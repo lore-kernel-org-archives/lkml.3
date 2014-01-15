@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaAOCYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:24:15 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:44079 "EHLO
+	id S1752264AbaAOCYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:24:39 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:44106 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaAOCYN (ORCPT
+	with ESMTP id S1750928AbaAOCY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:24:13 -0500
+	Tue, 14 Jan 2014 21:24:28 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,61 +14,74 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next v2 00/10] use appropriate APIs to get interfaces
-Date: Wed, 15 Jan 2014 10:23:35 +0800
-Message-ID: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next v2 04/10] dcb: use __dev_get_by_name instead of dev_get_by_name to find interface
+Date: Wed, 15 Jan 2014 10:23:39 +0800
+Message-ID: <1389752625-23189-5-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under rtnl_lock protection, we should use __dev_get_name/index()
-rather than dev_get_name()/index() to find interface handlers
-because the former interfaces can help us avoid to change interface
-reference counter.
+The following call chain indicates that dcb_doit() is protected
+under rtnl_lock. So if we use __dev_get_by_name() instead of
+dev_get_by_name() to find interface handlers in it, this would
+help us avoid to change interface reference counter.
 
-v2 changes:
- - Change return value of nl80211_set_wiphy() to 0 in patch #10
-   by johannes's suggestion.
- - Add 'Acked-by' into several patches which were acknowledged by
-   corresponding maintainers.
+rtnetlink_rcv()
+  rtnl_lock()
+  netlink_rcv_skb()
+    dcb_doit()
+  rtnl_unlock()
 
-Ying Xue (10):
-  Drivers: Staging: cxt1e1: use __dev_get_name instead of dev_get_name
-    to find interfaces
-  bonding: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  eql: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  dcb: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  decnet: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  vxlan: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  batman-adv: use __dev_get_by_index instead of dev_get_by_index to
-    find interface
-  caif: __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  can: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  net: nl80211: __dev_get_by_index instead of dev_get_by_index to find
-    interface
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ net/dcb/dcbnl.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
- drivers/net/bonding/bond_main.c |   49 +++++++++----------
- drivers/net/eql.c               |   95 ++++++++++++++++--------------------
- drivers/net/vxlan.c             |    3 +-
- drivers/staging/cxt1e1/linux.c  |   15 +++---
- net/batman-adv/hard-interface.c |    4 +-
- net/caif/chnl_net.c             |    3 +-
- net/can/gw.c                    |   15 ++----
- net/dcb/dcbnl.c                 |   15 ++----
- net/decnet/dn_route.c           |   10 +---
- net/wireless/nl80211.c          |  102 ++++++++++++++-------------------------
- 10 files changed, 124 insertions(+), 187 deletions(-)
-
+diff --git a/net/dcb/dcbnl.c b/net/dcb/dcbnl.c
+index 66fbe19..5536444 100644
+--- a/net/dcb/dcbnl.c
++++ b/net/dcb/dcbnl.c
+@@ -1688,21 +1688,17 @@ static int dcb_doit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	if (!tb[DCB_ATTR_IFNAME])
+ 		return -EINVAL;
+ 
+-	netdev = dev_get_by_name(net, nla_data(tb[DCB_ATTR_IFNAME]));
++	netdev = __dev_get_by_name(net, nla_data(tb[DCB_ATTR_IFNAME]));
+ 	if (!netdev)
+ 		return -ENODEV;
+ 
+-	if (!netdev->dcbnl_ops) {
+-		ret = -EOPNOTSUPP;
+-		goto out;
+-	}
++	if (!netdev->dcbnl_ops)
++		return -EOPNOTSUPP;
+ 
+ 	reply_skb = dcbnl_newmsg(fn->type, dcb->cmd, portid, nlh->nlmsg_seq,
+ 				 nlh->nlmsg_flags, &reply_nlh);
+-	if (!reply_skb) {
+-		ret = -ENOBUFS;
+-		goto out;
+-	}
++	if (!reply_skb)
++		return -ENOBUFS;
+ 
+ 	ret = fn->cb(netdev, nlh, nlh->nlmsg_seq, tb, reply_skb);
+ 	if (ret < 0) {
+@@ -1714,7 +1710,6 @@ static int dcb_doit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 
+ 	ret = rtnl_unicast(reply_skb, net, portid);
+ out:
+-	dev_put(netdev);
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
