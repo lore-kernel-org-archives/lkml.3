@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbaAOPMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:12:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40292 "EHLO mx1.redhat.com"
+	id S1752361AbaAOPNl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:13:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914AbaAOPMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:12:53 -0500
-Date: Wed, 15 Jan 2014 10:12:23 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Greg KH <gregkh@suse.de>,
-        "Ken'ichi Ohmichi" <oomichi@mxs.nes.nec.co.jp>,
-        Dan Aloni <da-x@monatomic.org>
-Subject: Re: [PATCH] kdump: Fix exported size of vmcoreinfo note
-Message-ID: <20140115151223.GB29244@redhat.com>
-References: <20140114193311.GL3096@redhat.com>
- <20140114153554.88b4a8c193b88df9492f6973@linux-foundation.org>
+	id S1751632AbaAOPNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:13:39 -0500
+Date: Wed, 15 Jan 2014 16:12:55 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, namhyung@kernel.org, mingo@kernel.org,
+        dsahern@gmail.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/6] perf, tools: Enable printing the srcline in the
+ history
+Message-ID: <20140115151255.GC17358@krava.redhat.com>
+References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
+ <1389661461-18996-5-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114153554.88b4a8c193b88df9492f6973@linux-foundation.org>
+In-Reply-To: <1389661461-18996-5-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 03:35:54PM -0800, Andrew Morton wrote:
-> On Tue, 14 Jan 2014 14:33:11 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+On Mon, Jan 13, 2014 at 05:04:19PM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> > Right now we seem to be exporting the max data size contained inside
-> > vmcoreinfo note. But this does not include the size of meta data around
-> > vmcore info data. Like name of the note and starting and ending elf_note.
-> > 
-> > I think user space expects total size and that size is put in PT_NOTE
-> > elf header. Things seem to be fine so far because we are not using
-> > vmcoreinfo note to the maximum capacity. But as it starts filling up,
-> > to capacity, at some point of time, problem will be visible.
+> For lbr-as-callgraph we need to see the line number in the history,
+> because many LBR entries can be in a single function, and just
+> showing the same function name many times is not useful.
 > 
-> urgh.  This is what we get for adding undocumented interfaces.
+> When the history code is configured to sort by address, also try to
+> resolve the address to a file:srcline and display this in the browser.
+> If that doesn't work still display the address.
 > 
-> Looking through the fd59d231f81cb0287 changelog and the various email
-> threads it points to I can find no mention of what vmcoreinfo is
-> *supposed* to contain.  It was just kinda silently tossed in there.
+> This can be also useful without LBRs for understanding which call in a large
+> function (or in which inlined function) called something else.
 > 
-> So as a remedial step, could we please get this and any associated
-> interfaces written down in a way which people can very belatedly
-> review?
-
-Sure. I will send another patch to add some documentation for vmcoreinfo
-in Documentation/ABI/testing/* in a separate patch.
-
+> Contains fixes from Namhyung Kim
 > 
-> Phrases like "I think user space expects" and "Things seem to be fine
-> so far" don't inspire a ton of confidence.  What are the chances of
-> userspace breakage here?  Would it be safer/saner to leave vmcoreinfo
-> alone and add a new vmcoreinfo2 with the altered behaviour?
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/ui/browsers/hists.c | 15 ++++++++++++---
+>  tools/perf/ui/stdio/hist.c     | 16 +++++++++++++---
+>  tools/perf/util/callchain.h    |  1 +
+>  tools/perf/util/machine.c      |  2 +-
+>  tools/perf/util/srcline.c      |  6 ++++--
+>  5 files changed, 31 insertions(+), 9 deletions(-)
+> 
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index b720b92..060fffc 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -399,9 +399,18 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
+>  {
+>  	int printed;
+>  
+> -	if (cl->ms.sym)
+> -		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+> -	else
+> +	if (cl->ms.sym) {
+> +		if (callchain_param.key == CCKEY_ADDRESS &&
+> +		    cl->ms.map && !cl->srcline)
+> +			cl->srcline = get_srcline(cl->ms.map->dso,
+> +						  map__rip_2objdump(cl->ms.map,
+> +								    cl->ip));
+> +		if (cl->srcline)
+> +			printed = scnprintf(bf, bfsize, "%s %s",
+> +					cl->ms.sym->name, cl->srcline);
+> +		else
+> +			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+> +	} else
+>  		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
 
-I don't think user space will be broken with this change. So there is
-no need to introduce vmcoreinfo2. This change is safe and backward 
-compatible. More explanation on why this change is safe is below.
+above function 'callchain_list__sym_name' could be exported
 
-vmcoreinfo contains information about kernel which user space needs to
-know to do things like filtering. For example, various kernel config
-options or information about size or offset of some data structures etc.
-All this information is commmunicated to user space with an ELF note
-present in ELF /proc/vmcore file.
+>  
+>  	if (show_dso)
+> diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+> index 831fbb7..a494eed 100644
+> --- a/tools/perf/ui/stdio/hist.c
+> +++ b/tools/perf/ui/stdio/hist.c
+> @@ -56,9 +56,19 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+>  		} else
+>  			ret += fprintf(fp, "%s", "          ");
+>  	}
+> -	if (chain->ms.sym)
+> -		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+> -	else
+> +	if (chain->ms.sym) {
+> +		if (callchain_param.key == CCKEY_ADDRESS &&
+> +		    chain->ms.map)
+> +			chain->srcline = get_srcline(chain->ms.map->dso,
+> +						  map__rip_2objdump(
+> +							  chain->ms.map,
+> +							  chain->ip));
+> +		if (chain->srcline)
+> +			ret += fprintf(fp, "%s %s\n",
+> +				       chain->ms.sym->name, chain->srcline);
+> +		else
+> +			ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+> +	} else
+>  		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
 
-Currently vmcoreinfo data size is 4096. With some elf note meta data
-around it, actual size is 4132 bytes. But we are using barely 25% of
-that size. Rest is empty. So even if we tell user space that size of
-ELf note is 4096 and not 4132, nothing will be broken becase after
-around 1000 bytes, everything is zero anyway.
+and this place could call it
 
-But once we start filling up the note to the capacity, and not report
-the full size of note, bad things will start happening. Either some data
-will be lost or tools will be confused that they did not fine the zero
-note at the end.
-
-So I think this change is safe and should not break existing tools.
-
-Thanks
-Vivek
+jirka
