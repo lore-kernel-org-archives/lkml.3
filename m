@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaAOBFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:05:50 -0500
-Received: from mail-gg0-f177.google.com ([209.85.161.177]:48460 "EHLO
-	mail-gg0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaAOBFr (ORCPT
+	id S1751965AbaAOBGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:06:43 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:27048 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaAOBGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:05:47 -0500
-Date: Tue, 14 Jan 2014 17:05:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Nathan Zimmer <nzimmer@sgi.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Hedi <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] hotplug, memory: move register_memory_resource out of the
- lock_memory_hotplug
-In-Reply-To: <20140114151340.004d25c00056d88f33cadda0@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401141702450.3375@chino.kir.corp.google.com>
-References: <1389723874-32372-1-git-send-email-nzimmer@sgi.com> <20140114151340.004d25c00056d88f33cadda0@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 14 Jan 2014 20:06:42 -0500
+Message-ID: <1389747999.4971.27.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
+ too many tries
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, aswin@hp.com,
+        scott.norton@hp.com
+Date: Tue, 14 Jan 2014 17:06:39 -0800
+In-Reply-To: <1389745990-7069-4-git-send-email-jason.low2@hp.com>
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014, Andrew Morton wrote:
+On Tue, 2014-01-14 at 16:33 -0800, Jason Low wrote:
+> When running workloads that have high contention in mutexes on an 8 socket
+> machine, spinners would often spin for a long time with no lock owner.
+> 
+> One of the potential reasons for this is because a thread can be preempted
+> after clearing lock->owner but before releasing the lock
 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm/memory_hotplug.c: register_memory_resource() fixes
-> 
-> - register_memory_resource() should not go BUG on ENOMEM.  That's
->   appropriate at system boot time, but not at memory-hotplug time.  Fix.
-> 
-> - register_memory_resource()'s caller is incorrectly replacing
->   request_resource()'s -EBUSY with -EEXIST.  Fix this by propagating
->   errors appropriately.
-> 
+What happens if you invert the order here? So mutex_clear_owner() is
+called after the actual unlocking (__mutex_fastpath_unlock).
 
-Unfortunately, -EEXIST is a special case return value for both 
-acpi_memory_enable_device() and hv_mem_hot_add(), so they would need to be 
-modified to agree concurrently with this change.
+>  or preempted after
+> acquiring the mutex but before setting lock->owner. 
+
+That would be the case _only_ for the fastpath. For the slowpath
+(including optimistic spinning) preemption is already disabled at that
+point.
+
+> In those cases, the
+> spinner cannot check if owner is not on_cpu because lock->owner is NULL.
+> 
+> A solution that would address the preemption part of this problem would
+> be to disable preemption between acquiring/releasing the mutex and
+> setting/clearing the lock->owner. However, that will require adding overhead
+> to the mutex fastpath.
+
+It's not uncommon to disable preemption in hotpaths, the overhead should
+be quite smaller, actually.
+
+> 
+> The solution used in this patch is to limit the # of times thread can spin on
+> lock->count when !owner.
+> 
+> The threshold used in this patch for each spinner was 128, which appeared to
+> be a generous value, but any suggestions on another method to determine
+> the threshold are welcomed.
+
+Hmm generous compared to what? Could you elaborate further on how you
+reached this value? These kind of magic numbers have produced
+significant debate in the past.
+
+Thanks,
+Davidlohr
+
