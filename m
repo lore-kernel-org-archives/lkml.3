@@ -1,179 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaAOKA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:00:26 -0500
-Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:33483 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751848AbaAOKAT (ORCPT
+	id S1751451AbaAOKFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:05:10 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:48379 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaAOKFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:00:19 -0500
-X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 05:00:18 EST
+	Wed, 15 Jan 2014 05:05:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D65880.10301@atmel.com>
-References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
-	<1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
-	<52D65880.10301@atmel.com>
-Date: Wed, 15 Jan 2014 10:54:45 +0100
-Message-ID: <CACh+v5Pi-ZF5orDWheX9C3MpUcU56oDio_O8s6sR3Snb9QmTZQ@mail.gmail.com>
-Subject: Re: [PATCH v2 06/12] at91: smc: Adds helper functions to validate and
- clip the smc timings.
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        boris brezillon <b.brezillon@overkiz.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAOMwXhNBNa4EKe8rVTtQeAwXGGwFaRu9az+4yHARdH1PnPW1yQ@mail.gmail.com>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<1387814889-16670-4-git-send-email-lpapp@kde.org>
+	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
+	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
+	<CACRpkdbih0xQWqnuouhuiRCzYmou++76ex5zC1nh=iBQWJ9otA@mail.gmail.com>
+	<CAOMwXhMtc44SpA5yoGBP38muMqPMi3EkxeAKh3V5c_H=3qoXhw@mail.gmail.com>
+	<CAOMwXhNBNa4EKe8rVTtQeAwXGGwFaRu9az+4yHARdH1PnPW1yQ@mail.gmail.com>
+Date: Wed, 15 Jan 2014 11:05:01 +0100
+Message-ID: <CACRpkdap8GpdwMbj-H+UNA_KH60tQ+2uYznTKJgOE3AFdy3JvQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jon Corbet <corbet@lwn.net>
 Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 6550204184489121816
-X-Ovh-Remote: 209.85.192.174 (mail-pd0-f174.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/15 Nicolas Ferre <nicolas.ferre@atmel.com>:
-> On 09/01/2014 13:31, Jean-Jacques Hiblot :
->> This patchs implememnts 2 functions to help with the configuration of a
->> chip-select's timing:
->> * sam9_smc_check_cs_configuration : checks that the values would fit in the
->>   registers.
->> * sam9_smc_clip_cs_configuration : clip the values to their maximum.
->>
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>  arch/arm/mach-at91/include/mach/at91sam9_smc.h |  2 +
->>  arch/arm/mach-at91/sam9_smc.c                  | 77 ++++++++++++++++++++++++++
->>  2 files changed, 79 insertions(+)
->>
->> diff --git a/arch/arm/mach-at91/include/mach/at91sam9_smc.h b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
->> index c3e29311..615ac56 100644
->> --- a/arch/arm/mach-at91/include/mach/at91sam9_smc.h
->> +++ b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
->> @@ -47,6 +47,8 @@ extern void sam9_smc_read_mode(int id, int cs, struct sam9_smc_config *config);
->>  extern void sam9_smc_write_mode(int id, int cs, struct sam9_smc_config *config);
->>  extern void sam9_smc_cs_read(void __iomem *, struct sam9_smc_config *config);
->>  extern void sam9_smc_cs_configure(void __iomem *, struct sam9_smc_config *cfg);
->> +extern int sam9_smc_check_cs_configuration(struct sam9_smc_config *config);
->> +extern void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config);
->>  #endif
->>
->>  #define AT91_SMC_SETUP               0x00                            /* Setup Register for CS n */
->> diff --git a/arch/arm/mach-at91/sam9_smc.c b/arch/arm/mach-at91/sam9_smc.c
->> index d7a6156..fe3c492 100644
->> --- a/arch/arm/mach-at91/sam9_smc.c
->> +++ b/arch/arm/mach-at91/sam9_smc.c
->> @@ -23,6 +23,83 @@
->>
->>  static void __iomem *smc_base_addr[2];
->>
->> +static int count_trailing_zeroes(u32 x)
->
-> Don't we have something generic for this?
->
-> Check include/asm-generic/bitops/count_zeros.h
+On Tue, Jan 14, 2014 at 6:17 PM, Laszlo Papp <lpapp@kde.org> wrote:
 
-I wonder how I could have missed this one :o)
+[CC:ing Jon Corbet on this as he's better at the consensus process
+and may correct me here.]
 
->
->> +{
->> +     int ret = 0;
->> +     if (!(x & 0xFFFF)) {
->> +             ret += 16;
->> +             x = x >> 16;
->> +     }
->> +     if (!(x & 0xFF)) {
->> +             ret += 8;
->> +             x = x >> 8;
->> +     }
->> +     if (!(x & 0xF)) {
->> +             ret += 4;
->> +             x = x >> 4;
->> +     }
->> +     if (!(x & 0x3)) {
->> +             ret += 2;
->> +             x = x >> 2;
->> +     }
->> +     if (!(x & 0x1)) {
->> +             ret += 1;
->> +             x = x >> 1;
->> +     }
->> +     if (!(x & 0x1))
->> +             ret += 1;
->> +
->> +     return ret;
->> +}
->> +
->> +
->> +#define __CHECK_CFG(config, x, y)  do {\
->> +     if (x##_(config->y) > x) {\
->> +             pr_debug("error: %s (0x%x) is out of range\n", #y,\
->> +                     config->y >> count_trailing_zeroes(x));\
->> +             return -EINVAL;\
->> +             } \
->> +     } while (0)
->
-> I do not like the use of macro for this. You can convert them to
-> functions and it would increase readability. I am pretty confident that
-> gcc will optimize it so that is won't impact performance.
+> I have just had a quick look and I am now worried.... It seems that
+> the pinctrl system was not as mature in 3.2 that I need to support as
+> these days... The short term task of mine is to get it working for
+> that release, and trying to upstream all this is an additional
+> bonus....
 
-It's not a matter of performance. I wanted to use the stringification
-for the debug message.
+I am just a community maintainer, I do not worry very much about
+your company's infatuation with ancient kernel releases, so please
+do not bring such issues to us. We only develop and worry about
+the mainline kernel, Torvald's HEAD, with stability fixes going into
+the -stable kernels (not new stuff like this).
 
->
->> +int sam9_smc_check_cs_configuration(struct sam9_smc_config *config)
->> +{
->> +     __CHECK_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
->> +     __CHECK_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
->> +     __CHECK_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
->> +     __CHECK_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
->> +     __CHECK_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
->> +     __CHECK_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
->> +     __CHECK_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
->> +     __CHECK_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
->> +     __CHECK_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
->> +     __CHECK_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
->> +     __CHECK_CFG(config, AT91_SMC_TDF, tdf_cycles);
->> +     return 0;
->> +}
->> +
->> +#define __CLIP_CFG(config, x, y)  do {\
->> +     if (x##_(config->y) > x) {\
->> +             config->y = x >> count_trailing_zeroes(x);\
->> +             pr_debug("clipping %s to %d\n", #y, config->y);\
->> +             } \
->> +     } while (0)
->
-> Ditto.
->
->> +
->> +void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config)
->> +{
->> +     __CLIP_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
->> +     __CLIP_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
->> +     __CLIP_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
->> +     __CLIP_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
->> +     __CLIP_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
->> +     __CLIP_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
->> +     __CLIP_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
->> +     __CLIP_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
->> +     __CLIP_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
->> +     __CLIP_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
->> +     __CLIP_CFG(config, AT91_SMC_TDF, tdf_cycles);
->> +
->> +}
->> +
->>  static void sam9_smc_cs_write_mode(void __iomem *base,
->>                                       struct sam9_smc_config *config)
->>  {
->>
->
->
-> --
-> Nicolas Ferre
+> Hence, my question is: would it be acceptable to leave the gpio
+> functionality clearly separate and keep the pinctrl functionality on
+> top of it?
+
+What do you mean?
+
+These are two orthogonal subsystems with some GPIO-to-pin
+criss-cross APIs, I'm just asking that you implement both APIs:
+GPIO and pin control.
+
+Please look at other combined drivers in drivers/pinctrl
+and you will see what I mean.
+
+> Failing that, is it somehow possible to get this functionality nicely
+> working with both versions?
+
+The kernel development process is not suited to such things.
+This is not how we work, we don't want people to develop
+*new features* on old kernels, that is just insane.
+
+> The definite target is 3.2.1 for us as of now.
+
+I'm sorry to tell you that your organization does not understand
+how the mainline community develop new features. If you want to
+work with the community you develop new features on the HEAD,
+last kernel release (v3.12, soon v3.13) or directly on top of the
+pin control development tree in this case.
+
+The fact that some person or function in your company think it
+is a good idea to base development on kernel v3.2.x does not
+concern me, nor anyone else in the community.
+
+I mean, of course it is interesting to know odd stuff about the
+remote corners of kernel development, but it doesn't influence our
+behavior.
+
+> I would appreciate any suggestion about it. The pinctrl system was
+> introduced in 3.1 if I am not mistaken, and 3.2 has lotta less drivers
+> around, etc... Not quite sure about the core foundation though.
+
+If a company decides to work on a fork from the community
+that is their problem, basically. Then they assume all forward-porting
+and maintenance costs, sometimes also a huge cost of
+backward-porting entire subsystems and an increasing threshold
+to migrate to new kernel releases as time goes by.
+
+I'm not saying this is necessarily a bad decision for the company,
+but it means forking and disconnecting from the community,
+we will not come around and work like you do.
+
+I have seen this behaviour in many companies, and what they
+typically do not realize is that working this way comes with a
+cost because they are still dependent on new features only
+developed upstream and they often do not realize the issue of
+escalting maintenance cost as the fork widens over time.
+
+Then we have the ontology problem:
+The suggestion from any system manager (or similar
+function/role) in an organization that they want to lock down
+development to a certain older kernel version that "they know
+is stable" or "have agreed upon" or something like that is a
+complete fallacy, they are not the architects and developers of
+the Linux kernel and they are not competent to make such
+statements, to put one thing very clear.
+
+The only people that can make such statements you will find
+in the MAINTAINERS file of the kernel and that's it. Very simple.
+Usually they will tell you to do your development on the very
+latest kernel.
+
+It might be that someone pays your wages to work and think
+counter to this very simple rule, but that is another thing, that
+is not the truth or the way the world works, it is just a power
+relation in the working place and while I do realize that this is a
+fact of life, it doesn't change the way the community works.
+
+Yours,
+Linus Walleij
