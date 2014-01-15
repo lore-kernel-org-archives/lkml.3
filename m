@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaAOWBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:01:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41515 "EHLO
+	id S1754468AbaAOWCA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:02:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41513 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386AbaAOWBL (ORCPT
+	with ESMTP id S1754381AbaAOWBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:01:11 -0500
+	Wed, 15 Jan 2014 17:01:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 075/166] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
-Date: Wed, 15 Jan 2014 13:51:29 -0800
-Message-Id: <1389822780-4729-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 070/166] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
+Date: Wed, 15 Jan 2014 13:51:24 -0800
+Message-Id: <1389822780-4729-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,66 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
+commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
 
-This patch touches the RT group scheduling case.
+We should be writing bits here but instead we're writing the
+numbers that correspond to the bits we want to write. Fix it by
+wrapping the numbers in the BIT() macro. This fixes gpios acting
+as interrupts.
 
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
-priority, while rt_rq passed to them may be not the top-level rt_rq.
-This is wrong, because changing of priority on a child level does not
-guarantee that the priority is the highest all over the rq. So, this
-leak makes RT balancing unusable.
-
-The short example: the task having the highest priority among all rq's
-RT tasks (no one other task has the same priority) are waking on a
-throttle rt_rq.  The rq's cpupri is set to the task's priority
-equivalent, but real rq->rt.highest_prio.curr is less.
-
-The patch below fixes the problem.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/rt.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/gpio/gpio-msm-v2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 4f02b28..14a3a35 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -962,6 +962,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
+diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
+index 55a7e77..0152b1a 100644
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -249,7 +249,7 @@ static void msm_gpio_irq_mask(struct irq_data *d)
  
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
+-	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	__clear_bit(gpio, msm_gpio.enabled_irqs);
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
  }
-@@ -971,6 +978,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
+@@ -261,7 +261,7 @@ static void msm_gpio_irq_unmask(struct irq_data *d)
  
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	__set_bit(gpio, msm_gpio.enabled_irqs);
+-	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
  }
 -- 
 1.8.3.2
