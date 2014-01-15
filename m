@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaAORIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:08:39 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49624 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaAORIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:08:36 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, glommer@gmail.com
-Subject: [PATCH] KVM: remove useless write to vcpu->hv_clock.tsc_timestamp
-Date: Wed, 15 Jan 2014 18:08:11 +0100
-Message-Id: <1389805691-3183-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752611AbaAORJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:09:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572AbaAORJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:09:00 -0500
+Date: Wed, 15 Jan 2014 18:08:35 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 3/4] timers: Reduce future
+	__run_timers() latency for newly emptied list
+Message-ID: <20140115170835.GC11499@redhat.com>
+References: <20140115051939.GA31164@linux.vnet.ibm.com> <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com> <1389763248-31297-3-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389763248-31297-3-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous patch from Marcelo, the comment before this write
-became obsolete.  In fact, the write is unnecessary.  The calls to
-kvm_write_tsc ultimately result in a master clock update as soon as
-all TSCs agree and the master clock is re-enabled.  This master
-clock update will rewrite tsc_timestamp.
+On 01/14, Paul E. McKenney wrote:
+>
+> @@ -700,6 +700,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
+>  			base->next_timer = base->timer_jiffies;
+>  	}
+>  	base->all_timers--;
+> +	(void)catchup_timer_jiffies(base);
 
-So, together with the comment, delete the dead write too.
+Agreed, but I think that detach_expired_timer() should do the same,
+this can stop main loop in __run_timers().
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/x86.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 842abd3..0fbdced 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1278,8 +1278,6 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, struct msr_data *msr)
- 	kvm->arch.last_tsc_write = data;
- 	kvm->arch.last_tsc_khz = vcpu->arch.virtual_tsc_khz;
- 
--	/* Reset of TSC must disable overshoot protection below */
--	vcpu->arch.hv_clock.tsc_timestamp = 0;
- 	vcpu->arch.last_guest_tsc = data;
- 
- 	/* Keep track of which generation this VCPU has synchronized to */
--- 
-1.7.1
+Oleg.
 
