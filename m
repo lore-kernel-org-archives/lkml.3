@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaAOOLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:11:53 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:16211 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752061AbaAOOLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:11:52 -0500
-Date: Wed, 15 Jan 2014 09:11:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Petr Mladek <pmladek@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v6 3/8] x86: add generic function to modify more calls
- using int3 framework
-Message-ID: <20140115091149.7525db07@gandalf.local.home>
-In-Reply-To: <52D64439.5040800@hitachi.com>
-References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
-	<1386690140-19941-4-git-send-email-pmladek@suse.cz>
-	<20140114193338.4375f205@gandalf.local.home>
-	<52D64439.5040800@hitachi.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752124AbaAOOML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:12:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49459 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089AbaAOOMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:12:08 -0500
+Message-ID: <52D6970D.3050701@zytor.com>
+Date: Wed, 15 Jan 2014 06:11:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dave Young <dyoung@redhat.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an arbitrary
+ pagetable
+References: <1389473370-1940-1-git-send-email-bp@alien8.de> <1389473370-1940-2-git-send-email-bp@alien8.de> <20140113053240.GA11237@dhcp-16-126.nay.redhat.com> <20140113101822.GA5388@pd.tnic> <20140113122320.GA1900@darkstar.nay.redhat.com> <52D3FCAA.7070004@linux.intel.com> <20140114014003.GB4327@dhcp-16-126.nay.redhat.com> <52D57F75.7060308@zytor.com> <20140115011609.GD23767@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20140115011609.GD23767@dhcp-16-126.nay.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 17:18:01 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-  
-> >> +static char bp_int3;
-> > 
-> > bp_int3 is not going to be anything but 0xcc. Let's change that to:
-> > 
-> > static char bp_int3 = 0xcc;
-> > 
-> > And remove the other initializations.
+On 01/14/2014 05:16 PM, Dave Young wrote:
+>>
+>> Why the [Finnish] do you feel that information needs to be in a
+>> different form because it is (currently!) not available as a module?
 > 
-> just a comment.
-> If it is always 0xcc, it should be a const variable.
+> I think moving them to comment can avoid including extra linux/module.h
 > 
 
-Yeah, I was thinking that too. As long as sizeof(bp_int3) still works,
-which it should for just adding a "const", and not make it a macro.
+And that matters, why?
 
-static const bp_int3 = 0xcc;
+	-hpa
 
-Thanks!
-
--- Steve
