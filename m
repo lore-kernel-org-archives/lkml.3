@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaAOV5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:57:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40937 "EHLO
+	id S1753489AbaAOV52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:57:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40930 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaAOV5O (ORCPT
+	with ESMTP id S1753418AbaAOV5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:14 -0500
+	Wed, 15 Jan 2014 16:57:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 135/166] drm/nouveau/bios: make jump conditional
-Date: Wed, 15 Jan 2014 13:52:29 -0800
-Message-Id: <1389822780-4729-136-git-send-email-kamal@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 128/166] mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
+Date: Wed, 15 Jan 2014 13:52:22 -0800
+Message-Id: <1389822780-4729-129-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,40 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6d60792ec059d9f2139828f9f017679abb81aa73 upstream.
+commit 73beb63d290f961c299526852884846b0d868840 upstream.
 
-This fixes a hang in VBIOS scripts of the form "condition; jump".
-The jump used to always be executed, while now it will only be
-executed if the condition is true.
+This fixes a kernel panic when resuming from suspend to RAM.
+Without this fix an interrupt hits after the delayed work is canceled
+and thus requeues it. So we end up freeing an armed timer.
 
-See https://bugs.freedesktop.org/show_bug.cgi?id=72943
-
-Reported-by: Darcy Brás da Silva <dardevelin@cidadecool.com>
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/mfd/rtsx_pcr.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-index ad6662c..9e0cb43 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-@@ -1262,7 +1262,11 @@ init_jump(struct nvbios_init *init)
- 	u16 offset = nv_ro16(bios, init->offset + 1);
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 148aa18..0c0a84d 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1188,8 +1188,14 @@ static void rtsx_pci_remove(struct pci_dev *pcidev)
  
- 	trace("JUMP\t0x%04x\n", offset);
--	init->offset = offset;
+ 	pcr->remove_pci = true;
+ 
+-	cancel_delayed_work(&pcr->carddet_work);
+-	cancel_delayed_work(&pcr->idle_work);
++	/* Disable interrupts at the pcr level */
++	spin_lock_irq(&pcr->lock);
++	rtsx_pci_writel(pcr, RTSX_BIER, 0);
++	pcr->bier = 0;
++	spin_unlock_irq(&pcr->lock);
 +
-+	if (init_exec(init))
-+		init->offset = offset;
-+	else
-+		init->offset += 3;
- }
++	cancel_delayed_work_sync(&pcr->carddet_work);
++	cancel_delayed_work_sync(&pcr->idle_work);
  
- /**
+ 	mfd_remove_devices(&pcidev->dev);
+ 
 -- 
 1.8.3.2
 
