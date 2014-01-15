@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaAOBSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:18:37 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:41788 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaAOBSe (ORCPT
+	id S1751676AbaAOBZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:25:19 -0500
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:43940 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaAOBZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:18:34 -0500
-Message-ID: <52D5E1CD.2020405@windriver.com>
-Date: Wed, 15 Jan 2014 09:18:05 +0800
-From: Ying Xue <ying.xue@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 14 Jan 2014 20:25:15 -0500
+Date: Tue, 14 Jan 2014 17:25:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+cc: Fengguang Wu <fengguang.wu@intel.com>, santosh.shilimkar@ti.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/mm: memblock: switch to use NUMA_NO_NODE
+In-Reply-To: <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com>
+Message-ID: <alpine.DEB.2.02.1401141724480.32645@chino.kir.corp.google.com>
+References: <20140107022559.GE14055@localhost> <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: <davem@davemloft.net>, <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
-        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
-        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next 10/10] net: nl80211: __dev_get_by_index instead
- of dev_get_by_index to find interface
-References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>	 <1389685269-18600-11-git-send-email-ying.xue@windriver.com> <1389701498.23430.1.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1389701498.23430.1.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.185]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 08:11 PM, Johannes Berg wrote:
-> On Tue, 2014-01-14 at 15:41 +0800, Ying Xue wrote:
-> 
->> @@ -2218,10 +2194,6 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
->>  			rdev->wiphy.coverage_class = old_coverage_class;
->>  		}
->>  	}
->> -
->> - bad_res:
->> -	if (netdev)
->> -		dev_put(netdev);
->>  	return result;
-> 
-> I believe that could be "return 0;" now, which would make the code
-> easier to read.
-> 
+On Wed, 8 Jan 2014, Grygorii Strashko wrote:
 
-Yes, I will change it in next version.
-
-Thanks,
-Ying
-
-> johannes
+> Update X86 code to use NUMA_NO_NODE instead of MAX_NUMNODES while
+> calling memblock APIs, because memblock API is changed to use NUMA_NO_NODE and
+> will produce warning during boot otherwise.
 > 
+> See:
+>  https://lkml.org/lkml/2013/12/9/898
 > 
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
 > 
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
+Acked-by: David Rientjes <rientjes@google.com>
+
+Thanks for following through with this, Grygorii!
