@@ -1,79 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaAOHUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:20:00 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:46176 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaAOHTz (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 15 Jan 2014 02:19:55 -0500
-Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
- efi_enter_virtual_mode()
-From: joeyli <jlee@suse.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matt Fleming <matt@console-pimps.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-In-Reply-To: <1389731547.1792.296.camel@misato.fc.hp.com>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
-	 <20131221122148.GB29501@console-pimps.org>
-	 <2530951.HFPX8MI38t@vostro.rjw.lan>
-	 <1389672548.24105.252.camel@linux-s257.site> <52D57B54.7080509@zytor.com>
-	 <1389731547.1792.296.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Jan 2014 15:18:02 +0800
-Message-ID: <1389770282.24105.259.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1751473AbaAOHVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:21:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750856AbaAOHVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 02:21:15 -0500
+Date: Wed, 15 Jan 2014 09:21:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH net-next] tun/macvtap: limit the packets queued through
+ rcvbuf
+Message-ID: <20140115072104.GA32078@redhat.com>
+References: <1389682387-28601-1-git-send-email-jasowang@redhat.com>
+ <20140114082516.GB1101@redhat.com>
+ <52D4F924.2040502@redhat.com>
+ <20140114095219.GB2846@redhat.com>
+ <52D60221.1060701@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D60221.1060701@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2014-01-14 於 13:32 -0700，Toshi Kani 提到：
-> > > +       acpi_early_init();
-> > >         timekeeping_init();
-> > >         time_init();
-> > >         sched_clock_postinit();
-> > > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
-> > >  
-> > >         check_bugs();
-> > >  
-> > > -       acpi_early_init(); /* before LAPIC and SMP init */
-> > >         sfi_init_late();
-> > >  
-> > >         if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-> > > 
-> > 
-> > Hi Toshi,
-> > 
-> > Could you try this variant, too?  If this works as well then we end
-> up
-> > solving two problems in one patch...
+On Wed, Jan 15, 2014 at 11:36:01AM +0800, Jason Wang wrote:
+> On 01/14/2014 05:52 PM, Michael S. Tsirkin wrote:
+> > On Tue, Jan 14, 2014 at 04:45:24PM +0800, Jason Wang wrote:
+> >> > On 01/14/2014 04:25 PM, Michael S. Tsirkin wrote:
+> >>> > > On Tue, Jan 14, 2014 at 02:53:07PM +0800, Jason Wang wrote:
+> >>>> > >> We used to limit the number of packets queued through tx_queue_length. This
+> >>>> > >> has several issues:
+> >>>> > >>
+> >>>> > >> - tx_queue_length is the control of qdisc queue length, simply reusing it
+> >>>> > >>   to control the packets queued by device may cause confusion.
+> >>>> > >> - After commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 ("macvtap: Add
+> >>>> > >>   support of packet capture on macvtap device."), an unexpected qdisc
+> >>>> > >>   caused by non-zero tx_queue_length will lead qdisc lock contention for
+> >>>> > >>   multiqueue deivce.
+> >>>> > >> - What we really want is to limit the total amount of memory occupied not
+> >>>> > >>   the number of packets.
+> >>>> > >>
+> >>>> > >> So this patch tries to solve the above issues by using socket rcvbuf to
+> >>>> > >> limit the packets could be queued for tun/macvtap. This was done by using
+> >>>> > >> sock_queue_rcv_skb() instead of a direct call to skb_queue_tail(). Also two
+> >>>> > >> new ioctl() were introduced for userspace to change the rcvbuf like what we
+> >>>> > >> have done for sndbuf.
+> >>>> > >>
+> >>>> > >> With this fix, we can safely change the tx_queue_len of macvtap to
+> >>>> > >> zero. This will make multiqueue works without extra lock contention.
+> >>>> > >>
+> >>>> > >> Cc: Vlad Yasevich <vyasevic@redhat.com>
+> >>>> > >> Cc: Michael S. Tsirkin <mst@redhat.com>
+> >>>> > >> Cc: John Fastabend <john.r.fastabend@intel.com>
+> >>>> > >> Cc: Stephen Hemminger <stephen@networkplumber.org>
+> >>>> > >> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> >>>> > >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >>> > > No, I don't think we can change userspace-visible behaviour like that.
+> >>> > >
+> >>> > > This will break any existing user that tries to control
+> >>> > > queue length through sysfs,netlink or device ioctl.
+> >> > 
+> >> > But it looks like a buggy API, since tx_queue_len should be for qdisc
+> >> > queue length instead of device itself.
+> > Probably, but it's been like this since 2.6.x time.
+> > Also, qdisc queue is unused for tun so it seemed kind of
+> > reasonable to override tx_queue_len.
+> >
+> >> > If we really want to preserve the
+> >> > behaviour, how about using a new feature flag and change the behaviour
+> >> > only when the device is created (TUNSETIFF) with the new flag?
+> > OK this addresses the issue partially, but there's also an issue
+> > of permissions: tx_queue_len can only be changed if
+> > capable(CAP_NET_ADMIN). OTOH in your patch a regular user
+> > can change the amount of memory consumed per queue
+> > by calling TUNSETRCVBUF.
 > 
-> Hi Peter,
+> Yes, but we have the same issue for TUNSETSNDBUF.
+
+To an extent, but TUNSETSNDBUF is different. It limits how much device can queue
+*in the networking stack* but each queue in the stack is also
+limited, when we exceed that we star dropping packets.
+So while with infinite value (which is the default btw)
+you can keep host pretty busy, you will not be able to run
+it out of memory.
+
+The proposed TUNSETRCVBUF would keep configured amount
+of memory around indefinitely so you can run host out of memory.
+
+So assuming all this
+How about an ethtool or netlink command to configure this
+instead?
+
+> >
+> >>> > >
+> >>> > > Take a look at my patch in msg ID 20140109071721.GD19559@redhat.com
+> >>> > > which gives one way to set tx_queue_len to zero without
+> >>> > > breaking userspace.
+> >> > 
+> >> > If I read the patch correctly, it will make no way for the user who
+> >> > really want to change the qdisc queue length for tun.
+> > Why would this matter?  As far as I can see qdisc queue is currently unused.
+> >
 > 
-> Yes, this version works fine as well.
-> 
-> Tested-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Thanks,
-> -Toshi
+> User may use qdisc to do port mirroring, bandwidth limitation, traffic
+> prioritization or more for a VM. So we do have users and maybe more
+> consider the case of vpn.
 
-Thanks a lot for your testing.
+Well it's not used by default at least.
+I remember that we discussed this previously actually.
 
-I will re-send a formal patch with changelog to everybody.
+If all we want to do actually is utilize no_qdisc by default,
+we can simply use Eric's patch:
 
-Regards
-Joey Lee
+http://article.gmane.org/gmane.linux.kernel/1279597
 
+and a similar patch for macvtap.
+I tried it at the time and it didn't seem to help performance
+at all, but a lot has changed since, in particular I didn't
+test mq.
 
+If you now have results showing how it's beneficial, pls post them.
 
+-- 
+MST
