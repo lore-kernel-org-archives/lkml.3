@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaAOUyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:54:12 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:7744 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751720AbaAOUyI (ORCPT
+	id S1751978AbaAOUyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:54:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60940 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaAOUy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:54:08 -0500
-Date: Wed, 15 Jan 2014 15:54:05 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/timers 3/4] timers: Reduce future
- __run_timers() latency for newly emptied list
-Message-ID: <20140115155405.5682a2de@gandalf.local.home>
-In-Reply-To: <1389763248-31297-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140115051939.GA31164@linux.vnet.ibm.com>
-	<1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1389763248-31297-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 15 Jan 2014 15:54:28 -0500
+Date: Wed, 15 Jan 2014 12:54:27 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/7] ARM: perf_event: Support percpu irqs for the
+ CPU PMU
+Message-ID: <20140115205427.GB26193@codeaurora.org>
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+ <1389808535-23852-2-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389808535-23852-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014 21:20:47 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On 01/15, Stephen Boyd wrote:
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 789d846a9184..e76750980b38 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
+>  
+>  static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+>  {
+> -	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+> -	struct platform_device *plat_device = armpmu->plat_device;
+> -	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
+> +	struct arm_pmu *armpmu;
+> +	struct platform_device *plat_device;
+> +	struct arm_pmu_platdata *plat;
+> +
+> +	if (irq_is_percpu(irq))
+> +		dev = *(struct arm_pmu_cpu **)dev;
 
+Oh. I just realized that struct arm_pmu_cpu doesn't even exist. This
+still compiles though because we're dealing with a void pointer.
 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 295837e5e011..bdd1c00ec4ec 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -700,6 +700,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
->  			base->next_timer = base->timer_jiffies;
->  	}
->  	base->all_timers--;
-> +	(void)catchup_timer_jiffies(base);
+Perhaps its better to just do
 
-Why the "(void)" ?
+	dev = *(void **)dev;
 
--- Steve
+here. Can you fix that up when applying? Otherwise I'll do it on
+the next send if there are more comments.
 
->  	return 1;
->  }
+> +	armpmu = dev;
+> +	plat_device = armpmu->plat_device;
+> +	plat = dev_get_platdata(&plat_device->dev);
 >  
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
