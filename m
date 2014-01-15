@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaAOKzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:55:04 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54582 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaAOKzA (ORCPT
+	id S1751619AbaAOK73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:59:29 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34859 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaAOK72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:55:00 -0500
-Date: Wed, 15 Jan 2014 10:54:46 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20140115105446.GF15567@sirena.org.uk>
-References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
- <1387847559-18330-3-git-send-email-sboyd@codeaurora.org>
- <20140109015158.7168.60274@quantum>
- <52D4B502.3080409@codeaurora.org>
- <20140115093641.4167.83109@quantum>
+	Wed, 15 Jan 2014 05:59:28 -0500
+Message-ID: <52D66A0C.4090509@atmel.com>
+Date: Wed, 15 Jan 2014 11:59:24 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DOr+hlVy7JMLa9bO"
-Content-Disposition: inline
-In-Reply-To: <20140115093641.4167.83109@quantum>
-X-Cookie: Marriage is the sole cause of divorce.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 02/15] clk: Allow drivers to pass in a regmap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: <b.brezillon@overkiz.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH] at91: dt: i2c: add a new compatibility string for the
+ at91sam9261
+References: <1389781467-29626-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1389781467-29626-1-git-send-email-jjhiblot@traphandler.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 15/01/2014 11:24, Jean-Jacques Hiblot :
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
---DOr+hlVy7JMLa9bO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-On Wed, Jan 15, 2014 at 01:36:41AM -0800, Mike Turquette wrote:
+Thanks Jean-Jacques.
 
-> Providing common functions for the basic case (e.g. read-modify-write on
-> a register using a known mask) is reasonable. But that is exactly what
-> the existing basic clock types do (sans regmap) and they have all become
-> pretty ugly over time. And the clk-composite implementation just makes
-> me a sad panda.
+Side note: do not forget i2c maintainer and ml.
 
-What we've tried to do with regulators is just have multiple helper
-functions in the core rather than trying to merge their implementation,
-the drivers pick the right one for their usage, and in cases where there
-aren't many drivers doing the same thing we just have the driver either
-copy the bits of the implementation they reuse or call the helper
-function from within the implementation.
+> ---
+>  drivers/i2c/busses/i2c-at91.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
+> index 8edba9d..843d012 100644
+> --- a/drivers/i2c/busses/i2c-at91.c
+> +++ b/drivers/i2c/busses/i2c-at91.c
+> @@ -589,6 +589,9 @@ static const struct of_device_id atmel_twi_dt_ids[] = {
+>  		.compatible = "atmel,at91sam9260-i2c",
+>  		.data = &at91sam9260_config,
+>  	} , {
+> +		.compatible = "atmel,at91sam9261-i2c",
+> +		.data = &at91sam9261_config,
+> +	} , {
+>  		.compatible = "atmel,at91sam9g20-i2c",
+>  		.data = &at91sam9g20_config,
+>  	} , {
+> 
 
---DOr+hlVy7JMLa9bO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1mjzAAoJELSic+t+oim9D3MQAJWxAv5ObrqZzQqnXqQpGffT
-RzaazYXTS6sDurATNVUl1vkanQ/eRSco1ndZUXpIpm61/uE3HcwpNckPH7KuH9lT
-u4PUqlfWUWwS8Ydx6nPN8EXAfzXf+qsTdAlwvAMwNFZSiznJ9YsEzdEVlLW4Yx2O
-r7OGHKnI91XwNFDyN1j1ZHUt9VkEOuWM4NaZ2ttL/lpMBZr33fQ7F2XByki6SzhW
-tymRAdHfIhuc/2k+4jvR+YU1rIjEpe3qJ9EDmxwK2CvG8RWY+/vaPDfYnv5wNbZU
-ELs/9/ukcVJM2FzDzlg4XULDs4yW6LbbPtbPINpxxcB0kv3Z9q/u+PBeggRgiLCg
-fwjnrCy2rsjQlQEtqBYSmamN9ePfErkPQoLHaY85SSyGRFdbWzDDZI//lI5ufH6M
-v1LradqIeSvfmsBNXA6I37risIDQwyxBl9TxkV03vVRnWcziLO9U9AZJkavpEGtP
-ZHpk6rVuJFFBN65HKCgjZQAEi9K1ZYOhAsTWqrJNNYTlitwlTq5I3NiuHjF0l6ZW
-iUY6sRt8K0lhOlujzTDZcRLcP3LMIITrWbxMcH5BNZCD9kH5rCtDFTDXs7PEPVhs
-0OIYYzuFZoyalmYfP7rENKfdyu/ZALisFecd4vQTNhQTjTKnCusIM9Z7jnQgi9oA
-bT+3zehWWzyOZgAekXFL
-=kj9T
------END PGP SIGNATURE-----
-
---DOr+hlVy7JMLa9bO--
+-- 
+Nicolas Ferre
