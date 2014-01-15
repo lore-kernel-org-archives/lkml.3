@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaAOVxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:53:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40740 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933AbaAOVxm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752942AbaAOVxm (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 Jan 2014 16:53:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40735 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaAOVxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 16:53:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathy Vanhoef <vanhoefm@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 126/166] ath9k_htc: properly set MAC address and BSSID mask
-Date: Wed, 15 Jan 2014 13:52:20 -0800
-Message-Id: <1389822780-4729-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 127/166] aacraid: prevent invalid pointer dereference
+Date: Wed, 15 Jan 2014 13:52:21 -0800
+Message-Id: <1389822780-4729-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,103 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathy Vanhoef <vanhoefm@gmail.com>
+From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
 
-commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
+commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
 
-Pick the MAC address of the first virtual interface as the new hardware MAC
-address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
+It appears that driver runs into a problem here if fibsize is too small
+because we allocate user_srbcmd with fibsize size only but later we
+access it until user_srbcmd->sg.count to copy it over to srbcmd.
 
-Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
+structure already includes one sg element and this is not needed for
+commands without data.  So, we would recommend to add the following
+(instead of test for fibsize == 0).
+
+Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++++++--------
- drivers/net/wireless/ath/ath9k/main.c         |  5 +++--
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/scsi/aacraid/commctrl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-index 2f34993..112116b 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -145,21 +145,26 @@ static void ath9k_htc_bssid_iter(void *data, u8 *mac, struct ieee80211_vif *vif)
- 	struct ath9k_vif_iter_data *iter_data = data;
- 	int i;
- 
--	for (i = 0; i < ETH_ALEN; i++)
--		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	if (iter_data->hw_macaddr != NULL) {
-+		for (i = 0; i < ETH_ALEN; i++)
-+			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	} else {
-+		iter_data->hw_macaddr = mac;
-+	}
- }
- 
--static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
-+static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
- 				     struct ieee80211_vif *vif)
- {
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_vif_iter_data iter_data;
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
--	iter_data.hw_macaddr = common->macaddr;
-+	iter_data.hw_macaddr = NULL;
- 	memset(&iter_data.mask, 0xff, ETH_ALEN);
- 
- 	if (vif)
-@@ -171,6 +176,10 @@ static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
- 		ath9k_htc_bssid_iter, &iter_data);
- 
- 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
-+
-+	if (iter_data.hw_macaddr)
-+		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
-+
- 	ath_hw_setbssidmask(common);
- }
- 
-@@ -1076,7 +1085,7 @@ static int ath9k_htc_add_interface(struct ieee80211_hw *hw,
- 		goto out;
+diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
+index 1ef041b..ee6cadd 100644
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -510,7 +510,8 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
+ 		goto cleanup;
  	}
  
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	priv->vif_slot |= (1 << avp->index);
- 	priv->nvifs++;
-@@ -1139,7 +1148,7 @@ static void ath9k_htc_remove_interface(struct ieee80211_hw *hw,
- 
- 	ath9k_htc_set_opmode(priv);
- 
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	/*
- 	 * Stop ANI only if there are no associated station interfaces.
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index e0eb87b..667319b 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -886,8 +886,9 @@ void ath9k_calculate_iter_data(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(ah);
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
- 	memset(iter_data, 0, sizeof(*iter_data));
- 	iter_data->hw_macaddr = common->macaddr;
+-	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
++	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
++	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
+ 		rcode = -EINVAL;
+ 		goto cleanup;
+ 	}
 -- 
 1.8.3.2
 
