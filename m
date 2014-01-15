@@ -1,133 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaAOUdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:33:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48475 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaAOUdg (ORCPT
+	id S1751319AbaAOUrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:47:10 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:37496 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaAOUrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:33:36 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/13] tools lib traceevent: Get rid of die() finally!!
-Date: Wed, 15 Jan 2014 17:33:05 -0300
-Message-Id: <1389817991-8145-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1389817991-8145-1-git-send-email-acme@infradead.org>
-References: <1389817991-8145-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 15 Jan 2014 15:47:07 -0500
+Message-ID: <1389818820.17932.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
+Date: Wed, 15 Jan 2014 12:47:00 -0800
+In-Reply-To: <20140114205603.f4fd2678.akpm@linux-foundation.org>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
+	 <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
+	 <20131220140153.GC11295@suse.de>
+	 <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
+	 <20131223004438.GA19388@lge.com> <20131223021118.GA2487@lge.com>
+	 <1388778945.2956.20.camel@buesod1.americas.hpqcorp.net>
+	 <20140106001938.GB696@lge.com>
+	 <1389010745.14953.5.camel@buesod1.americas.hpqcorp.net>
+	 <20140107015701.GB26726@lge.com>
+	 <1389062214.9937.0.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.DEB.2.02.1401141906350.451@chino.kir.corp.google.com>
+	 <1389760669.4971.31.camel@buesod1.americas.hpqcorp.net>
+	 <20140114205603.f4fd2678.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+On Tue, 2014-01-14 at 20:56 -0800, Andrew Morton wrote:
+> On Tue, 14 Jan 2014 20:37:49 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> 
+> > On Tue, 2014-01-14 at 19:08 -0800, David Rientjes wrote:
+> > > On Mon, 6 Jan 2014, Davidlohr Bueso wrote:
+> > > 
+> > > > > If Andrew agree, It would be great to merge 1-7 patches into mainline
+> > > > > before your mutex approach. There are some of clean-up patches and, IMO,
+> > > > > it makes the code more readable and maintainable, so it is worth to merge
+> > > > > separately.
+> > > > 
+> > > > Fine by me.
+> > > > 
+> > > 
+> > > It appears like patches 1-7 are still missing from linux-next, would you 
+> > > mind posting them in a series with your approach?
+> > 
+> > I haven't looked much into patches 4-7, but at least the first three are
+> > ok. I was waiting for Andrew to take all seven for linux-next and then
+> > I'd rebase my approach on top. Anyway, unless Andrew has any
+> > preferences, if by later this week they're not picked up, I'll resend
+> > everything.
+> 
+> Well, we're mainly looking for bugfixes this last in the cycle. 
+> "[PATCH v3 03/14] mm, hugetlb: protect region tracking via newly
+> introduced resv_map lock" fixes a bug, but I'd assumed that it depended
+> on earlier patches. 
 
-Now all of its users were gone. :)
+It doesn't seem to depend on anything. All 1-7 patches apply cleanly on
+linux-next, the last change to mm/hugetlb.c was commit 3ebac7fa (mm:
+dump page when hitting a VM_BUG_ON using VM_BUG_ON_PAGE).
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1389750340-15965-5-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-utils.h |  4 ----
- tools/lib/traceevent/parse-utils.c | 44 --------------------------------------
- 2 files changed, 48 deletions(-)
+>  If we think that one is serious then it would be
+> better to cook up a minimal fix which is backportable into 3.12 and
+> eariler?
 
-diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
-index e76c9acb92cd..d1dc2170e402 100644
---- a/tools/lib/traceevent/event-utils.h
-+++ b/tools/lib/traceevent/event-utils.h
-@@ -23,18 +23,14 @@
- #include <ctype.h>
- 
- /* Can be overridden */
--void die(const char *fmt, ...);
--void *malloc_or_die(unsigned int size);
- void warning(const char *fmt, ...);
- void pr_stat(const char *fmt, ...);
- void vpr_stat(const char *fmt, va_list ap);
- 
- /* Always available */
--void __die(const char *fmt, ...);
- void __warning(const char *fmt, ...);
- void __pr_stat(const char *fmt, ...);
- 
--void __vdie(const char *fmt, ...);
- void __vwarning(const char *fmt, ...);
- void __vpr_stat(const char *fmt, ...);
- 
-diff --git a/tools/lib/traceevent/parse-utils.c b/tools/lib/traceevent/parse-utils.c
-index bba701cf10e6..eda07fa31dca 100644
---- a/tools/lib/traceevent/parse-utils.c
-+++ b/tools/lib/traceevent/parse-utils.c
-@@ -25,40 +25,6 @@
- 
- #define __weak __attribute__((weak))
- 
--void __vdie(const char *fmt, va_list ap)
--{
--	int ret = errno;
--
--	if (errno)
--		perror("trace-cmd");
--	else
--		ret = -1;
--
--	fprintf(stderr, "  ");
--	vfprintf(stderr, fmt, ap);
--
--	fprintf(stderr, "\n");
--	exit(ret);
--}
--
--void __die(const char *fmt, ...)
--{
--	va_list ap;
--
--	va_start(ap, fmt);
--	__vdie(fmt, ap);
--	va_end(ap);
--}
--
--void __weak die(const char *fmt, ...)
--{
--	va_list ap;
--
--	va_start(ap, fmt);
--	__vdie(fmt, ap);
--	va_end(ap);
--}
--
- void __vwarning(const char *fmt, va_list ap)
- {
- 	if (errno)
-@@ -117,13 +83,3 @@ void __weak pr_stat(const char *fmt, ...)
- 	__vpr_stat(fmt, ap);
- 	va_end(ap);
- }
--
--void __weak *malloc_or_die(unsigned int size)
--{
--	void *data;
--
--	data = malloc(size);
--	if (!data)
--		die("malloc");
--	return data;
--}
--- 
-1.8.1.4
+I don't think it's too serious, afaik it's a theoretical race and I
+haven't seen any bug reports for it. So we can probably just wait for
+3.14, as you say, it's already late in the cycle anyways. Just let me
+know what you want to do so we can continue working on the actual
+performance issue.
+
+Thanks,
+Davidlohr
 
