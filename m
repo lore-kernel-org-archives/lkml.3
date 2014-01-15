@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaAOWD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:03:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41476 "EHLO
+	id S1754575AbaAOWE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:04:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311AbaAOWAt (ORCPT
+	with ESMTP id S1754274AbaAOWAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:00:49 -0500
+	Wed, 15 Jan 2014 17:00:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: JongHo Kim <furmuwon@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 077/166] ALSA: Add SNDRV_PCM_STATE_PAUSED case in wait_for_avail function
-Date: Wed, 15 Jan 2014 13:51:31 -0800
-Message-Id: <1389822780-4729-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 078/166] cpupower: Fix segfault due to incorrect getopt_long arugments
+Date: Wed, 15 Jan 2014 13:51:32 -0800
+Message-Id: <1389822780-4729-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,35 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: JongHo Kim <furmuwon@gmail.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
+commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
 
-When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
-state from the wait_for_avail function, the sleep process will be woken by
-timeout(10 seconds). Even if the sleep process wake up by timeout, by this
-patch, the process will continue with sleep and wait for the other state.
+If a user calls 'cpupower set --perf-bias 15', the process will end with
+a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
+call.  This is because the getopt_long structure currently has all of
+the options as having an optional_argument when they really have a
+required argument.  We change the structure to use required_argument to
+match the short options and it resolves the issue.
 
-Signed-off-by: JongHo Kim <furmuwon@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/pcm_lib.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/power/cpupower/utils/cpupower-set.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index c4840ff..4be58d2 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1904,6 +1904,8 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
- 		case SNDRV_PCM_STATE_DISCONNECTED:
- 			err = -EBADFD;
- 			goto _endloop;
-+		case SNDRV_PCM_STATE_PAUSED:
-+			continue;
- 		}
- 		if (!tout) {
- 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
+diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
+index dc4de37..bcf1d2f 100644
+--- a/tools/power/cpupower/utils/cpupower-set.c
++++ b/tools/power/cpupower/utils/cpupower-set.c
+@@ -18,9 +18,9 @@
+ #include "helpers/bitmask.h"
+ 
+ static struct option set_opts[] = {
+-	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
+-	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
+-	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
++	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
++	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
++	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
+ 	{ },
+ };
+ 
 -- 
 1.8.3.2
 
