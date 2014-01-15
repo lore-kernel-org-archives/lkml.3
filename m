@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaAOCpJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:45:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:51149 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086AbaAOCmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:42:17 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: linux-kernel@vger.kernel.org
-Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 5/6] virtio: fail adding buffer on broken queues.
-Date: Wed, 15 Jan 2014 13:06:10 +1030
-Message-Id: <1389753371-26469-5-git-send-email-rusty@rustcorp.com.au>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389753371-26469-1-git-send-email-rusty@rustcorp.com.au>
-References: <1389753371-26469-1-git-send-email-rusty@rustcorp.com.au>
+	id S1752412AbaAOCpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:45:45 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:56171 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaAOCpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 21:45:42 -0500
+Date: Tue, 14 Jan 2014 18:45:38 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@sr71.net>
+cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        penberg@kernel.org
+Subject: Re: [RFC][PATCH 3/9] mm: page->pfmemalloc only used by slab/skb
+In-Reply-To: <52D5B762.3090209@sr71.net>
+Message-ID: <alpine.DEB.2.02.1401141842220.32645@chino.kir.corp.google.com>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180051.0181E467@viggo.jf.intel.com> <alpine.DEB.2.10.1401141348130.19618@nuc> <52D5B762.3090209@sr71.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heinz points out that adding buffers to a broken virtqueue (which
-should "never happen") still works.  Failing allows drivers to detect
-and complain about broken devices.
+On Tue, 14 Jan 2014, Dave Hansen wrote:
 
-Now drivers are robust, we can add this extra check.
+> >> page->pfmemalloc does not deserve a spot in 'struct page'.  It is
+> >> only used transiently _just_ after a page leaves the buddy
+> >> allocator.
+> > 
+> > Why would we need to do this if we are removing the cmpxchg_double?
+> 
+> Why do we need the patch?
+> 
+> 'struct page' is a mess.  It's really hard to follow, and the space in
+> the definition is a limited resource.  We should not waste that space on
+> such a transient and unimportant value as pfmemalloc.
+> 
 
-Reported-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/virtio/virtio_ring.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 28b5338fff71..b74033dca384 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -203,6 +203,11 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- 
- 	BUG_ON(data == NULL);
- 
-+	if (unlikely(vq->broken)) {
-+		END_USE(vq);
-+		return -EIO;
-+	}
-+
- #ifdef DEBUG
- 	{
- 		ktime_t now = ktime_get();
-@@ -309,7 +314,7 @@ add_head:
-  * Caller must ensure we don't call this with other virtqueue operations
-  * at the same time (except where noted).
-  *
-- * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
-+ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
-  */
- int virtqueue_add_sgs(struct virtqueue *_vq,
- 		      struct scatterlist *sgs[],
-@@ -347,7 +352,7 @@ EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
-  * Caller must ensure we don't call this with other virtqueue operations
-  * at the same time (except where noted).
-  *
-- * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
-+ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
-  */
- int virtqueue_add_outbuf(struct virtqueue *vq,
- 			 struct scatterlist sg[], unsigned int num,
-@@ -369,7 +374,7 @@ EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
-  * Caller must ensure we don't call this with other virtqueue operations
-  * at the same time (except where noted).
-  *
-- * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
-+ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
-  */
- int virtqueue_add_inbuf(struct virtqueue *vq,
- 			struct scatterlist sg[], unsigned int num,
--- 
-1.8.3.2
-
+I don't have any strong opinions on whether this patch is merged or not, 
+but I'm not sure it's cleaner to do it with an accessor function that 
+overloads page->index when its placement within the union inside 
+struct page makes that obvious, nor is it good that the patch adds more 
+code than it removes solely because it introduces those accessor 
+functions.
