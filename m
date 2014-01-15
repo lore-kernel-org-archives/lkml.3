@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaAOCZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:25:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36198 "EHLO
+	id S1752228AbaAOCYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:24:36 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36147 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298AbaAOCYq (ORCPT
+	with ESMTP id S1752081AbaAOCYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:24:46 -0500
+	Tue, 14 Jan 2014 21:24:25 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next v2 09/10] can: use __dev_get_by_index instead of dev_get_by_index to find interface
-Date: Wed, 15 Jan 2014 10:23:44 +0800
-Message-ID: <1389752625-23189-10-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next v2 03/10] eql: use __dev_get_by_name instead of dev_get_by_name to find interface
+Date: Wed, 15 Jan 2014 10:23:38 +0800
+Message-ID: <1389752625-23189-4-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
 References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
@@ -26,61 +26,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As cgw_create_job() is always under rtnl_lock protection,
-__dev_get_by_index() instead of dev_get_by_index() should be used to
-find interface handler in it having us avoid to change interface
-reference counter.
+The following call chain indicates that eql_ioctl(), eql_enslave(),
+eql_emancipate(), eql_g_slave_cfg() and eql_s_slave_cfg() are
+protected under rtnl_lock. So if we use __dev_get_by_name() instead
+of dev_get_by_name() to find interface handlers in them, this would
+help us avoid to change interface reference counters.
 
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+dev_ioctl()
+  rtnl_lock()
+    dev_ifsioc()
+      eql_ioctl()
+        eql_enslave()
+	eql_emancipate()
+	eql_g_slave_cfg()
+	eql_s_slave_cfg()
+  rtnl_unlock()
+
+Additionally we also change their return values from -EINVAL to
+-ENODEV in case that interfaces are no found.
+
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 ---
- net/can/gw.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/net/eql.c |   95 +++++++++++++++++++++++------------------------------
+ 1 file changed, 42 insertions(+), 53 deletions(-)
 
-diff --git a/net/can/gw.c b/net/can/gw.c
-index 88c8a39..ac31891 100644
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -839,21 +839,21 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
- 	if (!gwj->ccgw.src_idx || !gwj->ccgw.dst_idx)
- 		goto out;
+diff --git a/drivers/net/eql.c b/drivers/net/eql.c
+index f219d38..7a79b60 100644
+--- a/drivers/net/eql.c
++++ b/drivers/net/eql.c
+@@ -395,6 +395,7 @@ static int __eql_insert_slave(slave_queue_t *queue, slave_t *slave)
+ 		if (duplicate_slave)
+ 			eql_kill_one_slave(queue, duplicate_slave);
  
--	gwj->src.dev = dev_get_by_index(&init_net, gwj->ccgw.src_idx);
-+	gwj->src.dev = __dev_get_by_index(&init_net, gwj->ccgw.src_idx);
++		dev_hold(slave->dev);
+ 		list_add(&slave->list, &queue->all_slaves);
+ 		queue->num_slaves++;
+ 		slave->dev->flags |= IFF_SLAVE;
+@@ -413,39 +414,35 @@ static int eql_enslave(struct net_device *master_dev, slaving_request_t __user *
+ 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
+ 		return -EFAULT;
  
- 	if (!gwj->src.dev)
- 		goto out;
- 
- 	if (gwj->src.dev->type != ARPHRD_CAN)
--		goto put_src_out;
-+		goto out;
- 
--	gwj->dst.dev = dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
-+	gwj->dst.dev = __dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
- 
- 	if (!gwj->dst.dev)
--		goto put_src_out;
-+		goto out;
- 
- 	if (gwj->dst.dev->type != ARPHRD_CAN)
--		goto put_src_dst_out;
-+		goto out;
- 
- 	gwj->limit_hops = limhops;
- 
-@@ -862,11 +862,6 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
- 	err = cgw_register_filter(gwj);
- 	if (!err)
- 		hlist_add_head_rcu(&gwj->list, &cgw_list);
+-	slave_dev  = dev_get_by_name(&init_net, srq.slave_name);
+-	if (slave_dev) {
+-		if ((master_dev->flags & IFF_UP) == IFF_UP) {
+-			/* slave is not a master & not already a slave: */
+-			if (!eql_is_master(slave_dev) &&
+-			    !eql_is_slave(slave_dev)) {
+-				slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
+-				equalizer_t *eql = netdev_priv(master_dev);
+-				int ret;
 -
--put_src_dst_out:
--	dev_put(gwj->dst.dev);
--put_src_out:
--	dev_put(gwj->src.dev);
- out:
- 	if (err)
- 		kmem_cache_free(cgw_cache, gwj);
+-				if (!s) {
+-					dev_put(slave_dev);
+-					return -ENOMEM;
+-				}
+-
+-				memset(s, 0, sizeof(*s));
+-				s->dev = slave_dev;
+-				s->priority = srq.priority;
+-				s->priority_bps = srq.priority;
+-				s->priority_Bps = srq.priority / 8;
+-
+-				spin_lock_bh(&eql->queue.lock);
+-				ret = __eql_insert_slave(&eql->queue, s);
+-				if (ret) {
+-					dev_put(slave_dev);
+-					kfree(s);
+-				}
+-				spin_unlock_bh(&eql->queue.lock);
+-
+-				return ret;
+-			}
++	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
++	if (!slave_dev)
++		return -ENODEV;
++
++	if ((master_dev->flags & IFF_UP) == IFF_UP) {
++		/* slave is not a master & not already a slave: */
++		if (!eql_is_master(slave_dev) && !eql_is_slave(slave_dev)) {
++			slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
++			equalizer_t *eql = netdev_priv(master_dev);
++			int ret;
++
++			if (!s)
++				return -ENOMEM;
++
++			memset(s, 0, sizeof(*s));
++			s->dev = slave_dev;
++			s->priority = srq.priority;
++			s->priority_bps = srq.priority;
++			s->priority_Bps = srq.priority / 8;
++
++			spin_lock_bh(&eql->queue.lock);
++			ret = __eql_insert_slave(&eql->queue, s);
++			if (ret)
++				kfree(s);
++
++			spin_unlock_bh(&eql->queue.lock);
++
++			return ret;
+ 		}
+-		dev_put(slave_dev);
+ 	}
+ 
+ 	return -EINVAL;
+@@ -461,24 +458,20 @@ static int eql_emancipate(struct net_device *master_dev, slaving_request_t __use
+ 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, srq.slave_name);
+-	ret = -EINVAL;
+-	if (slave_dev) {
+-		spin_lock_bh(&eql->queue.lock);
+-
+-		if (eql_is_slave(slave_dev)) {
+-			slave_t *slave = __eql_find_slave_dev(&eql->queue,
+-							      slave_dev);
++	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
++	if (!slave_dev)
++		return -ENODEV;
+ 
+-			if (slave) {
+-				eql_kill_one_slave(&eql->queue, slave);
+-				ret = 0;
+-			}
++	ret = -EINVAL;
++	spin_lock_bh(&eql->queue.lock);
++	if (eql_is_slave(slave_dev)) {
++		slave_t *slave = __eql_find_slave_dev(&eql->queue, slave_dev);
++		if (slave) {
++			eql_kill_one_slave(&eql->queue, slave);
++			ret = 0;
+ 		}
+-		dev_put(slave_dev);
+-
+-		spin_unlock_bh(&eql->queue.lock);
+ 	}
++	spin_unlock_bh(&eql->queue.lock);
+ 
+ 	return ret;
+ }
+@@ -494,7 +487,7 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
++	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
+ 	if (!slave_dev)
+ 		return -ENODEV;
+ 
+@@ -510,8 +503,6 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	}
+ 	spin_unlock_bh(&eql->queue.lock);
+ 
+-	dev_put(slave_dev);
+-
+ 	if (!ret && copy_to_user(scp, &sc, sizeof (slave_config_t)))
+ 		ret = -EFAULT;
+ 
+@@ -529,7 +520,7 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
++	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
+ 	if (!slave_dev)
+ 		return -ENODEV;
+ 
+@@ -548,8 +539,6 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	}
+ 	spin_unlock_bh(&eql->queue.lock);
+ 
+-	dev_put(slave_dev);
+-
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
