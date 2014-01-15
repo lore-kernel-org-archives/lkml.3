@@ -1,100 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaAOQKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:10:18 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:47507 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaAOQKO (ORCPT
+	id S1752175AbaAOQSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:18:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:30767 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751499AbaAOQSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:10:14 -0500
-X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
-   d="scan'208";a="91020649"
-Date: Wed, 15 Jan 2014 16:10:11 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
-Message-ID: <20140115161011.GQ5698@zion.uk.xensource.com>
-References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com>
- <20140115103707.GI5698@zion.uk.xensource.com>
- <52D67536.4030106@citrix.com>
- <20140115144519.GO5698@zion.uk.xensource.com>
- <52D6A0B9.2030204@citrix.com>
- <20140115145951.GP5698@zion.uk.xensource.com>
- <52D6A45C.1060705@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52D6A45C.1060705@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA1
+	Wed, 15 Jan 2014 11:18:41 -0500
+Date: Wed, 15 Jan 2014 11:18:39 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 06/17] tools lib traceevent: Add
+ pevent_unregister_event_handler()
+Message-ID: <20140115111839.73d85422@gandalf.local.home>
+In-Reply-To: <1389750340-15965-7-git-send-email-namhyung@kernel.org>
+References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
+	<1389750340-15965-7-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 03:08:12PM +0000, Zoltan Kiss wrote:
-> On 15/01/14 14:59, Wei Liu wrote:
-> >On Wed, Jan 15, 2014 at 02:52:41PM +0000, Zoltan Kiss wrote:
-> >>On 15/01/14 14:45, Wei Liu wrote:
-> >>>>>>The recent patch to fix receive side flow control (11b57f) solved the spinning
-> >>>>>>>>>thread problem, however caused an another one. The receive side can stall, if:
-> >>>>>>>>>- xenvif_rx_action sets rx_queue_stopped to false
-> >>>>>>>>>- interrupt happens, and sets rx_event to true
-> >>>>>>>>>- then xenvif_kthread sets rx_event to false
-> >>>>>>>>>
-> >>>>>>>
-> >>>>>>>If you mean "rx_work_todo" returns false.
-> >>>>>>>
-> >>>>>>>In this case
-> >>>>>>>
-> >>>>>>>(!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
-> >>>>>>>
-> >>>>>>>can still be true, can't it?
-> >>>>>Sorry, I should wrote rx_queue_stopped to true
-> >>>>>
-> >>>In this case, if rx_queue_stopped is true, then we're expecting frontend
-> >>>to notify us, right?
-> >>>
-> >>>rx_queue_stopped is set to true if we cannot make any progress to queue
-> >>>packet into the ring. In that situation we can expect frontend will send
-> >>>notification to backend after it goes through the backlog in the ring.
-> >>>That means rx_event is set to true, and rx_work_todo is true again. So
-> >>>the ring is actually not stalled in this case as well. Did I miss
-> >>>something?
-> >>>
-> >>
-> >>Yes, we expect the guest to notify us, and it does, and we set
-> >>rx_event to true (see second point), but then the thread set it to
-> >>false (see third point). Talking with Paul, another solution could
-> >>be to set rx_event false before calling xenvif_rx_action. But using
-> >>rx_last_skb_slots makes it quicker for the thread to see if it
-> >>doesn't have to do anything.
-> >>
-> >
-> >OK, this is a better explaination. So actually there's no bug in the
-> >original implementation and your patch is sort of an improvement.
-> >
-> >Could you send a new version of this patch with relevant information in
-> >commit message? Talking to people offline is faster, but I would like to
-> >have public discussion and relevant information archived in a searchable
-> >form. Thanks.
-> 
-> No, there is a bug in the original implementation:
-> - [THREAD] xenvif_rx_action sets rx_queue_stopped to true
-> - [INTERRUPT] interrupt happens, and sets rx_event to true
-> - [THREAD] then xenvif_kthread sets rx_event to false
-> - [THREAD] rx_work_todo never returns true anymore
-> 
+On Wed, 15 Jan 2014 10:45:29 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
+  
+>  	pr_stat("overriding event (%d) %s:%s with new print handler",
+>  		event->id, event->system, event->name);
+> @@ -5637,6 +5649,79 @@ int pevent_register_event_handler(struct pevent *pevent, int id,
+>  	return -1;
+>  }
+>  
+> +static int handle_matches(struct event_handler *handler, int id,
+> +			  const char *sys_name, const char *event_name,
+> +			  pevent_event_handler_func func, void *context)
+> +{
+> +	if (id >= 0 && id != handler->id)
+> +		return 0;
+> +
+> +	if (event_name && (strcmp(event_name, handler->event_name) != 0))
+> +		return 0;
+> +
+> +	if (sys_name && (strcmp(sys_name, handler->sys_name) != 0))
+> +		return 0;
+> +
+> +	if (func != handler->func || context != handler->context)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> +/**
+> + * pevent_unregister_event_handler - unregister an existing event handler
+> + * @pevent: the handle to the pevent
+> + * @id: the id of the event to unregister
+> + * @sys_name: the system name the handler belongs to
+> + * @event_name: the name of the event handler
+> + * @func: the function to call to parse the event information
+> + * @context: the data to be passed to @func
+> + *
+> + * This function removes existing event handler (parser).
+> + *
+> + * If @id is >= 0, then it is used to find the event.
+> + * else @sys_name and @event_name are used.
+> + *
+> + * Returns 0 if handler was removed successfully, -1 if event was not found.
+> + */
+> +int pevent_unregister_event_handler(struct pevent *pevent, int id,
+> +				    const char *sys_name, const char *event_name,
+> +				    pevent_event_handler_func func, void *context)
+> +{
+> +	struct event_format *event;
+> +	struct event_handler *handle;
+> +	struct event_handler **next;
+> +
+> +	event = pevent_search_event(pevent, id, sys_name, event_name);
+> +	if (event == NULL)
+> +		goto not_found;
+> +
+> +	if (event->handler == func && event->context == context) {
+> +		pr_stat("overriding event (%d) %s:%s with default print handler",
 
-I see what you mean. The interrupt is "lost", that's why it's stalled.
+Should we use the word "overriding" again? Perhaps saying:
 
-> I will update the explanation and send in the patch again.
-> 
+"removing override print handler (%d) %s:%s. Going back to default handler."
 
-Thanks.
+Or something?
 
-Wei.
+-- Steve
 
-> Zoli
+> +			event->id, event->system, event->name);
+> +
+> +		event->handler = NULL;
+> +		event->context = NULL;
+> +		return 0;
+> +	}
+> +
+> +not_found:
+> +	for (next = &pevent->handlers; *next; next = &(*next)->next) {
+> +		handle = *next;
+> +		if (handle_matches(handle, id, sys_name, event_name,
+> +				   func, context))
+> +			break;
+> +	}
+> +
+> +	if (!(*next))
+> +		return -1;
+> +
+> +	*next = handle->next;
+> +	free_handler(handle);
+> +
+> +	return 0;
+> +}
+> +
