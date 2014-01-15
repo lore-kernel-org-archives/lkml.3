@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaAOKaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:30:07 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:50351 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004AbaAOKaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:30:03 -0500
-Message-ID: <52D66325.3010003@mev.co.uk>
-Date: Wed, 15 Jan 2014 10:29:57 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752157AbaAOKav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:30:51 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:47718 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaAOKat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:30:49 -0500
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Chase Southwood <chase.southwood@yahoo.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] Staging: comedi: convert while loop to timeout in
- ni_mio_common.c
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com> <1389745385-27146-1-git-send-email-chase.southwood@yahoo.com> <20140115035849.GA13127@kroah.com>
-In-Reply-To: <20140115035849.GA13127@kroah.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140106183000.GG1096@mudshark.cambridge.arm.com>
+References: <1388420732-13961-1-git-send-email-jean.pihet@linaro.org>
+	<1388420732-13961-2-git-send-email-jean.pihet@linaro.org>
+	<20140106183000.GG1096@mudshark.cambridge.arm.com>
+Date: Wed, 15 Jan 2014 11:30:48 +0100
+Message-ID: <CAFrcx1=ivcoNBTSBO47zs04Ji3XZza7pH3bVFS5M0-uZTg38RA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM64: perf: add support for perf registers API
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-15 03:58, Greg KH wrote:
-> On Tue, Jan 14, 2014 at 06:23:05PM -0600, Chase Southwood wrote:
->> This patch for ni_mio_common.c changes out a while loop for a timeout,
->> which is preferred.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->>
->> OK, here's another go at it.  Hopefully everything looks more correct
->> this time.  Greg, I've followed the pattern you gave me, and I really
->> appreciate all of the tips!  As always, just let me know if there are
->> still things that need adjusting (especially length of timeout, udelay,
->> etc.).
->>
->> Thanks,
->> Chase Southwood
->>
->> 2: Changed from simple clean-up to swapping a timeout in for a while loop.
->>
->> 3: Removed extra counter variable, and added error checking.
->>
->> 4: No longer using counter variable, using jiffies instead.
->>
->>   drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
->>   1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
->> index 457b884..882b249 100644
->> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
->> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
->> @@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
->>   {
->>   	const struct ni_board_struct *board = comedi_board(dev);
->>   	struct ni_private *devpriv = dev->private;
->> +	unsigned long timeout;
->>
->>   	if (board->reg_type == ni_reg_6143) {
->>   		/*  Flush the 6143 data FIFO */
->>   		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
->>   		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
->> -		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
->> +		/*  Wait for complete */
->> +		timeout = jiffies + msec_to_jiffies(100);
->> +		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
->> +			if (time_after(jiffies, timeout)) {
->> +				comedi_error(dev, "FIFO flush timeout.");
->> +				break;
->> +			}
->> +			udelay(1);
->
-> Sleep for at least 10, as I think that's the smallest time delay you can
-> sleep for anyway (meaning it will be that long no matter what number you
-> put there less than 10, depending on the hardware used of course.)
+Hi Will,
 
-udelay() doesn't sleep (though it may get pre-empted) and I think you 
-can use any value you like within reason (up to a few 1000 microseconds).
+On 6 January 2014 19:30, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> Thanks for the updated patches. One minor comment on this one.
+>
+> On Mon, Dec 30, 2013 at 04:25:30PM +0000, Jean Pihet wrote:
+>> From: Jean Pihet <jean.pihet@newoldbits.com>
+>>
+>> This patch implements the functions required for the perf registers API,
+>> allowing the perf tool to interface kernel register dumps with libunwind
+>> in order to provide userspace backtracing.
+>> Compat mode is also supported.
+>
+> [...]
+>
+>> +u64 perf_reg_value(struct pt_regs *regs, int idx)
+>> +{
+>> +     if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM64_MAX))
+>> +             return 0;
+>
+> While this is probably fine, I'd feel more comfortable if you had separate
+> limit checks for native and compat...
+In fact in the native and compat modes the same set of registers are
+accessed, based on the native regs that are registered to the perf
+event core, cf. the definition of PERF_REGS_MASK in
+tools/perf/arch/arm64/include/perf_regs.h.
+
+The regs set could be registered differently based on the binary to
+trace, but unfortunately the perf core code does not allow that.
+
+I would leave the code as is, what do you think?
+
+Cheers,
+Jean
 
 >
-> Other than that, looks much better.
+>> +     /*
+>> +      * Compat (i.e. 32 bit) mode:
+>> +      * - PC has been set in the pt_regs struct in kernel_entry,
+>> +      * - Handle SP and LR here.
+>> +      */
+>> +     if (compat_user_mode(regs)) {
 >
-> thanks,
+> i.e. have a WARN_ON_ONCE here for the compat structure size.
 >
-> greg k-h
+>> +             if ((u32)idx == PERF_REG_ARM64_SP)
+>> +                     return regs->compat_sp;
+>> +             if ((u32)idx == PERF_REG_ARM64_LR)
+>> +                     return regs->compat_lr;
+>> +     }
 >
-
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> then stick an else here with the original check.
+>
+> Make sense?
+>
+> Will
