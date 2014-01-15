@@ -1,125 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaAOVwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:52:01 -0500
-Received: from ozlabs.org ([203.10.76.45]:53697 "EHLO ozlabs.org"
+	id S1752566AbaAOVv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:51:59 -0500
+Received: from ozlabs.org ([203.10.76.45]:35024 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023AbaAOVv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751361AbaAOVv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 16:51:57 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jason Wang <jasowang@redhat.com>, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH net-next RFC] virtio-net: drop rq->max and rq->num
-In-Reply-To: <1388134685-30691-1-git-send-email-jasowang@redhat.com>
-References: <1388134685-30691-1-git-send-email-jasowang@redhat.com>
+To: "Lee\, Chun-Yi" <joeyli.kernel@gmail.com>, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Marek <mmarek@suse.com>
+Cc: "David Howells" <dhowells@redhat.com>
+Subject: Re: [PATCH] MODSIGN: Fix including certificate twice when the signing_key.x509
+In-Reply-To: <1389249983-31265-1-git-send-email-jlee@suse.com>
+References: <1389249983-31265-1-git-send-email-jlee@suse.com>
 User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 15 Jan 2014 14:11:23 +1030
-Message-ID: <87mwixx670.fsf@rustcorp.com.au>
+Date: Wed, 15 Jan 2014 15:09:54 +1030
+Message-ID: <87eh49x3hh.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang <jasowang@redhat.com> writes:
-> It looks like there's no need for those two fields:
->
-> - Unless there's a failure for the first refill try, rq->max should be always
->   equal to the vring size.
-> - rq->num is only used to determine the condition that we need to do the refill,
->   we could check vq->num_free instead.
-> - rq->num was required to be increased or decreased explicitly after each
->   get/put which results a bad API.
->
-> So this patch removes them both to make the code simpler.
+Punting to David Howells...
 
-Nice.  These fields date from when the vq struct was opaque.
+Cheers,
+Rusty.
+"Lee, Chun-Yi" <joeyli.kernel@gmail.com> writes:
+> From: Chun-Yi Lee <jlee@suse.com>
+>
+> This issue was found in devel-pekey branch on linux-modsign.git tree.
+> The
+> x509_certificate_list includes certificate twice when the
+> signing_key.x509
+> already exists.
+> We can reproduce this issue by making kernel twice, the build log of
+> second time looks like this:
+>
+> ...
+>   CHK     kernel/config_data.h
+>   CERTS   kernel/x509_certificate_list
+>   - Including cert /ramdisk/working/joey/linux-modsign/signing_key.x509
+>   - Including cert signing_key.x509
+> ...
+>
+> Actually the build path was the same with the srctree path when building
+> kernel. It causes the size of bzImage increased by packaging
+> certificates
+> twice.
+>
+> v2:
+> Using '$(shell /bin/pwd)' instead of '$(shell pwd)' for more reliable
+> between different shells
 
-Applied,
+Hmm, that's not a great test for equality.  How about:
+
+     ifneq ($(realpath .), $(realpath $(srctree)))
+
+That should cover all the cases.
+
+Cheers,
 Rusty.
 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 16 +++-------------
->  1 file changed, 3 insertions(+), 13 deletions(-)
 >
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index c51a988..4e1bce3 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -72,9 +72,6 @@ struct receive_queue {
->  
->  	struct napi_struct napi;
->  
-> -	/* Number of input buffers, and max we've ever had. */
-> -	unsigned int num, max;
-> -
->  	/* Chain pages by the private ptr. */
->  	struct page *pages;
->  
-> @@ -360,7 +357,6 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
->  		}
->  
->  		page = virt_to_head_page(buf);
-> -		--rq->num;
->  
->  		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
->  		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
-> @@ -406,7 +402,6 @@ err_skb:
->  		}
->  		page = virt_to_head_page(buf);
->  		put_page(page);
-> -		--rq->num;
->  	}
->  err_buf:
->  	dev->stats.rx_dropped++;
-> @@ -628,10 +623,7 @@ static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
->  		oom = err == -ENOMEM;
->  		if (err)
->  			break;
-> -		++rq->num;
->  	} while (rq->vq->num_free);
-> -	if (unlikely(rq->num > rq->max))
-> -		rq->max = rq->num;
->  	if (unlikely(!virtqueue_kick(rq->vq)))
->  		return false;
->  	return !oom;
-> @@ -699,11 +691,10 @@ again:
->  	while (received < budget &&
->  	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
->  		receive_buf(rq, buf, len);
-> -		--rq->num;
->  		received++;
->  	}
->  
-> -	if (rq->num < rq->max / 2) {
-> +	if (rq->vq->num_free > virtqueue_get_vring_size(rq->vq) / 2) {
->  		if (!try_fill_recv(rq, GFP_ATOMIC))
->  			schedule_delayed_work(&vi->refill, 0);
->  	}
-> @@ -1398,9 +1389,7 @@ static void free_unused_bufs(struct virtnet_info *vi)
->  				give_pages(&vi->rq[i], buf);
->  			else
->  				dev_kfree_skb(buf);
-> -			--vi->rq[i].num;
->  		}
-> -		BUG_ON(vi->rq[i].num != 0);
->  	}
->  }
->  
-> @@ -1671,7 +1660,8 @@ static int virtnet_probe(struct virtio_device *vdev)
->  		try_fill_recv(&vi->rq[i], GFP_KERNEL);
->  
->  		/* If we didn't even get one input buffer, we're useless. */
-> -		if (vi->rq[i].num == 0) {
-> +		if (vi->rq[i].vq->num_free ==
-> +		    virtqueue_get_vring_size(vi->rq[i].vq)) {
->  			free_unused_bufs(vi);
->  			err = -ENOMEM;
->  			goto free_recv_bufs;
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Josh Boyer <jwboyer@redhat.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Michal Marek <mmarek@suse.com>
+> Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>  kernel/Makefile |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index bc010ee..582fa7a 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -136,7 +136,10 @@ $(obj)/timeconst.h: $(obj)/hz.bc $(src)/timeconst.bc FORCE
+>  #
+>  ###############################################################################
+>  ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
+> -X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
+> +X509_CERTIFICATES-y := $(wildcard *.x509)
+> +ifneq ($(shell /bin/pwd), $(srctree))
+> +X509_CERTIFICATES-y += $(wildcard $(srctree)/*.x509)
+> +endif
+>  X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += $(objtree)/signing_key.x509
+>  X509_CERTIFICATES-raw := $(sort $(foreach CERT,$(X509_CERTIFICATES-y), \
+>  				$(or $(realpath $(CERT)),$(CERT))))
 > -- 
-> 1.8.3.2
+> 1.6.4.2
