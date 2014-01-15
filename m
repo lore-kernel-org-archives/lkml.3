@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaAOUga (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:36:30 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:52300 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751613AbaAOUg2 (ORCPT
+	id S1752049AbaAOUdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:33:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48477 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaAOUdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:36:28 -0500
-Date: Wed, 15 Jan 2014 15:36:26 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+	Wed, 15 Jan 2014 15:33:36 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 16/17] tools lib traceevent: Unregister handler when
- scsi plugin unloaded
-Message-ID: <20140115153626.79977c6b@gandalf.local.home>
-In-Reply-To: <1389750340-15965-17-git-send-email-namhyung@kernel.org>
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-	<1389750340-15965-17-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/13] tools lib traceevent: Check return value of realloc()
+Date: Wed, 15 Jan 2014 17:33:03 -0300
+Message-Id: <1389817991-8145-6-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1389817991-8145-1-git-send-email-acme@infradead.org>
+References: <1389817991-8145-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 10:45:39 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+From: Namhyung Kim <namhyung@kernel.org>
 
-> The function handler should be unregistered when the plugin unloaded
-> otherwise it'll try to access invalid memory.
-> 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/lib/traceevent/plugin_scsi.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/tools/lib/traceevent/plugin_scsi.c b/tools/lib/traceevent/plugin_scsi.c
-> index 6fb8e3e3fcad..64d688534518 100644
-> --- a/tools/lib/traceevent/plugin_scsi.c
-> +++ b/tools/lib/traceevent/plugin_scsi.c
-> @@ -421,3 +421,10 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
->  				       PEVENT_FUNC_ARG_VOID);
->  	return 0;
->  }
-> +
-> +void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
-> +{
-> +	pevent_unregister_print_function(pevent,
-> +					 process_scsi_trace_parse_cdb,
-> +					 "scsi_trace_parse_cdb");
-> +}
+If realloc() fails, it'll leak the buffer.  Also increate buffer size
+only if the allocation succeeded.
 
-Seems we have a trend ;-)
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1389750340-15965-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/trace-seq.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-Same for patch 17.
-
--- Steve
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index f7112138e6af..e454a2c66cac 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -91,11 +91,16 @@ void trace_seq_destroy(struct trace_seq *s)
+ 
+ static void expand_buffer(struct trace_seq *s)
+ {
+-	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+-	s->buffer = realloc(s->buffer, s->buffer_size);
+-	if (WARN_ONCE(!s->buffer,
+-		      "Can't allocate trace_seq buffer memory"))
++	char *buf;
++
++	buf = realloc(s->buffer, s->buffer_size + TRACE_SEQ_BUF_SIZE);
++	if (WARN_ONCE(!buf, "Can't allocate trace_seq buffer memory")) {
+ 		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
++		return;
++	}
++
++	s->buffer = buf;
++	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+ }
+ 
+ /**
+-- 
+1.8.1.4
 
