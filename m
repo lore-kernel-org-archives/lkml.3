@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaAOBQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:16:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35785 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaAOBQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:16:45 -0500
-Date: Tue, 14 Jan 2014 17:16:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Hedi <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] hotplug, memory: move register_memory_resource out of the
- lock_memory_hotplug
-Message-Id: <20140114171644.d7b97b0501708afbeae7c841@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1401141702450.3375@chino.kir.corp.google.com>
-References: <1389723874-32372-1-git-send-email-nzimmer@sgi.com>
-	<20140114151340.004d25c00056d88f33cadda0@linux-foundation.org>
-	<alpine.DEB.2.02.1401141702450.3375@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752048AbaAOBQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:16:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43460 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaAOBQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 20:16:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="465243307"
+Message-ID: <1389748603.2336.9.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 3/4] fix module autoloading for ACPI enumerated devices
+From: Zhang Rui <rui.zhang@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, rjw@rjwysocki.net,
+        grant.likely@secretlab.ca, jarkko.nikula@linux.intel.com,
+        mika.westerberg@linux.intel.com
+Date: Wed, 15 Jan 2014 09:16:43 +0800
+In-Reply-To: <20140114144155.GQ15567@sirena.org.uk>
+References: <1389686417.3309.8.camel@rzhang1-mobl4>
+	 <20140114144155.GQ15567@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014 17:05:42 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
-
-> On Tue, 14 Jan 2014, Andrew Morton wrote:
+On Tue, 2014-01-14 at 14:41 +0000, Mark Brown wrote:
+> On Tue, Jan 14, 2014 at 04:00:17PM +0800, Zhang Rui wrote:
+> > On Mon, 2014-01-13 at 17:35 +0000, Mark Brown wrote:
+> > > On Mon, Jan 13, 2014 at 09:48:31PM +0800, Zhang Rui wrote:
+> > > > ACPI enumerated devices has ACPI style _HID and _CID strings,
+> > > > all of these strings can be used for both driver loading and matching.
 > 
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > Subject: mm/memory_hotplug.c: register_memory_resource() fixes
-> > 
-> > - register_memory_resource() should not go BUG on ENOMEM.  That's
-> >   appropriate at system boot time, but not at memory-hotplug time.  Fix.
-> > 
-> > - register_memory_resource()'s caller is incorrectly replacing
-> >   request_resource()'s -EBUSY with -EEXIST.  Fix this by propagating
-> >   errors appropriately.
-> > 
+> > If this piece of code is used in an *SPI* driver for an ACPI enumerated
+> > spi device, the spi driver module_alias is "acpi:INTABCD", but
+> > the uevent of its spi device node is
+> > "spi:INTABCD" (PREFIX:spi_device->modalias).
 > 
-> Unfortunately, -EEXIST is a special case return value for both 
-> acpi_memory_enable_device() and hv_mem_hot_add(), so they would need to be 
-> modified to agree concurrently with this change.
+> OK that makes sense, but what does this have to do with the _HID and
+> _CID methods?
 
-blah, OK, thanks, I'll drop it.
+If an ACPI enumerated SPI device has a _HID and a _CID,
+both of them need to be exposed in 'uevent', so that a driver that
+matches _CID can also have a chance to be probed. This can not be done
+by the current code, thus we need special handling of ACPI enumerated
+SPI devices.
+
+>   Surely we're just replacing spi: with acpi: in the uevent?
+
+yes.
+
+thanks,
+rui
+
