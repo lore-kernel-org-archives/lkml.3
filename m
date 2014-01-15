@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497AbaAOFPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:15:25 -0500
-Received: from nm4-vm4.bullet.mail.gq1.yahoo.com ([98.136.218.163]:27071 "EHLO
-	nm4-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750973AbaAOFPW (ORCPT
+	id S1751524AbaAOFRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:17:14 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54175 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaAOFRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:15:22 -0500
-X-Yahoo-Newman-Id: 690616.7871.bm@smtp233.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jcU2ea4VM1llTTI1B9mMa6KhDGi9xXSWj7GE9ARszueYZfB
- xQ7f.7C_72.4TJIyCt4netS9HiOOk4jcjFlNcFpoK_pHDC0GxkDTlxCYEjC6
- deCyHBAlIRhgL6B9Ot2K5PpcV0B9Ngm3DoYxsGIRoHiO4wN4HK2dLU2c12yR
- VR5rb7mbRnoXk1qp89ymjZhYVIwsG.weaOuZFfLAREepPnK1Q_cDxSaR4RWf
- qe8o5ajY9R6ClK8x31FpkF_gjvOxLP5ISF8fiWSD8A8i0scI.DdpgaEHIyIx
- PpXUIbrDZEcpADUzjvN0YdxgyLQqk8_FHIFizI8WYzWE9BzIVzo.g44F7tIm
- x5eaqM7YnP8YzBq.qbxVkbbxaAiZz2lTdifLcFfsWU.NqEefFzAtH6JdDTgU
- Vo.VSG9Ukkonyie9YmZ_PIZYY_WMJcNym2X9R55G7.TQLjjiK.Zd6jfG3ppw
- brRR9LmInclmGrZW0YubSwc3OdqxZ_SEifMfDbqSECSP1tWq82MiTUn4R666
- .cAtXpn5YaUDttArUsJxOkJsCJXf1Xg--
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [98.139.211.125])
-        by smtp233.mail.gq1.yahoo.com with SMTP; 15 Jan 2014 05:15:21 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v5] Staging: comedi: convert while loop to timeout in ni_mio_common.c
-Date: Tue, 14 Jan 2014 23:15:17 -0600
-Message-Id: <1389762917-3134-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+	Wed, 15 Jan 2014 00:17:12 -0500
+X-AuditID: 9c930179-b7c84ae000000e38-40-52d619d6fe91
+Date: Wed, 15 Jan 2014 14:17:58 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Bob Liu <bob.liu@oracle.com>, Cai Liu <cai.liu@samsung.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, liucai.lfn@gmail.com
+Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+Message-ID: <20140115051758.GK1992@bbox>
+References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
+ <20140113233505.GS1992@bbox>
+ <52D4909B.7070107@oracle.com>
+ <20140114045022.GZ1992@bbox>
+ <20140114050528.GA1992@bbox>
+ <52D4CE4C.1030809@oracle.com>
+ <CAL1ERfMYXuQ48BEi=5pFCbDjAJ75RRRmnUGEanhWpxYh9RgZOQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1ERfMYXuQ48BEi=5pFCbDjAJ75RRRmnUGEanhWpxYh9RgZOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch for ni_mio_common.c changes out a while loop for a timeout,
-which is preferred.
+On Tue, Jan 14, 2014 at 02:15:44PM +0800, Weijie Yang wrote:
+> On Tue, Jan 14, 2014 at 1:42 PM, Bob Liu <bob.liu@oracle.com> wrote:
+> >
+> > On 01/14/2014 01:05 PM, Minchan Kim wrote:
+> >> On Tue, Jan 14, 2014 at 01:50:22PM +0900, Minchan Kim wrote:
+> >>> Hello Bob,
+> >>>
+> >>> On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
+> >>>>
+> >>>> On 01/14/2014 07:35 AM, Minchan Kim wrote:
+> >>>>> Hello,
+> >>>>>
+> >>>>> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
+> >>>>>> zswap can support multiple swapfiles. So we need to check
+> >>>>>> all zbud pool pages in zswap.
+> >>>>>
+> >>>>> True but this patch is rather costly that we should iterate
+> >>>>> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
+> >>>>>
+> >>>>> How about defining zswap_tress as linked list instead of static
+> >>>>> array? Then, we could reduce unnecessary iteration too much.
+> >>>>>
+> >>>>
+> >>>> But if use linked list, it might not easy to access the tree like this:
+> >>>> struct zswap_tree *tree = zswap_trees[type];
+> >>>
+> >>> struct zswap_tree {
+> >>>     ..
+> >>>     ..
+> >>>     struct list_head list;
+> >>> }
+> >>>
+> >>> zswap_frontswap_init()
+> >>> {
+> >>>     ..
+> >>>     ..
+> >>>     zswap_trees[type] = tree;
+> >>>     list_add(&tree->list, &zswap_list);
+> >>> }
+> >>>
+> >>> get_zswap_pool_pages(void)
+> >>> {
+> >>>     struct zswap_tree *cur;
+> >>>     list_for_each_entry(cur, &zswap_list, list) {
+> >>>         pool_pages += zbud_get_pool_size(cur->pool);
+> >>>     }
+> >>>     return pool_pages;
+> >>> }
+> >
+> > Okay, I see your point. Yes, it's much better.
+> > Cai, Please make an new patch.
+> 
+> This improved patch could reduce unnecessary iteration too much.
+> 
+> But I still have a question: why do we need so many zbud pools?
+> How about use only one global zbud pool for all zswap_tree?
+> I do not test it, but I think it can improve the strore density.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
+Just a quick glance,
 
-All right, I think this guy's ready to go now!  Thanks for all the help!
-Chase
+I don't know how multiple swap configuration is popular?
+With your approach, what kinds of change do we need in frontswap_invalidate_area?
+You will add encoded *type* in offset of entry?
+So we always should decode it when we need search opeartion?
+We lose speed but get a density(? but not sure because it's dependent on workload)
+for rare configuration(ie, multiple swap) and rare event(ie, swapoff).
+It's just popped question, not strong objection.
+Anyway, point is that you can try it if you want and then, report the number. :)
 
-2: Changed from simple clean-up to swapping a timeout in for a while loop.
+Thanks.
 
-3: Removed extra counter variable, and added error checking.
-
-4: No longer using counter variable, using jiffies instead.
-
-5: udelay for 10u, instead of 1u.
-
- drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 457b884..07e9777 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
- {
- 	const struct ni_board_struct *board = comedi_board(dev);
- 	struct ni_private *devpriv = dev->private;
-+	unsigned long timeout;
- 
- 	if (board->reg_type == ni_reg_6143) {
- 		/*  Flush the 6143 data FIFO */
- 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
- 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
--		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
-+		/*  Wait for complete */
-+		timeout = jiffies + msec_to_jiffies(500);
-+		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
-+			if (time_after(jiffies, timeout)) {
-+				comedi_error(dev, "FIFO flush timeout.");
-+				break;
-+			}
-+			udelay(10);
-+		}
- 	} else {
- 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
- 		if (board->reg_type == ni_reg_625x) {
+> 
+> Just for your reference, Thanks!
+> 
 -- 
-1.8.4.2
-
+Kind regards,
+Minchan Kim
