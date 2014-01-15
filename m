@@ -1,80 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaAOB7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:59:02 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46843 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaAOB7B (ORCPT
+	id S1752047AbaAOCBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:01:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:10998 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750880AbaAOCBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:59:01 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-c1-52d5eb63e8e7
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: perf probe: Build error with missing libraries
-References: <20140113180400.GD5318@ghostprotocols.net>
-	<20140113181458.GE5318@ghostprotocols.net>
-	<52D495D1.5080505@hitachi.com>
-	<20140114130907.GA29798@ghostprotocols.net>
-Date: Wed, 15 Jan 2014 10:58:58 +0900
-In-Reply-To: <20140114130907.GA29798@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Tue, 14 Jan 2014 10:09:07 -0300")
-Message-ID: <87sisq9fa5.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 14 Jan 2014 21:01:04 -0500
+Date: Tue, 14 Jan 2014 21:00:58 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 01/17] tools lib traceevent: Add state member to struct
+ trace_seq
+Message-ID: <20140114210058.6b75c47a@gandalf.local.home>
+In-Reply-To: <1389750340-15965-2-git-send-email-namhyung@kernel.org>
+References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
+	<1389750340-15965-2-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Wed, 15 Jan 2014 10:45:24 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-On Tue, 14 Jan 2014 10:09:07 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jan 14, 2014 at 10:41:37AM +0900, Masami Hiramatsu escreveu:
->> (2014/01/14 3:14), Arnaldo Carvalho de Melo wrote:
->> > Jiri, this is something else for the give-me-more-ponies list for
->> > tests/make: build it on freshly provisioned systems with multiple mixes
->> > of devel packages installed ;-)
 >  
->> I think we can change makefile to get some combinations of config options
->> when building perf tools.
->
-> This is what:
->
->  make -C tools/perf -f tests/make
->
-> does, and we use it already, many config combos are tested, but that
-> kinda expects that all optional devel libs be installed.
+> @@ -32,8 +33,9 @@
+>  #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
+>  #define TRACE_SEQ_CHECK(s)						\
+>  do {									\
+> -	if ((s)->buffer == TRACE_SEQ_POISON)			\
+> -		die("Usage of trace_seq after it was destroyed");	\
+> +	if (WARN_ONCE((s)->buffer == TRACE_SEQ_POISON,			\
+> +		      "Usage of trace_seq after it was destroyed"))	\
+> +		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
+>  } while (0)
+>  
+>  /**
+> @@ -46,6 +48,7 @@ void trace_seq_init(struct trace_seq *s)
+>  	s->readpos = 0;
+>  	s->buffer_size = TRACE_SEQ_BUF_SIZE;
+>  	s->buffer = malloc_or_die(s->buffer_size);
+> +	s->state = TRACE_SEQ__GOOD;
+>  }
+>  
+>  /**
+> @@ -80,8 +83,9 @@ static void expand_buffer(struct trace_seq *s)
+>  {
+>  	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+>  	s->buffer = realloc(s->buffer, s->buffer_size);
+> -	if (!s->buffer)
+> -		die("Can't allocate trace_seq buffer memory");
+> +	if (WARN_ONCE(!s->buffer,
+> +		      "Can't allocate trace_seq buffer memory"))
+> +		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
+>  }
+>  
+>  /**
+> @@ -108,6 +112,9 @@ trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+>  	TRACE_SEQ_CHECK(s);
+>  
+>   try_again:
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
+>  	len = (s->buffer_size - 1) - s->len;
+>  
+>  	va_start(ap, fmt);
+> @@ -144,6 +151,9 @@ trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
+>  	TRACE_SEQ_CHECK(s);
+>  
+>   try_again:
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
+>  	len = (s->buffer_size - 1) - s->len;
+>  
+>  	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
+> @@ -174,11 +184,17 @@ int trace_seq_puts(struct trace_seq *s, const char *str)
+>  
+>  	TRACE_SEQ_CHECK(s);
+>  
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
+>  	len = strlen(str);
+>  
+>  	while (len > ((s->buffer_size - 1) - s->len))
+>  		expand_buffer(s);
+>  
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
+>  	memcpy(s->buffer + s->len, str, len);
+>  	s->len += len;
+>  
+> @@ -189,9 +205,15 @@ int trace_seq_putc(struct trace_seq *s, unsigned char c)
+>  {
+>  	TRACE_SEQ_CHECK(s);
+>  
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
 
-I've been thinking that the above should look like below.
+Instead of adding all of these, we can extend the macro
+TRACE_SEQ_CHECK() which does a
+	if (s->state != TRACE_SEQ__GOOD)
+		return;
 
-  make build-test (-C tools/perf)
+and a TRACE_SEQ_CHECK_RET() that does a return 0;
 
+-- Steve
 
-Maybe something like this?
+>  	while (s->len >= (s->buffer_size - 1))
+>  		expand_buffer(s);
+>  
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return 0;
+> +
+>  	s->buffer[s->len++] = c;
+>  
+>  	return 1;
+> @@ -201,6 +223,9 @@ void trace_seq_terminate(struct trace_seq *s)
+>  {
+>  	TRACE_SEQ_CHECK(s);
+>  
+> +	if (s->state != TRACE_SEQ__GOOD)
+> +		return;
+> +
+>  	/* There's always one character left on the buffer */
+>  	s->buffer[s->len] = 0;
+>  }
+> @@ -208,5 +233,16 @@ void trace_seq_terminate(struct trace_seq *s)
+>  int trace_seq_do_printf(struct trace_seq *s)
+>  {
+>  	TRACE_SEQ_CHECK(s);
+> -	return printf("%.*s", s->len, s->buffer);
+> +
+> +	switch (s->state) {
+> +	case TRACE_SEQ__GOOD:
+> +		return printf("%.*s", s->len, s->buffer);
+> +	case TRACE_SEQ__BUFFER_POISONED:
+> +		puts("Usage of trace_seq after it was destroyed");
+> +		break;
+> +	case TRACE_SEQ__MEM_ALLOC_FAILED:
+> +		puts("Can't allocate trace_seq buffer memory");
+> +		break;
+> +	}
+> +	return -1;
+>  }
 
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index eefb9fb0c02f..e110c2a2ade1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -75,6 +75,12 @@ clean:
- 	$(make)
- 
- #
-+# The build-test target is not really parallel, don't print the jobs info:
-+#
-+build-test:
-+	@$(MAKE) -f tests/make --no-print-directory
-+
-+#
- # All other targets get passed through:
- #
- %:
-
--- 
-Thanks,
-Namhyung
