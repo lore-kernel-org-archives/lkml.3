@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaAOOLr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:11:47 -0500
-Received: from forward13.mail.yandex.net ([95.108.130.120]:59530 "EHLO
-	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaAOOLo (ORCPT
+	id S1752127AbaAOOOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:14:21 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:50142 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaAOOOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:11:44 -0500
-From: Victor Porton <porton@narod.ru>
-Envelope-From: porton@yandex.ru
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-In-Reply-To: <20140115135930.GK8782@dhcp22.suse.cz>
-References: <135711389759165@web22h.yandex.ru> <20140115135930.GK8782@dhcp22.suse.cz>
-Subject: Re: Notifying on empty cgroup
-MIME-Version: 1.0
-Message-Id: <409331389795100@web18j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 15 Jan 2014 16:11:40 +0200
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Wed, 15 Jan 2014 09:14:18 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: aaron.f.brown@intel.com, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, davem@davemloft.net
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH 1/2 v3] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and cleanup const 63
+Date: Wed, 15 Jan 2014 22:12:28 +0800
+Message-Id: <1389795148-341-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-15.01.2014, 15:59, "Michal Hocko" <mhocko@suse.cz>:
-> [CCing cgroups mailing list]
-> On Wed 15-01-14 06:12:45, Victor Porton wrote:
->
->> šI want to write software which needs to receive a signal when the cgroup
->> šcreated by it becomes empty. (After this the empty cgroup should be deleted
->> šjust not to clutter the memory.)
->>
->> šIf the kernel does not support such notifications, it should be improved.
->> šThis functionality is crucial for some kinds of software.
->>
->> šThere is /sys/fs/cgroup/systemd/release_agent but I don't understand how to
->> šuse it. I don't understand why we would need it at all.
->
-> "1.4 What does notify_on_release do ?" in
-> Documentation/cgroups/cgroups.txt the kernel source doesn't help?
+Because ixgbe driver limit the max number of VF functions could be enabled
+to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the const 63
+in code.
 
-I've read it. I understand what it does. I don't understand how to use it in practice nor why it is done this way.
+v2: fix a typo.
+v3: fix a encoding issue.
 
->> šStarting a binary on emptying a cgroup with the purpose to notify an other
->> šbinary looks like a big overkill.
->
-> the binary can do rmdir which is what you want, no?
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-I suppose a base package should do that, not my specific software. Do I understand right?
-
->> šAlso my program should work in userspace without the need to use
->> šrelease_agent which can be accessed only by root.
->
-> The release_agent is global for all groups so the program doesn't have
-> to care.
-
-Again: What MY program should do?
-
->> šNote that my work is related with sandboxing software (running a program in
->> šclosed environment, so that it would be unable for example to remove user's
->> šfiles).
->>
->> šSee also
->> šhttp://portonsoft.wordpress.com/2014/01/11/toward-robust-linux-sandbox/
->>
->> š--
->> šVictor Porton - http://portonvictor.org
->> š--
->> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> šthe body of a message to majordomo@vger.kernel.org
->> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
->> šPlease read the FAQ at šhttp://www.tux.org/lkml/
->
-> --
-> Michal Hocko
-> SUSE Labs
-
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 0ade0cd..47e9b44 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -4818,7 +4818,7 @@ static int ixgbe_sw_init(struct ixgbe_adapter *adapter)
+ #ifdef CONFIG_PCI_IOV
+ 	/* assign number of SR-IOV VFs */
+ 	if (hw->mac.type != ixgbe_mac_82598EB)
+-		adapter->num_vfs = (max_vfs > 63) ? 0 : max_vfs;
++		adapter->num_vfs = (max_vfs > IXGBE_MAX_VFS_DRV_LIMIT) ? 0 : max_vfs;
+ 
+ #endif
+ 	/* enable itr by default in dynamic mode */
+@@ -7640,7 +7640,7 @@ static int ixgbe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ixgbe_init_mbx_params_pf(hw);
+ 	memcpy(&hw->mbx.ops, ii->mbx_ops, sizeof(hw->mbx.ops));
+ 	ixgbe_enable_sriov(adapter);
+-	pci_sriov_set_totalvfs(pdev, 63);
++	pci_sriov_set_totalvfs(pdev, IXGBE_MAX_VFS_DRV_LIMIT);
+ skip_sriov:
+ 
+ #endif
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+index 276d7b1..6925979 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+@@ -152,7 +152,8 @@ void ixgbe_enable_sriov(struct ixgbe_adapter *adapter)
+ 		 * physical function.  If the user requests greater thn
+ 		 * 63 VFs then it is an error - reset to default of zero.
+ 		 */
+-		adapter->num_vfs = min_t(unsigned int, adapter->num_vfs, 63);
++		adapter->num_vfs = min_t(unsigned int,
++					adapter->num_vfs, IXGBE_MAX_VFS_DRV_LIMIT);
+ 
+ 		err = pci_enable_sriov(adapter->pdev, adapter->num_vfs);
+ 		if (err) {
+@@ -259,7 +260,7 @@ static int ixgbe_pci_sriov_enable(struct pci_dev *dev, int num_vfs)
+ 	 * PF.  The PCI bus driver already checks for other values out of
+ 	 * range.
+ 	 */
+-	if (num_vfs > 63) {
++	if (num_vfs > IXGBE_MAX_VFS_DRV_LIMIT) {
+ 		err = -EPERM;
+ 		goto err_out;
+ 	}
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
+index 4713f9f..2593666 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
+@@ -28,6 +28,11 @@
+ #ifndef _IXGBE_SRIOV_H_
+ #define _IXGBE_SRIOV_H_
+ 
++/*  ixgbe driver limit the max number of VFs could be enabled to
++ *  63 (IXGBE_MAX_VF_FUNCTIONS - 1)
++ */
++#define IXGBE_MAX_VFS_DRV_LIMIT  (IXGBE_MAX_VF_FUNCTIONS - 1)
++
+ void ixgbe_restore_vf_multicasts(struct ixgbe_adapter *adapter);
+ void ixgbe_msg_task(struct ixgbe_adapter *adapter);
+ int ixgbe_vf_configuration(struct pci_dev *pdev, unsigned int event_mask);
 -- 
-Victor Porton - http://portonvictor.org
+1.8.3.4 (Apple Git-47)
+
