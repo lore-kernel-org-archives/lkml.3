@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390AbaAOWgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:36:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40801 "EHLO
+	id S1755252AbaAOWgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:36:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40782 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaAOVy3 (ORCPT
+	with ESMTP id S1753084AbaAOVyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:54:29 -0500
+	Wed, 15 Jan 2014 16:54:19 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 163/166] virtio-net: fix refill races during restore
-Date: Wed, 15 Jan 2014 13:52:57 -0800
-Message-Id: <1389822780-4729-164-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 165/166] netpoll: Fix missing TXQ unlock and and OOPS.
+Date: Wed, 15 Jan 2014 13:52:59 -0800
+Message-Id: <1389822780-4729-166-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -31,56 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 6cd4ce0099da7702f885b6fa9ebb49e3831d90b4 ]
+[ Upstream commit aca5f58f9ba803ec8c2e6bcf890db17589e8dfcc ]
 
-During restoring, try_fill_recv() was called with neither napi lock nor napi
-disabled. This can lead two try_fill_recv() was called in the same time. Fix
-this by refilling before trying to enable napi.
+The VLAN tag handling code in netpoll_send_skb_on_dev() has two problems.
 
-Fixes 0741bcb5584f9e2390ae6261573c4de8314999f2
-(virtio: net: Add freeze, restore handlers to support S4).
+1) It exits without unlocking the TXQ.
 
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+2) It then tries to queue a NULL skb to npinfo->txq.
+
+Reported-by: Ahmed Tamrawi <atamrawi@iastate.edu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 [ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/virtio_net.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/core/netpoll.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 8f009899..4380036 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1723,16 +1723,17 @@ static int virtnet_restore(struct virtio_device *vdev)
- 	if (err)
- 		return err;
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 40c1496..0281162 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -338,8 +338,14 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 					if (vlan_tx_tag_present(skb) &&
+ 					    !(netif_skb_features(skb) & NETIF_F_HW_VLAN_TX)) {
+ 						skb = __vlan_put_tag(skb, vlan_tx_tag_get(skb));
+-						if (unlikely(!skb))
+-							break;
++						if (unlikely(!skb)) {
++							/* This is actually a packet drop, but we
++							 * don't want the code at the end of this
++							 * function to try and re-queue a NULL skb.
++							 */
++							status = NETDEV_TX_OK;
++							goto unlock_txq;
++						}
+ 						skb->vlan_tci = 0;
+ 					}
  
--	if (netif_running(vi->dev))
-+	if (netif_running(vi->dev)) {
-+		for (i = 0; i < vi->curr_queue_pairs; i++)
-+			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+				schedule_delayed_work(&vi->refill, 0);
-+
- 		for (i = 0; i < vi->max_queue_pairs; i++)
- 			virtnet_napi_enable(&vi->rq[i]);
-+	}
+@@ -347,6 +353,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 					if (status == NETDEV_TX_OK)
+ 						txq_trans_update(txq);
+ 				}
++			unlock_txq:
+ 				__netif_tx_unlock(txq);
  
- 	netif_device_attach(vi->dev);
- 
--	for (i = 0; i < vi->max_queue_pairs; i++)
--		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
--			schedule_delayed_work(&vi->refill, 0);
--
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = true;
- 	mutex_unlock(&vi->config_lock);
+ 				if (status == NETDEV_TX_OK)
 -- 
 1.8.3.2
 
