@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaAONpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:45:16 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:52953 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaAONpN (ORCPT
+	id S1752056AbaAONpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:45:25 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:50512 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaAONpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:45:13 -0500
-Message-ID: <52D690DE.8080507@linaro.org>
-Date: Wed, 15 Jan 2014 14:45:02 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 08:45:20 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-CC: raistlin@linux.it, juri.lelli@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <20140115122452.GA18311@gmail.com>
-In-Reply-To: <20140115122452.GA18311@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389689198-2641-5-git-send-email-rui.zhang@intel.com>
+References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
+	<1389689198-2641-5-git-send-email-rui.zhang@intel.com>
+Date: Wed, 15 Jan 2014 07:45:18 -0600
+Message-ID: <CAL_JsqJFRQ+27N_9AwZXpx4V=g8HKn84WdVKtQ_Br_8SQTXY7g@mail.gmail.com>
+Subject: Re: [PATCH 4/4] OF: introduce OF style 'modalias' support for
+ platform bus.
+From: Rob Herring <robherring2@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, wsa@the-dreams.de,
+        Mark Brown <broonie@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        rafael.j.wysocki@intel.com, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, jarkko.nikula@linux.intel.com,
+        mika.westerberg@linux.intel.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 01:24 PM, Ingo Molnar wrote:
+On Tue, Jan 14, 2014 at 2:46 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+> Fix a problem that, the platform bus supports the OF style modalias
+> in .uevent() call, but not in its device 'modalias' sysfs attribute.
 >
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+> cc: devicetree@vger.kernel.org
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+
+Acked-by: Rob Herring <robh@kernel.org>
+
+As there doesn't appear any dependency with the rest of this series, I
+can take this.
+
+One minor nit below.
+
+> ---
+>  drivers/base/platform.c   |    4 ++++
+>  drivers/of/device.c       |    3 +++
+>  include/linux/of_device.h |    6 ++++++
+>  3 files changed, 13 insertions(+)
 >
->> On Wed, Jan 15, 2014 at 09:27:34AM +0100, Daniel Lezcano wrote:
->>>
->>> Hi all,
->>>
->>> I use the tip/sched/core branch.
->>>
->>> After git pulling yesterday, my host is unresponsive after booting the OS.
->>>
->>>   * It boots normally
->>>   * It sends info to the console
->>>   * The graphics does not work
->>>   * The terminals show the prompt, I can enter the username but after
->>> pressing enter, it does not give the password prompt
->>>   * sysrq works more or less, I can't get the process stack but it receives
->>> the command
->>>
->>> It is like no new process can be created.
->>>
->>> I have a dual Xeon processor E5325 (2 x 4 cores).
->>>
->>> After git bisecting, the following patch seems to introduce the bug.
->>>
->>> commit d50dde5a10f305253cbc3855307f608f8a3c5f73
->>
->> OK, so my headless WSM-EP boots just fine. Obviously it cannot confirm
->> if graphics works, but I can ssh in and work on it without bother.
->>
->> I can even log in on the serial console without problems.
->>
->> I tried both tip/master and tip/sched/core.
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 2f4aea2..bc78848 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -679,6 +679,10 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
+>         struct platform_device  *pdev = to_platform_device(dev);
+>         int len;
 >
-> I too booted various sytems and have yet to notice similar oddity.
+> +       len = of_device_get_modalias(dev, buf, PAGE_SIZE -1);
+> +       if (len != -ENODEV)
+> +               return len;
+> +
+>         len = acpi_device_modalias(dev, buf, PAGE_SIZE -1);
+>         if (len != -ENODEV)
+>                 return len;
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index f685e55..dafb973 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -85,6 +85,9 @@ ssize_t of_device_get_modalias(struct device *dev, char *str, ssize_t len)
+>         int cplen, i;
+>         ssize_t tsize, csize, repend;
+>
+> +       if ((!dev) || (!dev->of_node))\
 
-Ok, I was able to boot and use the system with init=/bin/bash and a 
-busybox but the ubuntu distro ends up to block after booting. So I guess 
-there a service triggering something in the kernel leading to this issue.
+Don't need the parentheses here.
 
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> +               return -ENODEV;
+> +
+>         /* Name & Type */
+>         csize = snprintf(str, len, "of:N%sT%s", dev->of_node->name,
+>                          dev->of_node->type);
+> diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+> index 82ce324..8d7dd67 100644
+> --- a/include/linux/of_device.h
+> +++ b/include/linux/of_device.h
+> @@ -64,6 +64,12 @@ static inline int of_driver_match_device(struct device *dev,
+>  static inline void of_device_uevent(struct device *dev,
+>                         struct kobj_uevent_env *env) { }
+>
+> +static inline int of_device_get_modalias(struct device *dev,
+> +                                  char *str, ssize_t len)
+> +{
+> +       return -ENODEV;
+> +}
+> +
+>  static inline int of_device_uevent_modalias(struct device *dev,
+>                                    struct kobj_uevent_env *env)
+>  {
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
