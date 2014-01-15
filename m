@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaAOEtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:49:18 -0500
-Received: from ozlabs.org ([203.10.76.45]:55887 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaAOEtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:49:15 -0500
-Date: Wed, 15 Jan 2014 15:48:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Guy Briggs <rgb@redhat.com>, Joe Perches <joe@perches.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: manual merge of the audit tree with Linus' tree
-Message-Id: <20140115154855.09736b2b99b44da360b127db@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_Jan_2014_15_48_55_+1100_lxsalGKUMKwoG_Y4"
+	id S1751511AbaAOExh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:53:37 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38486 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaAOExf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 23:53:35 -0500
+Message-ID: <52D61448.3070108@linaro.org>
+Date: Wed, 15 Jan 2014 12:53:28 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Michael wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <52D60F11.3070005@linux.vnet.ibm.com> <52D61333.8060705@linaro.org>
+In-Reply-To: <52D61333.8060705@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jan_2014_15_48_55_+1100_lxsalGKUMKwoG_Y4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/15/2014 12:48 PM, Alex Shi wrote:
+> On 01/15/2014 12:31 PM, Michael wang wrote:
+>> Hi, Alex
+>>
+>> On 01/15/2014 12:07 PM, Alex Shi wrote:
+>> [snip] 		}
+>>> +#ifdef CONFIG_NO_HZ_COMMON
+>>> +		/*
+>>> +		 * Coarsely to get the latest idle cpu for shorter latency and
+>>> +		 * possible power benefit.
+>>> +		 */
+>>> +		if (!min_load) {
+> 
+> here should be !load.
+>>> +			struct tick_sched *ts = &per_cpu(tick_cpu_sched, i);
+>>> +
+>>> +			s64 latest_wake = 0;
+>>
+>> I guess we missed some code for latest_wake here?
+> 
+> Yes, thanks for reminder!
+> 
+> so updated patch:
+> 
 
-Hi Eric,
+ops, still incorrect. re-updated:
 
-Today's linux-next merge of the audit tree got a conflict in
-include/net/xfrm.h between commit d511337a1eda ("xfrm.h: Remove extern
-from function prototypes") from Linus' tree and commit 4440e8548153
-("audit: convert all sessionid declaration to unsigned int") from the
-audit tree.
+===
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>From 5d48303b3eb3b5ca7fde54a6dfcab79cff360403 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@linaro.org>
+Date: Tue, 14 Jan 2014 23:07:42 +0800
+Subject: [PATCH] sched: find the latest idle cpu
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Currently we just try to find least load cpu. If some cpus idled,
+we just pick the first cpu in cpu mask.
 
-diff --cc include/net/xfrm.h
-index cd7c46ff6f1f,f8d32b908423..000000000000
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@@ -714,23 -713,23 +714,23 @@@ static inline void xfrm_audit_helper_us
-  		audit_log_task_context(audit_buf);
-  }
- =20
- -extern void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
- -				  kuid_t auid, unsigned int ses, u32 secid);
- -extern void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
- -				  kuid_t auid, unsigned int ses, u32 secid);
- -extern void xfrm_audit_state_add(struct xfrm_state *x, int result,
- -				 kuid_t auid, unsigned int ses, u32 secid);
- -extern void xfrm_audit_state_delete(struct xfrm_state *x, int result,
- -				    kuid_t auid, unsigned int ses, u32 secid);
- -extern void xfrm_audit_state_replay_overflow(struct xfrm_state *x,
- -					     struct sk_buff *skb);
- -extern void xfrm_audit_state_replay(struct xfrm_state *x,
- -				    struct sk_buff *skb, __be32 net_seq);
- -extern void xfrm_audit_state_notfound_simple(struct sk_buff *skb, u16 fam=
-ily);
- -extern void xfrm_audit_state_notfound(struct sk_buff *skb, u16 family,
- -				      __be32 net_spi, __be32 net_seq);
- -extern void xfrm_audit_state_icvfail(struct xfrm_state *x,
- -				     struct sk_buff *skb, u8 proto);
- +void xfrm_audit_policy_add(struct xfrm_policy *xp, int result, kuid_t aui=
-d,
-- 			   u32 ses, u32 secid);
-++			   unsigned int ses, u32 secid);
- +void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result, kuid_t =
-auid,
-- 			      u32 ses, u32 secid);
-++			      unsigned int ses, u32 secid);
- +void xfrm_audit_state_add(struct xfrm_state *x, int result, kuid_t auid,
-- 			  u32 ses, u32 secid);
-++			  unsigned int ses, u32 secid);
- +void xfrm_audit_state_delete(struct xfrm_state *x, int result, kuid_t aui=
-d,
-- 			     u32 ses, u32 secid);
-++			     unsigned int ses, u32 secid);
- +void xfrm_audit_state_replay_overflow(struct xfrm_state *x,
- +				      struct sk_buff *skb);
- +void xfrm_audit_state_replay(struct xfrm_state *x, struct sk_buff *skb,
- +			     __be32 net_seq);
- +void xfrm_audit_state_notfound_simple(struct sk_buff *skb, u16 family);
- +void xfrm_audit_state_notfound(struct sk_buff *skb, u16 family, __be32 ne=
-t_spi,
- +			       __be32 net_seq);
- +void xfrm_audit_state_icvfail(struct xfrm_state *x, struct sk_buff *skb,
- +			      u8 proto);
-  #else
- =20
-  static inline void xfrm_audit_policy_add(struct xfrm_policy *xp, int resu=
-lt,
+In fact we can get the interrupted idle cpu or the latest idled cpu,
+then we may get the benefit from both latency and power.
+The selected cpu maybe not the best, since other cpu may be interrupted
+during our selecting. But be captious costs too much.
 
---Signature=_Wed__15_Jan_2014_15_48_55_+1100_lxsalGKUMKwoG_Y4
-Content-Type: application/pgp-signature
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/fair.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c7395d9..e2c4cd9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4161,12 +4161,38 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ 
+ 	/* Traverse only the allowed CPUs */
+ 	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
++		s64 latest_wake = 0;
++
+ 		load = weighted_cpuload(i);
+ 
+ 		if (load < min_load || (load == min_load && i == this_cpu)) {
+ 			min_load = load;
+ 			idlest = i;
+ 		}
++#ifdef CONFIG_NO_HZ_COMMON
++		/*
++		 * Coarsely to get the latest idle cpu for shorter latency and
++		 * possible power benefit.
++		 */
++		if (!load) {
++			struct tick_sched *ts = &per_cpu(tick_cpu_sched, i);
++
++			/* idle cpu doing irq */
++			if (ts->inidle && !ts->idle_active)
++				idlest = i;
++			/* the cpu resched */
++			else if (!ts->inidle)
++				idlest = i;
++			/* find latest idle cpu */
++			else {
++				s64 temp = ktime_to_us(ts->idle_entrytime);
++				if (temp > latest_wake) {
++					latest_wake = temp;
++					idlest = i;
++				}
++			}
++		}
++#endif
+ 	}
+ 
+ 	return idlest;
+-- 
+1.8.1.2
 
-iQIcBAEBCAAGBQJS1hNJAAoJEMDTa8Ir7ZwVqswP/jxWynFHSLpKbHVWfU/7gmNJ
-NtRuO2xfU4ropZCI9bYkOqzsmzB1dlf0ecNZMJBAF8oG3ErkrTFQfZkWFa/kptD4
-P33dftCVIPSom04Jvthsq2+56KcwBi+fxwK/FfnTVmacV3Pjw2IEm5A07D+rfsTh
-Q0WF07zA45GLrEEKtiNDOXbDvLPMWkSew5DCV2J6ua3cUnkejqZH/gabyadW/tdm
-Mtxpy9pGEyqzIm9Z+5b8aIhLaf/6zBQL31rXJM7Is+k1Zt5y/oiLrpJ6y3WRh1Y6
-mYCXiV1iPhRKeC4WocIKJ86TE482+jAx1Z1RNbd/OjzavQBDF7rFt+x1KHrddkUp
-JBJr3bd6oNDorz1hBBIJTJVnW1d1I46GTAmE/mpWgyhbEh93tufsGEXAN0g0UVVm
-DFZ3Kr16+n/lJheYLkhZBTs1Ireaj/sUE6Cg04BgGpCY9Egao3mRLTcxYQujYYob
-JJ88S0FAL8eLtk1tj0yVywpf/FawU5Shm+1QEpwgnApPSq+2h6YgvGLhjR0XV+ba
-dmFQAxJVLSFpgi49NmVV/Oi2dgoCr98nXS16sgd/iskq+uY42SpkIhoQ5iVXBZJB
-iW19pdDj5Pe9JhkhQDS8H2JoM6PD12Ki+w/3ABPlbHfb9EyrCwEmJmgcnkQh/T2k
-q8h8XPPIOApwndXJE88q
-=kZg4
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Jan_2014_15_48_55_+1100_lxsalGKUMKwoG_Y4--
+-- 
+Thanks
+    Alex
