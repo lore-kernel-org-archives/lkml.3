@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaAOCY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:24:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36129 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaAOCYS (ORCPT
+	id S1751918AbaAOCbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:31:37 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:33954 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaAOCbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:24:18 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <davem@davemloft.net>
-CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
-        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
-        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
-        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next v2 01/10] Drivers: Staging: cxt1e1: use __dev_get_name instead of dev_get_name to find interfaces
-Date: Wed, 15 Jan 2014 10:23:36 +0800
-Message-ID: <1389752625-23189-2-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
-References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+	Tue, 14 Jan 2014 21:31:35 -0500
+Date: Tue, 14 Jan 2014 18:31:31 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@sr71.net>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently
+ instead of page->lru
+In-Reply-To: <20140114180044.1E401C47@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1401141829530.32645@chino.kir.corp.google.com>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180044.1E401C47@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-685474905-1389753093=:32645"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain denotes that both do_reset() and do_del_chan()
-are protected under rtnl_lock. If we use __dev_get_by_name() instead of
-dev_get_by_name() to find interface handlers in them, this would help
-us avoid to change interface reference counter.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-dev_ioctl()
-  rtnl_lock()
-  dev_ifsioc()
-    c4_ioctl()
-      do_reset()
-      do_del_chan()
-  rtnl_unlock()
+--531381512-685474905-1389753093=:32645
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
----
- drivers/staging/cxt1e1/linux.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+On Tue, 14 Jan 2014, Dave Hansen wrote:
 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 9b48373..4a08e16 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -770,9 +770,9 @@ do_del_chan (struct net_device *musycc_dev, void *data)
-     if (cp.channum > 999)
-         return -EINVAL;
-     snprintf (buf, sizeof(buf), CHANNAME "%d", cp.channum);
--    if (!(dev = dev_get_by_name (&init_net, buf)))
--        return -ENOENT;
--    dev_put (dev);
-+	dev = __dev_get_by_name(&init_net, buf);
-+	if (!dev)
-+		return -ENODEV;
-     ret = do_deluser (dev, 1);
-     if (ret)
-         return ret;
-@@ -792,19 +792,18 @@ do_reset (struct net_device *musycc_dev, void *data)
-         char        buf[sizeof (CHANNAME) + 3];
- 
-         sprintf (buf, CHANNAME "%d", i);
--        if (!(ndev = dev_get_by_name(&init_net, buf)))
--            continue;
-+	ndev = __dev_get_by_name(&init_net, buf);
-+	if (!ndev)
-+		continue;
-         priv = dev_to_hdlc (ndev)->priv;
- 
-         if ((unsigned long) (priv->ci) ==
-             (unsigned long) (netdev_priv(musycc_dev)))
-         {
-             ndev->flags &= ~IFF_UP;
--            dev_put (ndev);
-             netif_stop_queue (ndev);
-             do_deluser (ndev, 1);
--        } else
--            dev_put (ndev);
-+	}
-     }
-     return 0;
- }
--- 
-1.7.9.5
+> diff -puN include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently include/linux/mm_types.h
+> --- a/include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently	2014-01-14 09:57:56.099621967 -0800
+> +++ b/include/linux/mm_types.h	2014-01-14 09:57:56.106622281 -0800
+> @@ -124,6 +124,8 @@ struct page {
+>  	union {
+>  		struct list_head lru;	/* Pageout list, eg. active_list
+>  					 * protected by zone->lru_lock !
+> +					 * Can be used as a generic list
+> +					 * by the page owner.
+>  					 */
+>  		struct {		/* slub per cpu partial pages */
+>  			struct page *next;	/* Next partial slab */
+> @@ -136,7 +138,6 @@ struct page {
+>  #endif
+>  		};
+>  
+> -		struct list_head list;	/* slobs list of pages */
+>  		struct slab *slab_page; /* slab fields */
+>  		struct rcu_head rcu_head;	/* Used by SLAB
+>  						 * when destroying via RCU
 
+Did you try with a CONFIG_BLOCK config?
+
+block/blk-mq.c: In function ‘blk_mq_free_rq_map’:
+block/blk-mq.c:1094:10: error: ‘struct page’ has no member named ‘list’
+block/blk-mq.c:1094:10: warning: initialization from incompatible pointer type [enabled by default]
+block/blk-mq.c:1094:10: error: ‘struct page’ has no member named ‘list’
+block/blk-mq.c:1095:22: error: ‘struct page’ has no member named ‘list’
+block/blk-mq.c: In function ‘blk_mq_init_rq_map’:
+block/blk-mq.c:1159:22: error: ‘struct page’ has no member named ‘list’
+--531381512-685474905-1389753093=:32645--
