@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaAOV4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:56:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40842 "EHLO
+	id S1753281AbaAOV4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:56:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40855 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaAOV4J (ORCPT
+	with ESMTP id S1753260AbaAOV4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:56:09 -0500
+	Wed, 15 Jan 2014 16:56:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Paul Moore <pmoore@redhat.com>,
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 110/166] selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
-Date: Wed, 15 Jan 2014 13:52:04 -0800
-Message-Id: <1389822780-4729-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 124/166] KVM: x86: Fix APIC map calculation after re-enabling
+Date: Wed, 15 Jan 2014 13:52:18 -0800
+Message-Id: <1389822780-4729-125-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,45 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit c0c1439541f5305b57a83d599af32b74182933fe upstream.
+commit e66d2ae7c67bd9ac982a3d1890564de7f7eabf4b upstream.
 
-selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
-but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
-this looks confusing and triggers the "suspicious RCU usage"
-warning because ptrace_parent() does rcu_dereference_check().
+Update arch.apic_base before triggering recalculate_apic_map. Otherwise
+the recalculation will work against the previous state of the APIC and
+will fail to build the correct map when an APIC is hardware-enabled
+again.
 
-And in theory this is wrong, spin_lock()->preempt_disable()
-doesn't necessarily imply rcu_read_lock() we need to access
-the ->parent.
+This fixes a regression of 1e08ec4a13.
 
-Reported-by: Evan McNabb <emcnabb@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/hooks.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/lapic.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 0963169..6b0b250 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5455,11 +5455,11 @@ static int selinux_setprocattr(struct task_struct *p,
- 		/* Check for ptracing, and update the task SID if ok.
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
--		task_lock(p);
-+		rcu_read_lock();
- 		tracer = ptrace_parent(p);
- 		if (tracer)
- 			ptsid = task_sid(tracer);
--		task_unlock(p);
-+		rcu_read_unlock();
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 360aed5..8da302f 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1300,6 +1300,10 @@ void kvm_lapic_set_base(struct kvm_vcpu *vcpu, u64 value)
+ 		return;
+ 	}
  
- 		if (tracer) {
- 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
++	if (!kvm_vcpu_is_bsp(apic->vcpu))
++		value &= ~MSR_IA32_APICBASE_BSP;
++	vcpu->arch.apic_base = value;
++
+ 	/* update jump label if enable bit changes */
+ 	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
+ 		if (value & MSR_IA32_APICBASE_ENABLE)
+@@ -1309,10 +1313,6 @@ void kvm_lapic_set_base(struct kvm_vcpu *vcpu, u64 value)
+ 		recalculate_apic_map(vcpu->kvm);
+ 	}
+ 
+-	if (!kvm_vcpu_is_bsp(apic->vcpu))
+-		value &= ~MSR_IA32_APICBASE_BSP;
+-
+-	vcpu->arch.apic_base = value;
+ 	if (apic_x2apic_mode(apic)) {
+ 		u32 id = kvm_apic_id(apic);
+ 		u32 ldr = ((id >> 4) << 16) | (1 << (id & 0xf));
 -- 
 1.8.3.2
 
