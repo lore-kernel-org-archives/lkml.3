@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaAOHBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:01:06 -0500
-Received: from tartarus.angband.pl ([89.206.35.136]:45948 "EHLO
-	tartarus.angband.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaAOHBF (ORCPT
+	id S1751214AbaAOHEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:04:13 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:38826 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaAOHEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 02:01:05 -0500
-X-Greylist: delayed 2322 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 02:01:04 EST
-From: Adam Borowski <kilobyte@angband.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Adam Borowski <kilobyte@angband.pl>
-Date: Wed, 15 Jan 2014 07:21:04 +0100
-Message-Id: <1389766864-22673-1-git-send-email-kilobyte@angband.pl>
-X-Mailer: git-send-email 1.8.5.2
-X-SA-Exim-Connect-IP: 2001:6a0:118::6
-X-SA-Exim-Mail-From: kilobyte@angband.pl
-Subject: [PATCH] vt: detect and ignore OSC codes.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on tartarus.angband.pl)
+	Wed, 15 Jan 2014 02:04:10 -0500
+Message-ID: <1389769445.2944.33.camel@j-VirtualBox>
+Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
+ too many tries
+From: Jason Low <jason.low2@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com, davidlohr@hp.com,
+        hpa@zytor.com, aswin@hp.com, scott.norton@hp.com
+Date: Tue, 14 Jan 2014 23:04:05 -0800
+In-Reply-To: <20140114170056.7e93f279e11c751acb15ae67@linux-foundation.org>
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
+	 <20140114170056.7e93f279e11c751acb15ae67@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These can be used to send commands consisting of an arbitrary string to the
-terminal, most often used to set a terminal's window title or to redefine
-the colour palette.  Our console doesn't use OSC, unlike everything else,
-which can lead to junk being displayed if a process sends such a code
-unconditionally.
+On Tue, 2014-01-14 at 17:00 -0800, Andrew Morton wrote:
+> On Tue, 14 Jan 2014 16:33:10 -0800 Jason Low <jason.low2@hp.com> wrote:
+> 
+> > When running workloads that have high contention in mutexes on an 8 socket
+> > machine, spinners would often spin for a long time with no lock owner.
+> > 
+> > One of the potential reasons for this is because a thread can be preempted
+> > after clearing lock->owner but before releasing the lock, or preempted after
+> > acquiring the mutex but before setting lock->owner. In those cases, the
+> > spinner cannot check if owner is not on_cpu because lock->owner is NULL.
+> 
+> That sounds like a very small window.  And your theory is that this
+> window is being hit sufficiently often to impact aggregate runtime
+> measurements, which sounds improbable to me?
+> 
+> > A solution that would address the preemption part of this problem would
+> > be to disable preemption between acquiring/releasing the mutex and
+> > setting/clearing the lock->owner. However, that will require adding overhead
+> > to the mutex fastpath.
+> 
+> preempt_disable() is cheap, and sometimes free.
+> 
+> Have you confirmed that the preempt_disable() approach actually fixes
+> the performance issues?  If it does then this would confirm your
+> "potential reason" hypothesis.  If it doesn't then we should be hunting
+> further for the explanation.
 
-Not following Ecma-48, this commit recognizes 7-bit forms (ESC ] ... 0x07,
-ESC ] .. ESC \) but not 8-bit (0x9D ... 0x9C).
+Using Ingo's test-mutex application (http://lkml.org/lkml/2006/1/8/50)
+which can also generate high mutex contention, the preempt_disable()
+approach did provide approximately a 4% improvement at 160 threads, but
+not nearly the 25+% I was seeing with this patchset. So, it looks like
+preemption is not the main cause of the problem then.
 
-Signed-off-by: Adam Borowski <kilobyte@angband.pl>
----
- drivers/tty/vt/vt.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 61b1137..0377c52 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -1590,7 +1590,7 @@ static void restore_cur(struct vc_data *vc)
- 
- enum { ESnormal, ESesc, ESsquare, ESgetpars, ESgotpars, ESfunckey,
- 	EShash, ESsetG0, ESsetG1, ESpercent, ESignore, ESnonstd,
--	ESpalette };
-+	ESpalette, ESosc };
- 
- /* console_lock is held (except via vc_init()) */
- static void reset_terminal(struct vc_data *vc, int do_clear)
-@@ -1650,11 +1650,15 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
- 	 *  Control characters can be used in the _middle_
- 	 *  of an escape sequence.
- 	 */
-+	if (vc->vc_state == ESosc && c>=8 && c<=13) /* ... except for OSC */
-+		return;
- 	switch (c) {
- 	case 0:
- 		return;
- 	case 7:
--		if (vc->vc_bell_duration)
-+		if (vc->vc_state == ESosc)
-+			vc->vc_state = ESnormal;
-+		else if (vc->vc_bell_duration)
- 			kd_mksound(vc->vc_bell_pitch, vc->vc_bell_duration);
- 		return;
- 	case 8:
-@@ -1765,7 +1769,9 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
- 		} else if (c=='R') {   /* reset palette */
- 			reset_palette(vc);
- 			vc->vc_state = ESnormal;
--		} else
-+		} else if (c>='0' && c<='9')
-+			vc->vc_state = ESosc;
-+		else
- 			vc->vc_state = ESnormal;
- 		return;
- 	case ESpalette:
-@@ -2023,6 +2029,8 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
- 		return;
- 	default:
- 		vc->vc_state = ESnormal;
-+	case ESosc:
-+		return;
- 	}
- }
- 
--- 
-1.8.5.2
+Thanks,
+Jason
 
