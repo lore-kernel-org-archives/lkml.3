@@ -1,217 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbaAORzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:55:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44879 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaAORzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:55:39 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 1/7] ARM: perf_event: Support percpu irqs for the CPU PMU
-Date: Wed, 15 Jan 2014 09:55:29 -0800
-Message-Id: <1389808535-23852-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
-In-Reply-To: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
-References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+	id S1752916AbaAOR5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:57:31 -0500
+Received: from fieldses.org ([174.143.236.118]:36850 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752816AbaAOR50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:57:26 -0500
+Date: Wed, 15 Jan 2014 12:57:23 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        miklos@szeredi.hu
+Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140115175723.GA4596@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some CPU PMUs are wired up with one PPI for all the CPUs instead
-of with a different SPI for each CPU. Add support for these
-devices.
+On Wed, Jan 15, 2014 at 06:34:56PM +0100, Miklos Szeredi wrote:
+> On Wed, 2014-01-15 at 10:17 -0500, J. Bruce Fields wrote:
+> > From: "J. Bruce Fields" <bfields@redhat.com>
+> > 
+> > d_splice_alias can create duplicate directory aliases (in the !new
+> > case), or (in the new case) d_move without holding appropriate locks.
+> 
+> It can d_move, because the dentry is known to be disconnected, i.e. it
+> doesn't have a parent for which we could obtain the lock.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/perf_event.c     | 14 ++++--
- arch/arm/kernel/perf_event_cpu.c | 97 ++++++++++++++++++++++++++++------------
- 2 files changed, 80 insertions(+), 31 deletions(-)
+DCACHE_DISCONNECTED doesn't mean that.
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 789d846a9184..e76750980b38 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -16,6 +16,8 @@
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
- #include <linux/uaccess.h>
-+#include <linux/irq.h>
-+#include <linux/irqdesc.h>
- 
- #include <asm/irq_regs.h>
- #include <asm/pmu.h>
-@@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
- 
- static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
- {
--	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
--	struct platform_device *plat_device = armpmu->plat_device;
--	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
-+	struct arm_pmu *armpmu;
-+	struct platform_device *plat_device;
-+	struct arm_pmu_platdata *plat;
-+
-+	if (irq_is_percpu(irq))
-+		dev = *(struct arm_pmu_cpu **)dev;
-+	armpmu = dev;
-+	plat_device = armpmu->plat_device;
-+	plat = dev_get_platdata(&plat_device->dev);
- 
- 	if (plat && plat->handle_irq)
- 		return plat->handle_irq(irq, dev, armpmu->handle_irq);
-diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-index 20d553c9f5e2..6efd8aab15df 100644
---- a/arch/arm/kernel/perf_event_cpu.c
-+++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -25,6 +25,8 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
-+#include <linux/irq.h>
-+#include <linux/irqdesc.h>
- 
- #include <asm/cputype.h>
- #include <asm/irq_regs.h>
-@@ -33,6 +35,7 @@
- /* Set at runtime when we know what CPU type we are. */
- static struct arm_pmu *cpu_pmu;
- 
-+static DEFINE_PER_CPU(struct arm_pmu *, percpu_pmu);
- static DEFINE_PER_CPU(struct perf_event * [ARMPMU_MAX_HWEVENTS], hw_events);
- static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(ARMPMU_MAX_HWEVENTS)], used_mask);
- static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
-@@ -71,6 +74,26 @@ static struct pmu_hw_events *cpu_pmu_get_cpu_events(void)
- 	return this_cpu_ptr(&cpu_hw_events);
- }
- 
-+static void cpu_pmu_enable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *cpu_pmu = data;
-+	struct platform_device *pmu_device = cpu_pmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	enable_percpu_irq(irq, IRQ_TYPE_NONE);
-+	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
-+}
-+
-+static void cpu_pmu_disable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *cpu_pmu = data;
-+	struct platform_device *pmu_device = cpu_pmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
-+	disable_percpu_irq(irq);
-+}
-+
- static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
- {
- 	int i, irq, irqs;
-@@ -78,12 +101,18 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
- 
- 	irqs = min(pmu_device->num_resources, num_possible_cpus());
- 
--	for (i = 0; i < irqs; ++i) {
--		if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
--			continue;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq >= 0)
--			free_irq(irq, cpu_pmu);
-+	irq = platform_get_irq(pmu_device, 0);
-+	if (irq >= 0 && irq_is_percpu(irq)) {
-+		on_each_cpu(cpu_pmu_disable_percpu_irq, cpu_pmu, 1);
-+		free_percpu_irq(irq, &percpu_pmu);
-+	} else {
-+		for (i = 0; i < irqs; ++i) {
-+			if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
-+				continue;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq >= 0)
-+				free_irq(irq, cpu_pmu);
-+		}
- 	}
- }
- 
-@@ -101,33 +130,44 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
- 		return -ENODEV;
- 	}
- 
--	for (i = 0; i < irqs; ++i) {
--		err = 0;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq < 0)
--			continue;
--
--		/*
--		 * If we have a single PMU interrupt that we can't shift,
--		 * assume that we're running on a uniprocessor machine and
--		 * continue. Otherwise, continue without this interrupt.
--		 */
--		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
--			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
--				    irq, i);
--			continue;
--		}
--
--		err = request_irq(irq, handler,
--				  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
--				  cpu_pmu);
-+	irq = platform_get_irq(pmu_device, 0);
-+	if (irq >= 0 && irq_is_percpu(irq)) {
-+		err = request_percpu_irq(irq, handler, "arm-pmu", &percpu_pmu);
- 		if (err) {
- 			pr_err("unable to request IRQ%d for ARM PMU counters\n",
- 				irq);
- 			return err;
- 		}
--
--		cpumask_set_cpu(i, &cpu_pmu->active_irqs);
-+		on_each_cpu(cpu_pmu_enable_percpu_irq, cpu_pmu, 1);
-+	} else {
-+		for (i = 0; i < irqs; ++i) {
-+			err = 0;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq < 0)
-+				continue;
-+
-+			/*
-+			 * If we have a single PMU interrupt that we can't shift,
-+			 * assume that we're running on a uniprocessor machine and
-+			 * continue. Otherwise, continue without this interrupt.
-+			 */
-+			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+					    irq, i);
-+				continue;
-+			}
-+
-+			err = request_irq(irq, handler,
-+					  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
-+					  cpu_pmu);
-+			if (err) {
-+				pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+					irq);
-+				return err;
-+			}
-+
-+			cpumask_set_cpu(i, &cpu_pmu->active_irqs);
-+		}
- 	}
- 
- 	return 0;
-@@ -141,6 +181,7 @@ static void cpu_pmu_init(struct arm_pmu *cpu_pmu)
- 		events->events = per_cpu(hw_events, cpu);
- 		events->used_mask = per_cpu(used_mask, cpu);
- 		raw_spin_lock_init(&events->pmu_lock);
-+		per_cpu(percpu_pmu, cpu) = cpu_pmu;
- 	}
- 
- 	cpu_pmu->get_hw_events	= cpu_pmu_get_cpu_events;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+When you lookup a dentry by filehandle that dentry is initially marked
+DCACHE_DISCONNECTED.  It is cleared only after reconnect_path() has
+verified that the dentry is reachable all the way from the root.
 
+So !DCACHE_DISCONNECTED implies that the dentry is connected all the way
+up to the root, but the converse is not true.
+
+This has been a source of confusion, but it is explained in
+Documentation/filesystems/nfs/Exporting.  Recently I've cleaned up a few
+odd uses of DCACHE_DISCONNECTED and rewritten reconnect_path(), partly
+as an attempt to clarify the situation.
+
+Let me know if any of that doesn't look right to you....
+
+> > d_materialise_unique deals with both of these problems.  (The latter
+> > seems to be dealt by trylocks (see __d_unalias), which look like they
+> > could cause spurious lookup failures--but that's at least better than
+> > corrupting the dcache.)
+> > 
+> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> > ---
+> >  fs/dcache.c |   25 +------------------------
+> >  1 file changed, 1 insertion(+), 24 deletions(-)
+> > 
+> > Only lightly tested....  If this is right, then we can also just ditch
+> > d_splice_alias completely, and clean up the various d_find_alias's.
+> > 
+> > I think the only reason we have both d_splice_alias and
+> > d_materialise_unique is that the former was written for exportable
+> > filesystems and the latter for distributed filesystems.
+> > 
+> > But we have at least one exportable filesystem (fuse) using
+> > d_materialise_unique.  And I doubt d_splice_alias was ever completely
+> > correct even for on-disk filesystems.
+> > 
+> > Am I missing some subtlety?
+> 
+> One subtle difference is that for a non-directory d_splice_alias() will
+> reconnect a DCACHE_DISCONNECTED dentry if one exists, while
+> d_materialise_unique() will not.
+
+Actually until f80de2cde10350b8d146e375ff8b634e72e6a827 "dcache: don't
+clear DCACHE_DISCONNECTED too early", it was the reverse:
+d_materialise_unique cleared DISCONNECTED and d_splice_alias (correctly)
+did not.
+
+The only place where it should be cleared is reconnect_path().
+
+> Does this matter in practice?   The small number of extra dentries
+> probably does not matter.
+
+Directories are assumed to have unique aliases.  When they don't, the
+kernel can deadlock or crash.
+
+--b.
