@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaAOW36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:29:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40947 "EHLO
+	id S1753409AbaAOV5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:57:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40912 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaAOV5R (ORCPT
+	with ESMTP id S1751855AbaAOV5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:17 -0500
+	Wed, 15 Jan 2014 16:57:04 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 147/166] ipv6: don't count addrconf generated routes against gc limit
-Date: Wed, 15 Jan 2014 13:52:41 -0800
-Message-Id: <1389822780-4729-148-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 133/166] ACPI / TPM: fix memory leak when walking ACPI namespace
+Date: Wed, 15 Jan 2014 13:52:27 -0800
+Message-Id: <1389822780-4729-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,49 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-[ Upstream commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f ]
+commit df45c712d1f4ef37714245fb75de726f4ca2bf8d upstream.
 
-Brett Ciphery reported that new ipv6 addresses failed to get installed
-because the addrconf generated dsts where counted against the dst gc
-limit. We don't need to count those routes like we currently don't count
-administratively added routes.
+In function ppi_callback(), memory allocated by acpi_get_name() will get
+leaked when current device isn't the desired TPM device, so fix the
+memory leak.
 
-Because the max_addresses check enforces a limit on unbounded address
-generation first in case someone plays with router advertisments, we
-are still safe here.
-
-Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/route.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm_ppi.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 9b530eb..7352014 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2128,13 +2128,12 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
- 				    bool anycast)
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index 720ebcf..d0f1bdd 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -27,15 +27,18 @@ static char *tpm_device_name = "TPM";
+ static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
+ 				void **return_value)
  {
- 	struct net *net = dev_net(idev->dev);
--	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev, 0, NULL);
-+	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev,
-+					    DST_NOCOUNT, NULL);
- 	int err;
+-	acpi_status status;
++	acpi_status status = AE_OK;
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+-	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+-	if (strstr(buffer.pointer, context) != NULL) {
+-		*return_value = handle;
++
++	if (ACPI_SUCCESS(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer))) {
++		if (strstr(buffer.pointer, context) != NULL) {
++			*return_value = handle;
++			status = AE_CTRL_TERMINATE;
++		}
+ 		kfree(buffer.pointer);
+-		return AE_CTRL_TERMINATE;
+ 	}
+-	return AE_OK;
++
++	return status;
+ }
  
--	if (!rt) {
--		net_warn_ratelimited("Maximum number of routes reached, consider increasing route/max_size\n");
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
- 
- 	in6_dev_hold(idev);
- 
+ static inline void ppi_assign_params(union acpi_object params[4],
 -- 
 1.8.3.2
 
