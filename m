@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660AbaAOV6C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:58:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41045 "EHLO
+	id S1753714AbaAOV6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:58:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41059 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaAOV5z (ORCPT
+	with ESMTP id S1753668AbaAOV6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:55 -0500
+	Wed, 15 Jan 2014 16:58:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Pizunski <linus@narrativeteam.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 056/166] drivers/rtc/rtc-at91rm9200.c: correct alarm over day/month wrap
-Date: Wed, 15 Jan 2014 13:51:10 -0800
-Message-Id: <1389822780-4729-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 061/166] ASoC: tegra: fix uninitialized variables in set_fmt
+Date: Wed, 15 Jan 2014 13:51:15 -0800
+Message-Id: <1389822780-4729-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -30,35 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Pizunski <linus@narrativeteam.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit eb3c227289840eed95ddfb0516046f08d8993940 upstream.
+commit 241bf43321a10815225f477bba96a42285a2da73 upstream.
 
-Update month and day of month to the alarm month/day instead of current
-day/month when setting the RTC alarm mask.
+In tegra*_i2s_set_fmt(), in the (fmt == SND_SOC_DAIFMT_CBM_CFM) case,
+"val" is never assigned to, but left uninitialized. The other case does
+initialized it. Fix this by initializing val at the start of the
+function, and only ever ORing into it.
 
-Signed-off-by: Linus Pizunski <linus@narrativeteam.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Update the handling of "mask" so it works the same way for consistency.
+
+Update tegra20_spdif.c to use the same code-style for consistency, even
+though it doesn't happen to suffer from the same problem at present.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: 0f163546a772 ("ASoC: tegra: use regmap more directly")
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/rtc/rtc-at91rm9200.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/tegra/tegra20_i2s.c   |  6 +++---
+ sound/soc/tegra/tegra20_spdif.c | 10 +++++-----
+ sound/soc/tegra/tegra30_i2s.c   |  6 +++---
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 086fb35..357da6b 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -163,6 +163,8 @@ static int at91_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+diff --git a/sound/soc/tegra/tegra20_i2s.c b/sound/soc/tegra/tegra20_i2s.c
+index caa772d..57227e0 100644
+--- a/sound/soc/tegra/tegra20_i2s.c
++++ b/sound/soc/tegra/tegra20_i2s.c
+@@ -73,7 +73,7 @@ static int tegra20_i2s_set_fmt(struct snd_soc_dai *dai,
+ 				unsigned int fmt)
+ {
+ 	struct tegra20_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+-	unsigned int mask, val;
++	unsigned int mask = 0, val = 0;
  
- 	at91_alarm_year = tm.tm_year;
+ 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
+ 	case SND_SOC_DAIFMT_NB_NF:
+@@ -82,10 +82,10 @@ static int tegra20_i2s_set_fmt(struct snd_soc_dai *dai,
+ 		return -EINVAL;
+ 	}
  
-+	tm.tm_mon = alrm->time.tm_mon;
-+	tm.tm_mday = alrm->time.tm_mday;
- 	tm.tm_hour = alrm->time.tm_hour;
- 	tm.tm_min = alrm->time.tm_min;
- 	tm.tm_sec = alrm->time.tm_sec;
+-	mask = TEGRA20_I2S_CTRL_MASTER_ENABLE;
++	mask |= TEGRA20_I2S_CTRL_MASTER_ENABLE;
+ 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+ 	case SND_SOC_DAIFMT_CBS_CFS:
+-		val = TEGRA20_I2S_CTRL_MASTER_ENABLE;
++		val |= TEGRA20_I2S_CTRL_MASTER_ENABLE;
+ 		break;
+ 	case SND_SOC_DAIFMT_CBM_CFM:
+ 		break;
+diff --git a/sound/soc/tegra/tegra20_spdif.c b/sound/soc/tegra/tegra20_spdif.c
+index 04771d1..0f751e1 100644
+--- a/sound/soc/tegra/tegra20_spdif.c
++++ b/sound/soc/tegra/tegra20_spdif.c
+@@ -66,15 +66,15 @@ static int tegra20_spdif_hw_params(struct snd_pcm_substream *substream,
+ {
+ 	struct device *dev = dai->dev;
+ 	struct tegra20_spdif *spdif = snd_soc_dai_get_drvdata(dai);
+-	unsigned int mask, val;
++	unsigned int mask = 0, val = 0;
+ 	int ret, spdifclock;
+ 
+-	mask = TEGRA20_SPDIF_CTRL_PACK |
+-	       TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
++	mask |= TEGRA20_SPDIF_CTRL_PACK |
++		TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
+ 	switch (params_format(params)) {
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+-		val = TEGRA20_SPDIF_CTRL_PACK |
+-		      TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
++		val |= TEGRA20_SPDIF_CTRL_PACK |
++		       TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+diff --git a/sound/soc/tegra/tegra30_i2s.c b/sound/soc/tegra/tegra30_i2s.c
+index 6b64f5b..df9224d 100644
+--- a/sound/soc/tegra/tegra30_i2s.c
++++ b/sound/soc/tegra/tegra30_i2s.c
+@@ -116,7 +116,7 @@ static int tegra30_i2s_set_fmt(struct snd_soc_dai *dai,
+ 				unsigned int fmt)
+ {
+ 	struct tegra30_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+-	unsigned int mask, val;
++	unsigned int mask = 0, val = 0;
+ 
+ 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
+ 	case SND_SOC_DAIFMT_NB_NF:
+@@ -125,10 +125,10 @@ static int tegra30_i2s_set_fmt(struct snd_soc_dai *dai,
+ 		return -EINVAL;
+ 	}
+ 
+-	mask = TEGRA30_I2S_CTRL_MASTER_ENABLE;
++	mask |= TEGRA30_I2S_CTRL_MASTER_ENABLE;
+ 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+ 	case SND_SOC_DAIFMT_CBS_CFS:
+-		val = TEGRA30_I2S_CTRL_MASTER_ENABLE;
++		val |= TEGRA30_I2S_CTRL_MASTER_ENABLE;
+ 		break;
+ 	case SND_SOC_DAIFMT_CBM_CFM:
+ 		break;
 -- 
 1.8.3.2
 
