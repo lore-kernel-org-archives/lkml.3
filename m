@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaAOPGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:06:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44282 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaAOPGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:06:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
-   d="scan'208";a="465570359"
-Message-ID: <52D6A3FF.8070100@intel.com>
-Date: Wed, 15 Jan 2014 23:06:39 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752154AbaAOPIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:08:54 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:18668 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081AbaAOPIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:08:52 -0500
+X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
+   d="scan'208";a="90991094"
+Message-ID: <52D6A45C.1060705@citrix.com>
+Date: Wed, 15 Jan 2014 15:08:12 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fcr@adinet.com.uy, l@dorileo.org, "Zheng, Lv" <lv.zheng@intel.com>,
-        robert.moore@intel.com
-Subject: Re: [PATCH V2] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
-References: <1389019837-13619-1-git-send-email-tianyu.lan@intel.com> <5255063.SeYbBZqxVQ@vostro.rjw.lan> <20140114212406.GA25438@srcf.ucam.org> <4100200.O09E65sAKi@vostro.rjw.lan> <52D69E57.5020208@intel.com> <20140115144720.GA23218@srcf.ucam.org>
-In-Reply-To: <20140115144720.GA23218@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
+References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com> <20140115103707.GI5698@zion.uk.xensource.com> <52D67536.4030106@citrix.com> <20140115144519.GO5698@zion.uk.xensource.com> <52D6A0B9.2030204@citrix.com> <20140115145951.GP5698@zion.uk.xensource.com>
+In-Reply-To: <20140115145951.GP5698@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 10:47 PM, Matthew Garrett wrote:
-> On Wed, Jan 15, 2014 at 10:42:31PM +0800, Lan Tianyu wrote:
->> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
->> index fbf1ace..e98fa83 100644
->> --- a/drivers/acpi/battery.c
->> +++ b/drivers/acpi/battery.c
->> @@ -770,7 +770,7 @@ static int acpi_battery_add(struct acpi_device *device)
->>          device->driver_data = battery;
->>          mutex_init(&battery->lock);
->>          mutex_init(&battery->sysfs_lock);
->> -       if (acpi_has_method(battery->device->handle, "_BIX"))
->> +       if (acpi_evaluate_object(device->handle, "_BIX", NULL, &buffer);)
->>                  set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+On 15/01/14 14:59, Wei Liu wrote:
+> On Wed, Jan 15, 2014 at 02:52:41PM +0000, Zoltan Kiss wrote:
+>> On 15/01/14 14:45, Wei Liu wrote:
+>>>>>> The recent patch to fix receive side flow control (11b57f) solved the spinning
+>>>>>>>>> thread problem, however caused an another one. The receive side can stall, if:
+>>>>>>>>> - xenvif_rx_action sets rx_queue_stopped to false
+>>>>>>>>> - interrupt happens, and sets rx_event to true
+>>>>>>>>> - then xenvif_kthread sets rx_event to false
+>>>>>>>>>
+>>>>>>>
+>>>>>>> If you mean "rx_work_todo" returns false.
+>>>>>>>
+>>>>>>> In this case
+>>>>>>>
+>>>>>>> (!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
+>>>>>>>
+>>>>>>> can still be true, can't it?
+>>>>> Sorry, I should wrote rx_queue_stopped to true
+>>>>>
+>>> In this case, if rx_queue_stopped is true, then we're expecting frontend
+>>> to notify us, right?
+>>>
+>>> rx_queue_stopped is set to true if we cannot make any progress to queue
+>>> packet into the ring. In that situation we can expect frontend will send
+>>> notification to backend after it goes through the backlog in the ring.
+>>> That means rx_event is set to true, and rx_work_todo is true again. So
+>>> the ring is actually not stalled in this case as well. Did I miss
+>>> something?
+>>>
+>>
+>> Yes, we expect the guest to notify us, and it does, and we set
+>> rx_event to true (see second point), but then the thread set it to
+>> false (see third point). Talking with Paul, another solution could
+>> be to set rx_event false before calling xenvif_rx_action. But using
+>> rx_last_skb_slots makes it quicker for the thread to see if it
+>> doesn't have to do anything.
+>>
 >
-> Doesn't acpi_evaluate_object() return 0 on success? I think:
+> OK, this is a better explaination. So actually there's no bug in the
+> original implementation and your patch is sort of an improvement.
 >
-> if (ACPI_SUCESS(acpi_evaluate_object(device->handle, "_BIX", NULL,
-> &buffer))
->
+> Could you send a new version of this patch with relevant information in
+> commit message? Talking to people offline is faster, but I would like to
+> have public discussion and relevant information archived in a searchable
+> form. Thanks.
 
-Yes, Sorry for oops.
+No, there is a bug in the original implementation:
+- [THREAD] xenvif_rx_action sets rx_queue_stopped to true
+- [INTERRUPT] interrupt happens, and sets rx_event to true
+- [THREAD] then xenvif_kthread sets rx_event to false
+- [THREAD] rx_work_todo never returns true anymore
 
-> But maybe we should check for existence first and give an FW_BUG message
-> to indicate an invalid _BIX?
+I will update the explanation and send in the patch again.
 
-Yes, this is a good idea.
-
-Another point, the acpi_evaluate_object should return different error 
-code for these two cases(no _BIX and wrong size.). I wonder whether we 
-can use the error code to determine it belong which case?
->
-
-
--- 
-Best Regards
-Tianyu Lan
+Zoli
