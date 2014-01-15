@@ -1,156 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaAOQlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:41:23 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:57563 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaAOQlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:41:22 -0500
-Message-ID: <52D6BA2F.4050104@linaro.org>
-Date: Wed, 15 Jan 2014 11:41:19 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752608AbaAOQmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:42:00 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40913 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751864AbaAOQl6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 11:41:58 -0500
+From: Gaurav Jain <gjain@fb.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Pekka Enberg <penberg@iki.fi>, Ingo Molnar <mingo@kernel.org>,
+        "acme@redhat.com" <acme@redhat.com>
+Subject: Perf map file ownership check
+Thread-Topic: Perf map file ownership check
+Thread-Index: Ac8SEK+ry7vZnGqLR8yU2of67CmjRA==
+Date: Wed, 15 Jan 2014 16:41:49 +0000
+Message-ID: <357ED2BF-5CA6-454B-B433-BC6F6542D105@fb.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4C00D0E0CEC28949A3FF42CE9F889D16@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 04/16] ARM: move generic thumb instruction parsing
- code to new files for use by other feature
-References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-5-git-send-email-dave.long@linaro.org> <1387543562.3404.35.camel@linaro1.home>
-In-Reply-To: <1387543562.3404.35.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-15_05:2014-01-15,2014-01-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=3.35894793646041e-08 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997600857122248
+ urlsuspect_oldscore=0.997600857122248 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997600857122248 spamscore=0
+ recipient_to_sender_domain_totalscore=2 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401150099
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13 07:46, Jon Medhurst (Tixy) wrote:
-> On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> Move the thumb version of the kprobes instruction parsing code into more generic
->> files from where it can be used by uprobes and possibly other subsystems. The
->> symbol names will be made more generic in a subsequent part of this patchset.
->>
->> Signed-off-by: David A. Long <dave.long@linaro.org>
->> ---
->
-> I just have two comments about probes-thumb.h ...
->
-> [...]
->
->> diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
->> new file mode 100644
->> index 0000000..3f39210
->> --- /dev/null
->> +++ b/arch/arm/kernel/probes-thumb.h
->> @@ -0,0 +1,136 @@
->> +/*
->> + * arch/arm/kernel/probes-arm.h
->> + *
->> + * Copyright 2013 Linaro Ltd.
->> + * Written by: David A. Long
->> + *
->> + * The code contained herein is licensed under the GNU General Public
->> + * License. You may obtain a copy of the GNU General Public License
->> + * Version 2 or later at the following locations:
->> + *
->> + * http://www.opensource.org/licenses/gpl-license.html
->> + * http://www.gnu.org/copyleft/gpl.html
->> + */
->> +
->> +#ifndef _ARM_KERNEL_PROBES_THUMB_H
->> +#define  _ARM_KERNEL_PROBES_THUMB_H
->> +
->> +/*
->> + * True if current instruction is in an IT block.
->> + */
->> +#define in_it_block(cpsr)	((cpsr & 0x06000c00) != 0x00000000)
->> +
->> +/*
->> + * Return the condition code to check for the currently executing instruction.
->> + * This is in ITSTATE<7:4> which is in CPSR<15:12> but is only valid if
->> + * in_it_block returns true.
->> + */
->> +#define current_cond(cpsr)	((cpsr >> 12) & 0xf)
->
-> Looks like you forgot to remove above two #defines from kprobes-thumb.c
-> when you moved them to this header file.
+981c125 introduced a permission check on perf map files such that perf only loads the map file if it has ownership. Pekka mentioned that this prevents the perf tool from injecting arbitrary symbols from potentially malicious source.
 
-Fixed.
+In our workload, the code generating the map file is running as a non-root user. However, the perf tool is run as root. As a result, the ownership check fails and the map file is not loaded.
 
-> Also...
->
->> +enum probes_t32_action {
->> +	PROBES_T32_EMULATE_NONE,
->> +	PROBES_T32_SIMULATE_NOP,
->> +	PROBES_T32_LDMSTM,
->> +	PROBES_T32_LDRDSTRD,
->> +	PROBES_T32_TABLE_BRANCH,
->> +	PROBES_T32_TST,
->> +	PROBES_T32_CMP,
->> +	PROBES_T32_MOV,
->> +	PROBES_T32_ADDSUB,
->> +	PROBES_T32_LOGICAL,
->> +	PROBES_T32_ADDWSUBW_PC,
->> +	PROBES_T32_ADDWSUBW,
->> +	PROBES_T32_MOVW,
->> +	PROBES_T32_SAT,
->> +	PROBES_T32_BITFIELD,
->> +	PROBES_T32_SEV,
->> +	PROBES_T32_WFE,
->> +	PROBES_T32_MRS,
->> +	PROBES_T32_BRANCH_COND,
->> +	PROBES_T32_BRANCH,
->> +	PROBES_T32_PLDI,
->> +	PROBES_T32_LDR_LIT,
->> +	PROBES_T32_LDRSTR,
->> +	PROBES_T32_SIGN_EXTEND,
->> +	PROBES_T32_MEDIA,
->> +	PROBES_T32_REVERSE,
->> +	PROBES_T32_MUL_ADD,
->> +	PROBES_T32_MUL_ADD2,
->> +	PROBES_T32_MUL_ADD_LONG
->> +};
->> +
->> +enum probes_t16_action {
->> +	PROBES_T16_ADD_SP,
->> +	PROBES_T16_CBZ,
->> +	PROBES_T16_SIGN_EXTEND,
->> +	PROBES_T16_PUSH,
->> +	PROBES_T16_POP,
->> +	PROBES_T16_SEV,
->> +	PROBES_T16_WFE,
->> +	PROBES_T16_IT,
->> +	PROBES_T16_CMP,
->> +	PROBES_T16_ADDSUB,
->> +	PROBES_T16_LOGICAL,
->> +	PROBES_T16_BLX,
->> +	PROBES_T16_HIREGOPS,
->> +	PROBES_T16_LDR_LIT,
->> +	PROBES_T16_LDRHSTRH,
->> +	PROBES_T16_LDRSTR,
->> +	PROBES_T16_ADR,
->> +	PROBES_T16_LDMSTM,
->> +	PROBES_T16_BRANCH_COND,
->> +	PROBES_T16_BRANCH
->> +};
->> +
->
+This raises 2 questions:
+1. Is the ownership check necessary? What are the security implications of using symbols from an arbitrary source? I thought these are simply displayed by the perf tool.
+2. Is there a way to avoid the check? Possibly with a -f flag.
 
-Moved.
+Thanks,
 
--dl
-
-
+Gaurav
