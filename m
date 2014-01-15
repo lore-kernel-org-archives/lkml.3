@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaAOKVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:21:13 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:56825 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbaAOKVF (ORCPT
+	id S1751435AbaAOKYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:24:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48064 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaAOKYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:21:05 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv2 4/4] zram: report failed read and writes stats
-Date: Wed, 15 Jan 2014 13:16:17 +0300
-Message-Id: <1389780977-18949-5-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.8.5.3.493.gb139ac2
-In-Reply-To: <1389780977-18949-1-git-send-email-sergey.senozhatsky@gmail.com>
-References: <1389780977-18949-1-git-send-email-sergey.senozhatsky@gmail.com>
+	Wed, 15 Jan 2014 05:24:50 -0500
+Date: Wed, 15 Jan 2014 11:24:45 +0100
+From: Robert Richter <rric@kernel.org>
+To: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, wangnan0@huawei.com,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
+ op_overflow_handler()
+Message-ID: <20140115102445.GE20315@rric.localhost>
+References: <52B3F66D.6060707@huawei.com>
+ <20140113084555.GU20315@rric.localhost>
+ <52D4984B.9090600@huawei.com>
+ <20140114150553.GC20315@rric.localhost>
+ <52D5EC44.30101@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D5EC44.30101@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zram accounted but did not report numbers of failed read
-and write queries. make these stats available as failed_reads
-and failed_writes attrs.
+On 15.01.14 10:02:44, Weng Meiling wrote:
+> On 2014/1/14 23:05, Robert Richter wrote:
+> > @@ -94,6 +98,11 @@ static int op_create_counter(int cpu, int event)
+> >  
+> >  	per_cpu(perf_events, cpu)[event] = pevent;
+> >  
+> > +	/* sync perf_events with overflow handler: */
+> > +	smp_wmb();
+> > +
+> > +	perf_event_enable(pevent);
+> > +
+> 
+> Should this step go before the if check:pevent->state != PERF_EVENT_STATE_ACTIVE ?
+> Because the attr->disabled is true, So after the perf_event_create_kernel_counter
+> the pevent->state is not PERF_EVENT_STATE_ACTIVE.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Right, the check is a problem. We need to move it after the event was
+enabled. On error, we need to NULL the event, see below.
+
+-Robert
+
 ---
- drivers/block/zram/zram_drv.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/oprofile/oprofile_perf.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 6eb2155..ce00d47 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -699,6 +699,8 @@ static DEVICE_ATTR(memory_used, S_IRUGO, memory_used_show, NULL);
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index d5b2732..9dfb236 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -38,6 +38,9 @@ static void op_overflow_handler(struct perf_event *event,
+ 	int id;
+ 	u32 cpu = smp_processor_id();
  
- ZRAM_ATTR_RO(num_reads);
- ZRAM_ATTR_RO(num_writes);
-+ZRAM_ATTR_RO(failed_reads);
-+ZRAM_ATTR_RO(failed_writes);
- ZRAM_ATTR_RO(pages_stored);
- ZRAM_ATTR_RO(invalid_io);
- ZRAM_ATTR_RO(notify_free);
-@@ -711,6 +713,8 @@ static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_reset.attr,
- 	&dev_attr_num_reads.attr,
- 	&dev_attr_num_writes.attr,
-+	&dev_attr_failed_reads.attr,
-+	&dev_attr_failed_writes.attr,
- 	&dev_attr_pages_stored.attr,
- 	&dev_attr_invalid_io.attr,
- 	&dev_attr_notify_free.attr,
++	/* sync perf_events with op_create_counter(): */
++	smp_rmb();
++
+ 	for (id = 0; id < num_counters; ++id)
+ 		if (per_cpu(perf_events, cpu)[id] == event)
+ 			break;
+@@ -68,6 +71,7 @@ static void op_perf_setup(void)
+ 		attr->config		= counter_config[i].event;
+ 		attr->sample_period	= counter_config[i].count;
+ 		attr->pinned		= 1;
++		attr->disabled		= 1;
+ 	}
+ }
+ 
+@@ -85,16 +89,23 @@ static int op_create_counter(int cpu, int event)
+ 	if (IS_ERR(pevent))
+ 		return PTR_ERR(pevent);
+ 
+-	if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
+-		perf_event_release_kernel(pevent);
+-		pr_warning("oprofile: failed to enable event %d "
+-				"on CPU %d\n", event, cpu);
+-		return -EBUSY;
+-	}
+-
+ 	per_cpu(perf_events, cpu)[event] = pevent;
+ 
+-	return 0;
++	/* sync perf_events with overflow handler: */
++	smp_wmb();
++
++	perf_event_enable(pevent);
++
++	if (pevent->state == PERF_EVENT_STATE_ACTIVE)
++		return 0;
++
++	perf_event_release_kernel(pevent);
++	per_cpu(perf_events, cpu)[event] = NULL;
++
++	pr_warning("oprofile: failed to enable event %d on CPU %d\n",
++		event, cpu);
++
++	return -EBUSY;
+ }
+ 
+ static void op_destroy_counter(int cpu, int event)
 -- 
-1.8.5.3.493.gb139ac2
+1.8.4.2
 
