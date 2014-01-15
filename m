@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaAOJQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:16:28 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:23080 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaAOJPy (ORCPT
+	id S1752061AbaAOJQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:16:50 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:21264 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbaAOJQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:15:54 -0500
-X-AuditID: cbfee690-b7f266d00000287c-9b-52d651c9d47b
+	Wed, 15 Jan 2014 04:16:26 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-84-52d651e95f53
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
         cpgs@samsung.com, tomasz.figa@gmail.com,
         Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 5/8 v4] clk: samsung: exynos5250/5420: Add gate clock for SSS
- module
-Date: Wed, 15 Jan 2014 14:46:06 +0530
-Message-id: <1389777366-15147-1-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 6/8 v4] ARM: dts: exynos5250/5420: add dt node for sss module
+Date: Wed, 15 Jan 2014 14:46:37 +0530
+Message-id: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389354229-31936-1-git-send-email-ch.naveen@samsung.com>
-References: <1389354229-31936-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkTvdk4LUgg8VrTS1eHtK06H4lY9G7
+In-reply-to: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
+References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkSvdl4LUgg2NH2C1eHtK06H4lY9G7
 	4Cqbxf17P5ksLu+aw2Yx4/w+JotF2/4zW6za9YfR4uycQ0wOnB47Z91l99h2QNWjb8sqRo/P
-	m+QCWKK4bFJSczLLUov07RK4MlZP7GUs+Cde0fjkBlsDY7dIFyMnh4SAicSC/oOsELaYxIV7
-	69lAbCGBpYwSm755wtSs+bCIvYuRCyi+iFGiofc/lNPPJPFuxywWkCo2ATOJg4tWs4PYIgLO
-	Er+b17CCFDELHGCUWDf9FNBYDg5hgTCJ49vDQWpYBFQlHk89ALaNV8BV4tnSQ8wgJRICChJz
-	JtmAhDkF3CRe/t7BDHGQq8SLaTfZIA5axi4x6VwkxBgBiW+TD7FAtMpKbDrADFEiKXFwxQ2W
-	CYzCCxgZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIEhvnpf88m7GC8d8D6EGMy0LiJzFKi
-	yfnAOMkriTc0NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
-	BsZ5znMfVu75v2F32iP9FRdP9mzQtjEuV1f2d3NZwTL3k8PvN3sbdWaEzVRTvmRkd9nbvvZ6
-	As/5V+3cd1VX8fwyY+oX4XCNW3f96cY8ldt/TQ/79C79/3h5f0pgt6B8w8zv380SN6gWFL2f
-	yMsXeEjtMlNt0tWcgzqL3N61bNuiEcu7/MH6XZJKLMUZiYZazEXFiQC7A/mDiQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd2TgdeCDHbO1LV4eUjTovuVjEXv
-	gqtsFvfv/WSyuLxrDpvFjPP7mCwWbfvPbLFq1x9Gi7NzDjE5cHrsnHWX3WPbAVWPvi2rGD0+
-	b5ILYIlqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvM
-	AbpESaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixemIvY8E/8YrGJzfY
-	Ghi7RboYOTkkBEwk1nxYxA5hi0lcuLeerYuRi0NIYBGjREPvf3YIp59J4t2OWSwgVWwCZhIH
-	F60G6xARcJb43byGFaSIWeAAo8S66aeA2jk4hAXCJI5vDwepYRFQlXg89QAbiM0r4CrxbOkh
-	ZpASCQEFiTmTbEDCnAJuEi9/72AGsYWASl5Mu8k2gZF3ASPDKkbR1ILkguKk9FwjveLE3OLS
-	vHS95PzcTYzgSHomvYNxVYPFIUYBDkYlHt4f4VeDhFgTy4orcw8xSnAwK4nwSvlcCxLiTUms
-	rEotyo8vKs1JLT7EmAx01ERmKdHkfGCU55XEGxqbmJsam1qaWJiYWZImrCTOe7DVOlBIID2x
-	JDU7NbUgtQhmCxMHp1QDY38Nh6HXM7dFH/jT373u9Hx5tbq14+/r3kc+v87VOTj3GsuLeawN
-	c9eZtq3qn9K1RT3ix1rqr88zNI/7561lfEiTVX6RSJhY4U9eVibDxWscSg/OVZSalXHdqbVi
-	1o+3JrxH7nz1v8GqWWf21uaRS3Tdi+R+rVWzctY9vyM9R/OUw6UtYVufKbEUZyQaajEXFScC
-	AN+RAXLoAgAA
+	m+QCWKK4bFJSczLLUov07RK4Mi40rGMuOMdT8fj5HqYGxu1cXYycHBICJhJ/vk9gg7DFJC7c
+	Ww9kc3EICSxllPh0/jAbTNHpie2sEIlFjBL73y2AqupnkujeepEZpIpNwEzi4KLV7CC2iICz
+	xO/mNWAdzAIHGCXWTT8FNkpYwFdi2bbjYDaLgKrEx9ZTLCA2r4CrRPOGBYxdjBxA6xQk5kyy
+	AQlzCrhJbL38BGymEFDJnBNXmSEuWsYu8aSNE2KMgMS3yYdYIFplJTYdgCqRlDi44gbLBEbh
+	BYwMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECQ/30v2cTdzDeP2B9iDEZaNxEZinR5Hxg
+	rOSVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OY
+	zu1V79Wck7qe201ynLx13k/fDr3AO4bHtlTe4bqV+PjYnJ+T2uRX/5Cf5vllVtX+BYIPlR7r
+	X9q/RqTprdcey6lrKt+aBcqWP2bhldn22Xilxs0qwaXma3kSORh6tieVvTq0bQfXpMx9WT9N
+	VO+HW17ZMN+wO/7jssANzq/8IrLFbfdf26utxFKckWioxVxUnAgAG4NfsosCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd2XgdeCDE6wWrw8pGnR/UrGonfB
+	VTaL+/d+Mllc3jWHzWLG+X1MFou2/We2WLXrD6PF2TmHmBw4PXbOusvuse2AqkffllWMHp83
+	yQWwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA
+	HaKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzLjQsI654BxPxePne5ga
+	GLdzdTFyckgImEicntjOCmGLSVy4t56ti5GLQ0hgEaPE/ncLoJx+JonurReZQarYBMwkDi5a
+	zQ5iiwg4S/xuXsMKUsQscIBRYt30U2wgCWEBX4ll246D2SwCqhIfW0+xgNi8Aq4SzRsWMHYx
+	cgCtU5CYM8kGJMwp4Cax9fITsJlCQCVzTlxlnsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66
+	XnJ+7iZGcCQ9k9rBuLLB4hCjAAejEg/vj/CrQUKsiWXFlbmHGCU4mJVEeKV8rgUJ8aYkVlal
+	FuXHF5XmpBYfYkwGOmois5Rocj4wyvNK4g2NTcxNjU0tTSxMzCxJE1YS5z3Qah0oJJCeWJKa
+	nZpakFoEs4WJg1OqgbHSTfuyvNhSKemr7Ps+fg356SQwP7jK//bbvQ8luJfGHJpxafPfyBX+
+	eY+6lgSXZYUXLl3StLp933SOB4Yv57z/N/d1vZl/+lklKf+9+fPXrU4+HaYz2/yV6h4/BYVl
+	lxckLpKNWah0Xi4m/35vSF5S7OyNNX+COAuK3PSuLntiIqv5ekIz0wQlluKMREMt5qLiRAAp
+	J47e6AIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,84 +51,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds gating clock for SSS(Security SubSystem)
-module on Exynos5250/5420.
+This patch adds the device tree node for SSS module
+found on Exynos5420 and Exynos5250
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 TO: <linux-samsung-soc@vger.kernel.org>
-TO: Tomasz Figa <t.figa@samsung.com>
 CC: Kukjin Kim <kgene.kim@samsung.com>
 CC: <linux-crypto@vger.kernel.org>
 ---
 Changes since v3:
-1. Rebased on to https://git.kernel.org/pub/scm/linux/kernel/git/tfiga/samsung-clk.git
-2. Added new ID for SSS clock on Exynos5250, with Documentation and 
-3. Added gate clocks definitions for SSS on Exynos5420 and Exynos5250
+1. Modified the SSS clock ID as per dt-bindings for Exynos5250 in
+   samsung-clk.git tree.
 
- .../devicetree/bindings/clock/exynos5250-clock.txt |    1 +
- drivers/clk/samsung/clk-exynos5250.c               |    1 +
- drivers/clk/samsung/clk-exynos5420.c               |    4 ++++
- include/dt-bindings/clock/exynos5250.h             |    1 +
- 4 files changed, 7 insertions(+)
+ arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
+ arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-index 492ed09..a845fc6 100644
---- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-@@ -162,6 +162,7 @@ clock which they consume.
-   g2d			345
-   mdma0			346
-   smmu_mdma0		347
-+  sss			348
- 
- 
-    [Clock Muxes]
-diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-index ff4beeb..2c52fe1 100644
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -387,6 +387,7 @@ static struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
- 	 * CMU_ACP
- 	 */
- 	GATE(CLK_MDMA0, "mdma0", "div_aclk266", GATE_IP_ACP, 1, 0, 0),
-+	GATE(CLK_SSS, "sss", "div_aclk266", GATE_IP_ACP, 2, 0, 0),
- 	GATE(CLK_G2D, "g2d", "div_aclk200", GATE_IP_ACP, 3, 0, 0),
- 	GATE(CLK_SMMU_MDMA0, "smmu_mdma0", "div_aclk266", GATE_IP_ACP, 5, 0, 0),
- 
-diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
-index ab4f2f7..94915bb 100644
---- a/drivers/clk/samsung/clk-exynos5420.c
-+++ b/drivers/clk/samsung/clk-exynos5420.c
-@@ -26,6 +26,7 @@
- #define DIV_CPU1		0x504
- #define GATE_BUS_CPU		0x700
- #define GATE_SCLK_CPU		0x800
-+#define GATE_BUS_G2D		0x8700
- #define CPLL_LOCK		0x10020
- #define DPLL_LOCK		0x10030
- #define EPLL_LOCK		0x10040
-@@ -702,6 +703,9 @@ static struct samsung_gate_clock exynos5420_gate_clks[] __initdata = {
- 		0),
- 	GATE(CLK_SMMU_MIXER, "smmu_mixer", "aclk200_disp1", GATE_IP_DISP1, 9, 0,
- 		0),
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index c341e55..1d249df 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -704,4 +704,12 @@
+ 		io-channel-ranges;
+ 		status = "disabled";
+ 	};
 +
-+	/* SSS */
-+	GATE(CLK_SSS, "sss", "aclk266_g2d", GATE_BUS_G2D, 2, 0, 0),
++	sss@10830000 {
++		compatible = "samsung,exynos4210-secss";
++		reg = <0x10830000 0x10000>;
++		interrupts = <0 112 0>;
++		clocks = <&clock 348>;
++		clock-names = "secss";
++	};
  };
- 
- static struct samsung_pll_clock exynos5420_plls[nr_plls] __initdata = {
-diff --git a/include/dt-bindings/clock/exynos5250.h b/include/dt-bindings/clock/exynos5250.h
-index 922f2dc..f9b452b 100644
---- a/include/dt-bindings/clock/exynos5250.h
-+++ b/include/dt-bindings/clock/exynos5250.h
-@@ -150,6 +150,7 @@
- #define CLK_G2D			345
- #define CLK_MDMA0		346
- #define CLK_SMMU_MDMA0		347
-+#define CLK_SSS			348
- 
- /* mux clocks */
- #define CLK_MOUT_HDMI		1024
+diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+index 11dd202..56a3f3e 100644
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -652,4 +652,14 @@
+ 		clocks = <&clock 319>, <&clock 318>;
+ 		clock-names = "tmu_apbif", "tmu_triminfo_apbif";
+ 	};
++
++	sss@10830000 {
++		compatible = "samsung,exynos4210-secss";
++		reg = <0x10830000 0x10000>;
++		interrupts = <0 112 0>;
++		clocks = <&clock 471>;
++		clock-names = "secss";
++		samsung,power-domain = <&g2d_pd>;
++	};
++
+ };
 -- 
 1.7.9.5
 
