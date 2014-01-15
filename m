@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaAOBuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:50:10 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64925 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaAOBpn (ORCPT
+	id S1752072AbaAOBve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:51:34 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65242 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaAOBvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:45:43 -0500
-X-AuditID: 9c930197-b7b7cae000000e34-49-52d5e8442fcb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 02/17] tools lib traceevent: Check return value of realloc()
-Date: Wed, 15 Jan 2014 10:45:25 +0900
-Message-Id: <1389750340-15965-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
+	Tue, 14 Jan 2014 20:51:31 -0500
+X-AuditID: 9c93016f-b7b1aae000000f15-59-52d5e9a17084
+Date: Wed, 15 Jan 2014 10:52:17 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] zram: drop `init_done' struct zram member
+Message-ID: <20140115015217.GG1992@bbox>
+References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389692260-4421-2-git-send-email-sergey.senozhatsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389692260-4421-2-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If realloc() fails, it'll leak the buffer.  Also increate buffer size
-only if the allocation succeeded.
+On Tue, Jan 14, 2014 at 12:37:38PM +0300, Sergey Senozhatsky wrote:
+> Introduce init_done() helper function which allows us to drop
+> `init_done' struct zram member. init_done() uses the fact that
+> ->init_done == 1 equals to ->meta != NULL.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/trace-seq.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
-index 7f24e8989401..941d35d2cf87 100644
---- a/tools/lib/traceevent/trace-seq.c
-+++ b/tools/lib/traceevent/trace-seq.c
-@@ -81,11 +81,16 @@ void trace_seq_destroy(struct trace_seq *s)
- 
- static void expand_buffer(struct trace_seq *s)
- {
--	s->buffer_size += TRACE_SEQ_BUF_SIZE;
--	s->buffer = realloc(s->buffer, s->buffer_size);
--	if (WARN_ONCE(!s->buffer,
--		      "Can't allocate trace_seq buffer memory"))
-+	char *buf;
-+
-+	buf = realloc(s->buffer, s->buffer_size + TRACE_SEQ_BUF_SIZE);
-+	if (WARN_ONCE(!buf, "Can't allocate trace_seq buffer memory")) {
- 		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
-+		return;
-+	}
-+
-+	s->buffer = buf;
-+	s->buffer_size += TRACE_SEQ_BUF_SIZE;
- }
- 
- /**
 -- 
-1.7.11.7
-
+Kind regards,
+Minchan Kim
