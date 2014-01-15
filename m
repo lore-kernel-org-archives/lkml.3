@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaAORzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:55:54 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44873 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaAORzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:55:38 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 0/7] Support Krait CPU PMUs
-Date: Wed, 15 Jan 2014 09:55:28 -0800
-Message-Id: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+	id S1752878AbaAOR5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:57:06 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:46207 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780AbaAOR5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:57:04 -0500
+Date: Wed, 15 Jan 2014 12:56:55 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 1/3] memcg: notify userspace about OOM only when and action
+ is due
+Message-ID: <20140115175655.GJ6963@cmpxchg.org>
+References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
+ <1389798068-19885-2-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389798068-19885-2-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the Krait CPU PMUs. I split the main patch
-up into two parts: first the basic support that gets us just the architected
-events and second the full support patch that tackles the PMRESR interface.
+On Wed, Jan 15, 2014 at 04:01:06PM +0100, Michal Hocko wrote:
+> Userspace is currently notified about OOM condition after reclaim
+> fails to uncharge any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
+> This usually means that the memcg is really in troubles and an
+> OOM action (either done by userspace or kernel) has to be taken.
+> The kernel OOM killer however bails out and doesn't kill anything
+> if it sees an already dying/exiting task in a good hope a memory
+> will be released and the OOM situation will be resolved.
+> 
+> Therefore it makes sense to notify userspace only after really all
+> measures have been taken and an userspace action is required or
+> the kernel kills a task.
+> 
+> This patch is based on idea by David Rientjes to not notify
+> userspace when the current task is killed or in a late exiting.
+> The original patch, however, didn't handle in kernel oom killer
+> back offs which is implemtented by this patch.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Please note, this patchset relies on the per-cpu irq patch from Vinayak Kale,
-7f4a8e7b1943 (genirq: Add an accessor for IRQ_PER_CPU flag, 2013-12-04),
-that's sitting in linux-next. Patches are based on commit 21dea6695134 
-(ARM: msm_defconfig: Enable restart driver, 2013-12-20) in linux-next.
+OOM is a temporary state because any task can exit at a time that is
+not under our control and outside our knowledge.  That's why the OOM
+situation is defined by failing an allocation after a certain number
+of reclaim and charge attempts.
 
-Changes since v1:
- * Dropped sparse warning patch
- * Reworked percpu irq support patch to hide double pointers in dispatch func
- * Expanded on comments explaining Krait raw event syntax
- * Expanded on DT binding
- * Added qcom,no-pc-write property instead of using cpuid scheme
+As of right now, the OOM sampling window is MEM_CGROUP_RECLAIM_RETRIES
+loops of charge attempts and reclaim.  If a racing task is exiting and
+releasing memory during that window, the charge will succeed fine.  If
+the sampling window is too short in practice, it will have to be
+extended, preferrably through increasing MEM_CGROUP_RECLAIM_RETRIES.
 
-Stephen Boyd (7):
-  ARM: perf_event: Support percpu irqs for the CPU PMU
-  ARM: perf_event: Assign pdev pointer earlier for CPU PMUs
-  ARM: perf_event: Add basic support for Krait CPU PMUs
-  ARM: perf_event: Add hook for event index clearing
-  ARM: perf_event: Fully support Krait CPU PMU events
-  devicetree: bindings: Document Krait performance monitor units (PMU)
-  ARM: dts: msm: Add krait-pmu to platforms with Krait CPUs
+But a random task exiting a split second after the sampling window has
+closed will always be a possibility, regardless of how long it is.
+There is nothing to be gained from this layering violation and it's
+mind-boggling that you two still think this is a meaningful change.
 
- Documentation/devicetree/bindings/arm/pmu.txt |   9 +-
- arch/arm/boot/dts/qcom-msm8960-cdp.dts        |   6 +
- arch/arm/boot/dts/qcom-msm8974.dtsi           |   5 +
- arch/arm/include/asm/pmu.h                    |   1 +
- arch/arm/kernel/perf_event.c                  |  16 +-
- arch/arm/kernel/perf_event_cpu.c              | 103 +++--
- arch/arm/kernel/perf_event_v7.c               | 550 ++++++++++++++++++++++++++
- 7 files changed, 656 insertions(+), 34 deletions(-)
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
