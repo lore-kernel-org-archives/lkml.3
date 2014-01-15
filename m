@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaAOMQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 07:16:17 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51953 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaAOMQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 07:16:13 -0500
-Date: Wed, 15 Jan 2014 12:15:56 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Dave Young <dyoung@redhat.com>
-Cc: wim@iguana.be, dzickus@redhat.com, bhe@redhat.com, vgoyal@redhat.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: add a parameter for stop wdt before register
-Message-ID: <20140115121556.0407a099@alan.etchedpixels.co.uk>
-In-Reply-To: <20140115005931.GB23767@dhcp-16-126.nay.redhat.com>
-References: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
-	<20140114121639.77fe75ec@alan.etchedpixels.co.uk>
-	<20140115005931.GB23767@dhcp-16-126.nay.redhat.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752115AbaAOMRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 07:17:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46625 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053AbaAOMRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 07:17:31 -0500
+Date: Wed, 15 Jan 2014 13:17:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
+Message-ID: <20140115121728.GJ8782@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
+ <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
+ <20140114132727.GB32227@dhcp22.suse.cz>
+ <20140114142610.GF32227@dhcp22.suse.cz>
+ <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+ <20140115095829.GI8782@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115095829.GI8782@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> watchdog and crash dump really conflicts to some degree, from the watchdog
-> point of view it can reboot system whhen kdump kernel hangs. But from kdump
-> point of view it want ensure saving the vmcore for later debugging.
+On Wed 15-01-14 10:58:29, Michal Hocko wrote:
+> On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
+> > On Tue, 14 Jan 2014, Michal Hocko wrote:
+[...]
+> > > Ouch. And thinking about this shows that out_css_put is broken as well
+> > > for subtree walks (those that do not start at root_mem_cgroup level). We
+> > > need something like the the snippet bellow.
+> > 
+> > It's the out_css_put precedent that I was following in not incrementing
+> > for the root.  I think that's been discussed in the past, and rightly or
+> > wrongly we've concluded that the caller of mem_cgroup_iter() always has
+> > some hold on the root, which makes it safe to skip get/put on it here.
+> > No doubt one of those many short cuts to avoid memcg overhead when
+> > there's no memcg other than the root_mem_cgroup.
 > 
-> Maybe we can only select only one in this case.
+> That might be true but I guess it makes sense to get rid of some subtle
+> assumptions. Especially now that we have an effective per-cpu ref.
+> counting for css.
 
-You want to be able to make a decision at runtime which to use.
+OK, I finally found some time to think about this some more and it seems
+that the issue you have reported and the above issue are in fact
+identical. css reference counting optimization in fact also prevent from
+the endless loop you are seeing here because we simply didn't call
+css_tryget on the root...
 
-> > - if it can be stopped, you can open and stop it
-> 
-> For the last one since crashing happens we have no chance to open and stop.
+Therefore I guess we should reintroduce the optimization. What do you
+think about the following? This is on top of the current mmotm but it
+certainly needs backporting to the stable kernels.
+---
+>From 560924e86059947ab9418732cb329ad149dd8f6a Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 15 Jan 2014 11:52:09 +0100
+Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
 
-When you decide you need to set up to catch a core rather than just
-crash you can open and stop the watchdog (if supported), and you can then
-set up for a kdump and then at some point later if it crashes capture the
-dump.
+19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
+refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
+doesn't put a css reference on the root of the tree walk. The mentioned
+commit however dropped the root check when the css reference is taken
+while it keept the css_put optimization fora the root in place.
 
-As you say the two are basically incompatible models of operating, but
-that also means if you are about to take a dump you want ensure you will
-not be disturbed. So as far as I can see if you might need to take a
-dump, turn the watchdog off in advance. Worrying about it as you take a
-dump is too late.
+This means that css_put is not called and so css along with mem_cgroup
+and other cgroup internal object tied by css lifetime are never freed.
 
-Alan
+Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
+
+This patch also fixes issue reported by Hugh Dickins when
+mem_cgroup_iter might end up in an endless loop because a group which is
+under hard limit reclaim is removed in parallel with iteration.
+__mem_cgroup_iter_next would always return NULL because css_tryget on
+the root (reclaimed memcg) would fail and there are no other memcg in
+the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
+from the root and so the while (!memcg) loop would never terminate.
+as css_tryget is no longer called for the root of the tree walk this
+doesn't happen anymore.
+
+Cc: stable@vger.kernel.org # 3.10+
+Reported-and-debugged-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f016d26adfd3..dd3974c9f08d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1078,7 +1078,8 @@ skip_node:
+ 	 * protected by css_get and the tree walk is rcu safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
++		if ((next_css->flags & CSS_ONLINE) &&
++				(next_css == root || css_tryget(next_css)))
+ 			return mem_cgroup_from_css(next_css);
+ 		else {
+ 			prev_css = next_css;
+-- 
+1.8.5.2
+
+-- 
+Michal Hocko
+SUSE Labs
