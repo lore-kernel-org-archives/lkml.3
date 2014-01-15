@@ -1,161 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaAOJol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:44:41 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:22655 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaAOJoi (ORCPT
+	id S1752099AbaAOJpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:45:35 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44962 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaAOJpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:44:38 -0500
-Message-ID: <52D65880.10301@atmel.com>
-Date: Wed, 15 Jan 2014 10:44:32 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 04:45:32 -0500
+Date: Wed, 15 Jan 2014 10:45:28 +0100
+From: Alexander Aring <alex.aring@gmail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
+Message-ID: <20140115094527.GB12036@omega>
+References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>
+ <52D578A7.8020000@infradead.org>
+ <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-CC: <b.brezillon@overkiz.com>, <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 06/12] at91: smc: Adds helper functions to validate
- and clip the smc timings.
-References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com> <1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 13:31, Jean-Jacques Hiblot :
-> This patchs implememnts 2 functions to help with the configuration of a
-> chip-select's timing:
-> * sam9_smc_check_cs_configuration : checks that the values would fit in the
->   registers.
-> * sam9_smc_clip_cs_configuration : clip the values to their maximum.
+Hi Dmitry,
+
+On Wed, Jan 15, 2014 at 02:54:56AM +0400, Dmitry Eremin-Solenikov wrote:
+> Hello,
 > 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  arch/arm/mach-at91/include/mach/at91sam9_smc.h |  2 +
->  arch/arm/mach-at91/sam9_smc.c                  | 77 ++++++++++++++++++++++++++
->  2 files changed, 79 insertions(+)
 > 
-> diff --git a/arch/arm/mach-at91/include/mach/at91sam9_smc.h b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
-> index c3e29311..615ac56 100644
-> --- a/arch/arm/mach-at91/include/mach/at91sam9_smc.h
-> +++ b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
-> @@ -47,6 +47,8 @@ extern void sam9_smc_read_mode(int id, int cs, struct sam9_smc_config *config);
->  extern void sam9_smc_write_mode(int id, int cs, struct sam9_smc_config *config);
->  extern void sam9_smc_cs_read(void __iomem *, struct sam9_smc_config *config);
->  extern void sam9_smc_cs_configure(void __iomem *, struct sam9_smc_config *cfg);
-> +extern int sam9_smc_check_cs_configuration(struct sam9_smc_config *config);
-> +extern void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config);
->  #endif
->  
->  #define AT91_SMC_SETUP		0x00				/* Setup Register for CS n */
-> diff --git a/arch/arm/mach-at91/sam9_smc.c b/arch/arm/mach-at91/sam9_smc.c
-> index d7a6156..fe3c492 100644
-> --- a/arch/arm/mach-at91/sam9_smc.c
-> +++ b/arch/arm/mach-at91/sam9_smc.c
-> @@ -23,6 +23,83 @@
->  
->  static void __iomem *smc_base_addr[2];
->  
-> +static int count_trailing_zeroes(u32 x)
-
-Don't we have something generic for this?
-
-Check include/asm-generic/bitops/count_zeros.h
-
-> +{
-> +	int ret = 0;
-> +	if (!(x & 0xFFFF)) {
-> +		ret += 16;
-> +		x = x >> 16;
-> +	}
-> +	if (!(x & 0xFF)) {
-> +		ret += 8;
-> +		x = x >> 8;
-> +	}
-> +	if (!(x & 0xF)) {
-> +		ret += 4;
-> +		x = x >> 4;
-> +	}
-> +	if (!(x & 0x3)) {
-> +		ret += 2;
-> +		x = x >> 2;
-> +	}
-> +	if (!(x & 0x1)) {
-> +		ret += 1;
-> +		x = x >> 1;
-> +	}
-> +	if (!(x & 0x1))
-> +		ret += 1;
-> +
-> +	return ret;
-> +}
-> +
-> +
-> +#define __CHECK_CFG(config, x, y)  do {\
-> +	if (x##_(config->y) > x) {\
-> +		pr_debug("error: %s (0x%x) is out of range\n", #y,\
-> +			config->y >> count_trailing_zeroes(x));\
-> +		return -EINVAL;\
-> +		} \
-> +	} while (0)
-
-I do not like the use of macro for this. You can convert them to
-functions and it would increase readability. I am pretty confident that
-gcc will optimize it so that is won't impact performance.
-
-> +int sam9_smc_check_cs_configuration(struct sam9_smc_config *config)
-> +{
-> +	__CHECK_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
-> +	__CHECK_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
-> +	__CHECK_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
-> +	__CHECK_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
-> +	__CHECK_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
-> +	__CHECK_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
-> +	__CHECK_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
-> +	__CHECK_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
-> +	__CHECK_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
-> +	__CHECK_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
-> +	__CHECK_CFG(config, AT91_SMC_TDF, tdf_cycles);
-> +	return 0;
-> +}
-> +
-> +#define __CLIP_CFG(config, x, y)  do {\
-> +	if (x##_(config->y) > x) {\
-> +		config->y = x >> count_trailing_zeroes(x);\
-> +		pr_debug("clipping %s to %d\n", #y, config->y);\
-> +		} \
-> +	} while (0)
-
-Ditto.
-
-> +
-> +void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config)
-> +{
-> +	__CLIP_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
-> +	__CLIP_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
-> +	__CLIP_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
-> +	__CLIP_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
-> +	__CLIP_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
-> +	__CLIP_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
-> +	__CLIP_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
-> +	__CLIP_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
-> +	__CLIP_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
-> +	__CLIP_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
-> +	__CLIP_CFG(config, AT91_SMC_TDF, tdf_cycles);
-> +
-> +}
-> +
->  static void sam9_smc_cs_write_mode(void __iomem *base,
->  					struct sam9_smc_config *config)
->  {
+> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> >
+> > On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
+> > > Hi all,
+> > >
+> > > This tree fails (more than usual) the powerpc allyesconfig build.
+> > >
+> > > Changes since 20140113:
+> > >
+> >
+> >
+> > on i386:
+> >
+> > net/built-in.o: In function `header_create':
+> > 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
+> > net/built-in.o: In function `bt_6lowpan_recv':
+> > (.text+0x166b3c): undefined reference to `lowpan_process_data'
 > 
+> Ah, nice Makefile hack there.
+> David, Marcel, could you please consider the attached patch.
 
+oops, thanks for fixing this fast!
 
--- 
-Nicolas Ferre
+- Alex
