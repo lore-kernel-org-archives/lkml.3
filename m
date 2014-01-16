@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaAPTwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:52:20 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:17412 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaAPTwR (ORCPT
+	id S1751775AbaAPUO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:14:27 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33718 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaAPUOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:52:17 -0500
-Date: Thu, 16 Jan 2014 13:51:12 -0600
-From: Mike Miller <mike.miller@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, thenzl@redhat.com,
-        hare@suse.de
-Subject: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-Message-ID: <20140116195112.GA9658@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Thu, 16 Jan 2014 15:14:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140116195115.GD4127@katana>
+References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
+	<1382326010-4554-3-git-send-email-bleung@chromium.org>
+	<20131021065804.GX3521@intel.com>
+	<CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
+	<20131114180538.GK11022@katana>
+	<CANLzEksP1nRfBaQ3-sSouOYL4C+oLKiE75eHfFdEzLmrQKn3dQ@mail.gmail.com>
+	<20131126130959.GI7427@katana>
+	<20140103155217.GG7132@katana>
+	<CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
+	<20140116195115.GD4127@katana>
+Date: Thu, 16 Jan 2014 12:14:22 -0800
+X-Google-Sender-Auth: QpVmCAuwqf0zvPM-np31o1LDd_o
+Message-ID: <CANLzEksAQmzTCTTm-Tx198i7+sDmast5Lcn6fvYZddwNbwvLkQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
+From: Benson Leung <bleung@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, khali@linux-fr.org,
+        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Miller <mike.miller@hp.com>
+Hi Wolfram,
 
-This patch has every ID we have in our svn repository. Some controllers were
-cancelled, others added, now the cancelled ones are back. Apparently the
-debate rages on about which controllers are cancelled, which are not,
-whatever. Please accept this patch. It is dependent upon the patches I sent
-yesterday. 
-This patch made/tested against kernel-3.13.0-rc8
+On Thu, Jan 16, 2014 at 11:51 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>
+> > Our devices and our platforms have some other requirements which
+> > turned me away from using i2c_register_board_info.
+>
+> Okay, so I'll drop these patches.
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
----
- drivers/scsi/hpsa.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 348b207..3affec5 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -100,6 +100,7 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
-@@ -108,15 +109,19 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x192A},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BF},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C0},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C2},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C6},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CA},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CB},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CC},
-@@ -149,22 +154,29 @@ static struct board_type products[] = {
- 	{0x3354103C, "Smart Array P420i", &SA5_access},
- 	{0x3355103C, "Smart Array P220i", &SA5_access},
- 	{0x3356103C, "Smart Array P721m", &SA5_access},
-+	{0x1920103C, "Smart Array P430i", &SA5_access},
- 	{0x1921103C, "Smart Array P830i", &SA5_access},
- 	{0x1922103C, "Smart Array P430", &SA5_access},
- 	{0x1923103C, "Smart Array P431", &SA5_access},
- 	{0x1924103C, "Smart Array P830", &SA5_access},
-+	{0x1925103C, "Smart Array P831", &SA5_access},
- 	{0x1926103C, "Smart Array P731m", &SA5_access},
- 	{0x1928103C, "Smart Array P230i", &SA5_access},
- 	{0x1929103C, "Smart Array P530", &SA5_access},
-+	{0x192A103C, "Smart Array P531", &SA5_access},
- 	{0x21BD103C, "Smart Array", &SA5_access},
- 	{0x21BE103C, "Smart Array", &SA5_access},
- 	{0x21BF103C, "Smart Array", &SA5_access},
- 	{0x21C0103C, "Smart Array", &SA5_access},
-+	{0x21C1103C, "Smart Array", &SA5_access},
- 	{0x21C2103C, "Smart Array", &SA5_access},
- 	{0x21C3103C, "Smart Array", &SA5_access},
-+	{0x21C4103C, "Smart Array", &SA5_access},
- 	{0x21C5103C, "Smart Array", &SA5_access},
-+	{0x21C6103C, "Smart Array", &SA5_access},
- 	{0x21C7103C, "Smart Array", &SA5_access},
- 	{0x21C8103C, "Smart Array", &SA5_access},
-+	{0x21C9103C, "Smart Array", &SA5_access},
- 	{0x21CA103C, "Smart Array", &SA5_access},
- 	{0x21CB103C, "Smart Array", &SA5_access},
- 	{0x21CC103C, "Smart Array", &SA5_access},
+Sorry if I was unclear, but I am not able to use
+i2c_register_board_info for these devices because of the requirement
+to use "probe."
+
+Currently, I am doing explicit instantiation of devices using
+i2c_new_probed_device.
+
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
