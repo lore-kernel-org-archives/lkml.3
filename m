@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaAPSFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:05:42 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64584 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaAPSFd (ORCPT
+	id S1751272AbaAPSJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:09:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44118 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaAPSJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:05:33 -0500
-Date: Thu, 16 Jan 2014 10:05:32 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Kernel stack overflows due to  "powerpc: Remove ksp_limit on ppc64"
- with v3.13-rc8 on ppc32 (P2020)
-Message-ID: <20140116180532.GA1616@roeck-us.net>
+	Thu, 16 Jan 2014 13:09:57 -0500
+Date: Thu, 16 Jan 2014 19:09:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
+ checks)
+Message-ID: <20140116180944.GC9655@laptop.programming.kicks-ass.net>
+References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
+ <20140109163120.GA8038@redhat.com>
+ <20140109170823.GF7572@laptop.programming.kicks-ass.net>
+ <20140109175448.GA17673@redhat.com>
+ <20140112205814.GP7572@laptop.programming.kicks-ass.net>
+ <20140113160705.GA7616@redhat.com>
+ <20140116174348.GA17614@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140116174348.GA17614@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, Jan 16, 2014 at 06:43:48PM +0100, Oleg Nesterov wrote:
+> But with or without this change the following code
+> 
+> 		static DEFINE_MUTEX(m1);
+> 		static DEFINE_MUTEX(mx);
+> 
+> 		lockdep_set_novalidate_class(&mx);
+> 
+> 		// m1 -> mx
+> 		mutex_lock(&m1);
+> 		mutex_lock(&mx);
+> 		mutex_unlock(&mx);
+> 		mutex_unlock(&m1);
+> 
+> 		// mx -> m1 ; should trigger the warning ???
+> 		mutex_lock(&mx);
+> 		mutex_lock(&m1);
+> 		mutex_unlock(&m1);
+> 		mutex_unlock(&mx);
+> 
+> doesn't trigger the warning too. This is correct because
+> lockdep_set_novalidate_class() means, well, no-validate.
+> The question is: do we really want to avoid all validations?
 
-I am getting kernel stack overflows with v3.13-rc8 on a system with P2020 CPU.
-The kernel is patched for the target, but I don't think that is related.
-Stack overflows are in different areas, but always in calls from __do_softirq.
+Good question.
 
-Crashes happen reliably either during boot or if I put any kind of load
-onto the system.
+> Why lockdep_set_novalidate_class() was added? Unlees I missed
+> something the problem is that (say) __driver_attach() can take
+> the "same" lock twice, drivers/base/ lacks annotations.
 
-Example:
+Indeed, the driver model locking always slips my mind but yes its
+creative. Alan Stern seems to have a good grasp on it though.
 
-Kernel stack overflow in process eb3e5a00, r1=eb79df90
-CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
-task: eb3e5a00 ti: c0616000 task.ti: ef440000
-NIP: c003a420 LR: c003a410 CTR: c0017518
-REGS: eb79dee0 TRAP: 0901   Not tainted (3.13.0-rc8-juniper-00146-g19eca00)
-MSR: 00029000 <CE,EE,ME>  CR: 24008444  XER: 00000000
-GPR00: c003a410 eb79df90 eb3e5a00 00000000 eb05d900 00000001 65d87646 00000000
-GPR08: 00000000 020b8000 00000000 00000000 44008442
-NIP [c003a420] __do_softirq+0x94/0x1ec
-LR [c003a410] __do_softirq+0x84/0x1ec
-Call Trace:
-[eb79df90] [c003a410] __do_softirq+0x84/0x1ec (unreliable)
-[eb79dfe0] [c003a970] irq_exit+0xbc/0xc8
-[eb79dff0] [c000cc1c] call_do_irq+0x24/0x3c
-[ef441f20] [c00046a8] do_IRQ+0x8c/0xf8
-[ef441f40] [c000e7f4] ret_from_except+0x0/0x18
---- Exception: 501 at 0xfcda524
-    LR = 0x10024900
-Instruction dump:
-7c781b78 3b40000a 3a73b040 543c0024 3a800000 3b3913a0 7ef5bb78 48201bf9
-5463103a 7d3b182e 7e89b92e 7c008146 <3ba00000> 7e7e9b78 48000014 57fff87f
-Kernel panic - not syncing: kernel stack overflow
-CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
-Call Trace:
-Rebooting in 180 seconds..
+> Perhaps we should change the meaning of lockdep_set_novalidate_class?
+> (perhaps with rename). What do you think about the patch below?
+> 
+> With this patch __lockdep_no_validate__ means "automatically nested",
 
-Reverting the following commit fixes the problem.
+Yes, I suppose that might work, it would allow some validation.
 
-cbc9565ee8 "powerpc: Remove ksp_limit on ppc64"
+> although I have to remind I can hardly understand the code I am
+> trying to change ;)
 
-Should I submit a patch reverting this commit, or is there a better way to fix
-the problem on short notice (given that 3.13 is close) ?
-
-Thanks,
-Guenter
+You don't seem to be doing too badly ;-)
