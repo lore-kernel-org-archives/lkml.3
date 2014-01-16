@@ -1,228 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaAPCSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:18:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34959 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaAPCSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:18:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
-   d="scan'208";a="459567862"
-Date: Thu, 16 Jan 2014 10:18:11 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        lkp@linux.intel.com
-Subject: Re: [sched] 73628fba4: +69% context switches
-Message-ID: <20140116021811.GA17073@localhost>
-References: <20140111101956.GA11150@localhost>
- <52D3804A.8060700@linaro.org>
- <20140116012301.GA2535@localhost>
- <52D73D9E.8090402@linaro.org>
+	id S1752298AbaAPCUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:20:55 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38706 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaAPCUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 21:20:51 -0500
+Message-ID: <52D74126.6050602@linux.vnet.ibm.com>
+Date: Thu, 16 Jan 2014 07:47:10 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D73D9E.8090402@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
+        agraf@suse.de, paulus@samba.org, mingo@kernel.org, mikey@neuling.org,
+        shangw@linux.vnet.ibm.com, rafael.j.wysocki@intel.com,
+        galak@kernel.crashing.org, benh@kernel.crashing.org,
+        paulmck@linux.vnet.ibm.com, arnd@arndb.de, linux-pm@vger.kernel.org,
+        rostedt@goodmis.org, michael@ellerman.id.au, john.stultz@linaro.org,
+        anton@samba.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V5 0/8] cpuidle/ppc: Enable deep idle states on PowerNV
+References: <20140115080555.20446.27238.stgit@preeti.in.ibm.com> <52D6A971.4040301@windriver.com>
+In-Reply-To: <52D6A971.4040301@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011602-0928-0000-0000-000005AE28FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 10:02:06AM +0800, Alex Shi wrote:
-> On 01/16/2014 09:23 AM, Fengguang Wu wrote:
-> > On Mon, Jan 13, 2014 at 01:57:30PM +0800, Alex Shi wrote:
-> >> On 01/11/2014 06:19 PM, Fengguang Wu wrote:
-> >>> Alex,
-> >>>
-> >>> FYI, we find much increased interrupts and context switches introduced
-> >>> by commit 73628fba4 ("sched: unify imbalance bias for target group")
-> >>> in your noload branch:
-> >>
-> >> Many thanks for the generous and quick testing! :)
-> >>
-> >> few questions for the results and give a testing patch for try. it also push on github. 
-> >>
-> >> What's about the aim7 shell_rtns_1 and shared throughput?
-> > 
-> > The throughputs remain the same.  We only report changed numbers.
+Hi Paul,
+
+On 01/15/2014 08:59 PM, Paul Gortmaker wrote:
+> On 14-01-15 03:07 AM, Preeti U Murthy wrote:
 > 
-> So many interrupt increase doesn't cause any performance change, that
-> make more doubt of data correction.
-> Could you like to give the typical vmstat output? Specially the
-> sys/us/wa/id time percentages.
+> [...]
+> 
+>>
+>> This patchset is based on mainline commit-id:8ae516aa8b8161254d3,  and the
+> 
+> I figured I'd give this a quick sanity build test for a few
+> configs, but v3.13-rc1-141-g8ae516aa8b81 seems too old; Ben's
+> ppc next branch is at v3.13-rc1-160-gfac515db4520 and it fails:
+> 
+> -------
+> $ git am ppc-idle
+> Applying: powerpc: Free up the slot of PPC_MSG_CALL_FUNC_SINGLE IPI message
+> Applying: powerpc: Implement tick broadcast IPI as a fixed IPI message
+> Applying: cpuidle/ppc: Split timer_interrupt() into timer handling and interrupt handling routines
+> error: patch failed: arch/powerpc/kernel/time.c:510
+> error: arch/powerpc/kernel/time.c: patch does not apply
+> Patch failed at 0003 cpuidle/ppc: Split timer_interrupt() into timer handling and interrupt handling routines
+> The copy of the patch that failed is found in:
+>    /home/paul/git/linux-head/.git/rebase-apply/patch
+> When you have resolved this problem, run "git am --continue".
+> If you prefer to skip this patch, run "git am --skip" instead.
+> To restore the original branch and stop patching, run "git am --abort".
+> $ dry-run
+> patching file arch/powerpc/kernel/time.c
+> Hunk #3 FAILED at 544.
+> Hunk #4 FAILED at 554.
+> Hunk #5 succeeded at 862 (offset 12 lines).
+> 2 out of 5 hunks FAILED -- saving rejects to file arch/powerpc/kernel/time.c.rej
+> --------
+> 
+> It appears to conflict with:
+> 
+> commit 0215f7d8c53fb192cd4491ede0ece5cca6b5db57
+> Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date:   Tue Jan 14 17:11:39 2014 +1100
+> 
+>     powerpc: Fix races with irq_work
+> 
+> 
 
-wfg@bee /lkp/result/lkp-ne04/micro/aim7/shell_rtns_1/x86_64-lkp/91dd08bd65052b483f96f75abcc93f2f1b67a62c/1% cat vmstat
-1389799131.230965 procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
-1389799131.231067  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
-1389799131.231088  1  0      0 11192512      0 850368    0    0    10     0   74  109  0  2 97  0
-1389799132.202831  2  0      0 11088468      0 851636    0    0     0     0  651 4293  1  2 98  0
-1389799133.203196  1  0      0 10954680      0 851672    0    0     0     0  277 2796  0  1 99  0
-1389799134.203607  0  0      0 10954116      0 851692    0    0     0     0  193  493  0  0 100  0
-1389799135.204022  0  0      0 10954964      0 851692    0    0     0     0  203  541  0  0 100  0
-1389799136.204447  0  0      0 10955656      0 851756    0    0     0     0  210  513  0  0 100  0
-1389799137.204838  0  0      0 10955564      0 851776    0    0     0     0  219  552  0  0 100  0
-1389799138.205241  0  0      0 10956100      0 851776    0    0     0     0  204  529  0  0 100  0
-1389799139.205667  0  0      0 10956400      0 851776    0    0     0     0  197  547  0  0 100  0
-1389799140.206104  1  0      0 10956684      0 851844    0    0     0     0  222  539  0  0 100  0
-1389799141.206506  0  0      0 10956412      0 851844    0    0     0     0  205  521  0  0 100  0
-1389799142.206932  0  0      0 10956676      0 851892    0    0     0     0  213  532  0  0 100  0
-1389799143.207206 1912 26      0 10354424      0 851960    0    0     0     0 8849 31376 28 67  6  0
-1389799144.207531 1515 35      0 10318484      0 852092    0    0     0     0 7670 28332 31 69  0  0
-1389799145.207852 1678 26      0 10303276      0 852196    0    0     0     0 7596 27208 31 69  0  0
-1389799146.208176 1981 43      0 10264672      0 852284    0    0     0     0 7478 27313 31 69  0  0
-1389799147.208500 1977 35      0 10299316      0 852380    0    0     0     0 8505 29552 30 70  0  0
-1389799148.208820 1800 48      0 10300820      0 852500    0    0     0     0 8506 29456 31 69  0  0
-1389799149.209144 1983 40      0 10310796      0 852600    0    0     0     0 8023 28719 29 71  0  0
-1389799150.209466 1816 28      0 10267816      0 852676    0    0     0     0 7027 26286 32 68  0  0
-1389799151.209784 1329 31      0 10193448      0 852780    0    0     0     0 8564 29613 30 70  0  0
-1389799152.210105 1722 28      0 10193404      0 852896    0    0     0     0 8993 29358 30 70  0  0
-1389799153.210427 1762 26      0 10338320      0 852976    0    0     0     0 9391 32241 30 71  0  0
-1389799154.210751 1509 36      0 10203556      0 853100    0    0     0     0 10013 32206 30 70  0  0
-1389799155.211073 1205 25      0 10229852      0 853212    0    0     0     0 9744 32089 30 70  0  0
-1389799156.211398 1982 32      0 10329704      0 853288    0    0     0     0 8437 29161 29 71  0  0
-1389799157.211718 1756 31      0 10250128      0 853384    0    0     0     0 7476 27144 30 70  0  0
-1389799158.212032 1970 27      0 10358368      0 853496    0    0     0     0 7506 27875 30 70  0  0
-1389799159.212365 1992 13      0 10306128      0 853604    0    0     0     0 8105 28380 31 69  0  0
-1389799160.212681 1986 36      0 10243380      0 853692    0    0     0     0 8404 29428 30 70  0  0
-1389799161.213004 1724 32      0 10265420      0 853760    0    0     0     0 7844 28716 29 71  0  0
-1389799162.213337 1973 24      0 10364640      0 853876    0    0     0     0 7558 27253 31 69  0  0
-1389799163.213660 1936 38      0 10236308      0 854008    0    0     0     0 7879 28209 31 69  0  0
-1389799164.213988 1810 30      0 10265044      0 854076    0    0     0     0 9246 30739 31 69  0  0
-1389799165.214307 1965 29      0 10344108      0 854184    0    0     0     0 9135 31255 30 70  0  0
-1389799166.214628 1978 33      0 10344384      0 854300    0    0     0     0 8292 29067 29 71  0  0
-1389799167.214938 1969 30      0 10289112      0 854400    0    0     0     0 6936 26226 29 71  0  0
-1389799168.215253 958 12      0 10140312      0 854472    0    0     0     0 8210 29214 29 71  0  0
-1389799169.215572 1408 35      0 10137160      0 854596    0    0     0     0 9562 31072 30 70  0  0
-1389799170.215888 1218 13      0 10312800      0 854708    0    0     0     0 9135 31609 30 70  0  0
-1389799171.217063 1232 20      0 10258360      0 854792    0    0     0     0 9021 30519 31 69  0  0
-1389799172.217385 1988 25      0 10335908      0 854876    0    0     0     0 7756 27369 30 70  0  0
-1389799173.217705 1688 16      0 10369428      0 855004    0    0     0     0 8611 30032 30 70  0  0
-1389799174.218089 1981 27      0 10246728      0 855112    0    0     0     0 7634 26809 31 69  0  0
-1389799175.218408 1829 45      0 10230396      0 855192    0    0     0     0 8219 29337 30 70  0  0
-1389799176.218738 876 12      0 10146360      0 855268    0    0     0     0 8059 29358 31 69  0  0
-1389799177.219060 1973 44      0 10284400      0 855412    0    0     0     0 9803 31449 29 71  0  0
-1389799178.219380 1794 31      0 10173544      0 855492    0    0     0     0 15388 27535 31 69  0  0
-1389799179.219704 1566 11      0 10245204      0 855584    0    0     0     0 10387 33849 30 70  0  0
-1389799180.220096 1832 25      0 10329192      0 855692    0    0     0     0 8143 28547 31 69  0  0
-1389799181.220418 1640 33      0 10088520      0 855804    0    0     0     0 7216 26359 31 69  0  0
-1389799182.220738 1819 23      0 10222344      0 855884    0    0     0     0 8654 29991 31 69  0  0
-1389799183.221059 1659 20      0 10271384      0 855976    0    0     0     0 8671 30317 30 70  0  0
-1389799184.221379 1320 41      0 10110368      0 856108    0    0     0     0 7696 27189 28 72  0  0
-1389799185.221692 1972 22      0 10356188      0 856200    0    0     0     0 8966 30778 30 70  0  0
-1389799186.222098 1795 13      0 10237712      0 856284    0    0     0     0 8074 28370 31 69  0  0
-1389799187.222344 1990 20      0 10407224      0 856372    0    0     0     0 8044 29019 31 69  0  0
-1389799188.222960 1321  6      0 10124124      0 856504    0    0     0     0 7736 27526 30 70  0  0
-1389799189.222988 1804 33      0 10300448      0 856604    0    0     0     0 8580 29567 30 70  0  0
-1389799190.223321 1856 13      0 10313708      0 856676    0    0     0     0 8082 28645 31 69  0  0
-1389799191.223652 1379 14      0 10114468      0 856800    0    0     0     0 8046 27986 30 70  0  0
-1389799192.224033 1261  6      0 10161416      0 856908    0    0     0     0 9784 32060 30 70  0  0
-1389799193.224349 1976 34      0 10328644      0 856988    0    0     0     0 8229 29247 32 68  0  0
-1389799194.224668 1621 18      0 10257544      0 857088    0    0     0     0 7172 26597 31 69  0  0
-1389799195.225020 1245 11      0 10208652      0 857208    0    0     0     0 7717 27843 31 69  0  0
-1389799196.225342 1982 36      0 10255616      0 857304    0    0     0     0 9333 30885 31 69  0  0
-1389799197.225669 1707 19      0 10245296      0 857384    0    0     0     0 7589 27529 31 69  0  0
-1389799198.225999 1644 26      0 10182096      0 857468    0    0     0     0 8169 28721 31 69  0  0
-1389799199.228106 1727 49      0 10031600      0 857604    0    0     0     0 7981 28096 30 70  0  0
-1389799200.226631 1316 17      0 10179548      0 857696    0    0     0     0 9669 32554 31 69  0  0
-1389799201.226977 1953 28      0 10296580      0 857780    0    0     0     0 9051 30902 32 68  0  0
-1389799202.227297 1756 16      0 10376204      0 857876    0    0     0     0 8484 29803 30 70  0  0
-1389799203.227616 1810 18      0 10308232      0 858004    0    0     0     0 7987 28169 31 69  0  0
-1389799204.227940 1974 33      0 10271384      0 858096    0    0     0     0 8051 28489 31 69  0  0
-1389799205.228265 1456 15      0 10377436      0 858176    0    0     0     0 8119 29356 30 70  0  0
-1389799206.228586 1486 27      0 10507456      0 858300    0    0     0     0 7263 26390 31 69  0  0
-1389799207.228910 636 10      0 10845116      0 858424    0    0     0     0 7603 27877 30 70  0  0
-1389799208.229279  0  1      0 11144480      0 857444    0    0     0     0 12084 10976 11 24 61  4
-1389799209.229695  0  0      0 11156876      0 857480    0    0     0     0 12877  879  0  0 88 12
+Thanks for the build test.I will base it on the mainline at the latest
+commit as well as on Ben's tree and send out this patchset.
 
-wfg@bee /lkp/result/lkp-ne04/micro/aim7/shell_rtns_1/x86_64-lkp/v3.13-rc8/1% cat vmstat
-1389532389.340878 procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
-1389532389.340981  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
-1389532389.341018  1  0      0 11194112      0 850032    0    0    11     0   73  114  0  2 97  0
-1389532390.311886  2  0      0 11086632      0 851316    0    0     0     0  602 4353  1  1 98  0
-1389532391.312269  1  0      0 10957220      0 851640    0    0     0     0  250 2794  0  1 99  0
-1389532392.312662  0  0      0 10956344      0 851648    0    0     0     0  201  488  0  0 100  0
-1389532393.313071  0  0      0 10956192      0 851664    0    0     0     0  191  492  0  0 100  0
-1389532394.313530  0  0      0 10955948      0 851728    0    0     0     0  200  535  0  0 100  0
-1389532395.313928  0  0      0 10956636      0 851764    0    0     0     0  213  514  0  0 100  0
-1389532396.314378  0  0      0 10957468      0 851784    0    0     0     0  202  523  0  0 100  0
-1389532397.314827  0  0      0 10957268      0 851816    0    0     0     0  178  506  0  0 100  0
-1389532398.315244  0  0      0 10957696      0 851816    0    0     0     0  225  538  0  0 100  0
-1389532399.315693  0  0      0 10957864      0 851884    0    0     0     0  216  521  0  0 100  0
-1389532400.316139  0  0      0 10957416      0 851884    0    0     0     0  218  520  0  0 100  0
-1389532401.316410 1704 43      0 10258032      0 851904    0    0     0     0 4279 28293 27 67  6  0
-1389532402.318320 1793 14      0 10430624      0 851980    0    0     0     0 4222 25462 30 70  0  0
-1389532403.318634 1968 36      0 10305472      0 852116    0    0     0     0 4187 24538 30 70  0  0
-1389532404.318940 1929 49      0 10354720      0 852220    0    0     0     0 4150 24892 29 71  0  0
-1389532405.319257 1991 32      0 10321016      0 852288    0    0     0     0 4127 24437 30 70  0  0
-1389532406.319576 1971 22      0 10329164      0 852412    0    0     0     0 4153 24855 29 71  0  0
-1389532407.319885 1973 27      0 10349624      0 852504    0    0     0     0 4138 24729 31 69  0  0
-1389532408.320208 1738 25      0 10196808      0 852604    0    0     0     0 4159 23941 30 70  0  0
-1389532409.320586 1410 34      0 10313744      0 852676    0    0     0     0 4238 27216 31 69  0  0
-1389532410.320896 1972 26      0 10373828      0 852808    0    0     0     0 4205 24042 31 69  0  0
-1389532411.321213 1962 45      0 10281808      0 852908    0    0     0     0 4144 24928 30 70  0  0
-1389532412.321551 1980 23      0 10385052      0 852980    0    0     0     0 4152 24672 31 69  0  0
-1389532413.321872 1986 36      0 10271228      0 853068    0    0     0     0 4161 24411 31 69  0  0
-1389532414.322188 1954 30      0 10379288      0 853196    0    0     0     0 4142 25049 29 71  0  0
-1389532415.322493 1994 30      0 10297044      0 853284    0    0     0     0 4131 24370 31 69  0  0
-1389532416.322804 1979 30      0 10351020      0 853392    0    0     0     0 4143 25007 29 71  0  0
-1389532417.323118 1962 34      0 10325140      0 853476    0    0     0     0 4121 24227 31 69  0  0
-1389532418.323419 1771 29      0 10242912      0 853568    0    0     0     0 4169 24515 32 69  0  0
-1389532419.323736 1953 26      0 10363880      0 853696    0    0     0     0 4154 25473 29 71  0  0
-1389532420.324054 1981 24      0 10300608      0 853772    0    0     0     0 4156 24419 30 70  0  0
-1389532421.324365 1984 30      0 10329044      0 853872    0    0     0     0 4214 24887 30 70  0  0
-1389532422.324680 1977 24      0 10339236      0 853968    0    0     0     0 4158 24516 31 69  0  0
-1389532423.324999 1214 25      0 10195964      0 854104    0    0     0     0 4149 25003 30 70  0  0
-1389532424.325315 1918 34      0 10385636      0 854164    0    0     0     0 4267 25195 31 69  0  0
-1389532425.325632 1965 32      0 10287896      0 854248    0    0     0     0 4144 24609 30 70  0  0
-1389532426.325987 1769 30      0 10334972      0 854356    0    0     0     0 4203 25440 31 69  0  0
-1389532427.326300 1168 25      0 10273776      0 854480    0    0     0     0 4395 27553 30 70  0  0
-1389532428.326615 1781 24      0 10333020      0 854556    0    0     0     0 4266 25006 31 69  0  0
-1389532429.326934 1991 31      0 10320876      0 854652    0    0     0     0 4161 24652 29 71  0  0
-1389532430.327248 1944 37      0 10295652      0 854760    0    0     0     0 4192 25078 29 71  0  0
-1389532431.327558 1945 30      0 10376188      0 854868    0    0     0     0 4133 25084 31 70  0  0
-1389532432.327874 1980 29      0 10314412      0 854952    0    0     0     0 4141 24534 30 70  0  0
-1389532433.328178 1963 30      0 10352224      0 855044    0    0     0     0 4135 24935 31 69  0  0
-1389532434.328500 1990 31      0 10331884      0 855160    0    0     0     0 4158 24668 30 70  0  0
-1389532435.328815 1949 33      0 10348560      0 855260    0    0     0     0 4149 24665 30 70  0  0
-1389532436.329125 1950 28      0 10332712      0 855344    0    0     0     0 4159 24642 31 69  0  0
-1389532437.329437 1975 36      0 10349380      0 855424    0    0     0     0 4143 24827 30 70  0  0
-1389532438.329758 1972 26      0 10314112      0 855544    0    0     0     0 4129 24529 30 70  0  0
-1389532439.330075 1940 28      0 10353476      0 855664    0    0     0     0 4159 24677 30 70  0  0
-1389532440.330379 1848 38      0 10313616      0 855752    0    0     0     0 4152 24955 31 69  0  0
-1389532441.330678 1974 22      0 10347556      0 855816    0    0     0     0 4151 24473 29 71  0  0
-1389532442.330991 1952 35      0 10314856      0 855932    0    0     0     0 4151 24735 30 70  0  0
-1389532443.331298 1985 30      0 10337040      0 856060    0    0     0     0 4159 24705 29 71  0  0
-1389532444.331615 1959 27      0 10315816      0 856140    0    0     0     0 4119 24603 31 69  0  0
-1389532445.331917 1992 29      0 10341064      0 856220    0    0     0     0 4133 24982 30 70  0  0
-1389532446.332235 1973 33      0 10314320      0 856356    0    0     0     0 4129 24519 30 70  0  0
-1389532447.332548 1976 37      0 10342764      0 856428    0    0     0     0 4128 24765 30 70  0  0
-1389532448.332859 1615 28      0 10229224      0 856524    0    0     0     0 4168 25250 30 70  0  0
-1389532449.333163 1970 31      0 10293672      0 856644    0    0     0     0 4211 25534 30 70  0  0
-1389532450.333472 1995 23      0 10368256      0 856764    0    0     0     0 4139 24344 31 69  0  0
-1389532451.333796 1971 36      0 10277132      0 856824    0    0     0     0 4136 24742 30 70  0  0
-1389532452.334111 1965 33      0 10371140      0 856932    0    0     0     0 4173 24934 30 70  0  0
-1389532453.334424 1991 35      0 10284608      0 857036    0    0     0     0 4163 24709 30 70  0  0
-1389532454.334733 1961 31      0 10365300      0 857156    0    0     0     0 4143 25047 30 70  0  0
-1389532455.335048 1969 33      0 10316584      0 857236    0    0     0     0 4146 24730 31 69  0  0
-1389532456.335362 1945 25      0 10334376      0 857360    0    0     0     0 4211 25016 31 69  0  0
-1389532457.335681 1975 29      0 10327192      0 857472    0    0     0     0 4167 24583 30 70  0  0
-1389532458.336000 1953 22      0 10327528      0 857548    0    0     0     0 4139 24951 30 70  0  0
-1389532459.336310 1959 34      0 10329628      0 857616    0    0     0     0 4118 24270 31 69  0  0
-1389532460.336620 1943 32      0 10332304      0 857756    0    0     0     0 4148 24753 30 70  0  0
-1389532461.336936 1967 41      0 10331040      0 857848    0    0     0     0 4148 24814 31 69  0  0
-1389532462.337255 1935 37      0 10287564      0 857932    0    0     0     0 4194 24927 32 68  0  0
-1389532463.337585 1932 20      0 10376600      0 858004    0    0     0     0 4131 24999 30 70  0  0
-1389532464.338305 1602 31      0 10461852      0 858156    0    0     0     0 4144 24206 30 70  0  0
-1389532465.338265 682 14      0 10835680      0 858252    0    0     0     0 4201 24627 30 70  0  0
-1389532466.338738  0  0      0 11160304      0 857256    0    0     0     0 2404 11651 12 25 62  0
-
-> BTW
-> Just confirm, the benchmark is running on a native machine, not a kvm
-> guest, right?
-
-Yes. It's lkp-ne04.
-
-Thanks,
-Fengguang
+Regards
+Preeti U Murthy
+> Paul.
+> --
+> 
+>> cpuidle driver for powernv posted by Deepthi Dharwar:
+>> https://lkml.org/lkml/2014/1/14/172
+>>
+>>
+>> Changes in V5:
+>> -------------
+>> The primary change in this version is in Patch[6/8].
+>> As per the discussions in V4 posting of this patchset, it was decided to
+>> refine handling the wakeup of CPUs in fast-sleep by doing the following:
+>>
+>> 1. In V4, a polling mechanism was used by the CPU handling broadcast to
+>> find out the time of next wakeup of the CPUs in deep idle states. V5 avoids
+>> polling by a way described under PATCH[6/8] in this patchset.
+>>
+>> 2. The mechanism of broadcast handling of CPUs in deep idle in the absence of an
+>> external wakeup device should be generic and not arch specific code. Hence in this
+>> version this functionality has been integrated into the tick broadcast framework in
+>> the kernel unlike before where it was handled in powerpc specific code.
+>>
+>> 3. It was suggested that the "broadcast cpu" can be the time keeping cpu
+>> itself. However this has challenges of its own:
+>>
+>>  a. The time keeping cpu need not exist when all cpus are idle. Hence there
+>> are phases in time when time keeping cpu is absent. But for the use case that
+>> this patchset is trying to address we rely on the presence of a broadcast cpu
+>> all the time.
+>>
+>>  b. The nomination and un-assignment of the time keeping cpu is not protected
+>> by a lock today and need not be as well since such is its use case in the
+>> kernel. However we would need locks if we double up the time keeping cpu as the
+>> broadcast cpu.
+>>
+>> Hence the broadcast cpu is independent of the time-keeping cpu. However PATCH[6/8]
+>> proposes a simpler solution to pick a broadcast cpu in this version.
+>>
+>>
+>>
+>> Changes in V4:
+>> -------------
+>> https://lkml.org/lkml/2013/11/29/97
+>>
+>> 1. Add Fast Sleep CPU idle state on PowerNV.
+>>
+>> 2. Add the required context management for Fast Sleep and the call to OPAL
+>> to synchronize time base after wakeup from fast sleep.
+>>
+>> 4. Add parsing of CPU idle states from the device tree to populate the
+>> cpuidle
+>> state table.
+>>
+>> 5. Rename ambiguous functions in the code around waking up of CPUs from fast
+>> sleep.
+>>
+>> 6. Fixed a bug in re-programming of the hrtimer that is queued to wakeup the
+>> CPUs in fast sleep and modified Changelogs.
+>>
+>> 7. Added the ARCH_HAS_TICK_BROADCAST option. This signifies that we have a
+>> arch specific function to perform broadcast.
+>>
+>>
+>> Changes in V3:
+>> -------------
+>> http://thread.gmane.org/gmane.linux.power-management.general/38113
+>>
+>> 1. Fix the way in which a broadcast ipi is handled on the idling cpus. Timer
+>> handling on a broadcast ipi is being done now without missing out any timer
+>> stats generation.
+>>
+>> 2. Fix a bug in the programming of the hrtimer meant to do broadcast. Program
+>> it to trigger at the earlier of a "broadcast period", and the next wakeup
+>> event. By introducing the "broadcast period" as the maximum period after
+>> which the broadcast hrtimer can fire, we ensure that we do not miss
+>> wakeups in corner cases.
+>>
+>> 3. On hotplug of a broadcast cpu, trigger the hrtimer meant to do broadcast
+>> to fire immediately on the new broadcast cpu. This will ensure we do not miss
+>> doing a broadcast pending in the nearest future.
+>>
+>> 4. Change the type of allocation from GFP_KERNEL to GFP_NOWAIT while
+>> initializing bc_hrtimer since we are in an atomic context and cannot sleep.
+>>
+>> 5. Use the broadcast ipi to wakeup the newly nominated broadcast cpu on
+>> hotplug of the old instead of smp_call_function_single(). This is because we
+>> are interrupt disabled at this point and should not be using
+>> smp_call_function_single or its children in this context to send an ipi.
+>>
+>> 6. Move GENERIC_CLOCKEVENTS_BROADCAST to arch/powerpc/Kconfig.
+>>
+>> 7. Fix coding style issues.
+>>
+>>
+>> Changes in V2:
+>> -------------
+>> https://lkml.org/lkml/2013/8/14/239
+>>
+>> 1. Dynamically pick a broadcast CPU, instead of having a dedicated one.
+>> 2. Remove the constraint of having to disable tickless idle on the broadcast
+>> CPU by queueing a hrtimer dedicated to do broadcast.
+>>
+>>
+>>
+>> V1 posting: https://lkml.org/lkml/2013/7/25/740.
+>>
+>> 1. Added the infrastructure to wakeup CPUs in deep idle states in which the
+>> local timers stop.
+>> ---
+>>
+>> Preeti U Murthy (4):
+>>       cpuidle/ppc: Split timer_interrupt() into timer handling and interrupt handling routines
+>>       time/cpuidle: Support in tick broadcast framework in the absence of external clock device
+>>       cpuidle/powernv: Add "Fast-Sleep" CPU idle state
+>>       cpuidle/powernv: Parse device tree to setup idle states
+>>
+>> Srivatsa S. Bhat (2):
+>>       powerpc: Free up the slot of PPC_MSG_CALL_FUNC_SINGLE IPI message
+>>       powerpc: Implement tick broadcast IPI as a fixed IPI message
+>>
+>> Vaidyanathan Srinivasan (2):
+>>       powernv/cpuidle: Add context management for Fast Sleep
+>>       powermgt: Add OPAL call to resync timebase on wakeup
+>>
+>>
+>>  arch/powerpc/Kconfig                           |    2 
+>>  arch/powerpc/include/asm/opal.h                |    2 
+>>  arch/powerpc/include/asm/processor.h           |    1 
+>>  arch/powerpc/include/asm/smp.h                 |    2 
+>>  arch/powerpc/include/asm/time.h                |    1 
+>>  arch/powerpc/kernel/exceptions-64s.S           |   10 +
+>>  arch/powerpc/kernel/idle_power7.S              |   90 +++++++++--
+>>  arch/powerpc/kernel/smp.c                      |   23 ++-
+>>  arch/powerpc/kernel/time.c                     |   80 ++++++----
+>>  arch/powerpc/platforms/cell/interrupt.c        |    2 
+>>  arch/powerpc/platforms/powernv/opal-wrappers.S |    1 
+>>  arch/powerpc/platforms/ps3/smp.c               |    2 
+>>  drivers/cpuidle/cpuidle-powernv.c              |  106 ++++++++++++-
+>>  include/linux/clockchips.h                     |    4 -
+>>  kernel/time/clockevents.c                      |    9 +
+>>  kernel/time/tick-broadcast.c                   |  192 ++++++++++++++++++++++--
+>>  kernel/time/tick-internal.h                    |    8 +
+>>  17 files changed, 434 insertions(+), 101 deletions(-)
+>>
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
