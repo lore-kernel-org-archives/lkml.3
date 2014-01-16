@@ -1,153 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaAPBDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:03:04 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60964 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752144AbaAPBDB (ORCPT
+	id S1752487AbaAPBDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:03:17 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:39756 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161AbaAPBDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:03:01 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 1/3] pm/qos: allow state control of qos class
-Date: Thu, 16 Jan 2014 02:17:01 +0100
-Message-ID: <4530703.p5VZzXUXfQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <52952E90.4000604@intel.com>
-References: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com> <1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com> <52952E90.4000604@intel.com>
+	Wed, 15 Jan 2014 20:03:12 -0500
+Message-ID: <52D72FCD.1030005@gmail.com>
+Date: Wed, 15 Jan 2014 17:03:09 -0800
+From: Marc C <marc.ceeeee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Christian Daudt <bcm@fixthebug.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] ARM: brcmstb: dts: add a reference DTS for Broadcom
+ 7445
+References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com> <1389743333-16741-8-git-send-email-marc.ceeeee@gmail.com> <201401151410.39112.arnd@arndb.de> <61E0E2A7-F7FC-4397-8E92-06CC409912B9@gmail.com>
+In-Reply-To: <61E0E2A7-F7FC-4397-8E92-06CC409912B9@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 27, 2013 12:28:16 AM Rafael J. Wysocki wrote:
-> On 11/27/2013 12:20 AM, Jacob Pan wrote:
-> > When power capping or thermal control is needed, CPU QOS latency cannot
-> > be satisfied. This patch adds a state variable to indicate whether a QOS
-> > class (including all constraint requests) should be ignored.
-> >
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Hello Arnd,
+
+> And then you can add a regular device driver to drivers/reset that provides a
+> device_reset() API to other drivers, or a system-reset function to be registered as
+> arm_pm_restart. This driver would use syscon_regmap_lookup_by_phandle() to get access
+> to a regmap pointer, and then use either hardcoded offsets into the regmap, or get
+> those offsets from numbers in the devicetree, as provided in the example above.
+
+I was able to port a standalone "reboot" driver using syscon + regmap. However, for the
+SMP initialization case, it turns out that syscon is configured *after* SMP init. Do you
+have any advice for this type of situation?
+
+I'd hate to go around in circles, but without resorting to hard-coded offsets, perhaps I
+can just add the remaining "non-regmap" register offsets in the DT?
+
+Thanks,
+Marc
+
+On 01/15/2014 10:22 AM, Marc wrote:
+> Hi Arnd,
 > 
-> Honestly, I don't like this.  I know the motivation and what you're 
-> trying to achieve, but I don't like the approach.
+> Thank you for the suggestion - it's exactly what we were looking for!
 > 
-> I need to think a bit more about that.
-
-So the reason I don't like this patch is mainly because it affects all of the
-users of struct pm_qos_constraints and pm_qos_read_value(), which include
-device PM QoS among other things, but it only really needs to affect 
-PM_QOS_CPU_DMA_LATENCY.
-
-I would add a special routine, say pm_qos_cpu_dma_latency(), for reading the
-current effective PM_QOS_CPU_DMA_LATENCY constraint and checking whether or
-not it should be ignored.  Then, I'd make cpuidle use that.
-
-Thanks!
-
-> > ---
-> >   include/linux/pm_qos.h | 10 +++++++++-
-> >   kernel/power/qos.c     | 24 ++++++++++++++++++++++++
-> >   2 files changed, 33 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> > index 5a95013..648b50b 100644
-> > --- a/include/linux/pm_qos.h
-> > +++ b/include/linux/pm_qos.h
-> > @@ -10,7 +10,7 @@
-> >   #include <linux/device.h>
-> >   #include <linux/workqueue.h>
-> >   
-> > -enum {
-> > +enum pm_qos_class {
-> >   	PM_QOS_RESERVED = 0,
-> >   	PM_QOS_CPU_DMA_LATENCY,
-> >   	PM_QOS_NETWORK_LATENCY,
-> > @@ -20,6 +20,11 @@ enum {
-> >   	PM_QOS_NUM_CLASSES,
-> >   };
-> >   
-> > +enum pm_qos_state {
-> > +	PM_QOS_CONSTRAINT_AVAILABLE,
-> > +	PM_QOS_CONSTRAINT_IGNORED,
-> > +};
-> > +
-> >   enum pm_qos_flags_status {
-> >   	PM_QOS_FLAGS_UNDEFINED = -1,
-> >   	PM_QOS_FLAGS_NONE,
-> > @@ -77,6 +82,7 @@ struct pm_qos_constraints {
-> >   	struct plist_head list;
-> >   	s32 target_value;	/* Do not change to 64 bit */
-> >   	s32 default_value;
-> > +	enum pm_qos_state state;
-> >   	enum pm_qos_type type;
-> >   	struct blocking_notifier_head *notifiers;
-> >   };
-> > @@ -123,6 +129,8 @@ int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier);
-> >   int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
-> >   int pm_qos_request_active(struct pm_qos_request *req);
-> >   s32 pm_qos_read_value(struct pm_qos_constraints *c);
-> > +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
-> > +				enum pm_qos_state state);
-> >   
-> >   #ifdef CONFIG_PM
-> >   enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev, s32 mask);
-> > diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> > index 8dff9b4..cf475b0 100644
-> > --- a/kernel/power/qos.c
-> > +++ b/kernel/power/qos.c
-> > @@ -146,6 +146,11 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
-> >   
-> >   s32 pm_qos_read_value(struct pm_qos_constraints *c)
-> >   {
-> > +	/* return invalid default value if constraints cannot be met, e.g.
-> > +	 * during idle injection.
-> > +	 */
-> > +	if (c->state == PM_QOS_CONSTRAINT_IGNORED)
-> > +		return PM_QOS_DEFAULT_VALUE;
-> >   	return c->target_value;
-> >   }
-> >   
-> > @@ -353,6 +358,25 @@ void pm_qos_add_request(struct pm_qos_request *req,
-> >   }
-> >   EXPORT_SYMBOL_GPL(pm_qos_add_request);
-> >   
-> > +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
-> > +				enum pm_qos_state state)
-> > +{
-> > +	struct pm_qos_constraints *c = pm_qos_array[class]->constraints;
-> > +	unsigned long curr_value;
-> > +
-> > +	if (c->state == state)
-> > +		return;
-> > +	curr_value = (state == PM_QOS_CONSTRAINT_IGNORED) ?
-> > +		PM_QOS_DEFAULT_VALUE : c->target_value;
-> > +	c->state = state;
-> > +
-> > +	/* notify existing QOS requests change */
-> > +	blocking_notifier_call_chain(c->notifiers,
-> > +				curr_value,
-> > +				NULL);
-> > +}
-> > +EXPORT_SYMBOL_GPL(pm_qos_set_constraint_class_state);
-> > +
-> >   /**
-> >    * pm_qos_update_request - modifies an existing qos request
-> >    * @req : handle to list element holding a pm_qos request to use
+> Regards,
+> Marc
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Sent from my phone
+> 
+>> On Jan 15, 2014, at 5:10 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>
+>>> On Wednesday 15 January 2014, Marc Carino wrote:
+>>> +       gen-ctrl {
+>>> +               compatible = "brcm,brcmstb-gen-ctrl-v1";
+>>> +               reg = <0xf0404304 0x4
+>>> +                      0xf0404308 0x4
+>>> +                      0xf03e2578 0x4
+>>> +                      0xf03e2488 0x10
+>>> +                      0xf0452000 0x20>;
+>>> +       };
+>>
+>> Sorry I didn't get back to you on this when we discussed the previous
+>> version. I'm actually less happy with this DT representation than the
+>> original. What I take from your description is that you have multiple
+>> register ranges that basically combine more-or-less random registers
+>> that belong into different Linux subsystems.
+>>
+>> I think the best way to deal with this is to have the "syscon" driver
+>> handle the multiplexing between the various drivers that need access
+>> to the registers. It would look something like (taking the numbers
+>> from your previous patch):
+>>
+>>    ahb {
+>>        ranges = <0 0xf0000000 0x1000000>; /* 16 MB remapped registers */
+>>
+>>        hif-cpubuictrl: syscon@3e2400 {
+>>            compatible = "brcm,7445-cpubioctrl", "syscon";
+>>            reg = <0x3e2000, 0x1000>;
+>>        };
+>>
+>>        hif-continuation: syscon@45200 {
+>>            compatible = "brcm,7445-hif-continuation", "syscon";
+>>            reg = <0x452000, 0x1000>;
+>>        };
+>>
+>>        sun-top-ctrl: ...
+>>    };
+>>
+>> This lets the syscon driver find and map the three register areas.
+>> Drivers that need access to the registers then do 
+>>
+>>    reset {
+>>        compatible = "brcm,7445-reset-ctrl";
+>>        syscon = <&sun-top-ctrl 0x300 0x100>;
+>>        #reset-cells = <1>;
+>>    };
+>>
+>> And then you can add a regular device driver to drivers/reset that provides
+>> a device_reset() API to other drivers, or a system-reset function to be
+>> registered as arm_pm_restart. This driver would use
+>> syscon_regmap_lookup_by_phandle() to get access to a regmap pointer,
+>> and then use either hardcoded offsets into the regmap, or get those
+>> offsets from numbers in the devicetree, as provided in the example
+>> above.
+>>
+>>    Arnd
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
