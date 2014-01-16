@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaAPMv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:51:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47489 "EHLO mga02.intel.com"
+	id S1752504AbaAPM4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:56:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60559 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548AbaAPMvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:51:54 -0500
+	id S1751369AbaAPM4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:56:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
-   d="scan'208";a="467637441"
-Message-ID: <1389876709.3010.6.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 3/4] fix module autoloading for ACPI enumerated devices
-From: Zhang Rui <rui.zhang@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        wsa@the-dreams.de, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, grant.likely@linaro.org,
-        rob.herring@calxeda.com, jarkko.nikula@linux.intel.com,
-        mika.westerberg@linux.intel.com
-Date: Thu, 16 Jan 2014 20:51:49 +0800
-In-Reply-To: <20140116122819.GO15567@sirena.org.uk>
-References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
-	 <1389689198-2641-4-git-send-email-rui.zhang@intel.com>
-	 <20140116122819.GO15567@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+   d="scan'208";a="467638794"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: 8250_dw: fix compilation warning when !CONFIG_PM_SLEEP
+Date: Thu, 16 Jan 2014 14:55:57 +0200
+Message-Id: <1389876957-6052-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 12:28 +0000, Mark Brown wrote:
-> On Tue, Jan 14, 2014 at 04:46:37PM +0800, Zhang Rui wrote:
-> > ACPI enumerated devices has ACPI style _HID and _CID strings,
-> > all of these strings can be used for both driver loading and matching.
-> > 
-> > Currently, in Platform, I2C and SPI bus, the ACPI style driver matching
-> > is supported by invoking acpi_driver_match_device() in bus .match() callback.
-> > But, the module autoloading is still broken.
-> 
-> Acked-by: Mark Brown <broonie@linaro.org>
-> 
-> modulo the PAGE_SIZE stuff Mika noted - unless this changes radically
-> please just assume I'm OK with it.
+CONFIG_PM will be set if either or both CONFIG_PM_SLEEP and
+CONFIG_PM_RUNTIME is set. Compiling the driver with !CONFIG_PM_SLEEP causes
+following compilation warnings:
 
-thanks.
+drivers/tty/serial/8250/8250_dw.c:404:12: warning: ‘dw8250_suspend’ defined but not used [-Wunused-function]
+drivers/tty/serial/8250/8250_dw.c:413:12: warning: ‘dw8250_resume’ defined but not used [-Wunused-function]
 
--rui
+Fix this by using CONFIG_PM_SLEEP instead.
 
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/tty/serial/8250/8250_dw.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index 06525f10e364..47e6c57de3a6 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -400,7 +400,7 @@ static int dw8250_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int dw8250_suspend(struct device *dev)
+ {
+ 	struct dw8250_data *data = dev_get_drvdata(dev);
+@@ -418,7 +418,7 @@ static int dw8250_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-#endif /* CONFIG_PM */
++#endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_PM_RUNTIME
+ static int dw8250_runtime_suspend(struct device *dev)
+-- 
+1.8.5.2
 
