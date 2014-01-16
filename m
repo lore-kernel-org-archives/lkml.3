@@ -1,226 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaAPNnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:43:32 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:27510 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaAPNn0 (ORCPT
+	id S1752563AbaAPNiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:38:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38253 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaAPNiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:43:26 -0500
-X-AuditID: cbfee690-b7f266d00000287c-ae-52d7e1fc6cd6
-Date: Thu, 16 Jan 2014 13:43:24 +0000 (GMT)
-From: Saurabh Singh <saurabh1.s@samsung.com>
-Subject: Re: [PATCH] Parse missing regulator constraints from device tree blob
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "celinux-dev@tree.celinuxforum.org" 
-	<celinux-dev@tree.celinuxforum.org>,
-        SREEVATSA D B <srevatsa@samsung.com>,
-        Praveen BP <bp.praveen@samsung.com>
-Reply-to: saurabh1.s@samsung.com
-MIME-version: 1.0
-X-MTR: 20140116134145668@saurabh1.s
-Msgkey: 20140116134145668@saurabh1.s
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140116134145668@saurabh1.s
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <27224826.584141389879802275.JavaMail.weblogic@epml20>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSo/v34fUgg451LBaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj95xOxoJ5ThUn3rQzNTAecOhi5OQQElCVmL1nCyOILSFgIvFz
-	43ooW0ziwr31bF2MXEA1SxklWp/2sXYxcoAVHV6WDBGfzyjRtPgsC0gDC9Cgl/92sYLYbAK6
-	Eg/X32UHsYUF/CT2tHxkArFFBDQlVl5bxwTSzCzwjFni2fPjbBBXKEice94JVsQrIChxcuYT
-	FogrlCWeLG9lhYirSDxoOs0GEZeTWDL1MhOEzSsxo/0pC0x82tc1zBC2tMT5WRvgvln8/TFU
-	nF/i2O0dTBDP8Eo8uR8MM2b35i9Q4wUkpp45CNWqIdG78x+UzSexZuFbFpgxu04tZ4bpvb9l
-	Ltg5zAKKElO6H7JD2AYSRxbNYUX3Fq+Ak8Sco2uYJzAqz0KSmoWkfRaSdmQ1CxhZVjGKphYk
-	FxQnpReZ6BUn5haX5qXrJefnbmIEJobT/55N2MF474D1IcZkYJxMZJYSTc4HJpa8knhDYzMj
-	C1MTU2Mjc0sz0oSVxHnVHiUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCsOR32d5n9NM/C
-	RxOVy70K9aUN2C3/ljz+HHc+Se/DwT9iL7YbzelmCOn/+XFVZN8L3uZa4buuvpKtNVLrXhzy
-	uX6W7ZaK8oUzOoq6XBECskurPm/cXrLqk9KiR177D3jpM/BpWGvVMSxnsm7+8k7RmnPp35Nf
-	J07kb93Vc2t7WIyF/jyetjNKLMUZiYZazEXFiQB0386mIgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DN0/D68HGaxYaWFxedccNgdGj8+b
-	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DE1jrQwNDIxMgWoS0jJ+
-	z+lkLJjnVHHiTTtTA+MBhy5GTg4hAVWJ2Xu2MHYxcnBICJhIHF6WDBKWEBCTuHBvPVsXIxdQ
-	yXxGiabFZ1lAEixA9S//7WIFsdkEdCUerr/LDmILC/hJ7Gn5yARiiwhoSqy8to4JpJlZ4Bmz
-	xLPnx9kglilInHveCVbEKyAocXLmExaIbcoST5a3skLEVSQeNJ1mg4jLSSyZepkJwuaVmNH+
-	lAUmPu3rGmYIW1ri/KwNjDBXL/7+GCrOL3Hs9g4miMd4JZ7cD4YZs3vzF6jxAhJTzxyEatWQ
-	6N35D8rmk1iz8C0LzJhdp5Yzw/Te3zIX7BxmAUWJKd0P2SFsA4kji+awonuLV8BJYs7RNcwT
-	GOVmIUnNQtI+C0k7spoFjCyrGEVTC5ILipPSKwz1ihNzi0vz0vWS83M3MYLT07OFOxi/nLc+
-	xCjAwajEw7vj4bUgIdbEsuLK3EOMEhzMSiK8ZruvBwnxpiRWVqUW5ccXleakFh9iTAbG4ERm
-	KdHkfGDqzCuJNzQ2MTc1NrUwMDQ3NyNNWEmc9+7NpCAhgfTEktTs1NSC1CKYLUwcnFINjOor
-	V6lyeZ+TcS5JibCccW3h3bVvn+ppRlalXOxPXn4rdOLbxFT238GLdTXXZlfrze9j/8c5yy55
-	63vZWRIS01Tfd239Z6Fb5ufNbrrg9fXmE6+Oqz3leJN0uel229pjTzUqvFgMtOftPO5iWhO1
-	x/zdz8UuszWj/VgCcl7bHn9/6V/JSW7pDiWW4oxEQy3mouJEADkkdfGTAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Thu, 16 Jan 2014 08:38:07 -0500
+Date: Thu, 16 Jan 2014 05:37:15 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-p5yjnopajb3a8x0xha7yl5w8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: Rename --initial-delay to --delay
+Git-Commit-ID: a6205a35ba2d56dcfb79b08cc11b8c7d549826aa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:37:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0GDhdJG018061
 
-Hi Mark,
+Commit-ID:  a6205a35ba2d56dcfb79b08cc11b8c7d549826aa
+Gitweb:     http://git.kernel.org/tip/a6205a35ba2d56dcfb79b08cc11b8c7d549826aa
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 14 Jan 2014 17:58:12 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 14 Jan 2014 17:58:12 -0300
 
-New patch incorporating your suggestions is given below.
+perf record: Rename --initial-delay to --delay
 
-> * None of these properties are documented. Documentation is required so
->   that the contract is defined. That allows people to learn how to use
->   the properties, and makes clear what we can and cannot change
->   kernel-side.
-Done.  The documentation is in the patch below.
+To be consistent with the equivalent option in 'stat', also, for the
+same reason, use -D as the one letter alias.
 
-> * It leaks Linux internal details (e.g. suspend_state_t values,
->   valid_mode_mask) without any attempt at abstraction, in violation of
->   dt principles.
-Unlike valid_ops_mask, valid_mode_mask cannot be derived from the other settings.
-It depends on the hardware (regulator) capability. So, it has to be specified in DT blob.
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-p5yjnopajb3a8x0xha7yl5w8@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-record.txt | 3 ++-
+ tools/perf/builtin-record.c              | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-> * Accessors are used poorly. Endianness conversion is done manually
->   rather than being left to accessors, and property lengths aren't
->   checked.
-Used the accessors for u32 and bool.
-
-> 	u32 uv;
-> 	of_property_read_u32(np, "regulator-state-uv", &uv);
-> 
-> However, as far as I can see this value should come from an input supply
-> anyway.
-This is not input supply. This is operating voltage to be set when device suspends.
-
-diffstat for this patch is:
- Documentation/devicetree/bindings/regulator/regulator.txt |   19 ++++++
- drivers/regulator/of_regulator.c                          |   41 ++++++++++++++
- 2 files changed, 60 insertions(+)
-
-To apply the patch, in the root of a kernel tree use:
-patch -p1 < of_regulator.patch
-
-Please let me know any feedback you have on this patch or the approach used.
-
-Regards,
-=====================
-Saurabh Singh Sengar
-Lead Engineer
-Samsung R&D Institute
-India
-Samsung
-=====================
-Signed-off-by: Saurabh Singh Sengar <saurabh1.s@samsung.com>
-
---------------------------------------------------------------------------------
-diff -uprN -X linux-3.12.6-vanilla/Documentation/dontdiff linux-3.12.6-vanilla/Documentation/devicetree/bindings/regulator/regulator.txt linux-3.12.6/Documentation/devicetree/bindings/regulator/regulator.txt
---- linux-3.12.6-vanilla/Documentation/devicetree/bindings/regulator/regulator.txt	2013-12-20 21:21:33.000000000 +0530
-+++ linux-3.12.6/Documentation/devicetree/bindings/regulator/regulator.txt	2014-01-16 18:47:17.708608811 +0530
-@@ -14,6 +14,17 @@ Optional properties:
- - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
-   For hardwares which support disabling ramp rate, it should be explicitly
-   intialised to zero (regulator-ramp-delay = <0>) for disabling ramp delay.
-+- regulator-valid-modes-mask: valid operations for regulator on particular machine
-+- regulator-input-uv: regulator input voltage, only if supply is another regulator
-+- regulator-initial-mode: default mode to set on startup
-+- regulator-initial-state: suspend state to set at init
-+- regulator-state-mem, regulator-state-disk, regulator-state-standby:
-+	defines regulator suspend to memory, suspend to disk (hibernate) and standby respectively.
-+	have following sub-constarints:
-+	- regulator-state-uv: suspend voltage
-+	- regulator-state-mode: suspend regulator operating mode
-+	- regulator-state-enabled: is regulator enabled in this suspend state
-+	- regulator-state-disabled: is the regulator disbled in this suspend state
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 3a35a85..c71b0f3 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -208,7 +208,8 @@ overrides that and uses per-thread mmaps.  A side-effect of that is that
+ inheritance is automatically disabled.  --per-thread is ignored with a warning
+ if combined with -a or -C options.
  
- Deprecated properties:
- - regulator-compatible: If a regulator chip contains multiple
-@@ -29,6 +40,14 @@ Example:
- 		regulator-max-microvolt = <2500000>;
- 		regulator-always-on;
- 		vin-supply = <&vin>;
-+		regulator-valid-modes-mask = <REGULATOR_MODE_FAST>;
-+		regulator-initial-mode = <REGULATOR_MODE_STANDBY>;
-+		regulator-initial-state = <PM_SUSPEND_MEM>;
-+		regulator-state-mem {
-+			regulator-state-mode = <REGULATOR_MODE_IDLE>;
-+			regulator-state-enabled;
-+		};
-+
- 	};
+---initial-delay msecs::
++-D::
++--delay=::
+ After starting the program, wait msecs before measuring. This is useful to
+ filter out the startup phase of the program, which is often very different.
  
- Regulator Consumers:
-diff -uprN -X linux-3.12.6-vanilla/Documentation/dontdiff linux-3.12.6-vanilla/drivers/regulator/of_regulator.c linux-3.12.6/drivers/regulator/of_regulator.c
---- linux-3.12.6-vanilla/drivers/regulator/of_regulator.c	2013-12-20 21:21:33.000000000 +0530
-+++ linux-3.12.6/drivers/regulator/of_regulator.c	2014-01-16 18:45:44.135928414 +0530
-@@ -16,11 +16,27 @@
- #include <linux/regulator/machine.h>
- #include <linux/regulator/of_regulator.h>
- 
-+/**
-+ * set_regulator_state_constraints - set regulator state for low power system states
-+ * @np: device node for the low power regulator state
-+ * @regulator_state: regulator_state structure need to be filled
-+ */
-+static void set_regulator_state_constraints(struct device_node *np,
-+		struct regulator_state *state)
-+{
-+	of_property_read_u32(np, "regulator-state-uv", &state->uV);
-+	of_property_read_u32(np, "regulator-state-mode", &state->mode);
-+	state->enabled = of_property_read_bool(np, "regulator-state-enabled");
-+	state->disabled = of_property_read_bool(np, "regulator-state-disabled");
-+}
-+
-+
- static void of_get_regulation_constraints(struct device_node *np,
- 					struct regulator_init_data **init_data)
- {
- 	const __be32 *min_uV, *max_uV, *uV_offset;
- 	const __be32 *min_uA, *max_uA, *ramp_delay;
-+	struct device_node *state;
- 	struct property *prop;
- 	struct regulation_constraints *constraints = &(*init_data)->constraints;
- 
-@@ -73,6 +89,31 @@ static void of_get_regulation_constraint
- 		else
- 			constraints->ramp_disable = true;
- 	}
-+
-+	of_property_read_u32(np, "regulator-valid-modes-mask",
-+					&constraints->valid_modes_mask);
-+	of_property_read_u32(np, "regulator-input-uv",
-+					&constraints->input_uV);
-+	of_property_read_u32(np, "regulator-initial-mode",
-+					&constraints->initial_mode);
-+	of_property_read_u32(np, "regulator-initial-state",
-+					&constraints->initial_state);
-+
-+	/* regulator state during low power system states */
-+	state = of_find_node_by_name(np, "regulator-state-mem");
-+	if (state)
-+		set_regulator_state_constraints(state,
-+				&constraints->state_mem);
-+
-+	state = of_find_node_by_name(np, "regulator-state-disk");
-+	if (state)
-+		set_regulator_state_constraints(state,
-+				&constraints->state_disk);
-+
-+	state = of_find_node_by_name(np, "regulator-state-standby");
-+	if (state)
-+		set_regulator_state_constraints(state,
-+				&constraints->state_standby);
- }
- 
- /**ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 78e790f..3c394bf 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -882,7 +882,7 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
+-	OPT_UINTEGER(0, "initial-delay", &record.opts.initial_delay,
++	OPT_UINTEGER('D', "delay", &record.opts.initial_delay,
+ 		  "ms to wait before starting measurement after program start"),
+ 	OPT_STRING('u', "uid", &record.opts.target.uid_str, "user",
+ 		   "user to profile"),
