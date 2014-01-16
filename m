@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaAPLCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 06:02:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714AbaAPLCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 06:02:15 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: William Roberts <bill.c.roberts@gmail.com>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
-        William Roberts <wroberts@tresys.com>
-Subject: Re: [PATCH v3 3/3] audit: Audit proc cmdline value
-Date: Thu, 16 Jan 2014 06:02:02 -0500
-Message-ID: <2002335.9x4iUKkcnh@x2>
-Organization: Red Hat
-User-Agent: KMail/4.11.5 (Linux/3.12.7-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAFftDdoi-9KZvuWz4czNMSWE=Y1tPQEhZVAeQb=S+jKQ=m8rZQ@mail.gmail.com>
-References: <1389808934-4446-1-git-send-email-wroberts@tresys.com> <2708398.uWbqeU3VZe@x2> <CAFftDdoi-9KZvuWz4czNMSWE=Y1tPQEhZVAeQb=S+jKQ=m8rZQ@mail.gmail.com>
+	id S1752640AbaAPLDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 06:03:20 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:46679 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280AbaAPLDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 06:03:17 -0500
+Message-ID: <52D7BC71.9010908@linaro.org>
+Date: Thu, 16 Jan 2014 12:03:13 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Alex Shi <alex.shi@linaro.org>, Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, tglx@linutronix.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com,
+        linaro-kernel@lists.linaro.org,
+        Michael wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <20140115073533.GU31570@twins.programming.kicks-ass.net> <52D69D44.4090504@linaro.org>
+In-Reply-To: <52D69D44.4090504@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 15, 2014 09:08:39 PM William Roberts wrote:
-> >> > Try this,
-> >> > 
-> >> > cp /bin/ls 'test test test'
-> >> > auditctll -a always,exit -F arch=b64 -S stat -k test
-> >> > ./test\ test\ test './test\ test\ test'
-> >> > auditctl -D
-> >> > ausearch --start recent --key test
-> >> > 
-> >> >> On the event of weird chars, it gets hex escaped.
-> >> > 
-> >> > and its all in 1 lump with no escaping to figure out what is what.
-> >> 
-> >> Un-escape it. ausearch does this with paths. Then if you need to parse
-> >> it, do it.
-> > 
-> > How can you? When you unescape cmdline for the example I gave, you will
-> > have "./test test test ./test test test".  Which program ran and how many
-> > arguments were passed? If we are trying to improve on what comm= provides
-> > by having the full information, I have to be able to find out exactly
-> > what the program name was so it can be used for searching. If that can't
-> > be done, then we don't need this addition in its current form.
-> 
-> In your example, you will have an execve record, with it parsed, will you
-> not?
+On 01/15/2014 03:37 PM, Alex Shi wrote:
+> On 01/15/2014 03:35 PM, Peter Zijlstra wrote:
+>> On Wed, Jan 15, 2014 at 12:07:59PM +0800, Alex Shi wrote:
+>>> Currently we just try to find least load cpu. If some cpus idled,
+>>> we just pick the first cpu in cpu mask.
+>>>
+>>> In fact we can get the interrupted idle cpu or the latest idled cpu,
+>>> then we may get the benefit from both latency and power.
+>>> The selected cpu maybe not the best, since other cpu may be interrupted
+>>> during our selecting. But be captious costs too much.
+>>
+>> No, we should not do anything like this without first integrating
+>> cpuidle.
+>>
+>> At which point we have a sane view of the idle states and can make a
+>> sane choice between them.
+>>
+>
+>
+> Daniel,
+>
+> Any comments to make it better?
 
-Only if you change your patch.
+Hi Alex,
+
+it is a nice optimization attempt but I agree with Peter we should focus 
+on integrating cpuidle.
+
+The question is "how do we integrate cpuidle ?"
+
+IMHO, the main problem are the governors, especially the menu governor.
+
+The menu governor tries to predict the events per cpu. This approach 
+which gave us a nice benefit for the power saving may not fit well for 
+the scheduler.
+
+I think we can classify the events in three categories:
+
+1. fully predictable (timers)
+2. partially predictable (eg. MMC, sdd or network)
+3. unpredictable (eg. keyboard, network ingress after quiescent period)
+
+The menu governor mix 2 and 3 with statistics and a performance 
+multiplier to reach shallow states based on heuristic and 
+experimentation for a specific platform.
+
+I was wondering if we shouldn't create a per task io latency tracking.
+
+Mostly based on io_schedule and io_schedule_timeout, we track the 
+latency for each task for each device, keeping up to date a rb-tree 
+where the left-most leaf is the minimum latency for all the tasks 
+running on a specific cpu. That allows better tracking when moving tasks 
+across cpus.
+
+With this approach, we have something consistent with the per load task 
+tracking.
+
+This io latency tracking gives us the next wake up event we can inject 
+to the cpuidle framework directly. That removes all the code related to 
+the menu governor statistics based on IO events and simplify a lot the 
+menu governor code. So we replaced a piece of the cpuidle code by a 
+scheduler code which I hope could be better for prediction, leading to a 
+part of integration.
+
+In order to finish integrating the cpuidle framework in the scheduler, 
+there are pending questions about the impact in the current design.
+
+Peter or Ingo, if you have time, could you have a look at the email I 
+sent previously [1] ?
+
+Thanks
+
+   -- Daniel
 
 
-> cmdline does not necessarily represent the arguments or process name.
-> Sometimes it does, sometimes it doesn't. Just treat the thing as one
-> string, perhaps do some form of substring matching in a tool. 
+[1] https://lkml.org/lkml/2013/12/17/106
 
-You are missing the point. The point is that you are trying to place trust in 
-something that can be gamed. The audit system is designed such that it cannot 
-be fooled very easily. Each piece of the subject and object are separated so 
-that programs can be written to analyze events. What I am trying to say is now 
-you are making something that concatenates fields with no way to regroup them 
-later to reconstruct what really happened,
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> To make this clear, I am not trying to improve on what comm provides.
-> comm provides
-> 16 chars for per thread name. The key is, its per thread, and can be
-> anything. The
-> "cmdline" value, is an arbitrary spot that is a global entity for the
-> process. So in my change, all things coming into these events will have a
-> similar cmdline audit. Which may help in narrowing down on whats going on
-> in the system
-
-It needs to be more trustworthy than this.
-
--Steve
