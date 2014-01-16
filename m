@@ -1,50 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664AbaAPTNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:13:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63576 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933AbaAPTNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:13:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,669,1384329600"; 
-   d="scan'208";a="439992120"
-Message-ID: <52D82F13.9070309@intel.com>
-Date: Thu, 16 Jan 2014 11:12:19 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751831AbaAPTQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:16:14 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64054 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaAPTQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 14:16:12 -0500
+Date: Thu, 16 Jan 2014 11:15:36 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
+In-Reply-To: <20140116152259.GG28157@dhcp22.suse.cz>
+Message-ID: <alpine.LSU.2.11.1401161011110.1321@eggly.anvils>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils> <alpine.LSU.2.11.1401131751080.2229@eggly.anvils> <20140114132727.GB32227@dhcp22.suse.cz> <20140114142610.GF32227@dhcp22.suse.cz> <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+ <20140115095829.GI8782@dhcp22.suse.cz> <20140115121728.GJ8782@dhcp22.suse.cz> <alpine.LSU.2.11.1401151241280.9004@eggly.anvils> <20140116081738.GA28157@dhcp22.suse.cz> <20140116152259.GG28157@dhcp22.suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: kernel test robot <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [slub shrink] 0f6934bf16: +191.9% vmstat.system.cs
-References: <20140116030744.GA19349@localhost>
-In-Reply-To: <20140116030744.GA19349@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 07:07 PM, kernel test robot wrote:
-> 9a0bb2966efbf30  0f6934bf1695682e7ced973f6  
-> ---------------  -------------------------  
->    8235933 ~ 2%     +80.6%   14872911 ~ 3%  lkp-sbx04/micro/will-it-scale/read2
->    8235933          +80.6%   14872911       TOTAL interrupts.RES
+On Thu, 16 Jan 2014, Michal Hocko wrote:
+> From 543df5c82f6eec622f669ea322ba6ff03924fded Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 16 Jan 2014 16:17:13 +0100
+> Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
 > 
-> 9a0bb2966efbf30  0f6934bf1695682e7ced973f6  
-> ---------------  -------------------------  
->     161531 ~ 7%    +191.9%     471544 ~ 9%  lkp-sbx04/micro/will-it-scale/read2
->     161531         +191.9%     471544       TOTAL vmstat.system.cs
+> 19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
+> refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
+> doesn't put a css reference on the root of the tree walk. The mentioned
+> commit however dropped the root check when the css reference is taken
+> while it keept the css_put optimization fora the root in place.
+
+I don't think that's quite right, actually - and I think it's all
+so confusing that we do need to be pedantic and set it down right.
+
+I spent quite a while yesterday trying out my "cg m" on 3.10, 3.11,
+3.12 and 3.13-rc8 on this laptop: first just counting mem_cgroup_allocs
+and frees (if I could get that far without hanging or crashing), then
+also with your patch in (on 3.12 and 3.13-rc8) or the completely
+different patch appended at the bottom (on 3.10 and 3.11), checking
+for leftover mem_cgroups afterwards.
+
+I saw no evidence of mem_cgroup leakage on 3.10 and 3.11, which had
+	/*
+	 * Root is not visited by cgroup iterators so it needs an
+	 * explicit visit.
+	 */
+	if (!last_visited)
+		return root;
+at the head of __mem_cgroup_iter_next(), removed around the same
+time as changeover from prev_cgroup etc to prev_css etc in 3.12.
+
+I don't believe 19f39402864e was responsible for a reference leak,
+that came later.  But I think it was responsible for the original
+endless iteration (shrink_zone going around and around getting root
+again and again from mem_cgroup_iter).
+
+But beware of my conclusion, please check for yourself: with my
+separate kbuilds in separate /cg/cg/? memcgs, what "cg m" is doing
+is very simple and segregated, can hardly be called testing reclaim
+iteration, so I hope you have something better to check it.  Plus
+I was testing on 3.10 and 3.11 vanilla, not latest stable versions.
+
+(If I'm very honest, I'll admit that I still did not see that hang
+on 3.11 vanilla: what I hit was a crash in kfree instead, but the
+same patch got rid of that too.  Of course I ought to investigate
+further, but at some point I just have to give up and move on,
+there's just too much breakage to chase all over the kernel...)
+
 > 
-> 9a0bb2966efbf30  0f6934bf1695682e7ced973f6  
-> ---------------  -------------------------  
->      32943 ~ 1%     +71.8%      56599 ~ 3%  lkp-sbx04/micro/will-it-scale/read2
->      32943          +71.8%      56599       TOTAL vmstat.system.in
+> This means that css_put is not called and so css along with mem_cgroup
+> and other cgroup internal object tied by css lifetime are never freed.
+> 
+> Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
+> 
+> This patch also fixes issue reported by Hugh Dickins when
+> mem_cgroup_iter might end up in an endless loop because a group which is
+> under hard limit reclaim is removed in parallel with iteration.
+> __mem_cgroup_iter_next would always return NULL because css_tryget on
+> the root (reclaimed memcg) would fail and there are no other memcg in
+> the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
+> from the root and so the while (!memcg) loop would never terminate.
+> as css_tryget is no longer called for the root of the tree walk this
+> doesn't happen anymore.
+> 
+> [hughd@google.com: Fixed root vs. root->css fix]
+> [hughd@google.com: Get rid of else branch because it is ugly]
 
-I suspect that something is wrong with that system.  My 160-cpu system
-does about 40,000 interrupts/sec and ~4300 context switches/sec when
-running 160 read2_processes.  I wonder if you're hitting swap or the
-dirty limits or something.  Are you running it with way more threads
-than it has CPUs?
+Thanks for your courtesy!  But let's not clutter it with those two.
 
-Also, are those will-it-scale tests the threaded or process versions?
+> <Hugh's-selection>-by: Hugh Dickins <hughd@google.com>
+
+You already credited me above, but "Reported-by:" here if you insist.
+
+> Cc: stable@vger.kernel.org # 3.10+
+
+Well, I'm okay with that, if we use that as a way to shoehorn in the
+patch at the bottom instead for 3.10 and 3.11 stables.  Whether that's
+an abuse of the stable system... I think not, the patch at the bottom
+(though it could be written in a variety of other ways) is what we're
+relying on for 3.11 at Google, and the iteration hang it fixes is
+equivalent to the one you're fixing here (but a hang repeatedly
+calling mem_cgroup_iter morphed into a tighter hang repeatedly
+calling __mem_cgroup_iter_next with the 3.12 rewrite, plus leakage).
+
+Or, if you're uncomfortable with the misrepresentation, you could
+just say 3.12+; but I think we serve other users of 3.10 and 3.11
+best by saying 3.10+ there as you have it.
+
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+No quarrels with that!
+
+> ---
+>  mm/memcontrol.c | 18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f016d26adfd3..969f14d32b30 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1076,14 +1076,22 @@ skip_node:
+>  	 * skipped and we should continue the tree walk.
+>  	 * last_visited css is safe to use because it is
+>  	 * protected by css_get and the tree walk is rcu safe.
+> +	 *
+> +	 * We do not take a reference on the root of the tree walk
+> +	 * because we might race with the root removal when it would
+> +	 * be the only node in the iterated hierarchy and mem_cgroup_iter
+> +	 * would end up in an endless loop because it expects that at
+> +	 * least one valid node will be returned. Root cannot disappear
+> +	 * because caller of the iterator should hold it already so
+> +	 * skipping css reference should be safe.
+>  	 */
+>  	if (next_css) {
+> -		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
+> +		if ((next_css->flags & CSS_ONLINE) &&
+
+Well, okay.  It's fine by me to keep the CSS_ONLINE one separate if you
+prefer, but since we're not intending that one for -stable (or are we?),
+basing this on top of that means that this patch will not apply to stable
+and gregkh will ask us to craft a separate version for each release.
+That's okay, I just preferred not to revisit this later (any more than
+will anyway be necessary for 3.10 and 3.11).
+
+> +				(next_css == root->css || css_tryget(next_css)))
+>  			return mem_cgroup_from_css(next_css);
+> -		else {
+> -			prev_css = next_css;
+> -			goto skip_node;
+> -		}
+> +
+
+Yes, thanks, it's better with the blank line.
+
+> +		prev_css = next_css;
+> +		goto skip_node;
+>  	}
+>  
+>  	return NULL;
+> -- 
+> 1.8.5.2
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+
+"Equivalent" patch for 3.10 or 3.11: fixing similar hangs but no leakage.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+
+--- v3.10/mm/memcontrol.c	2013-06-30 15:13:29.000000000 -0700
++++ linux/mm/memcontrol.c	2014-01-15 18:18:24.476566659 -0800
+@@ -1226,7 +1226,8 @@ struct mem_cgroup *mem_cgroup_iter(struc
+ 			}
+ 		}
+ 
+-		memcg = __mem_cgroup_iter_next(root, last_visited);
++		if (!prev || last_visited)
++			memcg = __mem_cgroup_iter_next(root, last_visited);
+ 
+ 		if (reclaim) {
+ 			if (last_visited)
