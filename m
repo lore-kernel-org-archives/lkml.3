@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaAPQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:20:59 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:51826 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaAPQU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:20:57 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next-20140114 - BUG: spinlock wrong CPU on CPU#3, mount/597
-In-Reply-To: Your message of "Thu, 16 Jan 2014 11:39:34 +0100."
-             <20140116103934.GA30291@quack.suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <14473.1389810012@turing-police.cc.vt.edu>
-            <20140116103934.GA30291@quack.suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1389889219_2720P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 16 Jan 2014 11:20:19 -0500
-Message-ID: <55555.1389889219@turing-police.cc.vt.edu>
+	id S1752595AbaAPQYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:24:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890AbaAPQYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 11:24:42 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
+        aquini@redhat.com, mst@redhat.com, rusty@rustcorp.com.au,
+        vdavydov@parallels.com, amit.shah@redhat.com, dfediuck@redhat.com,
+        agl@us.ibm.com
+Subject: [RFC PATCH 0/4] virtio_balloon: add pressure notification via a new virtqueue
+Date: Thu, 16 Jan 2014 11:24:01 -0500
+Message-Id: <1389889445-3855-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1389889219_2720P
-Content-Type: text/plain; charset=us-ascii
+The pressure notification added to the virtio-balloon driver by this series
+is going to be used by the host (QEMU, in this case) to implement automatic
+balloning support. More details in patch 3/4 and patch 4/4.
 
-On Thu, 16 Jan 2014 11:39:34 +0100, Jan Kara said:
+Patch 1/4 adds in-kernel vmpressure support and is not really part of this
+series, it's added here for the convenience of someone who wants to try
+automatic ballooning. Patch 2/4 is a hack to make in-kernel vmpressure work
+for something not related to cgroups, I'll improve it in later versions.
 
->   Hum, the complaint is for group->notification_waitq->lock which
-> is an internal lock for the wait queue. Actually the corruption seems to be
-> only a single bit flip - the whole spinlock structure looks correct, only
-> owner_cpu got flipped from 0x3 to 0x23. Ah, do you have patch from Hugh:
->
-> fanotify: fix corruption preventing startup
->
-> The corruption would match that very well and Andrew queued it just
-> recently...
+Glauber Costa (1):
+  vmpressure: in-kernel notifications
 
-Aha.  It landed after next-20140114 got put together.  WIll try -0116 (which
-does have it) and if that doesn't fix it, I'll follow up...
+Luiz capitulino (3):
+  vmpressure in-kernel: hack
+  virtio_balloon: add pressure notification via a new virtqueue
+  virtio_balloon: skip inflation if guest is under pressure
 
+ drivers/virtio/virtio_balloon.c     | 100 ++++++++++++++++++++++++++++++++----
+ include/linux/vmpressure.h          |   6 +++
+ include/uapi/linux/virtio_balloon.h |   1 +
+ mm/vmpressure.c                     |  58 +++++++++++++++++++--
+ 4 files changed, 151 insertions(+), 14 deletions(-)
 
---==_Exmh_1389889219_2720P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUtgGwwdmEQWDXROgAQIAmg/8CR56hFsTL1Tt/sXe5kxJ6CM5qTzJuk43
-VLdjRNAE2g/gKTHYThpwI6cLXFy03PqpyT42KeaJgvlHrrg4uhfxrn6926xpLmzT
-bDwDtjhhcknX2GgMo8IxKvlfG1DuGtKES6IbwuofmCSr434NBbNUbmGXnD4sOQsh
-3G2MgjW0nxRsXl/J0xxt6KaxhvsXsZzvxTZfNnlV71dGb4WtrFPCQOrU8BS/sWyU
-X0IpoK2Wi6qhNQyhLaAKur86M70+swEQQahos+w2S5XF+ERUghtB+F+LIjOwfIwH
-j/XqeHbjT6+vJIOvu6oh0miHUliu91WNtjhKqw18lkK080nUuZ0wdvGsQB4E+mHJ
-Ef5QBEvCpuQzDppCLdUvCYqQ5QYvXCpvVch0XPcIVxYX4q3v8rURyOIzoxkzsmEG
-oYagH5YbCRrClUbseqFSLvvS8JzvI9VfAYY4O5cc9qx8GmsQiVH/v6vrFSsCi+rA
-g5UO9r86TG3v0cVitDU5Wt+6Dv3lT8OdtzVe3e/vZMmGfrqb4D7K/rsvOtOzqv6E
-e/zVPpZDR4SFIITk3xC2LS+vTUFMA2i8HKaUn5q7B8mEyOD0R73J4OYUU4Z8lnB4
-OMZFrHWRcxOBpQSX2KyBhcOZ8fRblBxDt8SI9M3zy2GEOeaj5/w0wnSyDtiNdaHG
-uqPeui9nVGE=
-=sabb
------END PGP SIGNATURE-----
-
---==_Exmh_1389889219_2720P--
+-- 
+1.8.1.4
