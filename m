@@ -1,133 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaAPHrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 02:47:40 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:38527 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaAPHrj (ORCPT
+	id S1751520AbaAPHuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 02:50:11 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:54055 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaAPHuI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 02:47:39 -0500
-Date: Thu, 16 Jan 2014 09:47:38 +0200
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>, Rony Efraim <ronye@mellanox.com>,
-        Hadar Hen Zion <hadarh@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] net/mlx4_core: clean up srq_res_start_move_to()
-Message-ID: <20140116094738.025833a6@jpm-OptiPlex-GX620>
-In-Reply-To: <1389728812.28068.9.camel@x220>
-References: <1389099734.15032.20.camel@x41>
-	<20140114084050.70a612af@jpm-OptiPlex-GX620>
-	<1389728812.28068.9.camel@x220>
-Organization: Mellanox
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+	Thu, 16 Jan 2014 02:50:08 -0500
+Date: Thu, 16 Jan 2014 08:49:43 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Silvio F <silvio.fricke@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Budig <simon.budig@kernelconcepts.de>
+Subject: Re: [PATCH 2/2] Input: edt-ft5x06: Add DT support
+Message-ID: <20140116084943.17da0226@ipc1.ka-ro>
+In-Reply-To: <20140113134441.GD1273@e106331-lin.cambridge.arm.com>
+References: <1389608224-9975-1-git-send-email-LW@KARO-electronics.de>
+	<1389608224-9975-2-git-send-email-LW@KARO-electronics.de>
+	<20140113134441.GD1273@e106331-lin.cambridge.arm.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACK.  OK.
+Hi,
 
--Jack
+Mark Rutland wrote:
+> On Mon, Jan 13, 2014 at 10:17:04AM +0000, Lothar Waßmann wrote:
+> > This patch allows the edt-ft5x06 multitouch panel driver to be
+> > configured via DT.
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> > ---
+> >  .../bindings/input/touchscreen/edt-ft5x06.txt      |   31 ++++
+> >  drivers/input/touchscreen/edt-ft5x06.c             |  145 +++++++++++++++----
+> >  2 files changed, 145 insertions(+), 31 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > new file mode 100644
+> > index 0000000..629dbdd
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > @@ -0,0 +1,31 @@
+> > +* EDT FT5x06 Multiple Touch Controller
+> > +
+[...]
+> > +- threshold: allows setting the "click"-threshold in the range from 20 to 80.
+> > +- gain: sensitivity (0..31) (lower value -> higher sensitivity)
+> > +- offset: edge compensation (0..31)
+> > +- report_rate: report rate (3..14)
+> 
+> s/_/-/ on property names please. Also, it may make sense to prefix these
+> as they're rather generic sounding names.
+> 
+> Could you elaborate on these a litle please? What units are each of
+> these in? Why does it make sense to have them in the dt?
+> 
+I just converted them from being passed via platform_data. I have no
+idea what they actually control and what units they use. I could not
+even find a manual where they are documented.
+Maybe Simon Budig can help out here as the original driver author.
 
-On Tue, 14 Jan 2014 20:46:52 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
 
-> Building resource_tracker.o triggers a GCC warning:
->     drivers/net/ethernet/mellanox/mlx4/resource_tracker.c: In
-> function 'mlx4_HW2SW_SRQ_wrapper':
-> drivers/net/ethernet/mellanox/mlx4/resource_tracker.c:3202:17:
-> warning: 'srq' may be used uninitialized in this function
-> [-Wmaybe-uninitialized] atomic_dec(&srq->mtt->ref_count); ^
-> 
-> This is a false positive. But a cleanup of srq_res_start_move_to() can
-> help GCC here. The code currently uses a switch statement where a
-> plain if/else would do, since only two of the switch's four cases can
-> ever occur. Dropping that switch makes the warning go away.
-> 
-> While we're at it, add some missing braces, and convert state to the
-> correct type.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> v2: adjust to Jack's review.
-> 
->  .../net/ethernet/mellanox/mlx4/resource_tracker.c  | 46
-> ++++++++-------------- 1 file changed, 16 insertions(+), 30
-> deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-> b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c index
-> 15cd659..4acd84c 100644 ---
-> a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c +++
-> b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c @@ -1371,7
-> +1371,7 @@ static int cq_res_start_move_to(struct mlx4_dev *dev, int
-> slave, int cqn, } 
->  static int srq_res_start_move_to(struct mlx4_dev *dev, int slave,
-> int index,
-> -				 enum res_cq_states state, struct
-> res_srq **srq)
-> +				 enum res_srq_states state, struct
-> res_srq **srq) {
->  	struct mlx4_priv *priv = mlx4_priv(dev);
->  	struct mlx4_resource_tracker *tracker =
-> &priv->mfunc.master.res_tracker; @@ -1380,39 +1380,25 @@ static int
-> srq_res_start_move_to(struct mlx4_dev *dev, int slave, int index, 
->  	spin_lock_irq(mlx4_tlock(dev));
->  	r = res_tracker_lookup(&tracker->res_tree[RES_SRQ], index);
-> -	if (!r)
-> +	if (!r) {
->  		err = -ENOENT;
-> -	else if (r->com.owner != slave)
-> +	} else if (r->com.owner != slave) {
->  		err = -EPERM;
-> -	else {
-> -		switch (state) {
-> -		case RES_SRQ_BUSY:
-> -			err = -EINVAL;
-> -			break;
-> -
-> -		case RES_SRQ_ALLOCATED:
-> -			if (r->com.state != RES_SRQ_HW)
-> -				err = -EINVAL;
-> -			else if (atomic_read(&r->ref_count))
-> -				err = -EBUSY;
-> -			break;
-> -
-> -		case RES_SRQ_HW:
-> -			if (r->com.state != RES_SRQ_ALLOCATED)
-> -				err = -EINVAL;
-> -			break;
-> -
-> -		default:
-> +	} else if (state == RES_SRQ_ALLOCATED) {
-> +		if (r->com.state != RES_SRQ_HW)
->  			err = -EINVAL;
-> -		}
-> +		else if (atomic_read(&r->ref_count))
-> +			err = -EBUSY;
-> +	} else if (state != RES_SRQ_HW || r->com.state !=
-> RES_SRQ_ALLOCATED) {
-> +		err = -EINVAL;
-> +	}
->  
-> -		if (!err) {
-> -			r->com.from_state = r->com.state;
-> -			r->com.to_state = state;
-> -			r->com.state = RES_SRQ_BUSY;
-> -			if (srq)
-> -				*srq = r;
-> -		}
-> +	if (!err) {
-> +		r->com.from_state = r->com.state;
-> +		r->com.to_state = state;
-> +		r->com.state = RES_SRQ_BUSY;
-> +		if (srq)
-> +			*srq = r;
->  	}
->  
->  	spin_unlock_irq(mlx4_tlock(dev));
+Lothar Waßmann
+-- 
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
