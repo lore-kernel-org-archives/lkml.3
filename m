@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaAPA57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:57:59 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59271 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaAPA5z (ORCPT
+	id S1752317AbaAPA6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:58:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43186 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaAPA6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:57:55 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-f3-52d72e912aa3
-Date: Thu, 16 Jan 2014 09:58:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+	Wed, 15 Jan 2014 19:58:46 -0500
+Date: Wed, 15 Jan 2014 16:58:45 -0800 (PST)
+Message-Id: <20140115.165845.1813878173743840445.davem@davemloft.net>
+To: damuzi000@gmail.com
+Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 4/4] zram: report failed read and writes stats
-Message-ID: <20140116005844.GN1992@bbox>
-References: <1389780977-18949-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389780977-18949-5-git-send-email-sergey.senozhatsky@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389780977-18949-5-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Subject: Re: [PATCH net-next] net: stmmac: fix NULL pointer dereference in
+ stmmac_get_tx_hwtstamp
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1389795967-2452-1-git-send-email-damuzi000@gmail.com>
+References: <1389795967-2452-1-git-send-email-damuzi000@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 01:16:17PM +0300, Sergey Senozhatsky wrote:
-> zram accounted but did not report numbers of failed read
-> and write queries. make these stats available as failed_reads
-> and failed_writes attrs.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+From: Bruce Liu <damuzi000@gmail.com>
+Date: Wed, 15 Jan 2014 22:26:07 +0800
 
--- 
-Kind regards,
-Minchan Kim
+> When timestamping is enabled, stmmac_tx_clean will call
+> stmmac_get_tx_hwtstamp to get tx TS.
+> But the skb can be NULL because the last of its tx_skbuff is NULL
+> if this packet frame is filled in more than one descriptors.
+> 
+> Signed-off-by: Bruce Liu <damuzi000@gmail.com>
+
+Sometimes the cure is worse than the disease.
+
+Your change means that every multi-segment packet will never have
+it's timestamp properly recorded, which is of course bogus.
+
+You need to change this code such that the SKB from the first
+descriptor is maintained so that we can pass it into
+stmmac_get_tx_hwtstamp() at the appropriate time.
+
+Thanks.
