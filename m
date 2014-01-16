@@ -1,149 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaAPNiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:38:52 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:46977 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaAPNin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:38:43 -0500
-Message-ID: <1389879444.2794.44.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v2 2/2] i2c: New bus driver for the QUP I2C controller
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        James Ralston <james.d.ralston@intel.com>,
-        Bill Brown <bill.e.brown@intel.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 16 Jan 2014 15:37:24 +0200
-In-Reply-To: <20140115164604.GI14405@codeaurora.org>
-References: <1389659437-16406-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1389659437-16406-3-git-send-email-bjorn.andersson@sonymobile.com>
-	 <20140115164604.GI14405@codeaurora.org>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752793AbaAPNi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:38:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38305 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaAPNiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 08:38:54 -0500
+Date: Thu, 16 Jan 2014 05:38:23 -0800
+From: tip-bot for Mark Rutland <tipbot@zytor.com>
+Message-ID: <tip-a8a5cd8b472ca20e5b8fa649c43b3756867322f8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, will.deacon@arm.com,
+        mark.rutland@arm.com, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, will.deacon@arm.com,
+        mark.rutland@arm.com, jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1389782648-4417-4-git-send-email-mark.rutland@arm.com>
+References: <1389782648-4417-4-git-send-email-mark.rutland@arm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: tools: Fix cross building
+Git-Commit-ID: a8a5cd8b472ca20e5b8fa649c43b3756867322f8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:38:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  a8a5cd8b472ca20e5b8fa649c43b3756867322f8
+Gitweb:     http://git.kernel.org/tip/a8a5cd8b472ca20e5b8fa649c43b3756867322f8
+Author:     Mark Rutland <mark.rutland@arm.com>
+AuthorDate: Wed, 15 Jan 2014 10:44:08 +0000
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 15 Jan 2014 15:15:05 -0300
 
-Hi,
+perf: tools: Fix cross building
 
-On Wed, 2014-01-15 at 08:46 -0800, Stephen Boyd wrote: 
-> On 01/13, Bjorn Andersson wrote:
-> > +/*
-> > + * QUP driver for Qualcomm MSM platforms
-> > + *
-> > + */
-> 
-> This comment seems redundant, we know what file we're looking at.
-> 
-> > +
-> > +struct qup_i2c_dev {
-> > +	struct device		*dev;
-> > +	void __iomem		*base;
-> > +	struct pinctrl		*pctrl;
-> 
-> This is unused.
-> 
-> > +	int			irq;
-> > +	struct clk		*clk;
-> > +	struct clk		*pclk;
-> > +	struct i2c_adapter	adap;
-> > +
-> > +	int			clk_freq;
-> 
-> This is only ever used in probe, so why do we need to store it
-> away?
-> 
-> > +	int			clk_ctl;
-> > +	int			one_bit_t;
-> > +	int			out_fifo_sz;
-> > +	int			in_fifo_sz;
-> > +	int			out_blk_sz;
-> > +	int			in_blk_sz;
-> > +	unsigned long		xfer_time;
-> > +	unsigned long		wait_idle;
-> > +
-> > +	struct i2c_msg		*msg;
-> > +	/* Current possion in user message buffer */
-> 
-> s/possion/position/?
-> 
-> > +	int			pos;
-> > +	/* Keep number of bytes left to be transmitted */
-> > +	int			cnt;
-> > +	/* I2C protocol errors */
-> > +	u32			bus_err;
-> > +	/* QUP core errors */
-> > +	u32			qup_err;
-> > +	/*
-> > +	 * maximum bytes that could be send (per iterration). could be
-> 
-> s/iterration/iteration/?
-> 
-> > +	 * equal of fifo size or block size (in block mode)
-> > +	 */
-> > +	int			chunk_sz;
-> > +	struct completion	xfer;
-> > +};
-> > +
-> > +static irqreturn_t qup_i2c_interrupt(int irq, void *dev)
-> > +{
-> > +	struct qup_i2c_dev *qup = dev;
-> > +	u32 bus_err;
-> > +	u32 qup_err;
-> > +	u32 opflags;
-> > +
-> [...]
-> > +
-> > +	if (opflags & QUP_OUT_SVC_FLAG)
-> > +		writel(QUP_OUT_SVC_FLAG, qup->base + QUP_OPERATIONAL);
-> > +
-> > +	if (!(qup->msg->flags == I2C_M_RD))
-> 
-> Should this be?
-> 
-> 	if (!(qup->msg->flags & I2C_M_RD))
-> 
-> Otherwise it should be
-> 
-> 	if (qup->msg->flags != I2C_M_RD)
-> 
+Currently the feature-checks Makefile does not inherit $(CC), and calls
+cc rather than $(CROSS_COMPILE)gcc. Thus the feature checks invoke the
+native toolchain rather than the cross toolchain, and can identify
+features as available when they are not. This can break the build.
 
-This check is actually broken. Intention was that if this is read
-transaction and there is no QUP_MX_INPUT_DONE or QUP_IN_SVC_FLAG
-to exit without wakeup transfer thread. As is it now it will never
-complete write transactions.
+Additionally the native pkg-config is always called as opposed to
+$(CROSS_COMPILE)pkg-config, so the wrong flags and paths may be passed
+to the cross compiler.
 
-Regards,
-Ivan
+This patch passes CROSS_COMPILE down to the feature-checks Makefile, and
+forces its use. Additionally pkg-config is replaced with
+$(CROSS_COMPILE)pkg-config via a new $(PKG_CONFIG) variable. This patch
+has been build tested on x86_64 and arm.
 
-> > +		return IRQ_HANDLED;
-> > +
-> > +	if ((opflags & QUP_MX_INPUT_DONE) || (opflags & QUP_IN_SVC_FLAG))
-> > +		writel(QUP_IN_SVC_FLAG, qup->base + QUP_OPERATIONAL);
-> > +
-> > +done:
-> > +	qup->qup_err = qup_err;
-> > +	qup->bus_err = bus_err;
-> > +	complete(&qup->xfer);
-> > +	return IRQ_HANDLED;
-> > +}
-> > +
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/r/1389782648-4417-4-git-send-email-mark.rutland@arm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile.perf                  | 1 +
+ tools/perf/config/Makefile                | 6 +++---
+ tools/perf/config/feature-checks/Makefile | 9 +++++----
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 87d7726..7257e7e 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -76,6 +76,7 @@ $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+ 
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
++PKG_CONFIG = $(CROSS_COMPILE)pkg-config
+ 
+ RM      = rm -f
+ LN      = ln -f
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 01dd43d..d604e50 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -372,7 +372,7 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+   ifneq ($(feature-gtk2), 1)
+     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+     NO_GTK2 := 1
+@@ -381,8 +381,8 @@ ifndef NO_GTK2
+       GTK_CFLAGS := -DHAVE_GTK_INFO_BAR_SUPPORT
+     endif
+     CFLAGS += -DHAVE_GTK2_SUPPORT
+-    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++    GTK_CFLAGS += $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null)
++    GTK_LIBS := $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
+     EXTLIBS += -ldl
+   endif
+ endif
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7cf6fcd..12e5513 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -28,7 +28,8 @@ FILES=					\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin
+ 
+-CC := $(CC) -MD
++CC := $(CROSS_COMPILE)gcc -MD
++PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+ 
+ all: $(FILES)
+ 
+@@ -37,7 +38,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
+ ###############################
+ 
+ test-all.bin:
+-	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+ 
+ test-hello.bin:
+ 	$(BUILD)
+@@ -82,10 +83,10 @@ test-libslang.bin:
+ 	$(BUILD) -I/usr/include/slang -lslang
+ 
+ test-gtk2.bin:
+-	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+ 
+ test-gtk2-infobar.bin:
+-	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+ 
+ grep-libs  = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
