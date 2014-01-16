@@ -1,87 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaAPNkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:40:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38448 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187AbaAPNkv (ORCPT
+	id S1753233AbaAPNmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:42:17 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:63399 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaAPNmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:40:51 -0500
-Date: Thu, 16 Jan 2014 05:40:11 -0800
-From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-5778fccf361c9ba443b45d822f3d875f64c80084@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, raistlin@linux.it, tglx@linutronix.de,
-        fengguang.wu@intel.com, juri.lelli@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, raistlin@linux.it, tglx@linutronix.de,
-        fengguang.wu@intel.com, juri.lelli@gmail.com
-In-Reply-To: <52D5552D.5000102@gmail.com>
-References: <52D5552D.5000102@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/core: Fix htmldocs warnings
-Git-Commit-ID: 5778fccf361c9ba443b45d822f3d875f64c80084
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 16 Jan 2014 08:42:13 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:40:18 -0800 (PST)
+In-Reply-To: <CAFftDdpyXdgk7hUt4geKLER7s44bOieZ4ugpQXUKj5m0mVkdyg@mail.gmail.com>
+References: <1389808934-4446-1-git-send-email-wroberts@tresys.com>
+	<2002335.9x4iUKkcnh@x2>
+	<CAFftDdqJbMwTDkYn6FbRE=j69F4mE+9i=Sw6aQTTs99hsP0KwA@mail.gmail.com>
+	<3286317.e32vfzCzRe@x2>
+	<CAFftDdpyXdgk7hUt4geKLER7s44bOieZ4ugpQXUKj5m0mVkdyg@mail.gmail.com>
+Date: Thu, 16 Jan 2014 08:42:11 -0500
+Message-ID: <CAFftDdqrpcgU1kCyrwCsDRHXhA182p38e6-CytsvPRTVYfi-zg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] audit: Audit proc cmdline value
+From: William Roberts <bill.c.roberts@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        William Roberts <wroberts@tresys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5778fccf361c9ba443b45d822f3d875f64c80084
-Gitweb:     http://git.kernel.org/tip/5778fccf361c9ba443b45d822f3d875f64c80084
-Author:     Juri Lelli <juri.lelli@gmail.com>
-AuthorDate: Tue, 14 Jan 2014 16:10:39 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 16 Jan 2014 09:27:12 +0100
+On Thu, Jan 16, 2014 at 8:40 AM, William Roberts
+<bill.c.roberts@gmail.com> wrote:
+> On Thu, Jan 16, 2014 at 7:11 AM, Steve Grubb <sgrubb@redhat.com> wrote:
+>> On Thursday, January 16, 2014 07:03:34 AM William Roberts wrote:
+>>> On Thu, Jan 16, 2014 at 6:02 AM, Steve Grubb <sgrubb@redhat.com> wrote:
+>>> > On Wednesday, January 15, 2014 09:08:39 PM William Roberts wrote:
+>>> >> >> > Try this,
+>>> >> >> >
+>>> >> >> > cp /bin/ls 'test test test'
+>>> >> >> > auditctll -a always,exit -F arch=b64 -S stat -k test
+>>> >> >> > ./test\ test\ test './test\ test\ test'
+>>> >> >> > auditctl -D
+>>> >> >> > ausearch --start recent --key test
+>>> >> >> >
+>>> >> >> >> On the event of weird chars, it gets hex escaped.
+>>> >> >> >
+>>> >> >> > and its all in 1 lump with no escaping to figure out what is what.
+>>> >> >>
+>>> >> >> Un-escape it. ausearch does this with paths. Then if you need to parse
+>>> >> >> it, do it.
+>>> >> >
+>>> >> > How can you? When you unescape cmdline for the example I gave, you will
+>>> >> > have "./test test test ./test test test".  Which program ran and how
+>>> >> > many
+>>> >> > arguments were passed? If we are trying to improve on what comm=
+>>> >> > provides
+>>> >> > by having the full information, I have to be able to find out exactly
+>>> >> > what the program name was so it can be used for searching. If that
+>>> >> > can't
+>>> >> > be done, then we don't need this addition in its current form.
+>>> >>
+>>> >> In your example, you will have an execve record, with it parsed, will you
+>>> >> not?
+>>> >
+>>> > Only if you change your patch.
+>>>
+>>> My patch has nothing to do with the emitting of an execve record. You
+>>> will get an
+>>> execve record with the arguments parsed out. Its not even really
+>>> "parsing" as each
+>>> element is in a NULL terminated char * array.
+>>
+>> That is what I am telling you is wrong. We can't have a string that can't be
+>> parsed later. If you reformat the output as an execve record, then we have
+>> something that is trustworthy.
+>
+Formatting of the string does not change the trust worthiness of its value. If
+I told you your name was JoEy, I could re-type it like this Joey and
+its still not
+true. I think the part of this your confusing is that this is really
+proctitle. On desktops
+the execution environment simply takes all the cmdline args and dumps
+it there. But,
+this is not always the case. The reason your arguments and command are
+well formatted
+on exec is becuase of the interface to the kernel. Its in a char *
+array. Their is NO parsing
+that is done on the kernels behalf. Accessing each value is just a
+matter of indexing the array.
+Parsing "cmdline", which again is arbitrary and controlled via
+setproctitle() is not needed,
+because its arbitrary. However, the fact that its arbitrary does not
+affect its usefulness. Many
+values used in the audit records, like comm (prctl()), can be
+manipulated by executing programs. But it
+may help a user to deduce what is going on.
 
-sched/core: Fix htmldocs warnings
+>>
+>>
+>>> >> cmdline does not necessarily represent the arguments or process name.
+>>> >> Sometimes it does, sometimes it doesn't. Just treat the thing as one
+>>> >> string, perhaps do some form of substring matching in a tool.
+>>> >
+>>> > You are missing the point. The point is that you are trying to place trust
+>>> > in something that can be gamed. The audit system is designed such that it
+>>> > cannot be fooled very easily. Each piece of the subject and object are
+>>> > separated so that programs can be written to analyze events. What I am
+>>> > trying to say is now you are making something that concatenates fields
+>>> > with no way to regroup them later to reconstruct what really happened,
+>>> >
+>>> >> To make this clear, I am not trying to improve on what comm provides.
+>>> >> comm provides
+>>> >> 16 chars for per thread name. The key is, its per thread, and can be
+>>> >> anything. The
+>>> >> "cmdline" value, is an arbitrary spot that is a global entity for the
+>>> >> process. So in my change, all things coming into these events will have a
+>>> >> similar cmdline audit. Which may help in narrowing down on whats going on
+>>> >> in the system
+>>> >
+>>> > It needs to be more trustworthy than this.
+>>>
+>>> Its as trustworthy as comm, its as trustworthy as path, etc. The audit
+>>> subsystem already prints many
+>>> untrusted values to aid in narrowing down the process, or to observe a
+>>> running processes behavior; this
+>>> is no different.
+>>
+>> Sure it is. comm is 1 entity on the value side of the name value pair. If it
+>> is detected as being special, its encoded so that it can be correctly
+>> dissected later. What you are creating cannot be correctly dissected. Please
+>> try the example I gave you and think about it a bit.
+>
+Your example BTW, can be parsed. I have an FSM on my
+whiteboard that will do it. But you don't need to parse it. Again,
+as I stated above it might not be set to your example. If you have
+a process that does this:
 
-Fengguang Wu's kbuild test robot reported the following new htmldocs warnings:
+prctl(PR_SET_NAME, "./test \test \test");
 
-  >>> Warning(kernel/sched/core.c:3380): No description found for parameter 'uattr'
-  >>> Warning(kernel/sched/core.c:3380): Excess function parameter 'attr' description in 'sys_sched_setattr'
-  >>> Warning(kernel/sched/core.c:3520): No description found for parameter 'uattr'
-  >>> Warning(kernel/sched/core.c:3520): Excess function parameter 'attr' description in 'sys_sched_getattr'
+You will see that comm now has white space and other chars.
 
-The second argument to sys_sched_{setattr,getattr}() is named uattr (not attr).
+I think to help avoid this confusion, I will change the keyword from
+cmdline= to proctitle=
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Dario Faggioli <raistlin@linux.it>
-Fixes: d50dde5a10f3 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
-Link: http://lkml.kernel.org/r/52D5552D.5000102@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 138711b..26af370 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3614,7 +3614,7 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
- /**
-  * sys_sched_setattr - same as above, but with extended sched_attr
-  * @pid: the pid in question.
-- * @attr: structure containing the extended parameters.
-+ * @uattr: structure containing the extended parameters.
-  */
- SYSCALL_DEFINE2(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr)
- {
-@@ -3756,7 +3756,7 @@ err_size:
- /**
-  * sys_sched_getattr - similar to sched_getparam, but with sched_attr
-  * @pid: the pid in question.
-- * @attr: structure containing the extended parameters.
-+ * @uattr: structure containing the extended parameters.
-  * @size: sizeof(attr) for fwd/bwd comp.
-  */
- SYSCALL_DEFINE3(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
+re-adding mailing list, accidentally dropped.
