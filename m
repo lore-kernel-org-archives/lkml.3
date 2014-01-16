@@ -1,135 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaAPILK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:11:10 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:54316 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaAPILI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:11:08 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ijc@hellion.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: orion: provide C-style interrupt handler for MULTI_IRQ_HANDLER
-Date: Thu, 16 Jan 2014 09:10:31 +0100
-Message-Id: <1389859831-9883-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1389775235.10695.51.camel@dagon.hellion.org.uk>
-References: <1389775235.10695.51.camel@dagon.hellion.org.uk>
+	id S1751480AbaAPIRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 03:17:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35954 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960AbaAPIRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 03:17:41 -0500
+Date: Thu, 16 Jan 2014 09:17:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
+Message-ID: <20140116081738.GA28157@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
+ <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
+ <20140114132727.GB32227@dhcp22.suse.cz>
+ <20140114142610.GF32227@dhcp22.suse.cz>
+ <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+ <20140115095829.GI8782@dhcp22.suse.cz>
+ <20140115121728.GJ8782@dhcp22.suse.cz>
+ <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT-enabled Marvell Kirkwood and Dove SoCs make use of an irqchip
-driver. As expected for irqchip drivers, it uses a C-style
-interrupt handler and therefore selects MULTI_IRQ_HANDLER.
+On Wed 15-01-14 13:24:34, Hugh Dickins wrote:
+> On Wed, 15 Jan 2014, Michal Hocko wrote:
+> > On Wed 15-01-14 10:58:29, Michal Hocko wrote:
+> > > On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
+> > > > On Tue, 14 Jan 2014, Michal Hocko wrote:
+> > [...]
+> > > > > Ouch. And thinking about this shows that out_css_put is broken as well
+> > > > > for subtree walks (those that do not start at root_mem_cgroup level). We
+> > > > > need something like the the snippet bellow.
+> > > > 
+> > > > It's the out_css_put precedent that I was following in not incrementing
+> > > > for the root.  I think that's been discussed in the past, and rightly or
+> > > > wrongly we've concluded that the caller of mem_cgroup_iter() always has
+> > > > some hold on the root, which makes it safe to skip get/put on it here.
+> > > > No doubt one of those many short cuts to avoid memcg overhead when
+> > > > there's no memcg other than the root_mem_cgroup.
+> > > 
+> > > That might be true but I guess it makes sense to get rid of some subtle
+> > > assumptions. Especially now that we have an effective per-cpu ref.
+> > > counting for css.
+> > 
+> > OK, I finally found some time to think about this some more and it seems
+> > that the issue you have reported and the above issue are in fact
+> > identical. css reference counting optimization in fact also prevent from
+> > the endless loop you are seeing here because we simply didn't call
+> > css_tryget on the root...
+> 
+> Wow.  I don't see them as the same issue, but yes, one fix for both.
 
-Now, compiling a kernel with both non-DT and DT support enabled,
-selecting MULTI_IRQ_HANDLER will break ASM irq handler used by
-non-DT boards.
+Yeah, they have an identical culprit, that's what I wanted to write but
+then little dwarfs have have changed that to make me sound funny.
 
-Therefore, we provide a C-style irq handler even for non-DT boards,
-if MULTI_IRQ_HANDLER is set. By installing the C-style irq handler
-in orion_irq_init this is transparent to all non-DT board files.
+> I completely missed that: so we've been leaking a "struct mem_cgroup"
+> and its attached stuff, for any memcg on which reclaim or other iteration
+> had been done, from v3.10 onwards?
 
-While the regression report was filed on Marvell Kirkwood, also
-Marvell Dove non-DT boards are affected and fixed by this patch.
+I am afraid so :/
+I've added a simple trace_printk into mem_cgroup_css_free just to be
+sure and it didn't show up after rmdir THAT_GROUP
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Reported-by: Ian Campbell <ijc@hellion.org.uk>
-Fixes: 2326f04321a9 ("ARM: kirkwood: convert to DT irqchip and clocksource")
-Fixes: f07d73e33d0e ("ARM: dove: convert to DT irqchip and clocksource")
----
-Compared to the two patch version sent on Ian's regression report,
-I cooked this down to a single patch only touching plat-orion/irq.c.
-I also dropped Orion5x and MV78x00, as they not yet select MULTI_IRQ_HANDLER
-at all. Instead I added a comment about taking care of them, as soon as
-they move over to an irqchip driver themselves.
+> Or am I confused and overstating it?  I'd have sworn I've checked for
+> memcg leaks myself after doing tests, and not realized this; but now I
+> put in a count of those allocated, yes, I see it going up and up (with
+> my half-fix in to proceed beyond the hang) without your fix, but staying
+> steady with your fix in (which also gets around my hang).
+> 
+> > 
+> > Therefore I guess we should reintroduce the optimization. What do you
+> 
+> It's not a question of reintroducing an optimization, but of either
+> fixing the broken end of the optimization, or ripping the other end out.
 
-I have not yet Cc'ed this patch to -stable to get some discussion and
-an Acked-by from Jason or Andrew, too.
+Heh, I didn't have a better name for the root css exclusion so I kept
+calling it optimization.
 
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/plat-orion/irq.c | 47 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+> At this point I'm for simply fixing what we know is broken; then later
+> one of us audit the other iterators to check the original assumption
+> behind the optimization is still valid (that callers of mem_cgroup_iter
+> have some kind of hold on the root they call it for).
 
-diff --git a/arch/arm/plat-orion/irq.c b/arch/arm/plat-orion/irq.c
-index c492e1b3dfdb..807df142444b 100644
---- a/arch/arm/plat-orion/irq.c
-+++ b/arch/arm/plat-orion/irq.c
-@@ -15,8 +15,51 @@
- #include <linux/io.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-+#include <asm/exception.h>
- #include <plat/irq.h>
- #include <plat/orion-gpio.h>
-+#include <mach/bridge-regs.h>
-+
-+#ifdef CONFIG_MULTI_IRQ_HANDLER
-+/*
-+ * Compiling with both non-DT and DT support enabled, will
-+ * break asm irq handler used by non-DT boards. Therefore,
-+ * we provide a C-style irq handler even for non-DT boards,
-+ * if MULTI_IRQ_HANDLER is set.
-+ *
-+ * Notes:
-+ * - this is prepared for Kirkwood and Dove only, update
-+ *   accordingly if you add Orion5x or MV78x00.
-+ * - Orion5x uses different macro names and has only one
-+ *   set of CAUSE/MASK registers.
-+ * - MV78x00 uses the same macro names but has a third
-+ *   set of CAUSE/MASK registers.
-+ *
-+ */
-+
-+static void __iomem *orion_irq_base = IRQ_VIRT_BASE;
-+
-+asmlinkage void
-+__exception_irq_entry orion_legacy_handle_irq(struct pt_regs *regs)
-+{
-+	u32 stat;
-+
-+	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_LOW_OFF);
-+	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_LOW_OFF);
-+	if (stat) {
-+		unsigned int hwirq = __fls(stat);
-+		handle_IRQ(hwirq, regs);
-+		return;
-+	}
-+	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_HIGH_OFF);
-+	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_HIGH_OFF);
-+	if (stat) {
-+		unsigned int hwirq = 32 + __fls(stat);
-+		handle_IRQ(hwirq, regs);
-+		return;
-+	}
-+}
-+#endif
- 
- void __init orion_irq_init(unsigned int irq_start, void __iomem *maskaddr)
- {
-@@ -35,6 +78,10 @@ void __init orion_irq_init(unsigned int irq_start, void __iomem *maskaddr)
- 	ct->chip.irq_unmask = irq_gc_mask_set_bit;
- 	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_MASK_CACHE,
- 			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
-+
-+#ifdef CONFIG_MULTI_IRQ_HANDLER
-+	set_handle_irq(orion_legacy_handle_irq);
-+#endif
- }
- 
- #ifdef CONFIG_OF
+Agreed.
+
+> Ah.  But perhaps the unfreeable memcg has been protecting us from
+> nasties which can now emerge.  Hmm: I like your fix, but it's not
+> something to rush into mainline and stable immediately.  We'll have
+> to give it some exposure first.
+
+I would like to get rid of the root css refcounting optimization as well
+but when I was thinking about it I figured it would be safer to go back
+what we had in 3.10 before my patch oversimplified that code. Later
+fixes can be built on top.
+
+Stable backport will be safer as well IMO.
+
+> And given the confusion, and progressive little modifications in
+> just these few lines of code, I wonder if it won't be easier for
+> stable to combine the CSS_ONLINE one into this to make a single
+> patch.  It is a separate issue, but similar, and now it's clear
+> that it's what you intended originally, I don't think it would be
+> inappropriate to make a single patch correcting those few lines,
+> with log comment listing the three issues.
+
+I am not sure how much combining the two would be helpful. This one
+already fixes 2 issues. But if you think it is worthwhile then I won't
+block it. 
+
+> > think about the following? This is on top of the current mmotm but it
+> > certainly needs backporting to the stable kernels.
+> > ---
+> > From 560924e86059947ab9418732cb329ad149dd8f6a Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 15 Jan 2014 11:52:09 +0100
+> > Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
+> > 
+> > 19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
+> > refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
+> > doesn't put a css reference on the root of the tree walk. The mentioned
+> > commit however dropped the root check when the css reference is taken
+> > while it keept the css_put optimization fora the root in place.
+> > 
+> > This means that css_put is not called and so css along with mem_cgroup
+> > and other cgroup internal object tied by css lifetime are never freed.
+> > 
+> > Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
+> > 
+> > This patch also fixes issue reported by Hugh Dickins when
+> > mem_cgroup_iter might end up in an endless loop because a group which is
+> > under hard limit reclaim is removed in parallel with iteration.
+> > __mem_cgroup_iter_next would always return NULL because css_tryget on
+> > the root (reclaimed memcg) would fail and there are no other memcg in
+> > the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
+> > from the root and so the while (!memcg) loop would never terminate.
+> > as css_tryget is no longer called for the root of the tree walk this
+> > doesn't happen anymore.
+> > 
+> > Cc: stable@vger.kernel.org # 3.10+
+> > Reported-and-debugged-by: Hugh Dickins <hughd@google.com>
+> 
+> Definitely not debugged by me!  Debugged and understood by you.
+
+You still have debugged the second part of the problem (endless loop).
+But I will go with whatever tag you like.
+
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/memcontrol.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index f016d26adfd3..dd3974c9f08d 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1078,7 +1078,8 @@ skip_node:
+> >  	 * protected by css_get and the tree walk is rcu safe.
+> >  	 */
+> >  	if (next_css) {
+> > -		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
+> > +		if ((next_css->flags & CSS_ONLINE) &&
+> > +				(next_css == root || css_tryget(next_css)))
+> 
+> Not quite: next_css points to one thing and root to another.
+
+Dohh, right you are next_css == root->css. I was wondering how I was
+able to see the leak being fixed and then realized that root->css has
+the same address as root...
+Anyway very well spotted.
+
+> >  			return mem_cgroup_from_css(next_css);
+> >  		else {
+> >  			prev_css = next_css;
+> > -- 
+> 
+> This is how I've re-written that block, and started testing on it;
+> the unnecessary "else {" part was looking increasingly ugly to me
+> (though let loose on it, I might change it all around more...)
+> 
+> 	if (next_css) {
+> 		if ((next_css->flags & CSS_ONLINE) &&
+> 		    (next_css == &root->css || css_tryget(next_css)))
+> 			return mem_cgroup_from_css(next_css);
+> 		prev_css = next_css;
+> 		goto skip_node;
+> 	}
+
+Yes, that looks better. Maybe put a blank line before prev_css = next_css?
+
+> Sorry for being so slow to respond, by the way: for a couple of hours
+> I couldn't test at all, and thought I was going mad - one day I send
+> you that "cg" script, the next day it starts to break, it couldn't
+> "mkdir -p /cg/cg", claiming it already existed, wha???  Turns out the
+> fix for that has gone into yesterday's mmotm (though I've not had time
+> to move on to that yet): uninitialized ret in memcg_propagate_kmem().
+
+Thanks a lot!
 -- 
-1.8.5.2
-
+Michal Hocko
+SUSE Labs
