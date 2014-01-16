@@ -1,166 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaAPLdj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 06:33:39 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:59577 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409AbaAPLdh convert rfc822-to-8bit (ORCPT
+	id S1752412AbaAPLid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 06:38:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34928 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaAPLib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 06:33:37 -0500
-Date: Thu, 16 Jan 2014 11:33:32 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
-Message-ID: <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
-References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
- <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
- <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
- <20140115165623.GJ14405@codeaurora.org>
- <20140116013840.GA674@codeaurora.org>
+	Thu, 16 Jan 2014 06:38:31 -0500
+Date: Thu, 16 Jan 2014 12:38:01 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, tglx@linutronix.de,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
+        Michael wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+Message-ID: <20140116113801.GN31570@twins.programming.kicks-ass.net>
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
+ <20140115073533.GU31570@twins.programming.kicks-ass.net>
+ <52D69D44.4090504@linaro.org>
+ <52D7BC71.9010908@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140116013840.GA674@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 16 Jan 2014 11:33:33.0195 (UTC) FILETIME=[C98AA5B0:01CF12AE]
-X-MC-Unique: 114011611333400701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <52D7BC71.9010908@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 01:38:40AM +0000, Stephen Boyd wrote:
-> On 01/15, Stephen Boyd wrote:
-> > 
-> > Ah sorry, I forgot to put the compatible property here like in
-> > the dts change. I'll do that in the next revision. Yes we need a
-> > compatible property here to match the platform driver.
-> > 
+On Thu, Jan 16, 2014 at 12:03:13PM +0100, Daniel Lezcano wrote:
+> Hi Alex,
 > 
-> This is the replacement patch
+> it is a nice optimization attempt but I agree with Peter we should focus on
+> integrating cpuidle.
 > 
-> -----8<------
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> Subject: [PATCH v9] devicetree: bindings: Document Krait CPU/L1 EDAC
+> The question is "how do we integrate cpuidle ?"
 > 
-> The Krait CPU/L1 error reporting device is made up a per-CPU
-> interrupt. While we're here, document the next-level-cache
-> property that's used by the Krait EDAC driver.
+> IMHO, the main problem are the governors, especially the menu governor.
+
+Yah.
+
+> The menu governor tries to predict the events per cpu. This approach which
+> gave us a nice benefit for the power saving may not fit well for the
+> scheduler.
+
+So the way to start all this is I think to gradually share more and
+more.
+
+Start by pulling in the actual idle state; such that we can indeed
+observe what the relative cost is of waking a cpu (against another), and
+maybe even the predicted wakeup time.
+
+Then pull in the various statistics gathering bits -- without improving
+them.
+
+Then improve the statistics; try and remove duplicate statistics -- if
+there's such things, try and use the extra information the scheduler has
+etc..
+
+Then worry about the governors, or what's left of them.
+
+> In order to finish integrating the cpuidle framework in the scheduler, there
+> are pending questions about the impact in the current design.
 > 
-> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/arm/cpus.txt | 58 ++++++++++++++++++++++++++
->  1 file changed, 58 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index 91304353eea4..03a529e791c4 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -62,6 +62,20 @@ nodes to be present and contain the properties described below.
->  		Value type: <u32>
->  		Definition: must be set to 0
->  
-> +	- compatible
-> +		Usage: optional
-> +		Value type: <string>
-> +		Definition: should be one of the compatible strings listed
-> +			    in the cpu node compatible property. This property
-> +			    shall only be present if all the cpu nodes have the
-> +			    same compatible property.
+> Peter or Ingo, if you have time, could you have a look at the email I sent
+> previously [1] ?
 
-Do we really want to do that ? I am not sure. A cpus node is supposed to
-be a container node, we should not define this binding just because we
-know the kernel creates a platform device for it then.
+I read it once, it didn't make sense at the time, I just read it again,
+still doesn't make sense.
 
-interrupts is a cpu node property and I think it should be kept as such.
+We need the idle task, since we need to DO something to go idle, the
+scheduler needs to pick a task to go do that something. This is the idle
+task.
 
-I know it will be duplicated and I know you can't rely on a platform
-device for probing (since if I am not mistaken, removing a compatible
-string from cpus prevents its platform device creation), but that's an issue
-related to how the kernel works, you should not define DT bindings to solve
-that IMHO.
+You cannot get rid of that.
 
-Lorenzo
+In fact, the 'doing' of that task is running much of the cpuidle code,
+so by getting rid of it, there's nobody left to execute that code.
 
-> +
-> +	- interrupts
-> +		Usage: required when node contains cpus with compatible
-> +		       string "qcom,krait".
-> +		Value type: <prop-encoded-array>
-> +		Definition: L1/CPU error interrupt
-> +
->  - cpu node
->  
->  	Description: Describes a CPU in an ARM based system
-> @@ -191,6 +205,11 @@ nodes to be present and contain the properties described below.
->  			  property identifying a 64-bit zero-initialised
->  			  memory location.
->  
-> +	- next-level-cache
-> +		Usage: optional
-> +		Value type: <phandle>
-> +		Definition: phandle pointing to the next level cache
-> +
->  Example 1 (dual-cluster big.LITTLE system 32-bit):
->  
->  	cpus {
-> @@ -382,3 +401,42 @@ cpus {
->  		cpu-release-addr = <0 0x20000000>;
->  	};
->  };
-> +
-> +
-> +Example 5 (Krait 32-bit system):
-> +
-> +cpus {
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +	interrupts = <1 9 0xf04>;
-> +	compatible = "qcom,krait";
-> +
-> +	cpu@0 {
-> +		device_type = "cpu";
-> +		reg = <0>;
-> +		next-level-cache = <&L2>;
-> +	};
-> +
-> +	cpu@1 {
-> +		device_type = "cpu";
-> +		reg = <1>;
-> +		next-level-cache = <&L2>;
-> +	};
-> +
-> +	cpu@2 {
-> +		device_type = "cpu";
-> +		reg = <2>;
-> +		next-level-cache = <&L2>;
-> +	};
-> +
-> +	cpu@3 {
-> +		device_type = "cpu";
-> +		reg = <3>;
-> +		next-level-cache = <&L2>;
-> +	};
-> +
-> +	L2: l2-cache {
-> +		compatible = "cache";
-> +		interrupts = <0 2 0x4>;
-> +	};
-> +};
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+Also, since its already running that cpuidle stuff, integrating it more
+closely with the scheduler will not in fact change much, it will still
+run it.
 
+Could of course be I'm not reading what you meant to write, if so, do
+try again ;-)
