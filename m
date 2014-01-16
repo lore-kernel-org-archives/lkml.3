@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaAPAMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:12:33 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:55830 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaAPAMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:12:30 -0500
-Date: Thu, 16 Jan 2014 02:11:41 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, penberg@kernel.org, cl@linux-foundation.org
-Subject: Re: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently
- instead of page->lru
-Message-ID: <20140116001141.GA8456@node.dhcp.inet.fi>
-References: <20140114180042.C1C33F78@viggo.jf.intel.com>
- <20140114180044.1E401C47@viggo.jf.intel.com>
+	id S1752631AbaAPANo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:13:44 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:62210 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaAPANl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 19:13:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140114180044.1E401C47@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <1389754951.14001.4.camel@joe-AO722>
+References: <1389754365-31863-1-git-send-email-festevam@gmail.com>
+	<1389754951.14001.4.camel@joe-AO722>
+Date: Wed, 15 Jan 2014 22:13:40 -0200
+Message-ID: <CAOMZO5BirX4pS8BeXM4bydPMREBkLRvOtFtV2aS_-uY8RxdTaw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: pfuze100-regulator: Fix some checkpatch complaints
+From: Fabio Estevam <festevam@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:00:44AM -0800, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> 'struct page' has two list_head fields: 'lru' and 'list'.
-> Conveniently, they are unioned together.  This means that code
-> can use them interchangably, which gets horribly confusing like
-> with this nugget from slab.c:
-> 
-> >	list_del(&page->lru);
-> >	if (page->active == cachep->num)
-> >		list_add(&page->list, &n->slabs_full);
-> 
-> This patch makes the slab and slub code use page->lru
-> universally instead of mixing ->list and ->lru.
-> 
-> So, the new rule is: page->lru is what the you use if you want to
-> keep your page on a list.  Don't like the fact that it's not
-> called ->list?  Too bad.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+On Wed, Jan 15, 2014 at 1:02 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-01-15 at 00:52 -0200, Fabio Estevam wrote:
+>> Fix the following checkpatch error and warning:
+>
+> While you're at it:
+>
+>> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+> []
+>> @@ -309,14 +309,17 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
+> []
+>> +     case 0x8:
+>> +             dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
+>
+> missing "\n" terminating newline and
+> missing break (or fallthrough comment)
+>
+>> +     case 0x0:
+>> +             break;
+>> +     default:
+>> +             dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
+>
+> invalid vs illegal
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Thanks, Joe.
 
--- 
- Kirill A. Shutemov
+Will address your suggestions through a different patch.
+
+Regards,
+
+Fabio Estevam
