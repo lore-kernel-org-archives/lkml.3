@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaAPNx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:53:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532AbaAPNxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:53:22 -0500
-Message-ID: <52D7E41A.1060408@redhat.com>
-Date: Thu, 16 Jan 2014 14:52:26 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752729AbaAPNzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:55:01 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:46107 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaAPNy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 08:54:58 -0500
+Date: Thu, 16 Jan 2014 14:54:50 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>, Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>
+Subject: [PATCH -next] futex: fix futex_hashsize initialization
+Message-ID: <20140116135450.GA4345@osiris>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 7/8] zram: drop not used table `count' member
-References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com> <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
-In-Reply-To: <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011613-0542-0000-0000-000007AC8E79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
-> struct table `count' member is not used.
+"futexes: Increase hash table size for better performance" introduces a new
+alloc_large_system_hash() call. alloc_large_system_hash() however may allocate
+less memory than requested, e.g. limited by MAX_ORDER.
 
-What was the intended use of this counter anyway?
+Hence pass a pointer to alloc_large_system_hash() which will contain the hash
+shift when the function returns. Afterwards correctly set futex_hashsize.
 
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> ---
->  drivers/block/zram/zram_drv.h | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 58d4ac5..1d5b1f5 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -64,7 +64,6 @@ enum zram_pageflags {
->  struct table {
->  	unsigned long handle;
->  	u16 size;	/* object size (excluding header) */
-> -	u8 count;	/* object ref count (not yet used) */
->  	u8 flags;
+Fixes a crash on s390 where the requested allocation size was 4MB but only 1MB
+was allocated.
 
-I noticed that your earlier version of this patch changed the
-flags size to 16. What has changed?
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ kernel/futex.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Jerome
-
->  } __aligned(4);
->  
-> 
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3666aa0017ed..44a1261cb9ff 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2846,6 +2846,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ static int __init futex_init(void)
+ {
+ 	u32 curval;
++	unsigned int futex_shift;
+ 	unsigned long i;
+ 
+ #if CONFIG_BASE_SMALL
+@@ -2857,8 +2858,9 @@ static int __init futex_init(void)
+ 	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
+ 					       futex_hashsize, 0,
+ 					       futex_hashsize < 256 ? HASH_SMALL : 0,
+-					       NULL, NULL, futex_hashsize, futex_hashsize);
+-
++					       &futex_shift, NULL,
++					       futex_hashsize, futex_hashsize);
++	futex_hashsize = 1UL << futex_shift;
+ 	/*
+ 	 * This will fail and we want it. Some arch implementations do
+ 	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
+-- 
+1.8.4.5
 
