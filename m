@@ -1,86 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaAPMor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:44:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4679 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbaAPMoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:44:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
-   d="scan'208";a="466088550"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] drivers/rtc/rtc-cmos.c: fix compilation warning when !CONFIG_PM_SLEEP
-Date: Thu, 16 Jan 2014 14:44:17 +0200
-Message-Id: <1389876257-4986-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1752710AbaAPMp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:45:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36124 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaAPMp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:45:26 -0500
+Date: Thu, 16 Jan 2014 13:44:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Paul Turner <pjt@google.com>,
+        Ben Segall <bsegall@google.com>
+Subject: Re: [PATCH v2] sched: reduce contention on tg's load_avg &
+ runnable_avg
+Message-ID: <20140116124457.GR31570@twins.programming.kicks-ass.net>
+References: <1389838956-56574-1-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389838956-56574-1-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_PM will be set also if only CONFIG_PM_RUNTIME is set which causes
-the compiler to emit following warning:
 
-drivers/rtc/rtc-cmos.c:845:12: warning: ‘cmos_resume’ defined but not used [-Wunused-function]
+First of.. WTF is v1?
 
-Fix this by using CONFIG_PM_SLEEP instead of CONFIG_PM and removing it from
-the driver pm ops as this has been taken care by SIMPLE_DEV_PM_OPS()
-already.
+Secondly, please always CC the authors of the code you're changing.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/rtc/rtc-cmos.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+On Wed, Jan 15, 2014 at 09:22:36PM -0500, Waiman Long wrote:
+> It was found that with a perf profile of a compute workload (at 1500
+> users) of the AIM7 benchmark running on a glueless 4-socket 40-core
+> Westmere-EX system (HT on) on a 3.13-rc8 kernel that the scheduling
+> tick related functions account for quite a significant portion of
+> the total kernel cpu cycles.
+> 
+>   0.62%  reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
+>   0.47%  reaim  [kernel.kallsyms]  [k] entity_tick
+>   0.10%  reaim  [kernel.kallsyms]  [k] update_cfs_shares
+>   0.03%  reaim  [kernel.kallsyms]  [k] update_curr
+> 
+> The scheduling tick functions account for about 1.22% of the total
+> CPU cycles. Of the top 2 function in the above list, the reading
+> and writing of the tg->load_avg variable account for over 90% of the
+> CPU cycles:
+> 
+>   atomic_long_add(tg_contrib, &tg->load_avg);
+>   atomic_long_read(&tg->load_avg) + 1);
+> 
+> This patch reduces the contention on the load_avg variable (and
+> secondarily on the runnable_avg variable) by the following 2 measures:
+> 
+> 1. Make the load_avg and runnable_avg fields of the task_group
+>    structure sit in their own cacheline without sharing it with others.
+>    This only applies if the kernel is built for NUMA systems with
+>    multiple sockets.
 
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index f14876256a4a..8d3b80d5f337 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -791,7 +791,7 @@ static void __exit cmos_do_remove(struct device *dev)
- 	cmos->dev = NULL;
- }
- 
--#ifdef	CONFIG_PM
-+#ifdef	CONFIG_PM_SLEEP
- 
- static int cmos_suspend(struct device *dev)
- {
-@@ -889,8 +889,6 @@ static int cmos_resume(struct device *dev)
- 	return 0;
- }
- 
--static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
--
- #else
- 
- static inline int cmos_poweroff(struct device *dev)
-@@ -900,6 +898,8 @@ static inline int cmos_poweroff(struct device *dev)
- 
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
-+
- /*----------------------------------------------------------------*/
- 
- /* On non-x86 systems, a "CMOS" RTC lives most naturally on platform_bus.
-@@ -1042,11 +1042,9 @@ static struct pnp_driver cmos_pnp_driver = {
- 
- 	/* flag ensures resume() gets called, and stops syslog spam */
- 	.flags		= PNP_DRIVER_RES_DO_NOT_CHANGE,
--#ifdef CONFIG_PM_SLEEP
- 	.driver		= {
- 			.pm = &cmos_pm_ops,
- 	},
--#endif
- };
- 
- #endif	/* CONFIG_PNP */
--- 
-1.8.5.2
+So why not for SMP?
 
+Also, what's the difference between having both of them in the same
+cacheline as opposed to a cacheline each?
+
+They're both touched from the same tick, so it makes sense to have them
+in one cacheline. Now you get to move two lines into exclusive state,
+instead of just the one.
+
+> 2. Use atomic_long_add_return() to update the fields and save the
+>    returned value in a temporary location in the cfs structure to
+>    be used later instead of reading the fields directly.
+
+Then why aren't this two patches?
+
+Furthermore, I completely hate the way you implemented this; the stuff
+like in the first hunk below makes the entire code flow horrid. Its
+already difficult code, using conditional variables makes it even worse.
+
+Who's to say your 'cached' value is recent? You didn't put in a call
+chain analysis to show you always first pass through the add_return()
+before using the cached value.
+
+> The second change does require some changes in the ordering of how
+> some of the average counts are being computed and hence may have a
+> slight effect on their behavior.
+
+Might have is no good, either you work through it and make damn sure its
+solid or you walk.
+
+Preserved the rest for the added Cc's.
+
+> With these 2 changes, the perf profile becomes:
+> 
+>   0.42%   reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
+>   0.05%   reaim  [kernel.kallsyms]  [k] update_cfs_shares
+>   0.04%   reaim  [kernel.kallsyms]  [k] update_curr
+>   0.04%   reaim  [kernel.kallsyms]  [k] entity_tick
+> 
+> The %CPU cycle is reduced to about 0.55%. It is not a big change,
+> but it did improve the compute benchmark slightly from 398509 JPM
+> (Jobs/Minute) to 405803 JPM which is about 2% improvement and reduced
+> the reported systime from 50.03s to 48.37s.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> ---
+>  kernel/sched/fair.c  |   29 ++++++++++++++++++++++-------
+>  kernel/sched/sched.h |   14 ++++++++++++--
+>  2 files changed, 34 insertions(+), 9 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c7395d9..c4aa86d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1868,7 +1868,10 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
+>  	 * to gain a more accurate current total weight. See
+>  	 * update_cfs_rq_load_contribution().
+>  	 */
+> -	tg_weight = atomic_long_read(&tg->load_avg);
+> +	/* Use the saved version of tg's load_avg, if available */
+> +	tg_weight = cfs_rq->tg_load_save;
+> +	if (!tg_weight)
+> +		tg_weight = atomic_long_read(&tg->load_avg);
+>  	tg_weight -= cfs_rq->tg_load_contrib;
+>  	tg_weight += cfs_rq->load.weight;
+>  
+> @@ -2155,7 +2158,8 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>  	tg_contrib -= cfs_rq->tg_load_contrib;
+>  
+>  	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+> -		atomic_long_add(tg_contrib, &tg->load_avg);
+> +		cfs_rq->tg_load_save =
+> +			atomic_long_add_return(tg_contrib, &tg->load_avg);
+>  		cfs_rq->tg_load_contrib += tg_contrib;
+>  	}
+>  }
+> @@ -2176,7 +2180,8 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+>  	contrib -= cfs_rq->tg_runnable_contrib;
+>  
+>  	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
+> -		atomic_add(contrib, &tg->runnable_avg);
+> +		cfs_rq->tg_runnable_save =
+> +			atomic_add_return(contrib, &tg->runnable_avg);
+>  		cfs_rq->tg_runnable_contrib += contrib;
+>  	}
+>  }
+> @@ -2186,12 +2191,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+>  	struct cfs_rq *cfs_rq = group_cfs_rq(se);
+>  	struct task_group *tg = cfs_rq->tg;
+>  	int runnable_avg;
+> +	long load_avg;
+>  
+>  	u64 contrib;
+>  
+>  	contrib = cfs_rq->tg_load_contrib * tg->shares;
+> -	se->avg.load_avg_contrib = div_u64(contrib,
+> -				     atomic_long_read(&tg->load_avg) + 1);
+> +	/*
+> +	 * Retrieve & clear the saved tg's load_avg and use it if not 0
+> +	 */
+> +	load_avg = cfs_rq->tg_load_save;
+> +	cfs_rq->tg_load_save = 0;
+> +	if (unlikely(!load_avg))
+> +		load_avg = atomic_long_read(&tg->load_avg);
+> +	se->avg.load_avg_contrib = div_u64(contrib, load_avg + 1);
+>  
+>  	/*
+>  	 * For group entities we need to compute a correction term in the case
+> @@ -2216,7 +2228,10 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+>  	 * of consequential size guaranteed to see n_i*w_i quickly converge to
+>  	 * our upper bound of 1-cpu.
+>  	 */
+> -	runnable_avg = atomic_read(&tg->runnable_avg);
+> +	runnable_avg = cfs_rq->tg_runnable_save;
+> +	cfs_rq->tg_runnable_save = 0;
+> +	if (unlikely(!runnable_avg))
+> +		runnable_avg = atomic_read(&tg->runnable_avg);
+>  	if (runnable_avg < NICE_0_LOAD) {
+>  		se->avg.load_avg_contrib *= runnable_avg;
+>  		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
+> @@ -2823,9 +2838,9 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>  	/*
+>  	 * Ensure that runnable average is periodically updated.
+>  	 */
+> -	update_entity_load_avg(curr, 1);
+>  	update_cfs_rq_blocked_load(cfs_rq, 1);
+>  	update_cfs_shares(cfs_rq);
+> +	update_entity_load_avg(curr, 1);
+>  
+>  #ifdef CONFIG_SCHED_HRTICK
+>  	/*
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 88c85b2..f425630 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -11,6 +11,14 @@
+>  #include "cpupri.h"
+>  #include "cpuacct.h"
+>  
+> +#ifndef ____cacheline_aligned_in_numa
+> +#ifdef CONFIG_NUMA
+> +#define ____cacheline_aligned_in_numa	____cacheline_aligned
+> +#else
+> +#define ____cacheline_aligned_in_numa
+> +#endif
+> +#endif
+> +
+>  struct rq;
+>  
+>  extern __read_mostly int scheduler_running;
+> @@ -150,8 +158,8 @@ struct task_group {
+>  	unsigned long shares;
+>  
+>  #ifdef	CONFIG_SMP
+> -	atomic_long_t load_avg;
+> -	atomic_t runnable_avg;
+> +	atomic_long_t load_avg ____cacheline_aligned_in_numa;
+> +	atomic_t runnable_avg ____cacheline_aligned_in_numa;
+>  #endif
+>  #endif
+>  
+> @@ -285,7 +293,9 @@ struct cfs_rq {
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	/* Required to track per-cpu representation of a task_group */
+>  	u32 tg_runnable_contrib;
+> +	int tg_runnable_save;
+>  	unsigned long tg_load_contrib;
+> +	long tg_load_save;
+>  
+>  	/*
+>  	 *   h_load = weight * f(tg)
+> -- 
+> 1.7.1
+> 
