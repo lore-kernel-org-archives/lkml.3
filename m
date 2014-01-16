@@ -1,241 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaAPMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:45:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36124 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaAPMp0 (ORCPT
+	id S1752748AbaAPMqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:46:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36272 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752722AbaAPMqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:45:26 -0500
-Date: Thu, 16 Jan 2014 13:44:57 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Paul Turner <pjt@google.com>,
-        Ben Segall <bsegall@google.com>
-Subject: Re: [PATCH v2] sched: reduce contention on tg's load_avg &
- runnable_avg
-Message-ID: <20140116124457.GR31570@twins.programming.kicks-ass.net>
-References: <1389838956-56574-1-git-send-email-Waiman.Long@hp.com>
+	Thu, 16 Jan 2014 07:46:19 -0500
+Date: Thu, 16 Jan 2014 12:45:27 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH v6 2/6] misc: sram: implement mmio-sram-reserved option
+Message-ID: <20140116124527.GD19578@e106331-lin.cambridge.arm.com>
+References: <27256277.YJ687suYy5@phil>
+ <1669323.jqjZBfkRx4@phil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1389838956-56574-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1669323.jqjZBfkRx4@phil>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-First of.. WTF is v1?
-
-Secondly, please always CC the authors of the code you're changing.
-
-On Wed, Jan 15, 2014 at 09:22:36PM -0500, Waiman Long wrote:
-> It was found that with a perf profile of a compute workload (at 1500
-> users) of the AIM7 benchmark running on a glueless 4-socket 40-core
-> Westmere-EX system (HT on) on a 3.13-rc8 kernel that the scheduling
-> tick related functions account for quite a significant portion of
-> the total kernel cpu cycles.
+On Wed, Jan 15, 2014 at 09:41:28PM +0000, Heiko Stübner wrote:
+> This implements support for the mmio-sram-reserved option to keep the
+> genpool from using these areas.
 > 
->   0.62%  reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
->   0.47%  reaim  [kernel.kallsyms]  [k] entity_tick
->   0.10%  reaim  [kernel.kallsyms]  [k] update_cfs_shares
->   0.03%  reaim  [kernel.kallsyms]  [k] update_curr
-> 
-> The scheduling tick functions account for about 1.22% of the total
-> CPU cycles. Of the top 2 function in the above list, the reading
-> and writing of the tg->load_avg variable account for over 90% of the
-> CPU cycles:
-> 
->   atomic_long_add(tg_contrib, &tg->load_avg);
->   atomic_long_read(&tg->load_avg) + 1);
-> 
-> This patch reduces the contention on the load_avg variable (and
-> secondarily on the runnable_avg variable) by the following 2 measures:
-> 
-> 1. Make the load_avg and runnable_avg fields of the task_group
->    structure sit in their own cacheline without sharing it with others.
->    This only applies if the kernel is built for NUMA systems with
->    multiple sockets.
-
-So why not for SMP?
-
-Also, what's the difference between having both of them in the same
-cacheline as opposed to a cacheline each?
-
-They're both touched from the same tick, so it makes sense to have them
-in one cacheline. Now you get to move two lines into exclusive state,
-instead of just the one.
-
-> 2. Use atomic_long_add_return() to update the fields and save the
->    returned value in a temporary location in the cfs structure to
->    be used later instead of reading the fields directly.
-
-Then why aren't this two patches?
-
-Furthermore, I completely hate the way you implemented this; the stuff
-like in the first hunk below makes the entire code flow horrid. Its
-already difficult code, using conditional variables makes it even worse.
-
-Who's to say your 'cached' value is recent? You didn't put in a call
-chain analysis to show you always first pass through the add_return()
-before using the cached value.
-
-> The second change does require some changes in the ordering of how
-> some of the average counts are being computed and hence may have a
-> slight effect on their behavior.
-
-Might have is no good, either you work through it and make damn sure its
-solid or you walk.
-
-Preserved the rest for the added Cc's.
-
-> With these 2 changes, the perf profile becomes:
-> 
->   0.42%   reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
->   0.05%   reaim  [kernel.kallsyms]  [k] update_cfs_shares
->   0.04%   reaim  [kernel.kallsyms]  [k] update_curr
->   0.04%   reaim  [kernel.kallsyms]  [k] entity_tick
-> 
-> The %CPU cycle is reduced to about 0.55%. It is not a big change,
-> but it did improve the compute benchmark slightly from 398509 JPM
-> (Jobs/Minute) to 405803 JPM which is about 2% improvement and reduced
-> the reported systime from 50.03s to 48.37s.
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Suggested-by: Rob Herring <robherring2@gmail.com>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
 > ---
->  kernel/sched/fair.c  |   29 ++++++++++++++++++++++-------
->  kernel/sched/sched.h |   14 ++++++++++++--
->  2 files changed, 34 insertions(+), 9 deletions(-)
+>  drivers/misc/sram.c |  118 +++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 110 insertions(+), 8 deletions(-)
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c7395d9..c4aa86d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1868,7 +1868,10 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
->  	 * to gain a more accurate current total weight. See
->  	 * update_cfs_rq_load_contribution().
->  	 */
-> -	tg_weight = atomic_long_read(&tg->load_avg);
-> +	/* Use the saved version of tg's load_avg, if available */
-> +	tg_weight = cfs_rq->tg_load_save;
-> +	if (!tg_weight)
-> +		tg_weight = atomic_long_read(&tg->load_avg);
->  	tg_weight -= cfs_rq->tg_load_contrib;
->  	tg_weight += cfs_rq->load.weight;
+> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> index afe66571..7fb60f3 100644
+> --- a/drivers/misc/sram.c
+> +++ b/drivers/misc/sram.c
+> @@ -36,13 +36,23 @@ struct sram_dev {
+>  	struct clk *clk;
+>  };
 >  
-> @@ -2155,7 +2158,8 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->  	tg_contrib -= cfs_rq->tg_load_contrib;
->  
->  	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-> -		atomic_long_add(tg_contrib, &tg->load_avg);
-> +		cfs_rq->tg_load_save =
-> +			atomic_long_add_return(tg_contrib, &tg->load_avg);
->  		cfs_rq->tg_load_contrib += tg_contrib;
->  	}
->  }
-> @@ -2176,7 +2180,8 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
->  	contrib -= cfs_rq->tg_runnable_contrib;
->  
->  	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-> -		atomic_add(contrib, &tg->runnable_avg);
-> +		cfs_rq->tg_runnable_save =
-> +			atomic_add_return(contrib, &tg->runnable_avg);
->  		cfs_rq->tg_runnable_contrib += contrib;
->  	}
->  }
-> @@ -2186,12 +2191,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->  	struct cfs_rq *cfs_rq = group_cfs_rq(se);
->  	struct task_group *tg = cfs_rq->tg;
->  	int runnable_avg;
-> +	long load_avg;
->  
->  	u64 contrib;
->  
->  	contrib = cfs_rq->tg_load_contrib * tg->shares;
-> -	se->avg.load_avg_contrib = div_u64(contrib,
-> -				     atomic_long_read(&tg->load_avg) + 1);
-> +	/*
-> +	 * Retrieve & clear the saved tg's load_avg and use it if not 0
-> +	 */
-> +	load_avg = cfs_rq->tg_load_save;
-> +	cfs_rq->tg_load_save = 0;
-> +	if (unlikely(!load_avg))
-> +		load_avg = atomic_long_read(&tg->load_avg);
-> +	se->avg.load_avg_contrib = div_u64(contrib, load_avg + 1);
->  
->  	/*
->  	 * For group entities we need to compute a correction term in the case
-> @@ -2216,7 +2228,10 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->  	 * of consequential size guaranteed to see n_i*w_i quickly converge to
->  	 * our upper bound of 1-cpu.
->  	 */
-> -	runnable_avg = atomic_read(&tg->runnable_avg);
-> +	runnable_avg = cfs_rq->tg_runnable_save;
-> +	cfs_rq->tg_runnable_save = 0;
-> +	if (unlikely(!runnable_avg))
-> +		runnable_avg = atomic_read(&tg->runnable_avg);
->  	if (runnable_avg < NICE_0_LOAD) {
->  		se->avg.load_avg_contrib *= runnable_avg;
->  		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
-> @@ -2823,9 +2838,9 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
->  	/*
->  	 * Ensure that runnable average is periodically updated.
->  	 */
-> -	update_entity_load_avg(curr, 1);
->  	update_cfs_rq_blocked_load(cfs_rq, 1);
->  	update_cfs_shares(cfs_rq);
-> +	update_entity_load_avg(curr, 1);
->  
->  #ifdef CONFIG_SCHED_HRTICK
->  	/*
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 88c85b2..f425630 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -11,6 +11,14 @@
->  #include "cpupri.h"
->  #include "cpuacct.h"
->  
-> +#ifndef ____cacheline_aligned_in_numa
-> +#ifdef CONFIG_NUMA
-> +#define ____cacheline_aligned_in_numa	____cacheline_aligned
-> +#else
-> +#define ____cacheline_aligned_in_numa
-> +#endif
-> +#endif
+> +struct sram_reserve {
+> +	unsigned long start;
+> +	unsigned long size;
+> +};
 > +
->  struct rq;
+>  static int sram_probe(struct platform_device *pdev)
+>  {
+>  	void __iomem *virt_base;
+>  	struct sram_dev *sram;
+>  	struct resource *res;
+> -	unsigned long size;
+> -	int ret;
+> +	unsigned long size, cur_start, cur_size;
+> +	const __be32 *reserved_list = NULL;
+> +	int reserved_size = 0;
+> +	struct sram_reserve *rblocks;
+> +	unsigned int nblocks;
+> +	int ret = 0;
+> +	int i;
 >  
->  extern __read_mostly int scheduler_running;
-> @@ -150,8 +158,8 @@ struct task_group {
->  	unsigned long shares;
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	virt_base = devm_ioremap_resource(&pdev->dev, res);
+> @@ -65,19 +75,111 @@ static int sram_probe(struct platform_device *pdev)
+>  	if (!sram->pool)
+>  		return -ENOMEM;
 >  
->  #ifdef	CONFIG_SMP
-> -	atomic_long_t load_avg;
-> -	atomic_t runnable_avg;
-> +	atomic_long_t load_avg ____cacheline_aligned_in_numa;
-> +	atomic_t runnable_avg ____cacheline_aligned_in_numa;
->  #endif
->  #endif
->  
-> @@ -285,7 +293,9 @@ struct cfs_rq {
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  	/* Required to track per-cpu representation of a task_group */
->  	u32 tg_runnable_contrib;
-> +	int tg_runnable_save;
->  	unsigned long tg_load_contrib;
-> +	long tg_load_save;
->  
->  	/*
->  	 *   h_load = weight * f(tg)
-> -- 
-> 1.7.1
-> 
+> -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+> -				res->start, size, -1);
+> -	if (ret < 0) {
+> -		if (sram->clk)
+> -			clk_disable_unprepare(sram->clk);
+> -		return ret;
+> +	if (pdev->dev.of_node) {
+> +		reserved_list = of_get_property(pdev->dev.of_node,
+> +						"mmio-sram-reserved",
+> +						&reserved_size);
+> +		if (reserved_list) {
+> +			reserved_size /= sizeof(*reserved_list);
+
+As a general observation, It looks like a lot of people need to know how
+many array elements a property might hold (for datastructure
+allocation), and are open-coding element counting.
+
+I think it would be nice if we had a helper function to count how many
+elements a property can hold (of_property_count_u32_elems?) that would
+centralise strict sanity checking (e.g. prop->len % elem_size == 0) and
+DTB format details (so you don't have to care about endianness, and it
+becomes possible to add DTB metadata later and get runtime type
+checking).
+
+That can all come later and shouldn't block this patch.
+
+> +			if (!reserved_size || reserved_size % 2) {
+> +				dev_warn(&pdev->dev, "wrong number of arguments in mmio-sram-reserved\n");
+> +				reserved_list = NULL;
+> +				reserved_size = 0;
+> +			}
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * We need an additional block to mark the end of the memory region
+> +	 * after the reserved blocks from the dt are processed.
+> +	 */
+> +	nblocks = reserved_size / 2 + 1;
+> +	rblocks = kmalloc((nblocks) * sizeof(*rblocks), GFP_KERNEL);
+> +	if (!rblocks) {
+> +		ret = -ENOMEM;
+> +		goto err_alloc;
+> +	}
+> +
+> +	cur_start = 0;
+> +	for (i = 0; i < nblocks - 1; i++) {
+> +		rblocks[i].start = be32_to_cpu(*reserved_list++);
+> +		rblocks[i].size = be32_to_cpu(*reserved_list++);
+
+It feels a little odd to have to have to care about the format of the
+dtb and do endianness conversion here. It would be nice to limit the
+scope of DTB format details to the of_ helper functions.
+
+Could you use of_property_read_u32_index here instead please?
+
+Otherwise this looks fine to me.
+
+Cheers,
+Mark.
