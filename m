@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaAPUYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:24:07 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:12343 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750750AbaAPUYE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:24:04 -0500
-From: Gaurav Jain <gjain@fb.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-Thread-Topic: [PATCH] perf tools: Fix JIT profiling on heap
-Thread-Index: AQHPEl02V6lP9aISxEm2DlWsTOWtmpqH8nCAgAAMvwA=
-Date: Thu, 16 Jan 2014 20:23:27 +0000
-Message-ID: <CEFDA8E4.2D359%gjain@fb.com>
-In-Reply-To: <20140116143749.GA21526@ghostprotocols.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <FD37586F183A824B942FDC360AFF2E4B@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1751998AbaAPU0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:26:09 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:35318 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751449AbaAPU0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 15:26:05 -0500
+Date: Thu, 16 Jan 2014 15:26:03 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
+ checks)
+In-Reply-To: <20140116180944.GC9655@laptop.programming.kicks-ass.net>
+Message-ID: <Pine.LNX.4.44L0.1401161515190.1109-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-16_07:2014-01-16,2014-01-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.502552658695225 urlsuspect_oldscore=0.502552658695225
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.502552658695225 spamscore=0
- recipient_to_sender_domain_totalscore=53 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1401160130
-X-FB-Internal: deliver
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/14, 9:37 AM, "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
-wrote:
+On Thu, 16 Jan 2014, Peter Zijlstra wrote:
 
->Em Thu, Jan 16, 2014 at 10:49:31AM +0900, Namhyung Kim escreveu:
->> Gaurav reported that perf cannot profile JIT program if it executes
->> the code on heap.  This was because current map__new() only handle JIT
->> on anon mappings - extends it to handle no_dso (heap, stack) case too.
->> 
->> This patch assumes JIT profiling only provides dynamic function
->> symbols so check the mapping type to distinguish the case.  It'd
->> provide no symbols for data mapping - if we need to support symbols on
->> data mappings later it should be changed.
->
->But we do support symbols in data mappings, that is why we have
->MAP__VARIABLE, etc, can you elaborate?
+> On Thu, Jan 16, 2014 at 06:43:48PM +0100, Oleg Nesterov wrote:
+> > But with or without this change the following code
+> > 
+> > 		static DEFINE_MUTEX(m1);
+> > 		static DEFINE_MUTEX(mx);
+> > 
+> > 		lockdep_set_novalidate_class(&mx);
+> > 
+> > 		// m1 -> mx
+> > 		mutex_lock(&m1);
+> > 		mutex_lock(&mx);
+> > 		mutex_unlock(&mx);
+> > 		mutex_unlock(&m1);
+> > 
+> > 		// mx -> m1 ; should trigger the warning ???
+> > 		mutex_lock(&mx);
+> > 		mutex_lock(&m1);
+> > 		mutex_unlock(&m1);
+> > 		mutex_unlock(&mx);
+> > 
+> > doesn't trigger the warning too. This is correct because
+> > lockdep_set_novalidate_class() means, well, no-validate.
+> > The question is: do we really want to avoid all validations?
+> 
+> Good question.
+> 
+> > Why lockdep_set_novalidate_class() was added? Unlees I missed
+> > something the problem is that (say) __driver_attach() can take
+> > the "same" lock twice, drivers/base/ lacks annotations.
+> 
+> Indeed, the driver model locking always slips my mind but yes its
+> creative. Alan Stern seems to have a good grasp on it though.
 
-Does perf support data mappings from perf map files? Could you please
-share an example of how I may be able to use this.
+Mostly my "grasp" is just a firm belief that trying to manage locking
+throughout the entire driver tree is hopeless.  Individual sub-portions
+of it are usually well behaved, but the thing as a whole is a mess.
 
->Gaurav, do this fixes the problem you reported? Can I have your
->Tested-by: tag?
+> > Perhaps we should change the meaning of lockdep_set_novalidate_class?
+> > (perhaps with rename). What do you think about the patch below?
+> > 
+> > With this patch __lockdep_no_validate__ means "automatically nested",
+> 
+> Yes, I suppose that might work, it would allow some validation.
 
-Yep, I¹ve tested this version of the patch and it works great for me.
+I haven't seen the patch, but I'm not so sure it will work.  Suppose we
+have two devices, D1 and D2, and some other mutex, M.  Then the locking
+pattern:
 
-Thanks,
+	lock(D1);
+	lock(M);
+	unlock(M);
+	unlock(D1);
 
-Gaurav
+generally should not conflict with:
+
+	lock(M);
+	lock(D2);
+	unlock(D2);
+	unlock(M);
+
+even though D1's and D2's locks belong to the same class.  For example,
+M might be a mutex embedded in the private data associated with D1, and
+D2 might be a child of D1.
+
+Alan Stern
 
