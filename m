@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaAPWwD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:52:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44940 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaAPWwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:52:00 -0500
-Message-ID: <52D8625C.1000902@zytor.com>
-Date: Thu, 16 Jan 2014 14:51:08 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751323AbaAPW5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:57:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45086 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaAPW5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 17:57:44 -0500
+Date: Thu, 16 Jan 2014 14:57:32 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-ca1e631c3acf80bc5f5934ce9054a9b4880c96e1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bin.gao@intel.com, tglx@linutronix.de, fengguang.wu@intel.com,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bin.gao@intel.com, hpa@linux.intel.com,
+        fengguang.wu@intel.com
+In-Reply-To: <tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org>
+References: <tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, tsc, apic: Unbreak static (MSR)
+  calibration when CONFIG_X86_LOCAL_APIC=n
+Git-Commit-ID: ca1e631c3acf80bc5f5934ce9054a9b4880c96e1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>	<20140116121955.GQ31570@twins.programming.kicks-ass.net>	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>	<20140116222536.GX30183@twins.programming.kicks-ass.net> <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-In-Reply-To: <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 14:57:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 02:34 PM, Stephen Rothwell wrote:
-> Hi Peter,
-> 
-> On Thu, 16 Jan 2014 23:25:36 +0100 Peter Zijlstra
-> <peterz@infradead.org> wrote:
->> 
->> On Fri, Jan 17, 2014 at 07:46:28AM +1100, Stephen Rothwell
->> wrote:
->>> 
->>> On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra
->>> <peterz@infradead.org> wrote:
->>>> 
->>>> I think the below ought to work
->>> 
->>> To be clear, all you did was replace the body of mwait_idle()
->>> with
->>> 
->>> mwait_idle_with_hints(0, 0);
->> 
->> Pretty much, and add the asm/mwait.h include, otherwise you'll
->> end up with a compile fail.
->> 
->>> (and the comment above it)?  I need to apply in incremental
->>> patch in the merge commit.
->> 
->> I don't think I touched the comment at all.
-> 
+Commit-ID:  ca1e631c3acf80bc5f5934ce9054a9b4880c96e1
+Gitweb:     http://git.kernel.org/tip/ca1e631c3acf80bc5f5934ce9054a9b4880c96e1
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 16 Jan 2014 13:00:21 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 16 Jan 2014 13:00:21 -0800
 
-In retrospect this bit probably should have gone through the idle
-tree.  That was my bad, I need to coordinate with Len better.
+x86, tsc, apic: Unbreak static (MSR) calibration when CONFIG_X86_LOCAL_APIC=n
 
-	-hpa
+If we aren't going to use the local APIC anyway, we obviously don't
+care about its timer frequency.
 
+Link: http://lkml.kernel.org/r/tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Bin Gao <bin.gao@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/tsc_msr.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index c502772..8b5434f 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -118,8 +118,10 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
+ 	*fast_calibrate = freq * ratio;
+ 	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
+ 	lapic_timer_frequency = (freq * 1000) / HZ;
+ 	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
++#endif
+ 
+ 	return 1;
+ }
