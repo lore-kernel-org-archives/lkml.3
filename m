@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaAPJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:29:50 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:53167 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaAPJ3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:29:45 -0500
+	id S1752229AbaAPJaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:30:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34260 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325AbaAPJaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 04:30:00 -0500
+Message-ID: <52D7A68F.5030700@redhat.com>
+Date: Thu, 16 Jan 2014 10:29:51 +0100
+From: =?windows-1252?Q?Jan_Kalu=9Ea?= <jkaluza@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com>
-References: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com>
-Date: Thu, 16 Jan 2014 10:29:45 +0100
-Message-ID: <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
-Subject: Re: Baytrail problems (was Re: Linux 3.13-rc8)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Paul Drews <paul.drews@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>, Eric Paris <eparis@redhat.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rgb@redhat.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v4 0/3] Send audit/procinfo/cgroup data in socket-level
+ control message
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com> <1389600109-30739-1-git-send-email-jkaluza@redhat.com> <20140115.121730.1984913330507219167.davem@davemloft.net> <1389828103.681.34.camel@flatline.rdu.redhat.com> <20140115232345.GA22237@mtj.dyndns.org>
+In-Reply-To: <20140115232345.GA22237@mtj.dyndns.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 2:49 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Adding in the appropriate people...
+On 01/16/2014 12:23 AM, Tejun Heo wrote:
+> On Wed, Jan 15, 2014 at 06:21:43PM -0500, Eric Paris wrote:
+>> Reliably being able to audit what process requested an action is
+>> extremely useful.  And I like the audit patch, as it is a couple of ints
+>> we are storing.
+>>
+>> procinfo and cgroup can both be up to 4k of data.
+>>
+>> Is there an alternative he should consider?  Some way to grab a
+>> reference on task_struct and just attach that to the message?
 >
-> On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
-> <gnomes@lxorguk.ukuu.org.uk> wrote:
->>
->> It seems to hate Baytrail/T
->>
->> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
->> right but otherwise running nicely and playing 3D games to 3.13-rc8
->>
->> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
->>   in
+> Or maybe it can be made separately optional instead of tagging along
+> on an existing option so that it doesn't tax use cases which don't
+> care about the new stuff?
+
+Right, I could add new option next to SOCK_PASSCRED which could be used 
+to send newly added stuff. Would this be acceptable?
+
+I would still vote for SCM_AUDIT to be part of SOCK_PASSCRED and move 
+SCM_CGROUP and SCM_PROCINFO into new option.
+
+> Thanks.
 >
-> Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
-> but I guess the GPIO and ACPI ID addition ends up also enabling all
-> the old code that Alan probably never ran in 3.11 because the driver
-> didn't trigger on his machine.
 
-So that is commit f6308b36c411dc5
-"ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"?
+Regards,
+Jan Kaluza
 
-This seems to have been selected for -stable as well so the
-problem will be spreading as distros start pushing stable kernel
-updates :-(
-
-That came in through the ACPI tree, Rafael do you want to
-revert it if there is no better quickfix?
-
-This adds an interesting twist to the general statement that
-new PCI/ACPI IDs should go into stable BTW, maybe they
-should not always do that.
-
-Yours,
-Linus Walleij
