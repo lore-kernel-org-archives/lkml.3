@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaAPKy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 05:54:56 -0500
-Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:55116 "EHLO
-	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751948AbaAPKyy (ORCPT
+	id S1752501AbaAPK4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 05:56:45 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:55373 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751271AbaAPK4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 05:54:54 -0500
+	Thu, 16 Jan 2014 05:56:44 -0500
 From: <srinivas.kandagatla@st.com>
 To: <netdev@vger.kernel.org>
 Cc: Giuseppe CAVALLARO <peppe.cavallaro@st.com>,
-        <linux-kernel@vger.kernel.org>, <srinivas.kandagatla@st.com>
+        David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@st.com>
 Subject: [PATCH v2 0/9] net: stmmac PM related fixes.
-Date: Thu, 16 Jan 2014 10:48:41 +0000
-Message-ID: <1389869321-27411-1-git-send-email-srinivas.kandagatla@st.com>
+Date: Thu, 16 Jan 2014 10:50:50 +0000
+Message-ID: <1389869450-28003-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
