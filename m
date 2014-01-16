@@ -1,143 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaAPMqU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:46:20 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36272 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752722AbaAPMqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:46:19 -0500
-Date: Thu, 16 Jan 2014 12:45:27 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH v6 2/6] misc: sram: implement mmio-sram-reserved option
-Message-ID: <20140116124527.GD19578@e106331-lin.cambridge.arm.com>
-References: <27256277.YJ687suYy5@phil>
- <1669323.jqjZBfkRx4@phil>
+	id S1752513AbaAPMvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:51:02 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59726 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153AbaAPMu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:50:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
+   d="scan'208";a="467637162"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-spi@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] spi/pxa2xx: fix compilation warning when !CONFIG_PM_SLEEP
+Date: Thu, 16 Jan 2014 14:50:55 +0200
+Message-Id: <1389876655-5484-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1669323.jqjZBfkRx4@phil>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 09:41:28PM +0000, Heiko Stübner wrote:
-> This implements support for the mmio-sram-reserved option to keep the
-> genpool from using these areas.
-> 
-> Suggested-by: Rob Herring <robherring2@gmail.com>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
-> ---
->  drivers/misc/sram.c |  118 +++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 110 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-> index afe66571..7fb60f3 100644
-> --- a/drivers/misc/sram.c
-> +++ b/drivers/misc/sram.c
-> @@ -36,13 +36,23 @@ struct sram_dev {
->  	struct clk *clk;
->  };
->  
-> +struct sram_reserve {
-> +	unsigned long start;
-> +	unsigned long size;
-> +};
-> +
->  static int sram_probe(struct platform_device *pdev)
->  {
->  	void __iomem *virt_base;
->  	struct sram_dev *sram;
->  	struct resource *res;
-> -	unsigned long size;
-> -	int ret;
-> +	unsigned long size, cur_start, cur_size;
-> +	const __be32 *reserved_list = NULL;
-> +	int reserved_size = 0;
-> +	struct sram_reserve *rblocks;
-> +	unsigned int nblocks;
-> +	int ret = 0;
-> +	int i;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	virt_base = devm_ioremap_resource(&pdev->dev, res);
-> @@ -65,19 +75,111 @@ static int sram_probe(struct platform_device *pdev)
->  	if (!sram->pool)
->  		return -ENOMEM;
->  
-> -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-> -				res->start, size, -1);
-> -	if (ret < 0) {
-> -		if (sram->clk)
-> -			clk_disable_unprepare(sram->clk);
-> -		return ret;
-> +	if (pdev->dev.of_node) {
-> +		reserved_list = of_get_property(pdev->dev.of_node,
-> +						"mmio-sram-reserved",
-> +						&reserved_size);
-> +		if (reserved_list) {
-> +			reserved_size /= sizeof(*reserved_list);
+CONFIG_PM will be set if either or both CONFIG_PM_SLEEP and
+CONFIG_PM_RUNTIME is set. Compiling the driver with !CONFIG_PM_SLEEP causes
+following compilation warning:
 
-As a general observation, It looks like a lot of people need to know how
-many array elements a property might hold (for datastructure
-allocation), and are open-coding element counting.
+drivers/spi/spi-pxa2xx.c:1270:12: warning: ‘pxa2xx_spi_suspend’ defined but not used [-Wunused-function]
 
-I think it would be nice if we had a helper function to count how many
-elements a property can hold (of_property_count_u32_elems?) that would
-centralise strict sanity checking (e.g. prop->len % elem_size == 0) and
-DTB format details (so you don't have to care about endianness, and it
-becomes possible to add DTB metadata later and get runtime type
-checking).
+Fix this by using CONFIG_PM_SLEEP instead.
 
-That can all come later and shouldn't block this patch.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/spi/spi-pxa2xx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +			if (!reserved_size || reserved_size % 2) {
-> +				dev_warn(&pdev->dev, "wrong number of arguments in mmio-sram-reserved\n");
-> +				reserved_list = NULL;
-> +				reserved_size = 0;
-> +			}
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * We need an additional block to mark the end of the memory region
-> +	 * after the reserved blocks from the dt are processed.
-> +	 */
-> +	nblocks = reserved_size / 2 + 1;
-> +	rblocks = kmalloc((nblocks) * sizeof(*rblocks), GFP_KERNEL);
-> +	if (!rblocks) {
-> +		ret = -ENOMEM;
-> +		goto err_alloc;
-> +	}
-> +
-> +	cur_start = 0;
-> +	for (i = 0; i < nblocks - 1; i++) {
-> +		rblocks[i].start = be32_to_cpu(*reserved_list++);
-> +		rblocks[i].size = be32_to_cpu(*reserved_list++);
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index cbc68848789d..c702fc536a77 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1268,7 +1268,7 @@ static void pxa2xx_spi_shutdown(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "shutdown failed with %d\n", status);
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int pxa2xx_spi_suspend(struct device *dev)
+ {
+ 	struct driver_data *drv_data = dev_get_drvdata(dev);
+-- 
+1.8.5.2
 
-It feels a little odd to have to have to care about the format of the
-dtb and do endianness conversion here. It would be nice to limit the
-scope of DTB format details to the of_ helper functions.
-
-Could you use of_property_read_u32_index here instead please?
-
-Otherwise this looks fine to me.
-
-Cheers,
-Mark.
