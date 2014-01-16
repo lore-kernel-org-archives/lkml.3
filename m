@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaAPJqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:46:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34313 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaAPJqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:46:34 -0500
-Date: Thu, 16 Jan 2014 10:46:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-In-Reply-To: <CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1401161043350.4207@ionos.tec.linutronix.de>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com> <20140115171704.GB21574@localhost.localdomain> <CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752448AbaAPJqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:46:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31261 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752336AbaAPJql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 04:46:41 -0500
+Message-ID: <52D7AA3F.2030501@redhat.com>
+Date: Thu, 16 Jan 2014 10:45:35 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Minchan Kim <minchan@kernel.org>
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 4/4] zram: report failed read and writes stats
+References: <1389780977-18949-1-git-send-email-sergey.senozhatsky@gmail.com> <1389780977-18949-5-git-send-email-sergey.senozhatsky@gmail.com> <20140116005844.GN1992@bbox>
+In-Reply-To: <20140116005844.GN1992@bbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014, Viresh Kumar wrote:
-
-> On 15 January 2014 22:47, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Are you sure about that? NO_HZ_FULL shouldn't touch much hrtimers.
-> > Those are independant from the tick.
-> >
-> > Although some of them seem to rely on the softirq, but that seem to
-> > concern the tick hrtimer only.
+On 01/16/2014 01:58 AM, Minchan Kim wrote:
+> On Wed, Jan 15, 2014 at 01:16:17PM +0300, Sergey Senozhatsky wrote:
+>> zram accounted but did not report numbers of failed read
+>> and write queries. make these stats available as failed_reads
+>> and failed_writes attrs.
+>>
+>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Acked-by: Minchan Kim <minchan@kernel.org>
 > 
-> To make it clear I was talking about the hrtimer used by tick_sched_timer.
-> I have crossed checked which timers are active on isolated CPU from
-> /proc/timer_list and it gave on tick_sched_timer's hrtimer.
-> 
-> In the attached trace (dft.txt), see these locations:
-> - Line 252: Time 302.573881: we scheduled the hrtimer for 300 seconds
-> ahead of current time.
-> - Line 254, 258, 262, 330, 334: We got interruptions continuously after
-> ~90 seconds and this looked to be a case of timer's counter overflow.
-> Isn't it? (I have removed some lines towards the end of this file to make
-> it shorter, though dft.dat is untouched)
 
-Just do the math.
+This of course depends on third patch, but since I have no objection
+to the ZRAM_ATTR_RO() macro part:
 
-     max reload value / timer freq = max time span
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 
-So:
-
-     0x7fffffff / 24MHz = 89.478485 sec
-
-Nothing to do here except to get rid of the requirement to arm the
-timer at all.
-
-Thanks,
-
-	tglx
