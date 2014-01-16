@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaAPSEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:04:50 -0500
-Received: from sauhun.de ([89.238.76.85]:59992 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047AbaAPSEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:04:45 -0500
-Date: Thu, 16 Jan 2014 19:04:41 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Phil Carmody <phil.carmody@partner.samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] i2c: Re-instate body of i2c_parent_is_i2c_adapter()
-Message-ID: <20140116180441.GA2617@katana>
-References: <1389648544-4201-1-git-send-email-swarren@wwwdotorg.org>
- <20140114161254.GA6442@katana>
- <52D8160B.7090205@wwwdotorg.org>
+	id S1751497AbaAPSFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:05:11 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47105 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbaAPSFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:05:07 -0500
+Date: Thu, 16 Jan 2014 10:05:05 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
+Message-ID: <20140116180505.GA30925@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+ <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
+ <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
+ <20140115165623.GJ14405@codeaurora.org>
+ <20140116013840.GA674@codeaurora.org>
+ <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D8160B.7090205@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/16, Lorenzo Pieralisi wrote:
+> On Thu, Jan 16, 2014 at 01:38:40AM +0000, Stephen Boyd wrote:
+> > On 01/15, Stephen Boyd wrote:
+> > > 
+> > > Ah sorry, I forgot to put the compatible property here like in
+> > > the dts change. I'll do that in the next revision. Yes we need a
+> > > compatible property here to match the platform driver.
+> > > 
+> > 
+> > This is the replacement patch
+> > 
+> > -----8<------
+> > From: Stephen Boyd <sboyd@codeaurora.org>
+> > Subject: [PATCH v9] devicetree: bindings: Document Krait CPU/L1 EDAC
+> > 
+> > The Krait CPU/L1 error reporting device is made up a per-CPU
+> > interrupt. While we're here, document the next-level-cache
+> > property that's used by the Krait EDAC driver.
+> > 
+> > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  Documentation/devicetree/bindings/arm/cpus.txt | 58 ++++++++++++++++++++++++++
+> >  1 file changed, 58 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> > index 91304353eea4..03a529e791c4 100644
+> > --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> > +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> > @@ -62,6 +62,20 @@ nodes to be present and contain the properties described below.
+> >  		Value type: <u32>
+> >  		Definition: must be set to 0
+> >  
+> > +	- compatible
+> > +		Usage: optional
+> > +		Value type: <string>
+> > +		Definition: should be one of the compatible strings listed
+> > +			    in the cpu node compatible property. This property
+> > +			    shall only be present if all the cpu nodes have the
+> > +			    same compatible property.
+> 
+> Do we really want to do that ? I am not sure. A cpus node is supposed to
+> be a container node, we should not define this binding just because we
+> know the kernel creates a platform device for it then.
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is just copying more of the ePAPR spec into this document.
+It just so happens that having a compatible field here allows a
+platform device to be created. I don't see why that's a problem.
 
-> I do see this in for-current, but it looks like that branch isn't part
-> of linux-next. Should it be, or perhaps for-current should be merged
-> into for-next?
+> 
+> interrupts is a cpu node property and I think it should be kept as such.
+> 
+> I know it will be duplicated and I know you can't rely on a platform
+> device for probing (since if I am not mistaken, removing a compatible
+> string from cpus prevents its platform device creation), but that's an issue
+> related to how the kernel works, you should not define DT bindings to solve
+> that IMHO.
 
-It is upstream already.
+The interrupts property is also common for all cpus so it seems
+fine to collapse the value down into a PPI specifier indicating
+that all CPUs get the interrupt, similar to how we compress the
+information about the compatible string.
 
-
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS2B85AAoJEBQN5MwUoCm2GR0P/jo+b8k4gnwcG+Cd1AFcbVx4
-XyrSxwe8nWDiYKjtSAZX7ibBfRduEcdiAx8t12t8tN0z0ptjARV8EQgVkvRlSXzP
-WU43jYBzV6nOh/E/4I2H9ScoR4SDbtfBy818m10Zp4NutN+Gz/2xUT5WqAnBkt3d
-2+D/8N/qotxCF7zjWq0HMC54zFSoSpESM61HwH6sYF3ynvCwEQU8csrQVj+TI9B3
-L1CIz/29grnQl1wrlQPL2qftvhL5/5vfbPdtJ31YEctRjAswZ+qb48uU5E7Yus8Z
-aOavx5NCy55GZogt8YYhJ0mFshPiJKMYDpydkL0Rj4wpsjEIgnMxiJdnsFc0hT9N
-RbNc4W7ymHpRVNb29Gn8IuJKljGtPUakYQr7wa2X49F2w5nF6ZsP41Ps2lPoL672
-yaIjeukbhkP425Kl+tsPvRI6K2o/xcf+d2yz88HXKeEO3Daj/pBQhUyvynqypcrv
-l97KD6y8Tlr2g3ULceC2nY+161PvGThs9tvf0F7qVomgOcI0WMrBV6RCDQj0Old/
-daCM/vQu4J93d9bvvI25qVCrWFImtq4MjjZWkBHDb82veD29PT4JeKIN402reDDY
-0ek3fDq9WQpdAc1gPeeKj2AvTbWOqpYDrmYuqYJn+WCDqOQYYoCjpqTkiZ2m+ehr
-/Fz56r4WorHf9FVFntCl
-=24eK
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
