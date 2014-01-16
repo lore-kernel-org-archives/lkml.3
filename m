@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaAPCfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:35:02 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58256 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaAPCbW (ORCPT
+	id S1752513AbaAPCg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:36:58 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52995 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaAPCg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:31:22 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-cc-52d744779a99
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 03/12] tools lib traceevent: Unregister handler when function plugin unloaded
-Date: Thu, 16 Jan 2014 11:31:09 +0900
-Message-Id: <1389839478-5887-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
-References: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 15 Jan 2014 21:36:56 -0500
+Date: Wed, 15 Jan 2014 18:36:49 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v2 tip/core/timers] Crude timer-wheel latency hacks
+Message-ID: <20140116023649.GT10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140115051939.GA31164@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1401152316500.4207@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401152316500.4207@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011602-8236-0000-0000-0000061F805A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function handler should be unregistered when the plugin unloaded
-otherwise it'll try to access invalid memory.
+On Wed, Jan 15, 2014 at 11:22:41PM +0100, Thomas Gleixner wrote:
+> Paul,
+> 
+> On Tue, 14 Jan 2014, Paul E. McKenney wrote:
+> > The following three patches provide some crude timer-wheel latency
+> > patches.  I understand that a more comprehensive solution is in progress,
+> > but in the meantime, these patches work well in cases where a given
+> > CPU has either zero or one timers pending, which is a common case for
+> > NO_HZ_FULL kernels.  So, on the off-chance that this is helpful to
+> > someone, the individual patches are as follows:
+> 
+> so far that makes sense, though I'd rather like to redesign the whole
+> timer wheel mess than adding more duct tape to it.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/plugin_function.c | 3 +++
- 1 file changed, 3 insertions(+)
+This is supposed to be in addition you your redesign, absolutely not
+instead of your redesign.  For one thing, hopefully your redesign
+will avoid jiffy-scanning in the case where the CPU has a pair of
+timers separated by many jiffies.  My patches won't help in that case.
 
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 39461485f9a7..80ba4ff1fe84 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -148,6 +148,9 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
- {
- 	int i, x;
- 
-+	pevent_unregister_event_handler(pevent, -1, "ftrace", "function",
-+					function_handler, NULL);
-+
- 	for (i = 0; i <= cpus; i++) {
- 		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
- 			free(fstack[i].stack[x]);
--- 
-1.7.11.7
+My patches are instead intended for testing in the meantime, and they
+do help a bit in some common NO_HZ_FULL situations.
+
+>                                                    I can't dig into
+> the details right now as I'm dead tired and about to leave for a
+> funeral. i'll have a detailed look at this at the weekend.
+
+My sympathies!
+
+And I will be sending out an updated series shortly anyway.
+
+							Thanx, Paul
 
