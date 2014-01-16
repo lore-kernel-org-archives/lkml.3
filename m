@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaAPSSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:18:21 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48071 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaAPSST (ORCPT
+	id S1751272AbaAPS05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:26:57 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:51153 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750764AbaAPS0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:18:19 -0500
-Date: Thu, 16 Jan 2014 12:15:28 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] ARM: sun6i: dt: Add PLL6 and SPI module clocks
-Message-ID: <20140116181528.GY8153@joshc.qualcomm.com>
-References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
- <1389892285-11745-3-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389892285-11745-3-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 16 Jan 2014 13:26:54 -0500
+Date: Thu, 16 Jan 2014 12:26:52 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Hansen <dave@sr71.net>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+In-Reply-To: <52D81214.7070608@sr71.net>
+Message-ID: <alpine.DEB.2.10.1401161226170.30036@nuc>
+References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net>
+ <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com> <alpine.DEB.2.10.1401111854580.6036@nuc> <20140113014408.GA25900@lge.com> <52D41F52.5020805@sr71.net> <alpine.DEB.2.10.1401141404190.19618@nuc> <52D5B48D.30006@sr71.net>
+ <alpine.DEB.2.10.1401161041160.29778@nuc> <52D81214.7070608@sr71.net>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 06:11:23PM +0100, Maxime Ripard wrote:
-> The module clocks in the A31 are still compatible with the A10 one. Add the SPI
-> module clocks and the PLL6 in the device tree to allow their use by the SPI
-> controllers.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/boot/dts/sun6i-a31.dtsi | 48 +++++++++++++++++++++++++++++++---------
->  1 file changed, 38 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-> index 5256ad9..ae058eb 100644
-> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> @@ -73,16 +73,12 @@
->  			clocks = <&osc24M>;
->  		};
->  
-> -		/*
-> -		 * This is a dummy clock, to be used as placeholder on
-> -		 * other mux clocks when a specific parent clock is not
-> -		 * yet implemented. It should be dropped when the driver
-> -		 * is complete.
-> -		 */
-> -		pll6: pll6 {
-> -			#clock-cells = <0>;
-> -			compatible = "fixed-clock";
-> -			clock-frequency = <0>;
-> +		pll6: clk@01c20028 {
-> +			#clock-cells = <1>;
-> +			compatible = "allwinner,sun6i-a31-pll6-clk";
-> +			reg = <0x01c20028 0x4>;
-> +			clocks = <&osc24M>;
-> +			clock-output-names = "pll6";
->  		};
->  
->  		cpu: cpu@01c20050 {
-> @@ -182,6 +178,38 @@
->  					"apb2_uart1", "apb2_uart2", "apb2_uart3",
->  					"apb2_uart4", "apb2_uart5";
->  		};
-> +
-> +		spi0_clk: clk@01c200a0 {
-> +			#clock-cells = <0>;
-> +			compatible = "allwinner,sun4i-mod0-clk";
-> +			reg = <0x01c200a0 0x4>;
-> +			clocks = <&osc24M>, <&pll6>;
+On Thu, 16 Jan 2014, Dave Hansen wrote:
 
-This looks weird.  You've set the pll6 #clock-cells = <1>, but you
-aren't using a specifier here.  Same below, as well.  The binding
-documentation indicates that #clock-cells should be 0 for the pll6 node.
+> This was a really tight loop where the caches are really hot, but it did
+> show the large 'struct page' winning:
+>
+> 	http://sr71.net/~dave/intel/slub/slub-perf-20140109.png
+>
+> As I said in the earlier description, the paravirt code doing interrupt
+> disabling was what really hurt the two spinlock cases.
 
-  Josh
+Hrm... Ok. in that case the additional complexity may be justified.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
