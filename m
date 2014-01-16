@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaAPSts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:49:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49961 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427AbaAPSto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:49:44 -0500
-Date: Thu, 16 Jan 2014 18:49:40 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [TLB range flush] +34.7% hackbench.throughput
-Message-ID: <20140116184940.GR4963@suse.de>
-References: <1389278098-27154-1-git-send-email-mgorman@suse.de>
- <20140116140118.GA22224@localhost>
+	id S1751821AbaAPSuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:50:01 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15039 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751616AbaAPSt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:49:59 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19PZMrMnfxuO40VHCrlw65FycKlOQcJXUI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan EFF1D50C214
+Date: Thu, 16 Jan 2014 13:49:43 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Ian Campbell <ijc@hellion.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: orion: provide C-style interrupt handler for
+ MULTI_IRQ_HANDLER
+Message-ID: <20140116184943.GK29184@titan.lakedaemon.net>
+References: <1389775235.10695.51.camel@dagon.hellion.org.uk>
+ <1389859831-9883-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140116164833.GH29184@titan.lakedaemon.net>
+ <1389891087.6697.26.camel@kazak.uk.xensource.com>
+ <20140116165347.GI29184@titan.lakedaemon.net>
+ <52D82802.6090104@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140116140118.GA22224@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D82802.6090104@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 10:01:18PM +0800, Fengguang Wu wrote:
-> Hi Mel,
-> 
-> I applied your patchset on v3.13-rc7 and get some test results. The
-> results are encouraging: hackbench throughput increased by 34.7% with
-> parameters 1600%-threads-pipe on a 2S SNB server.
-> 
-> In case you are interested, here are the full list of changes.
-> kconfig is attached.
-> 
+On Thu, Jan 16, 2014 at 07:42:10PM +0100, Sebastian Hesselbarth wrote:
+...
+> Out of curiosity, does that adding the Cc tag to the commit queue
+> it automatically as soon as it will be pulled by Linus?
 
-I am intersted and thanks very much for the report. It's very encouraging.
+Yes.  The -stable team scans commits as they are added to Linus' tree.
+If it has that tag, then they cherrypick it for the appropriate trees.
+As do many vendors and distros.
 
--- 
-Mel Gorman
-SUSE Labs
+There's no need to actually "email Cc" stable, they won't take it until
+it's landed in mainline.  iirc, this generates a form letter from Greg
+:)
+
+> @Ian: Thanks for hunting this down, please keep bothering us with
+> bug reports :)
+
+Yes, please!
+
+thx,
+
+Jason.
