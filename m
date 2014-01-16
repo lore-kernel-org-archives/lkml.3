@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaAPNYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:24:11 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:36715 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaAPNYI (ORCPT
+	id S1752457AbaAPN0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:26:07 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:44896 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaAPN0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:24:08 -0500
+	Thu, 16 Jan 2014 08:26:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387592016-13740-3-git-send-email-syin@broadcom.com>
+In-Reply-To: <1387592016-13740-2-git-send-email-syin@broadcom.com>
 References: <1386787041-6035-1-git-send-email-syin@broadcom.com>
 	<1387592016-13740-1-git-send-email-syin@broadcom.com>
-	<1387592016-13740-3-git-send-email-syin@broadcom.com>
-Date: Thu, 16 Jan 2014 14:24:07 +0100
-Message-ID: <CACRpkdYKrGFpK3Y46-9ah_ssaf-Y6O=O9Usqsw72gjorMKGYNw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+	<1387592016-13740-2-git-send-email-syin@broadcom.com>
+Date: Thu, 16 Jan 2014 14:26:03 +0100
+Message-ID: <CACRpkdam944YvgOe-xBqkDUCH3YMNH+TajBa7FR1KDt_vZKGvA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] pinctrl: Add void * to pinctrl_pin_desc
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sherman Yin <syin@broadcom.com>
 Cc: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
@@ -39,16 +39,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, Dec 21, 2013 at 3:13 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-> Adds pinctrl driver devicetree binding for Broadcom Capri (BCM281xx) SoCs.
+> drv_data is added to the pinctrl_pin_desc for drivers to define additional
+> driver-specific per-pin data.
 >
 > Signed-off-by: Sherman Yin <syin@broadcom.com>
 > Reviewed-by: Christian Daudt <bcm@fixthebug.org>
 > Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
-> v4: Changed valid values for "bias-pull-up" property for I2C pins.  Expanded
->     pin configuration node example.
 
-Patch applied with Mark R's ACK and a copy of his ECG.
+This patch applied as well.
 
 Yours,
 Linus Walleij
