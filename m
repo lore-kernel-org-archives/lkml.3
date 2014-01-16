@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaAPOUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:20:36 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:55300 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaAPOUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:20:23 -0500
-Message-ID: <52D7EAA4.2080208@linaro.org>
-Date: Thu, 16 Jan 2014 15:20:20 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752812AbaAPOVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:21:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44057 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435AbaAPOVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:21:43 -0500
+Date: Thu, 16 Jan 2014 15:21:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2 -mm] mm, oom: prefer thread group leaders for display
+ purposes
+Message-ID: <20140116142141.GF28157@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1401151837560.1835@chino.kir.corp.google.com>
+ <20140116070549.GL6963@cmpxchg.org>
+ <alpine.DEB.2.02.1401152344560.14407@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1401152345330.14407@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <52D7E343.40909@linaro.org> <20140116141743.GT31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140116141743.GT31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401152345330.14407@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 03:17 PM, Peter Zijlstra wrote:
-> On Thu, Jan 16, 2014 at 02:48:51PM +0100, Daniel Lezcano wrote:
->> 3570  sched_getparam(3570, { 0 })       = 0
->> 3570  sched_getscheduler(3570)          = 0 (SCHED_OTHER)
->> 3570  sched_get_priority_min(SCHED_OTHER) = 0
->> 3570  sched_get_priority_max(SCHED_OTHER) = 0
->> 3571  sched_get_priority_min(SCHED_OTHER) = 0
->> 3571  sched_get_priority_max(SCHED_OTHER) = 0
->> 3571  sched_get_priority_min(SCHED_OTHER) = 0
->> 3571  sched_get_priority_max(SCHED_OTHER) = 0
->> 3571  sched_setscheduler(3572, SCHED_OTHER, { 0 } <unfinished ...>
->> 3571  <... sched_setscheduler resumed> ) = 0
->> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
->> 3571  <... sched_get_priority_min resumed> ) = 0
->> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
->> 3571  <... sched_get_priority_max resumed> ) = 0
->> 3571  sched_setscheduler(3573, SCHED_OTHER, { 0 } <unfinished ...>
->> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
->> permitted)
->> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
->> 3571  <... sched_get_priority_min resumed> ) = 0
->> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
->> 3571  <... sched_get_priority_max resumed> ) = 0
->> 3571  sched_setscheduler(3574, SCHED_OTHER, { 0 } <unfinished ...>
->> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
->> permitted)
->>
->> The same strace but on a kernel which does not hang. The calls to
->> sched_setscheduler do not fail.
->>
->> 3292  sched_getparam(3292, { 0 })       = 0
->> 3292  sched_getscheduler(3292)          = 0 (SCHED_OTHER)
->> 3292  sched_get_priority_min(SCHED_OTHER) = 0
->> 3292  sched_get_priority_max(SCHED_OTHER) = 0
->> 3293  sched_get_priority_min(SCHED_OTHER) = 0
->> 3293  sched_get_priority_max(SCHED_OTHER) = 0
->> 3293  sched_get_priority_min(SCHED_OTHER) = 0
->> 3293  sched_get_priority_max(SCHED_OTHER) = 0
->> 3293  sched_setscheduler(3294, SCHED_OTHER, { 0 } <unfinished ...>
->> 3293  <... sched_setscheduler resumed> ) = 0
->> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
->> 3293  <... sched_get_priority_min resumed> ) = 0
->> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
->> 3293  <... sched_get_priority_max resumed> ) = 0
->> 3293  sched_setscheduler(3295, SCHED_OTHER, { 0 } <unfinished ...>
->> 3293  <... sched_setscheduler resumed> ) = 0
->> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
->> 3293  <... sched_get_priority_min resumed> ) = 0
->> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
->> 3293  <... sched_get_priority_max resumed> ) = 0
->> 3293  sched_setscheduler(3296, SCHED_OTHER, { 0 } <unfinished ...>
->> 3293  <... sched_setscheduler resumed> ) = 0
->>
->> The EPERM error comes from kernel/sched/core.c:3303
->>
->> ...
->> 		if (fair_policy(policy)) {
->> 			if (!can_nice(p, attr->sched_nice))
->> 				return -EPERM;
->> 		}
->> ...
->>
->>
->> But I don't know why this is leading to block a process or making rsyslogd
->> being not woken up by a packet coming in the af_unix socket.
->
-> Could you test with a fresh tip/master, Ingo just pushed out a stack of
-> fixes, in particularly:
->
-> e3de300d1212b ("sched: Preserve the nice level over sched_setscheduler() and sched_setparam() calls")
-> 39fd8fd22b322 ("sched: Fix up scheduler syscall LTP fails")
->
-> Could have affected things.
->
-> Meanwhile I'll try and better read what the above says.
+On Wed 15-01-14 23:46:44, David Rientjes wrote:
+> When two threads have the same badness score, it's preferable to kill the 
+> thread group leader so that the actual process name is printed to the 
+> kernel log rather than the thread group name which may be shared amongst 
+> several processes.
 
-Already tested. The last commits do not change the issue described above.
+I am not sure I understand this. Is this about ->comm? If yes then why
+couldn't the group leader do PR_SET_NAME?
 
+> This was the behavior when select_bad_process() used to do 
+> for_each_process(), but it now iterates threads instead and leads to 
+> ambiguity.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  v2: fixes missing get_task_struct() found by Johannes.
+> 
+>  mm/memcontrol.c | 19 ++++++++++++-------
+>  mm/oom_kill.c   | 12 ++++++++----
+>  2 files changed, 20 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a815686..d69c4b3 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1841,13 +1841,18 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  				break;
+>  			};
+>  			points = oom_badness(task, memcg, NULL, totalpages);
+> -			if (points > chosen_points) {
+> -				if (chosen)
+> -					put_task_struct(chosen);
+> -				chosen = task;
+> -				chosen_points = points;
+> -				get_task_struct(chosen);
+> -			}
+> +			if (points < chosen_points)
+> +				continue;
+> +			/* Prefer thread group leaders for display purposes */
+> +			if (points == chosen_points &&
+> +			    thread_group_leader(chosen))
+> +				continue;
+> +
+> +			if (chosen)
+> +				put_task_struct(chosen);
+> +			chosen = task;
+> +			chosen_points = points;
+> +			get_task_struct(chosen);
+>  		}
+>  		css_task_iter_end(&it);
+>  	}
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 054ff47..1dca3d8 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -327,10 +327,14 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  			break;
+>  		};
+>  		points = oom_badness(p, NULL, nodemask, totalpages);
+> -		if (points > chosen_points) {
+> -			chosen = p;
+> -			chosen_points = points;
+> -		}
+> +		if (points < chosen_points)
+> +			continue;
+> +		/* Prefer thread group leaders for display purposes */
+> +		if (points == chosen_points && thread_group_leader(chosen))
+> +			continue;
+> +
+> +		chosen = p;
+> +		chosen_points = points;
+>  	}
+>  	if (chosen)
+>  		get_task_struct(chosen);
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Michal Hocko
+SUSE Labs
