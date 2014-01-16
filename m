@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaAPS1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:27:38 -0500
-Received: from nm32-vm4.bullet.mail.gq1.yahoo.com ([98.136.216.227]:27046 "EHLO
-	nm32-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751549AbaAPS1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:27:35 -0500
-X-Yahoo-Newman-Id: 133386.94785.bm@smtp229.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: tuEdK_UVM1k2XKxCamWg5UVbJP_7xqpDaTrUphTGkWIKH5g
- iX8hHr4xox3z8muTqrRFZxDX.dNhM_U_HaVXQpb_mWAqu0oubumEdvYQiU.J
- VFdH5E_6aOvBIgJ5ibgDHeW7jxoWXUL3VKJCfk3Teb9aPXIiMPjwjEGJAX5I
- 3T_LMretraGnf4d0racmOLh0I53F7EfUAa8nCk0N5HpcUJm7zVegA5stWMhO
- Uu_dCVzAp2i6V8xNOF4LyzYlgd9iS7ODqo1sotTA9eKEnH7s4RrYEcObacxB
- PwMFg_Ou1TAw.DEDzsocPDZLcfLB.bngGCslAHPQkLTaeiytrSgjSjU6VqWy
- 7FZStPXODVyszBaCTBIAQTNZxRQb4Bj75PyC2FJEqfdUsU2dTUo9qwuaGXjB
- sZcGPS1mIDOh.bh4uusQ2UilGhQYm3..KGk4l.VmpUghb687RkNZnq7H79qn
- zlC_GEasw4pzJj3FBWXn_NpRWZBBt0uOEuzdkid2uNafBuRHzy7en6hG.osP
- 9QfhyJYV0m5cWqmbYnqU-
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [98.138.105.21])
-        by smtp229.mail.gq1.yahoo.com with SMTP; 16 Jan 2014 18:27:35 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v8] Staging: comedi: convert while loop to timeout in ni_mio_common.c
-Date: Thu, 16 Jan 2014 12:27:29 -0600
-Message-Id: <1389896849-3186-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+	id S1751756AbaAPS2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:28:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23616 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333AbaAPS2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:28:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,668,1384329600"; 
+   d="scan'208";a="404034805"
+From: Durgadoss R <durgadoss.r@intel.com>
+To: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com, wni@nvidia.com,
+        Durgadoss R <durgadoss.r@intel.com>
+Subject: [PATCHv5 00/10] Thermal Framework Enhancements
+Date: Fri, 17 Jan 2014 05:26:17 +0530
+Message-Id: <1389916587-2541-1-git-send-email-durgadoss.r@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch for ni_mio_common.c changes out a while loop for a timeout,
-which is preferred.
+This patch set is a v5 of the previous versions submitted here:
+[v4]: http://lwn.net/Articles/568988/
+[v3]: https://lkml.org/lkml/2013/2/5/228 
+[v2]: http://lwn.net/Articles/531720/
+[v1]: https://lkml.org/lkml/2012/12/18/108 
+[RFC]:https://patchwork.kernel.org/patch/1758921/
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
+This patch set is based on Rui's -next tree, on top
+of commit 'c698a4492f01127ca90fc28cd5157f3d616fe4ff'
+This is tested on a Core-i5 running ubuntu 12.04.
 
-Okay, back to v2, basically.  I fixed the checkpatch warning from v2,
-and added the error checking that was from v3, but otherwise it is the
-same.  Of note, I have used a udelay of 1 here (Greg had suggested to
-use 10, but Ian prefers 1 so I have gone with that, and I assume that
-cpu_relax is no longer an option.).
+Changes since v4:
+ * Cleaned up the thermal_release function; Now all
+   kfree's are done in _unregister functions.
+ * Kconfig option to selectively enable and use this
+   new version of thermal_core.c
+ * According to a previous comment from Rui, moved all
+   new API's into a file named thermal_core_new.c
+Changes since v3:
+ * Added a patch to conditionally do kfree(cdev) in
+   thermal_release function.
+ * Reworked all sysfs attributes to have one value per file
+   This includes sensor_trip_* and map_weight* attributes.
+ * Added 'lock' variable in thermal_zone structure to
+   protect its members.
+ * Added Documentation to all functions in thermal_core.c
+ * Changes all strcpy() to strlcpy()
+ * Used devm_kzalloc() in places where applicable
+ * Address some buffer overflow conditions and contentions
+   in tz->sensors[] and tz->cdevs[].
+Changes since v2:
+ * Reworked the map sysfs attributes in patch [5/8]
+ * Dropped configuration for maximum sensors and
+   cooling devices, through Kconfig.
+ * Added __remove_trip_attr method
+ * Renamed __clean_map_entry to __remove_map_entry
+   for consistency in naming.
+Changes Since v1:
+ * Removed kobject creation for thermal_trip and thermal_map
+   nodes as per Greg-KH's comments.
+ * Added ABI Documentation under 'testing'.
+ * Modified the GET_INDEX macro to be more linux-like, thanks
+   to Joe Perches.
+ * Added get_[sensor/cdev]_by_name APIs to thermal.h
 
-2: Changed from simple clean-up to swapping a timeout in for a while loop.
+This series contains 10 patches:
+Patch 1/10: Remove code from thermal_release function. 
+            Do kfree in _unregister functions.
+Patch 2/10: Creates new sensor level APIs
+Patch 3/10: Adds new cooling device APIs
+Patch 4/10: Creates new zone level APIs. The existing tzd structure is
+            kept as such for clarity and compatibility purposes.
+Patch 5/10: Creates functions to add/remove a cdev to/from a zone. The
+            existing tcd structure need not be modified.
+Patch 6/10: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
+  	    under /sys/class/thermal/zoneY/. This exposes various trip
+            points for sensorX present in zoneY.
+Patch 7/10: Adds mapY_* sysfs node. These attributes represent the
+	    relationship between various sensors and cooling
+	    devices in a thermal zone.
+Patch 8/10: Creates Documentation for the new APIs. A new file is
+            created for clarity. Final goal is to merge with the existing
+            file or refactor the files, as whatever seems appropriate.
+Patch 9/10: Add ABI documentation for sysfs interfaces introduced in this patch.
+Patch 10/10: A dummy driver that can be used for testing. This is not for merge.
 
-3: Removed extra counter variable, and added error checking.
+Thanks to Rui for helping me in resolving some
+Kconfig issues, related to this series.
 
-4: No longer using counter variable, using jiffies instead.
+Durgadoss R (10):
+  Thermal: Do kfree in _unregister functions
+  Thermal: Create sensor level APIs
+  Thermal: Add cooling device APIs
+  Thermal: Create zone level APIs
+  Thermal: Add APIs to bind cdev to new zone structure
+  Thermal: Add trip point sysfs nodes for sensor
+  Thermal: Create Thermal map sysfs attributes for a zone
+  Thermal: Add Documentation to new APIs
+  Thermal: Add ABI Documentation for sysfs interfaces
+  Thermal: Dummy driver used for testing
 
-5: udelay for 10u, instead of 1u.
+ Documentation/ABI/testing/sysfs-class-thermal |  137 +++
+ Documentation/thermal/sysfs-api2.txt          |  240 ++++
+ drivers/thermal/Kconfig                       |    9 +
+ drivers/thermal/Makefile                      |    4 +
+ drivers/thermal/thermal_core.c                |   19 +-
+ drivers/thermal/thermal_core.h                |    1 +
+ drivers/thermal/thermal_core_new.c            | 1585 +++++++++++++++++++++++++
+ drivers/thermal/thermal_test.c                |  322 +++++
+ include/linux/thermal.h                       |  144 ++-
+ 9 files changed, 2447 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
+ create mode 100644 Documentation/thermal/sysfs-api2.txt
+ create mode 100644 drivers/thermal/thermal_core_new.c
+ create mode 100644 drivers/thermal/thermal_test.c
 
-6: Scrap udelay entirely, in favor of cpu_relax. Include asm/processor.h
-in order to use cpu_relax.
-
-7: Fix typo (msec vs msecs).
-
-8: Revert back to v2, with some small changes (see above).
-
- drivers/staging/comedi/drivers/ni_mio_common.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 457b884..10c27cb 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -687,12 +687,22 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
- {
- 	const struct ni_board_struct *board = comedi_board(dev);
- 	struct ni_private *devpriv = dev->private;
-+	static const int timeout = 10000;
-+	int i;
- 
- 	if (board->reg_type == ni_reg_6143) {
- 		/*  Flush the 6143 data FIFO */
- 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
- 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
--		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
-+		/*  Wait for complete */
-+		for (i = 0; i < timeout; i++) {
-+			if (!(ni_readl(AIFIFO_Status_6143) & 0x10))
-+				break;
-+			udelay(1);
-+		}
-+		if (i == timeout) {
-+			comedi_error(dev, "FIFO flush timeout.");
-+		}
- 	} else {
- 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
- 		if (board->reg_type == ni_reg_625x) {
 -- 
-1.8.4.2
+1.7.9.5
 
