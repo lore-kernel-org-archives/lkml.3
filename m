@@ -1,278 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaAPXfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:35:08 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:44870 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaAPXfF (ORCPT
+	id S1751633AbaAPXjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:39:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46418 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaAPXju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:35:05 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <20140114171740.GB1867@redhat.com>
-	<20140114182135.GA29296@kroah.com> <20140114191208.GA9942@redhat.com>
-	<20140114193139.GA3636@kroah.com> <20140114210610.GC9942@redhat.com>
-	<87iotmc9ic.fsf@xmission.com> <20140115141618.GD7950@htj.dyndns.org>
-	<87fvoo25gj.fsf@xmission.com> <20140116001116.GA27182@redhat.com>
-Date: Thu, 16 Jan 2014 15:34:56 -0800
-In-Reply-To: <20140116001116.GA27182@redhat.com> (Veaceslav Falico's message
-	of "Thu, 16 Jan 2014 01:11:16 +0100")
-Message-ID: <878uufwlen.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 16 Jan 2014 18:39:50 -0500
+Date: Thu, 16 Jan 2014 15:39:38 -0800
+From: tip-bot for David Cohen <tipbot@zytor.com>
+Message-ID: <tip-acb20d7395f75b0fdb5b300f9fb3b9c6054fb04f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1389913624-9149-2-git-send-email-david.a.cohen@linux.intel.com>
+References: <1389913624-9149-2-git-send-email-david.a.cohen@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/intel-mid] x86, intel-mid: sfi_handle_*_dev()
+  should check for pdata error code
+Git-Commit-ID: acb20d7395f75b0fdb5b300f9fb3b9c6054fb04f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19I2zDrydyvTdU3avC03G46JFYIk8lDmR4=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4969]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Veaceslav Falico <vfalico@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 15:39:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Veaceslav Falico <vfalico@redhat.com> writes:
+Commit-ID:  acb20d7395f75b0fdb5b300f9fb3b9c6054fb04f
+Gitweb:     http://git.kernel.org/tip/acb20d7395f75b0fdb5b300f9fb3b9c6054fb04f
+Author:     David Cohen <david.a.cohen@linux.intel.com>
+AuthorDate: Thu, 16 Jan 2014 15:07:02 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 16 Jan 2014 15:06:29 -0800
 
-> On Wed, Jan 15, 2014 at 03:25:16PM -0800, Eric W. Biederman wrote:
->>Tejun Heo <tj@kernel.org> writes:
->>
->>> Hey, Veaceslav, Eric.
->
-> Hi Tejun, Eric,
->
->>>
->>> On Tue, Jan 14, 2014 at 05:35:23PM -0800, Eric W. Biederman wrote:
->>>> >>> >>This works like a charm. However, if I want to use (obviously, with the
->>>> >>> >>symlink present):
->>>> >>> >>
->>>> >>> >>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
->>>> >>> >
->>>> >>> >You forgot the namespace option to this call, what kernel version are
->>>> >>> >you using here?
->>>> >>>
->>>> >>> It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
->>>> >>> 3.13-rc6 with some networking patches on top of it.
->>>
->>> Does this work on 3.12?  How about Greg's driver-core-next?  Do you
->>> have a minimal test case that I can use to reproduce the issue?
->
-> Sorry for the latency in responses, I'll update once I'll manage to test it
-> on those.
->
-> ...snip...
->>> Veaceslav, please confirm whether the issue is reproducible w/ v3.12.
->>
->>Anyway since a symlink living in a different namespace from it's target
->>is just nonsense this (only compile tested) patch should fix the issue,
->>and make sysfs_rename_link usable for people without a masters degree in
->>sysfs again.
->
-> It's still there :-(. I've used your patch and added my small addition[1] to
-> test the sysfs_rename_link() (on top of net-next, 3.13-rc7), however the
-> issue is still there:
+x86, intel-mid: sfi_handle_*_dev() should check for pdata error code
 
-I expect the bug is my quick patch missed testing for sysfs_ns_type to
-see if we care at all about namespaces in sysfs_rename_link.
+When Intel MID finds a match between SFI table from FW and registered
+SFI devices, it will always register a device regardless the platform
+code was successful or not.
 
-Which would make just the sysfs_rename_link bit look like.
+This patch adds an extra option for platform code to return error code
+and abort device registration on SFI table parsing.
 
-Something like that.
+This patch does not contain any functional changes for current intel
+mid platform code.
 
-Eric
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Link: http://lkml.kernel.org/r/1389913624-9149-2-git-send-email-david.a.cohen@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/intel-mid/sfi.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 3ae3f1bf1a09..8b51d1b6cc21 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -194,15 +194,13 @@ EXPORT_SYMBOL_GPL(sysfs_remove_link);
-  *     @targ:  object we're pointing to.
-  *     @old:   previous name of the symlink.
-  *     @new:   new name of the symlink.
-- *     @new_ns: new namespace of the symlink.
-- *
-  *     A helper function for the common rename symlink idiom.
-  */
--int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
--                        const char *old, const char *new, const void *new_ns)
-+int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
-+                     const char *old, const char *new)
- {
-        struct sysfs_dirent *parent_sd, *sd = NULL;
--       const void *old_ns = NULL;
-+       const void *old_ns = NULL, *new_ns = NULL;
-        int result;
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 80a5228..1d5d20b 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -337,6 +337,8 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
+ 	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
+ 		pentry->name, pentry->irq);
+ 	pdata = intel_mid_sfi_get_pdata(dev, pentry);
++	if (IS_ERR(pdata))
++		return;
  
-        if (!kobj)
-@@ -224,13 +222,16 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
-        if (sd->s_symlink.target_sd->s_dir.kobj != targ)
-                goto out;
+ 	pdev = platform_device_alloc(pentry->name, 0);
+ 	if (pdev == NULL) {
+@@ -370,6 +372,8 @@ static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
+ 		spi_info.chip_select);
  
-+       if (sysfs_ns_type(parent_sd))
-+               new_ns = kobject_namespace(targ);
-+
-        result = sysfs_rename(sd, parent_sd, new, new_ns);
+ 	pdata = intel_mid_sfi_get_pdata(dev, &spi_info);
++	if (IS_ERR(pdata))
++		return;
  
- out:
-        sysfs_put(sd);
-        return result;
- }
--EXPORT_SYMBOL_GPL(sysfs_rename_link_ns);
-+EXPORT_SYMBOL_GPL(sysfs_rename_link);
+ 	spi_info.platform_data = pdata;
+ 	if (dev->delay)
+@@ -395,6 +399,8 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
+ 		i2c_info.addr);
+ 	pdata = intel_mid_sfi_get_pdata(dev, &i2c_info);
+ 	i2c_info.platform_data = pdata;
++	if (IS_ERR(pdata))
++		return;
  
- static int sysfs_get_target_path(struct sysfs_dirent *parent_sd,
-                                 struct sysfs_dirent *target_sd, char *path)
-
-
-
->
-> [   79.038340] net bond0: renaming to bondbla
-> [   79.038380] ------------[ cut here ]------------
-> [   79.038411] WARNING: CPU: 1 PID: 5318 at fs/sysfs/dir.c:618
-> sysfs_find_dirent+0x84/0x110()
-> [   79.038449] sysfs: ns invalid in 'bridge0' for 'lower_bond0'
-> ...snip...
-> [   79.038877]  [<ffffffff810ae826>] warn_slowpath_fmt+0x46/0x50
-> [   79.038903]  [<ffffffff812ba890>] ? sysfs_get_dirent_ns+0x30/0x80
-> [   79.038930]  [<ffffffff812b97c4>] sysfs_find_dirent+0x84/0x110
-> [   79.038957]  [<ffffffff812ba89e>] sysfs_get_dirent_ns+0x3e/0x80
-> [   79.038983]  [<ffffffff812baf87>] sysfs_rename_link+0x57/0xe0
-> [   79.039030]  [<ffffffff81689e72>] netdev_adjacent_rename_links+0xa2/0x160
->
-> The current scheme (sysfs_remove_link() + sysfs_add_link()) works perfectly
-> well without any namespaces. I'll dig into it once I have some spare time,
-> it's not at all critical.
->
-> [1]: the patch (I've included your patch too, just in case):
->
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 67b180d..0c9377a 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1825,9 +1825,8 @@ int device_rename(struct device *dev, const char *new_name)
->  	}
->  	if (dev->class) {
-> -		error = sysfs_rename_link_ns(&dev->class->p->subsys.kobj,
-> -					     kobj, old_device_name,
-> -					     new_name, kobject_namespace(kobj));
-> +		error = sysfs_rename_link(&dev->class->p->subsys.kobj,
-> +					  kobj, old_device_name, new_name);
->  		if (error)
->  			goto out;
->  	}
-> diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-> index 3ae3f1b..651444a 100644
-> --- a/fs/sysfs/symlink.c
-> +++ b/fs/sysfs/symlink.c
-> @@ -194,12 +194,10 @@ EXPORT_SYMBOL_GPL(sysfs_remove_link);
->   *	@targ:	object we're pointing to.
->   *	@old:	previous name of the symlink.
->   *	@new:	new name of the symlink.
-> - *	@new_ns: new namespace of the symlink.
-> - *
->   *	A helper function for the common rename symlink idiom.
->   */
-> -int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
-> -			 const char *old, const char *new, const void *new_ns)
-> +int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
-> +		      const char *old, const char *new)
->  {
->  	struct sysfs_dirent *parent_sd, *sd = NULL;
->  	const void *old_ns = NULL;
-> @@ -224,13 +222,13 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
->  	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
->  		goto out;
->  -	result = sysfs_rename(sd, parent_sd, new, new_ns);
-> +	result = sysfs_rename(sd, parent_sd, new, kobject_namespace(targ));
->  out:
->  	sysfs_put(sd);
->  	return result;
->  }
-> -EXPORT_SYMBOL_GPL(sysfs_rename_link_ns);
-> +EXPORT_SYMBOL_GPL(sysfs_rename_link);
->  static int sysfs_get_target_path(struct sysfs_dirent *parent_sd,
->  				 struct sysfs_dirent *target_sd, char *path)
-> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-> index 6695040..093d992 100644
-> --- a/include/linux/sysfs.h
-> +++ b/include/linux/sysfs.h
-> @@ -213,9 +213,8 @@ int __must_check sysfs_create_link_nowarn(struct kobject *kobj,
->  					  const char *name);
->  void sysfs_remove_link(struct kobject *kobj, const char *name);
->  -int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
-> -			 const char *old_name, const char *new_name,
-> -			 const void *new_ns);
-> +int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
-> +		      const char *old_name, const char *new_name);
->  void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
->  			const char *name);
-> @@ -341,9 +340,8 @@ static inline void sysfs_remove_link(struct kobject *kobj, const char *name)
->  {
->  }
->  -static inline int sysfs_rename_link_ns(struct kobject *k, struct kobject *t,
-> -				       const char *old_name,
-> -				       const char *new_name, const void *ns)
-> +static inline int sysfs_rename_link(struct kobject *k, struct kobject *t,
-> +				    const char *old_name, const char *new_name)
->  {
->  	return 0;
->  }
-> @@ -455,12 +453,6 @@ static inline void sysfs_remove_file(struct kobject *kobj,
->  	return sysfs_remove_file_ns(kobj, attr, NULL);
->  }
->  -static inline int sysfs_rename_link(struct kobject *kobj, struct kobject
-> *target,
-> -				    const char *old_name, const char *new_name)
-> -{
-> -	return sysfs_rename_link_ns(kobj, target, old_name, new_name, NULL);
-> -}
-> -
->  static inline struct sysfs_dirent *
->  sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
->  {
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 9957557..5d24d8e 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -5005,19 +5005,20 @@ EXPORT_SYMBOL(netdev_upper_dev_unlink);
->  void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
->  {
->  	struct netdev_adjacent *iter;
-> +	char old_linkname[IFNAMSIZ+7], new_linkname[IFNAMSIZ+7];
->  	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-> -		netdev_adjacent_sysfs_del(iter->dev, oldname,
-> -					  &iter->dev->adj_list.lower);
-> -		netdev_adjacent_sysfs_add(iter->dev, dev,
-> -					  &iter->dev->adj_list.lower);
-> +		sprintf(old_linkname, "lower_%s", oldname);
-> +		sprintf(new_linkname, "lower_%s", dev->name);
-> +		sysfs_rename_link(&(iter->dev->dev.kobj), &(dev->dev.kobj),
-> +				  old_linkname, new_linkname);
->  	}
->  	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-> -		netdev_adjacent_sysfs_del(iter->dev, oldname,
-> -					  &iter->dev->adj_list.upper);
-> -		netdev_adjacent_sysfs_add(iter->dev, dev,
-> -					  &iter->dev->adj_list.upper);
-> +		sprintf(old_linkname, "upper_%s", oldname);
-> +		sprintf(new_linkname, "upper_%s", dev->name);
-> +		sysfs_rename_link(&(iter->dev->dev.kobj), &(dev->dev.kobj),
-> +				  old_linkname, new_linkname);
->  	}
->  }
->  
+ 	if (dev->delay)
+ 		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
