@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaAPCg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:36:58 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:52995 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaAPCg4 (ORCPT
+	id S1752508AbaAPCkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:40:51 -0500
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:52580 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaAPCks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:36:56 -0500
-Date: Wed, 15 Jan 2014 18:36:49 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH v2 tip/core/timers] Crude timer-wheel latency hacks
-Message-ID: <20140116023649.GT10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140115051939.GA31164@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1401152316500.4207@ionos.tec.linutronix.de>
+	Wed, 15 Jan 2014 21:40:48 -0500
+Date: Wed, 15 Jan 2014 18:40:41 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch -mm] mm, oom: prefer thread group leaders for display
+ purposes
+Message-ID: <alpine.DEB.2.02.1401151837560.1835@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401152316500.4207@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011602-8236-0000-0000-0000061F805A
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 11:22:41PM +0100, Thomas Gleixner wrote:
-> Paul,
-> 
-> On Tue, 14 Jan 2014, Paul E. McKenney wrote:
-> > The following three patches provide some crude timer-wheel latency
-> > patches.  I understand that a more comprehensive solution is in progress,
-> > but in the meantime, these patches work well in cases where a given
-> > CPU has either zero or one timers pending, which is a common case for
-> > NO_HZ_FULL kernels.  So, on the off-chance that this is helpful to
-> > someone, the individual patches are as follows:
-> 
-> so far that makes sense, though I'd rather like to redesign the whole
-> timer wheel mess than adding more duct tape to it.
+When two threads have the same badness score, it's preferable to kill the 
+thread group leader so that the actual process name is printed to the 
+kernel log rather than the thread group name which may be shared amongst 
+several processes.
 
-This is supposed to be in addition you your redesign, absolutely not
-instead of your redesign.  For one thing, hopefully your redesign
-will avoid jiffy-scanning in the case where the CPU has a pair of
-timers separated by many jiffies.  My patches won't help in that case.
+This was the behavior when select_bad_process() used to do 
+for_each_process(), but it now iterates threads instead and leads to 
+ambiguity.
 
-My patches are instead intended for testing in the meantime, and they
-do help a bit in some common NO_HZ_FULL situations.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/memcontrol.c | 18 +++++++++++-------
+ mm/oom_kill.c   | 12 ++++++++----
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
->                                                    I can't dig into
-> the details right now as I'm dead tired and about to leave for a
-> funeral. i'll have a detailed look at this at the weekend.
-
-My sympathies!
-
-And I will be sending out an updated series shortly anyway.
-
-							Thanx, Paul
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a815686..b482f49 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1841,13 +1841,17 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 				break;
+ 			};
+ 			points = oom_badness(task, memcg, NULL, totalpages);
+-			if (points > chosen_points) {
+-				if (chosen)
+-					put_task_struct(chosen);
+-				chosen = task;
+-				chosen_points = points;
+-				get_task_struct(chosen);
+-			}
++			if (points < chosen_points)
++				continue;
++			/* Prefer thread group leaders for display purposes */
++			if (points == chosen_points &&
++			    thread_group_leader(chosen))
++				continue;
++
++			if (chosen)
++				put_task_struct(chosen);
++			chosen = task;
++			chosen_points = points;
+ 		}
+ 		css_task_iter_end(&it);
+ 	}
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 054ff47..1dca3d8 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -327,10 +327,14 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			break;
+ 		};
+ 		points = oom_badness(p, NULL, nodemask, totalpages);
+-		if (points > chosen_points) {
+-			chosen = p;
+-			chosen_points = points;
+-		}
++		if (points < chosen_points)
++			continue;
++		/* Prefer thread group leaders for display purposes */
++		if (points == chosen_points && thread_group_leader(chosen))
++			continue;
++
++		chosen = p;
++		chosen_points = points;
+ 	}
+ 	if (chosen)
+ 		get_task_struct(chosen);
