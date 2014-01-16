@@ -1,240 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaAPGbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 01:31:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60851 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaAPGa4 (ORCPT
+	id S1751645AbaAPGe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 01:34:56 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:9673 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaAPGew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 01:30:56 -0500
-Date: Wed, 15 Jan 2014 22:30:44 -0800
-From: tip-bot for Bin Gao <tipbot@zytor.com>
-Message-ID: <tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bin.gao@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bin.gao@intel.com, hpa@linux.intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, tsc: Add static (MSR)
-  TSC calibration on Intel Atom SoCs
-Git-Commit-ID: 7da7c1561366ba8adb7275464ab44e84e1faa7e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 15 Jan 2014 22:30:50 -0800 (PST)
+	Thu, 16 Jan 2014 01:34:52 -0500
+X-AuditID: cbfee68e-b7f566d000002344-91-52d77d856991
+Date: Thu, 16 Jan 2014 06:34:45 +0000 (GMT)
+From: Saurabh Singh <saurabh1.s@samsung.com>
+Subject: [PATCH] Parse missing regulator constraints from device tree blob
+To: lgirdwood@gmail.com, broonie@kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, celinux-dev@tree.celinuxforum.org
+Cc: srevatsa@samsung.com, bp.praveen@samsung.com
+Reply-to: saurabh1.s@samsung.com
+MIME-version: 1.0
+X-MTR: 20140116062836384@saurabh1.s
+Msgkey: 20140116062836384@saurabh1.s
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140116062836384@saurabh1.s
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <23745449.572421389854083634.JavaMail.weblogic@epml20>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSpdtaez3IYON2S4vLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJVx5PBJpoJnGhW/m+6yNTDeUe9i5OQQElCVmL1nCyOILSFgIvHi
+	5DYWCFtM4sK99WxdjFxANUsZJXo6fwM5HGBFJz65QcTnM0osWfEJLM4CNOhDBxdIL5uArsTD
+	9XfZQcLCAl4S3094gpSLCLxklOhbeYMNpIZZwEbiTMdCNogbFCTOPe9kArF5BQQlTs58AnWD
+	ssTi91fYIeIqEiv3/2KFiMtJLJl6mQnC5pWY0f6UBSY+7esaZghbWuL8rA2MML8s/v4YKs4v
+	cez2DiaIV3glntwPhhmze/MXNghbQGLqmYNQrRoSf75OgVrFJ7Fm4VsWmDG7Ti1nhum9v2Uu
+	E8RbihJTuh+yQ9gGEkcWzWFF9xavgJPEmg9PWCcwKs9CkpqFpH0WknZkNQsYWVYxiqYWJBcU
+	J6UXGekVJ+YWl+al6yXn525iBCaF0/+e9e1gvHnA+hBjMjBGJjJLiSbnA5NKXkm8obGZkYWp
+	iamxkbmlGWnCSuK8ix4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgzJ+1cmdVbPZum02L
+	ZzyVvRi9xKvyxoxnjAH6X8R2V5x5dcr32IPPky7d9DR6G1FtyDltA8dHpZPSbvVvOmckyagw
+	Zf+oMPfbXaLgVt2/b+bsS73TbUv2CjSq/Jqj2+Entie2Ky/V+UPIIYWYqU5T5MxsZQpZLYK/
+	hcb/1nl2TOAbU72LD5OuEktxRqKhFnNRcSIA4fuc1SADAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/tGbqttdeDDPpn61pc3jWHzYHR4/Mm
+	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q9NYK0MDAyNToJqEtIwj
+	h08yFTzTqPjddJetgfGOehcjJ4eQgKrE7D1bGLsYOTgkBEwkTnxyAwlLCIhJXLi3nq2LkQuo
+	ZD6jxJIVn9hAaliA6j90cIHUsAnoSjxcf5cdJCws4CXx/YQnSLmIwEtGib6VN9hAapgFbCTO
+	dCxkg1ilIHHueScTiM0rIChxcuYTFohdyhKL319hh4irSKzc/4sVIi4nsWTqZSYIm1diRvtT
+	Fpj4tK9rmCFsaYnzszYwwty8+PtjqDi/xLHbO5gg3uKVeHI/GGbM7s1f2CBsAYmpZw5CtWpI
+	/Pk6BWoVn8SahW9ZYMbsOrWcGab3/pa5TBBvKUpM6X7IDmEbSBxZNIcV3Vu8Ak4Saz48YZ3A
+	KDcLSWoWkvZZSNqR1SxgZFnFKJpakFxQnJReYahXnJhbXJqXrpecn7uJEZyani3cwfjlvPUh
+	RgEORiUe3h0PrwUJsSaWFVfmHmKU4GBWEuHlML8eJMSbklhZlVqUH19UmpNafIgxGRh/E5ml
+	RJPzgWkzryTe0NjE3NTY1MLA0NzcjDRhJXHeuzeTgoQE0hNLUrNTUwtSi2C2MHFwSjUwXmgP
+	3yS/reKyfrO+4Bo7Lua3ipzfnmQKPXnAHL1RRJJtQu2l16Z7j9SV6gWGsqwKE1gdNCfBxb1m
+	V9K8H7O/+6Z5l1SdOKumFc6vE39Cqn5RmFZcoq7Jh5DyI91Gi8UXZxit9f2cdMs09Gn6MZnD
+	00QndPmtk8qdFWWs+VXB+mqkd86reFUlluKMREMt5qLiRACWyxs2kQMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0G6Z1eC015733
 
-Commit-ID:  7da7c1561366ba8adb7275464ab44e84e1faa7e0
-Gitweb:     http://git.kernel.org/tip/7da7c1561366ba8adb7275464ab44e84e1faa7e0
-Author:     Bin Gao <bin.gao@intel.com>
-AuthorDate: Mon, 21 Oct 2013 09:16:33 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 15 Jan 2014 22:28:48 -0800
+This patch adds support for parsing following regulator contraints from device tree blob.
+1. valid modes mask (valid_modes_mask)
+2. input microvolt(input_uV)
+3. initial mode (initial_mode)
+4. initial state (initial_state)
+5. state mem (state_mem)
+6. state disk (state_disk)
+7. state standby (state_standby)
 
-x86, tsc: Add static (MSR) TSC calibration on Intel Atom SoCs
+This patch is currently against a linux 3.12.6 kernel.
 
-On SoCs that have the calibration MSRs available, either there is no
-PIT, HPET or PMTIMER to calibrate against, or the PIT/HPET/PMTIMER is
-driven from the same clock as the TSC, so calibration is redundant and
-just slows down the boot.
+diffstat for this patch is:
+ of_regulator.c |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
 
-TSC rate is caculated by this formula:
-<maximum core-clock to bus-clock ratio> * <maximum resolved frequency>
-The ratio and the resolved frequency ID can be obtained from MSR.
-See Intel 64 and IA-32 System Programming Guid section 16.12 and 30.11.5
-for details.
+To apply the patch, in the root of a kernel tree use:
+patch -p1 < of_regulator.patch
 
-Signed-off-by: Bin Gao <bin.gao@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org
----
- arch/x86/include/asm/tsc.h |   3 ++
- arch/x86/kernel/Makefile   |   2 +-
- arch/x86/kernel/tsc.c      |  10 ++++
- arch/x86/kernel/tsc_msr.c  | 125 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 139 insertions(+), 1 deletion(-)
+Please let me know any feedback you have on this patch or the approach used.
 
-diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-index 235be70..57ae63c 100644
---- a/arch/x86/include/asm/tsc.h
-+++ b/arch/x86/include/asm/tsc.h
-@@ -65,4 +65,7 @@ extern int notsc_setup(char *);
- extern void tsc_save_sched_clock_state(void);
- extern void tsc_restore_sched_clock_state(void);
+Regards,
+=====================
+Saurabh Singh Sengar
+Lead Engineer
+Samsung R&D Institute
+India
+Samsung
+=====================
+Signed-off-by: Saurabh Singh Sengar <saurabh1.s@samsung.com>
+
+--------------------------------------------------------------------------------
+--- linux-3.12.6/drivers/regulator/of_regulator.c.orig	2014-01-08 17:19:43.085903573 +0530
++++ linux-3.12.6/drivers/regulator/of_regulator.c	2014-01-15 20:12:22.146543128 +0530
+@@ -16,11 +16,40 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/of_regulator.h>
  
-+/* MSR based TSC calibration for Intel Atom SoC platforms */
-+int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
-+
- #endif /* _ASM_X86_TSC_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index dbe9bd6..6dbbb1e 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -32,7 +32,7 @@ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
--obj-y			+= tsc.o io_delay.o rtc.o
-+obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
- obj-y			+= resource.o
- 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 930e5d4..e574716 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -419,6 +419,16 @@ unsigned long native_calibrate_tsc(void)
- 	unsigned long flags, latch, ms, fast_calibrate;
- 	int hpet = is_hpet_enabled(), i, loopmin;
- 
-+	/* Calibrate TSC using MSR for Intel Atom SoCs */
-+	local_irq_save(flags);
-+	i = try_msr_calibrate_tsc(&fast_calibrate);
-+	local_irq_restore(flags);
-+	if (i >= 0) {
-+		if (i == 0)
-+			pr_warn("Fast TSC calibration using MSR failed\n");
-+		return fast_calibrate;
-+	}
-+
- 	local_irq_save(flags);
- 	fast_calibrate = quick_pit_calibrate();
- 	local_irq_restore(flags);
-diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
-new file mode 100644
-index 0000000..c502772
---- /dev/null
-+++ b/arch/x86/kernel/tsc_msr.c
-@@ -0,0 +1,125 @@
-+/*
-+ * tsc_msr.c - MSR based TSC calibration on Intel Atom SoC platforms.
-+ *
-+ * TSC in Intel Atom SoC runs at a constant rate which can be figured
-+ * by this formula:
-+ * <maximum core-clock to bus-clock ratio> * <maximum resolved frequency>
-+ * See Intel 64 and IA-32 System Programming Guid section 16.12 and 30.11.5
-+ * for details.
-+ * Especially some Intel Atom SoCs don't have PIT(i8254) or HPET, so MSR
-+ * based calibration is the only option.
-+ *
-+ *
-+ * Copyright (C) 2013 Intel Corporation
-+ * Author: Bin Gao <bin.gao@intel.com>
-+ *
-+ * This file is released under the GPLv2.
++/**
++ * set_regulator_state_constraints - set regulator state for low power system states
++ * @np: device node for the low power regulator state
++ * @regulator_state: regulator_state structure need to be filled
 + */
-+
-+#include <linux/kernel.h>
-+#include <asm/processor.h>
-+#include <asm/setup.h>
-+#include <asm/apic.h>
-+#include <asm/param.h>
-+
-+/* CPU reference clock frequency: in KHz */
-+#define FREQ_83		83200
-+#define FREQ_100	99840
-+#define FREQ_133	133200
-+#define FREQ_166	166400
-+
-+#define MAX_NUM_FREQS	8
-+
-+/*
-+ * According to Intel 64 and IA-32 System Programming Guide,
-+ * if MSR_PERF_STAT[31] is set, the maximum resolved bus ratio can be
-+ * read in MSR_PLATFORM_ID[12:8], otherwise in MSR_PERF_STAT[44:40].
-+ * Unfortunately some Intel Atom SoCs aren't quite compliant to this,
-+ * so we need manually differentiate SoC families. This is what the
-+ * field msr_plat does.
-+ */
-+struct freq_desc {
-+	u8 x86_family;	/* CPU family */
-+	u8 x86_model;	/* model */
-+	u8 msr_plat;	/* 1: use MSR_PLATFORM_INFO, 0: MSR_IA32_PERF_STATUS */
-+	u32 freqs[MAX_NUM_FREQS];
-+};
-+
-+static struct freq_desc freq_desc_tables[] = {
-+	/* PNW */
-+	{ 6, 0x27, 0, { 0, 0, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
-+	/* CLV+ */
-+	{ 6, 0x35, 0, { 0, FREQ_133, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
-+	/* TNG */
-+	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
-+	/* VLV2 */
-+	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
-+	/* ANN */
-+	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
-+};
-+
-+static int match_cpu(u8 family, u8 model)
++static void set_regulator_state_constraints(struct device_node *np,
++		struct regulator_state *regulator_state)
 +{
-+	int i;
++	const __be32 *uV, *mode;
 +
-+	for (i = 0; i < ARRAY_SIZE(freq_desc_tables); i++) {
-+		if ((family == freq_desc_tables[i].x86_family) &&
-+			(model == freq_desc_tables[i].x86_model))
-+			return i;
-+	}
++	uV = of_get_property(np, "regulator-state-uV", NULL);
++	if (uV)
++		regulator_state->uV = be32_to_cpu(*uV);
 +
-+	return -1;
++	mode = of_get_property(np, "regulator-state-mode", NULL);
++	if (mode)
++		regulator_state->mode = be32_to_cpu(*mode);
++
++	if (of_find_property(np, "regulator-state-enabled", NULL))
++		regulator_state->enabled = true;
++
++	if (of_find_property(np, "regulator-state-disabled", NULL))
++		regulator_state->disabled = true;
 +}
 +
-+/* Map CPU reference clock freq ID(0-7) to CPU reference clock freq(KHz) */
-+#define id_to_freq(cpu_index, freq_id) \
-+	(freq_desc_tables[cpu_index].freqs[freq_id])
 +
-+/*
-+ * Do MSR calibration only for known/supported CPUs.
-+ * Return values:
-+ * -1: CPU is unknown/unsupported for MSR based calibration
-+ *  0: CPU is known/supported, but calibration failed
-+ *  1: CPU is known/supported, and calibration succeeded
-+ */
-+int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
-+{
-+	int cpu_index;
-+	u32 lo, hi, ratio, freq_id, freq;
+ static void of_get_regulation_constraints(struct device_node *np,
+ 					struct regulator_init_data **init_data)
+ {
+ 	const __be32 *min_uV, *max_uV, *uV_offset;
+ 	const __be32 *min_uA, *max_uA, *ramp_delay;
++	const __be32  *initial_mode, *initial_state;
++	const __be32  *input_uV, *valid_modes_mask;
++	struct device_node *state;
+ 	struct property *prop;
+ 	struct regulation_constraints *constraints = &(*init_data)->constraints;
+ 
+@@ -73,6 +102,40 @@ static void of_get_regulation_constraint
+ 		else
+ 			constraints->ramp_disable = true;
+ 	}
 +
-+	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
-+	if (cpu_index < 0)
-+		return -1;
++	valid_modes_mask = of_get_property(np,
++			"regulator-valid-modes-mask", NULL);
++	if (valid_modes_mask)
++		constraints->valid_modes_mask = be32_to_cpu(*valid_modes_mask);
 +
-+	*fast_calibrate = 0;
++	input_uV = of_get_property(np, "regulator-input-microvolt", NULL);
++	if (input_uV)
++		constraints->input_uV = be32_to_cpu(*input_uV);
 +
-+	if (freq_desc_tables[cpu_index].msr_plat) {
-+		rdmsr(MSR_PLATFORM_INFO, lo, hi);
-+		ratio = (lo >> 8) & 0x1f;
-+	} else {
-+		rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
-+		ratio = (hi >> 8) & 0x1f;
-+	}
-+	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
++	initial_mode = of_get_property(np, "regulator-initial-mode", NULL);
++	if (initial_mode)
++		constraints->initial_mode = be32_to_cpu(*initial_mode);
 +
-+	if (!ratio)
-+		return 0;
++	initial_state = of_get_property(np, "regulator-initial-state", NULL);
++	if (initial_state)
++		constraints->initial_state = be32_to_cpu(*initial_state);
 +
-+	/* Get FSB FREQ ID */
-+	rdmsr(MSR_FSB_FREQ, lo, hi);
-+	freq_id = lo & 0x7;
-+	freq = id_to_freq(cpu_index, freq_id);
-+	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
-+				freq_id, freq);
-+	if (!freq)
-+		return 0;
++	/* regulator state during low power system states */
++	state = of_find_node_by_name(np, "regulator-state-mem");
++	if (state)
++		set_regulator_state_constraints(state,
++				&constraints->state_mem);
 +
-+	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
-+	*fast_calibrate = freq * ratio;
-+	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
++	state = of_find_node_by_name(np, "regulator-state-disk");
++	if (state)
++		set_regulator_state_constraints(state,
++				&constraints->state_disk);
 +
-+	lapic_timer_frequency = (freq * 1000) / HZ;
-+	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
++	state = of_find_node_by_name(np, "regulator-state-standby");
++	if (state)
++		set_regulator_state_constraints(state,
++				&constraints->state_standby);
 +
-+	return 1;
-+}
+ }
+ 
+ /**ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
