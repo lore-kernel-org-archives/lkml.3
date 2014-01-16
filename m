@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaAPXpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:45:50 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:41110 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaAPXpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:45:47 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: <linux-fsdevel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Jan 2014 15:45:38 -0800
-Message-ID: <871u07wkwt.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751703AbaAPXtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:49:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaAPXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 18:48:58 -0500
+Date: Thu, 16 Jan 2014 18:48:17 -0500
+From: Kyle McMartin <kyle@redhat.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, catalin.marinas@arm.com, will.deacon@arm.com
+Subject: [PATCH] arm64: fix strnlen_user when count <= strlen
+Message-ID: <20140116234817.GP18705@redacted.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/pEX4MHxqYgSOoiRFPWaccKdNz4tBGFtU=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0047]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: [PATCH] vfs: Don't leak a path when get_empty_filp in dentry_open
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I received a bug report about the ruby test-suite failing on AArch64 when
+attempting to pass MAX_ARG_STRLEN sized args to execv[1]. It was
+expecting an E2BIG returned, but instead was receiving ENOMEM, and
+concatenating the argument strings in funky ways.
 
-Normally in dentry_open the passed in path is placed on the new filp
-removing the caller from needing to worry about it.  In the rare case
-that we can not allocate a filp the path is not consumed.  None of the
-callers of dentry_open call path_put in their error handling when
-dentry_open fails so call path_put for them on error and keep everyone's
-error handling simple.
+The problem appeared to be in __strnlen_user on arm64, as when
+instrumenting fs/exec.c to compare the results of the asm-generic
+strnlen_user, I noticed an off-by-one on the result:
+long-param-test: optimized strnlen_user (131072) and naive (131073) disagree!
 
-Cc: stable@vger.kernel.org
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+As a result, fix strnlen_user to match expected behaviour as documented
+in lib/strnlen_user.c, and return count+1 when count would be exceeded.
+
+I didn't feel comfortable prodding the assembler, so I just worked
+around it in the wrapper.
+
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+
+1. https://bugzilla.redhat.com/show_bug.cgi?id=1038676
+
 ---
- fs/open.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 4b3e1edf2fe4..0afa243941da 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -843,6 +843,8 @@ struct file *dentry_open(const struct path *path, int flags,
- 			put_filp(f);
- 			f = ERR_PTR(error);
- 		}
-+	} else {
-+		path_put(path);
- 	}
- 	return f;
+I tested that this behaves the same as the lib/strnlen_user.c version
+with some hacked together code here:
+http://kyle.fedorapeople.org/strnlen_user-test.tar.xz
+
+{master}kmcmarti ~/strnlen_user-test $ ./test
+=== count = 0 ===
+strnlen_user = 0
+__strnlen_user = 0
+fixed__strnlen_user = 0
+=== count < strlen ===
+strnlen_user = 7
+__strnlen_user = 6
+fixed__strnlen_user = 7
+=== count = strlen ===
+strnlen_user = 13
+__strnlen_user = 12
+fixed__strnlen_user = 13
+=== count > strlen ===
+strnlen_user = 13
+__strnlen_user = 13
+fixed__strnlen_user = 13
+
+--- a/arch/arm64/include/asm/uaccess.h
++++ b/arch/arm64/include/asm/uaccess.h
+@@ -290,9 +290,15 @@ static inline long __must_check strnlen_user(const char __user *s, long n)
+ {
+ 	unsigned long res = 0;
+ 
++	if (unlikely(n <= 0))
++		return 0;
++
+ 	if (__addr_ok(s))
+ 		res = __strnlen_user(s, n);
+ 
++	if (unlikely(res >= n))
++		return n + 1;
++
+ 	return res;
  }
--- 
-1.7.5.4
-
+ 
