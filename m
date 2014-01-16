@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaAPAqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:46:46 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:41120 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaAPAqo (ORCPT
+	id S1752127AbaAPAqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:46:53 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43015 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaAPAqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:46:44 -0500
-Date: Thu, 16 Jan 2014 01:46:42 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of the algorithm
-Message-ID: <20140116004642.GJ19945@order.stressinduktion.org>
-Mail-Followup-To: Ben Hutchings <bhutchings@solarflare.com>,
-	Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Austin S Hemmelgarn <ahferroin7@gmail.com>,
-	Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-	Stephen Hemminger <stephen@networkplumber.org>,
-	Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-	Christoph Lameter <cl@linux-foundation.org>,
-	Andy Gospodarek <andy@greyhouse.net>,
-	Veaceslav Falico <vfalico@redhat.com>,
-	Jay Vosburgh <fubar@us.ibm.com>,
-	Jakub Zawadzki <darkjames-ws@darkjames.pl>
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com> <1389828228-30312-3-git-send-email-dborkman@redhat.com> <1389831470.11912.40.camel@bwh-desktop.uk.level5networks.com>
+	Wed, 15 Jan 2014 19:46:49 -0500
+Date: Wed, 15 Jan 2014 16:46:49 -0800 (PST)
+Message-Id: <20140115.164649.533508366980529205.davem@davemloft.net>
+To: rusty@rustcorp.com.au
+Cc: jasowang@redhat.com, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next RFC] virtio-net: drop rq->max and rq->num
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <87zjmwvlzl.fsf@rustcorp.com.au>
+References: <1388134685-30691-1-git-send-email-jasowang@redhat.com>
+	<87mwixx670.fsf@rustcorp.com.au>
+	<87zjmwvlzl.fsf@rustcorp.com.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1389831470.11912.40.camel@bwh-desktop.uk.level5networks.com>
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 12:17:50AM +0000, Ben Hutchings wrote:
-> On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
-> [...]
-> > --- a/include/linux/reciprocal_div.h
-> > +++ b/include/linux/reciprocal_div.h
-> [...]
-> > + * RECIPROCAL_VALUE_TO_ZERO can be used to express an element, which
-> > + * used as the argument to reciprocal_divide always yields zero.
-> >   */
-> [...]
-> > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
-> [...]
-> > +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
-> >  {
-> > -	return (u32)(((u64)A * R) >> 32);
-> > +	u32 t = (u32)(((u64)a * R.m) >> 32);
-> > +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
-> [...]
+From: Rusty Russell <rusty@rustcorp.com.au>
+Date: Thu, 16 Jan 2014 10:25:26 +1030
+
+> Rusty Russell <rusty@rustcorp.com.au> writes:
+>> Jason Wang <jasowang@redhat.com> writes:
+>>> It looks like there's no need for those two fields:
+>>>
+>>> - Unless there's a failure for the first refill try, rq->max should be always
+>>>   equal to the vring size.
+>>> - rq->num is only used to determine the condition that we need to do the refill,
+>>>   we could check vq->num_free instead.
+>>> - rq->num was required to be increased or decreased explicitly after each
+>>>   get/put which results a bad API.
+>>>
+>>> So this patch removes them both to make the code simpler.
+>>
+>> Nice.  These fields date from when the vq struct was opaque.
+>>
+>> Applied,
+>> Rusty.
 > 
-> (a - t) has type u32.
-> So (a - t) >> 32 has undefined behaviour.
+> Oops, this doesn't require any core virtio changes, so it's for DaveM:
+> 
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Good catch, totally overlooked that.
-
-Thanks,
-
-  Hannes
-
+Jason please repost this with Rusty's ACK, thanks.
