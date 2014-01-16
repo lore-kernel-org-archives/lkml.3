@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaAPECN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:02:13 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57623 "EHLO
+	id S1751970AbaAPECq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:02:46 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57768 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaAPECK (ORCPT
+	with ESMTP id S1751388AbaAPECo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:02:10 -0500
-Date: Wed, 15 Jan 2014 20:02:03 -0800
+	Wed, 15 Jan 2014 23:02:44 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,66 +14,78 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: [PATCH v3 tip/core/timers 0/5] Crude timer-wheel latency hacks
-Message-ID: <20140116040203.GA5206@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/timers 1/5] timers: Track total number of timers in list
+Date: Wed, 15 Jan 2014 20:02:30 -0800
+Message-Id: <1389844954-5886-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20140116040203.GA5206@linux.vnet.ibm.com>
+References: <20140116040203.GA5206@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011604-0928-0000-0000-00000574DDCD
+x-cbid: 14011604-0928-0000-0000-00000574DE68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The following five patches provide some crude timer-wheel latency patches.
-I understand that a more comprehensive solution is in progress, but in the
-meantime, these patches work well in cases where a given CPU has either
-zero or one timers pending, which is a common case for NO_HZ_FULL kernels.
-Note that these patches do not help in the case where a given timer wheel
-has a pair of widely separated timers, while the more comprehensive
-solution is likely to handle more gracefully.  So, on the off-chance
-that this is helpful to someone, the individual patches are as follows:
+Currently, the tvec_base structure's ->active_timers field tracks only
+the non-deferrable timers, which means that even if ->active_timers is
+zero, there might well be non-deferrable timers in the list.  This commit
+therefore adds an ->all_timers field to track all the timers, whether
+deferrable or not.
 
-1.	Add ->all_timers field to tbase_vec to count all timers, not
-	just the non-deferrable ones.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/timer.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-2.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
-
-3.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
-	to empty.
-
-4.	Avoid jiffy-at-a-time stepping after a timer is added to an
-	initially empty timer wheel.
-
-5.	Make internal_add_timer() update ->next_timer if ->active_timers == 0,
-	courtesy of Oleg Nesterov.
-
-Differences from v2:
-
-o	Add patch #5 from Oleg.
-
-o	Move the check for adding to an empty timer wheel from mod_timer()
-	to internal_add_timer(), as suggested by Oleg Nesterov.
-
-o	Addressed review comments from Oleg, Steven Rostedt, Josh Triplett,
-	and Fengguang Wu.
-
-Differences from v1:
-
-o	Fix an embarrassing bug located by Oleg Nesterov where the
-	timer wheel could be judged to be empty even if it contained
-	deferrable timers.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/kernel/timer.c |   30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 6582b82fa966..2245b7374c3d 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -81,6 +81,7 @@ struct tvec_base {
+ 	unsigned long timer_jiffies;
+ 	unsigned long next_timer;
+ 	unsigned long active_timers;
++	unsigned long all_timers;
+ 	struct tvec_root tv1;
+ 	struct tvec tv2;
+ 	struct tvec tv3;
+@@ -392,6 +393,7 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ 			base->next_timer = timer->expires;
+ 		base->active_timers++;
+ 	}
++	base->all_timers++;
+ }
+ 
+ #ifdef CONFIG_TIMER_STATS
+@@ -671,6 +673,7 @@ detach_expired_timer(struct timer_list *timer, struct tvec_base *base)
+ 	detach_timer(timer, true);
+ 	if (!tbase_get_deferrable(timer->base))
+ 		base->active_timers--;
++	base->all_timers--;
+ }
+ 
+ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
+@@ -685,6 +688,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
+ 		if (timer->expires == base->next_timer)
+ 			base->next_timer = base->timer_jiffies;
+ 	}
++	base->all_timers--;
+ 	return 1;
+ }
+ 
+@@ -1560,6 +1564,7 @@ static int init_timers_cpu(int cpu)
+ 	base->timer_jiffies = jiffies;
+ 	base->next_timer = base->timer_jiffies;
+ 	base->active_timers = 0;
++	base->all_timers = 0;
+ 	return 0;
+ }
+ 
+-- 
+1.8.1.5
 
