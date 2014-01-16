@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaAPWeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:34:36 -0500
-Received: from ozlabs.org ([203.10.76.45]:34279 "EHLO ozlabs.org"
+	id S1751439AbaAPWlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:41:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:37269 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754AbaAPWef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:34:35 -0500
-Date: Fri, 17 Jan 2014 09:34:26 +1100
+	id S1751246AbaAPWlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 17:41:46 -0500
+Date: Fri, 17 Jan 2014 09:41:31 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-In-Reply-To: <20140116222536.GX30183@twins.programming.kicks-ass.net>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
-	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-	<20140116222536.GX30183@twins.programming.kicks-ass.net>
+To: David Fries <David@Fries.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: Re: pull w1 updates to linux-next?
+Message-Id: <20140117094131.4379cba0c7f5b18744f95311@canb.auug.org.au>
+In-Reply-To: <20140116045100.GB29560@spacedout.fries.net>
+References: <20140116045100.GB29560@spacedout.fries.net>
 X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Jan_2014_09_34_26_+1100_S1+uVWKy9DcPQKi6"
+ boundary="Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jan_2014_09_34_26_+1100_S1+uVWKy9DcPQKi6
+--Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Peter,
+Hi Davis,
 
-On Thu, 16 Jan 2014 23:25:36 +0100 Peter Zijlstra <peterz@infradead.org> wr=
-ote:
+On Wed, 15 Jan 2014 22:51:01 -0600 David Fries <David@Fries.net> wrote:
 >
-> On Fri, Jan 17, 2014 at 07:46:28AM +1100, Stephen Rothwell wrote:
-> >=20
-> > On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra <peterz@infradead.org=
-> wrote:
-> > >
-> > > I think the below ought to work
-> >=20
-> > To be clear, all you did was replace the body of mwait_idle() with
-> >=20
-> > 	mwait_idle_with_hints(0, 0);
->=20
-> Pretty much, and add the asm/mwait.h include, otherwise you'll end up
-> with a compile fail.
->=20
-> > (and the comment above it)?  I need to apply in incremental patch in the
-> > merge commit.
->=20
-> I don't think I touched the comment at all.
+> I've not submitted to linux-next before, would you pull the one wire
+> changes to linux-next?  It has been posted and reviewed by one wire
+> maintainer Evgeniy Polyakov, and the 15 patch series was posted again
+> ready to go for GregKH to pick up.  This is my one wire tree not
+> maintainer, and once merged upstream won't be updated unless I have
+> another set of changes.
+>
+> cd5f76716a37ebef3e8b771d672ba552a25dafd5
+> git://github.com/dfries/linux.git w1_rework
 
-Thanks.
+If this is meant for v3.14, then you should probably just ask Greg to
+merge them (though it may be too late already for the next merge
+window).  If its for v3.15, then ask me again after v3.14-rc1 is released
+and I will add your tree then.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__17_Jan_2014_09_34_26_+1100_S1+uVWKy9DcPQKi6
+--Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJS2F52AAoJEMDTa8Ir7ZwVJd0P/jGPDChXvScQ0xLsL42IMdVq
-8Z1/nAoDjI85yPnheQgreh75ia1SFN/l15LGk0yhxtI+H3WomIqrF0PDqhKjOyBZ
-+Zwzwfvpug82XD6K7ArfhKeia8++fvTVZyIUt6CNV6b5yKRUILYwjY9AC1E1lj6T
-hIGMpdrVPbqHyQU3HxPLpJz1BtRXKWmorfc9kJ8bVGCqPho81550Zysj98asjzMQ
-7iw9jCcOsChUtttRXhxsFhPr4JrQ5d8Byi2bif2NLfxxSAeLjgzZNbZKmgV1R4hX
-7Yl2eukq1BDbXAFhuy+AdNM93YfG9VTDG4FvHOo1KHKO2W71fG5hO71Y+tUEafGa
-buv/DrrFEPZqTgJy6Gcid7E+qi9f45Y2a75sh1cuDXse67D1MyJ8LKOsUzuINGIP
-eNzh0zB6Fj2KS0CKVGrRBnNbGvRA8jHyGqMnF79Tl59OyLBT/+bH1Mu7qLh+5BmB
-fnTtM05402KuhglfHcOSqB2ALbW2ofR6/+5rF02JRi7/hV20mVNSennebBZ7N8cD
-uzKoSjJaWH+TgcDWbwAdgh+PReKG3U/pEOCjaXN4hRWeHd8Ql9kFpSvkQ0JGk4+6
-0dfJP7gOCdPifb8aMNJHAhnXbEKx8jvA5jKNfQjcdvUhnw7UBz3KjbHC+AGZtgln
-Ef9WtTZhQUjPCQ+djZd4
-=VaPg
+iQIcBAEBCAAGBQJS2GAnAAoJEMDTa8Ir7ZwVyAUQAI2XLgRj7fvXF7a1bG6n7blE
+4k8eu8RZRcoADXkxAy6WGj7+4WaSR+1aglDRhB8SeDTlnJcbaYL4TunrPkd0NMnl
+P38Jem2n5AfXXPMVtcnJLAtcFhOpXjhd0cfLeP1PwhJYOdymoSXJINfxe1KHbT9h
+cJU9BKCZd9CRKSCdFHNeQsbl3dOSYt3O5O06+QgS/xR65XuLMNhFRZ4DBTjZAvEi
+jPeWzs6NRuW1kYgv6vm05q7TQ1CEu4NEc+ce+UM+BKxGnvZzz5VpB46p8Jc14+5y
+ABcXh+ojVVpxtS8Nb15iGjfCtmzuTLs05+91tzxc2HRnwyeN13ca7Gy4uYJcg1Nf
+h5d8qWQgb0oW9oB1z2CMBRSIG2XsbdFUSFqj5VZmEfO7KxO/7nwq5IaMaXhQ1zq+
+gFx5JakZ53ePqixtCTkZjSx8yJVs+B/d5w97meVbPxt6jVv//PsprAO3ugcbcwXo
+CYiI1Jn4TSlzGn/UPpSxrThxcfSWcOhWmjDk9MJT0vflyKEd8Gy+WZxcg0ZAb3aA
+LkOZiOADzkuGhfy+/SBAfEptw52M6eKMO6p152rWuwyjVNdVTdg04+6h8oR5Ygny
+J18EdGtBfkdtlUsCcBGZyOnT7Tz8Yq4QYGoaL4EHdxk67PIGn1fFfNb9pEvZDi8i
+pTqfzLjuxHELrbUEBWMt
+=CKev
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__17_Jan_2014_09_34_26_+1100_S1+uVWKy9DcPQKi6--
+--Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l--
