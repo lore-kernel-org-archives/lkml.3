@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaAPWtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:49:31 -0500
-Received: from mail-gg0-f170.google.com ([209.85.161.170]:55553 "EHLO
-	mail-gg0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaAPWt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:49:29 -0500
-Date: Thu, 16 Jan 2014 14:49:25 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 -mm] mm, oom: prefer thread group leaders for display
- purposes
-In-Reply-To: <20140116142141.GF28157@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1401161447510.31228@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1401151837560.1835@chino.kir.corp.google.com> <20140116070549.GL6963@cmpxchg.org> <alpine.DEB.2.02.1401152344560.14407@chino.kir.corp.google.com> <alpine.DEB.2.02.1401152345330.14407@chino.kir.corp.google.com>
- <20140116142141.GF28157@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751482AbaAPWwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:52:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44940 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750AbaAPWwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 17:52:00 -0500
+Message-ID: <52D8625C.1000902@zytor.com>
+Date: Thu, 16 Jan 2014 14:51:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tip tree
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>	<20140116121955.GQ31570@twins.programming.kicks-ass.net>	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>	<20140116222536.GX30183@twins.programming.kicks-ass.net> <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
+In-Reply-To: <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014, Michal Hocko wrote:
-
-> > When two threads have the same badness score, it's preferable to kill the 
-> > thread group leader so that the actual process name is printed to the 
-> > kernel log rather than the thread group name which may be shared amongst 
-> > several processes.
+On 01/16/2014 02:34 PM, Stephen Rothwell wrote:
+> Hi Peter,
 > 
-> I am not sure I understand this. Is this about ->comm? If yes then why
-> couldn't the group leader do PR_SET_NAME?
+> On Thu, 16 Jan 2014 23:25:36 +0100 Peter Zijlstra
+> <peterz@infradead.org> wrote:
+>> 
+>> On Fri, Jan 17, 2014 at 07:46:28AM +1100, Stephen Rothwell
+>> wrote:
+>>> 
+>>> On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra
+>>> <peterz@infradead.org> wrote:
+>>>> 
+>>>> I think the below ought to work
+>>> 
+>>> To be clear, all you did was replace the body of mwait_idle()
+>>> with
+>>> 
+>>> mwait_idle_with_hints(0, 0);
+>> 
+>> Pretty much, and add the asm/mwait.h include, otherwise you'll
+>> end up with a compile fail.
+>> 
+>>> (and the comment above it)?  I need to apply in incremental
+>>> patch in the merge commit.
+>> 
+>> I don't think I touched the comment at all.
 > 
 
-Both comm and pid, we only display thread group leaders in the tasklist 
-dump of eligible processes, we want the killed message to specify from 
-which process.
+In retrospect this bit probably should have gone through the idle
+tree.  That was my bad, I need to coordinate with Len better.
 
-You're suggesting a thread group leader do PR_SET_NAME of all its threads 
-for readable oom killer output?  Lol.
+	-hpa
+
+
