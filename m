@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaAPB6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:58:42 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:42184 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaAPB6i (ORCPT
+	id S1752214AbaAPCCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:02:13 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:56186 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbaAPCCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:58:38 -0500
+	Wed, 15 Jan 2014 21:02:10 -0500
+Message-ID: <52D73D9E.8090402@linaro.org>
+Date: Thu, 16 Jan 2014 10:02:06 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <309B89C4C689E141A5FF6A0C5FB2118B7312DE7D@ORSMSX101.amr.corp.intel.com>
-References: <1389795148-341-1-git-send-email-ethan.kernel@gmail.com>
-	<309B89C4C689E141A5FF6A0C5FB2118B7312DA20@ORSMSX101.amr.corp.intel.com>
-	<CABawtvNEDjTJAjJ9TeEvZd7+2kD=H6zA23T-aQo3uVm5SUEhCQ@mail.gmail.com>
-	<309B89C4C689E141A5FF6A0C5FB2118B7312DE7D@ORSMSX101.amr.corp.intel.com>
-Date: Thu, 16 Jan 2014 09:58:37 +0800
-Message-ID: <CABawtvNSpDU+pjdJOpCB8kyQqA7B9N4g0S_yPgQaZnB3h0+nFg@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v3] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and
- cleanup const 63
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: "Brown, Aaron F" <aaron.f.brown@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        lkp@linux.intel.com
+Subject: Re: [sched] 73628fba4: +69% context switches
+References: <20140111101956.GA11150@localhost> <52D3804A.8060700@linaro.org> <20140116012301.GA2535@localhost>
+In-Reply-To: <20140116012301.GA2535@localhost>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaron,
-
-Is this your net-next repo ? if so, I rebuild the patch with this repo
-right now .
-git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next.git
-
-Thanks,
-Ethan
-
-On Thu, Jan 16, 2014 at 9:54 AM, Brown, Aaron F <aaron.f.brown@intel.com> wrote:
-> On Thu, 2014-01-16 at 09:27 +0800, Ethan Zhao wrote:
->> On Thu, Jan 16, 2014 at 6:00 AM, Brown, Aaron F <aaron.f.brown@intel.com> wrote:
->> > On Wed, 2014-01-15 at 22:12 +0800, Ethan Zhao wrote:
->> >> Because ixgbe driver limit the max number of VF functions could be enabled
->> >> to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the const 63
->> >> in code.
->> >>
->> >> v2: fix a typo.
->> >> v3: fix a encoding issue.
->> >>
->> >> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
->> >> ---
->> >>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
->> >>  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
->> >>  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
->> >>  3 files changed, 10 insertions(+), 4 deletions(-)
->> >>
->> >> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> >> index 0ade0cd..47e9b44 100644
->> >> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> >> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> >> @@ -4818,7 +4818,7 @@ static int ixgbe_sw_init(struct ixgbe_adapter *adapter)
->> >>  #ifdef CONFIG_PCI_IOV
->> >>       /* assign number of SR-IOV VFs */
->> >>       if (hw->mac.type != ixgbe_mac_82598EB)
->> >> -             adapter->num_vfs = (max_vfs > 63) ? 0 : max_vfs;
->> >
->> >
->> > Unfortunately the if statement got changed considerably with a recent
->> > commit:
->> >
->> > commit 170e85430bcbe4d18e81b5a70bb163c741381092
->> > ixgbe: add warning when max_vfs is out of range.
->> >
->> > And the pattern no longer exists to make a match.  In other words, this
->> > patch no longer applies to net-next and I have to ask you for yet
->> > another spin if you still want to squash the magic number.
+On 01/16/2014 09:23 AM, Fengguang Wu wrote:
+> On Mon, Jan 13, 2014 at 01:57:30PM +0800, Alex Shi wrote:
+>> On 01/11/2014 06:19 PM, Fengguang Wu wrote:
+>>> Alex,
+>>>
+>>> FYI, we find much increased interrupts and context switches introduced
+>>> by commit 73628fba4 ("sched: unify imbalance bias for target group")
+>>> in your noload branch:
 >>
->> It's not a good news. Our distro is waiting for this patch showing up in stable.
->> OK, info me if there is a windows for me to revise the patch.
->
-> I don't think any particular window of time is better than another. I
-> don't see this change as needing very thorough testing so if you send in
-> (yet) another version I'll try to get it through our internal process as
-> rapidly as I can.
->
+>> Many thanks for the generous and quick testing! :)
 >>
->> Thanks,
->> Ethan
+>> few questions for the results and give a testing patch for try. it also push on github. 
 >>
->> >
->> > Thanks,
->> > Aaron
->
+>> What's about the aim7 shell_rtns_1 and shared throughput?
+> 
+> The throughputs remain the same.  We only report changed numbers.
+
+So many interrupt increase doesn't cause any performance change, that
+make more doubt of data correction.
+Could you like to give the typical vmstat output? Specially the
+sys/us/wa/id time percentages.
+
+BTW
+Just confirm, the benchmark is running on a native machine, not a kvm
+guest, right?
+
+>>
+>> commit c5a8778a132cfa882609fbccb4ee6542eac9866d
+>> Author: Alex Shi <alex.shi@linaro.org>
+>> Date:   Mon Jan 13 13:54:30 2014 +0800
+>>
+>>     more bias towards local cpu group
+> 
+> 
+> In your rebased tree, there are still much increased interrupts and
+> context switches:
+> 
+
+Thanks for your great testing!
+Seems I tune it to the wrong direction. :)
+
+Will change to another directory to reduce the questionable interrupt/CS
+increase.
+
+-- 
+Thanks
+    Alex
