@@ -1,32 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaAPOCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:02:04 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55671 "EHLO
+	id S1752703AbaAPOHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:07:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55686 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376AbaAPOCA (ORCPT
+	with ESMTP id S1752572AbaAPOH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:02:00 -0500
-Date: Thu, 16 Jan 2014 14:01:53 +0000
+	Thu, 16 Jan 2014 09:07:29 -0500
+Date: Thu, 16 Jan 2014 14:07:12 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Yi Zhang <yizhang.mrvl@gmail.com>
-Cc: Yi Zhang <yizhang@marvell.com>, hongfeng@marvell.com,
-        linux-kernel@vger.kernel.org, zhouqiao@marvell.com
-Message-ID: <20140116140153.GC17314@sirena.org.uk>
-References: <CAK=oMXebE=OKzGbaRH_baOvRyhPXnw0MZuRrcZYLpeR73=XdqA@mail.gmail.com>
- <20140114210618.GZ15567@sirena.org.uk>
- <CAK=oMXc1YwQcAEfwzgr9QKVCF8kyT3wH2aubYtMYCcJBxviw6Q@mail.gmail.com>
+To: Saurabh Singh <saurabh1.s@samsung.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "celinux-dev@tree.celinuxforum.org" 
+	<celinux-dev@tree.celinuxforum.org>,
+        SREEVATSA D B <srevatsa@samsung.com>,
+        Praveen BP <bp.praveen@samsung.com>
+Message-ID: <20140116140712.GE17314@sirena.org.uk>
+References: <27224826.584141389879802275.JavaMail.weblogic@epml20>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1ccMZA6j1vT5UqiK"
+	protocol="application/pgp-signature"; boundary="DqhR8hV3EnoxUkKN"
 Content-Disposition: inline
-In-Reply-To: <CAK=oMXc1YwQcAEfwzgr9QKVCF8kyT3wH2aubYtMYCcJBxviw6Q@mail.gmail.com>
+In-Reply-To: <27224826.584141389879802275.JavaMail.weblogic@epml20>
 X-Cookie: We have DIFFERENT amounts of HAIR --
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Question] Should we make the primary interrupt handler
- configurable for regmap_add_irq_chip()?
+Subject: Re: [PATCH] Parse missing regulator constraints from device tree blob
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,54 +39,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1ccMZA6j1vT5UqiK
+--DqhR8hV3EnoxUkKN
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jan 16, 2014 at 07:33:13PM +0800, Yi Zhang wrote:
-> 2014/1/15 Mark Brown <broonie@kernel.org>:
-> > On Sat, Jan 11, 2014 at 12:15:21PM +0800, Yi Zhang wrote:
+On Thu, Jan 16, 2014 at 01:43:23PM +0000, Saurabh Singh wrote:
+> Hi Mark,
+>=20
+> New patch incorporating your suggestions is given below.
+>=20
+> > * None of these properties are documented. Documentation is required so
+> >   that the contract is defined. That allows people to learn how to use
+> >   the properties, and makes clear what we can and cannot change
+> >   kernel-side.
+> Done.  The documentation is in the patch below.
 
-> >> I met a scenario:
-> >> As soon as the interrupt is triggered, a wakelock is needed to be held
-> >> until the threaded handler finishes,
-> >> I think we may hold it in the primary interrupt handler, but now it's
-> >> NULL by default;
+Please send patches using the process in SubmittingPatches, the
+formatting of the submission is very important for tools like git am
+which people use to work with patches.
 
-> > This sounds like something we should just support in the core, though to
-
-> Sorry, I'm not clear about this, you mean that this has been supported
-> in regmap framework?
-> I searched but didn't find related mail about this, could you please
-> kindly point out the mail loop?
-> thanks very much;
-
-I'm saying we should support it in the core rather than providing a way
-to override the handlers - it seems like it'll be sufficiently common
-that we'll rapidly end up with multiple implementations anyway.  It
-isn't currently supported in the core though, someone would need to
-write that code.
-
---1ccMZA6j1vT5UqiK
+--DqhR8hV3EnoxUkKN
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS1+ZOAAoJELSic+t+oim9HEoP/21T3B3gOXCQ2miq0CTB1Kza
-5KvlzNp8umE/zM2c6Ot/Agb+dHTOGsG+UBwDuuFT0Ay9EMxrfijkcrFjStQta7CM
-NsNnuw5OZPc/VET1ZVOWpZPxA+9JS36fM0ErJrAA7JfgkRkW+ZJel8KbN5AkKRJx
-3RWdzAnzOIFVxk2hQnYLy1/ecywghgb/MtnV+3O4dx06/l1ihs+MzNK+BY6lNa9h
-Vd/8rxeHXPe6HGcB5Y6WeHoTyIiP0fZ6zxwtkRUN8pOs2RHPHPsOqsdwPvIe+6QP
-9mfjtGwOihipMzKPz4w42JvuPYaw08jPOoq4bQV14wVx8GK00v5mjjv9PUVQUDXz
-etOkfpBw+KzOAqhwxp2UvjORYaxbne/l8YOq776K9tIPJhOs9hMLLmp4Q+tsPGte
-qR1No0x9UYOI4vPhEal1+OlWK19Edce7z5UZNbiXTYMGTacUbzsvZU4kbc1p4C2f
-ySwn3p19DRIE6Kvz90GH5AXzKajzYRuBqyN3IdQ73WKMl4ZzubgRIepFXq0EV/1E
-mHCiBwCT5KzwE0Kd3VX6lP8+NayOjSqDC2usva7I1334oWVc67ZlQyULIc+JzZS+
-dWMrRFC8K4qgCzg/ycZesrcVaBxjuz8BVkcB8G/zC2rzqcDc3EuffrTlaVHn83ej
-KvcD5DVT1Gamp3cNdfkz
-=XLdN
+iQIcBAEBAgAGBQJS1+eNAAoJELSic+t+oim9jNMP/ig9ppqMxc0cg2tfMODfcKwc
+m/iBW1Ty0SNTuX+VOXnXAQG6YGRT31A3I+V0ANuaeMQ3yXtiSeO7btqrEn22qrTA
+0NwGDSazDJiPz2/M/g370H7ky+avRK8WpLVtmClsKGFTJ5Shor86HJZTYv37DPO5
+3ybKHfkKcjICpUpNOVn1A0b964lPRGVSkgdheda8J4GOuQbEa2rjnbx//HLHtIe/
+NmJYFyvF3DDS9e9boauQySV8Yy9kOGORXreEe2bs9SUsvPlVKSC4Pah+DE9WHy9e
+OgvNiwCVwFhH1DI2Jv65IZknm+vVkEoW4D6KXrYHhXr8xMtUQTWRUo2jLu5ylHBk
+k+2y0EkJzVoEmh3JQEU3OTEwqnEFi8eI7+P3BR+VdUAMGY8MVIDnVjLzbt7gHstw
+o5vLgrvX5h4blIx7fcdOwZTDmbfhyGJO8+Vb24lQ/ltLwuQrFpVUW9TNtzV5AFls
+RgfGhOTzp1kD1ykGWlcLG1jMzgmf3GN0bhSkBpeIYPfXAK0u4bBT54rSiUyEX4cg
+JpxSVCJeI55Kt+f60Y2cb4woLcJCWwRx6iqEehIrfnSTBtCEWUa0XsyxwXaQ311e
+RKLku/VS47OBw4HsOrMzvaZGjVsQoppMadZBudpgBOvpR/zW04xqswtsQMJ+yxol
+6V3R1CrISUTa1iFMStF2
+=KFxQ
 -----END PGP SIGNATURE-----
 
---1ccMZA6j1vT5UqiK--
+--DqhR8hV3EnoxUkKN--
