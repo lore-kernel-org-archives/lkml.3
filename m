@@ -1,180 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaAPPgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:36:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271AbaAPPga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:36:30 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kosaki.motohiro@gmail.com, dyoung@redhat.com, rientjes@google.com,
-        linux-acpi@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug [v5]
-Date: Thu, 16 Jan 2014 10:35:51 -0500
-Message-Id: <1389886551-32647-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1389822660.1792.349.camel@misato.fc.hp.com>
-References: <1389822660.1792.349.camel@misato.fc.hp.com>
+	id S1752443AbaAPPhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:37:23 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59324 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752264AbaAPPhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:37:21 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v12 0/7] cpufreq:boost: CPU Boost mode support
+Date: Thu, 16 Jan 2014 16:51:20 +0100
+Message-ID: <63197714.M09EiGrl9g@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140116104008.15b77a1f@amdc2363>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <1389335623.2411.15.camel@rzhang1-mobl4> <20140116104008.15b77a1f@amdc2363>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booting a kdump kernel on a system that has specific memory hotplug
-regions the boot will fail with warnings like:
+On Thursday, January 16, 2014 10:40:08 AM Lukasz Majewski wrote:
+> Hi Rafael,
+> 
+> > On Wed, 2014-01-08 at 01:35 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, January 07, 2014 07:58:24 AM Lukasz Majewski wrote:
+> > > > Hi Rafael,
+> > > 
+> > > Hi,
+> > > 
+> > > > > This patch series introduces support for CPU overclocking
+> > > > > technique called Boost.
+> > > > > 
+> > > > > It is a follow up of a LAB governor proposal. Boost is a LAB
+> > > > > component:
+> > > > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+> > > > > 
+> > > > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
+> > > > > software oriented one (like the one done at Exynos).
+> > > > > For this reason cpufreq/freq_table code has been reorganized to
+> > > > > include common code.
+> > > > > 
+> > > > > Important design decisions:
+> > > > > - Boost related code is compiled-in unconditionally to cpufreq
+> > > > > core and disabled by default. The cpufreq_driver is
+> > > > > responsibile for setting boost_supported flag and providing
+> > > > > set_boost callback(if HW support is needed). For software
+> > > > > managed boost, special Kconfig flag - CONFIG_CPU_FREQ_BOOST_SW
+> > > > > has been defined. It will be selected only when a target
+> > > > > platform has thermal framework properly configured.
+> > > > > 
+> > > > > - struct cpufreq_driver has been extended with boost related
+> > > > > fields: -- boost_supported - when driver supports boosting
+> > > > >         -- boost_enabled - boost state
+> > > > >         -- set_boost - callback to function, which is necessary
+> > > > > to enable/disable boost
+> > > > > 
+> > > > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost)
+> > > > > is visible _only_ when cpufreq driver supports Boost.
+> > > > > 
+> > > > > - No special spin_lock for Boost was created. The one from
+> > > > > cpufreq core was reused.
+> > > > > 
+> > > > > - The Boost code doesn't rely on any policy. When boost state is
+> > > > > changed, then the policy list is iterated and proper
+> > > > > adjustements are done.
+> > > > > 
+> > > > > - To improve safety level, the thermal framework is also
+> > > > > extended to disable software boosting, when thermal trip point
+> > > > > is reached. After cooling down the boost can be enabled again.
+> > > > > This emulates behaviour similar to HW managed boost (like x86)
+> > > > > 
+> > > > > Tested at HW:
+> > > > >        Exynos 4412 3.13-rc4 Linux
+> > > > >        Intel Core i7-3770 3.13-rc4 Linux
+> > > > > 
+> > > > > Above patches were posted on top of kernel_pm/bleeding-edge
+> > > > > (SHA1: bd0f3a5d9dce48a917ce1f1047534d79c725149)
+> > > > > 
+> > > > > Lukasz Majewski (7):
+> > > > >   cpufreq: Add boost frequency support in core
+> > > > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
+> > > > > common boost solution
+> > > > >   cpufreq:boost:Kconfig: Provide support for software managed
+> > > > > BOOST cpufreq:exynos:Extend Exynos cpufreq driver to support
+> > > > > boost framework
+> > > > >   Documentation:cpufreq:boost: Update BOOST documentation
+> > > > >   cpufreq:exynos4x12: Change L0 driver data to
+> > > > > CPUFREQ_BOOST_FREQ thermal:exynos:boost: Automatic
+> > > > > enable/disable of BOOST feature (at Exynos4412)
+> > > > > 
+> > > > >  Documentation/cpu-freq/boost.txt          |   26 +++----
+> > > > >  drivers/cpufreq/Kconfig                   |    4 +
+> > > > >  drivers/cpufreq/Kconfig.arm               |   15 ++++
+> > > > >  drivers/cpufreq/acpi-cpufreq.c            |   86
+> > > > > +++++++-------------- drivers/cpufreq/cpufreq.c
+> > > > > | 118 ++++++++++++++++++++++++++++-
+> > > > > drivers/cpufreq/exynos-cpufreq.c          |    3 +
+> > > > > drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
+> > > > > drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
+> > > > > drivers/thermal/samsung/exynos_tmu_data.c |   12 +--
+> > > > > include/linux/cpufreq.h                   |   24 ++++++ 10 files
+> > > > > changed, 261 insertions(+), 85 deletions(-)
+> > > > > 
+> > > > 
+> > > > A gentle ping about BOOST patches.
+> > > > 
+> > > > Its been already acked by Viresh and Eduardo.
+> > > > 
+> > > > It applies on kernel_pm/bleeding_edge SHA1:
+> > > > 4836deb72c5e2a9af0cb2129c1149783a26d99ab
+> > > 
+> > > It looks like Rui is still looking into this.
+> > > 
+> > > Rui, are you fine with this series?
+> > > 
+> > Yes, I'm okay with the thermal related parts of this patch set.
+> > 
+> 
+> Rafael, gentle reminder about BOOST patches ... :-)
 
-[    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
-[    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-3.10.0-65.el7.x86_64 #1
-[    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
-QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-[    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
-ffff8800341bd950
-[    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
-00000000000084d0
-[    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
-0000000000000200
-[    2.989821] Call Trace:
-[    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
-[    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
-[    3.004817]  [<ffffffff815b87ee>] ?
-__alloc_pages_direct_compact+0xac/0x196
-[    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
-[    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
-[    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
-[    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
-[    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
-[    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
-[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-[    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
-[    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-[    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-[    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-[    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-[    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
-[    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
-[    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-[    3.181956] Mem-Info:
-[    3.184490] Node 0 DMA per-cpu:
-[    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
-[    3.193353] Node 0 DMA32 per-cpu:
-[    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
-[    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
-[    3.202410]  active_file:0 inactive_file:0 isolated_file:0
-[    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
-[    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
-[    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
-[    3.202410]  free_cma:0
+I'm about to take them for 3.14.
 
-because the system has run out of memory at boot time.  This occurs
-because of the following sequence in the boot:
+Thanks!
 
-Main kernel boots and sets E820 map.  The second kernel is booted with a
-map generated by the kdump service using memmap= and memmap=exactmap.
-These parameters are added to the kernel parameters of the kdump
-kernel.   The kdump kernel has limited memory resources so as not
-to severely impact the main kernel.
+[PS: Please don't use the rjw@sisk.pl address, that domain is gone.]
 
-The system then panics and the kdump kernel boots (which is a
-completely new kernel boot).  During this boot ACPI is initialized and the
-kernel (as can be seen above) traverses the ACPI namespace and finds an
-entry for a memory device to be hotadded.
-
-ie)
-
-[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-
-At this point the kernel adds page table information and the the kdump
-kernel runs out of memory.
-
-This can also be reproduced by using the memmap=exactmap and mem=X
-parameters on the main kernel and booting.
-
-This patchset resolves the problem by adding a kernel parameter,
-acpi_no_memhotplug, to disable ACPI memory hotplug.
-
-[v2]: changed acpi_no_memhotplug to bool
-[v3]: cleaned up Documentation/kernel-parameters.txt
-[v4]: add __initdata to acpi_no_memhotplug
-[v5]: remove kexec, kdump only
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: kosaki.motohiro@gmail.com
-Cc: dyoung@redhat.com
-Cc: rientjes@google.com
-Cc: linux-acpi@vger.kernel.org
-Cc: kexec@lists.infradead.org
----
- Documentation/kernel-parameters.txt |    3 +++
- drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
- 2 files changed, 15 insertions(+)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index b9e9bd8..6201229 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			no: ACPI OperationRegions are not marked as reserved,
- 			no further checks are performed.
- 
-+	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kdump
-+			   kernels.
-+
- 	add_efi_memmap	[EFI; X86] Include EFI memory map in
- 			kernel's map of available physical RAM.
- 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 551dad7..383cd80 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
- 	acpi_memory_device_free(mem_device);
- }
- 
-+static bool __initdata acpi_no_memhotplug;
-+
- void __init acpi_memory_hotplug_init(void)
- {
-+	if (acpi_no_memhotplug)
-+		return;
-+
- 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
- }
-+
-+static int __init disable_acpi_memory_hotplug(char *str)
-+{
-+	acpi_no_memhotplug = true;
-+	return 1;
-+}
-+__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
 -- 
-1.7.9.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
