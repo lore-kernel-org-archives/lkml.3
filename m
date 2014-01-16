@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaAPEaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:30:01 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:45750 "EHLO
+	id S1752545AbaAPEaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:30:19 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:45754 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaAPE37 (ORCPT
+	with ESMTP id S1752027AbaAPEaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:29:59 -0500
+	Wed, 15 Jan 2014 23:30:13 -0500
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, GregKH <greg@kroah.com>
-Subject: [PATCH 01/15] w1: fix w1_send_slave dropping a slave id
-Date: Wed, 15 Jan 2014 22:29:12 -0600
-Message-Id: <1389846566-28862-2-git-send-email-David@Fries.net>
+Subject: [PATCH 02/15] w1: fixup search to support abort from netlink
+Date: Wed, 15 Jan 2014 22:29:13 -0600
+Message-Id: <1389846566-28862-3-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1389846566-28862-1-git-send-email-David@Fries.net>
 References: <1389846566-28862-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 22:29:53 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 22:30:04 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous logic,
-if (avail > 8) {
-	store slave;
-	return;
-}
-send data; clear;
+Before 63706172f33 "rework kthread_stop()" kthread_should_stop()
+always returned false when called from a non-kthread task, after it
+would oops as a non-kthread didn't have that structure and netlink was
+calling search from a thread which wasn't a kthread.  9d1817cab2f030
+"w1: fix oops when w1_search is called from netlink connector",
+modified the code to avoid calling kthread_stop from a netlink thread.
 
-The logic error is, if there isn't space send the buffer and clear,
-but the slave wasn't added to the now empty buffer loosing that slave
-id.  It also should have been "if (avail >= 8)" because when it is 8,
-there is space.
-
-Instead, if there isn't space send and clear the buffer, then there is
-always space for the slave id.
+Introduce a w1_master flag and bit W1_ABORT_SEARCH to identify abort
+to cleanly support both kthread and netlink search abort.  A search
+can take seconds to run, so it is important to abort early if the
+hardware is removed in the middle of a search.
 
 Signed-off-by: David Fries <David@Fries.net>
-Cc: stable@vger.kernel.org
 Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Marcin Jurkowski <marcin1j@gmail.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Cc: Sven Geggus <lists@fuchsschwanzdomain.de>
 ---
- drivers/w1/w1_netlink.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/w1/w1.c     |    3 +--
+ drivers/w1/w1.h     |   10 ++++++++++
+ drivers/w1/w1_int.c |    2 ++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index 40788c9..73705af 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
- 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
- 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
- 	int avail;
-+	u64 *data;
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 66efa96..67b6d5f 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -960,8 +960,7 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 			tmp64 = (triplet_ret >> 2);
+ 			rn |= (tmp64 << i);
  
- 	/* update kernel slave list */
- 	w1_slave_found(dev, rn);
+-			/* ensure we're called from kthread and not by netlink callback */
+-			if (!dev->priv && kthread_should_stop()) {
++			if (test_bit(W1_ABORT_SEARCH, &dev->flags)) {
+ 				mutex_unlock(&dev->bus_mutex);
+ 				dev_dbg(&dev->dev, "Abort w1_search\n");
+ 				return;
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index ca8081a..bc329d2 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -155,6 +155,14 @@ struct w1_bus_master
+ 		u8, w1_slave_found_callback);
+ };
  
- 	avail = dev->priv_size - cmd->len;
++/**
++ * enum w1_master_flags - bitfields used in w1_master.flags
++ * @W1_ABORT_SEARCH: abort searching early on shutdown
++ */
++enum w1_master_flags {
++	W1_ABORT_SEARCH = 0,
++};
++
+ struct w1_master
+ {
+ 	struct list_head	w1_master_entry;
+@@ -178,6 +186,8 @@ struct w1_master
+ 	/** 5V strong pullup duration in milliseconds, zero disabled. */
+ 	int			pullup_duration;
  
--	if (avail > 8) {
--		u64 *data = (void *)(cmd + 1) + cmd->len;
-+	if (avail < 8) {
-+		msg->ack++;
-+		cn_netlink_send(msg, 0, GFP_KERNEL);
++	long			flags;
++
+ 	struct task_struct	*thread;
+ 	struct mutex		mutex;
+ 	struct mutex		bus_mutex;
+diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
+index 5a98649..f84e48b 100644
+--- a/drivers/w1/w1_int.c
++++ b/drivers/w1/w1_int.c
+@@ -184,6 +184,7 @@ int w1_add_master_device(struct w1_bus_master *master)
  
--		*data = rn;
--		cmd->len += 8;
--		hdr->len += 8;
--		msg->len += 8;
--		return;
-+		msg->len = sizeof(struct w1_netlink_msg) +
-+			sizeof(struct w1_netlink_cmd);
-+		hdr->len = sizeof(struct w1_netlink_cmd);
-+		cmd->len = 0;
- 	}
+ #if 0 /* Thread cleanup code, not required currently. */
+ err_out_kill_thread:
++	set_bit(W1_ABORT_SEARCH, &dev->flags);
+ 	kthread_stop(dev->thread);
+ #endif
+ err_out_rm_attr:
+@@ -199,6 +200,7 @@ void __w1_remove_master_device(struct w1_master *dev)
+ 	struct w1_netlink_msg msg;
+ 	struct w1_slave *sl, *sln;
  
--	msg->ack++;
--	cn_netlink_send(msg, 0, GFP_KERNEL);
-+	data = (void *)(cmd + 1) + cmd->len;
++	set_bit(W1_ABORT_SEARCH, &dev->flags);
+ 	kthread_stop(dev->thread);
  
--	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
--	hdr->len = sizeof(struct w1_netlink_cmd);
--	cmd->len = 0;
-+	*data = rn;
-+	cmd->len += 8;
-+	hdr->len += 8;
-+	msg->len += 8;
- }
- 
- static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
+ 	mutex_lock(&w1_mlock);
 -- 
 1.7.10.4
 
