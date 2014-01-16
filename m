@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaAPUVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:21:38 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36379 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaAPUVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:21:37 -0500
-Date: Thu, 16 Jan 2014 12:21:10 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Kent Overstreet <kmo@daterainc.com>
-cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next bio iters break discard?
-In-Reply-To: <20140114222424.GA7333@moria.home.lan>
-Message-ID: <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils> <20140114023346.GN9037@kmo> <yq161pnmcl2.fsf@sermon.lab.mkp.net> <20140114044841.GO9037@kmo> <yq1ob3el3mr.fsf@sermon.lab.mkp.net> <20140114222424.GA7333@moria.home.lan>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1751873AbaAPUYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:24:07 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:12343 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750750AbaAPUYE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 15:24:04 -0500
+From: Gaurav Jain <gjain@fb.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
+Thread-Topic: [PATCH] perf tools: Fix JIT profiling on heap
+Thread-Index: AQHPEl02V6lP9aISxEm2DlWsTOWtmpqH8nCAgAAMvwA=
+Date: Thu, 16 Jan 2014 20:23:27 +0000
+Message-ID: <CEFDA8E4.2D359%gjain@fb.com>
+In-Reply-To: <20140116143749.GA21526@ghostprotocols.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-ID: <FD37586F183A824B942FDC360AFF2E4B@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-16_07:2014-01-16,2014-01-16,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.502552658695225 urlsuspect_oldscore=0.502552658695225
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.502552658695225 spamscore=0
+ recipient_to_sender_domain_totalscore=53 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401160130
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014, Kent Overstreet wrote:
-> 
-> Does the below patch look like what we want? I'm assuming that if
+On 1/16/14, 9:37 AM, "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
+wrote:
 
-You don't fill me with confidence ;)
+>Em Thu, Jan 16, 2014 at 10:49:31AM +0900, Namhyung Kim escreveu:
+>> Gaurav reported that perf cannot profile JIT program if it executes
+>> the code on heap.  This was because current map__new() only handle JIT
+>> on anon mappings - extends it to handle no_dso (heap, stack) case too.
+>> 
+>> This patch assumes JIT profiling only provides dynamic function
+>> symbols so check the mapping type to distinguish the case.  It'd
+>> provide no symbols for data mapping - if we need to support symbols on
+>> data mappings later it should be changed.
+>
+>But we do support symbols in data mappings, that is why we have
+>MAP__VARIABLE, etc, can you elaborate?
 
-> multiple WRITE_SAME bios are merged, since they're all writing the same
-> data we can consider the entire request to be a single segment.
-> 
-> commit 1755e7ffc5745591d37b8956ce2512f4052a104a
-> Author: Kent Overstreet <kmo@daterainc.com>
-> Date:   Tue Jan 14 14:22:01 2014 -0800
-> 
->     block: Explicitly handle discard/write same when counting segments
-> 
-> diff --git a/block/blk-merge.c b/block/blk-merge.c
-> index 8f8adaa..7d977f8 100644
-> --- a/block/blk-merge.c
-> +++ b/block/blk-merge.c
-> @@ -21,6 +21,12 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
->  	if (!bio)
->  		return 0;
->  
-> +	if (bio->bi_rw & REQ_DISCARD)
-> +		return 0;
-> +
-> +	if (bio->bi_rw & REQ_WRITE_SAME)
-> +		return 1;
-> +
->  	fbio = bio;
->  	cluster = blk_queue_cluster(q);
->  	seg_size = 0;
+Does perf support data mappings from perf map files? Could you please
+share an example of how I may be able to use this.
 
-For me this just shifts the crash,
-from __blk_recalc_rq_segments() to blk_rq_map_sg():
+>Gaurav, do this fixes the problem you reported? Can I have your
+>Tested-by: tag?
 
-blk_rq_map_sg
-scsi_init_sgtable
-scsi_init_io
-scsi_setup_blk_pc_cmnd
-sd_prep_fn
-blk_peek_request
-scsi_request_fn
-__blk_run_queue
-blk_run_queue
-scsi_run_queue
-scsi_next_command
-scsi_io_completion
-scsi_finish_command
-scsi_softirq_done
-blk_done_softirq
-__do_softirq
-irq_exit
-do_IRQ
-common_interrupt
-<EOI>
-cpuidle_idle_call
-arch_cpu_idle
-cpu_startup_entry
-start_secondary
-
-It's GPF'ing on struct scatter_list *sg 0x800000001473e064 in
-
-static inline void sg_assign_page(struct scatterlist *sg, struct page *page)
-{
-	unsigned long page_link = sg->page_link & 0x3;
-
-It appears to be in the static inline __blk_segment_map_sg(),
-and that GPF'ing address is what it just got from sg_next().
-
-Sorry, this isn't the kind of dump you'll be used to, but it's the
-best I can do at the moment, and I've just had to reboot the machine.
-
-O, tried again and it hit the BUG_ON(count > sdb->table.nents)
-on line 1048 of drivers/scsi/scsi_lib.c:
-
-scsi_init_sgtable
-<IRQ> scsi_init_io
-scsi_setup_blk_pc_cmnd
-sd_setup_discard_cmnd
-sd_prep_fn
-blk_peek_request
-etc. as before
-
-I'll have to leave the machine shortly - I'm rather hoping
-you can do your own discard testing to see such crashes.
+Yep, I¹ve tested this version of the patch and it works great for me.
 
 Thanks,
-Hugh
+
+Gaurav
+
