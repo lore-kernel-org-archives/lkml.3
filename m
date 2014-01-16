@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaAPP2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:28:11 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:34426 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaAPP2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:28:08 -0500
-Message-ID: <52D7FA85.9020504@linaro.org>
-Date: Thu, 16 Jan 2014 16:28:05 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752685AbaAPPeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:34:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45532 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389AbaAPPeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:34:20 -0500
+Message-ID: <52D7FBF7.2070508@suse.cz>
+Date: Thu, 16 Jan 2014 16:34:15 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <52D7E343.40909@linaro.org> <20140116141743.GT31570@twins.programming.kicks-ass.net> <52D7EAA4.2080208@linaro.org> <20140116142546.GU31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140116142546.GU31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>
+CC: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] scripts/gcc-version.sh: handle CC="gcc -m32"
+References: <87d2l5ji06.fsf@rustcorp.com.au> <52C6EF1C.9070809@suse.cz> <52C71EDA.6090706@suse.cz> <87k3e1x4ho.fsf@rustcorp.com.au>
+In-Reply-To: <87k3e1x4ho.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
-> On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
->> Already tested. The last commits do not change the issue described above.
->
-> Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
-> laptop around that should have some recent ubuntu on it, let me go find
-> it.
->
+On 15.1.2014 05:18, Rusty Russell wrote:
+> Michal Marek <mmarek@suse.cz> writes:
+>> On 3.1.2014 18:10, Michal Marek wrote:
+>>> On 2013-12-10 08:13, Rusty Russell wrote:
+>>>> Without it we get ugly warnings (though build still succeeds).
+>>>>
+>>>> $ make -j8 CC="gcc -m32"
+>>>> In file included from <command-line>:0:0:
+>>>> /usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+>>>>  #include <bits/predefs.h>
+>>>>                           ^
+>>>> compilation terminated.
+>>>> In file included from <command-line>:0:0:
+>>>> /usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+>>>>  #include <bits/predefs.h>
+>>>>                           ^
+>>>> compilation terminated.
+>>>> /home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+>>>> /home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+>>>> /bin/sh: 1: [: 0001: unexpected operator
+>>>>   CHK     include/config/kernel.release
+>>>>   CHK     include/generated/uapi/linux/version.h
+>>>> make[1]: Nothing to be done for `all'.
+>>>> ...
+>>>>
+>>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>>>>
+>>>> diff --git a/scripts/gcc-version.sh b/scripts/gcc-version.sh
+>>>> index 7f2126df91f2..d48b0cbaf246 100644
+>>>> --- a/scripts/gcc-version.sh
+>>>> +++ b/scripts/gcc-version.sh
+>>>> @@ -14,7 +14,7 @@ if [ "$1" = "-p" ] ; then
+>>>>  	shift;
+>>>>  fi
+>>>>  
+>>>> -compiler="$*"
+>>>> +compiler="$1"
+>>>
+>>> But this will break things like CC="ccache gcc". Your problem is that
+>>> you do not have the 32bit glibc headers, right?
+>>
+>> BTW, what is the usecase for CC="gcc -m32"? AFAICS, at least x86 and
+>> powerpc do this for you when building a 32bit kernel.
+> 
+> No, without -m32 I get:
+> 
+> $ make
+> make[1]: Nothing to be done for `all'.
+> make[1]: Nothing to be done for `relocs'.
+>   CHK     include/config/kernel.release
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
+> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
+> kernel/bounds.c:1:0: error: CPU you selected does not support x86-64 instruction set
+>  /*
+>  ^
+> kernel/bounds.c:1:0: warning: -mregparm is ignored in 64-bit mode [enabled by default]
+> make[1]: *** [kernel/bounds.s] Error 1
+> make: *** [prepare0] Error 2
+> 
+> If that's *supposed* to work, then the bug is elsewhere.
 
-Removing the lines below fix the issue.
+It is supposed to work, but I have no idea what's going on here. Please
+provide output of
+$ uname -m
+$ gcc -v
+$ make V=1
+$ cat .config
 
-These changes were introduced by the commit 
-d50dde5a10f305253cbc3855307f608f8a3c5f73.
+and we will see.
 
-I don't get the connection between what is supposed to do the patch as 
-described in the commit log and these four lines added.
-
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index 141baa3..acabef1 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -15,7 +15,7 @@
-
-  #include <uapi/asm/unistd.h>
-dlezcano@mai:~/Work/src/cpuidle-next (sched/idle-balance)$ git diff
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 93a2836..673edff 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3295,10 +3295,6 @@ recheck:
-          * Allow unprivileged RT tasks to decrease priority:
-          */
-         if (user && !capable(CAP_SYS_NICE)) {
--               if (fair_policy(policy)) {
--                       if (!can_nice(p, attr->sched_nice))
--                               return -EPERM;
--               }
-
-                 if (rt_policy(policy)) {
-                         unsigned long rlim_rtprio =
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Michal
