@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703AbaAPXtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:49:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37031 "EHLO mx1.redhat.com"
+	id S1751648AbaAPXyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:54:15 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47946 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaAPXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:48:58 -0500
-Date: Thu, 16 Jan 2014 18:48:17 -0500
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, catalin.marinas@arm.com, will.deacon@arm.com
-Subject: [PATCH] arm64: fix strnlen_user when count <= strlen
-Message-ID: <20140116234817.GP18705@redacted.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751369AbaAPXyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 18:54:10 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Linux PPC <linuxppc-dev@lists.ozlabs.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 3/8] powerpc: add hvcalls for 24x7 and gpci (get performance counter info)
+Date: Thu, 16 Jan 2014 15:53:49 -0800
+Message-Id: <1389916434-2288-4-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011623-5806-0000-0000-000023E391CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I received a bug report about the ruby test-suite failing on AArch64 when
-attempting to pass MAX_ARG_STRLEN sized args to execv[1]. It was
-expecting an E2BIG returned, but instead was receiving ENOMEM, and
-concatenating the argument strings in funky ways.
-
-The problem appeared to be in __strnlen_user on arm64, as when
-instrumenting fs/exec.c to compare the results of the asm-generic
-strnlen_user, I noticed an off-by-one on the result:
-long-param-test: optimized strnlen_user (131072) and naive (131073) disagree!
-
-As a result, fix strnlen_user to match expected behaviour as documented
-in lib/strnlen_user.c, and return count+1 when count would be exceeded.
-
-I didn't feel comfortable prodding the assembler, so I just worked
-around it in the wrapper.
-
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-
-1. https://bugzilla.redhat.com/show_bug.cgi?id=1038676
-
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
+ arch/powerpc/include/asm/hvcall.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-I tested that this behaves the same as the lib/strnlen_user.c version
-with some hacked together code here:
-http://kyle.fedorapeople.org/strnlen_user-test.tar.xz
-
-{master}kmcmarti ~/strnlen_user-test $ ./test
-=== count = 0 ===
-strnlen_user = 0
-__strnlen_user = 0
-fixed__strnlen_user = 0
-=== count < strlen ===
-strnlen_user = 7
-__strnlen_user = 6
-fixed__strnlen_user = 7
-=== count = strlen ===
-strnlen_user = 13
-__strnlen_user = 12
-fixed__strnlen_user = 13
-=== count > strlen ===
-strnlen_user = 13
-__strnlen_user = 13
-fixed__strnlen_user = 13
-
---- a/arch/arm64/include/asm/uaccess.h
-+++ b/arch/arm64/include/asm/uaccess.h
-@@ -290,9 +290,15 @@ static inline long __must_check strnlen_user(const char __user *s, long n)
- {
- 	unsigned long res = 0;
+diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
+index d8b600b..48d6efa 100644
+--- a/arch/powerpc/include/asm/hvcall.h
++++ b/arch/powerpc/include/asm/hvcall.h
+@@ -269,11 +269,15 @@
+ #define H_COP			0x304
+ #define H_GET_MPP_X		0x314
+ #define H_SET_MODE		0x31C
+-#define MAX_HCALL_OPCODE	H_SET_MODE
++#define H_GET_24X7_CATALOG_PAGE 0xF078
++#define H_GET_24X7_DATA		0xF07C
++#define H_GET_PERF_COUNTER_INFO 0xF080
++#define MAX_HCALL_OPCODE	H_GET_PERF_COUNTER_INFO
  
-+	if (unlikely(n <= 0))
-+		return 0;
+ /* Platform specific hcalls, used by KVM */
+ #define H_RTAS			0xf000
+ 
 +
- 	if (__addr_ok(s))
- 		res = __strnlen_user(s, n);
+ #ifndef __ASSEMBLY__
  
-+	if (unlikely(res >= n))
-+		return n + 1;
-+
- 	return res;
- }
- 
+ /**
+-- 
+1.8.5.2
+
