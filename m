@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaAPCdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:33:36 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:62884 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaAPCbX (ORCPT
+	id S1753131AbaAPCd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:33:57 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41562 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaAPCdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:31:23 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-d5-52d74478002b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/12] tools lib traceevent: Unregister handler when mac80211 plugin unloaded
-Date: Thu, 16 Jan 2014 11:31:14 +0900
-Message-Id: <1389839478-5887-9-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
-References: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 15 Jan 2014 21:33:35 -0500
+Date: Wed, 15 Jan 2014 18:33:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 4/4] timers: Reduce future
+	__run_timers() latency for first add to empty list
+Message-ID: <20140116023328.GS10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140115051939.GA31164@linux.vnet.ibm.com>
+ <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1389763248-31297-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140115172409.GD11499@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115172409.GD11499@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011602-1542-0000-0000-00000545DB93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The event handler should be unregistered when the plugin unloaded
-otherwise it'll try to access invalid memory.
+On Wed, Jan 15, 2014 at 06:24:09PM +0100, Oleg Nesterov wrote:
+> On 01/14, Paul E. McKenney wrote:
+> >
+> > @@ -749,6 +749,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+> >
+> >  	base = lock_timer_base(timer, &flags);
+> >
+> > +	(void)catchup_timer_jiffies(base);
+> 
+> Agreed, but perhaps it would be better to do this before
+> all_timers++ in internal_add_timer() ?
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/plugin_mac80211.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Excellent point, changed.
 
-diff --git a/tools/lib/traceevent/plugin_mac80211.c b/tools/lib/traceevent/plugin_mac80211.c
-index 558a3b91c046..7e15a0f1c2fd 100644
---- a/tools/lib/traceevent/plugin_mac80211.c
-+++ b/tools/lib/traceevent/plugin_mac80211.c
-@@ -93,3 +93,10 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
- 				      drv_bss_info_changed, NULL);
- 	return 0;
- }
-+
-+void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
-+{
-+	pevent_unregister_event_handler(pevent, -1, "mac80211",
-+					"drv_bss_info_changed",
-+					drv_bss_info_changed, NULL);
-+}
--- 
-1.7.11.7
+> This is funny, but I already have the same change for ->next_timer,
+> if we add this optimization perhaps that trivial patch makes sense
+> too.
+
+Yep, I queued your change in my series as well, thank you!
+
+							Thanx, Paul
 
