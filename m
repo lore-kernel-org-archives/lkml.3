@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaAPAm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:42:28 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52205 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaAPAm0 (ORCPT
+	id S1752005AbaAPAqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:46:46 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:41120 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaAPAqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:42:26 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-0e-52d72aef3569
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH/RFC] perf ui/tui: Show column header in hist browser
-References: <1389762525-1795-1-git-send-email-namhyung@kernel.org>
-	<20140115121044.GA1669@krava.redhat.com>
-	<20140115141314.GA16016@ghostprotocols.net>
-Date: Thu, 16 Jan 2014 09:42:23 +0900
-In-Reply-To: <20140115141314.GA16016@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Wed, 15 Jan 2014 11:13:14 -0300")
-Message-ID: <87ppns92q8.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 15 Jan 2014 19:46:44 -0500
+Date: Thu, 16 Jan 2014 01:46:42 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of the algorithm
+Message-ID: <20140116004642.GJ19945@order.stressinduktion.org>
+Mail-Followup-To: Ben Hutchings <bhutchings@solarflare.com>,
+	Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Austin S Hemmelgarn <ahferroin7@gmail.com>,
+	Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+	Stephen Hemminger <stephen@networkplumber.org>,
+	Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+	Christoph Lameter <cl@linux-foundation.org>,
+	Andy Gospodarek <andy@greyhouse.net>,
+	Veaceslav Falico <vfalico@redhat.com>,
+	Jay Vosburgh <fubar@us.ibm.com>,
+	Jakub Zawadzki <darkjames-ws@darkjames.pl>
+References: <1389828228-30312-1-git-send-email-dborkman@redhat.com> <1389828228-30312-3-git-send-email-dborkman@redhat.com> <1389831470.11912.40.camel@bwh-desktop.uk.level5networks.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1389831470.11912.40.camel@bwh-desktop.uk.level5networks.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo and Jiri,
+On Thu, Jan 16, 2014 at 12:17:50AM +0000, Ben Hutchings wrote:
+> On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
+> [...]
+> > --- a/include/linux/reciprocal_div.h
+> > +++ b/include/linux/reciprocal_div.h
+> [...]
+> > + * RECIPROCAL_VALUE_TO_ZERO can be used to express an element, which
+> > + * used as the argument to reciprocal_divide always yields zero.
+> >   */
+> [...]
+> > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
+> [...]
+> > +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
+> >  {
+> > -	return (u32)(((u64)A * R) >> 32);
+> > +	u32 t = (u32)(((u64)a * R.m) >> 32);
+> > +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
+> [...]
+> 
+> (a - t) has type u32.
+> So (a - t) >> 32 has undefined behaviour.
 
-On Wed, 15 Jan 2014 11:13:14 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 15, 2014 at 01:10:44PM +0100, Jiri Olsa escreveu:
->> On Wed, Jan 15, 2014 at 02:08:45PM +0900, Namhyung Kim wrote:
->> > Add a line for showing column headers like --stdio.
->> 
->> https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/commit/?h=perf/lock12&id=1a06d77629cb8870838132688f443b9ca1436026
->> 
->> ;-) I'll check your change
->
-> From a quick view, your change looks better, i.e. being able to toggle
-> the header line.
->
-> Please let me know what you guys end up agreeing is best.
-
-Yes, looking at the source, Jiri's version looks much better.  I was
-lazy for sorting column width and supporting a hotkey for toggling. :)
-I just wanted to see how you guys think, so the rfc.
+Good catch, totally overlooked that.
 
 Thanks,
-Namhyung
+
+  Hannes
+
