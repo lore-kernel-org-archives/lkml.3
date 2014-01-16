@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaAPPlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:41:36 -0500
-Received: from fieldses.org ([174.143.236.118]:53044 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512AbaAPPlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:41:35 -0500
-Date: Thu, 16 Jan 2014 10:41:32 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-Message-ID: <20140116154132.GB16829@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
- <1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
- <20140115175723.GA4596@fieldses.org>
- <CAJfpegs0+t4S1y9mhRMJMAERh-a95KjK_JQ7F5SRrfsNZOdoMA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegs0+t4S1y9mhRMJMAERh-a95KjK_JQ7F5SRrfsNZOdoMA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752445AbaAPPmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:42:03 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:36674 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127AbaAPPmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:42:00 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [GIT PULL] tick: A few more cleanups
+Date: Thu, 16 Jan 2014 16:41:48 +0100
+Message-Id: <1389886912-4783-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 07:25:11PM +0100, Miklos Szeredi wrote:
-> On Wed, Jan 15, 2014 at 6:57 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > On Wed, Jan 15, 2014 at 06:34:56PM +0100, Miklos Szeredi wrote:
-> >> On Wed, 2014-01-15 at 10:17 -0500, J. Bruce Fields wrote:
-> >> > From: "J. Bruce Fields" <bfields@redhat.com>
-> >> >
-> >> > d_splice_alias can create duplicate directory aliases (in the !new
-> >> > case), or (in the new case) d_move without holding appropriate locks.
-> >>
-> >> It can d_move, because the dentry is known to be disconnected, i.e. it
-> >> doesn't have a parent for which we could obtain the lock.
-> >
-> > DCACHE_DISCONNECTED doesn't mean that.
-> 
-> You're right, but I'm also right, because __d_find_alias() will check
-> IS_ROOT() too.  So only "root" disconnected dentries will be moved.
+Ingo,
 
-You're right, I forgot that check.
+Please pull the timers/core branch that can be found at:
 
-> >> One subtle difference is that for a non-directory d_splice_alias() will
-> >> reconnect a DCACHE_DISCONNECTED dentry if one exists, while
-> >> d_materialise_unique() will not.
-...
-> >> Does this matter in practice?   The small number of extra dentries
-> >> probably does not matter.
-> >
-> > Directories are assumed to have unique aliases.  When they don't, the
-> > kernel can deadlock or crash.
-> 
-> What I meant is that d_materialise_unique() will currently not reuse
-> disconnected *nondirectory* dentries, hence there may be more aliases
-> than necessary.  This could easily be fixed, though.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/core
 
-And, sorry, I did miss that you said "non-directory".  But I think you
-have that backwards: d_splice_alias looks like:
+HEAD: 8fe8ff09ce3b5750e1f3e45a1f4a81d59c7ff1f1
 
-	if (inode && S_ISDIR(inode->i_mode)) {
-		...
-	} else {
-		d_instantiate(dentry, inode);
-		if (d_unhashed(dentry))
-			d_rehash(dentry);
-	}
+----
+Nothing very exiting, just a bunch of non-critical cleanups for the next merge window:
 
-So it ignores any existing aliases in the non-directory case.
+1) Make the IRQ tick APIs naming more symetric
 
-d_materialise_unique by contrast calls __d_instantiate_unique, which
-looks like it should avoid adding duplicates.
+2) Optimize a bit jiffies_lock code coverage
 
-So I think switching everyone to d_materialiase_unique would result in
-fewer dentries.  But I've never seen any complaint about the issue and
-like you don't see a reason this would matter much either way.
+3) Whitespace fixes from Alex Shi
 
---b.
+4) Fix overflow in scheduler tick max deferment calculation. Given the
+current 1 second max limitation, this bug shouldn't happen in mainline.
+It's rather to prepare for making this value tunable. Or simply in case
+we change the current constant.
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (2):
+      tick: Rename tick_check_idle() to tick_irq_enter()
+      nohz: Get timekeeping max deferment outside jiffies_lock
+
+Alex Shi (1):
+      nohz_full: fix code style issue of tick_nohz_full_stop_tick
+
+Kevin Hilman (1):
+      sched/nohz: Fix overflow error in scheduler_tick_max_deferment()
+
+
+ include/linux/jiffies.h  |  6 ++++++
+ include/linux/tick.h     |  6 +++---
+ kernel/sched/core.c      |  2 +-
+ kernel/softirq.c         |  2 +-
+ kernel/time/tick-sched.c | 27 ++++++++++++++-------------
+ 5 files changed, 25 insertions(+), 18 deletions(-)
