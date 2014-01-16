@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaAPDOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:14:16 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38191 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaAPDOM (ORCPT
+	id S1752558AbaAPDOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 22:14:37 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:46652 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaAPDOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:14:12 -0500
-Message-ID: <1389842050.31367.396.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next 1/2] random32: add prandom_u32_lt_N and convert
- "misuses" of reciprocal_divide
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date: Wed, 15 Jan 2014 19:14:10 -0800
-In-Reply-To: <1389828228-30312-2-git-send-email-dborkman@redhat.com>
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
-	 <1389828228-30312-2-git-send-email-dborkman@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 15 Jan 2014 22:14:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1389840330.2944.104.camel@j-VirtualBox>
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+	<1389745990-7069-4-git-send-email-jason.low2@hp.com>
+	<1389840330.2944.104.camel@j-VirtualBox>
+Date: Thu, 16 Jan 2014 10:14:33 +0700
+X-Google-Sender-Auth: JxpBLRSGkw3dxzKBkZS1LaPGBc8
+Message-ID: <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
+Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after too
+ many tries
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
+On Thu, Jan 16, 2014 at 9:45 AM, Jason Low <jason.low2@hp.com> wrote:
+>
+> Any comments on the below change which unlocks the mutex before taking
+> the lock->wait_lock to wake up a waiter? Thanks.
 
-> @@ -1220,7 +1219,7 @@ static unsigned int fanout_demux_hash(struct packet_fanout *f,
->  				      struct sk_buff *skb,
->  				      unsigned int num)
->  {
-> -	return reciprocal_divide(skb->rxhash, num);
-> +	return (u32)(((u64) skb->rxhash * num) >> 32);
->  }
->  
+Hmm. Doesn't that mean that a new lock owner can come in *before*
+you've called debug_mutex_unlock and the lockdep stuff, and get the
+lock? And then debug_mutex_lock() will be called *before* the unlocker
+called debug_mutex_unlock(), which I'm sure confuses things.
 
-This is unfortunate.
-
-(This reverts one of your patch : f55d112e529386 )
-
-Please add a helper to explain what's going on here, and on many other
-spots we do this computation (as in get_rps_cpu()).
-Few people really understand this.
-
-Or keep reciprocal_divide() as is, and introduce a new set of functions
-for people really wanting the precise divides.
-
-
-
+          Linus
