@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaAPWZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:25:29 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:51817 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaAPWZX (ORCPT
+	id S1751687AbaAPW0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:26:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48546 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaAPW0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:25:23 -0500
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jan 2014 17:25:23 EST
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH] sh: kgdb: Add missing #include <linux/sched.h>
-Date: Thu, 16 Jan 2014 23:20:00 +0100
-Message-Id: <1389910800-13083-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 16 Jan 2014 17:26:01 -0500
+Date: Thu, 16 Jan 2014 23:25:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140116222536.GX30183@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+ <20140116121955.GQ31570@twins.programming.kicks-ass.net>
+ <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+On Fri, Jan 17, 2014 at 07:46:28AM +1100, Stephen Rothwell wrote:
+> Hi Peter,
+> 
+> On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > I think the below ought to work
+> 
+> To be clear, all you did was replace the body of mwait_idle() with
+> 
+> 	mwait_idle_with_hints(0, 0);
 
-arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
-arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
-arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
-arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
-arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
-arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
-arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
+Pretty much, and add the asm/mwait.h include, otherwise you'll end up
+with a compile fail.
 
-This is introduced by commit 16559ae48c76f1ceb970b9719dea62b77eb5d06b
-("kgdb: remove #include <linux/serial_8250.h> from kgdb.h").
+> (and the comment above it)?  I need to apply in incremental patch in the
+> merge commit.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-[geert: Reworded and reformatted]
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
-http://kisskb.ellerman.id.au/kisskb/buildresult/10477672/
-
- arch/sh/kernel/kgdb.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/sh/kernel/kgdb.c b/arch/sh/kernel/kgdb.c
-index 38b313909ac9..adad46e41a1d 100644
---- a/arch/sh/kernel/kgdb.c
-+++ b/arch/sh/kernel/kgdb.c
-@@ -13,6 +13,7 @@
- #include <linux/kdebug.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-+#include <linux/sched.h>
- #include <asm/cacheflush.h>
- #include <asm/traps.h>
- 
--- 
-1.7.9.5
-
+I don't think I touched the comment at all.
