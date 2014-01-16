@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaAPNwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:52:21 -0500
-Received: from mout.gmx.net ([212.227.17.20]:58480 "EHLO mout.gmx.net"
+	id S1752744AbaAPNx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:53:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513AbaAPNwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:52:20 -0500
-Message-ID: <1389880335.5418.46.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: select_idle_sibling macro optimize
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Date: Thu, 16 Jan 2014 14:52:15 +0100
-In-Reply-To: <52D7DAF5.4020506@linaro.org>
-References: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
-	 <52D7DAF5.4020506@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1752532AbaAPNxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 08:53:22 -0500
+Message-ID: <52D7E41A.1060408@redhat.com>
+Date: Thu, 16 Jan 2014 14:52:26 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 7/8] zram: drop not used table `count' member
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com> <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
+In-Reply-To: <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V03:K0:ZdaO/pMVrSukLMwLbp+pA15I9OONjKUuKXMlwMYEgEfKGWoJxSH
- 4msAQHLL/IUS/8+oypv1rL+YzkZgcp0Se3f42hb2GLlDqt6zKePqkgUaatMCjrXDhZBl9fK
- z4jKt0Z2MCEnBoLoEDPgTBBp4dPK3ArR0ap7sobFZQ2P1V0/nvbK+ZYqNBDRuNjYvEdnEBx
- WttlspDHWTUg5FAZxNZGg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 21:13 +0800, Alex Shi wrote: 
-> Add Mike Galbraith.
+On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
+> struct table `count' member is not used.
+
+What was the intended use of this counter anyway?
+
 > 
-> Any one like to give some comments?
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/zram_drv.h | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> On 01/15/2014 10:23 PM, Alex Shi wrote:
-> > If the sd domain just has one group, then we must be caught the
-> > 	i == target later, and then goes to deeper level domain.
-> > So just skip this domain checking to save some instructions.
-> > 
-> > Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> > ---
-> >  kernel/sched/fair.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index c7395d9..3265fbc 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -4196,6 +4196,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
-> >  	sd = rcu_dereference(per_cpu(sd_llc, target));
-> >  	for_each_lower_domain(sd) {
-> >  		sg = sd->groups;
-> > +
-> > +		/* skip single group domain */
-> > +		if (sg == sg->next)
-> > +			continue;
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 58d4ac5..1d5b1f5 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -64,7 +64,6 @@ enum zram_pageflags {
+>  struct table {
+>  	unsigned long handle;
+>  	u16 size;	/* object size (excluding header) */
+> -	u8 count;	/* object ref count (not yet used) */
+>  	u8 flags;
 
-When is that gonna happen?
+I noticed that your earlier version of this patch changed the
+flags size to 16. What has changed?
 
--Mike
+Jerome
 
+>  } __aligned(4);
+>  
+> 
 
