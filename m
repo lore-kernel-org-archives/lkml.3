@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaAPPsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:48:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40607 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaAPPsI (ORCPT
+	id S1752464AbaAPPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:49:26 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61333 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaAPPtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:48:08 -0500
-Date: Thu, 16 Jan 2014 16:48:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-Message-ID: <20140116154801.GS7572@laptop.programming.kicks-ass.net>
-References: <52D64676.4040000@linaro.org>
- <20140115120418.GD31570@twins.programming.kicks-ass.net>
- <52D7E343.40909@linaro.org>
- <20140116141743.GT31570@twins.programming.kicks-ass.net>
- <52D7EAA4.2080208@linaro.org>
- <20140116142546.GU31570@twins.programming.kicks-ass.net>
- <52D7FA85.9020504@linaro.org>
+	Thu, 16 Jan 2014 10:49:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D7FA85.9020504@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389638751-16173-2-git-send-email-trond.myklebust@primarydata.com>
+References: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
+ <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com> <1389638751-16173-2-git-send-email-trond.myklebust@primarydata.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Thu, 16 Jan 2014 23:49:02 +0800
+Message-ID: <CA+a=Yy6uf73Y=F5-Jp+2VrzMmbTYZXqDaEj-EHX335M3ZCvEZA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] NFSv4.1: Fix a race in nfs4_write_inode
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: shaobingqing <shaobingqing@bwstor.com.cn>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 04:28:05PM +0100, Daniel Lezcano wrote:
-> On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
-> >On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
-> >>Already tested. The last commits do not change the issue described above.
-> >
-> >Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
-> >laptop around that should have some recent ubuntu on it, let me go find
-> >it.
-> >
-> 
-> Removing the lines below fix the issue.
-> 
-> These changes were introduced by the commit
-> d50dde5a10f305253cbc3855307f608f8a3c5f73.
-> 
-> I don't get the connection between what is supposed to do the patch as
-> described in the commit log and these four lines added.
+On Tue, Jan 14, 2014 at 2:45 AM, Trond Myklebust
+<trond.myklebust@primarydata.com> wrote:
+> nfs4_write_inode() must not be allowed to exit until the layoutcommit
+> is done. That means that both NFS_INO_LAYOUTCOMMIT and
+> NFS_INO_LAYOUTCOMMITTING have to be cleared.
+>
+> Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+> ---
+>  fs/nfs/nfs4super.c | 14 +++---------
+>  fs/nfs/pnfs.c      | 67 ++++++++++++++++++++++++++++--------------------------
+>  2 files changed, 38 insertions(+), 43 deletions(-)
+>
+> diff --git a/fs/nfs/nfs4super.c b/fs/nfs/nfs4super.c
+> index 65ab0a0ca1c4..808f29574412 100644
+> --- a/fs/nfs/nfs4super.c
+> +++ b/fs/nfs/nfs4super.c
+> @@ -77,17 +77,9 @@ static int nfs4_write_inode(struct inode *inode, struct writeback_control *wbc)
+>  {
+>         int ret = nfs_write_inode(inode, wbc);
+>
+> -       if (ret >= 0 && test_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(inode)->flags)) {
+> -               int status;
+> -               bool sync = true;!test_and_clear_bit
+> -
+> -               if (wbc->sync_mode == WB_SYNC_NONE)
+> -                       sync = false;
+> -
+> -               status = pnfs_layoutcommit_inode(inode, sync);
+> -               if (status < 0)
+> -                       return status;
+> -       }
+> +       if (ret == 0)
+> +               ret = pnfs_layoutcommit_inode(inode,
+> +                               wbc->sync_mode == WB_SYNC_ALL);
+>         return ret;
+>  }
+>
+> diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
+> index d75d938d36cb..4755858e37a0 100644
+> --- a/fs/nfs/pnfs.c
+> +++ b/fs/nfs/pnfs.c
+> @@ -1790,6 +1790,15 @@ pnfs_generic_pg_readpages(struct nfs_pageio_descriptor *desc)
+>  }
+>  EXPORT_SYMBOL_GPL(pnfs_generic_pg_readpages);
+>
+> +static void pnfs_clear_layoutcommitting(struct inode *inode)
+> +{
+> +       unsigned long *bitlock = &NFS_I(inode)->flags;
+> +
+> +       clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
+> +       smp_mb__after_clear_bit();
+> +       wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
+> +}
+> +
+>  /*
+>   * There can be multiple RW segments.
+>   */
+> @@ -1807,7 +1816,6 @@ static void pnfs_list_write_lseg(struct inode *inode, struct list_head *listp)
+>  static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *listp)
+>  {
+>         struct pnfs_layout_segment *lseg, *tmp;
+> -       unsigned long *bitlock = &NFS_I(inode)->flags;
+>
+>         /* Matched by references in pnfs_set_layoutcommit */
+>         list_for_each_entry_safe(lseg, tmp, listp, pls_lc_list) {
+> @@ -1815,9 +1823,7 @@ static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *lis
+>                 pnfs_put_lseg(lseg);
+>         }
+>
+> -       clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
+> -       smp_mb__after_clear_bit();
+> -       wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
+> +       pnfs_clear_layoutcommitting(inode);
+>  }
+>
+>  void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
+> @@ -1881,43 +1887,37 @@ pnfs_layoutcommit_inode(struct inode *inode, bool sync)
+>         struct nfs4_layoutcommit_data *data;
+>         struct nfs_inode *nfsi = NFS_I(inode);
+>         loff_t end_pos;
+> -       int status = 0;
+> +       int status;
+>
+> -       dprintk("--> %s inode %lu\n", __func__, inode->i_ino);
+> -
+> -       if (!test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
+> +       if (!pnfs_layoutcommit_outstanding(inode))
+This might be a problem. If nfsi->flags has !NFS_INO_LAYOUTCOMMIT and
+NFS_INO_LAYOUTCOMMITTING, client cannot issue a new layoutcommit after
+the inflight one finishes. It might not be an issue for file layout as
+long as we only use layoutcommit to update time, but it can cause data
+corruption for block layout.
 
-The interface adds:
-
-  sched_attr::sched_nice
-
-And extends __sched_setscheduler() to also set nice values as provided
-by the sched_attr, therefore we must check to see if we've got
-permission to change the nice value.
-
+Thanks,
+Tao
