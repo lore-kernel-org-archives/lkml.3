@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaAPRKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:10:02 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:46852 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389AbaAPRKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:10:00 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC 06/18] regmap: Formalise use of non-bus context
-To: Pawel Moll <pawel.moll@arm.com>, Mark Brown <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-In-Reply-To: <1389272911.23721.49.camel@hornet>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com> < 1387815830-8794-7-git-send-email-pawel.moll@arm.com> <20131224124538. GZ30815@sirena.org.uk> <1389272911.23721.49.camel@hornet>
-Date: Thu, 16 Jan 2014 17:09:54 +0000
-Message-Id: <20140116170954.C3CBCC40973@trevor.secretlab.ca>
+	id S1753024AbaAPRKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:10:15 -0500
+Received: from www.sr71.net ([198.145.64.142]:42493 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002AbaAPRKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:10:10 -0500
+Message-ID: <52D81214.7070608@sr71.net>
+Date: Thu, 16 Jan 2014 09:08:36 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net> <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com> <alpine.DEB.2.10.1401111854580.6036@nuc> <20140113014408.GA25900@lge.com> <52D41F52.5020805@sr71.net> <alpine.DEB.2.10.1401141404190.19618@nuc> <52D5B48D.30006@sr71.net> <alpine.DEB.2.10.1401161041160.29778@nuc>
+In-Reply-To: <alpine.DEB.2.10.1401161041160.29778@nuc>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Jan 2014 13:08:31 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Tue, 2013-12-24 at 12:45 +0000, Mark Brown wrote:
-> > I'd note that I wasn't CCed on most of this series so I'm not entirely
-> > sure what it's trying to do.
+On 01/16/2014 08:44 AM, Christoph Lameter wrote:
+> On Tue, 14 Jan 2014, Dave Hansen wrote:
 > 
-> Apologies. The series is quite long and I didn't want to bother too many
-> people with mostly irrelevant changes. Will copy you on the whole thing
-> next time.
+>> On 01/14/2014 12:07 PM, Christoph Lameter wrote:
+>>> One easy way to shrink struct page is to simply remove the feature. The
+>>> patchset looked a bit complicated and does many other things.
+>>
+>> Sure.  There's a clear path if you only care about 'struct page' size,
+>> or if you only care about making the slub fast path as fast as possible.
+>>  We've got three variables, though:
+>>
+>> 1. slub fast path speed
 > 
-> > > Bus-less maps (ones with reg_read and reg_write functions
-> > > defined in regmap_config) were given the context passed
-> > > in regmap_init(), but it was still called "bus_context".
-> > > 
-> > > This patch formalises this aspect by renaming it to simple
-> > > "context" and adds the missing link, free_context function
-> > > in regmap_config, which allows bus-less maps to use the
-> > > context in classic way.
-> > 
-> > This should be two patches, one patch to do the rename and one to add
-> > the operation.  
-> 
-> Sure, will do.
-> 
-> > The obvious question here is why is this callback useful
-> > - what is being allocated in a regmap specific context that needs to be
-> > lifetime managed separately to the thing doing the creation?  I can't
-> > see any obvious reason why this would ever get used.
-> 
-> First of all, it's just a generalization of the free_context already
-> existing in regmap_bus (and used by regmap-mmio). And in case of this
-> series it is being used to release extra resource added allocated for a
-> "busless" regmap_config. Briefly, I'm using devm_regmap_init() to
-> "attach" a custom regmap configuration to a device when it is being
-> created (which is then dev_get_regmap()-ed in the driver, as you saw in
-> the regulator patch) and its context is a pointer to kzallocated data.
-> free_context is used to release it when devm resource is being removed.
+> The fast path does use this_cpu_cmpxchg_double which is something
+> different from a cmpxchg_double and its not used on struct page.
 
-Have you thought through all the implications here? What you've
-described effectively changes the devm model. devm operates under the
-assumption that devm data only exists between probe() and remove() time.
-If you 'preload' devm data then the preloaded data will get discarded at
-remove() time which breaks if the driver is remove and probed again at
-runtime.
+Yeah, I'm confusing the two.  I might as well say: "slub speed when
+touching 'struct page'"
 
-g.
+>> Arranged in three basic choices:
+>>
+>> 1. Big 'struct page', fast, medium complexity code
+>> 2. Small 'struct page', slow, lowest complexity
+> 
+> The numbers that I see seem to indicate that a big struct page means slow.
+
+This was a really tight loop where the caches are really hot, but it did
+show the large 'struct page' winning:
+
+	http://sr71.net/~dave/intel/slub/slub-perf-20140109.png
+
+As I said in the earlier description, the paravirt code doing interrupt
+disabling was what really hurt the two spinlock cases.
 
