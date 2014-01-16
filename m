@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaAPOla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:41:30 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:37534 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaAPOl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:41:28 -0500
-Message-ID: <52D7EF99.4010803@windriver.com>
-Date: Thu, 16 Jan 2014 09:41:29 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752793AbaAPOmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:42:00 -0500
+Received: from [207.46.163.185] ([207.46.163.185]:17936 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752685AbaAPOl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:41:58 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "gsi@denx.de" <gsi@denx.de>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] net/dt: Add support for overriding phy configuration
+ from device tree
+Thread-Topic: [PATCH] net/dt: Add support for overriding phy configuration
+ from device tree
+Thread-Index: AQHPEjo8iPjq+YyTXECb5rF9nP7rnpqHYceAgAALcoA=
+Date: Thu, 16 Jan 2014 14:40:04 +0000
+Message-ID: <1389883203.3720.7.camel@x230>
+References: <1389821938-3126-1-git-send-email-matthew.garrett@nebula.com>
+	 <20140116135905.GV20094@book.gsilab.sittig.org>
+In-Reply-To: <20140116135905.GV20094@book.gsilab.sittig.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 0093C80C01
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(689001)(679001)(779001)(377424004)(189002)(199002)(24454002)(49866001)(83322001)(47736001)(92566001)(93136001)(4396001)(33716001)(46102001)(50986001)(65816001)(47976001)(63696002)(19580405001)(53806001)(19580395003)(77096001)(79102001)(51856001)(54356001)(80976001)(92726001)(76796001)(76786001)(33646001)(56776001)(54316002)(76482001)(59766001)(77982001)(47446002)(74876001)(87936001)(74502001)(85306002)(69226001)(81686001)(81816001)(80022001)(2656002)(74662001)(74706001)(74366001)(85852003)(56816005)(90146001)(31966008)(81342001)(87266001)(81542001)(93516002)(83072002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A1D6848520A6B54591A734AE58731706@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "x86: fix 27-rc crash on vsmp due to paravirt
- during module load"
-References: <1389838259-29411-1-git-send-email-paul.gortmaker@windriver.com> <20140116084458.GA9346@gmail.com>
-In-Reply-To: <20140116084458.GA9346@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0GEg76T018377
 
-On 14-01-16 03:44 AM, Ingo Molnar wrote:
-> 
-> * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> 
->> This reverts commit 05e12e1c4c09cd35ac9f4e6af1e42b0036375d72.
->>
->> The old change from __init --> __init_or_module doesn't make
->> sense anymore, given that the arch/x86/kernel/vsmp_64.c code
->> is only for non-modular builds.
->>
->> As of commit 70511134f61bd6e5eed19f767381f9fb3e762d49
->> ("Revert "x86: don't compile vsmp_64 for 32bit") this file
->> became obj-y and hence is only for built-in.  That makes
->> any "or_module" support redundant.
->>
->> We need to distinguish between the two in order to do some
->> header cleanups.  This revert starts that process.
->>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> 
-> I suspect you want to carry this as part of your header cleanups, to 
-> not have to wait for upstream propagation?
+On Thu, 2014-01-16 at 14:59 +0100, Gerhard Sittig wrote:
 
-Either way is fine; I've already fed out some of the other
-independent chunks to maintainers just to keep the size of
-what goes in from me at rc1 a bit smaller.
+> These properties are booleans, and optional?  Does it mean that
+> you cannot _disable_ broken features?  Or does it mean that you
+> _must_ specify the non-broken features and thus break backwards
+> compatibility?  Or are these properties not boolean (they are not
+> used in the example either, unfortunately), and the binding text
+> would need an update for clarity?  What am I missing?
 
-> 
-> Please fix the title: the original commit was right, but was mooted by 
-> other changes. That's not a revert but a change that happens to be the 
-> inverse of an earlier change.
+They're not booleans. I'll update the text to make that clear.
 
-Fair point; will fix.
-
-Thanks,
-Paul.
---
-
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
