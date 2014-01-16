@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaAPCEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:04:04 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63070 "EHLO
+	id S1752594AbaAPCEC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:04:02 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:41828 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751634AbaAPCD3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752433AbaAPCD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 21:03:29 -0500
-Message-Id: <20140116020324.938651506@goodmis.org>
+Message-Id: <20140116020325.252615459@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 15 Jan 2014 20:58:29 -0500
+Date: Wed, 15 Jan 2014 20:58:30 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
         Michal Nazarewicz <mina86@mina86.org>,
         Kosaki Motohiro <kosaki.motohiro@gmail.com>,
         Milton Miller <miltonm@bga.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH RT 5/8] smp: introduce a generic on_each_cpu_mask() function
+Subject: [PATCH RT 6/8] smp: add func to IPI cpus based on parameter func
 References: <20140116015824.201732155@goodmis.org>
-Content-Disposition: inline; filename=0005-smp-introduce-a-generic-on_each_cpu_mask-function.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0006-smp-add-func-to-IPI-cpus-based-on-parameter-func.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,270 +47,160 @@ If anyone has any objections, please let me know.
 
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 
-[ Upstream commit 3fc498f165304dc913f1d13b5ac9ab4c758ee7ab ]
+[ Upstream commit b3a7e98e024ffa9f7e4554dd720c508015c4a831 ]
 
-We have lots of infrastructure in place to partition multi-core systems
-such that we have a group of CPUs that are dedicated to specific task:
-cgroups, scheduler and interrupt affinity, and cpuisol= boot parameter.
-Still, kernel code will at times interrupt all CPUs in the system via IPIs
-for various needs.  These IPIs are useful and cannot be avoided
-altogether, but in certain cases it is possible to interrupt only specific
-CPUs that have useful work to do and not the entire system.
+Add the on_each_cpu_cond() function that wraps on_each_cpu_mask() and
+calculates the cpumask of cpus to IPI by calling a function supplied as a
+parameter in order to determine whether to IPI each specific cpu.
 
-This patch set, inspired by discussions with Peter Zijlstra and Frederic
-Weisbecker when testing the nohz task patch set, is a first stab at trying
-to explore doing this by locating the places where such global IPI calls
-are being made and turning the global IPI into an IPI for a specific group
-of CPUs.  The purpose of the patch set is to get feedback if this is the
-right way to go for dealing with this issue and indeed, if the issue is
-even worth dealing with at all.  Based on the feedback from this patch set
-I plan to offer further patches that address similar issue in other code
-paths.
+The function works around allocation failure of cpumask variable in
+CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a time
+via smp_call_function_single().
 
-This patch creates an on_each_cpu_mask() and on_each_cpu_cond()
-infrastructure API (the former derived from existing arch specific
-versions in Tile and Arm) and uses them to turn several global IPI
-invocation to per CPU group invocations.
+The function is useful since it allows to seperate the specific code that
+decided in each case whether to IPI a specific cpu for a specific request
+from the common boilerplate code of handling creating the mask, handling
+failures etc.
 
-Core kernel:
-
-on_each_cpu_mask() calls a function on processors specified by cpumask,
-which may or may not include the local processor.
-
-You must not call this function with disabled interrupts or from a
-hardware interrupt handler or from a bottom half handler.
-
-arch/arm:
-
-Note that the generic version is a little different then the Arm one:
-
-1. It has the mask as first parameter
-2. It calls the function on the calling CPU with interrupts disabled,
-   but this should be OK since the function is called on the other CPUs
-   with interrupts disabled anyway.
-
-arch/tile:
-
-The API is the same as the tile private one, but the generic version
-also calls the function on the with interrupts disabled in UP case
-
-This is OK since the function is called on the other CPUs
-with interrupts disabled.
-
+[akpm@linux-foundation.org: s/gfpflags/gfp_flags/]
+[akpm@linux-foundation.org: avoid double-evaluation of `info' (per Michal), parenthesise evaluation of `cond_func']
+[akpm@linux-foundation.org: s/CPU/CPUs, use all 80 cols in comment]
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Matt Mackall <mpm@selenic.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Avi Kivity <avi@redhat.com>
 Acked-by: Michal Nazarewicz <mina86@mina86.org>
 Cc: Kosaki Motohiro <kosaki.motohiro@gmail.com>
 Cc: Milton Miller <miltonm@bga.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/kernel/smp_tlb.c   | 20 +++++---------------
- arch/tile/include/asm/smp.h |  7 -------
- arch/tile/kernel/smp.c      | 19 -------------------
- include/linux/smp.h         | 22 ++++++++++++++++++++++
- kernel/smp.c                | 29 +++++++++++++++++++++++++++++
- 5 files changed, 56 insertions(+), 41 deletions(-)
+ include/linux/smp.h | 24 +++++++++++++++++++++
+ kernel/smp.c        | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
 
-diff --git a/arch/arm/kernel/smp_tlb.c b/arch/arm/kernel/smp_tlb.c
-index 7dcb352..02c5d2c 100644
---- a/arch/arm/kernel/smp_tlb.c
-+++ b/arch/arm/kernel/smp_tlb.c
-@@ -13,18 +13,6 @@
- #include <asm/smp_plat.h>
- #include <asm/tlbflush.h>
- 
--static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
--	const struct cpumask *mask)
--{
--	preempt_disable();
--
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(smp_processor_id(), mask))
--		func(info);
--
--	preempt_enable();
--}
--
- /**********************************************************************/
- 
- /*
-@@ -87,7 +75,7 @@ void flush_tlb_all(void)
- void flush_tlb_mm(struct mm_struct *mm)
- {
- 	if (tlb_ops_need_broadcast())
--		on_each_cpu_mask(ipi_flush_tlb_mm, mm, 1, mm_cpumask(mm));
-+		on_each_cpu_mask(mm_cpumask(mm), ipi_flush_tlb_mm, mm, 1);
- 	else
- 		local_flush_tlb_mm(mm);
- }
-@@ -98,7 +86,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
- 		struct tlb_args ta;
- 		ta.ta_vma = vma;
- 		ta.ta_start = uaddr;
--		on_each_cpu_mask(ipi_flush_tlb_page, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_page,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_page(vma, uaddr);
- }
-@@ -121,7 +110,8 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 		ta.ta_vma = vma;
- 		ta.ta_start = start;
- 		ta.ta_end = end;
--		on_each_cpu_mask(ipi_flush_tlb_range, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_range,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_range(vma, start, end);
- }
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
- 
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
- 
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
- }
- 
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
- /*
-  * Functions related to starting/stopping cpus.
-  */
 diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 78fd0a2..742a45a 100644
+index 742a45a..3001ba5 100644
 --- a/include/linux/smp.h
 +++ b/include/linux/smp.h
-@@ -101,6 +101,13 @@ static inline void call_function_init(void) { }
- int on_each_cpu(smp_call_func_t func, void *info, int wait);
+@@ -108,6 +108,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+ 		void *info, bool wait);
  
  /*
-+ * Call a function on processors specified by mask, which might include
-+ * the local one.
++ * Call a function on each processor for which the supplied function
++ * cond_func returns a positive value. This may include the local
++ * processor.
 + */
-+void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
-+		void *info, bool wait);
++void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
++		smp_call_func_t func, void *info, bool wait,
++		gfp_t gfp_flags);
 +
 +/*
   * Mark the boot cpu "online" so that it can call console drivers in
   * printk() and can access its per-cpu storage.
   */
-@@ -131,6 +138,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 		local_irq_enable();		\
- 		0;				\
- 	})
+@@ -152,6 +161,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+ 			local_irq_enable();		\
+ 		}					\
+ 	} while (0)
 +/*
-+ * Note we still need to test the mask even for UP
-+ * because we actually can get an empty mask from
-+ * code that on SMP might call us without the local
-+ * CPU in the mask.
++ * Preemption is disabled here to make sure the cond_func is called under the
++ * same condtions in UP and SMP.
 + */
-+#define on_each_cpu_mask(mask, func, info, wait) \
-+	do {						\
-+		if (cpumask_test_cpu(0, (mask))) {	\
-+			local_irq_disable();		\
-+			(func)(info);			\
-+			local_irq_enable();		\
-+		}					\
++#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags)\
++	do {							\
++		void *__info = (info);				\
++		preempt_disable();				\
++		if ((cond_func)(0, __info)) {			\
++			local_irq_disable();			\
++			(func)(__info);				\
++			local_irq_enable();			\
++		}						\
++		preempt_enable();				\
 +	} while (0)
-+
+ 
  static inline void smp_send_reschedule(int cpu) { }
  #define num_booting_cpus()			1
- #define smp_prepare_boot_cpu()			do {} while (0)
 diff --git a/kernel/smp.c b/kernel/smp.c
-index 9e800b2..7b4e359 100644
+index 7b4e359..d5f3238 100644
 --- a/kernel/smp.c
 +++ b/kernel/smp.c
-@@ -712,3 +712,32 @@ int on_each_cpu(void (*func) (void *info), void *info, int wait)
- 	return ret;
+@@ -741,3 +741,64 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+ 	put_cpu();
  }
- EXPORT_SYMBOL(on_each_cpu);
+ EXPORT_SYMBOL(on_each_cpu_mask);
 +
-+/**
-+ * on_each_cpu_mask(): Run a function on processors specified by
-+ * cpumask, which may include the local processor.
-+ * @mask: The set of cpus to run on (only runs on online subset).
-+ * @func: The function to run. This must be fast and non-blocking.
-+ * @info: An arbitrary pointer to pass to the function.
-+ * @wait: If true, wait (atomically) until function has completed
-+ *        on other CPUs.
++/*
++ * on_each_cpu_cond(): Call a function on each processor for which
++ * the supplied function cond_func returns true, optionally waiting
++ * for all the required CPUs to finish. This may include the local
++ * processor.
++ * @cond_func:	A callback function that is passed a cpu id and
++ *		the the info parameter. The function is called
++ *		with preemption disabled. The function should
++ *		return a blooean value indicating whether to IPI
++ *		the specified CPU.
++ * @func:	The function to run on all applicable CPUs.
++ *		This must be fast and non-blocking.
++ * @info:	An arbitrary pointer to pass to both functions.
++ * @wait:	If true, wait (atomically) until function has
++ *		completed on other CPUs.
++ * @gfp_flags:	GFP flags to use when allocating the cpumask
++ *		used internally by the function.
 + *
-+ * If @wait is true, then returns once @func has returned.
++ * The function might sleep if the GFP flags indicates a non
++ * atomic allocation is allowed.
++ *
++ * Preemption is disabled to protect against CPUs going offline but not online.
++ * CPUs going online during the call will not be seen or sent an IPI.
 + *
 + * You must not call this function with disabled interrupts or
 + * from a hardware interrupt handler or from a bottom half handler.
 + */
-+void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
-+			void *info, bool wait)
++void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
++			smp_call_func_t func, void *info, bool wait,
++			gfp_t gfp_flags)
 +{
-+	int cpu = get_cpu();
++	cpumask_var_t cpus;
++	int cpu, ret;
 +
-+	smp_call_function_many(mask, func, info, wait);
-+	if (cpumask_test_cpu(cpu, mask)) {
-+		local_irq_disable();
-+		func(info);
-+		local_irq_enable();
++	might_sleep_if(gfp_flags & __GFP_WAIT);
++
++	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
++		preempt_disable();
++		for_each_online_cpu(cpu)
++			if (cond_func(cpu, info))
++				cpumask_set_cpu(cpu, cpus);
++		on_each_cpu_mask(cpus, func, info, wait);
++		preempt_enable();
++		free_cpumask_var(cpus);
++	} else {
++		/*
++		 * No free cpumask, bother. No matter, we'll
++		 * just have to IPI them one by one.
++		 */
++		preempt_disable();
++		for_each_online_cpu(cpu)
++			if (cond_func(cpu, info)) {
++				ret = smp_call_function_single(cpu, func,
++								info, wait);
++				WARN_ON_ONCE(!ret);
++			}
++		preempt_enable();
 +	}
-+	put_cpu();
 +}
-+EXPORT_SYMBOL(on_each_cpu_mask);
++EXPORT_SYMBOL(on_each_cpu_cond);
 -- 
 1.8.4.3
 
