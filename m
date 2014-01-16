@@ -1,198 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaAPJed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:34:33 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39506 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaAPJe3 (ORCPT
+	id S1752301AbaAPJfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:35:21 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:62189 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaAPJfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:34:29 -0500
-Message-ID: <52D7A750.50906@huawei.com>
-Date: Thu, 16 Jan 2014 17:33:04 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 16 Jan 2014 04:35:16 -0500
+Date: Thu, 16 Jan 2014 09:35:06 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger <rogerable@realtek.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        "micky_ching@realsil.com.cn" <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
+Message-ID: <20140116093506.GI11820@lee--X1>
+References: <1389685656-880-1-git-send-email-rogerable@realtek.com>
+ <1389685656-880-2-git-send-email-rogerable@realtek.com>
+ <20140114130409.GB11820@lee--X1>
+ <52D79E31.6000300@realtek.com>
 MIME-Version: 1.0
-To: Robert Richter <rric@kernel.org>
-CC: <oprofile-list@lists.sf.net>, <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, <wangnan0@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>, <sdu.liu@huawei.com>
-Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in op_overflow_handler()
-References: <52B3F66D.6060707@huawei.com> <20140113084555.GU20315@rric.localhost> <52D4984B.9090600@huawei.com> <20140114150553.GC20315@rric.localhost> <52D5EC44.30101@huawei.com> <20140115102445.GE20315@rric.localhost> <52D73148.4090408@huawei.com>
-In-Reply-To: <52D73148.4090408@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.66]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52D79E31.6000300@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-The testcase which trigger the problem on kernel 2.6.34 is:
-opcontrol --init
-opcontrol --no-vmlinux
-opcontrol --event=CPU_CYCLES:500:0:1:1
-opcontrol --start
-
-Run the testcase in the Linux 3.13-rc1 kernel, the last step "opcontrol --start"
-will stall, and can't be killed,  and print the following messages:
-
-#opcontrol --start
-Using 2.6+ OProfile kernel interface.
-Using log file /var/lib/oprofile/samples/oprofiled.log
-Daemon started.
-
-[  864.450714] INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=176 c=175 q=73)
-
-then the watchdog will cause the os reboot, because the environment casing the kernel 2.6.34
-warning message has gone. we use pandaboard to buildup the test environment now, but after reboot
-the demsg will lost, so I can't get the dmesg messages.
-
-Using the same test case, the problem also exists in the same kernel with the new patch applied:
-
-
-# opcontrol --start
-
-Using 2.6+ OProfile kernel interface.
-Using log file /var/lib/oprofile/samples/oprofiled.log
-Daemon started.
-[  508.456878] INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=685 c=684 q=83)
-[  571.496856] INFO: rcu_sched self-detected stall on CPU { 0}  (t=8404 jiffies g=685 c=684 q=83)
-[  634.526855] INFO: rcu_sched self-detected stall on CPU { 0}  (t=14707 jiffies g=685 c=684 q=83)
-
-
-During the test, I go through the code again. One thing confused me:
-when the event's sample_period is small, even the events was enabled
-after it was added to the perf_events list, the cpu won't keep printing
-the warning, but the code will go to another branch oprofile_add_sample(),
-so an interrupt storm will continue? In this way, it may be best to solve the
-problem from userland? Like oprofile tools, the oprofile tool version must be below
-v0.9.9, or the problem can't be reproduced. Because the v0.9.9 add the following
-patch which increase the minimum cycle period:
-
-ARM: events: increase minimum cycle period to 100k
-
-On ARM, we intentionally leave the minimum event counters low since
-the performance profile of the cores can vary dramatically between CPUs
-and their implementations.
-
-However, since the default event is CPU_CYCLES, it's best to err on the
-side of caution and raise the limit to something more realistic so we
-don't lock-up on the unsuspecting user (as opposed to somebody passing
-an explicit event period).
-
-This patch raises the CPU_CYCLES minimum event count to 100k on ARM.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-
-Authored by:  Will Deacon 2013-07-29
-Committed by:  Maynard Johnson 2013-07-29
-Browse code at this revision
-Parent(s): [a7e408]
-Child(ren): [491aff]
-changed events/arm/armv7-common/events
-
-events/arm/armv7-common/events Diff Switch to side-by-side view
-
---- a/events/arm/armv7-common/events
-+++ b/events/arm/armv7-common/events
-@@ -33,4 +33,4 @@
- event:0x1C counters:1,2,3,4,5,6 um:zero minimum:500 name:TTBR_WRITE_RETIRED : Write to TTBR architecturally executed, condition code pass
- event:0x1D counters:1,2,3,4,5,6 um:zero minimum:500 name:BUS_CYCLES : Bus cycle
-
--event:0xFF counters:0 um:zero minimum:500 name:CPU_CYCLES : CPU cycle
-+event:0xFF counters:0 um:zero minimum:100000 name:CPU_CYCLES : CPU cycle
-
-
-This is just my personal opinion. Maybe there is something wrong. What do you think about it?
-
-
-On 2014/1/16 9:09, Weng Meiling wrote:
+> >>+static int rtsx_usb_bulk_transfer_sglist(struct rtsx_ucr *ucr,
+> >>+             unsigned int pipe, struct scatterlist *sg, int num_sg,
+> >>+             unsigned int length, unsigned int *act_len, int timeout)
+> >>+{
+> >>+     int ret;
+> >>+
+> >>+     dev_dbg(&ucr->pusb_intf->dev, "%s: xfer %u bytes, %d entries\n",
+> >>+                     __func__, length, num_sg);
+> >>+     ret = usb_sg_init(&ucr->current_sg, ucr->pusb_dev, pipe, 0,
+> >>+                     sg, num_sg, length, GFP_NOIO);
+> >>+     if (ret)
+> >>+             return ret;
+> >>+
+> >>+     ucr->sg_timer.expires = jiffies + msecs_to_jiffies(timeout);
+> >>+     add_timer(&ucr->sg_timer);
+> >>+     usb_sg_wait(&ucr->current_sg);
+> >>+     del_timer(&ucr->sg_timer);
+> >>+
+> >>+     if (act_len)
+> >>+             *act_len = ucr->current_sg.bytes;
+> >>+
+> >>+     return ucr->current_sg.status;
+> >>+}
+> >
+> >Code looks fine, but shouldn't this live in a USB driver?
+> >
+> We have studied drivers in usb/storage, the place that most likely
+> to put the driver. All of them are for STANDARD usb mass storage
+> class(something like USB_CLASS_MASS_STORAGE). But this is not the
+> same case. This driver is for our vendor-class device with
+> completely different protocol. It is really an USB interfaced flash
+> card command converter(or channel) device rather than a real
+> storage. It also has two derived modules(rtsx_usb_sdmmc,
+> rtsx_usb_memstick) for other two subsystems.
 > 
-> On 2014/1/15 18:24, Robert Richter wrote:
->> On 15.01.14 10:02:44, Weng Meiling wrote:
->>> On 2014/1/14 23:05, Robert Richter wrote:
->>>> @@ -94,6 +98,11 @@ static int op_create_counter(int cpu, int event)
->>>>  
->>>>  	per_cpu(perf_events, cpu)[event] = pevent;
->>>>  
->>>> +	/* sync perf_events with overflow handler: */
->>>> +	smp_wmb();
->>>> +
->>>> +	perf_event_enable(pevent);
->>>> +
->>>
->>> Should this step go before the if check:pevent->state != PERF_EVENT_STATE_ACTIVE ?
->>> Because the attr->disabled is true, So after the perf_event_create_kernel_counter
->>> the pevent->state is not PERF_EVENT_STATE_ACTIVE.
->>
->> Right, the check is a problem. We need to move it after the event was
->> enabled. On error, we need to NULL the event, see below.
->>
->> -Robert
->>
->> ---
->>  drivers/oprofile/oprofile_perf.c | 27 +++++++++++++++++++--------
->>  1 file changed, 19 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
->> index d5b2732..9dfb236 100644
->> --- a/drivers/oprofile/oprofile_perf.c
->> +++ b/drivers/oprofile/oprofile_perf.c
->> @@ -38,6 +38,9 @@ static void op_overflow_handler(struct perf_event *event,
->>  	int id;
->>  	u32 cpu = smp_processor_id();
->>  
->> +	/* sync perf_events with op_create_counter(): */
->> +	smp_rmb();
->> +
->>  	for (id = 0; id < num_counters; ++id)
->>  		if (per_cpu(perf_events, cpu)[id] == event)
->>  			break;
->> @@ -68,6 +71,7 @@ static void op_perf_setup(void)
->>  		attr->config		= counter_config[i].event;
->>  		attr->sample_period	= counter_config[i].count;
->>  		attr->pinned		= 1;
->> +		attr->disabled		= 1;
->>  	}
->>  }
->>  
->> @@ -85,16 +89,23 @@ static int op_create_counter(int cpu, int event)
->>  	if (IS_ERR(pevent))
->>  		return PTR_ERR(pevent);
->>  
->> -	if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
->> -		perf_event_release_kernel(pevent);
->> -		pr_warning("oprofile: failed to enable event %d "
->> -				"on CPU %d\n", event, cpu);
->> -		return -EBUSY;
->> -	}
->> -
->>  	per_cpu(perf_events, cpu)[event] = pevent;
->>  
->> -	return 0;
->> +	/* sync perf_events with overflow handler: */
->> +	smp_wmb();
->> +
->> +	perf_event_enable(pevent);
->> +
->> +	if (pevent->state == PERF_EVENT_STATE_ACTIVE)
->> +		return 0;
->> +
->> +	perf_event_release_kernel(pevent);
->> +	per_cpu(perf_events, cpu)[event] = NULL;
->> +
->> +	pr_warning("oprofile: failed to enable event %d on CPU %d\n",
->> +		event, cpu);
->> +
->> +	return -EBUSY;
->>  }
->>  
->>  static void op_destroy_counter(int cpu, int event)
->>
-> 
-> OK, I'll test the patch, and send the result as soon as possible.
-> 
+> We also have another driver: rtsx_pcr.c resident in mfd/ for similar
+> devices but of PCIe interface. It is nature for us to choose the
+> same place for this variant.
 
+Very well, as long as it truly does not fit in drivers/usb. It would
+be good to have one of the USB folk give the nod though.
 
+> >>+     }
+> >>+
+> >>+     /* set USB interface data */
+> >>+     usb_set_intfdata(intf, ucr);
+> >>+
+> >>+     ucr->vendor_id = id->idVendor;
+> >>+     ucr->product_id = id->idProduct;
+> >>+     ucr->cmd_buf = ucr->rsp_buf = ucr->iobuf;
+> >>+
+> >>+     mutex_init(&ucr->dev_mutex);
+> >>+
+> >>+     ucr->pusb_intf = intf;
+> >>+
+> >>+     /* initialize */
+> >>+     ret = rtsx_usb_init_chip(ucr);
+> >>+     if (ret)
+> >>+             goto out_init_fail;
+> >>+
+> >>+     for (i = 0; i < ARRAY_SIZE(rtsx_usb_cells); i++) {
+> >>+             rtsx_usb_cells[i].platform_data = &ucr;
+> >
+> >You've already put this in your drvdata (or ntfdata, as it's called
+> >here). Why do you also need it in platform_data?
+> 
+> Derived modules rtsx_usb_sdmmc and rtsx_usb_memstick will retrieve
+> this from platform_data. They will not be aware of usb interface
+> struct.
+
+They don't need to. If the MMC or Memstick subsystems do not have
+their own helpers you can just use something like:
+
+  struct rtsx_ucr *ucr = dev_get_drvdata(pdev->dev.parent);
+
+Naturally this is untested code and might not work off the bat, but it
+does give you some idea of what you can do without iterating through
+and populating each sub-device's platform data.
+
+> >>+#define DRV_NAME_RTSX_USB            "rtsx_usb"
+> >>+#define DRV_NAME_RTSX_USB_SDMMC              "rtsx_usb_sdmmc"
+> >>+#define DRV_NAME_RTSX_USB_MS         "rtsx_usb_ms"
+> >
+> >Can you just put the names in the correct places please?
+> >
+> Do you mean just remove these definitions and fill the string
+> directly at the using place?
+
+I do.
+
+I find these types of defines unhelpful and somewhat obfuscating.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
