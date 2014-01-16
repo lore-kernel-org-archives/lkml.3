@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaAPUrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:47:03 -0500
-Received: from ozlabs.org ([203.10.76.45]:60719 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaAPUqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:46:37 -0500
-Date: Fri, 17 Jan 2014 07:46:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1751665AbaAPUss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:48:48 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:32090 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaAPUsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 15:48:45 -0500
+Message-ID: <1389905322.2216.10.camel@j-VirtualBox>
+Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
+ too many tries
+From: Jason Low <jason.low2@hp.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-In-Reply-To: <20140116121955.GQ31570@twins.programming.kicks-ass.net>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Date: Thu, 16 Jan 2014 12:48:42 -0800
+In-Reply-To: <20140116120559.GO31570@twins.programming.kicks-ass.net>
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
+	 <1389840330.2944.104.camel@j-VirtualBox>
+	 <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
+	 <1389854777.2126.20.camel@j-VirtualBox>
+	 <20140116120559.GO31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2014-01-16 at 13:05 +0100, Peter Zijlstra wrote:
+> On Wed, Jan 15, 2014 at 10:46:17PM -0800, Jason Low wrote:
+> > On Thu, 2014-01-16 at 10:14 +0700, Linus Torvalds wrote:
+> > > On Thu, Jan 16, 2014 at 9:45 AM, Jason Low <jason.low2@hp.com> wrote:
+> > > >
+> > > > Any comments on the below change which unlocks the mutex before taking
+> > > > the lock->wait_lock to wake up a waiter? Thanks.
+> > > 
+> > > Hmm. Doesn't that mean that a new lock owner can come in *before*
+> > > you've called debug_mutex_unlock and the lockdep stuff, and get the
+> > > lock? And then debug_mutex_lock() will be called *before* the unlocker
+> > > called debug_mutex_unlock(), which I'm sure confuses things.
+> > 
+> > If obtaining the wait_lock for debug_mutex_unlock is the issue, then
+> > perhaps we can address that by taking care of
+> > #ifdef CONFIG_DEBUG_MUTEXES. In the CONFIG_DEBUG_MUTEXES case, we can
+> > take the wait_lock first, and in the regular case, take the wait_lock
+> > after releasing the mutex.
+> 
+> I think we're already good for DEBUG_MUTEXES, because DEBUG_MUTEXES has
+> to work for archs that have !__mutex_slowpath_needs_to_unlock() and also
+> the DEBUG_MUTEXES code is entirely serialized on ->wait_lock.
 
-Hi Peter,
+Yeah, in the !__mutex_slowpath_needs_to_unlock() case, we release the
+mutex before calling __mutex_unlock_common_slowpath().
 
-On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra <peterz@infradead.org> wr=
-ote:
->
-> I think the below ought to work
+Jason
 
-To be clear, all you did was replace the body of mwait_idle() with
-
-	mwait_idle_with_hints(0, 0);
-
-(and the comment above it)?  I need to apply in incremental patch in the
-merge commit.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS2EUoAAoJEMDTa8Ir7ZwV5fUP/jfd/lVky9my2PddEGkcvQsn
-Jio9vlGNlwlB3caOmStVQ8jcboBf6XEELKROsEJ82t0ATGPo2D/1Yfkm4nQRl/q3
-lE1430vquUY0gAiIAIKcX74p2MKw4E4QoC9MrMUELSAbebvGpRg/qHCbHfOhe6Nb
-nHLOFg8FR70x7NHNtD4+Sg+VAhpgYIqfqbvKX5UrUJwKVod5YoXoYIyvOiCdCMDB
-euquVUs27+H3m39OkNFOcv8CcLYQjLOiwGCYcSk3H02ppx01/iZ9bJvJTfU/FkAl
-9gV6Kb4JYlxzNevigM94Muowx/Mo94eDufHhkR5dH5notqz5G5sJlbQR0QKviaOz
-2INXfjvdNCO0MLFU1rU1y+mPrEn1B1RWnuB20shIGum0oj9HRv4NkE3iqLlD2IN0
-hUVdQMZ3EuMo6AX364d9AxYRRD86JNiSgeK4M1/M/5I3mnFSIwy54GekaijlGis1
-ayAz5w4jeMCcKx8QfG+xe4iBmNg+pIrJkcR4/otQtdmVwpvDnyBrykn5S7GdF+f4
-OYXbztNu21z6wgl0UtZVyfb6YxWLJfp6f1QoypBn5+ssVXFQuhgunhGjNEU8b21b
-YaoufsNu0yjSrV35uEW+dp90vrhNeqggBiFRBtl0oZLOxHbNm6dcniamGNVyNNKN
-zRHGpaxpN3hFZw7nLEXc
-=f9/h
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf--
