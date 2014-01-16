@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaAPRME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:12:04 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:38964 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaAPRL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:11:59 -0500
-Date: Thu, 16 Jan 2014 12:13:10 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Will Deacon <will.deacon@arm.com>,
-        Chad Paradis <chad.paradis@umit.maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
-In-Reply-To: <20140114105721.GU7572@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1401161209280.1996@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu> <20140108225315.GG31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu> <20140109101921.GA26435@mudshark.cambridge.arm.com>
- <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu> <20140110094056.GK31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu> <20140114105721.GU7572@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752985AbaAPRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:14:57 -0500
+Received: from www.sr71.net ([198.145.64.142]:42537 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678AbaAPROz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:14:55 -0500
+Message-ID: <52D81331.5080209@sr71.net>
+Date: Thu, 16 Jan 2014 09:13:21 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, penberg@kernel.org
+Subject: Re: [RFC][PATCH 2/9] mm: slub: abstract out double cmpxchg option
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180046.C897727E@viggo.jf.intel.com> <alpine.DEB.2.10.1401141346310.19618@nuc> <52D5AEF7.6020707@sr71.net> <alpine.DEB.2.10.1401161045180.29778@nuc>
+In-Reply-To: <alpine.DEB.2.10.1401161045180.29778@nuc>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014, Peter Zijlstra wrote:
-
-> On Mon, Jan 13, 2014 at 11:55:17PM -0500, Vince Weaver wrote:
-
-> > I don't see an existing pmu capabilities struct... or do you mean
-> > coming up with one?
+On 01/16/2014 08:45 AM, Christoph Lameter wrote:
+> On Tue, 14 Jan 2014, Dave Hansen wrote:
+>> With the current code, if you wanted to turn off the double-cmpxchg abd
+>> get a 56-byte 'struct page' how would you do it?  Can you do it with a
+>> .config, or do you need to hack the code?
 > 
-> Yeah, adding one.
+> Remove HAVE_ALIGNED_STRUCT_PAGE from a Kconfig file.
 
-So would it be a struct, or just an integer with flags?
+SLUB 'selects' it, so it seems to pop back up whenever SLUB is on:
 
-> > Would it only hold an "overflow_interrupt_available" flag, or are
-> > there other generic capabilities it would be handy to know about?
-> 
-> Possible (other) flags could be:
-> 
->   PMU_HAS_INT      -- would allow sampling events
->   PMU_HAS_PRECISE  -- would allow any ::precise value
->   PMU_HAS_FILTER   -- would allow all os/user/etc. flags
+$ grep STRUCT_PAGE ~/build/64bit/.config
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+$ vi ~/build/64bit/.config
+... remove from Kconfig file
+$ grep STRUCT_PAGE ~/build/64bit/.config
+$ make oldconfig
+... no prompt
+$ grep STRUCT_PAGE ~/build/64bit/.config
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
 
-should we export these to userspace somehow?
 
-It would be handy to be able to tell you're getting EOPNOTSUP because
-PMU_HAS_INT is not set for your pmu, rather than trying to guess why 
-things are failing.
-
-Vince
