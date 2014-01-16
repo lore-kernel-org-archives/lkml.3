@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaAPOMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:12:06 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55708 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaAPOME (ORCPT
+	id S1752352AbaAPOSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:18:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38609 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbaAPOSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:12:04 -0500
-Date: Thu, 16 Jan 2014 14:11:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lars@metafoo.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140116141148.GH17314@sirena.org.uk>
-References: <1389859684-27456-1-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 16 Jan 2014 09:18:08 -0500
+Date: Thu, 16 Jan 2014 15:17:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140116141743.GT31570@twins.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115120418.GD31570@twins.programming.kicks-ass.net>
+ <52D7E343.40909@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="poemUeGtc2GQvHuH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389859684-27456-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: core: Fix possible NULL pointer dereference of
- pcm->config
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <52D7E343.40909@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 16, 2014 at 02:48:51PM +0100, Daniel Lezcano wrote:
+> 3570  sched_getparam(3570, { 0 })       = 0
+> 3570  sched_getscheduler(3570)          = 0 (SCHED_OTHER)
+> 3570  sched_get_priority_min(SCHED_OTHER) = 0
+> 3570  sched_get_priority_max(SCHED_OTHER) = 0
+> 3571  sched_get_priority_min(SCHED_OTHER) = 0
+> 3571  sched_get_priority_max(SCHED_OTHER) = 0
+> 3571  sched_get_priority_min(SCHED_OTHER) = 0
+> 3571  sched_get_priority_max(SCHED_OTHER) = 0
+> 3571  sched_setscheduler(3572, SCHED_OTHER, { 0 } <unfinished ...>
+> 3571  <... sched_setscheduler resumed> ) = 0
+> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+> 3571  <... sched_get_priority_min resumed> ) = 0
+> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+> 3571  <... sched_get_priority_max resumed> ) = 0
+> 3571  sched_setscheduler(3573, SCHED_OTHER, { 0 } <unfinished ...>
+> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
+> permitted)
+> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+> 3571  <... sched_get_priority_min resumed> ) = 0
+> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+> 3571  <... sched_get_priority_max resumed> ) = 0
+> 3571  sched_setscheduler(3574, SCHED_OTHER, { 0 } <unfinished ...>
+> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
+> permitted)
+> 
+> The same strace but on a kernel which does not hang. The calls to
+> sched_setscheduler do not fail.
+> 
+> 3292  sched_getparam(3292, { 0 })       = 0
+> 3292  sched_getscheduler(3292)          = 0 (SCHED_OTHER)
+> 3292  sched_get_priority_min(SCHED_OTHER) = 0
+> 3292  sched_get_priority_max(SCHED_OTHER) = 0
+> 3293  sched_get_priority_min(SCHED_OTHER) = 0
+> 3293  sched_get_priority_max(SCHED_OTHER) = 0
+> 3293  sched_get_priority_min(SCHED_OTHER) = 0
+> 3293  sched_get_priority_max(SCHED_OTHER) = 0
+> 3293  sched_setscheduler(3294, SCHED_OTHER, { 0 } <unfinished ...>
+> 3293  <... sched_setscheduler resumed> ) = 0
+> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+> 3293  <... sched_get_priority_min resumed> ) = 0
+> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+> 3293  <... sched_get_priority_max resumed> ) = 0
+> 3293  sched_setscheduler(3295, SCHED_OTHER, { 0 } <unfinished ...>
+> 3293  <... sched_setscheduler resumed> ) = 0
+> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+> 3293  <... sched_get_priority_min resumed> ) = 0
+> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+> 3293  <... sched_get_priority_max resumed> ) = 0
+> 3293  sched_setscheduler(3296, SCHED_OTHER, { 0 } <unfinished ...>
+> 3293  <... sched_setscheduler resumed> ) = 0
+> 
+> The EPERM error comes from kernel/sched/core.c:3303
+> 
+> ...
+> 		if (fair_policy(policy)) {
+> 			if (!can_nice(p, attr->sched_nice))
+> 				return -EPERM;
+> 		}
+> ...
+> 
+> 
+> But I don't know why this is leading to block a process or making rsyslogd
+> being not woken up by a packet coming in the af_unix socket.
 
---poemUeGtc2GQvHuH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Could you test with a fresh tip/master, Ingo just pushed out a stack of
+fixes, in particularly:
 
-On Thu, Jan 16, 2014 at 04:08:04PM +0800, Xiubo Li wrote:
-> Since the soc generic dmaengine pcm driver allows using the defualt settings,
-> so the pcm->config maybe NULL.
+e3de300d1212b ("sched: Preserve the nice level over sched_setscheduler() and sched_setparam() calls")
+39fd8fd22b322 ("sched: Fix up scheduler syscall LTP fails")
 
-Applied, thanks.
+Could have affected things.
 
---poemUeGtc2GQvHuH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Meanwhile I'll try and better read what the above says.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1+ihAAoJELSic+t+oim9CikP/1oNK1e+eBhQ9o/T1mBIodH2
-56C9jY1ODYITiKgNY2mtZXagqNBT/PjX9xl1WDq4HrnrvbhNeQstfkX+M2KV/5XU
-hbBv5rEpkOGJmT2T48+Pda+yPL65Oy7ELmzbGD1+jdjFy0oRWo+Vi3HP5+Bo5ROQ
-FS6oE8rzfsCSkjrantfSbdaa36i9SrVuvYaVZFps+213Nwr4pYuDl1a0AK5rq/DB
-EYRdynACum1VAgnKCHKC7exkr2uVWH0VtgaZpZ6DSxSaSBLaIOzOOh/eDXsA69Bb
-q+J8UheQ6I2xq2WH8YT8zW+8LLztV8g1zrorlacfczWwVRyDR12E0oDLmmp8RD4Z
-jBaSY12eXWhujWJnhOjhYI9GqHhv83nB0WlnBkZTOslW3bhFfQJPYKh3VhfpmCxG
-o/e7bMJCBTsMqYQ+ztwS6V2hjZVIFhADKlCNnp0cGvRi3SrXYKxoXZn8KCTncIOm
-b29gz/7Pw5TqZKtOvFv4sHDubWkY0HtPjCF7ONb9zfw+qLrVCWccP1LXv4kwGCo4
-TIeCRJpSvoXuqRi49aUGyGrWsgkJdDHDQ53FaqknB8TvMFGSjH8WyjxOfC4Dln1R
-tw0gYpYzG8ftw9Fv9avcjok+gvWdTH3ie670xjkZsZDl2/ePWgo/TCgxNU2LUgWA
-Hz3R+9EIKGBiVvtx5kfE
-=X34d
------END PGP SIGNATURE-----
-
---poemUeGtc2GQvHuH--
+Thanks!
