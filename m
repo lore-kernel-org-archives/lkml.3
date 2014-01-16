@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaAPVS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 16:18:57 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:47398 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215AbaAPVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 16:18:54 -0500
-Date: Thu, 16 Jan 2014 16:17:58 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/9] mm: thrash detection-based file cache sizing
-Message-ID: <20140116211758.GN6963@cmpxchg.org>
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
- <1389377443-11755-8-git-send-email-hannes@cmpxchg.org>
- <52D48C55.3020200@oracle.com>
- <20140114191619.GI6963@cmpxchg.org>
- <52D5F911.1090507@oracle.com>
+	id S1751724AbaAPVVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 16:21:16 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:63169 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaAPVVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 16:21:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D5F911.1090507@oracle.com>
+In-Reply-To: <744357E9AAD1214791ACBA4B0B909263011CE77F@SHSMSX101.ccr.corp.intel.com>
+References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
+	<1389689198-2641-5-git-send-email-rui.zhang@intel.com>
+	<CAL_JsqJFRQ+27N_9AwZXpx4V=g8HKn84WdVKtQ_Br_8SQTXY7g@mail.gmail.com>
+	<744357E9AAD1214791ACBA4B0B909263011CE77F@SHSMSX101.ccr.corp.intel.com>
+Date: Thu, 16 Jan 2014 15:21:12 -0600
+Message-ID: <CAL_Jsq+uVs=pHqSaQcQY-TQNnkFJ1MWkZxfE1B3Oxjby7uqrmw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] OF: introduce OF style 'modalias' support for
+ platform bus.
+From: Rob Herring <robherring2@gmail.com>
+To: "Zhang, Rui" <rui.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        Mark Brown <broonie@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "jarkko.nikula@linux.intel.com" <jarkko.nikula@linux.intel.com>,
+        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 10:57:21AM +0800, Bob Liu wrote:
-> On 01/15/2014 03:16 AM, Johannes Weiner wrote:
-> > On Tue, Jan 14, 2014 at 09:01:09AM +0800, Bob Liu wrote:
-> >> Good job! This patch looks good to me and with nice descriptions.
-> >> But it seems that this patch only fix the issue "working set changes
-> >> bigger than half of cache memory go undetected and thrash indefinitely".
-> >> My concern is could it be extended easily to address all other issues
-> >> based on this patch set?
-> >>
-> >> The other possible way is something like Peter has implemented the CART
-> >> and Clock-Pro which I think may be better because of using advanced
-> >> algorithms and consider the problem as a whole from the beginning.(Sorry
-> >> I haven't get enough time to read the source code, so I'm not 100% sure.)
-> >> http://linux-mm.org/PeterZClockPro2
-> > 
-> > My patches are moving the VM towards something that is comparable to
-> > how Peter implemented Clock-Pro.  However, the current VM has evolved
-> > over time in small increments based on real life performance
-> > observations.  Rewriting everything in one go would be incredibly
-> > disruptive and I doubt very much we would merge any such proposal in
-> > the first place.  So it's not like I don't see the big picture, it's
-> > just divide and conquer:
-> > 
-> > Peter's Clock-Pro implementation was basically a double clock with an
-> > intricate system to classify hotness, augmented by eviction
-> > information to work with reuse distances independent of memory size.
-> > 
-> > What we have right now is a double clock with a very rudimentary
-> > system to classify whether a page is hot: it has been accessed twice
-> > while on the inactive clock.  My patches now add eviction information
-> > to this, and improve the classification so that it can work with reuse
-> > distances up to memory size and is no longer dependent on the inactive
-> > clock size.
-> > 
-> > This is the smallest imaginable step that is still useful, and even
-> > then we had a lot of discussions about scalability of the data
-> > structures and confusion about how the new data point should be
-> > interpreted.  It also took a long time until somebody read the series
-> > and went, "Ok, this actually makes sense to me."  Now, maybe I suck at
-> > documenting, but maybe this is just complicated stuff.  Either way, we
-> > have to get there collectively, so that the code is maintainable in
-> > the long term.
-> > 
-> > Once we have these new concepts established, we can further improve
-> > the hotness detector so that it can classify and order pages with
-> > reuse distances beyond memory size.  But this will come with its own
-> > set of problems.  For example, some time ago we stopped regularly
-> > scanning and rotating active pages because of scalability issues, but
-> > we'll most likely need an uptodate estimate of the reuse distances on
-> > the active list in order to classify refaults properly.
-> > 
-> 
-> Thank you for your kindly explanation. It make sense to me please feel
-> free to add my review.
+On Thu, Jan 16, 2014 at 1:04 AM, Zhang, Rui <rui.zhang@intel.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Rob Herring [mailto:robherring2@gmail.com]
+>> Sent: Wednesday, January 15, 2014 9:45 PM
+>> To: Zhang, Rui
+>> Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org; linux-
+>> i2c@vger.kernel.org; linux-spi@vger.kernel.org; wsa@the-dreams.de; Mark
+>> Brown; Greg Kroah-Hartman; Wysocki, Rafael J; Grant Likely; Rob Herring;
+>> jarkko.nikula@linux.intel.com; mika.westerberg@linux.intel.com;
+>> devicetree@vger.kernel.org
+>> Subject: Re: [PATCH 4/4] OF: introduce OF style 'modalias' support for
+>> platform bus.
+>> Importance: High
+>>
+>> On Tue, Jan 14, 2014 at 2:46 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+>> > Fix a problem that, the platform bus supports the OF style modalias
+>> in
+>> > .uevent() call, but not in its device 'modalias' sysfs attribute.
+>> >
+>> > cc: devicetree@vger.kernel.org
+>> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>>
+>> Acked-by: Rob Herring <robh@kernel.org>
+>>
+>> As there doesn't appear any dependency with the rest of this series, I
+>> can take this.
+>>
+> Thanks.
+>
 
-Thank you!
+Looks like there is actually a dependency in modalias_show, and the
+comment about PAGE_SIZE would apply here too I think. So the whole
+series should be taken together.
 
-> >>> + * Approximating inactive page access frequency - Observations:
-> >>> + *
-> >>> + * 1. When a page is accessed for the first time, it is added to the
-> >>> + *    head of the inactive list, slides every existing inactive page
-> >>> + *    towards the tail by one slot, and pushes the current tail page
-> >>> + *    out of memory.
-> >>> + *
-> >>> + * 2. When a page is accessed for the second time, it is promoted to
-> >>> + *    the active list, shrinking the inactive list by one slot.  This
-> >>> + *    also slides all inactive pages that were faulted into the cache
-> >>> + *    more recently than the activated page towards the tail of the
-> >>> + *    inactive list.
-> >>> + *
-> >>
-> >> Nitpick, how about the reference bit?
-> > 
-> > What do you mean?
-> > 
-> 
-> Sorry, I mean the PG_referenced flag. I thought when a page is accessed
-> for the second time only PG_referenced flag  will be set instead of be
-> promoted to active list.
-
-It's cleared during rotation or not set on pages that came in through
-readahead, but the first access sets the bit and the second access
-activates it.
+Rob
