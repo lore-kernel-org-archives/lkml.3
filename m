@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444AbaAPBZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:25:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49044 "EHLO mga02.intel.com"
+	id S1753017AbaAPBdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:33:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32449 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900AbaAPBY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:24:58 -0500
+	id S1752260AbaAPBZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:25:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
-   d="scan'208";a="459548173"
+   d="scan'208";a="467394581"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-ext4@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v5 01/22] Fix XIP fault vs truncate race
-Date: Wed, 15 Jan 2014 20:24:19 -0500
-Message-Id: <f146fb2f49911a1cc1edd9025613a88d5a23b1db.1389779961.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v5 02/22] Allow page fault handlers to perform the COW
+Date: Wed, 15 Jan 2014 20:24:20 -0500
+Message-Id: <60513ca8b173f467bde45765633fb8f527687401.1389779961.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
 References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
@@ -25,77 +25,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pagecache faults recheck i_size after taking the page lock to ensure that
-the fault didn't race against a truncate.  We don't have a page to lock
-in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
-truncate path in unmap_mapping_range() after updating i_size.  So while
-we hold it in the fault path, we are guaranteed that either i_size has
-already been updated in the truncate path, or that the truncate will
-subsequently call zap_page_range_single() and so remove the mapping we
-have just inserted.
+Currently COW of an XIP file is done by first bringing in a read-only
+mapping, then retrying the fault and copying the page.  It is much more
+efficient to tell the fault handler that a COW is being attempted (by
+passing in the pre-allocated page in the vm_fault structure), and allow
+the handler to perform the COW operation itself.
 
-There is a window of time in which i_size has been reduced and the
-thread has a mapping to a page which will be removed from the file,
-but this is harmless as the page will not be allocated to a different
-purpose before the thread's access to it is revoked.
+Where the filemap code protects against truncation of the file until
+the PTE has been installed with the page lock, the XIP code use the
+i_mmap_mutex instead.  We must therefore unlock the i_mmap_mutex in
+__do_fault().
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- mm/filemap_xip.c | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ include/linux/mm.h |  2 ++
+ mm/memory.c        | 19 ++++++++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index d8d9fe3..c8d23e9 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -260,8 +260,17 @@ again:
- 		__xip_unmap(mapping, vmf->pgoff);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd00..e07c57c 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -195,6 +195,7 @@ struct vm_fault {
+ 	pgoff_t pgoff;			/* Logical page offset based on vma */
+ 	void __user *virtual_address;	/* Faulting virtual address */
  
- found:
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			mutex_unlock(&mapping->i_mmap_mutex);
-+			return VM_FAULT_SIGBUS;
-+		}
- 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
- 							xip_pfn);
-+		mutex_unlock(&mapping->i_mmap_mutex);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
- 		/*
-@@ -285,16 +294,27 @@ found:
- 		}
- 		if (error != -ENODATA)
- 			goto out;
-+
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			ret = VM_FAULT_SIGBUS;
-+			goto unlock;
-+		}
- 		/* not shared and writable, use xip_sparse_page() */
- 		page = xip_sparse_page();
- 		if (!page)
--			goto out;
-+			goto unlock;
- 		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
- 							page);
- 		if (err == -ENOMEM)
--			goto out;
-+			goto unlock;
++	struct page *cow_page;		/* Handler may choose to COW */
+ 	struct page *page;		/* ->fault handlers should return a
+ 					 * page here, unless VM_FAULT_NOPAGE
+ 					 * is set (which is also implied by
+@@ -958,6 +959,7 @@ static inline int page_mapped(struct page *page)
+ #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
+ #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
  
- 		ret = VM_FAULT_NOPAGE;
-+unlock:
-+		mutex_unlock(&mapping->i_mmap_mutex);
- out:
- 		write_seqcount_end(&xip_sparse_seq);
- 		mutex_unlock(&xip_sparse_mutex);
++#define VM_FAULT_COWED	0x0080	/* ->fault COWed the page instead */
+ #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
+ #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
+ #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
+diff --git a/mm/memory.c b/mm/memory.c
+index 5d9025f..3f1b666 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2673,6 +2673,7 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			vmf.pgoff = old_page->index;
+ 			vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+ 			vmf.page = old_page;
++			vmf.cow_page = NULL;
+ 
+ 			/*
+ 			 * Notify the address space that the page is about to
+@@ -3335,11 +3336,18 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	vmf.pgoff = pgoff;
+ 	vmf.flags = flags;
+ 	vmf.page = NULL;
++	vmf.cow_page = cow_page;
+ 
+ 	ret = vma->vm_ops->fault(vma, &vmf);
+ 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE |
+ 			    VM_FAULT_RETRY)))
+ 		goto uncharge_out;
++	if (unlikely(ret & VM_FAULT_COWED)) {
++		page = cow_page;
++		anon = 1;
++		__SetPageUptodate(page);
++		goto cowed;
++	}
+ 
+ 	if (unlikely(PageHWPoison(vmf.page))) {
+ 		if (ret & VM_FAULT_LOCKED)
+@@ -3399,6 +3407,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	}
+ 
++ cowed:
+ 	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 
+ 	/*
+@@ -3465,9 +3474,13 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (vma->vm_file && !page_mkwrite)
+ 			file_update_time(vma->vm_file);
+ 	} else {
+-		unlock_page(vmf.page);
+-		if (anon)
+-			page_cache_release(vmf.page);
++		if ((ret & VM_FAULT_COWED)) {
++			mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++		} else {
++			unlock_page(vmf.page);
++			if (anon)
++				page_cache_release(vmf.page);
++		}
+ 	}
+ 
+ 	return ret;
 -- 
 1.8.5.2
 
