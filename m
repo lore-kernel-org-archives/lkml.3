@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaAPPrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:47:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63404 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751591AbaAPPrT (ORCPT
+	id S1752324AbaAPPsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:48:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40607 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbaAPPsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:47:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Paul Drews <paul.drews@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>,
+	Thu, 16 Jan 2014 10:48:08 -0500
+Date: Thu, 16 Jan 2014 16:48:01 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Baytrail problems (was Re: Linux 3.13-rc8)
-Date: Thu, 16 Jan 2014 17:01:19 +0100
-Message-ID: <2029519.Z7OA0cinWM@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
-References: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com> <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140116154801.GS7572@laptop.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115120418.GD31570@twins.programming.kicks-ass.net>
+ <52D7E343.40909@linaro.org>
+ <20140116141743.GT31570@twins.programming.kicks-ass.net>
+ <52D7EAA4.2080208@linaro.org>
+ <20140116142546.GU31570@twins.programming.kicks-ass.net>
+ <52D7FA85.9020504@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7FA85.9020504@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 16, 2014 10:29:45 AM Linus Walleij wrote:
-> On Thu, Jan 16, 2014 at 2:49 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > Adding in the appropriate people...
+On Thu, Jan 16, 2014 at 04:28:05PM +0100, Daniel Lezcano wrote:
+> On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
+> >On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
+> >>Already tested. The last commits do not change the issue described above.
 > >
-> > On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
-> > <gnomes@lxorguk.ukuu.org.uk> wrote:
-> >>
-> >> It seems to hate Baytrail/T
-> >>
-> >> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
-> >> right but otherwise running nicely and playing 3D games to 3.13-rc8
-> >>
-> >> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
-> >>   in
+> >Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
+> >laptop around that should have some recent ubuntu on it, let me go find
+> >it.
 > >
-> > Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
-> > but I guess the GPIO and ACPI ID addition ends up also enabling all
-> > the old code that Alan probably never ran in 3.11 because the driver
-> > didn't trigger on his machine.
 > 
-> So that is commit f6308b36c411dc5
-> "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"?
+> Removing the lines below fix the issue.
 > 
-> This seems to have been selected for -stable as well so the
-> problem will be spreading as distros start pushing stable kernel
-> updates :-(
+> These changes were introduced by the commit
+> d50dde5a10f305253cbc3855307f608f8a3c5f73.
 > 
-> That came in through the ACPI tree, Rafael do you want to
-> revert it if there is no better quickfix?
+> I don't get the connection between what is supposed to do the patch as
+> described in the commit log and these four lines added.
 
-Yes, I'll push either a revert or a fix before the weekend.
+The interface adds:
 
-> This adds an interesting twist to the general statement that
-> new PCI/ACPI IDs should go into stable BTW, maybe they
-> should not always do that.
+  sched_attr::sched_nice
 
-Well, this is the first time we've had such a problem with ACPI IDs, but
-since we do have this problem, I'm not going to tag any commits like that for
-stable any more (and I'm not going to fast-track them any more for that
-matter).
+And extends __sched_setscheduler() to also set nice values as provided
+by the sched_attr, therefore we must check to see if we've got
+permission to change the nice value.
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
