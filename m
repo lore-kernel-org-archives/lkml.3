@@ -1,222 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaAPJkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:40:18 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51350 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaAPJjw (ORCPT
+	id S1752522AbaAPJk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:40:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:37871 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbaAPJkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:39:52 -0500
-Subject: [PATCH -tip 3/3] [CLEANUP] perf-tools: Export elf_section_by_name
- and reuse
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 16 Jan 2014 09:39:49 +0000
-Message-ID: <20140116093949.24403.38093.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140116093942.24403.50992.stgit@kbuild-fedora.novalocal>
-References: <20140116093942.24403.50992.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 04:40:18 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-59-52d7a8ff6c30
+Date: Thu, 16 Jan 2014 10:40:08 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org, rjw@sisk.pl
+Subject: Re: [PATCH v12 0/7] cpufreq:boost: CPU Boost mode support
+Message-id: <20140116104008.15b77a1f@amdc2363>
+In-reply-to: <1389335623.2411.15.camel@rzhang1-mobl4>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1387549495-809-1-git-send-email-l.majewski@samsung.com>
+ <20140107075824.59a1ed3c@amdc2363> <9268964.f27SUq68sj@vostro.rjw.lan>
+ <1389335623.2411.15.camel@rzhang1-mobl4>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t9jAV2GldeDDFoPsVtsnLGe1eJp0w92
+	i76fV5gt1uz/yWTRefYJs8WbR9wWl3fNYbP43HuE0WLG+X1MFrcbV7BZnDl9idWif2Evk8WT
+	h31sFhu/ejjweSze85LJ4861PWwe66a9ZfbYcrWdxaNvyypGj0eLWxg9jt/YzuTxeZNcAEcU
+	l01Kak5mWWqRvl0CV8al7a9YCpqUK35MT29gXCDVxcjJISFgIrH47BVmCFtM4sK99WxdjFwc
+	QgKLGCWutO+Acn4xSuyacBOsikVAVaLz2E5GEJtNQE/i892nTCC2iIC2xNyeU8wgDcwC3SwS
+	xxpesYAkhAWcJCYvmAzWzAvU0H5gJ1icU8BUYtaVw6wQG74wSjTOmMgOkuAXkJRo//cD6iY7
+	iXOfNrBDNAtK/Jh8D6yZWUBLYvO2JlYIW15i85q3zBMYBWchKZuFpGwWkrIFjMyrGEVTC5IL
+	ipPSc430ihNzi0vz0vWS83M3MYIj7Jn0DsZVDRaHGAU4GJV4eHc8vBYkxJpYVlyZe4hRgoNZ
+	SYTXe/n1ICHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2M
+	Cl4XD//a6Wr/uvj1xJ3yVz6xSxRy64QVbqt4sITh5iWx0vlLv33Qbd9v/KPuRaP2xaN79ilw
+	i7F4G57vNF/HtLCp63GZ8/1PsZLyDDPeuZ32rdhif1HQZfVNQ8Vtrrkmt3+Fi4k/8DFe98D2
+	V+u/GY8q57mbn02Mb5I9u9YgoEb4GvPTdRPFlFiKMxINtZiLihMBQe6hIqwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicated elf_section_by_name() functions from
-unwind.c and probe-event.c and use one exported
-elf_section_by_name() instance defined in symbol-elf.c.
-Note that this also moves get_text_start_address() to
-merge HAVE_DWARF_SUPPORT defined area.
+Hi Rafael,
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
----
- tools/perf/util/probe-event.c |   76 +++++++++++++++--------------------------
- tools/perf/util/symbol-elf.c  |    5 +--
- tools/perf/util/symbol.h      |    5 +++
- tools/perf/util/unwind.c      |   20 +----------
- 4 files changed, 37 insertions(+), 69 deletions(-)
+> On Wed, 2014-01-08 at 01:35 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, January 07, 2014 07:58:24 AM Lukasz Majewski wrote:
+> > > Hi Rafael,
+> > 
+> > Hi,
+> > 
+> > > > This patch series introduces support for CPU overclocking
+> > > > technique called Boost.
+> > > > 
+> > > > It is a follow up of a LAB governor proposal. Boost is a LAB
+> > > > component:
+> > > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+> > > > 
+> > > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
+> > > > software oriented one (like the one done at Exynos).
+> > > > For this reason cpufreq/freq_table code has been reorganized to
+> > > > include common code.
+> > > > 
+> > > > Important design decisions:
+> > > > - Boost related code is compiled-in unconditionally to cpufreq
+> > > > core and disabled by default. The cpufreq_driver is
+> > > > responsibile for setting boost_supported flag and providing
+> > > > set_boost callback(if HW support is needed). For software
+> > > > managed boost, special Kconfig flag - CONFIG_CPU_FREQ_BOOST_SW
+> > > > has been defined. It will be selected only when a target
+> > > > platform has thermal framework properly configured.
+> > > > 
+> > > > - struct cpufreq_driver has been extended with boost related
+> > > > fields: -- boost_supported - when driver supports boosting
+> > > >         -- boost_enabled - boost state
+> > > >         -- set_boost - callback to function, which is necessary
+> > > > to enable/disable boost
+> > > > 
+> > > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost)
+> > > > is visible _only_ when cpufreq driver supports Boost.
+> > > > 
+> > > > - No special spin_lock for Boost was created. The one from
+> > > > cpufreq core was reused.
+> > > > 
+> > > > - The Boost code doesn't rely on any policy. When boost state is
+> > > > changed, then the policy list is iterated and proper
+> > > > adjustements are done.
+> > > > 
+> > > > - To improve safety level, the thermal framework is also
+> > > > extended to disable software boosting, when thermal trip point
+> > > > is reached. After cooling down the boost can be enabled again.
+> > > > This emulates behaviour similar to HW managed boost (like x86)
+> > > > 
+> > > > Tested at HW:
+> > > >        Exynos 4412 3.13-rc4 Linux
+> > > >        Intel Core i7-3770 3.13-rc4 Linux
+> > > > 
+> > > > Above patches were posted on top of kernel_pm/bleeding-edge
+> > > > (SHA1: bd0f3a5d9dce48a917ce1f1047534d79c725149)
+> > > > 
+> > > > Lukasz Majewski (7):
+> > > >   cpufreq: Add boost frequency support in core
+> > > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
+> > > > common boost solution
+> > > >   cpufreq:boost:Kconfig: Provide support for software managed
+> > > > BOOST cpufreq:exynos:Extend Exynos cpufreq driver to support
+> > > > boost framework
+> > > >   Documentation:cpufreq:boost: Update BOOST documentation
+> > > >   cpufreq:exynos4x12: Change L0 driver data to
+> > > > CPUFREQ_BOOST_FREQ thermal:exynos:boost: Automatic
+> > > > enable/disable of BOOST feature (at Exynos4412)
+> > > > 
+> > > >  Documentation/cpu-freq/boost.txt          |   26 +++----
+> > > >  drivers/cpufreq/Kconfig                   |    4 +
+> > > >  drivers/cpufreq/Kconfig.arm               |   15 ++++
+> > > >  drivers/cpufreq/acpi-cpufreq.c            |   86
+> > > > +++++++-------------- drivers/cpufreq/cpufreq.c
+> > > > | 118 ++++++++++++++++++++++++++++-
+> > > > drivers/cpufreq/exynos-cpufreq.c          |    3 +
+> > > > drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
+> > > > drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
+> > > > drivers/thermal/samsung/exynos_tmu_data.c |   12 +--
+> > > > include/linux/cpufreq.h                   |   24 ++++++ 10 files
+> > > > changed, 261 insertions(+), 85 deletions(-)
+> > > > 
+> > > 
+> > > A gentle ping about BOOST patches.
+> > > 
+> > > Its been already acked by Viresh and Eduardo.
+> > > 
+> > > It applies on kernel_pm/bleeding_edge SHA1:
+> > > 4836deb72c5e2a9af0cb2129c1149783a26d99ab
+> > 
+> > It looks like Rui is still looking into this.
+> > 
+> > Rui, are you fine with this series?
+> > 
+> Yes, I'm okay with the thermal related parts of this patch set.
+> 
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index c68711c..a8a9b6c 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -173,54 +173,6 @@ const char *kernel_get_module_path(const char *module)
- 	return (dso) ? dso->long_name : NULL;
- }
- 
--#ifdef HAVE_DWARF_SUPPORT
--/* Copied from unwind.c */
--static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
--				    GElf_Shdr *shp, const char *name)
--{
--	Elf_Scn *sec = NULL;
--
--	while ((sec = elf_nextscn(elf, sec)) != NULL) {
--		char *str;
--
--		gelf_getshdr(sec, shp);
--		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
--		if (!strcmp(name, str))
--			break;
--	}
--
--	return sec;
--}
--
--static int get_text_start_address(const char *exec, unsigned long *address)
--{
--	Elf *elf;
--	GElf_Ehdr ehdr;
--	GElf_Shdr shdr;
--	int fd, ret = -ENOENT;
--
--	fd = open(exec, O_RDONLY);
--	if (fd < 0)
--		return -errno;
--
--	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
--	if (elf == NULL)
--		return -EINVAL;
--
--	if (gelf_getehdr(elf, &ehdr) == NULL)
--		goto out;
--
--	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
--		goto out;
--
--	*address = shdr.sh_addr - shdr.sh_offset;
--	ret = 0;
--out:
--	elf_end(elf);
--	return ret;
--}
--#endif
--
- static int init_user_exec(void)
- {
- 	int ret = 0;
-@@ -341,6 +293,34 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 	return 0;
- }
- 
-+static int get_text_start_address(const char *exec, unsigned long *address)
-+{
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+	GElf_Shdr shdr;
-+	int fd, ret = -ENOENT;
-+
-+	fd = open(exec, O_RDONLY);
-+	if (fd < 0)
-+		return -errno;
-+
-+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-+	if (elf == NULL)
-+		return -EINVAL;
-+
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		goto out;
-+
-+	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text", NULL))
-+		goto out;
-+
-+	*address = shdr.sh_addr - shdr.sh_offset;
-+	ret = 0;
-+out:
-+	elf_end(elf);
-+	return ret;
-+}
-+
- static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
- 					  int ntevs, const char *exec)
- {
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b0a127..7594567 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -136,9 +136,8 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
- 
--static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
--				    GElf_Shdr *shp, const char *name,
--				    size_t *idx)
-+Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-+			     GElf_Shdr *shp, const char *name, size_t *idx)
- {
- 	Elf_Scn *sec = NULL;
- 	size_t cnt = 1;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index cbd6803..fffe288 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -52,6 +52,11 @@ static inline char *bfd_demangle(void __maybe_unused *v,
- # define PERF_ELF_C_READ_MMAP ELF_C_READ
- #endif
- 
-+#ifdef HAVE_LIBELF_SUPPORT
-+extern Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-+				GElf_Shdr *shp, const char *name, size_t *idx);
-+#endif
-+
- #ifndef DMGL_PARAMS
- #define DMGL_PARAMS      (1 << 0)       /* Include function args */
- #define DMGL_ANSI        (1 << 1)       /* Include const, volatile, etc */
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 416f22b..742f23b 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -28,6 +28,7 @@
- #include "session.h"
- #include "perf_regs.h"
- #include "unwind.h"
-+#include "symbol.h"
- #include "util.h"
- 
- extern int
-@@ -158,23 +159,6 @@ static int __dw_read_encoded_value(u8 **p, u8 *end, u64 *val,
- 	__v;                                                    \
- 	})
- 
--static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
--				    GElf_Shdr *shp, const char *name)
--{
--	Elf_Scn *sec = NULL;
--
--	while ((sec = elf_nextscn(elf, sec)) != NULL) {
--		char *str;
--
--		gelf_getshdr(sec, shp);
--		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
--		if (!strcmp(name, str))
--			break;
--	}
--
--	return sec;
--}
--
- static u64 elf_section_offset(int fd, const char *name)
- {
- 	Elf *elf;
-@@ -190,7 +174,7 @@ static u64 elf_section_offset(int fd, const char *name)
- 		if (gelf_getehdr(elf, &ehdr) == NULL)
- 			break;
- 
--		if (!elf_section_by_name(elf, &ehdr, &shdr, name))
-+		if (!elf_section_by_name(elf, &ehdr, &shdr, name, NULL))
- 			break;
- 
- 		offset = shdr.sh_offset;
+Rafael, gentle reminder about BOOST patches ... :-)
+
+> thanks,
+> rui
+> > Rafael
+> > 
+> 
+> 
 
 
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
