@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaAPS3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:29:52 -0500
+	id S1751974AbaAPS3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:29:50 -0500
 Received: from mga14.intel.com ([143.182.124.37]:6313 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838AbaAPS2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:28:47 -0500
+	id S1751855AbaAPS2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:28:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,668,1384329600"; 
-   d="scan'208";a="404034976"
+   d="scan'208";a="404035014"
 From: Durgadoss R <durgadoss.r@intel.com>
 To: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com, wni@nvidia.com,
         Durgadoss R <durgadoss.r@intel.com>
-Subject: [PATCHv5 06/10] Thermal: Add trip point sysfs nodes for sensor
-Date: Fri, 17 Jan 2014 05:26:23 +0530
-Message-Id: <1389916587-2541-7-git-send-email-durgadoss.r@intel.com>
+Subject: [PATCHv5 08/10] Thermal: Add Documentation to new APIs
+Date: Fri, 17 Jan 2014 05:26:25 +0530
+Message-Id: <1389916587-2541-9-git-send-email-durgadoss.r@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389916587-2541-1-git-send-email-durgadoss.r@intel.com>
 References: <1389916587-2541-1-git-send-email-durgadoss.r@intel.com>
@@ -23,493 +23,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a trip point related sysfs nodes
-for each sensor under a zone in /sys/class/thermal/zoneX/.
-The nodes will be named, sensorX_trip_activeY,
-sensorX_trip_passiveY, sensorX_trip_hot, sensorX_trip_critical
-for active, passive, hot and critical trip points
-respectively for sensorX.
+This patch adds Documentation for the new APIs
+introduced in this patch set. The documentation
+also has a model sysfs structure for reference.
 
 Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
 ---
- drivers/thermal/thermal_core_new.c |  358 +++++++++++++++++++++++++++++++++++-
- include/linux/thermal.h            |   39 +++-
- 2 files changed, 395 insertions(+), 2 deletions(-)
+ Documentation/thermal/sysfs-api2.txt |  240 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 240 insertions(+)
+ create mode 100644 Documentation/thermal/sysfs-api2.txt
 
-diff --git a/drivers/thermal/thermal_core_new.c b/drivers/thermal/thermal_core_new.c
-index 3134b1a..e6a35f0 100644
---- a/drivers/thermal/thermal_core_new.c
-+++ b/drivers/thermal/thermal_core_new.c
-@@ -111,6 +111,25 @@ static void release_idr(struct idr *idr, int id)
- 	mutex_unlock(&thermal_idr_lock);
- }
- 
-+static int get_sensor_indx_by_kobj(struct thermal_zone *tz, const char *name)
-+{
-+	int i, indx = -EINVAL;
-+
-+	/* Protect against tz->sensors[i] being unregistered */
-+	mutex_lock(&sensor_list_lock);
-+
-+	for (i = 0; i < tz->sensor_indx; i++) {
-+		if (!strnicmp(name, kobject_name(&tz->sensors[i]->device.kobj),
-+					THERMAL_NAME_LENGTH)) {
-+			indx = i;
-+			break;
-+		}
-+	}
-+
-+	mutex_unlock(&sensor_list_lock);
-+	return indx;
-+}
-+
- static ssize_t
- name_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
-@@ -271,6 +290,115 @@ zone_name_show(struct device *dev, struct device_attribute *attr, char *buf)
- 	return sprintf(buf, "%s\n", tz->name);
- }
- 
-+static ssize_t
-+active_trip_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	int i, j, val;
-+	char kobj_name[THERMAL_NAME_LENGTH];
-+	struct thermal_zone *tz = to_thermal_zone(dev);
-+
-+	val = sscanf(attr->attr.name, "sensor%d_trip_active%d", &i, &j);
-+	if (!val)
-+		return -EINVAL;
-+
-+	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
-+
-+	mutex_lock(&tz->lock);
-+
-+	i = get_sensor_indx_by_kobj(tz, kobj_name);
-+	if (i < 0) {
-+		mutex_unlock(&tz->lock);
-+		return i;
-+	}
-+
-+	val = tz->sensor_trip[i]->active_trips[j];
-+	mutex_unlock(&tz->lock);
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static ssize_t
-+passive_trip_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	int i, j, val;
-+	char kobj_name[THERMAL_NAME_LENGTH];
-+	struct thermal_zone *tz = to_thermal_zone(dev);
-+
-+	val = sscanf(attr->attr.name, "sensor%d_trip_passive%d", &i, &j);
-+	if (!val)
-+		return -EINVAL;
-+
-+	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
-+
-+	mutex_lock(&tz->lock);
-+
-+	i = get_sensor_indx_by_kobj(tz, kobj_name);
-+	if (i < 0) {
-+		mutex_unlock(&tz->lock);
-+		return i;
-+	}
-+
-+	val = tz->sensor_trip[i]->passive_trips[j];
-+	mutex_unlock(&tz->lock);
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static ssize_t
-+hot_trip_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	int indx, val;
-+	char kobj_name[THERMAL_NAME_LENGTH];
-+	struct thermal_zone *tz = to_thermal_zone(dev);
-+
-+	val = sscanf(attr->attr.name, "sensor%d_trip_hot", &indx);
-+	if (!val)
-+		return -EINVAL;
-+
-+	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
-+
-+	mutex_lock(&tz->lock);
-+
-+	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-+	if (indx < 0) {
-+		mutex_unlock(&tz->lock);
-+		return indx;
-+	}
-+
-+	val = tz->sensor_trip[indx]->hot;
-+	mutex_unlock(&tz->lock);
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static ssize_t
-+critical_trip_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	int indx, val;
-+	char kobj_name[THERMAL_NAME_LENGTH];
-+	struct thermal_zone *tz = to_thermal_zone(dev);
-+
-+	val = sscanf(attr->attr.name, "sensor%d_trip_critical", &indx);
-+	if (!val)
-+		return -EINVAL;
-+
-+	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
-+
-+	mutex_lock(&tz->lock);
-+
-+	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-+	if (indx < 0) {
-+		mutex_unlock(&tz->lock);
-+		return indx;
-+	}
-+
-+	val = tz->sensor_trip[indx]->crit;
-+	mutex_unlock(&tz->lock);
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
- /* Thermal sensor attributes */
- static DEVICE_ATTR_RO(name);
- static DEVICE_ATTR_RO(temp);
-@@ -283,6 +411,41 @@ static DEVICE_ATTR_RW(cur_state);
- /* Thermal zone attributes */
- static DEVICE_ATTR_RO(zone_name);
- 
-+static void __remove_trip_attr(struct thermal_zone *tz, int indx)
-+{
-+	int i;
-+	struct thermal_trip_attr *attr = tz->trip_attr[indx];
-+	struct thermal_trip_point *trip = tz->sensor_trip[indx];
-+
-+	if (!attr || !trip)
-+		return;
-+
-+	if (trip->crit != THERMAL_TRIPS_NONE)
-+		device_remove_file(&tz->device, &attr->crit_attr.attr);
-+
-+	if (trip->hot != THERMAL_TRIPS_NONE)
-+		device_remove_file(&tz->device, &attr->hot_attr.attr);
-+
-+	if (trip->num_passive_trips > 0) {
-+		for (i = 0; i < trip->num_passive_trips; i++) {
-+			device_remove_file(&tz->device,
-+						&attr->passive_attrs[i].attr);
-+		}
-+		kfree(attr->passive_attrs);
-+	}
-+
-+	if (trip->num_active_trips > 0) {
-+		for (i = 0; i < trip->num_active_trips; i++) {
-+			device_remove_file(&tz->device,
-+						&attr->active_attrs[i].attr);
-+		}
-+		kfree(attr->active_attrs);
-+	}
-+
-+	kfree(tz->trip_attr[indx]);
-+	tz->trip_attr[indx] = NULL;
-+}
-+
- static void remove_sensor_from_zone(struct thermal_zone *tz,
- 				struct thermal_sensor *ts)
- {
-@@ -296,9 +459,15 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
- 
- 	mutex_lock(&tz->lock);
- 
-+	/* Remove trip point attributes associated with this sensor */
-+	__remove_trip_attr(tz, indx);
-+
- 	/* Shift the entries in the tz->sensors array */
--	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
-+	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++) {
- 		tz->sensors[j] = tz->sensors[j + 1];
-+		tz->sensor_trip[j] = tz->sensor_trip[j + 1];
-+		tz->trip_attr[j] = tz->trip_attr[j + 1];
-+	}
- 
- 	tz->sensor_indx--;
- 	mutex_unlock(&tz->lock);
-@@ -407,6 +576,82 @@ exit_name:
- 	return ret;
- }
- 
-+static int create_single_trip_attr(struct thermal_zone *tz,
-+			struct thermal_attr *attr,
-+			const char *attr_name,
-+			ssize_t (*rd_ptr)(struct device *dev,
-+			struct device_attribute *devattr, char *buf))
-+{
-+	snprintf(attr->name, THERMAL_NAME_LENGTH, attr_name);
-+	sysfs_attr_init(&attr->attr.attr);
-+	attr->attr.attr.name = attr->name;
-+	attr->attr.attr.mode = S_IRUGO;
-+	attr->attr.show = rd_ptr;
-+	return device_create_file(&tz->device, &attr->attr);
-+}
-+
-+static int create_passive_trip_attrs(struct thermal_zone *tz, int num_trips,
-+			int indx, struct thermal_trip_attr *attrs)
-+{
-+	char name[THERMAL_NAME_LENGTH];
-+	int size, i, ret;
-+
-+	if (num_trips <= 0)
-+		return 0;
-+
-+	size = sizeof(struct thermal_attr) * num_trips;
-+	attrs->passive_attrs = kzalloc(size, GFP_KERNEL);
-+	if (!attrs->passive_attrs)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < num_trips; i++) {
-+		snprintf(name, THERMAL_NAME_LENGTH,
-+					"sensor%d_trip_passive%d", indx, i);
-+		ret = create_single_trip_attr(tz, &attrs->passive_attrs[i],
-+					name, passive_trip_show);
-+		if (ret)
-+			goto exit;
-+	}
-+	return 0;
-+
-+exit:
-+	while (--i >= 0)
-+		device_remove_file(&tz->device, &attrs->passive_attrs[i].attr);
-+	kfree(attrs->passive_attrs);
-+	return ret;
-+}
-+
-+static int create_active_trip_attrs(struct thermal_zone *tz, int num_trips,
-+			int indx, struct thermal_trip_attr *attrs)
-+{
-+	char name[THERMAL_NAME_LENGTH];
-+	int size, i, ret;
-+
-+	if (num_trips <= 0)
-+		return 0;
-+
-+	size = sizeof(struct thermal_attr) * num_trips;
-+	attrs->active_attrs = kzalloc(size, GFP_KERNEL);
-+	if (!attrs->active_attrs)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < num_trips; i++) {
-+		snprintf(name, THERMAL_NAME_LENGTH,
-+				"sensor%d_trip_active%d", indx, i);
-+		ret = create_single_trip_attr(tz, &attrs->active_attrs[i],
-+				name, active_trip_show);
-+		if (ret)
-+			goto exit;
-+	}
-+	return 0;
-+
-+exit:
-+	while (--i >= 0)
-+		device_remove_file(&tz->device, &attrs->active_attrs[i].attr);
-+	kfree(attrs->active_attrs);
-+	return ret;
-+}
-+
- /**
-  * thermal_sensor_register - register a new thermal sensor
-  * @name:	name of the thermal sensor
-@@ -952,3 +1197,114 @@ exit_zone:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(thermal_add_cdev_to_zone);
-+
-+/**
-+ * thermal_add_sensor_trip_info - Add trip point information for @ts in @tz
-+ * @tz:		Thermal zone reference
-+ * @ts:		Thermal sensor reference
-+ * @trip:	Trip point structure reference
-+ *
-+ * Returns 0 on success, otherwise
-+ * -EINVAL for invalid paramenters
-+ * -EINVAL if @ts is not part of 'this' thermal zone @tz
-+ * -ENOMEM on kzalloc failures
-+ */
-+int thermal_add_sensor_trip_info(struct thermal_zone *tz,
-+		struct thermal_sensor *ts, struct thermal_trip_point *trip)
-+{
-+	char name[THERMAL_NAME_LENGTH];
-+	int i, indx, kobj_indx, ret;
-+	struct thermal_trip_attr *attrs;
-+
-+	if (!tz || !ts || !trip)
-+		return -EINVAL;
-+
-+	ret = sscanf(kobject_name(&ts->device.kobj), "sensor%d", &kobj_indx);
-+	if (!ret)
-+		return -EINVAL;
-+
-+	mutex_lock(&zone_list_lock);
-+
-+	indx = GET_INDEX(tz, ts, sensor);
-+	if (indx < 0) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
-+	/* Protect against 'ts' being unregistered */
-+	mutex_lock(&sensor_list_lock);
-+
-+	/* Protect tz->trip_attr[] and tz->sensor_trip[] */
-+	mutex_lock(&tz->lock);
-+
-+	tz->trip_attr[indx] = kzalloc(sizeof(struct thermal_trip_attr),
-+					GFP_KERNEL);
-+	if (!tz->trip_attr[indx]) {
-+		ret = -ENOMEM;
-+		goto exit_lock;
-+	}
-+
-+	attrs = tz->trip_attr[indx];
-+
-+	/* Create Critical trip point attribute */
-+	if (trip->crit != THERMAL_TRIPS_NONE) {
-+		snprintf(name, THERMAL_NAME_LENGTH,
-+					"sensor%d_trip_critical", kobj_indx);
-+		ret = create_single_trip_attr(tz, &attrs->crit_attr,
-+					name, critical_trip_show);
-+		if (ret)
-+			goto exit_trip;
-+	}
-+
-+	/* Create Hot trip point attribute */
-+	if (trip->hot != THERMAL_TRIPS_NONE) {
-+		snprintf(name, THERMAL_NAME_LENGTH,
-+					"sensor%d_trip_hot", kobj_indx);
-+		ret = create_single_trip_attr(tz, &attrs->hot_attr,
-+					name, hot_trip_show);
-+		if (ret)
-+			goto exit_crit_trip;
-+	}
-+
-+	/* Create Passive trip point attributes */
-+	ret = create_passive_trip_attrs(tz, trip->num_passive_trips,
-+				kobj_indx, attrs);
-+	if (ret)
-+		goto exit_hot_trip;
-+
-+	/* Create Active trip point attributes */
-+	ret = create_active_trip_attrs(tz, trip->num_active_trips,
-+				kobj_indx, attrs);
-+	if (ret)
-+		goto exit_passive_trips;
-+
-+	tz->sensor_trip[indx] = trip;
-+
-+	mutex_unlock(&tz->lock);
-+	mutex_unlock(&sensor_list_lock);
-+	mutex_unlock(&zone_list_lock);
-+
-+	return 0;
-+
-+exit_passive_trips:
-+	i = trip->num_passive_trips;
-+	while (--i >= 0)
-+		device_remove_file(&tz->device, &attrs->passive_attrs[i].attr);
-+	kfree(attrs->passive_attrs);
-+exit_hot_trip:
-+	if (trip->hot != THERMAL_TRIPS_NONE)
-+		device_remove_file(&tz->device, &attrs->hot_attr.attr);
-+exit_crit_trip:
-+	if (trip->crit != THERMAL_TRIPS_NONE)
-+		device_remove_file(&tz->device, &attrs->crit_attr.attr);
-+exit_trip:
-+	kfree(tz->trip_attr[indx]);
-+	tz->trip_attr[indx] = NULL;
-+exit_lock:
-+	mutex_unlock(&tz->lock);
-+	mutex_unlock(&sensor_list_lock);
-+exit:
-+	mutex_unlock(&zone_list_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(thermal_add_sensor_trip_info);
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 9b080f2..fe7abc9 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -32,7 +32,7 @@
- 
- #define THERMAL_TRIPS_NONE	-1
- #define THERMAL_MAX_TRIPS	12
--#define THERMAL_NAME_LENGTH	20
-+#define THERMAL_NAME_LENGTH	25
- 
- /* invalid cooling state */
- #define THERMAL_CSTATE_INVALID -1UL
-@@ -172,6 +172,37 @@ struct thermal_attr {
- 	char name[THERMAL_NAME_LENGTH];
- };
- 
-+/*
-+ * This structure defines the trip points for a sensor.
-+ * The actual values for these trip points come from
-+ * platform characterization. The thermal governors
-+ * (either kernel or user space) may take appropriate
-+ * actions when the sensors reach these trip points.
-+ * See Documentation/thermal/sysfs-api2.txt for more details.
-+ *
-+ * As of now, For a particular sensor, we support:
-+ * a) 1 hot trip point
-+ * b) 1 critical trip point
-+ * c) 'n' passive trip points
-+ * d) 'm' active trip points
-+ */
-+struct thermal_trip_point {
-+	int hot;
-+	int crit;
-+	int num_passive_trips;
-+	int *passive_trips;
-+	int num_active_trips;
-+	int *active_trips;
-+	int active_trip_mask;
-+};
-+
-+struct thermal_trip_attr {
-+	struct thermal_attr hot_attr;
-+	struct thermal_attr crit_attr;
-+	struct thermal_attr *active_attrs;
-+	struct thermal_attr *passive_attrs;
-+};
-+
- struct thermal_sensor {
- 	char name[THERMAL_NAME_LENGTH];
- 	int id;
-@@ -231,6 +262,10 @@ struct thermal_zone {
- 	/* cdev level information */
- 	int cdev_indx; /* index into 'cdevs' array */
- 	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
-+
-+	/* Thermal sensors trip information */
-+	struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
-+	struct thermal_trip_attr *trip_attr[MAX_SENSORS_PER_ZONE];
- };
- 
- /* Structure that holds thermal governor information */
-@@ -350,6 +385,8 @@ struct thermal_sensor *thermal_get_sensor_by_name(const char *);
- int thermal_add_cdev_to_zone(struct thermal_zone *,
- 				struct thermal_cooling_device *);
- struct thermal_cooling_device *thermal_get_cdev_by_name(const char *);
-+int thermal_add_sensor_trip_info(struct thermal_zone *,
-+			struct thermal_sensor *, struct thermal_trip_point *);
- 
- #ifdef CONFIG_NET
- extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+diff --git a/Documentation/thermal/sysfs-api2.txt b/Documentation/thermal/sysfs-api2.txt
+new file mode 100644
+index 0000000..dd03297
+--- /dev/null
++++ b/Documentation/thermal/sysfs-api2.txt
+@@ -0,0 +1,240 @@
++Thermal Framework
++-----------------
++
++Written by Durgadoss R <durgadoss.r@intel.com>
++Copyright (c) 2014 Intel Corporation
++
++Created on: 15 January 2014
++
++0. Introduction
++---------------
++The Linux thermal framework provides a set of interfaces for thermal
++sensors and thermal cooling devices (fan, processor...) to register
++with the thermal management solution and to be a part of it.
++
++This document focuses on how to enable new thermal sensors and cooling
++devices to participate in thermal management. This solution is intended
++to be 'light-weight' and platform/architecture independent. Any thermal
++sensor/cooling device should be able to use the infrastructure easily.
++
++The goal of thermal framework is to expose the thermal sensor/zone and
++cooling device attributes in a consistent way. This will help the
++thermal governors to make use of the information to manage platform
++thermals efficiently.
++
++The thermal sensor source file can be generic (can be any sensor driver,
++in any subsystem). This driver will use the sensor APIs and register with
++thermal framework to participate in platform Thermal management. This
++does not (and should not) know about which zone it belongs to, or any
++other information about platform thermals. A sensor driver is a standalone
++piece of code, which can optionally register with thermal framework.
++
++However, for any platform, there should be a platformX_thermal.c file,
++which will know about the platform thermal characteristics (e.g how many
++sensors, zones, cooling devices, etc.. And how they are related to each other
++i.e the mapping information). Only in this file, the zone level APIs should
++be used, in which case the file will have all information required to attach
++various sensors to a particular zone.
++
++This way, we can have one platform level thermal file, which can support
++multiple platforms (may be)using the same set of sensors (but)binded in
++a different way. This file can get the platform thermal information
++through Firmware, ACPI tables, device tree etc.
++
++Unfortunately, today we don't have many drivers that can be clearly
++differentiated as 'sensor_file.c' and 'platform_thermal_file.c'.
++But very soon we will need/have. We see a lot of chip drivers,
++starting to use thermal framework; we should keep it really
++light-weight for them to do so but at the same time provide all
++the necessary features to participate in platform thermal management.
++
++An Example: drivers/hwmon/emc1403.c - a generic thermal chip driver
++In one platform this sensor can belong to 'ZoneA' and in another the
++same can belong to 'ZoneB'. But, emc1403.c does not really care about
++where does it belong. It just reports temperature.
++
++1. Terminology
++--------------
++This section describes the terminology used in the rest of this
++document as well as the thermal framework code.
++
++thermal_sensor: Hardware that can report temperature of a particular
++		spot in the platform, where it is placed. The temperature
++		reported by the sensor is the 'real' temperature reported
++		by the hardware.
++thermal_zone:	A virtual area on the device, that gets heated up. It may
++		have one or more thermal sensors attached to it.
++cooling_device:	Any component that can help in reducing the temperature of
++		a 'hot spot' either by reducing its performance (passive
++		cooling) or by other means(Active cooling E.g. Fan)
++
++trip_points:	Various temperature levels for each sensor. As of now, we
++		have four levels namely active, passive, hot and critical.
++		Hot and critical trip point support only one value whereas
++		active and passive can have any number of values. These
++		temperature values can come from platform data, and are
++		exposed through sysfs in a consistent manner. Stand-alone
++		thermal sensor drivers are not expected to know these values.
++		These values are RO.
++thresholds:	These are programmable temperature limits, on reaching which
++		the thermal sensor generates an interrupt. The framework is
++		notified about this interrupt to take appropriate action.
++		There can be as many number of thresholds as that of the
++		hardware supports. These values are RW.
++
++thermal_map:	This provides the mapping (aka binding) information between
++		various sensors and cooling devices in a particular zone.
++		Typically, this also comes from platform data; Stand-alone
++		sensor drivers or cooling device drivers are not expected
++		to know these mapping information.
++
++2. Thermal framework APIs
++-------------------------
++2.1: For Thermal Sensors
++2.1.1 thermal_sensor_register:
++	This function creates a new sensor directory under /sys/class/thermal/
++	as sensor[0-*]. This API is expected to be called by thermal sensor
++	drivers. These drivers may or may not be in thermal subsystem. This
++	function returns a thermal_sensor structure on success and appropriate
++	error on failure.
++
++	name: Name of the sensor
++	count: Number of programmable thresholds associated with this sensor
++	devdata: Device private data
++	ops: Thermal sensor callbacks
++		.get_temp: obtain the current temperature of the sensor
++		.get_trend: obtain the trend of the sensor
++		.get_threshold: get a particular threshold temperature
++		.set_threshold: set a particular threshold temperature
++		.get_hyst: get hysteresis value associated with a threshold
++		.set_hyst: set hysteresis value associated with a threshold
++
++2.1.2 thermal_sensor_unregister:
++	This function deletes the sensor directory under /sys/class/thermal/
++	for the given sensor. Thermal sensor drivers may call this API
++	during the driver's 'exit' routine.
++
++	ts: Thermal sensor that has to be unregistered
++
++2.2: For Cooling Devices
++2.2.1 thermal_cdev_register:
++	This function adds a new thermal cooling device (fan/processor/...)
++	to /sys/class/thermal/ folder as cooling_device[0-*]. This function
++	is expected to be called by cooling device drivers that may be
++	present in other subsystems also.
++
++	name: the cooling device name
++	devdata: device private data
++	ops: thermal cooling devices callbacks
++	.get_max_state: get the Maximum throttle state of the cooling device
++	.get_cur_state: get the Current throttle state of the cooling device
++	.set_cur_state: set the Current throttle state of the cooling device
++
++2.2.2 thermal_cdev_unregister:
++	This function deletes the given cdev entry form /sys/class/thermal;
++	and also cleans all the symlinks referred from various zones.
++
++	cdev: Cooling device to be unregistered
++
++2.3: For Thermal Zones
++2.3.1 thermal_create_thermal_zone:
++	This function adds a new 'zone' under /sys/class/thermal/
++	directory as zone[0-*]. This zone has at least one thermal
++	sensor and at most MAX_SENSORS_PER_ZONE number of sensors
++	attached to it. Similarly, this zone has at least one cdev
++	and at most MAX_CDEVS_PER_ZONE number of cdevs attached to it.
++	As of now, MAX_*_PER_ZONE values are hard-coded to 5. We can
++	make them configurable, through Kconfig option(during 'menuconfig').
++
++	name: Name of the thermal zone
++	devdata: Device private data
++
++2.3.2 thermal_add_sensor_to_zone
++	This function adds a 'sensorX' entry under /sys/class/thermal/
++	zoneY/ directory. This 'sensorX' is a symlink to the actual
++	sensor entry under /sys/class/thermal/. Correspondingly, the
++	method remove_sensor_from_zone deletes the symlink.
++
++	tz: thermal zone structure
++	ts: thermal sensor structure
++
++2.3.3 thermal_add_cdev_to_zone
++	This function adds a 'cdevX' entry under /sys/class/thermal/
++	zoneY/ directory. This 'cdevX' is a symlink to the actual
++	cdev entry under /sys/class/thermal/. Correspondingly, the
++	method remove_cdev_from_zone deletes the symlink.
++
++	tz: thermal zone structure
++	cdev: thermal cooling device structure
++
++2.4 For Thermal Trip
++2.4.1 thermal_add_sensor_trip_info
++	This function adds trip point information for the given sensor,
++	(under a given zone) under /sys/class/thermal/zoneX/.
++	This API creates sysfs attributes namely:
++	sensorX_trip_activeY, sensorX_trip_passiveY, sensorX_trip_hot,
++	sensorX_trip_critical. Each of these hold one trip point temperature
++	(in mC) values, as provided from platform data. As of now, we
++	support many Active and Passive trip points but only one hot
++	one critical trip point.
++
++	tz: thermal zone structure
++	ts: thermal sensor to which the trip points are attached
++	trip: trip point structure. Usually obtained from platform data
++
++2.5 For Thermal Map
++2.5.1 thermal_add_map_entry
++	This function adds a 'map[0-*]' sysfs attribute under
++	/sys/class/thermal/zoneX/mapY_*. Each map attribute helps
++	to describe the binding relationship between a sensor and
++	a cdev in the given zone. The map structure is typically
++	obtained as platform data. For example, through ACPI tables,
++	SFI tables, Device tree etc. The trip mask is a hex value;
++	if 'n' th bit (from LSB) is set, then for trip point 'n' this
++	cdev is throttled with the given weight[n].
++
++	tz: thermal zone to which a 'map' is being added
++	map: thermal_map structure
++
++3. Sysfs attributes structure
++-----------------------------
++Thermal sysfs attributes will be represented under /sys/class/thermal.
++
++3.1: For Thermal Sensors
++	/sys/class/thermal/sensor[0-*]:
++		|---type:		Name of the thermal sensor
++		|---temp_input:		Current temperature in mC
++		|---threshold[0-*]:	Threshold temperature in mC
++		|---threshold[0-*]_hyst:Optional hysteresis value in mC
++
++3.2: For Thermal Cooling Devices
++	/sys/class/thermal/cooling_device[0-*]:
++		|---type:		Type of the cooling device
++		|---max_state:		Maximum throttle state of the cdev
++		|---cur_state:		Current throttle state of the cdev
++
++3.3: For Thermal Zones
++	/sys/class/thermal/zone[0-*]:
++		|---zone_name:			Name of the thermal zone
++		|---sensorX:			Symlink to ../sensorX
++		|---cdevY:			Symlink to ../cdevY
++		|---sensorX_trip_activeM:	Active trip point for sensorX
++		|---sensorX_trip_passiveN:	Passive trip point for sensorX
++		|---sensorX_trip_hot:		Hot trip point for sensorX
++		|---sensorX_trip_critical:	Critical trip point for sensorX
++		|---mapX_sensor_name:		Sensor Name
++		|---mapX_cdev_name:		Cooling device Name
++		|---mapX_trip_type:		Trip point type
++		|---mapX_trip_mask:		Trip point mask
++		|---mapX_weightY:		Weights (used by governors)
++
++3.5: For Thermal Map
++	Each attribute represents the mapping/binding information between
++	a sensor and a cdev, together with a trip type.
++	/sys/class/thermal/zoneX/:
++		|---mapY_trip_type:		active/passive
++		|---mapY_sensor_name:		cpu
++		|---mapY_cdev_name:		proc
++		|---mapY_trip_mask:		0x03
++		|---mapY_weight0:		50
++		|---mapY_weight1:		30
 -- 
 1.7.9.5
 
