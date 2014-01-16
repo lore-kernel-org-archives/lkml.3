@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaAPFmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 00:42:50 -0500
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:58352
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751581AbaAPFmr (ORCPT
+	id S1752146AbaAPFsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 00:48:12 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39331 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaAPFsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 00:42:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
-From: Prabhakar Kushwaha <prabhakar@freescale.com>
-To: <arnd@arndb.de>, <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <scottwood@freescale.com>,
-        Prabhakar Kushwaha <prabhakar@freescale.com>
-Subject: [PATCH 2/2][v3] powerpc/config: Enable memory driver
-Date: Thu, 16 Jan 2014 11:12:33 +0530
-Message-ID: <1389850953-19907-1-git-send-email-prabhakar@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 16 Jan 2014 00:48:07 -0500
+X-Originating-IP: 50.43.14.201
+Date: Wed, 15 Jan 2014 21:47:53 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v3 tip/core/timers 0/5] Crude timer-wheel latency hacks
+Message-ID: <20140116054753.GC16901@leaf>
+References: <20140116040203.GA5206@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140116040203.GA5206@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Freescale IFC controller has been moved to driver to driver/memory.
+On Wed, Jan 15, 2014 at 08:02:03PM -0800, Paul E. McKenney wrote:
+> Hello!
+> 
+> The following five patches provide some crude timer-wheel latency patches.
+> I understand that a more comprehensive solution is in progress, but in the
+> meantime, these patches work well in cases where a given CPU has either
+> zero or one timers pending, which is a common case for NO_HZ_FULL kernels.
+> Note that these patches do not help in the case where a given timer wheel
+> has a pair of widely separated timers, while the more comprehensive
+> solution is likely to handle more gracefully.  So, on the off-chance
+> that this is helpful to someone, the individual patches are as follows:
+> 
+> 1.	Add ->all_timers field to tbase_vec to count all timers, not
+> 	just the non-deferrable ones.
+> 
+> 2.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
+> 
+> 3.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
+> 	to empty.
+> 
+> 4.	Avoid jiffy-at-a-time stepping after a timer is added to an
+> 	initially empty timer wheel.
+> 
+> 5.	Make internal_add_timer() update ->next_timer if ->active_timers == 0,
+> 	courtesy of Oleg Nesterov.
 
-So enable memory driver in powerpc config
+For all five patches in v3:
 
-Signed-off-by: Prabhakar Kushwaha <prabhakar@freescale.com>
----
- Changes for v2: Sending as it is
- Changes for v3: Sending as it is
-
- arch/powerpc/configs/corenet32_smp_defconfig |    1 +
- arch/powerpc/configs/corenet64_smp_defconfig |    1 +
- arch/powerpc/configs/mpc85xx_defconfig       |    1 +
- arch/powerpc/configs/mpc85xx_smp_defconfig   |    1 +
- 4 files changed, 4 insertions(+)
-
-diff --git a/arch/powerpc/configs/corenet32_smp_defconfig b/arch/powerpc/configs/corenet32_smp_defconfig
-index bbd794d..087d437 100644
---- a/arch/powerpc/configs/corenet32_smp_defconfig
-+++ b/arch/powerpc/configs/corenet32_smp_defconfig
-@@ -142,6 +142,7 @@ CONFIG_RTC_DRV_DS3232=y
- CONFIG_RTC_DRV_CMOS=y
- CONFIG_UIO=y
- CONFIG_STAGING=y
-+CONFIG_MEMORY=y
- CONFIG_VIRT_DRIVERS=y
- CONFIG_FSL_HV_MANAGER=y
- CONFIG_EXT2_FS=y
-diff --git a/arch/powerpc/configs/corenet64_smp_defconfig b/arch/powerpc/configs/corenet64_smp_defconfig
-index 63508dd..25b03f8 100644
---- a/arch/powerpc/configs/corenet64_smp_defconfig
-+++ b/arch/powerpc/configs/corenet64_smp_defconfig
-@@ -129,6 +129,7 @@ CONFIG_EDAC=y
- CONFIG_EDAC_MM_EDAC=y
- CONFIG_DMADEVICES=y
- CONFIG_FSL_DMA=y
-+CONFIG_MEMORY=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- CONFIG_ISO9660_FS=m
-diff --git a/arch/powerpc/configs/mpc85xx_defconfig b/arch/powerpc/configs/mpc85xx_defconfig
-index d2e0fab..87aad6d 100644
---- a/arch/powerpc/configs/mpc85xx_defconfig
-+++ b/arch/powerpc/configs/mpc85xx_defconfig
-@@ -213,6 +213,7 @@ CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_CMOS=y
- CONFIG_DMADEVICES=y
- CONFIG_FSL_DMA=y
-+CONFIG_MEMORY=y
- # CONFIG_NET_DMA is not set
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
-diff --git a/arch/powerpc/configs/mpc85xx_smp_defconfig b/arch/powerpc/configs/mpc85xx_smp_defconfig
-index 4cb7b59..d5d6915 100644
---- a/arch/powerpc/configs/mpc85xx_smp_defconfig
-+++ b/arch/powerpc/configs/mpc85xx_smp_defconfig
-@@ -214,6 +214,7 @@ CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_CMOS=y
- CONFIG_DMADEVICES=y
- CONFIG_FSL_DMA=y
-+CONFIG_MEMORY=y
- # CONFIG_NET_DMA is not set
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
--- 
-1.7.9.5
-
-
-
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
