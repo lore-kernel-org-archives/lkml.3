@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaAPFuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 00:50:24 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:58936
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751297AbaAPFsH (ORCPT
+	id S1751967AbaAPFyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 00:54:12 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47826 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaAPFyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 00:48:07 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21a7h1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>
-CC: <scottwood@freescale.com>, <LeoLi@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 2/7] DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
-Date: Thu, 16 Jan 2014 13:47:21 +0800
-Message-ID: <1389851246-8564-3-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
+	Thu, 16 Jan 2014 00:54:10 -0500
+Date: Thu, 16 Jan 2014 05:53:57 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Rakesh Pandit <rakesh@tuxera.com>
+Cc: ebiederm@xmission.com, keescook@chromium.org, serge.hallyn@canonical.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] befs: iget_locked() doesn't return an ERR_PTR
+Message-ID: <20140116055357.GW10323@ZenIV.linux.org.uk>
+References: <20140115175828.GA3514@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115175828.GA3514@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Wed, Jan 15, 2014 at 07:58:28PM +0200, Rakesh Pandit wrote:
+> Also fix befs_iget return value if iget_locked fails.
 
-Delete attribute DMA_INTERRUPT because fsldma doesn't support this function,
-exception will be thrown if talitos is used to offload xor at the same time.
+Applied, but I really wonder if we'd made a mistake with iget{5}_locked()
+API - perhaps the calling conventions returning ERR_PTR(-ENOMEM) would've
+been better...  Most of the callers are immediately followed by
+	if (!inode)
+		return ERR_PTR(-ENOMEM);
+and in fact something like
+inode_is_new(inode) = !ERR_PTR(inode) && (inode->i_flags & I_NEW)
+might've killed even more boilerplate in callers, so it might make
+sense to introduce a new variants of iget{,5}_locked that would
+return ERR_PTR(-ENOMEM) on out-of-memory and mark the original variants
+obsolete after a while...
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
----
- drivers/dma/fsldma.c |   31 -------------------------------
- 1 file changed, 31 deletions(-)
+Anyway, for now your patch is obviously the right fix.
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index fbf19d3..95236e6 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -534,35 +534,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
- }
- 
- static struct dma_async_tx_descriptor *
--fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
--{
--	struct fsldma_chan *chan;
--	struct fsl_desc_sw *new;
--
--	if (!dchan)
--		return NULL;
--
--	chan = to_fsl_chan(dchan);
--
--	new = fsl_dma_alloc_descriptor(chan);
--	if (!new) {
--		chan_err(chan, "%s\n", msg_ld_oom);
--		return NULL;
--	}
--
--	new->async_tx.cookie = -EBUSY;
--	new->async_tx.flags = flags;
--
--	/* Insert the link descriptor to the LD ring */
--	list_add_tail(&new->node, &new->tx_list);
--
--	/* Set End-of-link to the last link descriptor of new list */
--	set_ld_eol(chan, new);
--
--	return &new->async_tx;
--}
--
--static struct dma_async_tx_descriptor *
- fsl_dma_prep_memcpy(struct dma_chan *dchan,
- 	dma_addr_t dma_dst, dma_addr_t dma_src,
- 	size_t len, unsigned long flags)
-@@ -1318,12 +1289,10 @@ static int fsldma_of_probe(struct platform_device *op)
- 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
- 
- 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
--	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
- 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
- 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
--	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
- 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
- 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
- 	fdev->common.device_tx_status = fsl_tx_status;
--- 
-1.7.9.5
-
-
-
+BTW, the callers of iget{,5}_locked() that do not do that return
+ERR_PTR(-ENOMEM) on NULL thing are worth looking into:
+	* sysfs_get_inode() - callers of _that_ do the same thing; might
+as well have done it there.
+	* nilfs_iget_locked() - ditto.
+	* fuse_iget() - ditto.
+	* btrfs_iget_locked() - ditto.
+	* udf_iget() - callers galore, with very inconsistent error values
+propagated on that failure (EACCES, EIO, etc.); quite a few of those would
+be better off with ENOMEM (e.g. ->lookup() failing with EACCES on oom isn't
+right).
+	* __ecryptfs_get_inode() - EACCES instead of ENOMEM, for no good
+reason I can see...
+	* gfs2_iget() - ENOBUFS instead of ENOMEM.  ENOBUFS is 
+"No buffer space available (POSIX.1 (XSI STREAMS option))" and since
+we don't support STREAMS it's probably fair game, but... what the hell?
+	* ll_iget() - this one definitely ought to return ERR_PTR(), since
+it does that on other errors; callers check for both.  One of them converts
+NULL to ERR_PTR(-ENOMEM), another (in mount guts) treats it as EBADF (again,
+very odd return value when there's no file descriptors in sight).
+	* befs_iget() - the one you'd caught.
+	* hfs_iget() - one caller treats it as EACCES, another - as EINVAL.
+To make things more complicated, there's another failure exit, which probably
+should be EINVAL.  Overall, I'd make it return ERR_PTR()...
+	* cifs_iget() - probably would be better off with ERR_PTR(); most
+of the callers treat NULL as ENOMEM, but cifs_posix_mkdir() is really
+odd in that respect...  No sure what's going on there.
+	* hfs_btree_open() - callers end up treating that as EIO (and do that
+to kmalloc() failures right in there)
+	* hpfs_lookup() - treats all errors as ENOENT, that one included...
+	* hpfs_fill_super() - same, but treats everything as EINVAL
+	* bdget() and bdget_disk() - a bunch of callers forget to check for
+allocation failures at all; some are doing that legitimately, some are
+probably oopsable...
