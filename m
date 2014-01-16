@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaAPBtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:49:36 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44408 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaAPBte (ORCPT
+	id S1752437AbaAPBto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:49:44 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:61642 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349AbaAPBtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:49:34 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-a1-52d73aacffbe
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Gaurav Jain <gjain@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH] perf tools: Fix JIT profiling on heap
-Date: Thu, 16 Jan 2014 10:49:31 +0900
-Message-Id: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 15 Jan 2014 20:49:40 -0500
+MIME-Version: 1.0
+Date: Thu, 16 Jan 2014 08:49:38 +0700
+X-Google-Sender-Auth: LDJf3frKQ4fEUT9DGohiD4Vs7p0
+Message-ID: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com>
+Subject: Baytrail problems (was Re: Linux 3.13-rc8)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Paul Drews <paul.drews@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gaurav reported that perf cannot profile JIT program if it executes
-the code on heap.  This was because current map__new() only handle JIT
-on anon mappings - extends it to handle no_dso (heap, stack) case too.
+Adding in the appropriate people...
 
-This patch assumes JIT profiling only provides dynamic function
-symbols so check the mapping type to distinguish the case.  It'd
-provide no symbols for data mapping - if we need to support symbols on
-data mappings later it should be changed.
+On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
+<gnomes@lxorguk.ukuu.org.uk> wrote:
+>
+> It seems to hate Baytrail/T
+>
+> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
+> right but otherwise running nicely and playing 3D games to 3.13-rc8
+>
+> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
+>   in
 
-Reported-by: Gaurav Jain <gjain@fb.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/map.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
+but I guess the GPIO and ACPI ID addition ends up also enabling all
+the old code that Alan probably never ran in 3.11 because the driver
+didn't trigger on his machine.
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 9b9bd719aa19..ee1dd687a262 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 		map->ino = ino;
- 		map->ino_generation = ino_gen;
- 
--		if (anon) {
-+		if ((anon || no_dso) && type == MAP__FUNCTION) {
- 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
- 			filename = newfilename;
- 		}
-@@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			 * functions still return NULL, and we avoid the
- 			 * unnecessary map__load warning.
- 			 */
--			if (no_dso)
-+			if (type != MAP__FUNCTION)
- 				dso__set_loaded(dso, map->type);
- 		}
- 	}
--- 
-1.7.11.7
+Alan, do you have a crash picture/log?
 
+> - i915 console doesn't work
+
+Daniel/Dave?
+
+> - X can be kind of hacked to work by adding mode lines wit xrandr and
+>   turning the vga back on
+>
+> Bugs filed on both issues. The pinctrl one is nasty as it makes the i915
+> driver crash during initialisation, so the only way you can debug it is
+> pretty much a USB debug cable.
+>
+> Without pinctrl the crash goes away but the display still doesn't work.
+
+Thanks,
+
+              Linus
