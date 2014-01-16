@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaAPBbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:31:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49058 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314AbaAPBZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:25:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
-   d="scan'208";a="439548580"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v5 09/22] Remove mm/filemap_xip.c
-Date: Wed, 15 Jan 2014 20:24:27 -0500
-Message-Id: <ba13cd8603d774710a2116b17691c1e1fa82c450.1389779961.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+	id S1753315AbaAPBbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:31:19 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:8930 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaAPBbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:31:15 -0500
+Message-ID: <52D7366B.1030909@atmel.com>
+Date: Thu, 16 Jan 2014 09:31:23 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
+        <linux-sound@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ASoC: atmel_wm8904: make it available to choose clock
+References: <1389669956-2304-1-git-send-email-voice.shen@atmel.com> <1389669956-2304-3-git-send-email-voice.shen@atmel.com> <20140114203650.GX15567@sirena.org.uk>
+In-Reply-To: <20140114203650.GX15567@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is now empty as all of its contents have been replaced by fs/xip.c
+Hi Mark,
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- mm/Makefile      |  1 -
- mm/filemap_xip.c | 23 -----------------------
- 2 files changed, 24 deletions(-)
- delete mode 100644 mm/filemap_xip.c
+On 01/15/2014 04:36 AM, Mark Brown wrote:
+> On Tue, Jan 14, 2014 at 11:25:55AM +0800, Bo Shen wrote:
+>> Make it available to choose the clock from TK pin or RK pin. This
+>> is hardware design decided.
+>
+>> --- a/sound/soc/atmel/atmel_wm8904.c
+>> +++ b/sound/soc/atmel/atmel_wm8904.c
+>> @@ -108,6 +108,7 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
+>>   	struct device_node *codec_np, *cpu_np;
+>>   	struct snd_soc_card *card = &atmel_asoc_wm8904_card;
+>>   	struct snd_soc_dai_link *dailink = &atmel_asoc_wm8904_dailink;
+>> +	struct atmel_ssc_info *ssc_info;
+>>   	int ret;
+>>
+>>   	if (!np) {
+>> @@ -115,6 +116,15 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
+>>   		return -EINVAL;
+>>   	}
+>>
+>> +	ssc_info = devm_kzalloc(&pdev->dev, sizeof(*ssc_info), GFP_KERNEL);
+>> +	if (!ssc_info)
+>> +		return -ENOMEM;
+>> +
+>> +	ssc_info->clk_from_rk_pin =
+>> +		of_property_read_bool(np, "clk_from_rk_pin");
+>> +
+>> +	card->drvdata = (void *)ssc_info;
+>
+> Shouldn't this code be in the DAI driver?  Otherwise this series looks
+> fine to me, though the DT folks might have something to say I guess.
 
-diff --git a/mm/Makefile b/mm/Makefile
-index 305d10a..c019f5e 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -47,7 +47,6 @@ obj-$(CONFIG_SLUB) += slub.o
- obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
- obj-$(CONFIG_FAILSLAB) += failslab.o
- obj-$(CONFIG_MEMORY_HOTPLUG) += memory_hotplug.o
--obj-$(CONFIG_FS_XIP) += filemap_xip.o
- obj-$(CONFIG_MIGRATION) += migrate.o
- obj-$(CONFIG_QUICKLIST) += quicklist.o
- obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-deleted file mode 100644
-index 6316578..0000000
---- a/mm/filemap_xip.c
-+++ /dev/null
-@@ -1,23 +0,0 @@
--/*
-- *	linux/mm/filemap_xip.c
-- *
-- * Copyright (C) 2005 IBM Corporation
-- * Author: Carsten Otte <cotte@de.ibm.com>
-- *
-- * derived from linux/mm/filemap.c - Copyright (C) Linus Torvalds
-- *
-- */
--
--#include <linux/fs.h>
--#include <linux/pagemap.h>
--#include <linux/export.h>
--#include <linux/uio.h>
--#include <linux/rmap.h>
--#include <linux/mmu_notifier.h>
--#include <linux/sched.h>
--#include <linux/seqlock.h>
--#include <linux/mutex.h>
--#include <linux/gfp.h>
--#include <asm/tlbflush.h>
--#include <asm/io.h>
--
--- 
-1.8.5.2
+   For audio on Atmel SoC, it depends on three device nodes, one is SSC 
+node, one is the codec node and the sound node.
+   The sound node will parse by machine driver, and machine driver is 
+mainly for hardware connection. As the "clk_from_rk_pin" is decided by 
+hardware, so, I put it here.
+   If I move the code to dai driver, it will parse the sound node in dai 
+driver, I think it will make the code a little bit not explicit. What do 
+you think?
+
+Best Regards,
+Bo Shen
 
