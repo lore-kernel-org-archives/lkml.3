@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaAPCai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:30:38 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43894 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaAPCaf (ORCPT
+	id S1752846AbaAPCbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:31:33 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58256 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679AbaAPCbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:30:35 -0500
-Message-ID: <1389839550.5567.643.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3
- emulation
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: sagi grimberg <sagig@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Date: Wed, 15 Jan 2014 18:32:30 -0800
-In-Reply-To: <yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <52D6CD70.20706@mellanox.com>
-	 <1389822920.5567.560.camel@haakon3.risingtidesystems.com>
-	 <yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jan 2014 21:31:23 -0500
+X-AuditID: 9c93017e-b7b63ae000000e6a-d2-52d7447837b4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 06/12] tools lib traceevent: Unregister handler when kvm plugin unloaded
+Date: Thu, 16 Jan 2014 11:31:12 +0900
+Message-Id: <1389839478-5887-7-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
+References: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-15 at 20:42 -0500, Martin K. Petersen wrote:
-> >>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
-> 
-> nab> The issue is that existing fs/bio-integrity.c code always assumes
-> nab> client/initiator mode, in that it will attempt to
-> nab> bio_integrity_generate() protection information in the submit_bio
-> nab> WRITE path, and bio_integrity_verify() of protection information in
-> nab> the bio_endio READ completion path.
-> 
-> Only if the submit_bio() caller hasn't attached protection information
-> already. If you submit a bio with a bip already attached the block layer
-> will not generate/verify.
-> 
+The kvm handlers should be unregistered when the plugin unloaded
+otherwise they'll try to access invalid memory.
 
-Mmm, missed that detail.  So that would take care of the passthrough for
-the WRITE case then..
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/plugin_kvm.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-How about a passthrough on the READ completion side for target fabrics
-doing a hardware VERIFY..?  Any preferences how this should work..?
-
-Also, for IBLOCK responses to properly generate GUARD + REFERENCE tag
-CHECK_CONDITION sense failures from an underlying device VERIFY failure,
-there will also need to be a way to propagate up the failure status
-through bio_endio().  I assume bio_integrity_payload is the proper place
-for adding something like this..?
-
-One other item from my TODO list for IBLOCK protection support is how to
-go about determining which DIF type to expose in the target, based upon
-what is currently enabled on the underlying struct block_device.  I'm
-currently trying to deduce the protection type by looking at struct
-blk_integrity, but it would be helpful to make this explicit with
-bi->prot_type.
-
---nab
+diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
+index a0e282c6b967..9e0e8c61b43b 100644
+--- a/tools/lib/traceevent/plugin_kvm.c
++++ b/tools/lib/traceevent/plugin_kvm.c
+@@ -434,3 +434,32 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+ 				       PEVENT_FUNC_ARG_VOID);
+ 	return 0;
+ }
++
++void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
++{
++	pevent_unregister_event_handler(pevent, -1, "kvm", "kvm_exit",
++					kvm_exit_handler, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvm", "kvm_emulate_insn",
++					kvm_emulate_insn_handler, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvmmmu", "kvm_mmu_get_page",
++					kvm_mmu_get_page_handler, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvmmmu", "kvm_mmu_sync_page",
++					kvm_mmu_print_role, NULL);
++
++	pevent_unregister_event_handler(pevent, -1,
++					"kvmmmu", "kvm_mmu_unsync_page",
++					kvm_mmu_print_role, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvmmmu", "kvm_mmu_zap_page",
++					kvm_mmu_print_role, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvmmmu",
++			"kvm_mmu_prepare_zap_page", kvm_mmu_print_role,
++			NULL);
++
++	pevent_unregister_print_function(pevent, process_is_writable_pte,
++					 "is_writable_pte");
++}
+-- 
+1.7.11.7
 
