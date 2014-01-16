@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaAPNkn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:40:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38435 "EHLO
+	id S1753164AbaAPNk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:40:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38450 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaAPNkl (ORCPT
+	with ESMTP id S1752303AbaAPNkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:40:41 -0500
-Date: Thu, 16 Jan 2014 05:40:01 -0800
-From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-71362650b555a5b24c732e455484cc7cac1c8588@git.kernel.org>
+	Thu, 16 Jan 2014 08:40:52 -0500
+Date: Thu, 16 Jan 2014 05:40:21 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-e3de300d1212b42aa9d0d6031b12fca06ac00dd9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dan.carpenter@oracle.com,
-        juri.lelli@gmail.com
+        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, juri.lelli@gmail.com,
-        dan.carpenter@oracle.com
-In-Reply-To: <52D54E25.6060100@gmail.com>
-References: <52D54E25.6060100@gmail.com>
+        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
+In-Reply-To: <20140115113015.GB31570@twins.programming.kicks-ass.net>
+References: <20140115113015.GB31570@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline:
-  No need to check p if dl_se is valid
-Git-Commit-ID: 71362650b555a5b24c732e455484cc7cac1c8588
+Subject: [tip:sched/core] sched:
+  Preserve the nice level over sched_setscheduler() and sched_setparam()
+  calls
+Git-Commit-ID: e3de300d1212b42aa9d0d6031b12fca06ac00dd9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,52 +31,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:40:07 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:40:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  71362650b555a5b24c732e455484cc7cac1c8588
-Gitweb:     http://git.kernel.org/tip/71362650b555a5b24c732e455484cc7cac1c8588
-Author:     Juri Lelli <juri.lelli@gmail.com>
-AuthorDate: Tue, 14 Jan 2014 12:03:51 +0100
+Commit-ID:  e3de300d1212b42aa9d0d6031b12fca06ac00dd9
+Gitweb:     http://git.kernel.org/tip/e3de300d1212b42aa9d0d6031b12fca06ac00dd9
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 15 Jan 2014 12:30:15 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 16 Jan 2014 09:27:11 +0100
+CommitDate: Thu, 16 Jan 2014 09:27:14 +0100
 
-sched/deadline: No need to check p if dl_se is valid
+sched: Preserve the nice level over sched_setscheduler() and sched_setparam() calls
 
-Dan Carpenter reported new 'Smatch' warnings:
+Previously sched_setscheduler() and sched_setparam() would not affect
+the nice value of a task, restore this behaviour.
 
-  > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched/core
-  > head:   130816ce4d5f69167324f7272e70aa3d641677c6
-  > commit: 1baca4ce16b8cc7d4f50be1f7914799af30a2861 [17/50] sched/deadline: Add SCHED_DEADLINE SMP-related data structures & logic
-  >
-  > kernel/sched/deadline.c:937 pick_next_task_dl() warn: variable dereferenced before check 'p' (see line 934)
-
-BUG_ON() already fires if pick_next_dl_entity() doesn't return a valid
-dl_se. No need to check if p is valid afterward.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Fixes: 1baca4ce16b8 ("sched/deadline: Add SCHED_DEADLINE SMP-related data structures & logic")
-Link: http://lkml.kernel.org/r/52D54E25.6060100@gmail.com
+Cc: raistlin@linux.it
+Cc: juri.lelli@gmail.com
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Fixes: d50dde5a10f3 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
+Link: http://lkml.kernel.org/r/20140115113015.GB31570@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/deadline.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/sched/core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index ee25361..0de2482 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1007,8 +1007,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
- 	p->se.exec_start = rq_clock_task(rq);
- 
- 	/* Running task will never be pushed. */
--	if (p)
--		dequeue_pushable_dl_task(rq, p);
-+       dequeue_pushable_dl_task(rq, p);
- 
- #ifdef CONFIG_SCHED_HRTICK
- 	if (hrtick_enabled(rq))
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26af370..c1b3d7e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3451,7 +3451,8 @@ int sched_setscheduler(struct task_struct *p, int policy,
+ {
+ 	struct sched_attr attr = {
+ 		.sched_policy   = policy,
+-		.sched_priority = param->sched_priority
++		.sched_priority = param->sched_priority,
++		.sched_nice	= PRIO_TO_NICE(p->static_prio),
+ 	};
+ 	return __sched_setscheduler(p, &attr, true);
+ }
+@@ -3481,7 +3482,8 @@ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
+ {
+ 	struct sched_attr attr = {
+ 		.sched_policy   = policy,
+-		.sched_priority = param->sched_priority
++		.sched_priority = param->sched_priority,
++		.sched_nice	= PRIO_TO_NICE(p->static_prio),
+ 	};
+ 	return __sched_setscheduler(p, &attr, false);
+ }
