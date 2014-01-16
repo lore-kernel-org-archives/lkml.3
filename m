@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaAPSut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:50:49 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:30752 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaAPSuq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:50:46 -0500
-Message-ID: <1389898239.11912.61.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of
- the algorithm
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Daniel Borkmann <dborkman@redhat.com>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "Veaceslav Falico" <vfalico@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>,
-        "Jakub Zawadzki" <darkjames-ws@darkjames.pl>
-Date: Thu, 16 Jan 2014 18:50:39 +0000
-In-Reply-To: <alpine.DEB.2.10.1401161036110.29778@nuc>
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
-	 <1389828228-30312-3-git-send-email-dborkman@redhat.com>
-	 <alpine.DEB.2.10.1401161036110.29778@nuc>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1751914AbaAPSvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:51:14 -0500
+Received: from fieldses.org ([174.143.236.118]:33312 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484AbaAPSvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:51:12 -0500
+Date: Thu, 16 Jan 2014 13:51:07 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Bob Peterson <rpeterso@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140116185107.GE16829@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140116161015.GC16829@fieldses.org>
+ <1389888942.2779.34.camel@menhir>
+ <20140116164411.GD16829@fieldses.org>
+ <1875464309.3327883.1389891247171.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20438.001
-X-TM-AS-Result: No--22.408400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1875464309.3327883.1389891247171.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 10:37 -0600, Christoph Lameter wrote:
-> On Thu, 16 Jan 2014, Daniel Borkmann wrote:
+On Thu, Jan 16, 2014 at 11:54:07AM -0500, Bob Peterson wrote:
+> ----- Original Message -----
+> | Something like this?
+> (snip)
+> | @@ -779,6 +782,11 @@ static struct dentry *__gfs2_lookup(struct inode *dir,
+> | struct dentry *dentry,
+> |  	}
+> |  
+> |  	d = d_splice_alias(inode, dentry);
+> | +	if (IS_ERR(d)) {
+> | +		iput(inode);
+> | +		gfs2_glock_dq_uninit(&gh);
+> | +		return ERR_PTR(error);
 > 
-> > - * or else the performance is slower than a normal divide.
-> > - */
-> > -extern u32 reciprocal_value(u32 B);
-> > +struct reciprocal_value {
-> > +	u32 m;
-> > +	u8 sh1, sh2;
-> > +};
-> >
-> > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
-> >
-> > -static inline u32 reciprocal_divide(u32 A, u32 R)
-> > +struct reciprocal_value reciprocal_value(u32 d);
-> 
-> A function that returns a struct? That works? Which gcc versions support
-> it?
+> ---------------------------------^
+> Shouldn't that be ERR_PTR(d)?
 
-At least since gcc 1.29, given:
+Oops, yeah--well, actually just "d" I guess.
 
-Thu Sep 22 15:57:41 1988  Richard Stallman  (rms at sugar-bombs.ai.mit.edu)
-[...]
-	* stmt.c (expand_function_start): Set current_function_needs_context
-	and current_function_returns_struct.
+This is what I've got for what it's worth.
 
-Hope that's not a problem...
+--b.
 
-Ben.
+commit 6fba5295019b52a03d76c9e9570952466051a7a6
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Thu Jan 16 11:44:53 2014 -0500
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+    gfs2: revert "GFS2: d_splice_alias() can't return error"
+    
+    0d0d110720d7960b77c03c9f2597faaff4b484ae asserts that "d_splice_alias()
+    can't return error unless it was given an IS_ERR(inode)".
+    
+    That was true of the implementation of d_splice_alias, but this is
+    really a problem with d_splice_alias: at a minimum it should be able to
+    return -ELOOP in the case where inserting the given dentry would cause a
+    directory loop.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index 7119504..3f44902 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -585,6 +585,9 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+ 	error = PTR_ERR(inode);
+ 	if (!IS_ERR(inode)) {
+ 		d = d_splice_alias(inode, dentry);
++		error = PTR_ERR(d);
++		if (IS_ERR(d))
++			goto fail_gunlock;
+ 		error = 0;
+ 		if (file) {
+ 			if (S_ISREG(inode->i_mode)) {
+@@ -779,6 +782,11 @@ static struct dentry *__gfs2_lookup(struct inode *dir, struct dentry *dentry,
+ 	}
+ 
+ 	d = d_splice_alias(inode, dentry);
++	if (IS_ERR(d)) {
++		iput(inode);
++		gfs2_glock_dq_uninit(&gh);
++		return d;
++	}
+ 	if (file && S_ISREG(inode->i_mode))
+ 		error = finish_open(file, dentry, gfs2_open_common, opened);
+ 
