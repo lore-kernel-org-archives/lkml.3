@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaAPHqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 02:46:01 -0500
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:60837 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751545AbaAPHp7 (ORCPT
+	id S1752225AbaAPHqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 02:46:52 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:38108 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaAPHqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 02:45:59 -0500
-Message-ID: <52D78E2C.70704@mellanox.com>
-Date: Thu, 16 Jan 2014 09:45:48 +0200
-From: sagi grimberg <sagig@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 16 Jan 2014 02:46:47 -0500
+Date: Wed, 15 Jan 2014 23:46:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch v2 -mm] mm, oom: prefer thread group leaders for display
+ purposes
+In-Reply-To: <alpine.DEB.2.02.1401152344560.14407@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1401152345330.14407@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1401151837560.1835@chino.kir.corp.google.com> <20140116070549.GL6963@cmpxchg.org> <alpine.DEB.2.02.1401152344560.14407@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	<52D6CD70.20706@mellanox.com>	<1389822920.5567.560.camel@haakon3.risingtidesystems.com> <yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/2014 3:42 AM, Martin K. Petersen wrote:
->>>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
-> nab> The issue is that existing fs/bio-integrity.c code always assumes
-> nab> client/initiator mode, in that it will attempt to
-> nab> bio_integrity_generate() protection information in the submit_bio
-> nab> WRITE path, and bio_integrity_verify() of protection information in
-> nab> the bio_endio READ completion path.
->
-> Only if the submit_bio() caller hasn't attached protection information
-> already. If you submit a bio with a bip already attached the block layer
-> will not generate/verify.
->
+When two threads have the same badness score, it's preferable to kill the 
+thread group leader so that the actual process name is printed to the 
+kernel log rather than the thread group name which may be shared amongst 
+several processes.
 
-Yes, that was my understanding as well.
+This was the behavior when select_bad_process() used to do 
+for_each_process(), but it now iterates threads instead and leads to 
+ambiguity.
 
-Thanks Martin,
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ v2: fixes missing get_task_struct() found by Johannes.
 
-Sagi.
+ mm/memcontrol.c | 19 ++++++++++++-------
+ mm/oom_kill.c   | 12 ++++++++----
+ 2 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a815686..d69c4b3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1841,13 +1841,18 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 				break;
+ 			};
+ 			points = oom_badness(task, memcg, NULL, totalpages);
+-			if (points > chosen_points) {
+-				if (chosen)
+-					put_task_struct(chosen);
+-				chosen = task;
+-				chosen_points = points;
+-				get_task_struct(chosen);
+-			}
++			if (points < chosen_points)
++				continue;
++			/* Prefer thread group leaders for display purposes */
++			if (points == chosen_points &&
++			    thread_group_leader(chosen))
++				continue;
++
++			if (chosen)
++				put_task_struct(chosen);
++			chosen = task;
++			chosen_points = points;
++			get_task_struct(chosen);
+ 		}
+ 		css_task_iter_end(&it);
+ 	}
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 054ff47..1dca3d8 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -327,10 +327,14 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			break;
+ 		};
+ 		points = oom_badness(p, NULL, nodemask, totalpages);
+-		if (points > chosen_points) {
+-			chosen = p;
+-			chosen_points = points;
+-		}
++		if (points < chosen_points)
++			continue;
++		/* Prefer thread group leaders for display purposes */
++		if (points == chosen_points && thread_group_leader(chosen))
++			continue;
++
++		chosen = p;
++		chosen_points = points;
+ 	}
+ 	if (chosen)
+ 		get_task_struct(chosen);
