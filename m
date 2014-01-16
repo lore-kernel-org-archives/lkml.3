@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaAPNpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:45:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37954 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaAPNpj (ORCPT
+	id S1752826AbaAPNrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:47:13 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:46795 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646AbaAPNrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:45:39 -0500
-Date: Thu, 16 Jan 2014 14:44:40 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH v3 tip/core/timers 0/5] Crude timer-wheel latency hacks
-Message-ID: <20140116134440.GS31570@twins.programming.kicks-ass.net>
-References: <20140116040203.GA5206@linux.vnet.ibm.com>
+	Thu, 16 Jan 2014 08:47:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116040203.GA5206@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140116125727.GI30257@mudshark.cambridge.arm.com>
+References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
+	<20140116115634.GE30257@mudshark.cambridge.arm.com>
+	<CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
+	<20140116125727.GI30257@mudshark.cambridge.arm.com>
+Date: Thu, 16 Jan 2014 14:47:10 +0100
+Message-ID: <CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
+Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 08:02:03PM -0800, Paul E. McKenney wrote:
-> Hello!
-> 
-> The following five patches provide some crude timer-wheel latency patches.
-> I understand that a more comprehensive solution is in progress, but in the
-> meantime, these patches work well in cases where a given CPU has either
-> zero or one timers pending, which is a common case for NO_HZ_FULL kernels.
-> Note that these patches do not help in the case where a given timer wheel
-> has a pair of widely separated timers, while the more comprehensive
-> solution is likely to handle more gracefully.  So, on the off-chance
-> that this is helpful to someone, the individual patches are as follows:
-> 
-> 1.	Add ->all_timers field to tbase_vec to count all timers, not
-> 	just the non-deferrable ones.
-> 
-> 2.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
-> 
-> 3.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
-> 	to empty.
-> 
-> 4.	Avoid jiffy-at-a-time stepping after a timer is added to an
-> 	initially empty timer wheel.
-> 
-> 5.	Make internal_add_timer() update ->next_timer if ->active_timers == 0,
-> 	courtesy of Oleg Nesterov.
+Will,
 
-They seem like perfectly fine bandaids ;-)
+On 16 January 2014 13:57, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Jan 16, 2014 at 12:26:53PM +0000, Jean Pihet wrote:
+>> On 16 January 2014 12:56, Will Deacon <will.deacon@arm.com> wrote:
+>> > In your previous series, compat backtracing is actually split out into a
+>> > separate function (compat_user_backtrace), so it would be more consistent to
+>> > have a compat_user_stack_pointer macro, rather than add this check here.
+The compat_user_backtrace function is used to unwind using the frame
+pointer, it is not used to unwind using the dwarf info (which uses the
+user stack pointer).
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+>>
+>> Do you mean this change instead?
+>
+> I don't think so...
+>
+>> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+>> index 569b2187..9b88d2e 100644
+>> --- a/kernel/events/internal.h
+>> +++ b/kernel/events/internal.h
+>> @@ -185,7 +185,8 @@ static inline bool arch_perf_have_user_stack_dump(void)
+>>         return true;
+>>  }
+>>
+>> -#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
+>> +#define perf_user_stack_pointer(regs) \
+>> +       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+>
+> This doesn't belong in core code; compat_user_mode and the fields of regs
+> are arm64-specific.
+Right.
+
+> So I suppose you need to rework your original patch to
+> call compat_user_stack_pointer (which we already define in compat.h for
+> arm64) if compat_user_mode(regs)).
+The perf core code calls perf_user_stack_pointer(regs) to retrieve the
+stack pointer, with perf_user_stack_pointer(regs) defined as
+user_stack_pointer(regs).
+The problem is that perf is not aware of the compat mode, so every
+arch has to implement user_stack_pointer(regs) correctly.
+
+For this reason I think the first patch proposal is the right one
+unless the perf core code is redesigned to handle different ABIs. Do
+you see a better implementation?
+
+>
+> The problem there is the inconsistency with respect to the regs argument:
+>
+>   user_stack_pointer(regs)      // Returns user stack pointer for regs
+>   current_user_stack_pointer()  // Returns current user stack pointer
+>   compat_user_stack_pointer()   // Doesn't take a regs argument!
+>
+> On top of that, x86 treats those last two functions differently when current
+> is a compat task.
+>
+> So the simplest thing would be to make compat_user_stack_pointer expand to
+> user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
+> original patch fixing user_stack_pointer.
+>
+> Will
+
+Thx!
+Jean
