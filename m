@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaAPRKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:10:15 -0500
-Received: from www.sr71.net ([198.145.64.142]:42493 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002AbaAPRKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:10:10 -0500
-Message-ID: <52D81214.7070608@sr71.net>
-Date: Thu, 16 Jan 2014 09:08:36 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753060AbaAPRME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:12:04 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:38964 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbaAPRL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:11:59 -0500
+Date: Thu, 16 Jan 2014 12:13:10 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Will Deacon <will.deacon@arm.com>,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
+In-Reply-To: <20140114105721.GU7572@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1401161209280.1996@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu> <20140108225315.GG31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu> <20140109101921.GA26435@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu> <20140110094056.GK31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu> <20140114105721.GU7572@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
-References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net> <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com> <alpine.DEB.2.10.1401111854580.6036@nuc> <20140113014408.GA25900@lge.com> <52D41F52.5020805@sr71.net> <alpine.DEB.2.10.1401141404190.19618@nuc> <52D5B48D.30006@sr71.net> <alpine.DEB.2.10.1401161041160.29778@nuc>
-In-Reply-To: <alpine.DEB.2.10.1401161041160.29778@nuc>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 08:44 AM, Christoph Lameter wrote:
-> On Tue, 14 Jan 2014, Dave Hansen wrote:
+On Tue, 14 Jan 2014, Peter Zijlstra wrote:
+
+> On Mon, Jan 13, 2014 at 11:55:17PM -0500, Vince Weaver wrote:
+
+> > I don't see an existing pmu capabilities struct... or do you mean
+> > coming up with one?
 > 
->> On 01/14/2014 12:07 PM, Christoph Lameter wrote:
->>> One easy way to shrink struct page is to simply remove the feature. The
->>> patchset looked a bit complicated and does many other things.
->>
->> Sure.  There's a clear path if you only care about 'struct page' size,
->> or if you only care about making the slub fast path as fast as possible.
->>  We've got three variables, though:
->>
->> 1. slub fast path speed
+> Yeah, adding one.
+
+So would it be a struct, or just an integer with flags?
+
+> > Would it only hold an "overflow_interrupt_available" flag, or are
+> > there other generic capabilities it would be handy to know about?
 > 
-> The fast path does use this_cpu_cmpxchg_double which is something
-> different from a cmpxchg_double and its not used on struct page.
-
-Yeah, I'm confusing the two.  I might as well say: "slub speed when
-touching 'struct page'"
-
->> Arranged in three basic choices:
->>
->> 1. Big 'struct page', fast, medium complexity code
->> 2. Small 'struct page', slow, lowest complexity
+> Possible (other) flags could be:
 > 
-> The numbers that I see seem to indicate that a big struct page means slow.
+>   PMU_HAS_INT      -- would allow sampling events
+>   PMU_HAS_PRECISE  -- would allow any ::precise value
+>   PMU_HAS_FILTER   -- would allow all os/user/etc. flags
 
-This was a really tight loop where the caches are really hot, but it did
-show the large 'struct page' winning:
+should we export these to userspace somehow?
 
-	http://sr71.net/~dave/intel/slub/slub-perf-20140109.png
+It would be handy to be able to tell you're getting EOPNOTSUP because
+PMU_HAS_INT is not set for your pmu, rather than trying to guess why 
+things are failing.
 
-As I said in the earlier description, the paravirt code doing interrupt
-disabling was what really hurt the two spinlock cases.
-
+Vince
