@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325AbaAPGmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 01:42:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaAPGmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 01:42:22 -0500
-Date: Thu, 16 Jan 2014 08:41:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH net-next] tun/macvtap: limit the packets queued through
- rcvbuf
-Message-ID: <20140116064102.GA20993@redhat.com>
-References: <1389682387-28601-1-git-send-email-jasowang@redhat.com>
- <20140114082516.GB1101@redhat.com>
- <52D4F924.2040502@redhat.com>
- <20140114095219.GB2846@redhat.com>
- <52D60221.1060701@redhat.com>
- <20140115072104.GA32078@redhat.com>
- <52D7602F.8090800@redhat.com>
- <20140116054700.GC8915@redhat.com>
- <52D7763A.4040100@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D7763A.4040100@redhat.com>
+	id S1751544AbaAPGqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 01:46:25 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:4508 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaAPGqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 01:46:23 -0500
+Message-ID: <1389854777.2126.20.camel@j-VirtualBox>
+Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
+ too many tries
+From: Jason Low <jason.low2@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Date: Wed, 15 Jan 2014 22:46:17 -0800
+In-Reply-To: <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
+	 <1389840330.2944.104.camel@j-VirtualBox>
+	 <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 02:03:38PM +0800, Jason Wang wrote:
-> On 01/16/2014 01:47 PM, Michael S. Tsirkin wrote:
-> >On Thu, Jan 16, 2014 at 12:29:35PM +0800, Jason Wang wrote:
-> >>On 01/15/2014 03:21 PM, Michael S. Tsirkin wrote:
-> >>>On Wed, Jan 15, 2014 at 11:36:01AM +0800, Jason Wang wrote:
-> >>>>On 01/14/2014 05:52 PM, Michael S. Tsirkin wrote:
-> >>>>>On Tue, Jan 14, 2014 at 04:45:24PM +0800, Jason Wang wrote:
-> >>>>>>>On 01/14/2014 04:25 PM, Michael S. Tsirkin wrote:
-> >>>>>>>>>On Tue, Jan 14, 2014 at 02:53:07PM +0800, Jason Wang wrote:
-> >>>>>>>>>>>We used to limit the number of packets queued through tx_queue_length. This
-> >>>>>>>>>>>has several issues:
-> >>>>>>>>>>>
-> >>>>>>>>>>>- tx_queue_length is the control of qdisc queue length, simply reusing it
-> >>>>>>>>>>>   to control the packets queued by device may cause confusion.
-> >>>>>>>>>>>- After commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 ("macvtap: Add
-> >>>>>>>>>>>   support of packet capture on macvtap device."), an unexpected qdisc
-> >>>>>>>>>>>   caused by non-zero tx_queue_length will lead qdisc lock contention for
-> >>>>>>>>>>>   multiqueue deivce.
-> >>>>>>>>>>>- What we really want is to limit the total amount of memory occupied not
-> >>>>>>>>>>>   the number of packets.
-> >>>>>>>>>>>
-> >>>>>>>>>>>So this patch tries to solve the above issues by using socket rcvbuf to
-> >>>>>>>>>>>limit the packets could be queued for tun/macvtap. This was done by using
-> >>>>>>>>>>>sock_queue_rcv_skb() instead of a direct call to skb_queue_tail(). Also two
-> >>>>>>>>>>>new ioctl() were introduced for userspace to change the rcvbuf like what we
-> >>>>>>>>>>>have done for sndbuf.
-> >>>>>>>>>>>
-> >>>>>>>>>>>With this fix, we can safely change the tx_queue_len of macvtap to
-> >>>>>>>>>>>zero. This will make multiqueue works without extra lock contention.
-> >>>>>>>>>>>
-> >>>>>>>>>>>Cc: Vlad Yasevich<vyasevic@redhat.com>
-> >>>>>>>>>>>Cc: Michael S. Tsirkin<mst@redhat.com>
-> >>>>>>>>>>>Cc: John Fastabend<john.r.fastabend@intel.com>
-> >>>>>>>>>>>Cc: Stephen Hemminger<stephen@networkplumber.org>
-> >>>>>>>>>>>Cc: Herbert Xu<herbert@gondor.apana.org.au>
-> >>>>>>>>>>>Signed-off-by: Jason Wang<jasowang@redhat.com>
-> >>>>>>>>>No, I don't think we can change userspace-visible behaviour like that.
-> >>>>>>>>>
-> >>>>>>>>>This will break any existing user that tries to control
-> >>>>>>>>>queue length through sysfs,netlink or device ioctl.
-> >>>>>>>But it looks like a buggy API, since tx_queue_len should be for qdisc
-> >>>>>>>queue length instead of device itself.
-> >>>>>Probably, but it's been like this since 2.6.x time.
-> >>>>>Also, qdisc queue is unused for tun so it seemed kind of
-> >>>>>reasonable to override tx_queue_len.
-> >>>>>
-> >>>>>>>If we really want to preserve the
-> >>>>>>>behaviour, how about using a new feature flag and change the behaviour
-> >>>>>>>only when the device is created (TUNSETIFF) with the new flag?
-> >>>>>OK this addresses the issue partially, but there's also an issue
-> >>>>>of permissions: tx_queue_len can only be changed if
-> >>>>>capable(CAP_NET_ADMIN). OTOH in your patch a regular user
-> >>>>>can change the amount of memory consumed per queue
-> >>>>>by calling TUNSETRCVBUF.
-> >>>>Yes, but we have the same issue for TUNSETSNDBUF.
-> >>>To an extent, but TUNSETSNDBUF is different. It limits how much device can queue
-> >>>*in the networking stack* but each queue in the stack is also
-> >>>limited, when we exceed that we star dropping packets.
-> >>>So while with infinite value (which is the default btw)
-> >>>you can keep host pretty busy, you will not be able to run
-> >>>it out of memory.
-> >>>
-> >>>The proposed TUNSETRCVBUF would keep configured amount
-> >>>of memory around indefinitely so you can run host out of memory.
-> >>>
-> >>>So assuming all this
-> >>>How about an ethtool or netlink command to configure this
-> >>>instead?
-> >>>
-> >>Ok, so we can add net admin check for before trying to set rcvbuf.
-> >No, in practice I think using ioctl for sndbuf was also a mistake.
-> >Applications have no idea what to set it to - you need to know what else
-> >is running on the system, after a while
-> >QEMU ended up setting it back to infinity otherwise things kept
-> >breaking.
-> 
-> Yes, but it's not the problem of ioctl itself.
-> >ethtool or netlink would not have this problem.
-> >Which of the two is preferable I'm not sure.
-> >I wonder what do management tools such as libvirt prefer.
+On Thu, 2014-01-16 at 10:14 +0700, Linus Torvalds wrote:
+> On Thu, Jan 16, 2014 at 9:45 AM, Jason Low <jason.low2@hp.com> wrote:
 > >
+> > Any comments on the below change which unlocks the mutex before taking
+> > the lock->wait_lock to wake up a waiter? Thanks.
 > 
-> Libvirt usually create file descriptor, so it can also use ioctl()
-> to set sndbuf.
-> >>I
-> >>think it's better to use ioctl since we've already use it for
-> >>sndbuf. Using ethool means you need a dedicated new ethtool method
-> >>just for tuntap which seems sub-optimal.
-> >>Netlink looks better, but
-> >>we should also implement other ioctl also.
-> >I'm not sure what this last phrase means. Can you clarify pls?
-> >
-> 
-> Sure, I mean if we choose netlink, we'd better add other function
-> such as sndbuf, persistent flag and so on. Consider lots of existed
-> function were implemented through ioctl(), using it also for rcvbuf
-> looks ok and can simplify the changes of userspace.
+> Hmm. Doesn't that mean that a new lock owner can come in *before*
+> you've called debug_mutex_unlock and the lockdep stuff, and get the
+> lock? And then debug_mutex_lock() will be called *before* the unlocker
+> called debug_mutex_unlock(), which I'm sure confuses things.
 
-I'm not sure how long will it take for userspace to
-take advantage of this, or what guidance we'll give
-userspace.
+If obtaining the wait_lock for debug_mutex_unlock is the issue, then
+perhaps we can address that by taking care of
+#ifdef CONFIG_DEBUG_MUTEXES. In the CONFIG_DEBUG_MUTEXES case, we can
+take the wait_lock first, and in the regular case, take the wait_lock
+after releasing the mutex.
 
-The advantage of ethtool is that users can tweak settings
-without updating userspace management tools at all.
+#ifdef CONFIG_DEBUG_MUTEXES
+	spin_lock_mutex(&lock->wait_lock, flags);
+#endif
 
+        mutex_release(&lock->dep_map, nested, _RET_IP_);
+        debug_mutex_unlock(lock);
+        if (__mutex_slowpath_needs_to_unlock())
+                atomic_set(&lock->count, 1);
 
-Basically this new interface comes to replace the use of
-tx_queue_len which can be set from sysfs and ethtool
-so it should not be harder to use.
+#ifndef CONFIG_DEBUG_MUTEXES
+	spin_lock_mutex(&lock->wait_lock, flags);
+#endif
 
-> >>>>>>>>>Take a look at my patch in msg ID 20140109071721.GD19559@redhat.com
-> >>>>>>>>>which gives one way to set tx_queue_len to zero without
-> >>>>>>>>>breaking userspace.
-> >>>>>>>If I read the patch correctly, it will make no way for the user who
-> >>>>>>>really want to change the qdisc queue length for tun.
-> >>>>>Why would this matter?  As far as I can see qdisc queue is currently unused.
-> >>>>>
-> >>>>User may use qdisc to do port mirroring, bandwidth limitation, traffic
-> >>>>prioritization or more for a VM. So we do have users and maybe more
-> >>>>consider the case of vpn.
-> >>>Well it's not used by default at least.
-> >>>I remember that we discussed this previously actually.
-> >>>
-> >>>If all we want to do actually is utilize no_qdisc by default,
-> >>>we can simply use Eric's patch:
-> >>>
-> >>>http://article.gmane.org/gmane.linux.kernel/1279597
-> >>>
-> >>>and a similar patch for macvtap.
-> >>>I tried it at the time and it didn't seem to help performance
-> >>>at all, but a lot has changed since, in particular I didn't
-> >>>test mq.
-> >>>
-> >>>If you now have results showing how it's beneficial, pls post them.
-> >>>
-> >>I will have a test to see the difference.
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
