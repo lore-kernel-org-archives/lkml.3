@@ -1,172 +1,575 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaAPQd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:33:27 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49661 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaAPQdY (ORCPT
+	id S1752843AbaAPQeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:34:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49914 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590AbaAPQeQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:33:24 -0500
-Date: Thu, 16 Jan 2014 17:33:22 +0100
-From: Petr Janecek <janecek@ucw.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: BUG: sleeping function called from invalid context at
- block/blk-core.c:1690
-Message-ID: <20140116163322.GA5862@atrey.karlin.mff.cuni.cz>
+	Thu, 16 Jan 2014 11:34:16 -0500
+Date: Thu, 16 Jan 2014 16:34:09 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain
+ look-up
+Message-ID: <20140116163409.GD25540@e102568-lin.cambridge.arm.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+ <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 16 Jan 2014 16:34:10.0753 (UTC) FILETIME=[C8C39310:01CF12D8]
+X-MC-Unique: 114011616341313201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Tomasz,
 
-the crash happended ~11s after start of rsync from remote site (on a
-slow link) to local xfs.  Before that, local backups (rsync ext4 -> xfs,
-ext4 -> btrfs) had run.  The xfs is on lvm on md raid1 of two disks.
-The only other thing running on this server were idle win7 in kvm.  The
-system is current debian stable, only the kernel is vanilla 3.12.5.
+thank you for posting this series. I would like to use the DT bindings
+for power domains in the bindings for C-states on ARM:
 
+http://comments.gmane.org/gmane.linux.power-management.general/41012
 
-[2110283.280635] BUG: sleeping function called from invalid context at block/blk-core.c:1690
-[2110283.288905] BUG: unable to handle kernel paging request at 00000000ade1b4b0
-[2110283.296124] IP: [<ffffffff810714e4>] cpuacct_charge+0x62/0xaa
-[2110283.302100] PGD 0 
-[2110283.304338] Oops: 0000 [#1] SMP 
-[2110283.307818] Modules linked in: btrfs raid6_pq xor nls_cp437 vfat fat nls_utf8 isofs usb_storage vhost_net macvtap macvlan vhost tun ip6table_filter ip6_tables xt_multiport iptable_filter ip_tables x_tables cn fuse dummy bridge stp llc xfs libcrc32c ext3 jbd hwmon_vid loop firewire_sbp2 firewire_core crc_itu_t coretemp kvm_intel kvm crc32c_intel i2c_i801 iTCO_wdt iTCO_vendor_support psmouse i7core_edac microcode evdev i2c_core serio_raw edac_core lpc_ich mfd_core acpi_cpufreq processor thermal_sys button ext4 crc16 jbd2 mbcache dm_mod raid1 md_mod sg sd_mod crc_t10dif crct10dif_common hid_generic usbhid hid ehci_pci ehci_hcd ahci libahci libata scsi_mod e1000e ptp pps_core usbcore usb_common
-[2110283.371450] CPU: 1 PID: 12867 Comm: kworker/u16:3 Not tainted 3.12.5 #36
-[2110283.378344] Hardware name: Supermicro X8SIL/X8SIL, BIOS 1.1 05/27/2010
-[2110283.385068] Workqueue: writeback bdi_writeback_workfn (flush-253:3)
-[2110283.391577] task: ffff880232c88fa0 ti: ffff8802258f2000 task.ti: ffff8802258f2000
-[2110283.399262] RIP: 0010:[<ffffffff810714e4>]  [<ffffffff810714e4>] cpuacct_charge+0x62/0xaa
-[2110283.407672] RSP: 0018:ffff88023fc43c28  EFLAGS: 00010096
-[2110283.413173] RAX: 000000000000d250 RBX: ffff880232c88fa0 RCX: 0000000000000000
-[2110283.420518] RDX: ffffffff816373e0 RSI: ffffffff81635040 RDI: ffff880232c88fa0
-[2110283.427854] RBP: ffff88023fc43c58 R08: 0000000000026014 R09: 0000000000000001
-[2110283.435191] R10: ffffffff81635040 R11: ffffffff81071482 R12: 0000000000a2b0c6
-[2110283.442538] R13: 00000000258f2028 R14: 000124d6bff064e9 R15: ffff880232c88fa0
-[2110283.449884] FS:  0000000000000000(0000) GS:ffff88023fc40000(0000) knlGS:0000000000000000
-[2110283.458181] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[2110283.464123] CR2: 00000000ade1b4b0 CR3: 000000000160b000 CR4: 00000000000027e0
-[2110283.471468] Stack:
-[2110283.473677]  ffffffff81071482 0000000000000000 ffff88023fc43cb8 0000000000a2b0c6
-[2110283.481367]  ffff880232c89008 ffff880232c88fa0 ffff88023fc43c88 ffffffff8106c3f8
-[2110283.489059]  ffff88023fc53668 ffff880232c89008 0000000000000000 0000000000000001
-[2110283.496750] Call Trace:
-[2110283.499394]  <IRQ> 
-[2110283.501498]  [<ffffffff81071482>] ? cpuacct_account_field+0xb2/0xb2
-[2110283.508198]  [<ffffffff8106c3f8>] update_curr+0x11a/0x15f
-[2110283.513793]  [<ffffffff8106c7fa>] entity_tick+0x1b/0xe7
-[2110283.519214]  [<ffffffff8106c8ee>] task_tick_fair+0x28/0x46
-[2110283.524898]  [<ffffffff81065c2d>] scheduler_tick+0x5d/0xc6
-[2110283.530581]  [<ffffffff81045ebc>] update_process_times+0x5d/0x6d
-[2110283.536781]  [<ffffffff810896cd>] tick_sched_handle+0x45/0x54
-[2110283.542723]  [<ffffffff8108988e>] tick_sched_timer+0x58/0x78
-[2110283.548579]  [<ffffffff8105c003>] __run_hrtimer+0xd5/0x17e
-[2110283.554262]  [<ffffffff81089836>] ? tick_nohz_handler+0xab/0xab
-[2110283.560377]  [<ffffffff8105c306>] hrtimer_interrupt+0xd6/0x1e4
-[2110283.566406]  [<ffffffff8102ddb1>] hpet_interrupt_handler+0x25/0x2c
-[2110283.572782]  [<ffffffff8107c790>] handle_irq_event_percpu+0x94/0x1d8
-[2110283.579330]  [<ffffffff8107c910>] handle_irq_event+0x3c/0x5c
-[2110283.585185]  [<ffffffff8107ebe4>] handle_edge_irq+0xa1/0xc6
-[2110283.590952]  [<ffffffff81004577>] handle_irq+0x1f/0x28
-[2110283.596289]  [<ffffffff8107abd1>] ? console_unlock+0x218/0x25e
-[2110283.602317]  [<ffffffff81003cb3>] do_IRQ+0x48/0xaf
-[2110283.607308]  [<ffffffff813bd96f>] common_interrupt+0x6f/0x6f
-[2110283.613160]  <EOI> 
-[2110283.615264]  [<ffffffff8108e7b5>] ? mark_held_locks+0x73/0x97
-[2110283.621443]  [<ffffffff8107abd1>] ? console_unlock+0x218/0x25e
-[2110283.627470]  [<ffffffff8107b1e4>] ? vprintk_emit+0x400/0x426
-[2110283.633327]  [<ffffffff813b8ebc>] printk+0x48/0x4a
-[2110283.638316]  [<ffffffff810638cb>] __might_sleep+0x87/0xf1
-[2110283.643913]  [<ffffffff811d739f>] generic_make_request_checks+0x3e/0x2bf
-[2110283.650807]  [<ffffffff811d7633>] generic_make_request+0x13/0xdf
-[2110283.657015]  [<ffffffffa02d8d8c>] __map_bio+0xca/0x10a [dm_mod]
-[2110283.663137]  [<ffffffffa02d90aa>] __clone_and_map_data_bio+0x17d/0x19b [dm_mod]
-[2110283.670654]  [<ffffffffa02d9179>] __split_and_process_non_flush+0xb1/0x214 [dm_mod]
-[2110283.678519]  [<ffffffffa02d94ae>] __split_and_process_bio+0x1d2/0x1f7 [dm_mod]
-[2110283.685954]  [<ffffffffa02d6f20>] ? dm_suspend+0x189/0x189 [dm_mod]
-[2110283.692422]  [<ffffffffa02d9653>] _dm_request+0x180/0x198 [dm_mod]
-[2110283.698796]  [<ffffffffa02d9695>] dm_request+0x2a/0x2c [dm_mod]
-[2110283.704910]  [<ffffffff811d76bc>] generic_make_request+0x9c/0xdf
-[2110283.711114]  [<ffffffff811d780b>] submit_bio+0x10c/0x12b
-[2110283.716622]  [<ffffffff810e35e1>] ? account_page_writeback+0xe/0x10
-[2110283.723082]  [<ffffffff810e36d5>] ? test_set_page_writeback+0xf2/0x104
-[2110283.729802]  [<ffffffff8110c422>] __swap_writepage+0x1df/0x1ef
-[2110283.735855]  [<ffffffff8110c704>] ? end_swap_bio_read+0xb3/0xb3
-[2110283.741973]  [<ffffffff813bd516>] ? _raw_spin_unlock+0x26/0x3a
-[2110283.748003]  [<ffffffff8110d673>] ? page_swapcount+0x43/0x4b
-[2110283.753857]  [<ffffffff8110c46a>] swap_writepage+0x38/0x3f
-[2110283.759540]  [<ffffffff810ea7fa>] pageout+0x139/0x241
-[2110283.764789]  [<ffffffff810eb51d>] shrink_page_list+0x44b/0x676
-[2110283.770857]  [<ffffffff810ebdd3>] shrink_inactive_list+0x2a5/0x46a
-[2110283.777229]  [<ffffffff8108eb01>] ? trace_hardirqs_on+0xd/0xf
-[2110283.783170]  [<ffffffff810ec450>] shrink_lruvec+0x18f/0x34e
-[2110283.788938]  [<ffffffff810ec65d>] shrink_zone+0x4e/0xf6
-[2110283.794361]  [<ffffffff810ec86b>] shrink_zones+0x166/0x1ab
-[2110283.800045]  [<ffffffff8114e3c0>] ? wakeup_flusher_threads+0xb4/0xd0
-[2110283.806600]  [<ffffffff8114e32e>] ? wakeup_flusher_threads+0x22/0xd0
-[2110283.813147]  [<ffffffff810ec921>] do_try_to_free_pages+0x71/0x2cf
-[2110283.819436]  [<ffffffff810ecd6d>] try_to_free_pages+0x107/0x16e
-[2110283.825552]  [<ffffffff810e1eb9>] ? get_page_from_freelist+0x631/0x68f
-[2110283.832275]  [<ffffffff810e0f02>] __perform_reclaim+0x7f/0xc3
-[2110283.838215]  [<ffffffff810e25a0>] __alloc_pages_slowpath+0x270/0x4d6
-[2110283.844766]  [<ffffffff81067a47>] ? finish_task_switch+0x47/0xef
-[2110283.850985]  [<ffffffff810e29a8>] __alloc_pages_nodemask+0x1a2/0x21d
-[2110283.857533]  [<ffffffff81116a0a>] alloc_pages_current+0xef/0x110
-[2110283.863735]  [<ffffffff8111d2dc>] alloc_slab_page+0x1d/0x4e
-[2110283.869521]  [<ffffffff8111d35b>] allocate_slab+0x4e/0xf2
-[2110283.875117]  [<ffffffff8111d57b>] new_slab+0x2b/0x144
-[2110283.880366]  [<ffffffff8111ea9f>] __slab_alloc+0x17a/0x2bf
-[2110283.886074]  [<ffffffffa0be0dad>] ? kmem_alloc+0x64/0xae [xfs]
-[2110283.892102]  [<ffffffff8111f644>] ? __kmalloc+0xf2/0x12c
-[2110283.897625]  [<ffffffffa0be0dad>] ? kmem_alloc+0x64/0xae [xfs]
-[2110283.903649]  [<ffffffff8111f601>] __kmalloc+0xaf/0x12c
-[2110283.908999]  [<ffffffffa0be0dad>] kmem_alloc+0x64/0xae [xfs]
-[2110283.914878]  [<ffffffffa0be0e5f>] kmem_zalloc+0x11/0x2a [xfs]
-[2110283.920852]  [<ffffffffa0c1a019>] xlog_cil_insert_format_items+0x11d/0x1ab [xfs]
-[2110283.928473]  [<ffffffffa0c1a0e8>] xlog_cil_insert_items+0x41/0x190 [xfs]
-[2110283.935386]  [<ffffffffa0c1a27e>] xfs_log_commit_cil+0x47/0x121 [xfs]
-[2110283.942034]  [<ffffffffa0be03f9>] xfs_trans_commit+0x6a/0x1d8 [xfs]
-[2110283.948504]  [<ffffffffa0bd6a43>] xfs_iomap_write_allocate+0x21b/0x2f5 [xfs]
-[2110283.955776]  [<ffffffffa0bc6131>] xfs_map_blocks+0x141/0x21a [xfs]
-[2110283.962161]  [<ffffffffa0bc64ce>] xfs_vm_writepage+0x2c4/0x4a6 [xfs]
-[2110283.968726]  [<ffffffff810e33e6>] __writepage+0x15/0x34
-[2110283.974148]  [<ffffffff810e481a>] write_cache_pages+0x284/0x3a6
-[2110283.980264]  [<ffffffff810e33d1>] ? set_page_dirty+0x58/0x58
-[2110283.986119]  [<ffffffff810e497f>] generic_writepages+0x43/0x5a
-[2110283.992146]  [<ffffffff813bd516>] ? _raw_spin_unlock+0x26/0x3a
-[2110283.998185]  [<ffffffffa0bc4f98>] xfs_vm_writepages+0x4b/0x56 [xfs]
-[2110284.004646]  [<ffffffff810e49b4>] do_writepages+0x1e/0x27
-[2110284.010242]  [<ffffffff8114db2e>] __writeback_single_inode+0x94/0x17b
-[2110284.016876]  [<ffffffff8114e67b>] writeback_sb_inodes+0x29f/0x36f
-[2110284.023167]  [<ffffffff813bd516>] ? _raw_spin_unlock+0x26/0x3a
-[2110284.029195]  [<ffffffff8114e7be>] __writeback_inodes_wb+0x73/0xb4
-[2110284.035482]  [<ffffffff8114ebe1>] wb_writeback+0x174/0x2a1
-[2110284.041165]  [<ffffffff8103f6e2>] ? _local_bh_enable_ip+0xbc/0xc2
-[2110284.047456]  [<ffffffff8114edad>] wb_do_writeback+0x9f/0x1d4
-[2110284.053311]  [<ffffffff81051faa>] ? set_worker_desc+0x6a/0x77
-[2110284.059251]  [<ffffffff8114ef4c>] bdi_writeback_workfn+0x6a/0x182
-[2110284.065541]  [<ffffffff8108eabd>] ? trace_hardirqs_on_caller+0x151/0x188
-[2110284.072435]  [<ffffffff810548c9>] process_one_work+0x294/0x429
-[2110284.078464]  [<ffffffff8105480e>] ? process_one_work+0x1d9/0x429
-[2110284.084666]  [<ffffffff81054bc7>] worker_thread+0x169/0x27e
-[2110284.090434]  [<ffffffff81054a5e>] ? process_one_work+0x429/0x429
-[2110284.096675]  [<ffffffff81058c3d>] kthread+0xd1/0xd9
-[2110284.101750]  [<ffffffff81058b6c>] ? __init_kthread_worker+0x56/0x56
-[2110284.108209]  [<ffffffff813be0bc>] ret_from_fork+0x7c/0xb0
-[2110284.113805]  [<ffffffff81058b6c>] ? __init_kthread_worker+0x56/0x56
-[2110284.120263] Code: 41 b8 01 00 00 00 b9 02 00 00 00 31 f6 48 c7 c7 40 50 63 81 e8 bd e7 01 00 48 8b 83 38 0e 00 00 48 8b 50 48 48 8b 82 a8 00 00 00 <4a> 03 04 ed 70 b3 68 81 4c 01 20 48 8b 52 40 48 85 d2 75 e5 48 
-[2110284.140873] RIP  [<ffffffff810714e4>] cpuacct_charge+0x62/0xaa
-[2110284.146924]  RSP <ffff88023fc43c28>
-[2110284.150641] CR2: 00000000ade1b4b0
-[2110284.154395] ---[ end trace 225de33a05f4e6b0 ]---
-[2110284.164413] Kernel panic - not syncing: Fatal exception in interrupt
+and in particular link a given C-state to a given power domain so that the
+kernel will have a way to actually check what devices are lost upon C-state
+entry (and for devices I also mean CPU peripheral like PMUs, GIC CPU IF,
+caches and possibly cpus, all of them already represented with DT nodes).
 
+I have a remark:
 
-Regards,
+-  Can we group device nodes under a single power-domain-parent so that
+   all devices defined under that parent won't have to re-define a
+   power-domain property (a property like interrupt-parent, so to speak)
 
-Petr Janecek
+What do you think ?
+
+Thanks,
+Lorenzo
+
+On Sat, Jan 11, 2014 at 07:42:46PM +0000, Tomasz Figa wrote:
+> This patch introduces generic code to perform power domain look-up using
+> device tree and automatically bind devices to their power domains.
+> Generic device tree binding is introduced to specify power domains of
+> devices in their device tree nodes.
+> 
+> Backwards compatibility with legacy Samsung-specific power domain
+> bindings is provided, but for now the new code is not compiled when
+> CONFIG_ARCH_EXYNOS is selected to avoid collision with legacy code. This
+> will change as soon as Exynos power domain code gets converted to use
+> the generic framework in further patch.
+> 
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+> ---
+>  .../devicetree/bindings/power/power_domain.txt     |  51 ++++
+>  drivers/base/power/domain.c                        | 339 +++++++++++++++++++++
+>  include/linux/pm_domain.h                          |  34 +++
+>  kernel/power/Kconfig                               |   4 +
+>  4 files changed, 428 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power/power_domain.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
+> new file mode 100644
+> index 0000000..93be5d9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power/power_domain.txt
+> @@ -0,0 +1,51 @@
+> +* Generic power domains
+> +
+> +System on chip designs are often divided into multiple power domains that
+> +can be used for power gating of selected IP blocks for power saving by
+> +reduced leakage current.
+> +
+> +This device tree binding can be used to bind power domain consumer devices
+> +with their power domains provided by power domain providers. A power domain
+> +provider can be represented by any node in the device tree and can provide
+> +one or more power domains. A consumer node can refer to the provider by
+> +a phandle and a set of phandle arguments (so called power domain specifier)
+> +of length specified by #power-domain-cells property in the power domain
+> +provider node.
+> +
+> +==Power domain providers==
+> +
+> +Required properties:
+> + - #power-domain-cells : Number of cells in a power domain specifier;
+> +   Typically 0 for nodes representing a single power domain and 1 for nodes
+> +   providing multiple power domains (e.g. power controllers), but can be
+> +   any value as specified by device tree binding documentation of particular
+> +   provider.
+> +
+> +Example:
+> +
+> +       power: power-controller@12340000 {
+> +               compatible = "foo,power-controller";
+> +               reg = <0x12340000 0x1000>;
+> +               #power-domain-cells = <1>;
+> +       };
+> +
+> +The node above defines a power controller that is a power domain provider
+> +and expects one cell as its phandle argument.
+> +
+> +==Power domain consumers==
+> +
+> +Required properties:
+> + - power-domain : A phandle and power domain specifier as defined by bindings
+> +                  of power controller specified by phandle.
+> +
+> +Example:
+> +
+> +       leaky-device@12350000 {
+> +               compatible = "foo,i-leak-current";
+> +               reg = <0x12350000 0x1000>;
+> +               power-domain = <&power 0>;
+> +       };
+> +
+> +The node above defines a typical power domain consumer device, which is located
+> +inside power domain with index 0 of power controller represented by node with
+> +label "power".
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index bfb8955..6d47498 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -3,12 +3,16 @@
+>   *
+>   * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
+>   *
+> + * Support for Device Tree based power domain providers:
+> + * Copyright (C) 2014 Tomasz Figa <tomasz.figa@gmail.com>
+> + *
+>   * This file is released under the GPLv2.
+>   */
+> 
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+>  #include <linux/io.h>
+> +#include <linux/platform_device.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pm_domain.h>
+>  #include <linux/pm_qos.h>
+> @@ -2177,3 +2181,338 @@ void pm_genpd_init(struct generic_pm_domain *genpd,
+>         list_add(&genpd->gpd_list_node, &gpd_list);
+>         mutex_unlock(&gpd_list_lock);
+>  }
+> +
+> +#ifdef CONFIG_PM_GENERIC_DOMAINS_OF
+> +/*
+> + * DEVICE TREE BASED POWER DOMAIN PROVIDERS
+> + *
+> + * The code below implements generic device tree based power domain providers
+> + * that bind device tree nodes with generic power domains registered in the
+> + * system.
+> + *
+> + * Any driver that registers generic power domains and need to support binding
+> + * of devices to these domains is supposed to register a power domain provider,
+> + * which maps a power domain specifier retrieved from device tree to a power
+> + * domain.
+> + *
+> + * Two simple mapping functions have been provided for convenience:
+> + *  - of_genpd_xlate_simple() for 1:1 device tree node to domain mapping,
+> + *  - of_genpd_xlate_onecell() for mapping of multiple domains per node
+> + *    by index.
+> + */
+> +
+> +/**
+> + * struct of_genpd_provider - Power domain provider registration structure
+> + * @link: Entry in global list of domain providers
+> + * @node: Pointer to device tree node of domain provider
+> + * @xlate: Provider-specific xlate callback mapping a set of specifier cells
+> + *         into a power domain.
+> + * @data: context pointer to be passed into @xlate callback
+> + */
+> +struct of_genpd_provider {
+> +       struct list_head link;
+> +
+> +       struct device_node *node;
+> +       genpd_xlate_t xlate;
+> +       void *data;
+> +};
+> +
+> +/* List of registered power domain providers. */
+> +static LIST_HEAD(of_genpd_providers);
+> +/* Mutex to protect the list above. */
+> +static DEFINE_MUTEX(of_genpd_mutex);
+> +
+> +/**
+> + * of_genpd_lock() - Lock access to of_genpd_providers list
+> + */
+> +static void of_genpd_lock(void)
+> +{
+> +       mutex_lock(&of_genpd_mutex);
+> +}
+> +
+> +/**
+> + * of_genpd_unlock() - Unlock access to of_genpd_providers list
+> + */
+> +static void of_genpd_unlock(void)
+> +{
+> +       mutex_unlock(&of_genpd_mutex);
+> +}
+> +
+> +/**
+> + * of_genpd_xlate_simple() - Xlate function for direct node-domain mapping
+> + * @genpdspec: OF phandle args to map into a power domain
+> + * @data: xlate function private data - pointer to struct generic_pm_domain
+> + *
+> + * This is a generic xlate function that can be used to model power domains
+> + * that have their own device tree nodes. The private data of xlate function
+> + * needs to be a valid pointer to struct generic_pm_domain.
+> + */
+> +struct generic_pm_domain *of_genpd_xlate_simple(
+> +                                       struct of_phandle_args *genpdspec,
+> +                                       void *data)
+> +{
+> +       if (genpdspec->args_count != 0)
+> +               return ERR_PTR(-EINVAL);
+> +       return data;
+> +}
+> +EXPORT_SYMBOL_GPL(of_genpd_xlate_simple);
+> +
+> +/**
+> + * of_genpd_xlate_onecell() - Xlate function for providers using single index.
+> + * @genpdspec: OF phandle args to map into a power domain
+> + * @data: xlate function private data - pointer to struct genpd_onecell_data
+> + *
+> + * This is a generic xlate function that can be used to model simple power
+> + * domain controllers that have one device tree node and provide multiple
+> + * power domains. A single cell is used as an index to an array of power
+> + * domains specified in genpd_onecell_data struct when registering the
+> + * provider.
+> + */
+> +struct generic_pm_domain *of_genpd_xlate_onecell(
+> +                                       struct of_phandle_args *genpdspec,
+> +                                       void *data)
+> +{
+> +       struct genpd_onecell_data *genpd_data = data;
+> +       unsigned int idx = genpdspec->args[0];
+> +
+> +       if (genpdspec->args_count != 1)
+> +               return ERR_PTR(-EINVAL);
+> +
+> +       if (idx >= genpd_data->domain_num) {
+> +               pr_err("%s: invalid domain index %d\n", __func__, idx);
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       return genpd_data->domains[idx];
+> +}
+> +EXPORT_SYMBOL_GPL(of_genpd_xlate_onecell);
+> +
+> +/**
+> + * of_genpd_add_provider() - Register a domain provider for a node
+> + * @np: Device node pointer associated with domain provider
+> + * @genpd_src_get: callback for decoding domain
+> + * @data: context pointer for @genpd_src_get callback.
+> + */
+> +int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
+> +                         void *data)
+> +{
+> +       struct of_genpd_provider *cp;
+> +
+> +       cp = kzalloc(sizeof(struct of_genpd_provider), GFP_KERNEL);
+> +       if (!cp)
+> +               return -ENOMEM;
+> +
+> +       cp->node = of_node_get(np);
+> +       cp->data = data;
+> +       cp->xlate = xlate;
+> +
+> +       of_genpd_lock();
+> +       list_add(&cp->link, &of_genpd_providers);
+> +       of_genpd_unlock();
+> +       pr_debug("Added domain provider from %s\n", np->full_name);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(of_genpd_add_provider);
+> +
+> +/**
+> + * of_genpd_del_provider() - Remove a previously registered domain provider
+> + * @np: Device node pointer associated with domain provider
+> + */
+> +void of_genpd_del_provider(struct device_node *np)
+> +{
+> +       struct of_genpd_provider *cp;
+> +
+> +       of_genpd_lock();
+> +       list_for_each_entry(cp, &of_genpd_providers, link) {
+> +               if (cp->node == np) {
+> +                       list_del(&cp->link);
+> +                       of_node_put(cp->node);
+> +                       kfree(cp);
+> +                       break;
+> +               }
+> +       }
+> +       of_genpd_unlock();
+> +}
+> +EXPORT_SYMBOL_GPL(of_genpd_del_provider);
+> +
+> +/* See of_genpd_get_from_provider(). */
+> +static struct generic_pm_domain *__of_genpd_get_from_provider(
+> +                                       struct of_phandle_args *genpdspec)
+> +{
+> +       struct of_genpd_provider *provider;
+> +       struct generic_pm_domain *genpd = ERR_PTR(-ENOENT);
+> +
+> +       /* Check if we have such a provider in our array */
+> +       list_for_each_entry(provider, &of_genpd_providers, link) {
+> +               if (provider->node == genpdspec->np)
+> +                       genpd = provider->xlate(genpdspec, provider->data);
+> +               if (!IS_ERR(genpd))
+> +                       break;
+> +       }
+> +
+> +       return genpd;
+> +}
+> +
+> +/**
+> + * of_genpd_get_from_provider() - Look-up power domain
+> + * @genpdspec: OF phandle args to use for look-up
+> + *
+> + * Looks for domain provider under node specified by @genpdspec and if found
+> + * uses xlate function of the provider to map phandle args to a power domain.
+> + *
+> + * Returns a valid pointer to struct generic_pm_domain on success or ERR_PTR()
+> + * on failure.
+> + */
+> +static struct generic_pm_domain *of_genpd_get_from_provider(
+> +                                       struct of_phandle_args *genpdspec)
+> +{
+> +       struct generic_pm_domain *genpd;
+> +
+> +       of_genpd_lock();
+> +       genpd = __of_genpd_get_from_provider(genpdspec);
+> +       of_genpd_unlock();
+> +
+> +       return genpd;
+> +}
+> +
+> +/*
+> + * DEVICE<->DOMAIN BINDING USING DEVICE TREE LOOK-UP
+> + *
+> + * The code below registers a notifier for platform bus devices'
+> + * BUS_NOTIFY_BIND_DRIVER events and tries to attach devices to their power
+> + * domains by looking them up using Device Tree.
+> + *
+> + * Similarly in BUS_NOTIFY_UNBOUND_DRIVER the device is detached from its
+> + * domain, since it no longer supports runtime PM without any driver bound
+> + * to it.
+> + *
+> + * Both generic and legacy Samsung-specific DT bindings are supported to
+> + * keep backwards compatibility with existing DTBs.
+> + */
+> +
+> +/**
+> + * of_genpd_add_to_domain - Bind device to its power domain using Device Tree.
+> + * @dev: Device to bind to its power domain.
+> + *
+> + * Tries to parse power domain specifier from device's OF node and if succeeds
+> + * attaches the device to retrieved power domain.
+> + *
+> + * Returns 0 on success or negative error code otherwise.
+> + */
+> +static int of_genpd_add_to_domain(struct device *dev)
+> +{
+> +       struct of_phandle_args pd_args;
+> +       struct generic_pm_domain *pd;
+> +       int ret;
+> +
+> +       ret = of_parse_phandle_with_args(dev->of_node, "power-domain",
+> +                                       "#power-domain-cells", 0, &pd_args);
+> +       if (ret < 0) {
+> +               if (ret != ENOENT)
+> +                       return ret;
+> +
+> +               /*
+> +                * Try legacy Samsung-specific bindings
+> +                * (for backwards compatibility of DT ABI)
+> +                */
+> +               pd_args.args_count = 0;
+> +               pd_args.np = of_parse_phandle(dev->of_node,
+> +                                               "samsung,power-domain", 0);
+> +               if (!pd_args.np)
+> +                       return 0;
+> +       }
+> +
+> +       pd = of_genpd_get_from_provider(&pd_args);
+> +       if (IS_ERR(pd))
+> +               return PTR_ERR(pd);
+> +
+> +       dev_dbg(dev, "adding to power domain %s\n", pd->name);
+> +
+> +       while (1) {
+> +               ret = pm_genpd_add_device(pd, dev);
+> +               if (ret != -EAGAIN)
+> +                       break;
+> +               cond_resched();
+> +       }
+> +
+> +       if (!ret)
+> +               pm_genpd_dev_need_restore(dev, true);
+> +
+> +       return ret;
+> +}
+> +
+> +/**
+> + * of_genpd_del_from_domain - Unbind device from its power domain.
+> + * @dev: Device to unbind from its power domain.
+> + *
+> + * Unbinds device from power domain previously bound to it.
+> + *
+> + * Returns 0 on success or negative error code otherwise.
+> + */
+> +static int of_genpd_del_from_domain(struct device *dev)
+> +{
+> +       struct generic_pm_domain *genpd = dev_to_genpd(dev);
+> +       int ret;
+> +
+> +       if (IS_ERR(genpd))
+> +               return 0;
+> +
+> +       dev_dbg(dev, "removing from power domain %s\n", genpd->name);
+> +
+> +       while (1) {
+> +               ret = pm_genpd_remove_device(genpd, dev);
+> +               if (ret != -EAGAIN)
+> +                       break;
+> +               cond_resched();
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +/**
+> + * of_genpd_notifier_call - Receive device driver bind/unbind events
+> + * @nb: Notifier block which sent the event.
+> + * @event: Received event.
+> + * @data: Data attached to received event (struct device *).
+> + *
+> + * Registered handler for device driver bind/unbind events that lets the
+> + * code above perform the magic of adding/removing devices to/from its
+> + * power domains.
+> + */
+> +static int of_genpd_notifier_call(struct notifier_block *nb,
+> +                                 unsigned long event, void *data)
+> +{
+> +       struct device *dev = data;
+> +       int ret;
+> +
+> +       if (!dev->of_node)
+> +               return NOTIFY_DONE;
+> +
+> +       switch (event) {
+> +       case BUS_NOTIFY_BIND_DRIVER:
+> +               ret = of_genpd_add_to_domain(dev);
+> +               break;
+> +
+> +       case BUS_NOTIFY_UNBOUND_DRIVER:
+> +               ret = of_genpd_del_from_domain(dev);
+> +               break;
+> +
+> +       default:
+> +               return NOTIFY_DONE;
+> +       }
+> +
+> +       return notifier_from_errno(ret);
+> +}
+> +
+> +static struct notifier_block of_genpd_notifier_block = {
+> +       .notifier_call = of_genpd_notifier_call,
+> +};
+> +
+> +static int of_genpd_init(void)
+> +{
+> +       return bus_register_notifier(&platform_bus_type,
+> +                                       &of_genpd_notifier_block);
+> +}
+> +core_initcall(of_genpd_init);
+> +#endif
+> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+> index 7c1d252..08adac0 100644
+> --- a/include/linux/pm_domain.h
+> +++ b/include/linux/pm_domain.h
+> @@ -310,4 +310,38 @@ static inline void pm_genpd_syscore_poweron(struct device *dev)
+>         pm_genpd_syscore_switch(dev, false);
+>  }
+> 
+> +/* OF power domain providers */
+> +struct of_device_id;
+> +
+> +struct genpd_onecell_data {
+> +       struct generic_pm_domain **domains;
+> +       unsigned int domain_num;
+> +};
+> +
+> +typedef struct generic_pm_domain *(*genpd_xlate_t)(struct of_phandle_args *args,
+> +                                                  void *data);
+> +
+> +#ifdef CONFIG_PM_GENERIC_DOMAINS_OF
+> +int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
+> +                         void *data);
+> +void of_genpd_del_provider(struct device_node *np);
+> +
+> +struct generic_pm_domain *of_genpd_xlate_simple(
+> +                                       struct of_phandle_args *genpdspec,
+> +                                       void *data);
+> +struct generic_pm_domain *of_genpd_xlate_onecell(
+> +                                       struct of_phandle_args *genpdspec,
+> +                                       void *data);
+> +#else /* !CONFIG_PM_GENERIC_DOMAINS_OF */
+> +static inline int of_genpd_add_provider(struct device_node *np,
+> +                                       genpd_xlate_t xlate, void *data)
+> +{
+> +       return 0;
+> +}
+> +static inline void of_genpd_del_provider(struct device_node *np) {}
+> +
+> +#define of_genpd_xlate_simple          NULL
+> +#define of_genpd_xlate_onecell         NULL
+> +#endif /* CONFIG_PM_GENERIC_DOMAINS_OF */
+> +
+>  #endif /* _LINUX_PM_DOMAIN_H */
+> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+> index 2fac9cc..45aa98e 100644
+> --- a/kernel/power/Kconfig
+> +++ b/kernel/power/Kconfig
+> @@ -306,6 +306,10 @@ config PM_GENERIC_DOMAINS_RUNTIME
+>         def_bool y
+>         depends on PM_RUNTIME && PM_GENERIC_DOMAINS
+> 
+> +config PM_GENERIC_DOMAINS_OF
+> +       def_bool y
+> +       depends on PM_GENERIC_DOMAINS && OF && !ARCH_EXYNOS
+> +
+>  config CPU_PM
+>         bool
+>         depends on SUSPEND || CPU_IDLE
+> --
+> 1.8.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
