@@ -1,73 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaAPNzB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:55:01 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:46107 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaAPNy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:54:58 -0500
-Date: Thu, 16 Jan 2014 14:54:50 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>, Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: [PATCH -next] futex: fix futex_hashsize initialization
-Message-ID: <20140116135450.GA4345@osiris>
+	id S1752532AbaAPN7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:59:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123AbaAPN7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 08:59:13 -0500
+Message-ID: <52D7E577.5020506@redhat.com>
+Date: Thu, 16 Jan 2014 14:58:15 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011613-0542-0000-0000-000007AC8E79
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 4/8] zram: use atomic64_t for all zram stats
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com> <1389877936-15543-5-git-send-email-sergey.senozhatsky@gmail.com>
+In-Reply-To: <1389877936-15543-5-git-send-email-sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"futexes: Increase hash table size for better performance" introduces a new
-alloc_large_system_hash() call. alloc_large_system_hash() however may allocate
-less memory than requested, e.g. limited by MAX_ORDER.
+On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
+> This is a preparation patch for stats code duplication removal.
+> 
+> 1) use atomic64_t for `pages_zero' and `pages_stored' zram stats.
+> 2) `compr_size' and `pages_zero' struct zram_stats members did not
+> follow the existing device attr naming scheme: zram_stats.ATTR has
+> ATTR_show() function. rename them:
+> -- compr_size -> compr_data_size
+> -- pages_zero -> zero_pages
+> 
+> Minchan Kim's note:
+>  If we really have trouble with atomic stat operation, we could
+>  change it with percpu_counter so that it could solve atomic overhead and
+>  unnecessary memory space by introducing unsigned long instead of 64bit
+>  atomic_t.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 
-Hence pass a pointer to alloc_large_system_hash() which will contain the hash
-shift when the function returns. Afterwards correctly set futex_hashsize.
-
-Fixes a crash on s390 where the requested allocation size was 4MB but only 1MB
-was allocated.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- kernel/futex.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3666aa0017ed..44a1261cb9ff 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2846,6 +2846,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
- {
- 	u32 curval;
-+	unsigned int futex_shift;
- 	unsigned long i;
- 
- #if CONFIG_BASE_SMALL
-@@ -2857,8 +2858,9 @@ static int __init futex_init(void)
- 	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
- 					       futex_hashsize, 0,
- 					       futex_hashsize < 256 ? HASH_SMALL : 0,
--					       NULL, NULL, futex_hashsize, futex_hashsize);
--
-+					       &futex_shift, NULL,
-+					       futex_hashsize, futex_hashsize);
-+	futex_hashsize = 1UL << futex_shift;
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
- 	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
--- 
-1.8.4.5
+> ---
+>  drivers/block/zram/zram_drv.c | 18 +++++++++---------
+>  drivers/block/zram/zram_drv.h |  6 +++---
+>  2 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index c7c7789..0035d39 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -109,7 +109,7 @@ static ssize_t zero_pages_show(struct device *dev,
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+> -	return sprintf(buf, "%u\n", atomic_read(&zram->stats.pages_zero));
+> +	return sprintf(buf, "%llu\n", (u64)atomic64_read(&zram->stats.zero_pages));
+>  }
+>  
+>  static ssize_t orig_data_size_show(struct device *dev,
+> @@ -118,7 +118,7 @@ static ssize_t orig_data_size_show(struct device *dev,
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+>  	return sprintf(buf, "%llu\n",
+> -		(u64)(atomic_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+> +		(u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+>  }
+>  
+>  static ssize_t compr_data_size_show(struct device *dev,
+> @@ -127,7 +127,7 @@ static ssize_t compr_data_size_show(struct device *dev,
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+>  	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.compr_size));
+> +			(u64)atomic64_read(&zram->stats.compr_data_size));
+>  }
+>  
+>  static ssize_t mem_used_total_show(struct device *dev,
+> @@ -301,15 +301,15 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  		 */
+>  		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+>  			zram_clear_flag(meta, index, ZRAM_ZERO);
+> -			atomic_dec(&zram->stats.pages_zero);
+> +			atomic64_dec(&zram->stats.zero_pages);
+>  		}
+>  		return;
+>  	}
+>  
+>  	zs_free(meta->mem_pool, handle);
+>  
+> -	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
+> -	atomic_dec(&zram->stats.pages_stored);
+> +	atomic64_sub(meta->table[index].size, &zram->stats.compr_data_size);
+> +	atomic64_dec(&zram->stats.pages_stored);
+>  
+>  	meta->table[index].handle = 0;
+>  	meta->table[index].size = 0;
+> @@ -452,7 +452,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		zram_set_flag(meta, index, ZRAM_ZERO);
+>  		write_unlock(&zram->meta->tb_lock);
+>  
+> -		atomic_inc(&zram->stats.pages_zero);
+> +		atomic64_inc(&zram->stats.zero_pages);
+>  		ret = 0;
+>  		goto out;
+>  	}
+> @@ -508,8 +508,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	write_unlock(&zram->meta->tb_lock);
+>  
+>  	/* Update stats */
+> -	atomic64_add(clen, &zram->stats.compr_size);
+> -	atomic_inc(&zram->stats.pages_stored);
+> +	atomic64_add(clen, &zram->stats.compr_data_size);
+> +	atomic64_inc(&zram->stats.pages_stored);
+>  out:
+>  	if (locked)
+>  		mutex_unlock(&meta->buffer_lock);
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 2f173cb..58d4ac5 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -69,15 +69,15 @@ struct table {
+>  } __aligned(4);
+>  
+>  struct zram_stats {
+> -	atomic64_t compr_size;	/* compressed size of pages stored */
+> +	atomic64_t compr_data_size;	/* compressed size of pages stored */
+>  	atomic64_t num_reads;	/* failed + successful */
+>  	atomic64_t num_writes;	/* --do-- */
+>  	atomic64_t failed_reads;	/* should NEVER! happen */
+>  	atomic64_t failed_writes;	/* can happen when memory is too low */
+>  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+>  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> -	atomic_t pages_zero;		/* no. of zero filled pages */
+> -	atomic_t pages_stored;	/* no. of pages currently stored */
+> +	atomic64_t zero_pages;		/* no. of zero filled pages */
+> +	atomic64_t pages_stored;	/* no. of pages currently stored */
+>  };
+>  
+>  struct zram_meta {
+> 
 
