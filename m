@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaAPNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:39:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38347 "EHLO
+	id S1752889AbaAPNjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:39:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38352 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaAPNjV (ORCPT
+	with ESMTP id S1752866AbaAPNj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:39:21 -0500
-Date: Thu, 16 Jan 2014 05:38:44 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-2dc9fb1a7bf013ce24dd34bc25283b60b966f015@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, asharma@fb.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, asharma@fb.com
-In-Reply-To: <1389677157-30513-3-git-send-email-namhyung@kernel.org>
-References: <1389677157-30513-3-git-send-email-namhyung@kernel.org>
+	Thu, 16 Jan 2014 08:39:27 -0500
+Date: Thu, 16 Jan 2014 05:39:03 -0800
+From: tip-bot for Mark Rutland <tipbot@zytor.com>
+Message-ID: <tip-0e9e79a13ab9d56b86db6538305babc23b1445cc@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, will.deacon@arm.com,
+        mark.rutland@arm.com, jolsa@redhat.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, will.deacon@arm.com,
+        mark.rutland@arm.com, jolsa@redhat.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <1389782648-4417-3-git-send-email-mark.rutland@arm.com>
+References: <1389782648-4417-3-git-send-email-mark.rutland@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Factor out sample__resolve_callchain(
- )
-Git-Commit-ID: 2dc9fb1a7bf013ce24dd34bc25283b60b966f015
+Subject: [tip:perf/core] tools lib traceevent:
+  fix pointer-integer size mismatch
+Git-Commit-ID: 0e9e79a13ab9d56b86db6538305babc23b1445cc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,197 +32,71 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:38:51 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:39:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2dc9fb1a7bf013ce24dd34bc25283b60b966f015
-Gitweb:     http://git.kernel.org/tip/2dc9fb1a7bf013ce24dd34bc25283b60b966f015
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 14 Jan 2014 14:25:35 +0900
+Commit-ID:  0e9e79a13ab9d56b86db6538305babc23b1445cc
+Gitweb:     http://git.kernel.org/tip/0e9e79a13ab9d56b86db6538305babc23b1445cc
+Author:     Mark Rutland <mark.rutland@arm.com>
+AuthorDate: Wed, 15 Jan 2014 10:44:07 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 15 Jan 2014 15:32:43 -0300
+CommitDate: Wed, 15 Jan 2014 17:04:38 -0300
 
-perf tools: Factor out sample__resolve_callchain()
+tools lib traceevent: fix pointer-integer size mismatch
 
-The report__resolve_callchain() can be shared with perf top code as it
-doesn't really depend on the perf report code.  Factor it out as
-sample__resolve_callchain().  The same goes to the hist_entry__append_
-callchain() too.
+The scsi and cfg80211 plugins cast between unsigned long long and
+pointers, which is problematic for architectures where unsigned long
+long is wider than the native pointer size:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+  linux/tools/lib/traceevent/plugin_scsi.c: In function ‘process_scsi_trace_parse_cdb’:
+  linux/tools/lib/traceevent/plugin_scsi.c:408:26: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+    scsi_trace_parse_cdb(s, (unsigned char *) args[1], args[2]);
+
+  linux/tools/lib/traceevent/plugin_cfg80211.c: In function ‘process___le16_to_cpup’:
+  linux/tools/lib/traceevent/plugin_cfg80211.c:11:18: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+    uint16_t *val = (uint16_t *) args[0];
+
+This patch adds an intermediate cast to unsigned long, silencing the
+warning.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Link: http://lkml.kernel.org/r/1389677157-30513-3-git-send-email-namhyung@kernel.org
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/r/1389782648-4417-3-git-send-email-mark.rutland@arm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 24 +++---------------------
- tools/perf/builtin-top.c    | 22 +++++++---------------
- tools/perf/util/callchain.c | 23 +++++++++++++++++++++++
- tools/perf/util/callchain.h |  6 ++++++
- 4 files changed, 39 insertions(+), 36 deletions(-)
+ tools/lib/traceevent/plugin_cfg80211.c | 2 +-
+ tools/lib/traceevent/plugin_scsi.c     | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 46864dd..3c53ec2 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -75,24 +75,6 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
+diff --git a/tools/lib/traceevent/plugin_cfg80211.c b/tools/lib/traceevent/plugin_cfg80211.c
+index dcab8e8..57e9822 100644
+--- a/tools/lib/traceevent/plugin_cfg80211.c
++++ b/tools/lib/traceevent/plugin_cfg80211.c
+@@ -8,7 +8,7 @@ static unsigned long long
+ process___le16_to_cpup(struct trace_seq *s,
+ 		       unsigned long long *args)
+ {
+-	uint16_t *val = (uint16_t *) args[0];
++	uint16_t *val = (uint16_t *) (unsigned long) args[0];
+ 	return val ? (long long) le16toh(*val) : 0;
  }
  
--static int report__resolve_callchain(struct report *rep, struct symbol **parent,
--				     struct perf_evsel *evsel, struct addr_location *al,
--				     struct perf_sample *sample)
--{
--	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
--		return machine__resolve_callchain(al->machine, evsel, al->thread, sample,
--						  parent, al, rep->max_stack);
--	}
--	return 0;
--}
--
--static int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
--{
--	if (!symbol_conf.use_callchain)
--		return 0;
--	return callchain_append(he->callchain, &callchain_cursor, sample->period);
--}
--
- static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_location *al,
- 				      struct perf_sample *sample, struct perf_evsel *evsel,
- 				      union perf_event *event)
-@@ -103,7 +85,7 @@ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_locati
- 	struct hist_entry *he;
- 	struct mem_info *mi, *mx;
- 	uint64_t cost;
--	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
-+	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
- 
- 	if (err)
- 		return err;
-@@ -155,7 +137,7 @@ static int report__add_branch_hist_entry(struct perf_tool *tool, struct addr_loc
- 	unsigned i;
- 	struct hist_entry *he;
- 	struct branch_info *bi, *bx;
--	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
-+	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
- 
- 	if (err)
- 		return err;
-@@ -208,7 +190,7 @@ static int report__add_hist_entry(struct perf_tool *tool, struct perf_evsel *evs
- 	struct report *rep = container_of(tool, struct report, tool);
- 	struct symbol *parent = NULL;
- 	struct hist_entry *he;
--	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
-+	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
- 
- 	if (err)
- 		return err;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 569dd87..76cd510 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -743,15 +743,10 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	if (al.sym == NULL || !al.sym->ignore) {
- 		struct hist_entry *he;
- 
--		if ((sort__has_parent || symbol_conf.use_callchain) &&
--		    sample->callchain) {
--			err = machine__resolve_callchain(machine, evsel,
--							 al.thread, sample,
--							 &parent, &al,
--							 top->max_stack);
--			if (err)
--				return;
--		}
-+		err = sample__resolve_callchain(sample, &parent, evsel, &al,
-+						top->max_stack);
-+		if (err)
-+			return;
- 
- 		he = perf_evsel__add_hist_entry(evsel, &al, sample);
- 		if (he == NULL) {
-@@ -759,12 +754,9 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 			return;
- 		}
- 
--		if (symbol_conf.use_callchain) {
--			err = callchain_append(he->callchain, &callchain_cursor,
--					       sample->period);
--			if (err)
--				return;
--		}
-+		err = hist_entry__append_callchain(he, sample);
-+		if (err)
-+			return;
- 
- 		if (sort__has_sym)
- 			perf_top__record_precise_ip(top, he, evsel->idx, ip);
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index e3970e3..9eb4f57 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -17,6 +17,8 @@
- 
- #include "hist.h"
- #include "util.h"
-+#include "sort.h"
-+#include "machine.h"
- #include "callchain.h"
- 
- __thread struct callchain_cursor callchain_cursor;
-@@ -531,3 +533,24 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
- 
+diff --git a/tools/lib/traceevent/plugin_scsi.c b/tools/lib/traceevent/plugin_scsi.c
+index 6fb8e3e..7ef16cc 100644
+--- a/tools/lib/traceevent/plugin_scsi.c
++++ b/tools/lib/traceevent/plugin_scsi.c
+@@ -405,7 +405,7 @@ scsi_trace_parse_cdb(struct trace_seq *p, unsigned char *cdb, int len)
+ unsigned long long process_scsi_trace_parse_cdb(struct trace_seq *s,
+ 						unsigned long long *args)
+ {
+-	scsi_trace_parse_cdb(s, (unsigned char *) args[1], args[2]);
++	scsi_trace_parse_cdb(s, (unsigned char *) (unsigned long) args[1], args[2]);
  	return 0;
  }
-+
-+int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent,
-+			      struct perf_evsel *evsel, struct addr_location *al,
-+			      int max_stack)
-+{
-+	if (sample->callchain == NULL)
-+		return 0;
-+
-+	if (symbol_conf.use_callchain || sort__has_parent) {
-+		return machine__resolve_callchain(al->machine, evsel, al->thread,
-+						  sample, parent, al, max_stack);
-+	}
-+	return 0;
-+}
-+
-+int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
-+{
-+	if (!symbol_conf.use_callchain)
-+		return 0;
-+	return callchain_append(he->callchain, &callchain_cursor, sample->period);
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 08b25af..8ad97e9 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -145,10 +145,16 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
- }
  
- struct option;
-+struct hist_entry;
- 
- int record_parse_callchain(const char *arg, struct record_opts *opts);
- int record_parse_callchain_opt(const struct option *opt, const char *arg, int unset);
- int record_callchain_opt(const struct option *opt, const char *arg, int unset);
- 
-+int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent,
-+			      struct perf_evsel *evsel, struct addr_location *al,
-+			      int max_stack);
-+int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
-+
- extern const char record_callchain_help[];
- #endif	/* __PERF_CALLCHAIN_H */
