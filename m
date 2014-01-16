@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaAPTgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:36:11 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43801 "EHLO
+	id S1752012AbaAPThU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:37:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43820 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751298AbaAPTgJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751616AbaAPThQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:36:09 -0500
-Date: Thu, 16 Jan 2014 19:31:23 +0000
+	Thu, 16 Jan 2014 14:37:16 -0500
+Date: Thu, 16 Jan 2014 19:36:52 +0000
 From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gang.chen@asianux.com" <gang.chen@asianux.com>,
+To: Robert Richter <rric@kernel.org>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
-Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
- dependencies for XEN
-Message-ID: <20140116193123.GB22105@mudshark.cambridge.arm.com>
-References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20140109103004.GB11089@mudshark.cambridge.arm.com>
- <201401091204.17932.arnd@arndb.de>
- <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
- <20140109184251.GL17838@mudshark.cambridge.arm.com>
- <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com>
+        Li Zefan <lizefan@huawei.com>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
+ op_overflow_handler()
+Message-ID: <20140116193652.GD22105@mudshark.cambridge.arm.com>
+References: <52B3F66D.6060707@huawei.com>
+ <20140113084555.GU20315@rric.localhost>
+ <52D4984B.9090600@huawei.com>
+ <20140114150553.GC20315@rric.localhost>
+ <52D5EC44.30101@huawei.com>
+ <20140115102445.GE20315@rric.localhost>
+ <52D73148.4090408@huawei.com>
+ <52D7A750.50906@huawei.com>
+ <20140116115245.GB8360@rric.localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com>
+In-Reply-To: <20140116115245.GB8360@rric.localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
+On Thu, Jan 16, 2014 at 11:52:45AM +0000, Robert Richter wrote:
+> (cc'ing Will)
 
-On Thu, Jan 16, 2014 at 04:27:55PM +0000, Stefano Stabellini wrote:
-> On Thu, 9 Jan 2014, Will Deacon wrote:
-> > Ok, thanks for the explanation. Looking at the patch, I wonder whether it's
-> > not cleaner just to implement xchg code separately for Xen? The Linux code
-> > isn't always sufficient (due to the GENERIC_ATOMIC64 stuff) and most of the
-> > churn coming out of this patch is an attempt to provide some small code
-> > reuse at the cost of code readability.
+Thanks Robert,
+
+> On 16.01.14 17:33:04, Weng Meiling wrote:
+> > Using the same test case, the problem also exists in the same kernel with the new patch applied:
 > > 
-> > What do others think?
+> > 
+> > # opcontrol --start
+> > 
+> > Using 2.6+ OProfile kernel interface.
+> > Using log file /var/lib/oprofile/samples/oprofiled.log
+> > Daemon started.
+> > [  508.456878] INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=685 c=684 q=83)
+> > [  571.496856] INFO: rcu_sched self-detected stall on CPU { 0}  (t=8404 jiffies g=685 c=684 q=83)
+> > [  634.526855] INFO: rcu_sched self-detected stall on CPU { 0}  (t=14707 jiffies g=685 c=684 q=83)
 > 
-> I am OK with that, in fact my first version of the patch did just that:
+> Yes, the patch does not prevent an interrupt storm. The same happened
+> on x86 and was there solved also by limiting the minimum cycle period
+> as the kernel was not able to ratelimit.
 > 
-> http://marc.info/?l=linux-arm-kernel&m=138436406724990&w=2
+> > ARM: events: increase minimum cycle period to 100k
 > 
-> Is that what you had in mind?
+> > -event:0xFF counters:0 um:zero minimum:500 name:CPU_CYCLES : CPU cycle
+> > +event:0xFF counters:0 um:zero minimum:100000 name:CPU_CYCLES : CPU cycle
+> 
+> However, an arbitrary hardcoded value migth not fit for all kind of
+> cpus esp. on ARM where the variety is high. It also looks like there
+> is no way other than patching the events file to force lower values
+> than the minimum on cpus there this might be necessary.
 
-For the xchg part, yes, that looks a lot better. I don't like the #undef
-CONFIG_CPU_V6 though, can that be rewritten to use __LINUX_ARM_ARCH__?
+Yeah, it's pretty much impossible to pick a one-size-fits-all value for ARM.
+
+> The problem of too low sample periods could be solved on ARM by using
+> perf's interrupt throttling, you might play around with:
+> 
+>  /proc/sys/kernel/perf_event_max_sample_rate:100000
+> 
+> I am not quite sure whether this works esp. for kernel counters and
+> how userland can be notified about throttling. Throttling could be
+> worth for operf too, not only for the oprofile kernel driver.
+> 
+> From a quick look it seems there is also code in x86 that dynamically
+> adjusts the rate which might be worth being implemented for ARM too.
+
+Are you referring to the perf_sample_event_took callback? If so, that
+certainly looks worth persuing. I'll stick it on my list, thanks!
 
 Will
