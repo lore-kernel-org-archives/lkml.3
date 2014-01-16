@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaAPClD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 21:41:03 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:6014 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752435AbaAPClB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 21:41:01 -0500
-From: Gaurav Jain <gjain@fb.com>
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Thread-Topic: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Thread-Index: AQHPD09bvhY6ouXu+ki8ciwGSba3HpqDZ8uAgAF/04CAAGQLRIAAQoUAgAEAKdaAABvGqw==
-Date: Thu, 16 Jan 2014 02:40:49 +0000
-Message-ID: <5EB282DB-CB9D-498B-B36F-4899D954630F@fb.com>
-References: <87a9exajbg.fsf@sejong.aot.lge.com>
- <CEFB97C1.2CC71%gjain@fb.com>,<87lhyg91um.fsf@sejong.aot.lge.com>
-In-Reply-To: <87lhyg91um.fsf@sejong.aot.lge.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752528AbaAPCld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 21:41:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47508 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634AbaAPClb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 21:41:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
+   d="scan'208";a="465880117"
+Message-ID: <52D746D9.7030206@linux.intel.com>
+Date: Wed, 15 Jan 2014 18:41:29 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-16_01:2014-01-15,2014-01-16,1970-01-01 signatures=0
+To: Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an arbitrary
+ pagetable
+References: <1389473370-1940-1-git-send-email-bp@alien8.de> <1389473370-1940-2-git-send-email-bp@alien8.de> <20140113053240.GA11237@dhcp-16-126.nay.redhat.com> <20140113101822.GA5388@pd.tnic> <20140113122320.GA1900@darkstar.nay.redhat.com> <52D3FCAA.7070004@linux.intel.com> <20140114014003.GB4327@dhcp-16-126.nay.redhat.com> <52D57F75.7060308@zytor.com> <20140115011609.GD23767@dhcp-16-126.nay.redhat.com> <52D6970D.3050701@zytor.com> <20140116014457.GA3807@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20140116014457.GA3807@dhcp-16-126.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+On 1/15/2014 5:44 PM, Dave Young wrote:
+> On 01/15/14 at 06:11am, H. Peter Anvin wrote:
+>> On 01/14/2014 05:16 PM, Dave Young wrote:
+>>>>
+>>>> Why the [Finnish] do you feel that information needs to be in a
+>>>> different form because it is (currently!) not available as a module?
+>>>
+>>> I think moving them to comment can avoid including extra linux/module.h
+>>>
+>>
+>> And that matters, why?
+>
+> At least the code will be cleaner and kernel size will be a bit smaller?
+>
 
-> On Jan 15, 2014, at 8:01 PM, "Namhyung Kim" <namhyung@kernel.org> wrote:
-> 
-> Hi Gaurav,
-> 
->> On Wed, 15 Jan 2014 06:44:39 +0000, Gaurav Jain wrote:
->> Hi Namhyung,
->> 
->> 
->>> On 1/15/14, 12:46 AM, "Namhyung Kim" <namhyung@kernel.org> wrote:
->>> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
->>> index 9b9bd719aa19..d52387fe83f1 100644
->>> --- a/tools/perf/util/map.c
->>> +++ b/tools/perf/util/map.c
->>> @@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64
->>> start, u64 len,
->>>        map->ino = ino;
->>>        map->ino_generation = ino_gen;
->>> 
->>> -        if (anon) {
->>> +        if (anon || (no_dso && type == MAP__FUNCTION)) {
-> 
-> Hmm.. I think it should check type of anon mapping too (assuming JIT
-> interface only provides function symbols, no?):
-> 
->        if ((anon || no_dso) && type == MAP__FUNCTION)) {
+making something harder to grep and less standardized is hardly cleaner
+and these things compile to nothing for non-modules.
 
-In that case, shouldn't we filter out all mappings that are not executable as I had intended to do in my original patch?
 
->>>            snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
->>>            filename = newfilename;
->>>        }
->>> @@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64
->>> start, u64 len,
->>>             * functions still return NULL, and we avoid the
->>>             * unnecessary map__load warning.
->>>             */
->>> -            if (no_dso)
->>> +            if (no_dso && type != MAP__FUNCTION)
-> 
-> And it should be simply:
-> 
->            if (type != MAP__FUNCTION)
-> 
-> 
->>>                dso__set_loaded(dso, map->type);
->>>        }
->>>    }
-> 
-> I'll update this and send a formal patch soon.  Could you please test it with
-> the new patch then?
-
-Sure I'll test the new patch, though please note my previous suggestion.
-
-Gaurav
