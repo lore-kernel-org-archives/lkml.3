@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaAPGa6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 01:30:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60848 "EHLO
+	id S1751992AbaAPGbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 01:31:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60851 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaAPGax (ORCPT
+	with ESMTP id S1751271AbaAPGa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 01:30:53 -0500
-Date: Wed, 15 Jan 2014 22:30:31 -0800
-From: tip-bot for Prarit Bhargava <tipbot@zytor.com>
-Message-ID: <tip-da6139e49c7cb0f4251265cb5243b8d220adb48d@git.kernel.org>
-Cc: mingo@kernel.org, seiji.aguchi@hds.com, tony.luck@intel.com,
-        gong.chen@linux.intel.com, ruiv.wang@gmail.com, janet.morgan@intel.com,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        yang.z.zhang@intel.com, walken@google.com, prarit@redhat.com,
-        hpa@linux.intel.com, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, seiji.aguchi@hds.com, tony.luck@intel.com,
-        gong.chen@linux.intel.com, ruiv.wang@gmail.com, janet.morgan@intel.com,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        yang.z.zhang@intel.com, walken@google.com, prarit@redhat.com,
-        hpa@linux.intel.com, paul.gortmaker@windriver.com
-In-Reply-To: <1389613861-3853-1-git-send-email-prarit@redhat.com>
-References: <1389613861-3853-1-git-send-email-prarit@redhat.com>
+	Thu, 16 Jan 2014 01:30:56 -0500
+Date: Wed, 15 Jan 2014 22:30:44 -0800
+From: tip-bot for Bin Gao <tipbot@zytor.com>
+Message-ID: <tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bin.gao@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bin.gao@intel.com, hpa@linux.intel.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Add check for number of available vectors before CPU down
-Git-Commit-ID: da6139e49c7cb0f4251265cb5243b8d220adb48d
+Subject: [tip:x86/platform] x86, tsc: Add static (MSR)
+  TSC calibration on Intel Atom SoCs
+Git-Commit-ID: 7da7c1561366ba8adb7275464ab44e84e1faa7e0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,224 +26,215 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 15 Jan 2014 22:30:37 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 15 Jan 2014 22:30:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  da6139e49c7cb0f4251265cb5243b8d220adb48d
-Gitweb:     http://git.kernel.org/tip/da6139e49c7cb0f4251265cb5243b8d220adb48d
-Author:     Prarit Bhargava <prarit@redhat.com>
-AuthorDate: Mon, 13 Jan 2014 06:51:01 -0500
+Commit-ID:  7da7c1561366ba8adb7275464ab44e84e1faa7e0
+Gitweb:     http://git.kernel.org/tip/7da7c1561366ba8adb7275464ab44e84e1faa7e0
+Author:     Bin Gao <bin.gao@intel.com>
+AuthorDate: Mon, 21 Oct 2013 09:16:33 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 15 Jan 2014 22:24:02 -0800
+CommitDate: Wed, 15 Jan 2014 22:28:48 -0800
 
-x86: Add check for number of available vectors before CPU down
+x86, tsc: Add static (MSR) TSC calibration on Intel Atom SoCs
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+On SoCs that have the calibration MSRs available, either there is no
+PIT, HPET or PMTIMER to calibrate against, or the PIT/HPET/PMTIMER is
+driven from the same clock as the TSC, so calibration is redundant and
+just slows down the boot.
 
-When a cpu is downed on a system, the irqs on the cpu are assigned to
-other cpus.  It is possible, however, that when a cpu is downed there
-aren't enough free vectors on the remaining cpus to account for the
-vectors from the cpu that is being downed.
+TSC rate is caculated by this formula:
+<maximum core-clock to bus-clock ratio> * <maximum resolved frequency>
+The ratio and the resolved frequency ID can be obtained from MSR.
+See Intel 64 and IA-32 System Programming Guid section 16.12 and 30.11.5
+for details.
 
-This results in an interesting "overflow" condition where irqs are
-"assigned" to a CPU but are not handled.
-
-For example, when downing cpus on a 1-64 logical processor system:
-
-<snip>
-[  232.021745] smpboot: CPU 61 is now offline
-[  238.480275] smpboot: CPU 62 is now offline
-[  245.991080] ------------[ cut here ]------------
-[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
-[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
-[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
-[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
-[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
-[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
-[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
-[  246.082430] Call Trace:
-[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
-[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
-[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
-[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
-[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
-[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
-[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
-[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
-[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
-[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
-[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
-[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
-[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
-[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
-[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
-[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
-[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
-[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
-[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
-[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
-[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
-[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
-[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
-[  246.249610] ---[ end trace fb74fdef54d79039 ]---
-[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
-[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
-Last login: Mon Nov 11 08:35:14 from 10.18.17.119
-[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-
-(last lines keep repeating.  ixgbe driver is dead until module reload.)
-
-If the downed cpu has more vectors than are free on the remaining cpus on the
-system, it is possible that some vectors are "orphaned" even though they are
-assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
-watchdog fired and notified that something was wrong.
-
-This patch adds a function, check_vectors(), to compare the number of vectors
-on the CPU going down and compares it to the number of vectors available on
-the system.  If there aren't enough vectors for the CPU to go down, an
-error is returned and propogated back to userspace.
-
-v2: Do not need to look at percpu irqs
-v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
-    Priority Mode
-v4: Additional changes suggested by Gong Chen.
-v5/v6/v7/v8: Updated comment text
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1389613861-3853-1-git-send-email-prarit@redhat.com
-Reviewed-by: Gong Chen <gong.chen@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Janet Morgan <janet.morgan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Ruiv Wang <ruiv.wang@gmail.com>
-Cc: Gong Chen <gong.chen@linux.intel.com>
+Signed-off-by: Bin Gao <bin.gao@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/n/tip-rgm7xmg7k6qnjlw3ynkcjsmh@git.kernel.org
 ---
- arch/x86/include/asm/irq.h |  1 +
- arch/x86/kernel/irq.c      | 70 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/smpboot.c  |  6 ++++
- 3 files changed, 77 insertions(+)
+ arch/x86/include/asm/tsc.h |   3 ++
+ arch/x86/kernel/Makefile   |   2 +-
+ arch/x86/kernel/tsc.c      |  10 ++++
+ arch/x86/kernel/tsc_msr.c  | 125 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 139 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 0ea10f27..cb6cfcd 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 235be70..57ae63c 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -65,4 +65,7 @@ extern int notsc_setup(char *);
+ extern void tsc_save_sched_clock_state(void);
+ extern void tsc_restore_sched_clock_state(void);
  
- #ifdef CONFIG_HOTPLUG_CPU
- #include <linux/cpumask.h>
-+extern int check_irq_vectors_for_cpu_disable(void);
- extern void fixup_irqs(void);
- extern void irq_force_complete_move(int);
- #endif
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 22d0687..4207e8d 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -262,6 +262,76 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
++/* MSR based TSC calibration for Intel Atom SoC platforms */
++int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
++
+ #endif /* _ASM_X86_TSC_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index dbe9bd6..6dbbb1e 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -32,7 +32,7 @@ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+-obj-y			+= tsc.o io_delay.o rtc.o
++obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
  
- #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 930e5d4..e574716 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -419,6 +419,16 @@ unsigned long native_calibrate_tsc(void)
+ 	unsigned long flags, latch, ms, fast_calibrate;
+ 	int hpet = is_hpet_enabled(), i, loopmin;
+ 
++	/* Calibrate TSC using MSR for Intel Atom SoCs */
++	local_irq_save(flags);
++	i = try_msr_calibrate_tsc(&fast_calibrate);
++	local_irq_restore(flags);
++	if (i >= 0) {
++		if (i == 0)
++			pr_warn("Fast TSC calibration using MSR failed\n");
++		return fast_calibrate;
++	}
++
+ 	local_irq_save(flags);
+ 	fast_calibrate = quick_pit_calibrate();
+ 	local_irq_restore(flags);
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+new file mode 100644
+index 0000000..c502772
+--- /dev/null
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -0,0 +1,125 @@
 +/*
-+ * This cpu is going to be removed and its vectors migrated to the remaining
-+ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
-+ * This function is protected by stop_machine().
++ * tsc_msr.c - MSR based TSC calibration on Intel Atom SoC platforms.
++ *
++ * TSC in Intel Atom SoC runs at a constant rate which can be figured
++ * by this formula:
++ * <maximum core-clock to bus-clock ratio> * <maximum resolved frequency>
++ * See Intel 64 and IA-32 System Programming Guid section 16.12 and 30.11.5
++ * for details.
++ * Especially some Intel Atom SoCs don't have PIT(i8254) or HPET, so MSR
++ * based calibration is the only option.
++ *
++ *
++ * Copyright (C) 2013 Intel Corporation
++ * Author: Bin Gao <bin.gao@intel.com>
++ *
++ * This file is released under the GPLv2.
 + */
-+int check_irq_vectors_for_cpu_disable(void)
++
++#include <linux/kernel.h>
++#include <asm/processor.h>
++#include <asm/setup.h>
++#include <asm/apic.h>
++#include <asm/param.h>
++
++/* CPU reference clock frequency: in KHz */
++#define FREQ_83		83200
++#define FREQ_100	99840
++#define FREQ_133	133200
++#define FREQ_166	166400
++
++#define MAX_NUM_FREQS	8
++
++/*
++ * According to Intel 64 and IA-32 System Programming Guide,
++ * if MSR_PERF_STAT[31] is set, the maximum resolved bus ratio can be
++ * read in MSR_PLATFORM_ID[12:8], otherwise in MSR_PERF_STAT[44:40].
++ * Unfortunately some Intel Atom SoCs aren't quite compliant to this,
++ * so we need manually differentiate SoC families. This is what the
++ * field msr_plat does.
++ */
++struct freq_desc {
++	u8 x86_family;	/* CPU family */
++	u8 x86_model;	/* model */
++	u8 msr_plat;	/* 1: use MSR_PLATFORM_INFO, 0: MSR_IA32_PERF_STATUS */
++	u32 freqs[MAX_NUM_FREQS];
++};
++
++static struct freq_desc freq_desc_tables[] = {
++	/* PNW */
++	{ 6, 0x27, 0, { 0, 0, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
++	/* CLV+ */
++	{ 6, 0x35, 0, { 0, FREQ_133, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
++	/* TNG */
++	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
++	/* VLV2 */
++	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	/* ANN */
++	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
++};
++
++static int match_cpu(u8 family, u8 model)
 +{
-+	int irq, cpu;
-+	unsigned int this_cpu, vector, this_count, count;
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct cpumask affinity_new, online_new;
++	int i;
 +
-+	this_cpu = smp_processor_id();
-+	cpumask_copy(&online_new, cpu_online_mask);
-+	cpu_clear(this_cpu, online_new);
-+
-+	this_count = 0;
-+	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-+		irq = __this_cpu_read(vector_irq[vector]);
-+		if (irq >= 0) {
-+			desc = irq_to_desc(irq);
-+			data = irq_desc_get_irq_data(desc);
-+			cpumask_copy(&affinity_new, data->affinity);
-+			cpu_clear(this_cpu, affinity_new);
-+
-+			/* Do not count inactive or per-cpu irqs. */
-+			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
-+				continue;
-+
-+			/*
-+			 * A single irq may be mapped to multiple
-+			 * cpu's vector_irq[] (for example IOAPIC cluster
-+			 * mode).  In this case we have two
-+			 * possibilities:
-+			 *
-+			 * 1) the resulting affinity mask is empty; that is
-+			 * this the down'd cpu is the last cpu in the irq's
-+			 * affinity mask, or
-+			 *
-+			 * 2) the resulting affinity mask is no longer
-+			 * a subset of the online cpus but the affinity
-+			 * mask is not zero; that is the down'd cpu is the
-+			 * last online cpu in a user set affinity mask.
-+			 */
-+			if (cpumask_empty(&affinity_new) ||
-+			    !cpumask_subset(&affinity_new, &online_new))
-+				this_count++;
-+		}
++	for (i = 0; i < ARRAY_SIZE(freq_desc_tables); i++) {
++		if ((family == freq_desc_tables[i].x86_family) &&
++			(model == freq_desc_tables[i].x86_model))
++			return i;
 +	}
 +
-+	count = 0;
-+	for_each_online_cpu(cpu) {
-+		if (cpu == this_cpu)
-+			continue;
-+		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-+		     vector++) {
-+			if (per_cpu(vector_irq, cpu)[vector] < 0)
-+				count++;
-+		}
-+	}
-+
-+	if (count < this_count) {
-+		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
-+			this_cpu, this_count, count);
-+		return -ERANGE;
-+	}
-+	return 0;
++	return -1;
 +}
 +
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
- {
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 85dc05a..391ea52 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1312,6 +1312,12 @@ void cpu_disable_common(void)
- 
- int native_cpu_disable(void)
- {
-+	int ret;
++/* Map CPU reference clock freq ID(0-7) to CPU reference clock freq(KHz) */
++#define id_to_freq(cpu_index, freq_id) \
++	(freq_desc_tables[cpu_index].freqs[freq_id])
 +
-+	ret = check_irq_vectors_for_cpu_disable();
-+	if (ret)
-+		return ret;
++/*
++ * Do MSR calibration only for known/supported CPUs.
++ * Return values:
++ * -1: CPU is unknown/unsupported for MSR based calibration
++ *  0: CPU is known/supported, but calibration failed
++ *  1: CPU is known/supported, and calibration succeeded
++ */
++int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
++{
++	int cpu_index;
++	u32 lo, hi, ratio, freq_id, freq;
 +
- 	clear_local_APIC();
- 
- 	cpu_disable_common();
++	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
++	if (cpu_index < 0)
++		return -1;
++
++	*fast_calibrate = 0;
++
++	if (freq_desc_tables[cpu_index].msr_plat) {
++		rdmsr(MSR_PLATFORM_INFO, lo, hi);
++		ratio = (lo >> 8) & 0x1f;
++	} else {
++		rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
++		ratio = (hi >> 8) & 0x1f;
++	}
++	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
++
++	if (!ratio)
++		return 0;
++
++	/* Get FSB FREQ ID */
++	rdmsr(MSR_FSB_FREQ, lo, hi);
++	freq_id = lo & 0x7;
++	freq = id_to_freq(cpu_index, freq_id);
++	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
++				freq_id, freq);
++	if (!freq)
++		return 0;
++
++	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
++	*fast_calibrate = freq * ratio;
++	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
++
++	lapic_timer_frequency = (freq * 1000) / HZ;
++	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
++
++	return 1;
++}
