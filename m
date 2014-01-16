@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaAPMcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:32:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011AbaAPMch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:32:37 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1389249983-31265-1-git-send-email-jlee@suse.com>
-References: <1389249983-31265-1-git-send-email-jlee@suse.com>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Chun-Yi Lee <jlee@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Marek <mmarek@suse.com>
-Subject: Re: [PATCH] MODSIGN: Fix including certificate twice when the signing_key.x509
-Date: Thu, 16 Jan 2014 12:31:03 +0000
-Message-ID: <10837.1389875463@warthog.procyon.org.uk>
+	id S1752572AbaAPMj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:39:29 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:61380 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751592AbaAPMj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:39:26 -0500
+Message-ID: <1389875964.4985.14.camel@x220>
+Subject: Re: [PATCH] headers_check: special case seqbuf_dump()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Date: Thu, 16 Jan 2014 13:39:24 +0100
+In-Reply-To: <s5h4n54ta77.wl%tiwai@suse.de>
+References: <1389782899.2128.15.camel@x220> <s5h4n54ta77.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jan 2014 12:39:24.0518 (UTC) FILETIME=[FCB6B060:01CF12B7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
+On Thu, 2014-01-16 at 12:53 +0100, Takashi Iwai wrote:
+> At Wed, 15 Jan 2014 11:48:19 +0100,
+> Paul Bolle wrote:
+> > 2) By the way, what is actually meant by:
+> >     It is no longer possible to actually link against OSSlib with this
+> >     header, but we still provide these macros for programs using them.
+> > 
+> > Doesn't that mean compatibility to OSSlib isn't even useful?
+> 
+> Well, it's not about the compatibility to osslib.  The OSS seq
+> user-space codes are written with these macros no matter whether to
+> use osslib or not.  osslib was newer than these macros and it was
+> designed to be compatible with them.
 
-> This issue was found in devel-pekey branch on linux-modsign.git tree.
-> The
+So perhaps that line should read something like:
+    [...]
+    header, but we still provide these macros for programs that want to
+    interface with /dev/dsp and /dev/sequencer directly.
 
-Are you asking for this to go upstream or into my devel-pekey branch?
+I'm making that up: I know nothing about this stuff. I'm just looking
+for a way to make that comment clear to a person that wonders in, say,
+2019: "What on earth is seqbuf_dump() good for?".
 
-If upstream you want it to go upstream, I presume commit
-d7ec435fdd03cfee70dba934ee384acc87bd6d00 doesn't fix the problem?
 
-David
+Paul Bolle
+
