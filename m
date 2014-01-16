@@ -1,89 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaAPOtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:49:40 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:48815 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaAPOti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:49:38 -0500
+	id S1752790AbaAPOw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:52:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11930 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535AbaAPOwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:52:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,668,1384329600"; 
+   d="scan'208";a="466145747"
+Message-ID: <52D7F220.5090201@linux.intel.com>
+Date: Thu, 16 Jan 2014 06:52:16 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140115110724.GB3571@mudshark.cambridge.arm.com>
-References: <1388420732-13961-1-git-send-email-jean.pihet@linaro.org>
-	<1388420732-13961-2-git-send-email-jean.pihet@linaro.org>
-	<20140106183000.GG1096@mudshark.cambridge.arm.com>
-	<CAFrcx1=ivcoNBTSBO47zs04Ji3XZza7pH3bVFS5M0-uZTg38RA@mail.gmail.com>
-	<20140115110724.GB3571@mudshark.cambridge.arm.com>
-Date: Thu, 16 Jan 2014 15:49:37 +0100
-Message-ID: <CAFrcx1nN5hnhOWWxKP7TOOh4bGMtBcD_aK8T6_8mYW7HJRTZEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ARM64: perf: add support for perf registers API
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an arbitrary
+ pagetable
+References: <20140113122320.GA1900@darkstar.nay.redhat.com> <52D3FCAA.7070004@linux.intel.com> <20140114014003.GB4327@dhcp-16-126.nay.redhat.com> <52D57F75.7060308@zytor.com> <20140115011609.GD23767@dhcp-16-126.nay.redhat.com> <52D6970D.3050701@zytor.com> <20140116014457.GA3807@dhcp-16-126.nay.redhat.com> <52D746D9.7030206@linux.intel.com> <20140116030343.GF3807@dhcp-16-126.nay.redhat.com> <52D75A55.2080503@zytor.com> <20140116064627.GC6356@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20140116064627.GC6356@dhcp-16-126.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
-
-On 15 January 2014 12:07, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Jan 15, 2014 at 10:30:48AM +0000, Jean Pihet wrote:
->> Hi Will,
 >
-> Hi Jean,
+> If the *module* is really a nonmodule, IMHO it should add the information to
+> or add other macros macros instead of reuse the MODULE_*.
 >
->> On 6 January 2014 19:30, Will Deacon <will.deacon@arm.com> wrote:
->> > On Mon, Dec 30, 2013 at 04:25:30PM +0000, Jean Pihet wrote:
->> >> From: Jean Pihet <jean.pihet@newoldbits.com>
->> >>
->> >> This patch implements the functions required for the perf registers API,
->> >> allowing the perf tool to interface kernel register dumps with libunwind
->> >> in order to provide userspace backtracing.
->> >> Compat mode is also supported.
->> >
->> > [...]
->> >
->> >> +u64 perf_reg_value(struct pt_regs *regs, int idx)
->> >> +{
->> >> +     if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM64_MAX))
->> >> +             return 0;
->> >
->> > While this is probably fine, I'd feel more comfortable if you had separate
->> > limit checks for native and compat...
->> In fact in the native and compat modes the same set of registers are
->> accessed, based on the native regs that are registered to the perf
->> event core, cf. the definition of PERF_REGS_MASK in
->> tools/perf/arch/arm64/include/perf_regs.h.
->>
->> The regs set could be registered differently based on the binary to
->> trace, but unfortunately the perf core code does not allow that.
->>
->> I would leave the code as is, what do you think?
->
-> Well, what business would a compat task have accessing registers beyond the
-> compat subset? Since we don't expose the PC, we can simply lower the limit
-> as the compat registers form a prefix of the native registers, no?
-Yes it is a good thing to clamp the range of registers, based on the
-compat mode.
-Unfortunately the perf core code does not handle the compat mode,
-instead it always accesses all _native_ registers.
+> BTW, for macros in this file, for a nonmodule "license GPL" is unnecessary at all.
 
-Here is the proposal (after our discussion on IRC):
-- use the current patches on ARM64 so that we have a working solution
-that one can test/stress/use on real workloads,
-- re-factor the perf core code later to make able to handle multiple
-ABIs and corresponding registers sets.
+I really fail to see what you have against machine-and-human readable data
 
-Are you ok with that?
 
-Regards,
-Jean
-
->
-> Will
