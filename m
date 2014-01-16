@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaAPOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:20:26 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:45704 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376AbaAPOUX (ORCPT
+	id S1752763AbaAPOUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:20:36 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:55300 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbaAPOUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jan 2014 09:20:23 -0500
-Date: Thu, 16 Jan 2014 17:17:22 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 7/8] zram: drop not used table `count' member
-Message-ID: <20140116141722.GA2176@swordfish.minsk.epam.com>
-References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
- <52D7E41A.1060408@redhat.com>
+Message-ID: <52D7EAA4.2080208@linaro.org>
+Date: Thu, 16 Jan 2014 15:20:20 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D7E41A.1060408@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <52D7E343.40909@linaro.org> <20140116141743.GT31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140116141743.GT31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/16/14 14:52), Jerome Marchand wrote:
-> On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
-> > struct table `count' member is not used.
-> 
-> What was the intended use of this counter anyway?
-> 
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  drivers/block/zram/zram_drv.h | 1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index 58d4ac5..1d5b1f5 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -64,7 +64,6 @@ enum zram_pageflags {
-> >  struct table {
-> >  	unsigned long handle;
-> >  	u16 size;	/* object size (excluding header) */
-> > -	u8 count;	/* object ref count (not yet used) */
-> >  	u8 flags;
-> 
+On 01/16/2014 03:17 PM, Peter Zijlstra wrote:
+> On Thu, Jan 16, 2014 at 02:48:51PM +0100, Daniel Lezcano wrote:
+>> 3570  sched_getparam(3570, { 0 })       = 0
+>> 3570  sched_getscheduler(3570)          = 0 (SCHED_OTHER)
+>> 3570  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3570  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3571  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3571  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3571  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3571  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3571  sched_setscheduler(3572, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3571  <... sched_setscheduler resumed> ) = 0
+>> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+>> 3571  <... sched_get_priority_min resumed> ) = 0
+>> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+>> 3571  <... sched_get_priority_max resumed> ) = 0
+>> 3571  sched_setscheduler(3573, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
+>> permitted)
+>> 3571  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+>> 3571  <... sched_get_priority_min resumed> ) = 0
+>> 3571  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+>> 3571  <... sched_get_priority_max resumed> ) = 0
+>> 3571  sched_setscheduler(3574, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3571  <... sched_setscheduler resumed> ) = -1 EPERM (Operation not
+>> permitted)
+>>
+>> The same strace but on a kernel which does not hang. The calls to
+>> sched_setscheduler do not fail.
+>>
+>> 3292  sched_getparam(3292, { 0 })       = 0
+>> 3292  sched_getscheduler(3292)          = 0 (SCHED_OTHER)
+>> 3292  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3292  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3293  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3293  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3293  sched_get_priority_min(SCHED_OTHER) = 0
+>> 3293  sched_get_priority_max(SCHED_OTHER) = 0
+>> 3293  sched_setscheduler(3294, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3293  <... sched_setscheduler resumed> ) = 0
+>> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+>> 3293  <... sched_get_priority_min resumed> ) = 0
+>> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+>> 3293  <... sched_get_priority_max resumed> ) = 0
+>> 3293  sched_setscheduler(3295, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3293  <... sched_setscheduler resumed> ) = 0
+>> 3293  sched_get_priority_min(SCHED_OTHER <unfinished ...>
+>> 3293  <... sched_get_priority_min resumed> ) = 0
+>> 3293  sched_get_priority_max(SCHED_OTHER <unfinished ...>
+>> 3293  <... sched_get_priority_max resumed> ) = 0
+>> 3293  sched_setscheduler(3296, SCHED_OTHER, { 0 } <unfinished ...>
+>> 3293  <... sched_setscheduler resumed> ) = 0
+>>
+>> The EPERM error comes from kernel/sched/core.c:3303
+>>
+>> ...
+>> 		if (fair_policy(policy)) {
+>> 			if (!can_nice(p, attr->sched_nice))
+>> 				return -EPERM;
+>> 		}
+>> ...
+>>
+>>
+>> But I don't know why this is leading to block a process or making rsyslogd
+>> being not woken up by a packet coming in the af_unix socket.
 >
+> Could you test with a fresh tip/master, Ingo just pushed out a stack of
+> fixes, in particularly:
+>
+> e3de300d1212b ("sched: Preserve the nice level over sched_setscheduler() and sched_setparam() calls")
+> 39fd8fd22b322 ("sched: Fix up scheduler syscall LTP fails")
+>
+> Could have affected things.
+>
+> Meanwhile I'll try and better read what the above says.
 
-> I noticed that your earlier version of this patch changed the
-> flags size to 16. What has changed?
-> 
+Already tested. The last commits do not change the issue described above.
 
-nothing really. I was going to extend flags, but changed my plans. so it was
-a leftover.
 
-	-ss
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-> Jerome
-> 
-> >  } __aligned(4);
-> >  
-> > 
-> 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
