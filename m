@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaAPDsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:48:06 -0500
-Received: from mail-bn1lp0158.outbound.protection.outlook.com ([207.46.163.158]:34402
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1751552AbaAPD6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 22:58:36 -0500
+Received: from ozlabs.org ([203.10.76.45]:55549 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973AbaAPDsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:48:04 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Jean-Francois Moine <moinejf@free.fr>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Problems with simple-card
-Thread-Topic: Problems with simple-card
-Thread-Index: AQHPEh5JfNZzFIpXg0+wzFuEj1ZSy5qGlpyg
-Date: Thu, 16 Jan 2014 03:47:58 +0000
-Message-ID: <81eea230fdfa45bfa6d1f9d2b941221e@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <20140115191831.5965d17e@armhf>
-In-Reply-To: <20140115191831.5965d17e@armhf>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0093C80C01
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(679001)(689001)(51704005)(199002)(189002)(164054003)(87936001)(81342001)(47446002)(80022001)(31966008)(4396001)(81686001)(76576001)(74662001)(74876001)(74316001)(83072002)(74502001)(74366001)(93516002)(90146001)(81542001)(74706001)(85852003)(56816005)(87266001)(77982001)(85306002)(69226001)(2656002)(65816001)(47976001)(63696002)(66066001)(76796001)(51856001)(80976001)(47736001)(83322001)(46102001)(53806001)(54356001)(79102001)(49866001)(50986001)(54316002)(92566001)(76786001)(56776001)(76482001)(59766001)(33646001)(93136001)(81816001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751051AbaAPD6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 22:58:35 -0500
+Date: Thu, 16 Jan 2014 14:58:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the tip tree
+Message-Id: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0G3mcD3015164
 
-Hi,
+--Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I did a mistake in the v1 of my 'ASoC: simple-card: simplify code': I
-> did not initialize the pointer to the asoc_simple_card_dai_init()
-> function when DT. Then, I fixed that, and the simple card does not work
-> for me.
-> 
-> First, without any 'format' in the DT, I get a fmt for each CPU / CODEC
-> DAI: SND_SOC_DAIFMT_CBS_CFS is always set. Well, some code is executed
-> for nothing, but this is not critical.
-> 
+Hi all,
 
-This is the old issue that I have raised before, which is one limitation
-of snd_soc_of_parse_daifmt(). As descript above, if without any fmt in the
-DT node, and just using snd_soc_of_parse_daifmt() for each CPU/CODEC DAI fmt
-the SND_SOC_DAIFMT_CBS_CFS (none zero) is always set.
+After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-@Mark and Morimoto-san, there has two ways to deal with this in my mind:
-Fist, in the snd_soc_of_parse_daifmt(), modifying the
-boolen : "[prefix]bitclock-master"
-boolen : "[prefix]frame-master"
-	==> 
-[prefix]master = "XXX" and "XXX" is :
-"cbm-cfm" --> SND_SOC_DAIFMT_CBM_CFM          
-"cbs-cfm" --> SND_SOC_DAIFMT_CBS_CFM          
-"cbm-cfs" --> SND_SOC_DAIFMT_CBM_CFS          
-"cbs-cfs" --> SND_SOC_DAIFMT_CBS_CFS         
+arch/x86/kernel/process.c: In function 'mwait_idle':
+/scratch/sfr/next/arch/x86/kernel/process.c:434:3: error: implicit declarat=
+ion of function '__monitor' [-Werror=3Dimplicit-function-declaration]
+   __monitor((void *)&current_thread_info()->flags, 0, 0);
+   ^
+arch/x86/kernel/process.c:437:4: error: implicit declaration of function '_=
+_sti_mwait' [-Werror=3Dimplicit-function-declaration]
+    __sti_mwait(0, 0);
+    ^
 
-And the default value will be zero...
+Caused by commit 16824255394f ("x86, acpi, idle: Restructure the mwait
+idle routines") interacting with commit 7760518cce95 ("x86 idle: restore
+mwait_idle()") from the idle tree.
 
-If this method is applied, and there is no need any masks for
-snd_soc_of_parse_daifmt(), like in simple card driver:
+I am not sure how to fix this so I just reverted the idle tree commit for
+now (since it reverted cleanly). Please let me know if there is a better
+solution.
 
-/* get CPU/CODEC common format via simple-audio-card,format */
-info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
-           (SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Second, if there hasn't any DAI fmts in DT node and at the same time the CPU
-and CODEC DAI devices don't need to care about of them, and set_dai() pointer
-could be set to be NULL, and then snd_soc_dai_set_fmt() just returned -ENOTSUPP.
+--Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Thanks,
+iQIcBAEBCAAGBQJS11jpAAoJEMDTa8Ir7ZwVMhAP/3Nb2kS9uiLOeZhqRnyHJAf8
+BBUzCbvJwqQ5+CnWlvQ+wW4N9v5iEHDCpruy/SSueuiy6fNXpu6m/Cziam4gOZSe
+vdO4UWWWInS/FG/+aE0uZgYfA3SdPnhBj+P6nycsNhlycgnJvvBg5Zg7qxl6KElJ
+KoJDGNSvmpkqXv6xjtTtHpn577MFahBNOpFFKH7gAVr3KwQADg2qDbR4ZBLslRal
+KM6WoHjGRYb+acaGEol5H3nTRPTgWBz79Qkk7Mu2GktXzZpAbrXzeFy7QHxj7QgW
+nKus+HbaUt73mwDZfDcnJeDo9gRiGHNFRkUowIpZnpc5rnEmK+WS1O3GLHJtDFQz
+QK4lEqNozVok5Io6rfEChca/lPzS9LEMhsn8PdyVs7oyd84MPNpFbBxoNlwBu6BG
+SK9rXCi8xD5AkI9jHMm5E3s9Dq49Hbn2D8YrXJwTj/2xC4XYgSIEP69/OAxT1cLu
+6z+Y//cHbfmQZet/wt3/E9DWfRkgL7rWSJxnpOm9+ASKVY0XZkuwV+PMrkH7psZZ
+4BKnli7IS/0T6ixJ3nXc/idrclhIUJb2yVJ0pybzicksv04cBSd9ZMCyEHU9rraF
+4wicd/QqtINA382QwyLchKWYwsIY0NI2a3pug7s8sl9ztLsrs083bM9e9pAw8kvA
+BGNyn2AQbYe5nqV1Yy29
+=T0hJ
+-----END PGP SIGNATURE-----
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J--
