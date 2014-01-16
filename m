@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaAPECq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:02:46 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57768 "EHLO
+	id S1752070AbaAPECr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:02:47 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57769 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaAPECo (ORCPT
+	with ESMTP id S1751473AbaAPECo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 23:02:44 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,74 +16,55 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/timers 1/5] timers: Track total number of timers in list
-Date: Wed, 15 Jan 2014 20:02:30 -0800
-Message-Id: <1389844954-5886-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/timers 3/5] timers: Reduce future __run_timers() latency for newly emptied list
+Date: Wed, 15 Jan 2014 20:02:32 -0800
+Message-Id: <1389844954-5886-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20140116040203.GA5206@linux.vnet.ibm.com>
+In-Reply-To: <1389844954-5886-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140116040203.GA5206@linux.vnet.ibm.com>
+ <1389844954-5886-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011604-0928-0000-0000-00000574DE68
+x-cbid: 14011604-0928-0000-0000-00000574DE6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Currently, the tvec_base structure's ->active_timers field tracks only
-the non-deferrable timers, which means that even if ->active_timers is
-zero, there might well be non-deferrable timers in the list.  This commit
-therefore adds an ->all_timers field to track all the timers, whether
-deferrable or not.
+The __run_timers() function currently steps through the list one jiffy at
+a time in order to update the timer wheel.  However, if the timer wheel
+is empty, no adjustment is needed other than updating ->timer_jiffies.
+Therefore, if we just emptied the timer wheel, for example, by deleting
+the last timer, we should mark the timer wheel as being up to date.
+This marking will reduce (and perhaps eliminate) the jiffy-stepping that
+a future __run_timers() call will need to do in response to some future
+timer posting or migration.  This commit therefore catches ->timer_jiffies
+for this case.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/timer.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/timer.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/kernel/timer.c b/kernel/timer.c
-index 6582b82fa966..2245b7374c3d 100644
+index eff9052001e1..1e53acb33361 100644
 --- a/kernel/timer.c
 +++ b/kernel/timer.c
-@@ -81,6 +81,7 @@ struct tvec_base {
- 	unsigned long timer_jiffies;
- 	unsigned long next_timer;
- 	unsigned long active_timers;
-+	unsigned long all_timers;
- 	struct tvec_root tv1;
- 	struct tvec tv2;
- 	struct tvec tv3;
-@@ -392,6 +393,7 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
- 			base->next_timer = timer->expires;
- 		base->active_timers++;
- 	}
-+	base->all_timers++;
- }
- 
- #ifdef CONFIG_TIMER_STATS
-@@ -671,6 +673,7 @@ detach_expired_timer(struct timer_list *timer, struct tvec_base *base)
- 	detach_timer(timer, true);
+@@ -688,6 +688,7 @@ detach_expired_timer(struct timer_list *timer, struct tvec_base *base)
  	if (!tbase_get_deferrable(timer->base))
  		base->active_timers--;
-+	base->all_timers--;
+ 	base->all_timers--;
++	(void)catchup_timer_jiffies(base);
  }
  
  static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
-@@ -685,6 +688,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
- 		if (timer->expires == base->next_timer)
+@@ -703,6 +704,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
  			base->next_timer = base->timer_jiffies;
  	}
-+	base->all_timers--;
+ 	base->all_timers--;
++	(void)catchup_timer_jiffies(base);
  	return 1;
- }
- 
-@@ -1560,6 +1564,7 @@ static int init_timers_cpu(int cpu)
- 	base->timer_jiffies = jiffies;
- 	base->next_timer = base->timer_jiffies;
- 	base->active_timers = 0;
-+	base->all_timers = 0;
- 	return 0;
  }
  
 -- 
