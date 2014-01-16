@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaAPNpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:45:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990AbaAPNpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:45:04 -0500
-Message-ID: <52D7E225.7000105@redhat.com>
-Date: Thu, 16 Jan 2014 14:44:05 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753133AbaAPNou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:44:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38264 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503AbaAPNiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 08:38:10 -0500
+Date: Thu, 16 Jan 2014 05:37:24 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-7d16c634233c411f54b89d0f1d51750dc85c5f7e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung.kim@lge.com,
+        mark.rutland@arm.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, namhyung.kim@lge.com,
+        mark.rutland@arm.com, namhyung@kernel.org, tglx@linutronix.de
+In-Reply-To: <1389276479-9047-1-git-send-email-namhyung@kernel.org>
+References: <1389276479-9047-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix build error due to zfree() cast
+Git-Commit-ID: 7d16c634233c411f54b89d0f1d51750dc85c5f7e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 3/8] zram: remove good and bad compress stats
-References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com> <1389877936-15543-4-git-send-email-sergey.senozhatsky@gmail.com>
-In-Reply-To: <1389877936-15543-4-git-send-email-sergey.senozhatsky@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:37:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
-> Remove `good' and `bad' compressed sub-requests stats. RW request may
-> cause a number of RW sub-requests. zram used to account `good' compressed
-> sub-queries (with compressed size less than 50% of original size), `bad'
-> compressed sub-queries (with compressed size greater that 75% of original
-> size), leaving sub-requests with compression size between 50% and 75% of
-> original size not accounted and not reported. zram already accounts each
-> sub-request's compression size so we can calculate real device compression
-> ratio.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Commit-ID:  7d16c634233c411f54b89d0f1d51750dc85c5f7e
+Gitweb:     http://git.kernel.org/tip/7d16c634233c411f54b89d0f1d51750dc85c5f7e
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Thu, 9 Jan 2014 23:07:59 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 15 Jan 2014 15:10:04 -0300
 
-> ---
->  drivers/block/zram/zram_drv.c | 11 -----------
->  drivers/block/zram/zram_drv.h |  2 --
->  2 files changed, 13 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index b0bcb7e..c7c7789 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -293,7 +293,6 @@ static void zram_free_page(struct zram *zram, size_t index)
->  {
->  	struct zram_meta *meta = zram->meta;
->  	unsigned long handle = meta->table[index].handle;
-> -	u16 size = meta->table[index].size;
->  
->  	if (unlikely(!handle)) {
->  		/*
-> @@ -307,14 +306,8 @@ static void zram_free_page(struct zram *zram, size_t index)
->  		return;
->  	}
->  
-> -	if (unlikely(size > max_zpage_size))
-> -		atomic_dec(&zram->stats.bad_compress);
-> -
->  	zs_free(meta->mem_pool, handle);
->  
-> -	if (size <= PAGE_SIZE / 2)
-> -		atomic_dec(&zram->stats.good_compress);
-> -
->  	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
->  	atomic_dec(&zram->stats.pages_stored);
->  
-> @@ -478,7 +471,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	}
->  
->  	if (unlikely(clen > max_zpage_size)) {
-> -		atomic_inc(&zram->stats.bad_compress);
->  		clen = PAGE_SIZE;
->  		src = NULL;
->  		if (is_partial_io(bvec))
-> @@ -518,9 +510,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	/* Update stats */
->  	atomic64_add(clen, &zram->stats.compr_size);
->  	atomic_inc(&zram->stats.pages_stored);
-> -	if (clen <= PAGE_SIZE / 2)
-> -		atomic_inc(&zram->stats.good_compress);
-> -
->  out:
->  	if (locked)
->  		mutex_unlock(&meta->buffer_lock);
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index e81e9cd..2f173cb 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -78,8 +78,6 @@ struct zram_stats {
->  	atomic64_t notify_free;	/* no. of swap slot free notifications */
->  	atomic_t pages_zero;		/* no. of zero filled pages */
->  	atomic_t pages_stored;	/* no. of pages currently stored */
-> -	atomic_t good_compress;	/* % of pages with compression ratio<=50% */
-> -	atomic_t bad_compress;	/* % of pages with compression ratio>=75% */
->  };
->  
->  struct zram_meta {
-> 
+perf tools: Fix build error due to zfree() cast
 
+It failed to build perf on my ubuntu 10.04 box (gcc 4.4.3):
+
+    CC       util/strlist.o
+  cc1: warnings being treated as errors
+  util/strlist.c: In function ‘str_node__delete’:
+  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
+    CC       util/strfilter.o
+  make: *** [util/strlist.o] Error 1
+
+    CC       util/srcline.o
+  cc1: warnings being treated as errors
+  util/srcline.c: In function ‘addr2line_init’:
+  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c: In function ‘addr2line_cleanup’:
+  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
+  make: *** [util/srcline.o] Error 1
+
+It seems it only allows to remove 'const' qualifier.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1389276479-9047-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/srcline.c | 4 ++--
+ tools/perf/util/strlist.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 7e67879..f3e4bc5 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -129,7 +129,7 @@ static struct a2l_data *addr2line_init(const char *path)
+ 
+ out:
+ 	if (a2l) {
+-		zfree((void **)&a2l->input);
++		zfree((char **)&a2l->input);
+ 		free(a2l);
+ 	}
+ 	bfd_close(abfd);
+@@ -140,7 +140,7 @@ static void addr2line_cleanup(struct a2l_data *a2l)
+ {
+ 	if (a2l->abfd)
+ 		bfd_close(a2l->abfd);
+-	zfree((void **)&a2l->input);
++	zfree((char **)&a2l->input);
+ 	zfree(&a2l->syms);
+ 	free(a2l);
+ }
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index 61a90bf..71f9d10 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -39,7 +39,7 @@ out_delete:
+ static void str_node__delete(struct str_node *snode, bool dupstr)
+ {
+ 	if (dupstr)
+-		zfree((void **)&snode->s);
++		zfree((char **)&snode->s);
+ 	free(snode);
+ }
+ 
