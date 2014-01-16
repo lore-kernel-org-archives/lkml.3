@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaAPOTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:19:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38800 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaAPOTI (ORCPT
+	id S1752731AbaAPOU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:20:26 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:45704 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376AbaAPOUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:19:08 -0500
-Date: Thu, 16 Jan 2014 06:18:26 -0800
-From: tip-bot for Heiko Carstens <tipbot@zytor.com>
-Message-ID: <tip-63b1a81699c2a45c9f737419b1ec1da0ecf92812@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org, jason.low2@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de, davidlohr@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org, jason.low2@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de, davidlohr@hp.com
-In-Reply-To: <20140116135450.GA4345@osiris>
-References: <20140116135450.GA4345@osiris>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] futexes: Fix futex_hashsize initialization
-Git-Commit-ID: 63b1a81699c2a45c9f737419b1ec1da0ecf92812
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 16 Jan 2014 09:20:23 -0500
+Date: Thu, 16 Jan 2014 17:17:22 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 7/8] zram: drop not used table `count' member
+Message-ID: <20140116141722.GA2176@swordfish.minsk.epam.com>
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
+ <52D7E41A.1060408@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 06:18:33 -0800 (PST)
+In-Reply-To: <52D7E41A.1060408@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  63b1a81699c2a45c9f737419b1ec1da0ecf92812
-Gitweb:     http://git.kernel.org/tip/63b1a81699c2a45c9f737419b1ec1da0ecf92812
-Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
-AuthorDate: Thu, 16 Jan 2014 14:54:50 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 16 Jan 2014 15:14:32 +0100
+On (01/16/14 14:52), Jerome Marchand wrote:
+> On 01/16/2014 02:12 PM, Sergey Senozhatsky wrote:
+> > struct table `count' member is not used.
+> 
+> What was the intended use of this counter anyway?
+> 
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > ---
+> >  drivers/block/zram/zram_drv.h | 1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index 58d4ac5..1d5b1f5 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -64,7 +64,6 @@ enum zram_pageflags {
+> >  struct table {
+> >  	unsigned long handle;
+> >  	u16 size;	/* object size (excluding header) */
+> > -	u8 count;	/* object ref count (not yet used) */
+> >  	u8 flags;
+> 
+>
 
-futexes: Fix futex_hashsize initialization
+> I noticed that your earlier version of this patch changed the
+> flags size to 16. What has changed?
+> 
 
-"futexes: Increase hash table size for better performance"
-introduces a new alloc_large_system_hash() call.
+nothing really. I was going to extend flags, but changed my plans. so it was
+a leftover.
 
-alloc_large_system_hash() however may allocate less memory than
-requested, e.g. limited by MAX_ORDER.
+	-ss
 
-Hence pass a pointer to alloc_large_system_hash() which will
-contain the hash shift when the function returns. Afterwards
-correctly set futex_hashsize.
-
-Fixes a crash on s390 where the requested allocation size was
-4MB but only 1MB was allocated.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Link: http://lkml.kernel.org/r/20140116135450.GA4345@osiris
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/futex.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 30971b5..1ddc449 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2844,6 +2844,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
- {
- 	u32 curval;
-+	unsigned int futex_shift;
- 	unsigned long i;
- 
- #if CONFIG_BASE_SMALL
-@@ -2855,8 +2856,9 @@ static int __init futex_init(void)
- 	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
- 					       futex_hashsize, 0,
- 					       futex_hashsize < 256 ? HASH_SMALL : 0,
--					       NULL, NULL, futex_hashsize, futex_hashsize);
--
-+					       &futex_shift, NULL,
-+					       futex_hashsize, futex_hashsize);
-+	futex_hashsize = 1UL << futex_shift;
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
- 	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
+> Jerome
+> 
+> >  } __aligned(4);
+> >  
+> > 
+> 
