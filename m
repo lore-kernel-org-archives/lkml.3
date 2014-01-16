@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaAPBdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:33:04 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32449 "EHLO mga09.intel.com"
+	id S1752398AbaAPBfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:35:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:41246 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260AbaAPBZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:25:00 -0500
+	id S1750900AbaAPBfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:35:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
-   d="scan'208";a="467394581"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v5 02/22] Allow page fault handlers to perform the COW
-Date: Wed, 15 Jan 2014 20:24:20 -0500
-Message-Id: <60513ca8b173f467bde45765633fb8f527687401.1389779961.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+   d="scan'208";a="459552129"
+Date: Thu, 16 Jan 2014 09:35:08 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@linux.intel.com
+Subject: [sched] b75e43bb77d: +87% hackbench.throughput
+Message-ID: <20140116013508.GB13621@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently COW of an XIP file is done by first bringing in a read-only
-mapping, then retrying the fault and copying the page.  It is much more
-efficient to tell the fault handler that a COW is being attempted (by
-passing in the pre-allocated page in the vm_fault structure), and allow
-the handler to perform the COW operation itself.
+Alex,
 
-Where the filemap code protects against truncation of the file until
-the PTE has been installed with the page lock, the XIP code use the
-i_mmap_mutex instead.  We must therefore unlock the i_mmap_mutex in
-__do_fault().
+We noticed that commit b75e43bb77d ("sched: find the latest idle cpu")
+increased hackbench throughput by +87% in test case hackbench
+1600%-threads-pipe on a 2S SNB server.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- include/linux/mm.h |  2 ++
- mm/memory.c        | 19 ++++++++++++++++---
- 2 files changed, 18 insertions(+), 3 deletions(-)
+      v3.13-rc7  b75e43bb77df14e2209532c1e
+---------------  -------------------------
+    171792 ~ 0%     +87.0%     321176 ~ 0%  hackbench.throughput
+   4677274 ~29%    +706.1%   37705344 ~ 1%  proc-vmstat.pgalloc_dma32
+  12718244 ~34%    +700.6%  1.018e+08 ~ 3%  numa-vmstat.node0.numa_local
+  12741758 ~34%    +699.3%  1.019e+08 ~ 3%  numa-vmstat.node0.numa_hit
+    275020 ~16%    +535.4%    1747494 ~ 3%  proc-vmstat.nr_tlb_remote_flush_received
+  24343551 ~30%    +745.7%  2.059e+08 ~ 1%  numa-numastat.node0.local_node
+    578758 ~13%    +507.2%    3514489 ~ 2%  interrupts.TLB
+ 8.696e+08 ~ 1%     -85.7%  1.246e+08 ~11%  interrupts.RES
+  24343552 ~30%    +745.7%  2.059e+08 ~ 1%  numa-numastat.node0.numa_hit
+     24275 ~12%    +296.2%      96175 ~ 4%  proc-vmstat.nr_tlb_remote_flush
+     16816 ~ 1%     -60.8%       6596 ~ 3%  proc-vmstat.nr_tlb_local_flush_all
+ 1.807e+08 ~ 1%    +135.8%   4.26e+08 ~ 1%  proc-vmstat.numa_local
+ 1.807e+08 ~ 1%    +135.8%   4.26e+08 ~ 1%  proc-vmstat.numa_hit
+ 1.818e+08 ~ 1%    +135.4%   4.28e+08 ~ 1%  proc-vmstat.pgfree
+ 1.771e+08 ~ 1%    +120.3%  3.903e+08 ~ 1%  proc-vmstat.pgalloc_normal
+       270 ~14%    +149.1%        673 ~ 5%  slabinfo.mnt_cache.active_objs
+       270 ~14%    +149.1%        673 ~ 5%  slabinfo.mnt_cache.num_objs
+       378 ~ 2%     -45.5%        206 ~ 5%  proc-vmstat.nr_dirtied
+   1284432 ~ 2%     -42.0%     744640 ~ 2%  softirqs.RCU
+   4821300 ~ 1%     -40.6%    2863710 ~ 1%  proc-vmstat.pgfault
+ 1.564e+08 ~ 4%     +40.8%  2.202e+08 ~ 1%  numa-numastat.node1.local_node
+ 1.564e+08 ~ 4%     +40.8%  2.202e+08 ~ 1%  numa-numastat.node1.numa_hit
+  78523323 ~ 5%     +39.2%  1.093e+08 ~ 3%  numa-vmstat.node1.numa_local
+  78615652 ~ 5%     +39.2%  1.094e+08 ~ 3%  numa-vmstat.node1.numa_hit
+      7878 ~ 0%     +16.4%       9168 ~ 1%  vmstat.procs.r
+   1413677 ~ 0%     -84.6%     218164 ~10%  vmstat.system.in
+ 2.386e+09 ~ 0%     -76.1%  5.709e+08 ~ 6%  time.voluntary_context_switches
+   5575434 ~ 0%     -75.6%    1359735 ~ 5%  vmstat.system.cs
+ 9.359e+08 ~ 1%     -73.2%  2.508e+08 ~ 6%  time.involuntary_context_switches
+   1229364 ~ 1%     +76.9%    2174598 ~ 0%  time.minor_page_faults
+      1638 ~ 1%     +60.0%       2622 ~ 1%  time.user_time
+     17188 ~ 0%      -8.4%      15749 ~ 0%  time.system_time
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd00..e07c57c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -195,6 +195,7 @@ struct vm_fault {
- 	pgoff_t pgoff;			/* Logical page offset based on vma */
- 	void __user *virtual_address;	/* Faulting virtual address */
- 
-+	struct page *cow_page;		/* Handler may choose to COW */
- 	struct page *page;		/* ->fault handlers should return a
- 					 * page here, unless VM_FAULT_NOPAGE
- 					 * is set (which is also implied by
-@@ -958,6 +959,7 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
- #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
- 
-+#define VM_FAULT_COWED	0x0080	/* ->fault COWed the page instead */
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
- #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-diff --git a/mm/memory.c b/mm/memory.c
-index 5d9025f..3f1b666 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2673,6 +2673,7 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			vmf.pgoff = old_page->index;
- 			vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
- 			vmf.page = old_page;
-+			vmf.cow_page = NULL;
- 
- 			/*
- 			 * Notify the address space that the page is about to
-@@ -3335,11 +3336,18 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	vmf.pgoff = pgoff;
- 	vmf.flags = flags;
- 	vmf.page = NULL;
-+	vmf.cow_page = cow_page;
- 
- 	ret = vma->vm_ops->fault(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE |
- 			    VM_FAULT_RETRY)))
- 		goto uncharge_out;
-+	if (unlikely(ret & VM_FAULT_COWED)) {
-+		page = cow_page;
-+		anon = 1;
-+		__SetPageUptodate(page);
-+		goto cowed;
-+	}
- 
- 	if (unlikely(PageHWPoison(vmf.page))) {
- 		if (ret & VM_FAULT_LOCKED)
-@@ -3399,6 +3407,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	}
- 
-+ cowed:
- 	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
- 
- 	/*
-@@ -3465,9 +3474,13 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (vma->vm_file && !page_mkwrite)
- 			file_update_time(vma->vm_file);
- 	} else {
--		unlock_page(vmf.page);
--		if (anon)
--			page_cache_release(vmf.page);
-+		if ((ret & VM_FAULT_COWED)) {
-+			mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+		} else {
-+			unlock_page(vmf.page);
-+			if (anon)
-+				page_cache_release(vmf.page);
-+		}
- 	}
- 
- 	return ret;
--- 
-1.8.5.2
 
+                                 hackbench.throughput
+
+   340000 ++----------------------------------------------------------------+
+          |                  O   O   O   O       O   O   O  O       O   O   |
+   320000 ++                                 O                  O           |
+   300000 ++                                                                |
+          |                                                                 |
+   280000 ++                                                                |
+   260000 O+  O   O   O   O                                                 |
+          |                                                                 |
+   240000 ++                                                                |
+   220000 ++                                                                |
+          |                                                                 |
+   200000 ++                                                                |
+   180000 ++                                                                |
+          *...*...*...*...*..*...*...*...*...*...*...*...*..*...*...*...*...*
+   160000 ++----------------------------------------------------------------+
+
+
+                          time.involuntary_context_switches
+
+   1e+09 ++-----------------------------------------------------------------+
+         *...*...*...*...      ..*...*...*..*...                  ..*...    |
+   9e+08 ++              *...*.                 *...*...*...*...*.      *...*
+   8e+08 ++                                                                 |
+         |                                                                  |
+   7e+08 ++                                                                 |
+         |                                                                  |
+   6e+08 ++                                                                 |
+         |                                                                  |
+   5e+08 ++                                                                 |
+   4e+08 ++                                                                 |
+         |                                                                  |
+   3e+08 ++                                                                 |
+         O   O   O   O   O   O   O   O   O  O   O   O   O   O   O   O   O   |
+   2e+08 ++-----------------------------------------------------------------+
+
+Thanks,
+Fengguang
