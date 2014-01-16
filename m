@@ -1,111 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaAPBZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:25:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32449 "EHLO mga09.intel.com"
+	id S1752975AbaAPB1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:27:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56213 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752056AbaAPBY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:24:59 -0500
+	id S1752560AbaAPBZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:25:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
-   d="scan'208";a="467394579"
+   d="scan'208";a="465853259"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-ext4@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
-Date: Wed, 15 Jan 2014 20:24:18 -0500
-Message-Id: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v5 22/22] XIP: Add support for unwritten extents
+Date: Wed, 15 Jan 2014 20:24:40 -0500
+Message-Id: <21d60639d747cdd683831ce57e7c753c9fa29ac1.1389779962.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches add support for XIP to ext4.  Unfortunately,
-it turns out to be necessary to rewrite the existing XIP support code
-first due to races that are unfixable in the current design.
+For read() and pagefault, we treat unwritten extents as holes.
+For write(), we have to zero parts of the block that we're not going to
+write to.  For holepunches, something's gone quite strangely wrong if we
+get an unwritten extent from get_block, considering that the filesystem's
+calling us to write zeroes to a partially written extent ...
 
-Since v4 of this patchset, I've improved the documentation, fixed a
-couple of warnings that a newer version of gcc emitted, and fixed a
-bug where we would read/write the wrong address for I/Os that were not
-aligned to PAGE_SIZE.
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ Documentation/filesystems/xip.txt |  7 +++----
+ fs/xip.c                          | 44 +++++++++++++++++++++++++++------------
+ 2 files changed, 34 insertions(+), 17 deletions(-)
 
-I've dropped the PMD fault patch from this set since there are some
-places where we would need to split a PMD page and there's no way to do
-that right now.  In its place, I've added a patch which attempts to add
-support for unwritten extents.  I'm still in two minds about this; on the
-one hand, it's clearly a win for reads and writes.  On the other hand,
-it adds a lot of complexity, and it probably isn't a win for pagefaults.
-
-Patch 2 wants careful review from the MM people.
-
-Matthew Wilcox (21):
-  Fix XIP fault vs truncate race
-  Allow page fault handlers to perform the COW
-  axonram: Fix bug in direct_access
-  Change direct_access calling convention
-  Introduce IS_XIP(inode)
-  Treat XIP like O_DIRECT
-  Rewrite XIP page fault handling
-  Change xip_truncate_page to take a get_block parameter
-  Remove mm/filemap_xip.c
-  Remove get_xip_mem
-  Replace ext2_clear_xip_target with xip_clear_blocks
-  ext2: Remove ext2_xip_verify_sb()
-  ext2: Remove ext2_use_xip
-  ext2: Remove xip.c and xip.h
-  Remove CONFIG_EXT2_FS_XIP
-  ext2: Remove ext2_aops_xip
-  xip: Add xip_zero_page_range
-  ext4: Make ext4_block_zero_page_range static
-  ext4: Fix typos
-  xip: Add reporting of major faults
-  XIP: Add support for unwritten extents
-
-Ross Zwisler (1):
-  ext4: Add XIP functionality
-
- Documentation/filesystems/Locking  |   3 -
- Documentation/filesystems/ext4.txt |   2 +
- Documentation/filesystems/xip.txt  | 126 +++++-----
- arch/powerpc/sysdev/axonram.c      |   8 +-
- drivers/block/brd.c                |   8 +-
- drivers/s390/block/dcssblk.c       |  19 +-
- fs/Kconfig                         |  21 +-
- fs/Makefile                        |   1 +
- fs/exofs/inode.c                   |   1 -
- fs/ext2/Kconfig                    |  11 -
- fs/ext2/Makefile                   |   1 -
- fs/ext2/ext2.h                     |   1 -
- fs/ext2/file.c                     |  43 +++-
- fs/ext2/inode.c                    |  35 +--
- fs/ext2/namei.c                    |   9 +-
- fs/ext2/super.c                    |  38 ++-
- fs/ext2/xip.c                      |  91 -------
- fs/ext2/xip.h                      |  26 --
- fs/ext4/ext4.h                     |   4 +-
- fs/ext4/file.c                     |  53 +++-
- fs/ext4/indirect.c                 |  19 +-
- fs/ext4/inode.c                    | 106 +++++---
- fs/ext4/namei.c                    |  10 +-
- fs/ext4/super.c                    |  39 ++-
- fs/open.c                          |   5 +-
- fs/xip.c                           | 428 ++++++++++++++++++++++++++++++++
- include/linux/blkdev.h             |   4 +-
- include/linux/fs.h                 |  47 +++-
- include/linux/mm.h                 |   2 +
- mm/Makefile                        |   1 -
- mm/fadvise.c                       |   6 +-
- mm/filemap.c                       |   6 +-
- mm/filemap_xip.c                   | 483 -------------------------------------
- mm/madvise.c                       |   2 +-
- mm/memory.c                        |  19 +-
- 35 files changed, 851 insertions(+), 827 deletions(-)
- delete mode 100644 fs/ext2/xip.c
- delete mode 100644 fs/ext2/xip.h
- create mode 100644 fs/xip.c
- delete mode 100644 mm/filemap_xip.c
-
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index b158de6..5e9a0c76 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -60,10 +60,9 @@ Filesystem support consists of
+   truncates and page faults
+ 
+ The get_block() callback passed to xip_do_io(), xip_fault(), xip_mkwrite()
+-and xip_truncate_page() must not return uninitialised extents.  It must zero
+-any blocks that it returns, and it must ensure that simultaneous calls to
+-get_block() (for example by a page-fault racing with a read() or a write())
+-work correctly.
++and xip_truncate_page() may return uninitialised extents.  If it does, it
++must ensure that simultaneous calls to get_block() (for example by a
++page-fault racing with a read() or a write()) work correctly.
+ 
+ These filesystems may be used for inspiration:
+ - ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
+diff --git a/fs/xip.c b/fs/xip.c
+index 88a516b..d160320 100644
+--- a/fs/xip.c
++++ b/fs/xip.c
+@@ -79,6 +79,12 @@ static long xip_get_pfn(struct inode *inode, struct buffer_head *bh,
+ 	return ops->direct_access(bdev, sector, &addr, pfn, bh->b_size);
+ }
+ 
++/* true if a buffer_head represents written data */
++static bool buffer_written(struct buffer_head *bh)
++{
++	return buffer_mapped(bh) && !buffer_unwritten(bh);
++}
++
+ static ssize_t xip_io(int rw, struct inode *inode, const struct iovec *iov,
+ 			loff_t start, loff_t end, unsigned nr_segs,
+ 			get_block_t get_block, struct buffer_head *bh)
+@@ -103,21 +109,29 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct iovec *iov,
+ 			retval = get_block(inode, block, bh, rw == WRITE);
+ 			if (retval)
+ 				break;
+-			if (buffer_mapped(bh)) {
+-				retval = xip_get_addr(inode, bh, &addr);
+-				if (retval < 0)
+-					break;
+-				addr += offset - (block << inode->i_blkbits);
+-				hole = false;
+-				size = retval;
+-			} else {
+-				if (rw == WRITE) {
++			if (rw == WRITE) {
++				if (!buffer_mapped(bh)) {
+ 					retval = -EIO;
+ 					break;
+ 				}
++				hole = false;
++			} else {
++				hole = !buffer_written(bh);
++			}
++
++			if (hole) {
+ 				addr = NULL;
+-				hole = true;
+ 				size = bh->b_size;
++			} else {
++				unsigned first;
++				retval = xip_get_addr(inode, bh, &addr);
++				if (retval < 0)
++					break;
++				size = retval;
++				first = offset - (block << inode->i_blkbits);
++				if (buffer_unwritten(bh))
++					memset(addr, 0, first);
++				addr += first;
+ 			}
+ 			max = offset + size;
+ 		}
+@@ -265,7 +279,7 @@ static int do_xip_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	if (error || bh.b_size < PAGE_SIZE)
+ 		return VM_FAULT_SIGBUS;
+ 
+-	if (!buffer_mapped(&bh) && !vmf->cow_page) {
++	if (!buffer_written(&bh) && !vmf->cow_page) {
+ 		if (vmf->flags & FAULT_FLAG_WRITE) {
+ 			error = get_block(inode, block, &bh, 1);
+ 			count_vm_event(PGMAJFAULT);
+@@ -286,7 +300,7 @@ static int do_xip_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 		return VM_FAULT_SIGBUS;
+ 	}
+ 	if (vmf->cow_page) {
+-		if (buffer_mapped(&bh))
++		if (buffer_written(&bh))
+ 			copy_user_bh(vmf->cow_page, inode, &bh, vaddr);
+ 		else
+ 			clear_user_highpage(vmf->cow_page, vaddr);
+@@ -397,7 +411,11 @@ int xip_zero_page_range(struct inode *inode, loff_t from, unsigned length,
+ 	err = get_block(inode, index, &bh, 0);
+ 	if (err < 0)
+ 		return err;
+-	if (buffer_mapped(&bh)) {
++	if (buffer_written(&bh)) {
++		/*
++		 * Should this be BUG_ON(!buffer_mapped)?  Surely we should
++		 * never be called for an unmapped block ...
++		 */
+ 		void *addr;
+ 		err = xip_get_addr(inode, &bh, &addr);
+ 		if (err)
 -- 
 1.8.5.2
 
