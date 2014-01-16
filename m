@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaAPJT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:19:28 -0500
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:47351 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751957AbaAPJTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:19:24 -0500
-Message-ID: <1389863932.3530.12.camel@linaro1.home>
-Subject: Re: [PATCH v4 13/16] ARM: Add an emulate flag to the
- kprobes/uprobes instruction decode functions
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 16 Jan 2014 09:18:52 +0000
-In-Reply-To: <52D6E1FE.8000303@linaro.org>
-References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
-	  <1387166930-13182-14-git-send-email-dave.long@linaro.org>
-	 <1387551482.3404.63.camel@linaro1.home> <52D6E1FE.8000303@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1752165AbaAPJWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:22:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414AbaAPJWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 04:22:17 -0500
+Message-ID: <52D7A4BC.7080703@redhat.com>
+Date: Thu, 16 Jan 2014 10:22:04 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: Re: [PATCH net-next 1/2] random32: add prandom_u32_lt_N and convert
+ "misuses" of reciprocal_divide
+References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>  <1389828228-30312-2-git-send-email-dborkman@redhat.com> <1389832172.14001.41.camel@joe-AO722>
+In-Reply-To: <1389832172.14001.41.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-15 at 14:31 -0500, David Long wrote:
-> On 12/20/13 09:58, Jon Medhurst (Tixy) wrote:
-> > On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
-[...]
-> >>   {
-> >>   #ifdef CONFIG_THUMB2_KERNEL
-> >>   	if (thumb) {
-> >> @@ -253,7 +253,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
-> >>    * non-zero value, the corresponding nibble in pinsn is validated and modified
-> >>    * according to the type.
-> >>    */
-> >> -static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
-> >> +static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
-> >>   {
-> >>   	probes_opcode_t insn = *pinsn;
-> >>   	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
-> >> @@ -317,9 +317,16 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
-> >>   		/* Replace value of nibble with new register number... */
-> >>   		insn &= ~mask;
-> >>   		insn |= new_bits & mask;
-> >> +		if (modify) {
-> >> +			/* Replace value of nibble with new register number */
-> >> +			insn &= ~mask;
-> >> +			insn |= new_bits & mask;
-> >> +		}
-> >
-> > Huh? As is, the above addition doesn't do anything because insn has
-> > already been modified. I guess you played with the idea that you needed
-> > to avoid changing insn (you don't) and then didn't undo the experiment
-> > quite right. :-)
-> >
-> 
-> The conditional modification of the instruction was part of Rabin's 
-> original work for uprobes, but I messed up the merge from an earlier 
-> working version of my patches.  My intention was/is to delete the old 
-> unconditional code.  Sounds like maybe you disagree though.  The intent 
-> is to only modify the instruction in the kprobes case.
+On 01/16/2014 01:29 AM, Joe Perches wrote:
+> On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
+>> Many functions have open coded a function that return a random
+>> number in range [0,N-1]. Also, only because we have a function
+>> that is named reciprocal_divide(), it has not much to do with
+>> the pupose where it is being used when a previous reciprocal_value()
+>> has not been obtained.
+>
+> prandom_u32_lt_N?
+>
+> I do not like the camelcase name and thought the
+> prandom_u32_max was better.
 
-'insn' is the local variable containing the instruction value we're
-processing. It doesn't matter if we change that, we just need to avoid
-updating the instruction in memory, which the code in the next chunk
-already correctly checks for...
+Hm, you wanted to have the name intuitive, right ... so
+u32 prandom_u32_lt_N(u32 N) suggests "less then N". If you
+are saying "_max" here, then you should keep in mind that
+the maximum result you get from here is "max-1", not "max".
+But whatever, it's just a name.
 
-> >>   	}
-> >>
-> >> -	*pinsn = insn;
-> >> +	if (modify)
-> >> +		*pinsn = insn;
-> >> +
-> >>   	return true;
-> >>
+> How about using
+>
+> u32 prandom_u32_max(u32 max)
+> {
+> 	return (u32)(((u64)prandom_u32() * max) >> 32);
+> }
+>
+> u32 prandom_u32_range(u32 a, u32 b)
+> {
+> 	if (b < a)
+> 		swap(a, b);
+>
+> 	return a + (u32)(((u64)prandom_u32() * (b - a)) >> 32);
+> }
 
-So only one of these 'if (modify)' checks is required for code
-correctness, and I suggest keeping the second one as it's more explicit
-and defensive.
-
-
--- 
-Tixy
-
+I didn't introduce the last one as it wasn't used in the patch.
