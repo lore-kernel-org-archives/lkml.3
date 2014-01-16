@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaAPTAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:00:07 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32095 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750933AbaAPTAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:00:04 -0500
-Date: Thu, 16 Jan 2014 14:00:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [RFC][PATCH 0/2] preempt: Track unmatched preempt_enable() to
- preempt_disable()
-Message-ID: <20140116140001.58758cfd@gandalf.local.home>
-In-Reply-To: <20140116184251.GA11314@laptop.programming.kicks-ass.net>
-References: <20140116171824.748919700@goodmis.org>
-	<20140116174536.GB9655@laptop.programming.kicks-ass.net>
-	<20140116133906.50bcbc93@gandalf.local.home>
-	<20140116184251.GA11314@laptop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1751497AbaAPTKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:10:48 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:50302
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291AbaAPTKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 14:10:46 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
+Subject: [PATCH 1/1] Drivers: hv: vmbus: Don't timeout during the initial connection with host
+Date: Thu, 16 Jan 2014 11:59:58 -0800
+Message-Id: <1389902398-20067-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014 19:42:51 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+When the guest attempts to connect with the host when there may already be a
+connection with the host (as would be the case during the kdump/kexec path),
+it is difficult to guarantee timely response from the host. Starting with
+WS2012 R2, the host supports this ability to re-connect with the host
+(explicitly to support kexec). Prior to responding to the guest, the host
+needs to ensure that device states based on the previous connection to
+the host have been properly torn down. This may introduce unbounded delays.
+To deal with this issue, don't do a timed wait during the initial connect
+with the host.
 
-> Suppose a reschedule interrupt happens in the middle; we set
-> NEED_RESCHED but won't act because preempt is disabled.
-> 
-> When we hit preempt_enable() we'll call into preempt_schedule() but fail
-> because preemptible() finds irqs_disabled().
-> 
-> And in the end we do not schedule, but have NEED_RESCHED set.
-> 
-> FAIL.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/hv/connection.c |   11 +----------
+ 1 files changed, 1 insertions(+), 10 deletions(-)
 
-Ah! Interesting. Actually, you don't even need the first part. That
-happens simply with:
+diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
+index 855bbda..f2d7bf9 100644
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -67,7 +67,6 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
+ 	int ret = 0;
+ 	struct vmbus_channel_initiate_contact *msg;
+ 	unsigned long flags;
+-	int t;
+ 
+ 	init_completion(&msginfo->waitevent);
+ 
+@@ -102,15 +101,7 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
+ 	}
+ 
+ 	/* Wait for the connection response */
+-	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	if (t == 0) {
+-		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
+-				flags);
+-		list_del(&msginfo->msglistentry);
+-		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
+-					flags);
+-		return -ETIMEDOUT;
+-	}
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_del(&msginfo->msglistentry);
+-- 
+1.7.4.1
 
-	preempt_disable();
-
-	<interrupt - set need_resched>
-
-	local_irq_save();
-	preempt_enable();
-	local_irq_restore();
-
-I think we can get lockdep to trigger on that. I have ideas to make
-preempt tracer do that, which shouldn't be too hard to convert to
-lockdep.
-
-It looks that all we need to do is check for anytime we have interrupts
-becoming disabled with preemption disabled, and then enable preemption
-without first enabling interrupts. This should be able to be driven by
-state of the task or CPU even.
-
-I can see if I can whip up a patch to do that.
-
--- Steve
