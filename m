@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaAPOSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:18:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:30552 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751123AbaAPOSt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:18:49 -0500
-Date: Thu, 16 Jan 2014 09:18:47 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: pavel@pavlinux.ru
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH RT 0/8] Linux 3.2.53-rt76-rc1
-Message-ID: <20140116091847.0786c8af@gandalf.local.home>
-In-Reply-To: <52D7A93C.9090801@pavlinux.ru>
-References: <20140116015824.201732155@goodmis.org>
-	<52D7A93C.9090801@pavlinux.ru>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1752717AbaAPOTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:19:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38800 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546AbaAPOTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:19:08 -0500
+Date: Thu, 16 Jan 2014 06:18:26 -0800
+From: tip-bot for Heiko Carstens <tipbot@zytor.com>
+Message-ID: <tip-63b1a81699c2a45c9f737419b1ec1da0ecf92812@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dvhart@linux.intel.com, peterz@infradead.org, jason.low2@hp.com,
+        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dvhart@linux.intel.com, peterz@infradead.org, jason.low2@hp.com,
+        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, davidlohr@hp.com
+In-Reply-To: <20140116135450.GA4345@osiris>
+References: <20140116135450.GA4345@osiris>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] futexes: Fix futex_hashsize initialization
+Git-Commit-ID: 63b1a81699c2a45c9f737419b1ec1da0ecf92812
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 06:18:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014 13:41:16 +0400
-Pavel Vasilyev <pavel@pavlinux.ru> wrote:
+Commit-ID:  63b1a81699c2a45c9f737419b1ec1da0ecf92812
+Gitweb:     http://git.kernel.org/tip/63b1a81699c2a45c9f737419b1ec1da0ecf92812
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Thu, 16 Jan 2014 14:54:50 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 16 Jan 2014 15:14:32 +0100
 
-> 16.01.2014 05:58, Steven Rostedt пишет:
-> > Dear RT Folks,
-> > 
-> > This is the RT stable review cycle of patch 3.2.53-rt76-rc1.
-> 
-> Yap..., mainline is 3.2.54 !
-> 
+futexes: Fix futex_hashsize initialization
 
-Yeah, but I already had the -rt specific changes merged into 3.2.53
-before 3.2.54 was released, and then I discovered the cpu hotplug bug.
-I did not want to release that -rc until it was solved. Now that it is,
-I can release this one and then move to 3.2.54.
+"futexes: Increase hash table size for better performance"
+introduces a new alloc_large_system_hash() call.
 
-Thanks,
+alloc_large_system_hash() however may allocate less memory than
+requested, e.g. limited by MAX_ORDER.
 
--- Steve
+Hence pass a pointer to alloc_large_system_hash() which will
+contain the hash shift when the function returns. Afterwards
+correctly set futex_hashsize.
+
+Fixes a crash on s390 where the requested allocation size was
+4MB but only 1MB was allocated.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Link: http://lkml.kernel.org/r/20140116135450.GA4345@osiris
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/futex.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 30971b5..1ddc449 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2844,6 +2844,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ static int __init futex_init(void)
+ {
+ 	u32 curval;
++	unsigned int futex_shift;
+ 	unsigned long i;
+ 
+ #if CONFIG_BASE_SMALL
+@@ -2855,8 +2856,9 @@ static int __init futex_init(void)
+ 	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
+ 					       futex_hashsize, 0,
+ 					       futex_hashsize < 256 ? HASH_SMALL : 0,
+-					       NULL, NULL, futex_hashsize, futex_hashsize);
+-
++					       &futex_shift, NULL,
++					       futex_hashsize, futex_hashsize);
++	futex_hashsize = 1UL << futex_shift;
+ 	/*
+ 	 * This will fail and we want it. Some arch implementations do
+ 	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
