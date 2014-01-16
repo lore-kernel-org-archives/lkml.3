@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaAPEb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:31:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39155 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaAPEbW (ORCPT
+	id S1752641AbaAPEbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:31:44 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:45765 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaAPEbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:31:22 -0500
-Message-ID: <52D76037.50706@ti.com>
-Date: Thu, 16 Jan 2014 09:59:43 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 7/7] drivers/gpio: don't check resource with devm_ioremap_resource
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>	<1389700739-3696-7-git-send-email-wsa@the-dreams.de>	<CACRpkdYymB4i7Ju5MMNXWVe5nB6_NbWHwrPbOK2KeT0Ji-RzQg@mail.gmail.com>	<52D684E9.6080308@ti.com>	<CACRpkdY1FuRoSFAPT8qUybzrizN_tEgxB41dwW_-uEWdFPb0jA@mail.gmail.com>	<52D69551.4070607@ti.com> <87iotl453e.fsf@linaro.org>
-In-Reply-To: <87iotl453e.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jan 2014 23:31:42 -0500
+From: David Fries <David@Fries.net>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, GregKH <greg@kroah.com>
+Subject: [PATCH 04/15] w1: increase w1_max_slave_count, allow write access
+Date: Wed, 15 Jan 2014 22:29:15 -0600
+Message-Id: <1389846566-28862-5-git-send-email-David@Fries.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1389846566-28862-1-git-send-email-David@Fries.net>
+References: <1389846566-28862-1-git-send-email-David@Fries.net>
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 22:31:35 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014 09:20 PM, Kevin Hilman wrote:
-> Sekhar Nori <nsekhar@ti.com> writes:
-> 
->> On Wednesday 15 January 2014 07:21 PM, Linus Walleij wrote:
->>> On Wed, Jan 15, 2014 at 1:54 PM, Sekhar Nori <nsekhar@ti.com> wrote:
->>>> On Wednesday 15 January 2014 02:58 PM, Linus Walleij wrote:
->>>
->>>>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>>>>
->>>>> The DaVinci maintainers are queuing GPIO patches for their driver
->>>>> for this merge window, so requesting them to apply this patch.
->>>>
->>>> I wont be sending any more pull requests for v3.14. Even if I send, the
->>>> ARM-SoC maintainers will not take it anyway.
->>>
->>> But as it is a fix I believe the ARM SoC maintainers will apply it
->>> directly to the davinci branch.
->>
->> Sorry I did not realize this is a fix.
->>
->>>
->>> Wolfram: I suggest you send this patch with my ACK directly
->>> to arm@kernel.org and ask it to be applied to the davinci branch
->>> in the ARM SoC tree.
->>
->> This would work too, I guess. Wolfram, can you please keep me in CC too
->> in case questions/actions come up?
-> 
-> Sekhar, I assume this is an ack from you too?  If so, Wolfram, please
-> include that in the patch submitted to arm-soc.
+w1_max_slave_count is only used to abort the search early
+or take a fast search (when 1), so there isn't any reason to not allow
+it to be updated through sysfs.  Memory is not allocated based on
+the current value and 10 is a rather low base number, increasing to
+64, and printing a message the first time the count is reached and
+there were more devices to discover to let the user know why not
+all the devices were found.
 
-Wolfram, if you have not sent it already, please add:
+Signed-off-by: David Fries <David@Fries.net>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+---
+ drivers/w1/w1.c |   30 ++++++++++++++++++++++++++++--
+ drivers/w1/w1.h |    2 ++
+ 2 files changed, 30 insertions(+), 2 deletions(-)
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-The branch to which the patch will be applied is davinci/gpio on
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git. Please
-rebase on this branch so it applies cleanly.
-
-Thanks,
-Sekhar
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 92766a9..34ffdc6 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -46,7 +46,7 @@ MODULE_AUTHOR("Evgeniy Polyakov <zbr@ioremap.net>");
+ MODULE_DESCRIPTION("Driver for 1-wire Dallas network protocol.");
+ 
+ static int w1_timeout = 10;
+-int w1_max_slave_count = 10;
++int w1_max_slave_count = 64;
+ int w1_max_slave_ttl = 10;
+ 
+ module_param_named(timeout, w1_timeout, int, 0);
+@@ -316,6 +316,24 @@ static ssize_t w1_master_attribute_show_timeout(struct device *dev, struct devic
+ 	return count;
+ }
+ 
++static ssize_t w1_master_attribute_store_max_slave_count(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	long tmp;
++	struct w1_master *md = dev_to_w1_master(dev);
++
++	if (kstrtol(buf, 0, &tmp) == -EINVAL || tmp < 1)
++		return -EINVAL;
++
++	mutex_lock(&md->mutex);
++	md->max_slave_count = tmp;
++	/* allow each time the max_slave_count is updated */
++	clear_bit(W1_WARN_MAX_COUNT, &md->flags);
++	mutex_unlock(&md->mutex);
++
++	return count;
++}
++
+ static ssize_t w1_master_attribute_show_max_slave_count(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct w1_master *md = dev_to_w1_master(dev);
+@@ -518,7 +536,7 @@ static ssize_t w1_master_attribute_store_remove(struct device *dev,
+ static W1_MASTER_ATTR_RO(name, S_IRUGO);
+ static W1_MASTER_ATTR_RO(slaves, S_IRUGO);
+ static W1_MASTER_ATTR_RO(slave_count, S_IRUGO);
+-static W1_MASTER_ATTR_RO(max_slave_count, S_IRUGO);
++static W1_MASTER_ATTR_RW(max_slave_count, S_IRUGO | S_IWUSR | S_IWGRP);
+ static W1_MASTER_ATTR_RO(attempts, S_IRUGO);
+ static W1_MASTER_ATTR_RO(timeout, S_IRUGO);
+ static W1_MASTER_ATTR_RO(pointer, S_IRUGO);
+@@ -976,6 +994,14 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 			desc_bit = last_zero;
+ 			cb(dev, rn);
+ 		}
++
++		if (!last_device && slave_count == dev->max_slave_count &&
++			!test_bit(W1_WARN_MAX_COUNT, &dev->flags)) {
++			dev_info(&dev->dev, "%s: max_slave_count %d reached, "
++				"additional sensors ignored\n", __func__,
++				dev->max_slave_count);
++			set_bit(W1_WARN_MAX_COUNT, &dev->flags);
++		}
+ 	}
+ }
+ 
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index bc329d2..bd10b3c 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -158,9 +158,11 @@ struct w1_bus_master
+ /**
+  * enum w1_master_flags - bitfields used in w1_master.flags
+  * @W1_ABORT_SEARCH: abort searching early on shutdown
++ * @W1_WARN_MAX_COUNT: limit warning when the maximum count is reached
+  */
+ enum w1_master_flags {
+ 	W1_ABORT_SEARCH = 0,
++	W1_WARN_MAX_COUNT = 1,
+ };
+ 
+ struct w1_master
+-- 
+1.7.10.4
 
