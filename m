@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaAPJQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:16:55 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:55847 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751257AbaAPJQw (ORCPT
+	id S1752153AbaAPJT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:19:28 -0500
+Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:47351 "EHLO
+	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751957AbaAPJTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:16:52 -0500
-Message-ID: <52D7A40A.3010202@metafoo.de>
-Date: Thu, 16 Jan 2014 10:19:06 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: Fix possible NULL pointer dereference of
- pcm->config
-References: <1389859684-27456-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1389859684-27456-1-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 16 Jan 2014 04:19:24 -0500
+Message-ID: <1389863932.3530.12.camel@linaro1.home>
+Subject: Re: [PATCH v4 13/16] ARM: Add an emulate flag to the
+ kprobes/uprobes instruction decode functions
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 16 Jan 2014 09:18:52 +0000
+In-Reply-To: <52D6E1FE.8000303@linaro.org>
+References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
+	  <1387166930-13182-14-git-send-email-dave.long@linaro.org>
+	 <1387551482.3404.63.camel@linaro1.home> <52D6E1FE.8000303@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 09:08 AM, Xiubo Li wrote:
-> Since the soc generic dmaengine pcm driver allows using the defualt settings,
-> so the pcm->config maybe NULL.
->
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+On Wed, 2014-01-15 at 14:31 -0500, David Long wrote:
+> On 12/20/13 09:58, Jon Medhurst (Tixy) wrote:
+> > On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
+[...]
+> >>   {
+> >>   #ifdef CONFIG_THUMB2_KERNEL
+> >>   	if (thumb) {
+> >> @@ -253,7 +253,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+> >>    * non-zero value, the corresponding nibble in pinsn is validated and modified
+> >>    * according to the type.
+> >>    */
+> >> -static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+> >> +static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
+> >>   {
+> >>   	probes_opcode_t insn = *pinsn;
+> >>   	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
+> >> @@ -317,9 +317,16 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+> >>   		/* Replace value of nibble with new register number... */
+> >>   		insn &= ~mask;
+> >>   		insn |= new_bits & mask;
+> >> +		if (modify) {
+> >> +			/* Replace value of nibble with new register number */
+> >> +			insn &= ~mask;
+> >> +			insn |= new_bits & mask;
+> >> +		}
+> >
+> > Huh? As is, the above addition doesn't do anything because insn has
+> > already been modified. I guess you played with the idea that you needed
+> > to avoid changing insn (you don't) and then didn't undo the experiment
+> > quite right. :-)
+> >
+> 
+> The conditional modification of the instruction was part of Rabin's 
+> original work for uprobes, but I messed up the merge from an earlier 
+> working version of my patches.  My intention was/is to delete the old 
+> unconditional code.  Sounds like maybe you disagree though.  The intent 
+> is to only modify the instruction in the kprobes case.
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+'insn' is the local variable containing the instruction value we're
+processing. It doesn't matter if we change that, we just need to avoid
+updating the instruction in memory, which the code in the next chunk
+already correctly checks for...
 
-Thanks. I actually had the very same patch locally, but overlooked it. It would 
-be good if this could make it into 3.14, since the jz4740 conversion to the 
-generic dmaengine driver needs this.
+> >>   	}
+> >>
+> >> -	*pinsn = insn;
+> >> +	if (modify)
+> >> +		*pinsn = insn;
+> >> +
+> >>   	return true;
+> >>
 
-> ---
->   sound/soc/soc-generic-dmaengine-pcm.c | 9 ++++++---
->   1 file changed, 6 insertions(+), 3 deletions(-)
->
-> diff --git a/sound/soc/soc-generic-dmaengine-pcm.c b/sound/soc/soc-generic-dmaengine-pcm.c
-> index 560a778..5bace12 100644
-> --- a/sound/soc/soc-generic-dmaengine-pcm.c
-> +++ b/sound/soc/soc-generic-dmaengine-pcm.c
-> @@ -176,17 +176,20 @@ static struct dma_chan *dmaengine_pcm_compat_request_channel(
->   {
->   	struct dmaengine_pcm *pcm = soc_platform_to_pcm(rtd->platform);
->   	struct snd_dmaengine_dai_dma_data *dma_data;
-> +	dma_filter_fn fn = NULL;
->
->   	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
->
->   	if ((pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX) && pcm->chan[0])
->   		return pcm->chan[0];
->
-> -	if (pcm->config->compat_request_channel)
-> +	if (pcm->config && pcm->config->compat_request_channel)
->   		return pcm->config->compat_request_channel(rtd, substream);
->
-> -	return snd_dmaengine_pcm_request_channel(pcm->config->compat_filter_fn,
-> -						 dma_data->filter_data);
-> +	if (pcm->config)
-> +		fn = pcm->config->compat_filter_fn;
-> +
-> +	return snd_dmaengine_pcm_request_channel(fn, dma_data->filter_data);
->   }
->
->   static bool dmaengine_pcm_can_report_residue(struct dma_chan *chan)
->
+So only one of these 'if (modify)' checks is required for code
+correctness, and I suggest keeping the second one as it's more explicit
+and defensive.
+
+
+-- 
+Tixy
 
