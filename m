@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaAPE1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:27:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34777 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaAPE1t (ORCPT
+	id S1752355AbaAPE3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:29:09 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64500 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaAPE3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:27:49 -0500
-Message-ID: <52D75FB1.9090704@oracle.com>
-Date: Thu, 16 Jan 2014 12:27:29 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: aaron.f.brown@intel.com, jeffrey.t.kirsher@intel.com
-CC: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com
-Subject: [PATCH 2/2 Net-next] ixgbe: set driver_max_VFs should be done before
- enabling SRIOV
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 15 Jan 2014 23:29:07 -0500
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Marek <mmarek@suse.com>
+Subject: [RESEND PATCH v3] MODSIGN: Fix including certificate twice when the signing_key.x509 already exists
+Date: Thu, 16 Jan 2014 12:27:23 +0800
+Message-Id: <1389846443-21270-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chun-Yi Lee <jlee@suse.com>
 
-commit 43dc4e01 Limit number of reported VFs to device specific value
-It doesn't work and always returns -EBUSY because VFs ware already enabled.
+This issue was found in devel-pekey branch on linux-modsign.git tree.
+The x509_certificate_list includes certificate twice when the
+signing_key.x509 already exists.
+We can reproduce this issue by making kernel twice, the build log of
+second time looks like this:
 
-ixgbe_enable_sriov()
-         pci_enable_sriov()
-                 sriov_enable()
-                 {
-                 ... ..
-                 iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
-                 pci_cfg_access_lock(dev);
-                 ... ...
-                 }
-
-pci_sriov_set_totalvfs()
-{
-... ...
-if (dev->sriov->ctrl & PCI_SRIOV_CTRL_VFE)
-                 return -EBUSY;
 ...
-}
+  CHK     kernel/config_data.h
+  CERTS   kernel/x509_certificate_list
+  - Including cert /ramdisk/working/joey/linux-modsign/signing_key.x509
+  - Including cert signing_key.x509
+...
 
-So should set driver_max_VFs with pci_sriov_set_totalvfs() before
-enable VFs with ixgbe_enable_sriov().
+Actually the build path was the same with the srctree path when building
+kernel. It causes the size of bzImage increased by packaging
+certificates twice.
 
-V2: revised for net-next tree.
+Originally this patch was signed and merged to devel-pekey in David
+Howells's linux-modsign git:
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+http://lwn.net/Articles/540288/
+
+git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-modsign.git
+tags/pekey-20130221
+
+But it is missed in mainline kernel.
+
+v3:
+Using realpath to compare current file path with source tree patch.
+Thanks for Rusty Russell's suggestion.
+
+v2:
+Using '$(shell /bin/pwd)' instead of '$(shell pwd)' for more reliable
+between different shells
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Michal Marek <mmarek@suse.com>
+Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/Makefile |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c 
-b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index bea2cec..6e6af0d 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -7972,8 +7972,8 @@ static int ixgbe_probe(struct pci_dev *pdev, const 
-struct pci_device_id *ent)
-      /* Mailbox */
-      ixgbe_init_mbx_params_pf(hw);
-      memcpy(&hw->mbx.ops, ii->mbx_ops, sizeof(hw->mbx.ops));
--    ixgbe_enable_sriov(adapter);
-      pci_sriov_set_totalvfs(pdev, IXGBE_MAX_VFS_DRV_LIMIT);
-+    ixgbe_enable_sriov(adapter);
-  skip_sriov:
-
-  #endif
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bc010ee..1d671b1 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -136,7 +136,10 @@ $(obj)/timeconst.h: $(obj)/hz.bc $(src)/timeconst.bc FORCE
+ #
+ ###############################################################################
+ ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
+-X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
++X509_CERTIFICATES-y := $(wildcard *.x509)
++ifneq ($(realpath .), $(realpath $(srctree)))
++X509_CERTIFICATES-y += $(wildcard $(srctree)/*.x509)
++endif
+ X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += $(objtree)/signing_key.x509
+ X509_CERTIFICATES-raw := $(sort $(foreach CERT,$(X509_CERTIFICATES-y), \
+ 				$(or $(realpath $(CERT)),$(CERT))))
 -- 
-1.7.1
+1.6.4.2
 
