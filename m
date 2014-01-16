@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439AbaAPWlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:41:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:37269 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaAPWlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:41:46 -0500
-Date: Fri, 17 Jan 2014 09:41:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Fries <David@Fries.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: Re: pull w1 updates to linux-next?
-Message-Id: <20140117094131.4379cba0c7f5b18744f95311@canb.auug.org.au>
-In-Reply-To: <20140116045100.GB29560@spacedout.fries.net>
-References: <20140116045100.GB29560@spacedout.fries.net>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l"
+	id S1751490AbaAPWnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:43:18 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:43617 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaAPWnP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 17:43:15 -0500
+Date: Thu, 16 Jan 2014 14:43:11 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, hannes@cmpxchg.org,
+        liuj97@gmail.com, santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
+        iamjoonsoo.kim@lge.com, robin.m.holt@gmail.com, yinghai@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/nobootmem: Fix unused variable
+In-Reply-To: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1401161438240.31228@chino.kir.corp.google.com>
+References: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 16 Jan 2014, Philipp Hachtmann wrote:
 
-Hi Davis,
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index e2906a5..12cbb04 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -116,9 +116,13 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
+>  static unsigned long __init free_low_memory_core_early(void)
+>  {
+>  	unsigned long count = 0;
+> -	phys_addr_t start, end, size;
+> +	phys_addr_t start, end;
+>  	u64 i;
+>  
+> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> +	phys_addr_t size;
+> +#endif
+> +
+>  	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
+>  		count += __free_memory_core(start, end);
+>  
 
-On Wed, 15 Jan 2014 22:51:01 -0600 David Fries <David@Fries.net> wrote:
->
-> I've not submitted to linux-next before, would you pull the one wire
-> changes to linux-next?  It has been posted and reviewed by one wire
-> maintainer Evgeniy Polyakov, and the 15 patch series was posted again
-> ready to go for GregKH to pick up.  This is my one wire tree not
-> maintainer, and once merged upstream won't be updated unless I have
-> another set of changes.
->
-> cd5f76716a37ebef3e8b771d672ba552a25dafd5
-> git://github.com/dfries/linux.git w1_rework
+Two options: (1) add a helper function declared for 
+CONFIG_ARCH_DISCARD_MEMBLOCK that returns the count to add and is empty 
+otherwise, or (2) initialize size to zero in its definition.  It's much 
+better than #ifdef's inside the function for a variable declaration.
 
-If this is meant for v3.14, then you should probably just ask Greg to
-merge them (though it may be too late already for the next merge
-window).  If its for v3.15, then ask me again after v3.14-rc1 is released
-and I will add your tree then.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS2GAnAAoJEMDTa8Ir7ZwVyAUQAI2XLgRj7fvXF7a1bG6n7blE
-4k8eu8RZRcoADXkxAy6WGj7+4WaSR+1aglDRhB8SeDTlnJcbaYL4TunrPkd0NMnl
-P38Jem2n5AfXXPMVtcnJLAtcFhOpXjhd0cfLeP1PwhJYOdymoSXJINfxe1KHbT9h
-cJU9BKCZd9CRKSCdFHNeQsbl3dOSYt3O5O06+QgS/xR65XuLMNhFRZ4DBTjZAvEi
-jPeWzs6NRuW1kYgv6vm05q7TQ1CEu4NEc+ce+UM+BKxGnvZzz5VpB46p8Jc14+5y
-ABcXh+ojVVpxtS8Nb15iGjfCtmzuTLs05+91tzxc2HRnwyeN13ca7Gy4uYJcg1Nf
-h5d8qWQgb0oW9oB1z2CMBRSIG2XsbdFUSFqj5VZmEfO7KxO/7nwq5IaMaXhQ1zq+
-gFx5JakZ53ePqixtCTkZjSx8yJVs+B/d5w97meVbPxt6jVv//PsprAO3ugcbcwXo
-CYiI1Jn4TSlzGn/UPpSxrThxcfSWcOhWmjDk9MJT0vflyKEd8Gy+WZxcg0ZAb3aA
-LkOZiOADzkuGhfy+/SBAfEptw52M6eKMO6p152rWuwyjVNdVTdg04+6h8oR5Ygny
-J18EdGtBfkdtlUsCcBGZyOnT7Tz8Yq4QYGoaL4EHdxk67PIGn1fFfNb9pEvZDi8i
-pTqfzLjuxHELrbUEBWMt
-=CKev
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Jan_2014_09_41_31_+1100_XiEU_orDgQNhc08l--
+Also, since this is already in -mm, you'll want this fix folded into the 
+original patch, "mm/nobootmem: free_all_bootmem again", so it's probably 
+best to name it "mm/nobootmem: free_all_bootmem again fix".
