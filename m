@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaAPPoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:44:13 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:45606 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751634AbaAPPoH (ORCPT
+	id S1752874AbaAPPo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:44:26 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:44872 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751634AbaAPPoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:44:07 -0500
+	Thu, 16 Jan 2014 10:44:20 -0500
 From: <srinivas.kandagatla@st.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -16,9 +16,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <srinivas.kandagatla@st.com>
-Subject: [PATCH v2 4/4] ARM:STi: STiH415: Add interrupt support for pin controller
-Date: Thu, 16 Jan 2014 15:37:45 +0000
-Message-ID: <1389886665-32076-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v2 3/4] ARM:STi: STiH416: Add interrupt support for pin controller
+Date: Thu, 16 Jan 2014 15:37:37 +0000
+Message-ID: <1389886657-32035-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
@@ -31,18 +31,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-This patch adds interrupt support for STiH415 pin controllers.
+This patch adds interrupt support for STiH416 pin controllers.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
- arch/arm/boot/dts/stih415-pinctrl.dtsi |   75 ++++++++++++++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/stih416-pinctrl.dtsi |   81 ++++++++++++++++++++++++++++++++
+ 1 files changed, 81 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-index a9324fa..21b3b53 100644
---- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-@@ -7,6 +7,7 @@
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index 74f8cfc..3adbd98 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -8,6 +8,7 @@
   * publishhed by the Free Software Foundation.
   */
  #include "st-pincfg.h"
@@ -50,19 +50,19 @@ index a9324fa..21b3b53 100644
  / {
  
  	aliases {
-@@ -45,35 +46,49 @@
+@@ -49,41 +50,57 @@
  			#size-cells	= <1>;
- 			compatible	= "st,stih415-sbc-pinctrl";
+ 			compatible	= "st,stih416-sbc-pinctrl";
  			st,syscfg	= <&syscfg_sbc>;
 +			reg 		= <0xfe61f080 0x4>;
 +			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 180 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts 	= <GIC_SPI 182 IRQ_TYPE_LEVEL_HIGH>;
 +			interrupts-names = "irqmux";
- 			ranges 		= <0 0xfe610000 0x5000>;
+ 			ranges		= <0 0xfe610000 0x6000>;
  
  			PIO0: gpio@fe610000 {
  				gpio-controller;
- 				#gpio-cells	= <1>;
+ 				#gpio-cells = <1>;
 +				interrupt-controller;
 +				#interrupt-cells = <2>;
  				reg		= <0 0x100>;
@@ -100,15 +100,23 @@ index a9324fa..21b3b53 100644
  				reg		= <0x4000 0x100>;
  				st,bank-name	= "PIO4";
  			};
-@@ -169,53 +184,73 @@
+ 			PIO40: gpio@fe615000 {
+ 				gpio-controller;
+ 				#gpio-cells	= <1>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
+ 				reg		= <0x5000 0x100>;
+ 				st,bank-name	= "PIO40";
+ 				st,retime-pin-mask = <0x7f>;
+@@ -181,65 +198,89 @@
  			#size-cells	= <1>;
- 			compatible	= "st,stih415-front-pinctrl";
+ 			compatible	= "st,stih416-front-pinctrl";
  			st,syscfg	= <&syscfg_front>;
 +			reg 		= <0xfee0f080 0x4>;
 +			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 181 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts 	= <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
 +			interrupts-names = "irqmux";
- 			ranges		= <0 0xfee00000 0x8000>;
+ 			ranges		= <0 0xfee00000 0x10000>;
  
  			PIO5: gpio@fee00000 {
  				gpio-controller;
@@ -174,15 +182,31 @@ index a9324fa..21b3b53 100644
  				reg		= <0x7000 0x100>;
  				st,bank-name	= "PIO12";
  			};
-@@ -244,41 +279,57 @@
+ 			PIO30: gpio@fee08000 {
+ 				gpio-controller;
+ 				#gpio-cells	= <1>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
+ 				reg		= <0x8000 0x100>;
+ 				st,bank-name	= "PIO30";
+ 			};
+ 			PIO31: gpio@fee09000 {
+ 				gpio-controller;
+ 				#gpio-cells	= <1>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
+ 				reg		= <0x9000 0x100>;
+ 				st,bank-name	= "PIO31";
+ 			};
+@@ -276,41 +317,57 @@
  			#size-cells	= <1>;
- 			compatible	= "st,stih415-rear-pinctrl";
+ 			compatible	= "st,stih416-rear-pinctrl";
  			st,syscfg	= <&syscfg_rear>;
 +			reg 		= <0xfe82f080 0x4>;
 +			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 182 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts 	= <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
 +			interrupts-names = "irqmux";
- 			ranges		= <0 0xfe820000 0x8000>;
+ 			ranges 		= <0 0xfe820000 0x6000>;
  
  			PIO13: gpio@fe820000 {
  				gpio-controller;
@@ -231,11 +255,11 @@ index a9324fa..21b3b53 100644
 +				#interrupt-cells = <2>;
  				reg		= <0x5000 0x100>;
  				st,bank-name	= "PIO18";
- 			};
-@@ -329,23 +380,33 @@
+ 				st,retime-pin-mask = <0xf>;
+@@ -384,23 +441,33 @@
  			#size-cells	= <1>;
- 			compatible	= "st,stih415-left-pinctrl";
- 			st,syscfg	= <&syscfg_left>;
+ 			compatible	= "st,stih416-fvdp-fe-pinctrl";
+ 			st,syscfg	= <&syscfg_fvdp_fe>;
 +			reg 		= <0xfd6bf080 0x4>;
 +			reg-names	= "irqmux";
 +			interrupts 	= <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
@@ -266,15 +290,15 @@ index a9324fa..21b3b53 100644
  				reg		= <0x2000 0x100>;
  				st,bank-name	= "PIO102";
  			};
-@@ -356,35 +417,49 @@
+@@ -411,29 +478,41 @@
  			#size-cells	= <1>;
- 			compatible	= "st,stih415-right-pinctrl";
- 			st,syscfg	= <&syscfg_right>;
+ 			compatible	= "st,stih416-fvdp-lite-pinctrl";
+ 			st,syscfg		= <&syscfg_fvdp_lite>;
 +			reg 		= <0xfd33f080 0x4>;
 +			reg-names	= "irqmux";
 +			interrupts 	= <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
 +			interrupts-names = "irqmux";
- 			ranges		= <0 0xfd330000 0x5000>;
+ 			ranges			= <0 0xfd330000 0x5000>;
  
  			PIO103: gpio@fd330000 {
  				gpio-controller;
@@ -308,6 +332,7 @@ index a9324fa..21b3b53 100644
  				reg		= <0x3000 0x100>;
  				st,bank-name	= "PIO106";
  			};
+@@ -441,6 +520,8 @@
  			PIO107: gpio@fd334000 {
  				gpio-controller;
  				#gpio-cells	= <1>;
@@ -315,7 +340,7 @@ index a9324fa..21b3b53 100644
 +				#interrupt-cells = <2>;
  				reg		= <0x4000 0x100>;
  				st,bank-name	= "PIO107";
- 			};
+ 				st,retime-pin-mask = <0xf>;
 -- 
 1.7.6.5
 
