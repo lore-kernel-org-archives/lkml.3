@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaAPL6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 06:58:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59268 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752027AbaAPL6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 06:58:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
-   d="scan'208";a="439773447"
-Date: Thu, 16 Jan 2014 13:58:10 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 4/5] arm: omap3: twl: use the new lookup method with usb
- phy
-Message-ID: <20140116115810.GC11732@xps8300>
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1386601737-8735-5-git-send-email-heikki.krogerus@linux.intel.com>
- <52AEDE43.8030005@ti.com>
- <20131216144314.GB22944@xps8300>
- <52CBFAC0.9040103@ti.com>
- <20140114143849.GB21169@xps8300>
- <52D6972B.2030704@ti.com>
+	id S1752600AbaAPMDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:03:41 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39078 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022AbaAPMDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:03:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D6972B.2030704@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2002335.9x4iUKkcnh@x2>
+References: <1389808934-4446-1-git-send-email-wroberts@tresys.com>
+	<2708398.uWbqeU3VZe@x2>
+	<CAFftDdoi-9KZvuWz4czNMSWE=Y1tPQEhZVAeQb=S+jKQ=m8rZQ@mail.gmail.com>
+	<2002335.9x4iUKkcnh@x2>
+Date: Thu, 16 Jan 2014 07:03:34 -0500
+Message-ID: <CAFftDdqJbMwTDkYn6FbRE=j69F4mE+9i=Sw6aQTTs99hsP0KwA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] audit: Audit proc cmdline value
+From: William Roberts <bill.c.roberts@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        William Roberts <wroberts@tresys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 07:41:55PM +0530, Kishon Vijay Abraham I wrote:
-> The point I'm trying to make is that we won't 'always' know the device names in
-> advance.
+On Thu, Jan 16, 2014 at 6:02 AM, Steve Grubb <sgrubb@redhat.com> wrote:
+> On Wednesday, January 15, 2014 09:08:39 PM William Roberts wrote:
+>> >> > Try this,
+>> >> >
+>> >> > cp /bin/ls 'test test test'
+>> >> > auditctll -a always,exit -F arch=b64 -S stat -k test
+>> >> > ./test\ test\ test './test\ test\ test'
+>> >> > auditctl -D
+>> >> > ausearch --start recent --key test
+>> >> >
+>> >> >> On the event of weird chars, it gets hex escaped.
+>> >> >
+>> >> > and its all in 1 lump with no escaping to figure out what is what.
+>> >>
+>> >> Un-escape it. ausearch does this with paths. Then if you need to parse
+>> >> it, do it.
+>> >
+>> > How can you? When you unescape cmdline for the example I gave, you will
+>> > have "./test test test ./test test test".  Which program ran and how many
+>> > arguments were passed? If we are trying to improve on what comm= provides
+>> > by having the full information, I have to be able to find out exactly
+>> > what the program name was so it can be used for searching. If that can't
+>> > be done, then we don't need this addition in its current form.
+>>
+>> In your example, you will have an execve record, with it parsed, will you
+>> not?
+>
+> Only if you change your patch.
 
-In which cases do we not know the device names, and please note, cases
-where we would need to use the lookup? The normal cases we would use
-it are..
+My patch has nothing to do with the emitting of an execve record. You
+will get an
+execve record with the arguments parsed out. Its not even really
+"parsing" as each
+element is in a NULL terminated char * array.
 
-1) A driver creating a child device, like dwc3 when it creates the
-xhci. There the parent just delivers the phys it has to the child, so
-both the device name and the phys are known.
+>
+>
+>> cmdline does not necessarily represent the arguments or process name.
+>> Sometimes it does, sometimes it doesn't. Just treat the thing as one
+>> string, perhaps do some form of substring matching in a tool.
+>
+> You are missing the point. The point is that you are trying to place trust in
+> something that can be gamed. The audit system is designed such that it cannot
+> be fooled very easily. Each piece of the subject and object are separated so
+> that programs can be written to analyze events. What I am trying to say is now
+> you are making something that concatenates fields with no way to regroup them
+> later to reconstruct what really happened,
+>
+>
+>> To make this clear, I am not trying to improve on what comm provides.
+>> comm provides
+>> 16 chars for per thread name. The key is, its per thread, and can be
+>> anything. The
+>> "cmdline" value, is an arbitrary spot that is a global entity for the
+>> process. So in my change, all things coming into these events will have a
+>> similar cmdline audit. Which may help in narrowing down on whats going on
+>> in the system
+>
+> It needs to be more trustworthy than this.
 
-2) Platform code. Hopefully we can get rid of the platform code one
-day, but in any case, when we use it, we always know at least how many
-users a phy has, and if there is only a singe user, we can rely con_id
-to do the matching. Though I still don't really see much risk in using
-the controller device name also there. The lookup table should in any
-case be made in the place where the phy devices are created, so the
-phy name is definitely always known.
-
-3) Phys part of something like mfd. This is in practice the same as
-the platform code case. For example, with twl we always know there is
-only one user for the phy, which is musb. So we can just use musb's
-con_id if it's to scary to use "musb-hdrc.0".
-
-In any other case, you get the phy from DT, and there is no need to
-use the lookup when linking the phys and the users.
-
-> Btw how are you planning to differentiate between multiple controllers of the
-> same type with con_id?
-
-You don't rely on the con_id alone in those cases. You then use the
-device name. The con_id is just one parameter you can use to do the
-matching.
-
-> Maybe I'm missing the actual intention of this patch. Do you face problem if
-> the PHY's have to know about it's consumers in ACPI?
-
-<snip>
-
-> >> I would rather leave the way it is modelled now.
-> > 
-> > Do you mean, leave it in the platform code? Why? We would reduce the
-> > platform code by moving it to the mfd driver. Or did I misunderstood
-> > something?
-> 
-> In this case, the lookup table will be used only for non-dt boot so don't see
-> much use in moving to mfd driver.
-> I meant if the new method is not solving any problem then I would prefer the
-> way it is modelled now where the PHY's know about it's consumers.
-
-OK, so that's what you meant. Things like that init_data promotes use
-of platform data in the drivers, something that we really should get
-rid of. Is that not a problem to you?
-
-The phy drivers simply should not need to care about the consumers.
-They should not need to care about anything DT, ACPI, platform
-specific if it's possible, and here there is nothing preventing it.
-Let me clarify..
-
-The plan is that ultimately the drivers (meaning all the drivers, not
-just phy) don't need to care about things like DT properties, ACPI
-properties or anything DT, ACPI, platform specific. We will have
-generic driver properties and capabilities and the upper layers will
-take care of delivering the correct values from the source at hand.
-The drivers can be made truly platform agnostic.
-
-That is the goal, and we should make everything new by keeping that in
-mind. Many existing frameworks are being converted to that direction,
-like the gpio framework and DMA Engine API. The way you force the phy
-drivers the deliver the consumers is taking a step backwards.
-
-> Btw where does device gets created in ACPI boot?
-
-drivers/acpi/acpi_platform.c
-
-Thanks,
-
--- 
-heikki
+Its as trustworthy as comm, its as trustworthy as path, etc. The audit
+subsystem already prints many
+untrusted values to aid in narrowing down the process, or to observe a
+running processes behavior; this
+is no different.
