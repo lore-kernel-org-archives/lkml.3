@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaAPNrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:47:13 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:46795 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646AbaAPNrL (ORCPT
+	id S1752941AbaAPNsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:48:10 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55656 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaAPNsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:47:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140116125727.GI30257@mudshark.cambridge.arm.com>
-References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
-	<20140116115634.GE30257@mudshark.cambridge.arm.com>
-	<CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
-	<20140116125727.GI30257@mudshark.cambridge.arm.com>
-Date: Thu, 16 Jan 2014 14:47:10 +0100
-Message-ID: <CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
-Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+	Thu, 16 Jan 2014 08:48:05 -0500
+Date: Thu, 16 Jan 2014 13:47:32 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc C <marc.ceeeee@gmail.com>, Michal Simek <michal.simek@xilinx.com>,
+        David Brown <davidb@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Message-ID: <20140116134732.GB17314@sirena.org.uk>
+References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com>
+ <61E0E2A7-F7FC-4397-8E92-06CC409912B9@gmail.com>
+ <52D72FCD.1030005@gmail.com>
+ <201401161219.01038.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
+Content-Disposition: inline
+In-Reply-To: <201401161219.01038.arnd@arndb.de>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 7/7] ARM: brcmstb: dts: add a reference DTS for
+ Broadcom 7445
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
 
-On 16 January 2014 13:57, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Jan 16, 2014 at 12:26:53PM +0000, Jean Pihet wrote:
->> On 16 January 2014 12:56, Will Deacon <will.deacon@arm.com> wrote:
->> > In your previous series, compat backtracing is actually split out into a
->> > separate function (compat_user_backtrace), so it would be more consistent to
->> > have a compat_user_stack_pointer macro, rather than add this check here.
-The compat_user_backtrace function is used to unwind using the frame
-pointer, it is not used to unwind using the dwarf info (which uses the
-user stack pointer).
+--dc+cDN39EJAMEtIO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>
->> Do you mean this change instead?
->
-> I don't think so...
->
->> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
->> index 569b2187..9b88d2e 100644
->> --- a/kernel/events/internal.h
->> +++ b/kernel/events/internal.h
->> @@ -185,7 +185,8 @@ static inline bool arch_perf_have_user_stack_dump(void)
->>         return true;
->>  }
->>
->> -#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
->> +#define perf_user_stack_pointer(regs) \
->> +       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
->
-> This doesn't belong in core code; compat_user_mode and the fields of regs
-> are arm64-specific.
-Right.
+On Thu, Jan 16, 2014 at 12:19:00PM +0100, Arnd Bergmann wrote:
 
-> So I suppose you need to rework your original patch to
-> call compat_user_stack_pointer (which we already define in compat.h for
-> arm64) if compat_user_mode(regs)).
-The perf core code calls perf_user_stack_pointer(regs) to retrieve the
-stack pointer, with perf_user_stack_pointer(regs) defined as
-user_stack_pointer(regs).
-The problem is that perf is not aware of the compat mode, so every
-arch has to implement user_stack_pointer(regs) correctly.
+> 1. Other platforms also require the syscon driver to be active before
+> the regular device driver probing starts. Michal Simek has the same
+> issue in the zynq clock driver that you have for SMP initialization.
+> We have talked about this with Mark Brown already, and I think we will
+> find a solution for this in the end, but it's not as straightforward
+> as I first hoped. We can probably use help in this area.
 
-For this reason I think the first patch proposal is the right one
-unless the perf core code is redesigned to handle different ABIs. Do
-you see a better implementation?
+I thought the solution with deferring registration of the resource for
+dev_get_regmap() until a proper device materialised seemed simple and
+enough, did you folks run into any problems with that?  I had assumed a
+patch was likely to materialise so wasn't worrying about it myself.
 
->
-> The problem there is the inconsistency with respect to the regs argument:
->
->   user_stack_pointer(regs)      // Returns user stack pointer for regs
->   current_user_stack_pointer()  // Returns current user stack pointer
->   compat_user_stack_pointer()   // Doesn't take a regs argument!
->
-> On top of that, x86 treats those last two functions differently when current
-> is a compat task.
->
-> So the simplest thing would be to make compat_user_stack_pointer expand to
-> user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
-> original patch fixing user_stack_pointer.
->
-> Will
+--dc+cDN39EJAMEtIO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thx!
-Jean
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1+LxAAoJELSic+t+oim9idYP/R5g/BdN9pplOC0eJENE57/9
+RM/O+ha4hUGA/NuInI3kolroeI+LO5qtaVpQo904kMmfFcg2EgwGEbv08r0OfflQ
+k4xLxiuyiI5uxgsi8Gm1t9IwueJpQgPBvhdjkH87nuNlt34cDOzRh/0BJcIeV0hq
+sAXHyU5DfdGmhnscvuACGchrII6Ohf6HoK/kUeZhAruYjOhvBREG5xacIuIp2Nh5
+i5drd/qTm05uEzfVvIgxwFBzHfSy6mRqo0aH/h9dB9Sr0kZ/bfqXPe23rQawMN25
+1Rp5803i66j9q/53pI8DboVCQBDMwfdukM/b8pz3ymsMeddCJqITxSNTmWBncSd2
+bxGIPRIk6BhOcFMFCqDS1odpMd9YLD+b/Y/lcK8qaKqxwuqxnJeutE9FIlpBlvS3
+EQH1OyOHznDy2ii2+HUDXJR75xds8dxQop60WXFCt97gwDvgBx9UkEMn0cJzg40X
+vA2PJOP7ihfkP8YlOyG2GqvbpsEPDD7QcCBlsCCul34+Tnh3Gir88rZcIardOf8m
+G0bdqsT2xlPH/5uwDNDyFwnL5rPuWHKRQ5Ctj8V1Q98935Rk5x04sNVK2yakZVr7
+O2QIUAQrsgRgEXqwam51cn7Dl8Azj5hvJp/VnEXex1k8Q//VIXPLfDKdM6RkmskV
+CRi0KzepKhSvdhLlY7jl
+=x54h
+-----END PGP SIGNATURE-----
+
+--dc+cDN39EJAMEtIO--
