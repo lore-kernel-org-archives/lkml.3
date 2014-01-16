@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaAPQyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:54:14 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:53577 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaAPQyK (ORCPT
+	id S1752980AbaAPQye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:54:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42330 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955AbaAPQyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:54:10 -0500
-Date: Thu, 16 Jan 2014 11:54:07 -0500 (EST)
-From: Bob Peterson <rpeterso@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
-Message-ID: <1875464309.3327883.1389891247171.JavaMail.root@redhat.com>
-In-Reply-To: <20140116164411.GD16829@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org> <20140116161015.GC16829@fieldses.org> <1389888942.2779.34.camel@menhir> <20140116164411.GD16829@fieldses.org>
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+	Thu, 16 Jan 2014 11:54:32 -0500
+Date: Thu, 16 Jan 2014 17:54:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: Fix __sched_setscheduler() nice test
+Message-ID: <20140116165425.GA9481@laptop.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115120418.GD31570@twins.programming.kicks-ass.net>
+ <52D7E343.40909@linaro.org>
+ <20140116141743.GT31570@twins.programming.kicks-ass.net>
+ <52D7EAA4.2080208@linaro.org>
+ <20140116142546.GU31570@twins.programming.kicks-ass.net>
+ <52D7ED0A.2030502@linaro.org>
+ <20140116154239.GR7572@laptop.programming.kicks-ass.net>
+ <52D7FFCE.1030108@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF26 (Linux)/8.0.3_GA_5664)
-Thread-Topic: dcache: fix d_splice_alias handling of aliases
-Thread-Index: sWr4pmcEqFoZnzN4sumqH33yhapGLQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7FFCE.1030108@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-| Something like this?
-(snip)
-| @@ -779,6 +782,11 @@ static struct dentry *__gfs2_lookup(struct inode *dir,
-| struct dentry *dentry,
-|  	}
-|  
-|  	d = d_splice_alias(inode, dentry);
-| +	if (IS_ERR(d)) {
-| +		iput(inode);
-| +		gfs2_glock_dq_uninit(&gh);
-| +		return ERR_PTR(error);
+Subject: sched: Fix __sched_setscheduler() nice test
 
----------------------------------^
-Shouldn't that be ERR_PTR(d)?
+With the introduction of sched_attr::sched_nice we need to check if
+we've got permission to actually change the nice value.
 
-Bob Peterson
-Red Hat File Systems
+Daniel found that can_nice() would always fail; and upon inspection it
+turns out that can_nice() only tests to see if we can lower the nice
+value, but it doesn't validate if we're lowering or not.
+
+Therefore amend the test to only call can_nice() when we lower the nice
+value.
+
+Cc: raistlin@linux.it
+Cc: juri.lelli@gmail.com
+Fixes: d50dde5a10f3 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
+Reported-and-Tested-by: Daniel Lezcano <daniel.lezcano@linaro.org> 
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 93a2836b6220..36c951b7eef8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3296,7 +3296,8 @@ static int __sched_setscheduler(struct task_struct *p,
+ 	 */
+ 	if (user && !capable(CAP_SYS_NICE)) {
+ 		if (fair_policy(policy)) {
+-			if (!can_nice(p, attr->sched_nice))
++			if (attr->sched_nice < TASK_NICE(p) &&
++			    !can_nice(p, attr->sched_nice))
+ 				return -EPERM;
+ 		}
+ 
