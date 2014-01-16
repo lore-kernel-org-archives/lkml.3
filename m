@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaAPSuB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:50:01 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15039 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751616AbaAPSt7 (ORCPT
+	id S1751853AbaAPSut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:50:49 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:30752 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbaAPSuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:49:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19PZMrMnfxuO40VHCrlw65FycKlOQcJXUI=
-X-DKIM: OpenDKIM Filter v2.0.1 titan EFF1D50C214
-Date: Thu, 16 Jan 2014 13:49:43 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: orion: provide C-style interrupt handler for
- MULTI_IRQ_HANDLER
-Message-ID: <20140116184943.GK29184@titan.lakedaemon.net>
-References: <1389775235.10695.51.camel@dagon.hellion.org.uk>
- <1389859831-9883-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140116164833.GH29184@titan.lakedaemon.net>
- <1389891087.6697.26.camel@kazak.uk.xensource.com>
- <20140116165347.GI29184@titan.lakedaemon.net>
- <52D82802.6090104@gmail.com>
+	Thu, 16 Jan 2014 13:50:46 -0500
+Message-ID: <1389898239.11912.61.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of
+ the algorithm
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Christoph Lameter <cl@linux.com>
+CC: Daniel Borkmann <dborkman@redhat.com>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "Veaceslav Falico" <vfalico@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        "Jakub Zawadzki" <darkjames-ws@darkjames.pl>
+Date: Thu, 16 Jan 2014 18:50:39 +0000
+In-Reply-To: <alpine.DEB.2.10.1401161036110.29778@nuc>
+References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
+	 <1389828228-30312-3-git-send-email-dborkman@redhat.com>
+	 <alpine.DEB.2.10.1401161036110.29778@nuc>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D82802.6090104@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20438.001
+X-TM-AS-Result: No--22.408400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 07:42:10PM +0100, Sebastian Hesselbarth wrote:
-...
-> Out of curiosity, does that adding the Cc tag to the commit queue
-> it automatically as soon as it will be pulled by Linus?
+On Thu, 2014-01-16 at 10:37 -0600, Christoph Lameter wrote:
+> On Thu, 16 Jan 2014, Daniel Borkmann wrote:
+> 
+> > - * or else the performance is slower than a normal divide.
+> > - */
+> > -extern u32 reciprocal_value(u32 B);
+> > +struct reciprocal_value {
+> > +	u32 m;
+> > +	u8 sh1, sh2;
+> > +};
+> >
+> > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
+> >
+> > -static inline u32 reciprocal_divide(u32 A, u32 R)
+> > +struct reciprocal_value reciprocal_value(u32 d);
+> 
+> A function that returns a struct? That works? Which gcc versions support
+> it?
 
-Yes.  The -stable team scans commits as they are added to Linus' tree.
-If it has that tag, then they cherrypick it for the appropriate trees.
-As do many vendors and distros.
+At least since gcc 1.29, given:
 
-There's no need to actually "email Cc" stable, they won't take it until
-it's landed in mainline.  iirc, this generates a form letter from Greg
-:)
+Thu Sep 22 15:57:41 1988  Richard Stallman  (rms at sugar-bombs.ai.mit.edu)
+[...]
+	* stmt.c (expand_function_start): Set current_function_needs_context
+	and current_function_returns_struct.
 
-> @Ian: Thanks for hunting this down, please keep bothering us with
-> bug reports :)
+Hope that's not a problem...
 
-Yes, please!
+Ben.
 
-thx,
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Jason.
