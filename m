@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaAPUac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:30:32 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:47883 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaAPUa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:30:29 -0500
-Date: Thu, 16 Jan 2014 15:29:45 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
-Message-ID: <20140116202945.GD10165@tuxdriver.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
- <201312311047.30147@pali>
- <20140106200050.GG10885@tuxdriver.com>
- <20140116002121.GA3726@amd.pavel.ucw.cz>
+	id S1751352AbaAPUqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:46:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26578 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750AbaAPUqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 15:46:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,669,1384329600"; 
+   d="scan'208";a="467878402"
+Date: Thu, 16 Jan 2014 12:46:14 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: walt <w41ter@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
+ USB payload burst [NEW HARDWARE]
+Message-ID: <20140116204614.GB27608@xanatos>
+References: <20140109235045.GA17660@xanatos>
+ <52D4791B.3030309@gmail.com>
+ <20140114172056.GB12126@xanatos>
+ <52D5ABBD.7090202@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140116002121.GA3726@amd.pavel.ucw.cz>
+In-Reply-To: <52D5ABBD.7090202@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 01:21:21AM +0100, Pavel Machek wrote:
-> On Mon 2014-01-06 15:00:50, John W. Linville wrote:
-> > On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
-> > > On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
-> > > > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
-> > > > comments. More patches come from David's monitor & packet
-> > > > injection work. Patches are tested with 3.12 rc5 kernel on
-> > > > Nokia N900.
-> > > > 
-> > > > Second version contains new patch for fixing NULL pointer
-> > > > dereference which sometimes cause kernel panic and fixes code
-> > > > suggested by Pavel Machek.
-> >  
-> > > So far, there are no new comments for patches 01, 03-13 and 16. 
-> > > Are there any other problems with that patches or can be accepted 
-> > > for upstream?
-> >  
-> > They are probably fine to merge now.  Of course, I was still deleting
-> > wl12xx patches when they were originally posted, so I'll need someone
-> > to resend the patches to me...
+On Tue, Jan 14, 2014 at 01:27:25PM -0800, walt wrote:
+> On 01/14/2014 09:20 AM, Sarah Sharp wrote:
+> > On Mon, Jan 13, 2014 at 03:39:07PM -0800, walt wrote:
 > 
-> Ping? Did they get merged? Did you receive the patches?
+> >> Sarah, I just fixed my xhci bug for US$19.99 :)
+> >>
+> >> #lspci | tail -1
+> >> 04:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev 03)
+> >>
+> >> This new NEC usb3 controller does everything the ASMedia controller should have
+> >> done from the start.
+> 
+>  
+> > I just got a similar report from someone with a Fresco Logic host
+> > controller, so I may need you to test a work-around patch for the
+> > ASMedia host at some point.
 
-They are already available in wireless-next.
+Hmm, the Fresco Logic host issue seems unrelated.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> Oy, Sarah! ;)  I put the ASMedia adapter in my older amd64 machine, and, well,
+> the stupid thing Just Works(TM) with kernel 3.12.7!  (Yes, with the same disk
+> docking station, too.)
+
+Ugh.  Well, I suppose we can chalk it up to hardware failure?  I think
+you're the only one to report a verified issue with the Link TRB patch.
+
+You are sure you're running a vanilla 3.12.7 kernel, right?
+
+> I can't believe the adapter works perfectly in a different computer.  Have you
+> seen this kind of thing before?
+
+No, at least not this particular host-dying-only-on-one-machine failure
+mode.
+
+> At the moment I have two machines using your xhci driver and both work perfectly,
+> so I thank you again :)
+> 
+> I'm not sure where to go with this next.  I could put the adapter back in the
+> other machine again if you have more patches to test.
+
+I think any patches I was going to send are moot with this new
+information.  The issue with your PCI add-in card only happens in
+combination with a specific motherboard, so I don't think it makes sense
+to disable the no-op TRBs for that host.
+
+If lots of other people start reporting the same issue with the ASMedia
+0.96 host, and reverting commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e
+"usb: xhci: Link TRB must not occur within a USB payload burst" helps
+them, then I'll reconsider that decision.
+
+Thank you so much for your patience while debugging this issue, and
+being willing to try all sorts of kernels and patches.  I'm glad we
+finally figured out what the issue was, and you have working xHCI hosts
+now.
+
+Sarah Sharp
