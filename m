@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaAPQ3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:29:09 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:57728 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381AbaAPQ3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:29:06 -0500
-X-IronPort-AV: E=Sophos;i="4.95,668,1384300800"; 
-   d="scan'208";a="93539355"
-Date: Thu, 16 Jan 2014 16:27:55 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gang.chen@asianux.com" <gang.chen@asianux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
-Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
- dependencies for XEN
-In-Reply-To: <20140109184251.GL17838@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com>
-References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140109103004.GB11089@mudshark.cambridge.arm.com> <201401091204.17932.arnd@arndb.de> <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
- <20140109184251.GL17838@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1752878AbaAPQ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:29:24 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:56157 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381AbaAPQ3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 11:29:19 -0500
+Message-ID: <1389889754.31367.406.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: sk == 0xffffffff fix - not for commit
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Date: Thu, 16 Jan 2014 08:29:14 -0800
+In-Reply-To: <52D7F8EF.1050407@samsung.com>
+References: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
+	 <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <52A6BAC6.4090407@samsung.com>
+	 <1386685557.30495.344.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <52D7F8EF.1050407@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, Will Deacon wrote:
-> On Thu, Jan 09, 2014 at 12:47:24PM +0000, Stefano Stabellini wrote:
-> > On Thu, 9 Jan 2014, Arnd Bergmann wrote:
-> > > On Thursday 09 January 2014, Will Deacon wrote:
-> > > > On Wed, Jan 08, 2014 at 06:00:23PM +0000, Stefano Stabellini wrote:
-> > > > > Remove !GENERIC_ATOMIC64 build dependency:
-> > > > > - rename atomic64_xchg to armv7_atomic64_xchg and define it even ifdef
-> > > > >   GENERIC_ATOMIC64;
-> > > > > - call armv7_atomic64_xchg directly from xen/events.h.
-> > > > > 
-> > > > > Remove !CPU_V6 build dependency:
-> > > > > - introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
-> > > > >   CONFIG_CPU_V6;
-> > > > > - implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16.
-> > > > > 
-> > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > > CC: arnd@arndb.de
-> > > > > CC: linux@arm.linux.org.uk
-> > > > > CC: will.deacon@arm.com
-> > > > > CC: gang.chen@asianux.com
-> > > > > CC: catalin.marinas@arm.com
-> > > > > CC: jaccon.bastiaansen@gmail.com
-> > > > > CC: linux-arm-kernel@lists.infradead.org
-> > > > > CC: linux-kernel@vger.kernel.org
-> > > > > 
-> > > > 
-> > > > I'm confused here. It looks like you want to call armv7 code in a v6 kernel.
-> > > > What am I missing?
-> > > 
-> > > This is about being able to build a kernel that runs on ARMv6 and ARMv7
-> > > and also includes Xen. Because of obvious hardware limitations, Xen
-> > > will only run on v7, but currently you cannot even build it once you
-> > > enable (pre-v6K) ARMv6 support, since the combined v6+v7 kernel can't
-> > > do atomic accesses in a generic way on non-32bit variables.
-> > 
-> > Yep, that's right.
+On Thu, 2014-01-16 at 16:21 +0100, Andrzej Pietrasiewicz wrote:
+> W dniu 10.12.2013 15:25, Eric Dumazet pisze:
+> > On Tue, 2013-12-10 at 07:55 +0100, Andrzej Pietrasiewicz wrote:
+> >> W dniu 09.12.2013 16:31, Eric Dumazet pisze:
+> >>> On Mon, 2013-12-09 at 12:47 +0100, Andrzej Pietrasiewicz wrote:
+> >>>> NOT FOR COMMITTING TO MAINLINE.
+> >>>>
+> >>>> With g_ether loaded the sk occasionally becomes 0xffffffff.
+> >>>> It happens usually after transferring few hundreds of kilobytes to few
+> >>>> tens of megabytes. If sk is 0xffffffff then dereferencing it causes
+> >>>> kernel panic.
+> >>>>
+> >>>> This is a *workaround*. I don't know enough net code to understand the core
+> >>>> of the problem. However, with this patch applied the problems are gone,
+> >>>> or at least pushed farther away.
+> >>>
+> >>> Is it happening on SMP or UP ?
+> >>
+> >> UP build, S5PC110
+> >
+> > OK
+> >
+> > I believe you need additional debugging to track the exact moment
+> > 0xffffffff is fed to 'sk'
+> >
+> > It looks like a very strange bug, involving a problem in some assembly
+> > helper, register save/restore, compiler bug or stack corruption or
+> > something.
+> >
 > 
-> Ok, thanks for the explanation. Looking at the patch, I wonder whether it's
-> not cleaner just to implement xchg code separately for Xen? The Linux code
-> isn't always sufficient (due to the GENERIC_ATOMIC64 stuff) and most of the
-> churn coming out of this patch is an attempt to provide some small code
-> reuse at the cost of code readability.
+> I started with adding WARN_ON(sk == 0xffffffff); just before return in
+> __inet_lookup_established(), and the problem was gone. So this looks
+> very strange, like a toolchain problem.
+
+Or a timing issue. Adding a WARN_ON() adds extra instructions and might
+really change the assembly output.
+
 > 
-> What do others think?
+> I used gcc-linaro-arm-linux-gnueabihf-4.8-2013.05.
+> 
+> If I change the toolchain to
+> 
+> gcc-linaro-arm-linux-gnueabihf-4.7-2013.04-20130415
+> 
+> the problem seems to have gone away.
 
-I am OK with that, in fact my first version of the patch did just that:
+Its totally possible some barrier was not properly handled by the
+compiler. You could disassemble the function on both toolchains and
+try to spot the issue.
 
-http://marc.info/?l=linux-arm-kernel&m=138436406724990&w=2
 
-Is that what you had in mind?
+
