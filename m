@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaAPQNe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:13:34 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:52562 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316AbaAPQN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:13:29 -0500
-MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20140116154132.GB16829@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
-	<1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
-	<20140115175723.GA4596@fieldses.org>
-	<CAJfpegs0+t4S1y9mhRMJMAERh-a95KjK_JQ7F5SRrfsNZOdoMA@mail.gmail.com>
-	<20140116154132.GB16829@fieldses.org>
-Date: Thu, 16 Jan 2014 17:13:28 +0100
-Message-ID: <CAJfpegumqYe2oQ3at8w8OJFhNx38c6XBtdnyb4H6O=AGihfH-Q@mail.gmail.com>
+	id S1752426AbaAPQQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:16:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544AbaAPQQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 11:16:31 -0500
 Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-From: Miklos Szeredi <miklos@szeredi.hu>
+From: Steven Whitehouse <swhiteho@redhat.com>
 To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS list <linux-nfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+In-Reply-To: <20140116161015.GC16829@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+	 <20140116161015.GC16829@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 16 Jan 2014 16:15:42 +0000
+Message-ID: <1389888942.2779.34.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 4:41 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> And, sorry, I did miss that you said "non-directory".  But I think you
-> have that backwards: d_splice_alias looks like:
->
->         if (inode && S_ISDIR(inode->i_mode)) {
->                 ...
->         } else {
->                 d_instantiate(dentry, inode);
->                 if (d_unhashed(dentry))
->                         d_rehash(dentry);
->         }
->
-> So it ignores any existing aliases in the non-directory case.
+Hi,
 
-Okay.
+On Thu, 2014-01-16 at 11:10 -0500, J. Bruce Fields wrote:
+> On Wed, Jan 15, 2014 at 10:17:49AM -0500, bfields wrote:
+> > From: "J. Bruce Fields" <bfields@redhat.com>
+> > 
+> > d_splice_alias can create duplicate directory aliases (in the !new
+> > case), or (in the new case) d_move without holding appropriate locks.
+> > 
+> > d_materialise_unique deals with both of these problems.  (The latter
+> > seems to be dealt by trylocks (see __d_unalias), which look like they
+> > could cause spurious lookup failures--but that's at least better than
+> > corrupting the dcache.)
+> > 
+> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> > ---
+> >  fs/dcache.c |   25 +------------------------
+> >  1 file changed, 1 insertion(+), 24 deletions(-)
+> > 
+> > Only lightly tested....  If this is right, then we can also just ditch
+> > d_splice_alias completely, and clean up the various d_find_alias's.
+> > 
+> > I think the only reason we have both d_splice_alias and
+> > d_materialise_unique is that the former was written for exportable
+> > filesystems and the latter for distributed filesystems.
+> > 
+> > But we have at least one exportable filesystem (fuse) using
+> > d_materialise_unique.  And I doubt d_splice_alias was ever completely
+> > correct even for on-disk filesystems.
+> > 
+> > Am I missing some subtlety?
+> 
+> Hm, I just noticed:
+> 
+>     commit 0d0d110720d7960b77c03c9f2597faaff4b484ae
+>     Author: Miklos Szeredi <mszeredi@suse.cz>
+>     Date:   Mon Sep 16 14:52:00 2013 +0200
+> 
+>     GFS2: d_splice_alias() can't return error
+>     
+>     unless it was given an IS_ERR(inode), which isn't the case here.  So clean
+>     up the unnecessary error handling in gfs2_create_inode().
+>     
+>     This paves the way for real fixes (hence the stable Cc).
+>     
+>     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>     Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+>     Cc: stable@vger.kernel.org
+> 
+> While the statement is true for the current implementation of
+> d_splice_alias, I don't think it's actually true for any correct
+> implementation of d_splice_alias, which must be able to return at least
+> -ELOOP in the directory case.  Does gfs2 need fixing?
+> 
+> --b.
 
->
-> d_materialise_unique by contrast calls __d_instantiate_unique, which
-> looks like it should avoid adding duplicates.
->
-> So I think switching everyone to d_materialiase_unique would result in
-> fewer dentries.  But I've never seen any complaint about the issue and
-> like you don't see a reason this would matter much either way.
+Yes, in that case, probably in two places,
 
-So, yes, d_materialise_unique() looks like it has superior
-functionality compared to d_splice_alias().
+Steve.
 
-Thanks,
-Miklos
+
