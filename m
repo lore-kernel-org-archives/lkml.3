@@ -1,113 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaAPEZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:25:23 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36130 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaAPEZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:25:20 -0500
-Message-ID: <52D75F1D.9040405@oracle.com>
-Date: Thu, 16 Jan 2014 12:25:01 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752175AbaAPE00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:26:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaAPE0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 23:26:22 -0500
+Message-ID: <52D75F13.2060504@redhat.com>
+Date: Thu, 16 Jan 2014 12:24:51 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: aaron.f.brown@intel.com, jeffrey.t.kirsher@intel.com
-CC: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com
-Subject: [PATCH 1/2 Net-next] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro
- and cleanup const 63
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: David Miller <davem@davemloft.net>
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next RFC] virtio-net: drop rq->max and rq->num
+References: <1388134685-30691-1-git-send-email-jasowang@redhat.com>	<87mwixx670.fsf@rustcorp.com.au>	<87zjmwvlzl.fsf@rustcorp.com.au> <20140115.164649.533508366980529205.davem@davemloft.net>
+In-Reply-To: <20140115.164649.533508366980529205.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/16/2014 08:46 AM, David Miller wrote:
+> From: Rusty Russell<rusty@rustcorp.com.au>
+> Date: Thu, 16 Jan 2014 10:25:26 +1030
+>
+>> Rusty Russell<rusty@rustcorp.com.au>  writes:
+>>> Jason Wang<jasowang@redhat.com>  writes:
+>>>> It looks like there's no need for those two fields:
+>>>>
+>>>> - Unless there's a failure for the first refill try, rq->max should be always
+>>>>    equal to the vring size.
+>>>> - rq->num is only used to determine the condition that we need to do the refill,
+>>>>    we could check vq->num_free instead.
+>>>> - rq->num was required to be increased or decreased explicitly after each
+>>>>    get/put which results a bad API.
+>>>>
+>>>> So this patch removes them both to make the code simpler.
+>>> Nice.  These fields date from when the vq struct was opaque.
+>>>
+>>> Applied,
+>>> Rusty.
+>> Oops, this doesn't require any core virtio changes, so it's for DaveM:
+>>
+>> Acked-by: Rusty Russell<rusty@rustcorp.com.au>
+> Jason please repost this with Rusty's ACK, thanks.
 
-Because ixgbe driver limit the max number of VF functions could be enalbed
-to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the const 63
-in code.
-
-v3: revised for net-next tree.
-
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
----
-  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  |    4 ++--
-  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c |    4 ++--
-  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h |    5 +++++
-  3 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c 
-b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index cc06854..bea2cec 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -5028,7 +5028,7 @@ static int ixgbe_sw_init(struct ixgbe_adapter 
-*adapter)
-
-      /* assign number of SR-IOV VFs */
-      if (hw->mac.type != ixgbe_mac_82598EB) {
--        if (max_vfs > 63) {
-+        if (max_vfs > IXGBE_MAX_VFS_DRV_LIMIT) {
-              adapter->num_vfs = 0;
-              e_dev_warn("max_vfs parameter out of range. Not assigning 
-any SR-IOV VFs\n");
-          } else {
-@@ -7973,7 +7973,7 @@ static int ixgbe_probe(struct pci_dev *pdev, const 
-struct pci_device_id *ent)
-      ixgbe_init_mbx_params_pf(hw);
-      memcpy(&hw->mbx.ops, ii->mbx_ops, sizeof(hw->mbx.ops));
-      ixgbe_enable_sriov(adapter);
--    pci_sriov_set_totalvfs(pdev, 63);
-+    pci_sriov_set_totalvfs(pdev, IXGBE_MAX_VFS_DRV_LIMIT);
-  skip_sriov:
-
-  #endif
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c 
-b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-index 359f6e6..b324260 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-@@ -148,7 +148,7 @@ void ixgbe_enable_sriov(struct ixgbe_adapter *adapter)
-           * physical function.  If the user requests greater thn
-           * 63 VFs then it is an error - reset to default of zero.
-           */
--        adapter->num_vfs = min_t(unsigned int, adapter->num_vfs, 63);
-+        adapter->num_vfs = min_t(unsigned int, adapter->num_vfs, 
-IXGBE_MAX_VFS_DRV_LIMIT);
-
-          err = pci_enable_sriov(adapter->pdev, adapter->num_vfs);
-          if (err) {
-@@ -257,7 +257,7 @@ static int ixgbe_pci_sriov_enable(struct pci_dev 
-*dev, int num_vfs)
-       * PF.  The PCI bus driver already checks for other values out of
-       * range.
-       */
--    if (num_vfs > 63) {
-+    if (num_vfs > IXGBE_MAX_VFS_DRV_LIMIT) {
-          err = -EPERM;
-          goto err_out;
-      }
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h 
-b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
-index 4713f9f..8bd2919 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
-@@ -28,6 +28,11 @@
-  #ifndef _IXGBE_SRIOV_H_
-  #define _IXGBE_SRIOV_H_
-
-+/*  ixgbe driver limit the max number of VFs could be enabled to
-+ *  63 (IXGBE_MAX_VF_FUNCTIONS - 1)
-+ */
-+#define IXGBE_MAX_VFS_DRV_LIMIT  (IXGBE_MAX_VF_FUNCTIONS - 1)
-+
-  void ixgbe_restore_vf_multicasts(struct ixgbe_adapter *adapter);
-  void ixgbe_msg_task(struct ixgbe_adapter *adapter);
-  int ixgbe_vf_configuration(struct pci_dev *pdev, unsigned int event_mask);
--- 
-1.7.1
-
+Sure, will repost.
