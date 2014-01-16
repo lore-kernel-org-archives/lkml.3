@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaAPK7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 05:59:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58760 "EHLO mga02.intel.com"
+	id S1752498AbaAPLCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 06:02:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaAPK6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 05:58:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
-   d="scan'208";a="459773206"
-Message-ID: <1389869908.1871.347.camel@smile>
-Subject: Re: Baytrail problems (was Re: Linux 3.13-rc8)
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Paul Drews <paul.drews@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Jan 2014 12:58:28 +0200
-In-Reply-To: <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
-References: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com>
-	 <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751714AbaAPLCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 06:02:15 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+To: William Roberts <bill.c.roberts@gmail.com>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        William Roberts <wroberts@tresys.com>
+Subject: Re: [PATCH v3 3/3] audit: Audit proc cmdline value
+Date: Thu, 16 Jan 2014 06:02:02 -0500
+Message-ID: <2002335.9x4iUKkcnh@x2>
+Organization: Red Hat
+User-Agent: KMail/4.11.5 (Linux/3.12.7-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFftDdoi-9KZvuWz4czNMSWE=Y1tPQEhZVAeQb=S+jKQ=m8rZQ@mail.gmail.com>
+References: <1389808934-4446-1-git-send-email-wroberts@tresys.com> <2708398.uWbqeU3VZe@x2> <CAFftDdoi-9KZvuWz4czNMSWE=Y1tPQEhZVAeQb=S+jKQ=m8rZQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 10:29 +0100, Linus Walleij wrote:
-> On Thu, Jan 16, 2014 at 2:49 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > Adding in the appropriate people...
-> >
-> > On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
-> > <gnomes@lxorguk.ukuu.org.uk> wrote:
-> >>
-> >> It seems to hate Baytrail/T
-> >>
-> >> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
-> >> right but otherwise running nicely and playing 3D games to 3.13-rc8
-> >>
-> >> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
-> >>   in
-> >
-> > Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
-> > but I guess the GPIO and ACPI ID addition ends up also enabling all
-> > the old code that Alan probably never ran in 3.11 because the driver
-> > didn't trigger on his machine.
+On Wednesday, January 15, 2014 09:08:39 PM William Roberts wrote:
+> >> > Try this,
+> >> > 
+> >> > cp /bin/ls 'test test test'
+> >> > auditctll -a always,exit -F arch=b64 -S stat -k test
+> >> > ./test\ test\ test './test\ test\ test'
+> >> > auditctl -D
+> >> > ausearch --start recent --key test
+> >> > 
+> >> >> On the event of weird chars, it gets hex escaped.
+> >> > 
+> >> > and its all in 1 lump with no escaping to figure out what is what.
+> >> 
+> >> Un-escape it. ausearch does this with paths. Then if you need to parse
+> >> it, do it.
+> > 
+> > How can you? When you unescape cmdline for the example I gave, you will
+> > have "./test test test ./test test test".  Which program ran and how many
+> > arguments were passed? If we are trying to improve on what comm= provides
+> > by having the full information, I have to be able to find out exactly
+> > what the program name was so it can be used for searching. If that can't
+> > be done, then we don't need this addition in its current form.
 > 
-> So that is commit f6308b36c411dc5
-> "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"?
-> 
-> This seems to have been selected for -stable as well so the
-> problem will be spreading as distros start pushing stable kernel
-> updates :-(
-> 
-> That came in through the ACPI tree, Rafael do you want to
-> revert it if there is no better quickfix?
+> In your example, you will have an execve record, with it parsed, will you
+> not?
 
-It seems Mathias and Mika (Cc:ed) already heard about the issue and have
-been working on the solution.
-
-> 
-> This adds an interesting twist to the general statement that
-> new PCI/ACPI IDs should go into stable BTW, maybe they
-> should not always do that.
+Only if you change your patch.
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+> cmdline does not necessarily represent the arguments or process name.
+> Sometimes it does, sometimes it doesn't. Just treat the thing as one
+> string, perhaps do some form of substring matching in a tool. 
 
+You are missing the point. The point is that you are trying to place trust in 
+something that can be gamed. The audit system is designed such that it cannot 
+be fooled very easily. Each piece of the subject and object are separated so 
+that programs can be written to analyze events. What I am trying to say is now 
+you are making something that concatenates fields with no way to regroup them 
+later to reconstruct what really happened,
+
+
+> To make this clear, I am not trying to improve on what comm provides.
+> comm provides
+> 16 chars for per thread name. The key is, its per thread, and can be
+> anything. The
+> "cmdline" value, is an arbitrary spot that is a global entity for the
+> process. So in my change, all things coming into these events will have a
+> similar cmdline audit. Which may help in narrowing down on whats going on
+> in the system
+
+It needs to be more trustworthy than this.
+
+-Steve
