@@ -1,376 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaAPKXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 05:23:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50844 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaAPKXB (ORCPT
+	id S1752301AbaAPK0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 05:26:23 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:42088 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaAPK0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 05:23:01 -0500
-Message-ID: <52D7B2CA.8080902@ti.com>
-Date: Thu, 16 Jan 2014 15:52:02 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Sricharan R <r.sricharan@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
-        Kevin Hilman <khilman@linaro.org>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
- IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com>
-In-Reply-To: <1386066445-28245-3-git-send-email-r.sricharan@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 05:26:20 -0500
+Date: Thu, 16 Jan 2014 11:26:18 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of the algorithm
+Message-ID: <20140116102618.GA7436@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Austin S Hemmelgarn <ahferroin7@gmail.com>,
+	Jesse Gross <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+	Stephen Hemminger <stephen@networkplumber.org>,
+	Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+	Christoph Lameter <cl@linux-foundation.org>,
+	Andy Gospodarek <andy@greyhouse.net>,
+	Veaceslav Falico <vfalico@redhat.com>,
+	Jay Vosburgh <fubar@us.ibm.com>,
+	Jakub Zawadzki <darkjames-ws@darkjames.pl>
+References: <1389828228-30312-1-git-send-email-dborkman@redhat.com> <1389828228-30312-3-git-send-email-dborkman@redhat.com> <1389841646.31367.391.camel@edumazet-glaptop2.roam.corp.google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1389841646.31367.391.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hi Eric!
 
-On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
-> Some socs have a large number of interrupts requests to service
-> the needs of its many peripherals and subsystems. All of the
-> interrupt lines from the subsystems are not needed at the same
-> time, so they have to be muxed to the irq-controller appropriately.
-> In such places a interrupt controllers are preceded by an CROSSBAR
-> that provides flexibility in muxing the device requests to the controller
-> inputs.
+On Wed, Jan 15, 2014 at 07:07:26PM -0800, Eric Dumazet wrote:
+> On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
 > 
-> This driver takes care a allocating a free irq and then configuring the
-> crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
-> be called right before the irqchip_init, so that it is setup to handle the
-> irqchip callbacks.
+> > Also, reciprocal_value() and reciprocal_divide() always return 0
+> > for divisions by 1. This is a bit worrisome as those functions
+> > also get used in mm/slab.c and lib/flex_array.c, apparently for
+> > index calculation to access array slots. 
 > 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Rajendra Nayak <rnayak@ti.com>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> Acked-by: Kumar Gala <galak@codeaurora.org> (for DT binding portion)
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  [v5] Used the function of_property_read_u32_index instead of raw reading
->       from DT as per comments from Mark Rutland <mark.rutland@arm.com>
+> Hi Daniel
 > 
->  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
->  drivers/irqchip/Kconfig                            |    8 +
->  drivers/irqchip/Makefile                           |    1 +
->  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
->  include/linux/irqchip/irq-crossbar.h               |   11 ++
->  5 files changed, 255 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
->  create mode 100644 drivers/irqchip/irq-crossbar.c
->  create mode 100644 include/linux/irqchip/irq-crossbar.h
+> This off-by-one limitation is a known one,
+> and mm/slab.c does not have an issue with it because :
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> new file mode 100644
-> index 0000000..fb88585
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> @@ -0,0 +1,27 @@
-> +Some socs have a large number of interrupts requests to service
-> +the needs of its many peripherals and subsystems. All of the
-> +interrupt lines from the subsystems are not needed at the same
-> +time, so they have to be muxed to the irq-controller appropriately.
-> +In such places a interrupt controllers are preceded by an CROSSBAR
-> +that provides flexibility in muxing the device requests to the controller
-> +inputs.
-> +
-> +Required properties:
-> +- compatible : Should be "ti,irq-crossbar"
-> +- reg: Base address and the size of the crossbar registers.
-> +- ti,max-irqs: Total number of irqs available at the interrupt controller.
-> +- ti,reg-size: Size of a individual register in bytes. Every individual
-> +	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
-> +- ti,irqs-reserved: List of the reserved irq lines that are not muxed using
-> +		 crossbar. These interrupt lines are reserved in the soc,
-> +		 so crossbar bar driver should not consider them as free
-> +		 lines.
-> +
-> +Examples:
-> +		crossbar_mpu: @4a020000 {
-> +			compatible = "ti,irq-crossbar";
-> +			reg = <0x4a002a48 0x130>;
-> +			ti,max-irqs = <160>;
-> +			ti,reg-size = <2>;
-> +			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
-> +		};
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index 3792a1a..2efcde6 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -61,3 +61,11 @@ config VERSATILE_FPGA_IRQ_NR
->         int
->         default 4
->         depends on VERSATILE_FPGA_IRQ
-> +
-> +config IRQ_CROSSBAR
-> +	bool
-> +	help
-> +	  Support for a CROSSBAR ip that preceeds the main interrupt controller.
-> +	  The primary irqchip invokes the crossbar's callback which inturn allocates
-> +	  a free irq and configures the IP. Thus the peripheral interrupts are
-> +	  routed to one of the free irqchip interrupt lines.
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index c60b901..2edead9 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -22,3 +22,4 @@ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
->  obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
->  obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
->  obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
-> +obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-> new file mode 100644
-> index 0000000..ae605a3
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-crossbar.c
-> @@ -0,0 +1,208 @@
-> +/*
-> + *  drivers/irqchip/irq-crossbar.c
-> + *
-> + *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-> + *  Author: Sricharan R <r.sricharan@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/slab.h>
-> +#include <linux/irqchip/arm-gic.h>
-> +
-> +#define IRQ_FREE	-1
-> +#define GIC_IRQ_START	32
-> +
-> +/*
-> + * @int_max: maximum number of supported interrupts
-> + * @irq_map: array of interrupts to crossbar number mapping
-> + * @crossbar_base: crossbar base address
-> + * @register_offsets: offsets for each irq number
-> + */
-> +struct crossbar_device {
-> +	uint int_max;
-> +	uint *irq_map;
-> +	void __iomem *crossbar_base;
-> +	int *register_offsets;
-> +	void (*write) (int, int);
-> +};
-> +
-> +static struct crossbar_device *cb;
-> +
-> +static inline void crossbar_writel(int irq_no, int cb_no)
-> +{
-> +	writel(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-> +}
-> +
-> +static inline void crossbar_writew(int irq_no, int cb_no)
-> +{
-> +	writew(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-> +}
-> +
-> +static inline void crossbar_writeb(int irq_no, int cb_no)
-> +{
-> +	writeb(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-> +}
-> +
-> +static inline int allocate_free_irq(int cb_no)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < cb->int_max; i++) {
-> +		if (cb->irq_map[i] == IRQ_FREE) {
-> +			cb->irq_map[i] = cb_no;
-> +			return i;
-> +		}
-> +	}
-> +
-> +	return -ENODEV;
-> +}
-> +
-> +static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
-> +			       irq_hw_number_t hw)
-> +{
-> +	cb->write(hw - GIC_IRQ_START, cb->irq_map[hw - GIC_IRQ_START]);
-> +	return 0;
-> +}
-> +
-> +static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
-> +{
-> +	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
-> +
-> +	if (hw > GIC_IRQ_START)
-> +		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
-> +}
-> +
-> +static int crossbar_domain_xlate(struct irq_domain *d,
-> +				 struct device_node *controller,
-> +				 const u32 *intspec, unsigned int intsize,
-> +				 unsigned long *out_hwirq,
-> +				 unsigned int *out_type)
-> +{
-> +	unsigned long ret;
-> +
-> +	ret = allocate_free_irq(intspec[1]);
-> +
-> +	if (IS_ERR_VALUE(ret))
-> +		return ret;
-> +
-> +	*out_hwirq = ret + GIC_IRQ_START;
-> +	return 0;
-> +}
-> +
-> +const struct irq_domain_ops routable_irq_domain_ops = {
-> +	.map = crossbar_domain_map,
-> +	.unmap = crossbar_domain_unmap,
-> +	.xlate = crossbar_domain_xlate
-> +};
-> +
-> +static int __init crossbar_of_init(struct device_node *node)
-> +{
-> +	int i, size, max, reserved = 0, entry;
-> +	const __be32 *irqsr;
-> +
-> +	cb = kzalloc(sizeof(struct cb_device *), GFP_KERNEL);
-> +
-> +	if (!cb)
-> +		return -ENOMEM;
-> +
-> +	cb->crossbar_base = of_iomap(node, 0);
-> +	if (!cb->crossbar_base)
-> +		goto err1;
-> +
-> +	of_property_read_u32(node, "ti,max-irqs", &max);
-> +	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
-> +	if (!cb->irq_map)
-> +		goto err2;
-> +
-> +	cb->int_max = max;
-> +
-> +	for (i = 0; i < max; i++)
-> +		cb->irq_map[i] = IRQ_FREE;
-> +
-> +	/* Get and mark reserved irqs */
-> +	irqsr = of_get_property(node, "ti,irqs-reserved", &size);
-> +	if (irqsr) {
-> +		size /= sizeof(__be32);
-> +
-> +		for (i = 0; i < size; i++) {
-> +			of_property_read_u32_index(node,
-> +						   "ti,irqs-reserved",
-> +						   i, &entry);
-> +			if (entry > max) {
-> +				pr_err("Invalid reserved entry\n");
-> +				goto err3;
-> +			}
-> +			cb->irq_map[entry] = 0;
-> +		}
-> +	}
-> +
-> +	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-> +	if (!cb->register_offsets)
-> +		goto err3;
-> +
-> +	of_property_read_u32(node, "ti,reg-size", &size);
-> +
-> +	switch (size) {
-> +	case 1:
-> +		cb->write = crossbar_writeb;
-> +		break;
-> +	case 2:
-> +		cb->write = crossbar_writew;
-> +		break;
-> +	case 4:
-> +		cb->write = crossbar_writel;
-> +		break;
-> +	default:
-> +		pr_err("Invalid reg-size property\n");
-> +		goto err4;
-> +		break;
-> +	}
-> +
-> +	/*
-> +	 * Register offsets are not linear because of the
-> +	 * reserved irqs. so find and store the offsets once.
-> +	 */
-> +	for (i = 0; i < max; i++) {
-> +		if (!cb->irq_map[i])
-> +			continue;
-> +
-> +		cb->register_offsets[i] = reserved;
-> +		reserved += size;
-> +	}
-> +
-> +	register_routable_domain_ops(&routable_irq_domain_ops);
-> +	return 0;
-> +
-> +err4:
-> +	kfree(cb->register_offsets);
-> +err3:
-> +	kfree(cb->irq_map);
-> +err2:
-> +	iounmap(cb->crossbar_base);
-> +err1:
-> +	kfree(cb);
-> +	return -ENOMEM;
-> +}
-> +
-> +static const struct of_device_id crossbar_match[] __initconst = {
-> +	{ .compatible = "ti,irq-crossbar" },
-> +	{}
-> +};
-> +
-> +int irqcrossbar_init(void)
-> +{
-> +	struct device_node *np;
-> +	np = of_find_matching_node(NULL, crossbar_match);
-> +	if (!np)
-> +		return -ENODEV;
-> +
-> +	crossbar_of_init(np);
-> +	return 0;
-> +}
-> diff --git a/include/linux/irqchip/irq-crossbar.h b/include/linux/irqchip/irq-crossbar.h
-> new file mode 100644
-> index 0000000..e5537b8
-> --- /dev/null
-> +++ b/include/linux/irqchip/irq-crossbar.h
-> @@ -0,0 +1,11 @@
-> +/*
-> + *  drivers/irqchip/irq-crossbar.h
-> + *
-> + *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +int irqcrossbar_init(void);
+> - Minimal object size is not 1 byte, but 8 (or maybe 4)
+> - We always divide a multiple of the divisor,
+>   so there is no off-by-one effect.
+> 
+> Little attached prog does a brute force check if needed.
+> 
+> So far, the only relevant issue was about BPF, and a better
+> documentation of reciprocal_divide() use cases.
+> 
+> (I let Jesse comment on the flex_array case)
+> 
+> I am unsure we want to 'fix' things, we tried hard in the past to avoid
+> divides, so the ones we use are usually because the divisor is not
+> constant, so the reciprocal doesn't help.
+> 
+> (BPF is fixed in David tree)
+> 
+> Thanks !
 
-I already have your reviewed-by tag for the first patch in this series.
+You are right, we rewrite that part. The text is still from the first commit
+message where we did no full impact analysis. ;)
 
-Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
-to be merged. We are planning to take this series through arm-soc tree.
+Thanks,
 
-Can i please have your tag for this patch as well ?
+  Hannes
 
-Regards,
- Sricharan
