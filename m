@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaAPPNI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:13:08 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57232 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469AbaAPPNG (ORCPT
+	id S1752852AbaAPPQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:16:55 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57934 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaAPPQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:13:06 -0500
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: <linux-arm-kernel@lists.infradead.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: turn rate change failed warning into pr_debug
-Date: Thu, 16 Jan 2014 16:12:55 +0100
-Message-Id: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.2
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 16 Jan 2014 10:16:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH V2] net/dt: Add support for overriding phy configuration from device tree
+Date: Thu, 16 Jan 2014 16:16:46 +0100
+Message-ID: <7510122.cayuQ6qt8r@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1389883631-1480-1-git-send-email-matthew.garrett@nebula.com>
+References: <20140116135905.GV20094@book.gsilab.sittig.org> <1389883631-1480-1-git-send-email-matthew.garrett@nebula.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:vB+irDd/vOioB+nyVMq2099RG9xn5Ht7mLosOtlzs4t
+ 3FWNcvBEL+m9tgoS1Xvwf9Gk8dN+PJKQo1PTRV8GTJJ/W1VSsQ
+ CtPM7SBtiLAxUEGfiDWgtZVJvL50daE9VrQQwFOpp2TaIBJsmH
+ QtMLhRNl6tAnPp5KnD+59I4moLi0J8yJoKY+dkZtv3tczDzOm3
+ cLaqn/2LFgRHIRVYbCRrLUcFumzhDHHvA1XfL/49/zstSDlSyF
+ 3Be7nkezzkEXQpxPsxF2/itHRbvjXaf1drwztx7qsr/QfmssOV
+ Juubj/Hagmd3wLZJrq/eBbNQRJwxAaqXWELSzsx1X9la8Dm2h5
+ ilxJXny5betKRnBs+DGo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a rate change failed it's the opportunity of the caller to handle
-this. Do not spam the log with a message.
+On Thursday 16 January 2014 09:47:11 Matthew Garrett wrote:
+> +               if (!of_property_read_u32(np, "phy-mii-advertise-10half",
+> +                                          &tmp)) {
+> +                       if (tmp) {
+> +                               *val |= ADVERTISE_10HALF;
+> +                               phydev->advertising |= SUPPORTED_10baseT_Half;
+> +                       } else {
+> +                               phydev->advertising &=
+> +                                       ~(SUPPORTED_10baseT_Half);
+> +                       }
+> +
+> +                       *mask |= ADVERTISE_10HALF;
+> +               }
+> +               if (!of_property_read_u32(np, "phy-mii-advertise-10full",
+> +                                          &tmp)) {
+> +                       if (tmp) {
+> +                               *val |= ADVERTISE_10FULL;
+> +                               phydev->advertising |= SUPPORTED_10baseT_Full;
+> +                       } else {
+> +                               phydev->advertising &=
+> +                                       ~(SUPPORTED_10baseT_Full);
+> +                       }
+> +
+> +                       *mask |= ADVERTISE_10FULL;
+> +               }
+> 
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clk/clk.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Just a style suggestion: rather than almost duplicating the same 12 lines
+of code for each property, I think it can be split out into a helper
+function.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 2cf2ea6..f0124d4 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1460,7 +1460,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	/* notify that we are about to change rates */
- 	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
- 	if (fail_clk) {
--		pr_warn("%s: failed to set %s rate\n", __func__,
-+		pr_debug("%s: failed to set %s rate\n", __func__,
- 				fail_clk->name);
- 		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
- 		ret = -EBUSY;
--- 
-1.8.5.2
+	Arnd
 
