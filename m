@@ -1,427 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaAPI4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:56:38 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:56993 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaAPI4g (ORCPT
+	id S1752088AbaAPJIC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:08:02 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:49993
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751952AbaAPJHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:56:36 -0500
-Date: Thu, 16 Jan 2014 11:46:38 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/4] zram: rework reported to end-user zram statistics
-Message-ID: <20140116084638.GA2122@swordfish>
-References: <1389780977-18949-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389780977-18949-4-git-send-email-sergey.senozhatsky@gmail.com>
- <20140116005645.GM1992@bbox>
+	Thu, 16 Jan 2014 04:07:54 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <lars@metafoo.de>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <perex@perex.cz>, <tiwai@suse.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: core: Fix possible NULL pointer dereference of pcm->config
+Date: Thu, 16 Jan 2014 16:08:04 +0800
+Message-ID: <1389859684-27456-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116005645.GM1992@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/16/14 09:56), Minchan Kim wrote:
-> Hello Sergey,
-> 
-> On Wed, Jan 15, 2014 at 01:16:16PM +0300, Sergey Senozhatsky wrote:
-> > 1) Introduce ZRAM_ATTR_RO macro to generate zram atomic64_t stats
-> > `show' functions and reduce code duplication.
-> > 
-> > 2) Remove `good' and `bad' compressed sub-requests stats. RW request may
-> > cause a number of RW sub-requests. zram used to account `good' compressed
-> > sub-queries (with compressed size less than 50% of original size), `bad'
-> > compressed sub-queries (with compressed size greater that 75% of original
-> > size), leaving sub-requests with compression size between 50% and 75% of
-> > original size not accounted and not reported. zram already accounts each
-> > sub-request's compression size so we can calculate real device compression
-> > ratio.
-> > 
-> > Acked-by: Minchan Kim <minchan@kernel.org>
-> 
-> I didn't give any Acked in this patch.
-> If I made you confused, Sorry about that.
-> 
+Since the soc generic dmaengine pcm driver allows using the defualt settings,
+so the pcm->config maybe NULL.
 
-Hello,
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/soc-generic-dmaengine-pcm.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-sorry, I misread the situtation.
+diff --git a/sound/soc/soc-generic-dmaengine-pcm.c b/sound/soc/soc-generic-dmaengine-pcm.c
+index 560a778..5bace12 100644
+--- a/sound/soc/soc-generic-dmaengine-pcm.c
++++ b/sound/soc/soc-generic-dmaengine-pcm.c
+@@ -176,17 +176,20 @@ static struct dma_chan *dmaengine_pcm_compat_request_channel(
+ {
+ 	struct dmaengine_pcm *pcm = soc_platform_to_pcm(rtd->platform);
+ 	struct snd_dmaengine_dai_dma_data *dma_data;
++	dma_filter_fn fn = NULL;
+ 
+ 	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
+ 
+ 	if ((pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX) && pcm->chan[0])
+ 		return pcm->chan[0];
+ 
+-	if (pcm->config->compat_request_channel)
++	if (pcm->config && pcm->config->compat_request_channel)
+ 		return pcm->config->compat_request_channel(rtd, substream);
+ 
+-	return snd_dmaengine_pcm_request_channel(pcm->config->compat_filter_fn,
+-						 dma_data->filter_data);
++	if (pcm->config)
++		fn = pcm->config->compat_filter_fn;
++
++	return snd_dmaengine_pcm_request_channel(fn, dma_data->filter_data);
+ }
+ 
+ static bool dmaengine_pcm_can_report_residue(struct dma_chan *chan)
+-- 
+1.8.4
 
-> This patch did more than thing you mentioned in desription.
-> 
-> 1. Introduce macro to remove code duplication
-> 
->    It's really good.
-> 
-> 2. Change atomic_t with atomic64_t
-> 
->    At a first look, I didn't want it because lots of custormer for zram
->    are still 32bit machines so their cost would be increased a bit due to
->    any locking facility like cmpxchg on some architectures.
-> 
->    Having said that, I will support your cleanup patch now and then
->    If we really have trouble with atomic stat operation, we could
->    change it with percpu_counter so that it could solve atomic overhead and
->    unnecessary memory space by introducing unsigned long instead of 64bit
->    atomic_t.
-> 
->    So, please add this comment for future just in case of forgetting.
 
-ok
-
-> 3. Remove unreported some stat
-> 
->    Looks good to me.
-> 
-
-> 4. Changing name of some stat
-> 
->    I couldn't understand what's the gain because I'm happy with
->    orig_data_size and compr_data_size now.
-> 
-
-well, compressed_size contains regular english words and thus a regular
-user can easily understand it. compr_data_size looks like a variable name.
-I think I'll drop this at the moment.
-
-> 5. Removed zram_init_device's warning
-> 
->    Why? This patch doesn't include any justification.
-> 
-
-I think I'll drop this part at the moment. the motivation for this
-cleanup was that, imho, such big informative warnings are part of
-documentation, not the source code.
-
-	-ss
-
-> 6. Removed unused field of enum zram_pageflags
-> 
->    Looks good to me.
-> 
-> Please, separate it with each patches so let's focus one by one.
-> 
-> 
-> > Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  drivers/block/zram/zram_drv.c | 163 ++++++++++++------------------------------
-> >  drivers/block/zram/zram_drv.h |  17 ++---
-> >  2 files changed, 51 insertions(+), 129 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index b0bcb7e..6eb2155 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -42,6 +42,17 @@ static struct zram *zram_devices;
-> >  /* Module params (documentation at end) */
-> >  static unsigned int num_devices = 1;
-> >  
-> > +#define ZRAM_ATTR_RO(name)						\
-> > +static ssize_t zram_attr_##name##_show(struct device *d,		\
-> > +				struct device_attribute *attr, char *b)	\
-> > +{									\
-> > +	struct zram *zram = dev_to_zram(d);				\
-> > +	return sprintf(b, "%llu\n",					\
-> > +		(u64)atomic64_read(&zram->stats.name));			\
-> > +}									\
-> > +static struct device_attribute dev_attr_##name =			\
-> > +	__ATTR(name, S_IRUGO, zram_attr_##name##_show, NULL);
-> > +
-> >  static inline int init_done(struct zram *zram)
-> >  {
-> >  	return zram->meta != NULL;
-> > @@ -52,97 +63,36 @@ static inline struct zram *dev_to_zram(struct device *dev)
-> >  	return (struct zram *)dev_to_disk(dev)->private_data;
-> >  }
-> >  
-> > -static ssize_t disksize_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n", zram->disksize);
-> > -}
-> > -
-> > -static ssize_t initstate_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%u\n", init_done(zram));
-> > -}
-> > -
-> > -static ssize_t num_reads_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.num_reads));
-> > -}
-> > -
-> > -static ssize_t num_writes_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.num_writes));
-> > -}
-> > -
-> > -static ssize_t invalid_io_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.invalid_io));
-> > -}
-> > -
-> > -static ssize_t notify_free_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.notify_free));
-> > -}
-> > -
-> > -static ssize_t zero_pages_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%u\n", atomic_read(&zram->stats.pages_zero));
-> > -}
-> > -
-> > -static ssize_t orig_data_size_show(struct device *dev,
-> > +static ssize_t memory_used_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> > +	u64 val = 0;
-> >  	struct zram *zram = dev_to_zram(dev);
-> > +	struct zram_meta *meta = zram->meta;
-> >  
-> > -	return sprintf(buf, "%llu\n",
-> > -		(u64)(atomic_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
-> > +	down_read(&zram->init_lock);
-> > +	if (init_done(zram))
-> > +		val = zs_get_total_size_bytes(meta->mem_pool);
-> > +	up_read(&zram->init_lock);
-> > +	return sprintf(buf, "%llu\n", val);
-> >  }
-> >  
-> > -static ssize_t compr_data_size_show(struct device *dev,
-> > +static ssize_t disksize_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> >  	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.compr_size));
-> > +	return sprintf(buf, "%llu\n", zram->disksize);
-> >  }
-> >  
-> > -static ssize_t mem_used_total_show(struct device *dev,
-> > +static ssize_t initstate_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> > -	u64 val = 0;
-> > +	u32 val = 0;
-> >  	struct zram *zram = dev_to_zram(dev);
-> > -	struct zram_meta *meta = zram->meta;
-> > -
-> >  	down_read(&zram->init_lock);
-> > -	if (init_done(zram))
-> > -		val = zs_get_total_size_bytes(meta->mem_pool);
-> > +	val = init_done(zram);
-> >  	up_read(&zram->init_lock);
-> > -
-> > -	return sprintf(buf, "%llu\n", val);
-> > +	return sprintf(buf, "%u\n", val);
-> >  }
-> >  
-> >  /* flag operations needs meta->tb_lock */
-> > @@ -293,7 +243,6 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  {
-> >  	struct zram_meta *meta = zram->meta;
-> >  	unsigned long handle = meta->table[index].handle;
-> > -	u16 size = meta->table[index].size;
-> >  
-> >  	if (unlikely(!handle)) {
-> >  		/*
-> > @@ -302,21 +251,15 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  		 */
-> >  		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
-> >  			zram_clear_flag(meta, index, ZRAM_ZERO);
-> > -			atomic_dec(&zram->stats.pages_zero);
-> > +			atomic64_dec(&zram->stats.pages_zero);
-> >  		}
-> >  		return;
-> >  	}
-> >  
-> > -	if (unlikely(size > max_zpage_size))
-> > -		atomic_dec(&zram->stats.bad_compress);
-> > -
-> >  	zs_free(meta->mem_pool, handle);
-> >  
-> > -	if (size <= PAGE_SIZE / 2)
-> > -		atomic_dec(&zram->stats.good_compress);
-> > -
-> > -	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
-> > -	atomic_dec(&zram->stats.pages_stored);
-> > +	atomic64_sub(meta->table[index].size, &zram->stats.compressed_size);
-> > +	atomic64_dec(&zram->stats.pages_stored);
-> >  
-> >  	meta->table[index].handle = 0;
-> >  	meta->table[index].size = 0;
-> > @@ -459,7 +402,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  		zram_set_flag(meta, index, ZRAM_ZERO);
-> >  		write_unlock(&zram->meta->tb_lock);
-> >  
-> > -		atomic_inc(&zram->stats.pages_zero);
-> > +		atomic64_inc(&zram->stats.pages_zero);
-> >  		ret = 0;
-> >  		goto out;
-> >  	}
-> > @@ -478,7 +421,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  	}
-> >  
-> >  	if (unlikely(clen > max_zpage_size)) {
-> > -		atomic_inc(&zram->stats.bad_compress);
-> >  		clen = PAGE_SIZE;
-> >  		src = NULL;
-> >  		if (is_partial_io(bvec))
-> > @@ -516,11 +458,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  	write_unlock(&zram->meta->tb_lock);
-> >  
-> >  	/* Update stats */
-> > -	atomic64_add(clen, &zram->stats.compr_size);
-> > -	atomic_inc(&zram->stats.pages_stored);
-> > -	if (clen <= PAGE_SIZE / 2)
-> > -		atomic_inc(&zram->stats.good_compress);
-> > -
-> > +	atomic64_add(clen, &zram->stats.compressed_size);
-> > +	atomic64_inc(&zram->stats.pages_stored);
-> >  out:
-> >  	if (locked)
-> >  		mutex_unlock(&meta->buffer_lock);
-> > @@ -583,23 +522,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >  
-> >  static void zram_init_device(struct zram *zram, struct zram_meta *meta)
-> >  {
-> > -	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
-> > -		pr_info(
-> > -		"There is little point creating a zram of greater than "
-> > -		"twice the size of memory since we expect a 2:1 compression "
-> > -		"ratio. Note that zram uses about 0.1%% of the size of "
-> > -		"the disk when not in use so a huge zram is "
-> > -		"wasteful.\n"
-> > -		"\tMemory Size: %lu kB\n"
-> > -		"\tSize you selected: %llu kB\n"
-> > -		"Continuing anyway ...\n",
-> > -		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
-> > -		);
-> > -	}
-> > -
-> >  	/* zram devices sort of resembles non-rotational disks */
-> >  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
-> > -
-> >  	zram->meta = meta;
-> >  	pr_debug("Initialization done!\n");
-> >  }
-> > @@ -771,14 +695,15 @@ static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
-> >  		disksize_show, disksize_store);
-> >  static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
-> >  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
-> > -static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
-> > -static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
-> > -static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
-> > -static DEVICE_ATTR(notify_free, S_IRUGO, notify_free_show, NULL);
-> > -static DEVICE_ATTR(zero_pages, S_IRUGO, zero_pages_show, NULL);
-> > -static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> > -static DEVICE_ATTR(compr_data_size, S_IRUGO, compr_data_size_show, NULL);
-> > -static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> > +static DEVICE_ATTR(memory_used, S_IRUGO, memory_used_show, NULL);
-> > +
-> > +ZRAM_ATTR_RO(num_reads);
-> > +ZRAM_ATTR_RO(num_writes);
-> > +ZRAM_ATTR_RO(pages_stored);
-> > +ZRAM_ATTR_RO(invalid_io);
-> > +ZRAM_ATTR_RO(notify_free);
-> > +ZRAM_ATTR_RO(pages_zero);
-> > +ZRAM_ATTR_RO(compressed_size);
-> >  
-> >  static struct attribute *zram_disk_attrs[] = {
-> >  	&dev_attr_disksize.attr,
-> > @@ -786,12 +711,12 @@ static struct attribute *zram_disk_attrs[] = {
-> >  	&dev_attr_reset.attr,
-> >  	&dev_attr_num_reads.attr,
-> >  	&dev_attr_num_writes.attr,
-> > +	&dev_attr_pages_stored.attr,
-> >  	&dev_attr_invalid_io.attr,
-> >  	&dev_attr_notify_free.attr,
-> > -	&dev_attr_zero_pages.attr,
-> > -	&dev_attr_orig_data_size.attr,
-> > -	&dev_attr_compr_data_size.attr,
-> > -	&dev_attr_mem_used_total.attr,
-> > +	&dev_attr_pages_zero.attr,
-> > +	&dev_attr_compressed_size.attr,
-> > +	&dev_attr_memory_used.attr,
-> >  	NULL,
-> >  };
-> >  
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index e81e9cd..277023d 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -64,22 +64,19 @@ enum zram_pageflags {
-> >  struct table {
-> >  	unsigned long handle;
-> >  	u16 size;	/* object size (excluding header) */
-> > -	u8 count;	/* object ref count (not yet used) */
-> > -	u8 flags;
-> > +	u16 flags;
-> >  } __aligned(4);
-> >  
-> >  struct zram_stats {
-> > -	atomic64_t compr_size;	/* compressed size of pages stored */
-> > -	atomic64_t num_reads;	/* failed + successful */
-> > -	atomic64_t num_writes;	/* --do-- */
-> > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > +	atomic64_t num_writes;	/* number of writes */
-> > +	atomic64_t num_reads;	/* number of reads */
-> > +	atomic64_t pages_stored;	/* no. of pages currently stored */
-> > +	atomic64_t compressed_size;	/* compressed size of pages stored */
-> > +	atomic64_t pages_zero;		/* no. of zero filled pages */
-> > +	atomic64_t failed_reads;	/* no. of failed reads */
-> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > -	atomic_t pages_zero;		/* no. of zero filled pages */
-> > -	atomic_t pages_stored;	/* no. of pages currently stored */
-> > -	atomic_t good_compress;	/* % of pages with compression ratio<=50% */
-> > -	atomic_t bad_compress;	/* % of pages with compression ratio>=75% */
-> >  };
-> >  
-> >  struct zram_meta {
-> > -- 
-> > 1.8.5.3.493.gb139ac2
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
