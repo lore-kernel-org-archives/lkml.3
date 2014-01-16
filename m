@@ -1,69 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaAPB0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:26:20 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52191 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaAPB0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:26:17 -0500
-X-AuditID: 9c930197-b7b7cae000000e34-ad-52d735374cde
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: perf probe: Build error with missing libraries
-References: <20140113180400.GD5318@ghostprotocols.net>
-	<20140113181458.GE5318@ghostprotocols.net>
-	<52D495D1.5080505@hitachi.com>
-	<20140114130907.GA29798@ghostprotocols.net>
-	<87sisq9fa5.fsf@sejong.aot.lge.com>
-	<20140115183856.GD9750@ghostprotocols.net>
-Date: Thu, 16 Jan 2014 10:26:15 +0900
-In-Reply-To: <20140115183856.GD9750@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Wed, 15 Jan 2014 15:38:56 -0300")
-Message-ID: <874n5490p4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1752606AbaAPBZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:25:13 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37634 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191AbaAPBY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:24:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,666,1384329600"; 
+   d="scan'208";a="465853162"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [PATCH v5 04/22] Change direct_access calling convention
+Date: Wed, 15 Jan 2014 20:24:22 -0500
+Message-Id: <e905e4518bd0dd16d116d7b2dc6f86f2ebafd076.1389779961.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 15:38:56 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 15, 2014 at 10:58:58AM +0900, Namhyung Kim escreveu:
->> Hi Arnaldo,
->> 
->> On Tue, 14 Jan 2014 10:09:07 -0300, Arnaldo Carvalho de Melo wrote:
->> > Em Tue, Jan 14, 2014 at 10:41:37AM +0900, Masami Hiramatsu escreveu:
->> >> (2014/01/14 3:14), Arnaldo Carvalho de Melo wrote:
->> >> > Jiri, this is something else for the give-me-more-ponies list for
->> >> > tests/make: build it on freshly provisioned systems with multiple mixes
->> >> > of devel packages installed ;-)
->> >  
->> >> I think we can change makefile to get some combinations of config options
->> >> when building perf tools.
->> >
->> > This is what:
->> >
->> >  make -C tools/perf -f tests/make
->> >
->> > does, and we use it already, many config combos are tested, but that
->> > kinda expects that all optional devel libs be installed.
->> 
->> I've been thinking that the above should look like below.
->> 
->>   make build-test (-C tools/perf)
->> 
->> 
->> Maybe something like this?
->
-> Haven't tested, but I think it is worth to make this a shortcut, care to
-> test (if not yet) and resubmit with proper S-O-B, etc?
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
 
-OK, will do!
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     |  6 +++---
+ drivers/block/brd.c               |  8 +++++---
+ drivers/s390/block/dcssblk.c      | 19 ++++++++++---------
+ fs/ext2/xip.c                     | 30 +++++++++++++-----------------
+ include/linux/blkdev.h            |  4 ++--
+ 6 files changed, 42 insertions(+), 40 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b62eabf 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
+ 
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that it can provide, although it must not exceed the number of
++bytes requested.  It may also return a negative errno if an error occurs.
+ 
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 1fea249..28e69b0 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -138,9 +138,9 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
+  */
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+ 	loff_t offset;
+@@ -157,7 +157,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return min_t(unsigned long, size, bank->size - offset);
+ }
+ 
+ static const struct block_device_operations axon_ram_devops = {
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index d91f1a5..fa809cb 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -361,8 +361,8 @@ out:
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
+@@ -379,7 +379,9 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/* Could optimistically check to see if the next page in the
++	 * file is mapped to the next page of physical RAM */
++	return PAGE_SIZE;
+ }
+ #endif
+ 
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 6eca019..c09a2b0 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
+ 
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+ 
+@@ -865,25 +865,26 @@ fail:
+ 	bio_io_error(bio);
+ }
+ 
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
+ 
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
++	dev_sz = dev_info->end - dev_info->start;
+ 	if (secnum % (PAGE_SIZE/512))
+ 		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
++	offset = secnum * 512;
++	if (offset > dev_sz)
+ 		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return min_t(unsigned long, size, dev_sz - offset);
+ }
+ 
+ static void
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..fa40091 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,13 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+ 	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
+-
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return ops->direct_access(bdev, sector, kaddr, pfn, size);
+ }
+ 
+ static inline int
+@@ -53,12 +48,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ {
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
+ 
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
+ }
+ 
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +73,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
+ {
+-	int rc;
++	long rc;
+ 	sector_t block;
+ 
+ 	/* first, retrieve the sector number */
+@@ -86,6 +82,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1b135d4..00c8e1a 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1566,8 +1566,8 @@ struct block_device_operations {
+ 	void (*release) (struct gendisk *, fmode_t);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access) (struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+-- 
+1.8.5.2
+
