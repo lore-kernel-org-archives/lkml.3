@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaAPAUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:20:09 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:40808 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752269AbaAPAUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:20:06 -0500
-Date: Thu, 16 Jan 2014 02:20:01 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, penberg@kernel.org, cl@linux-foundation.org
-Subject: Re: [RFC][PATCH 5/9] mm: rearrange struct page
-Message-ID: <20140116002001.GC8456@node.dhcp.inet.fi>
-References: <20140114180042.C1C33F78@viggo.jf.intel.com>
- <20140114180055.21691733@viggo.jf.intel.com>
+	id S1752115AbaAPAVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:21:24 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52202 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaAPAVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 19:21:22 -0500
+Date: Thu, 16 Jan 2014 01:21:21 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, sre@ring0.de,
+        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
+Message-ID: <20140116002121.GA3726@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
+ <201312311047.30147@pali>
+ <20140106200050.GG10885@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140114180055.21691733@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140106200050.GG10885@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:00:55AM -0800, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> To make the layout of 'struct page' look nicer, I broke
-> up a few of the unions.  But, this has a cost: things that
-> were guaranteed to line up before might not any more.  To make up
-> for that, some BUILD_BUG_ON()s are added to manually check for
-> the alignment dependencies.
-> 
-> This makes it *MUCH* more clear how the first few fields of
-> 'struct page' get used by the slab allocators.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+On Mon 2014-01-06 15:00:50, John W. Linville wrote:
+> On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
+> > On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
+> > > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
+> > > comments. More patches come from David's monitor & packet
+> > > injection work. Patches are tested with 3.12 rc5 kernel on
+> > > Nokia N900.
+> > > 
+> > > Second version contains new patch for fixing NULL pointer
+> > > dereference which sometimes cause kernel panic and fixes code
+> > > suggested by Pavel Machek.
+>  
+> > So far, there are no new comments for patches 01, 03-13 and 16. 
+> > Are there any other problems with that patches or can be accepted 
+> > for upstream?
+>  
+> They are probably fine to merge now.  Of course, I was still deleting
+> wl12xx patches when they were originally posted, so I'll need someone
+> to resend the patches to me...
 
-Looks much cleaner!
+Ping? Did they get merged? Did you receive the patches?
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-
+Regards,
+								Pavel
 -- 
- Kirill A. Shutemov
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
