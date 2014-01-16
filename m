@@ -1,148 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaAPNmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:42:17 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63399 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaAPNmN (ORCPT
+	id S1752993AbaAPNj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:39:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38370 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaAPNjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:42:13 -0500
+	Thu, 16 Jan 2014 08:39:55 -0500
+Date: Thu, 16 Jan 2014 05:39:13 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-c026b3591e4f2a4993df773183704bb31634e0bd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, waiman.long@hp.com,
+        acme@ghostprotocols.net, peterz@infradead.org, luto@amacapital.net,
+        akpm@linux-foundation.org, tglx@linutronix.de, scott.norton@hp.com,
+        aswin@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        waiman.long@hp.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, acme@ghostprotocols.net, luto@amacapital.net,
+        akpm@linux-foundation.org, tglx@linutronix.de, scott.norton@hp.com,
+        aswin@hp.com
+In-Reply-To: <20140110200603.GJ7572@laptop.programming.kicks-ass.net>
+References: <20140110200603.GJ7572@laptop.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86, mm, perf:
+  Allow recursive faults from interrupts
+Git-Commit-ID: c026b3591e4f2a4993df773183704bb31634e0bd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <CAFftDdpyXdgk7hUt4geKLER7s44bOieZ4ugpQXUKj5m0mVkdyg@mail.gmail.com>
-References: <1389808934-4446-1-git-send-email-wroberts@tresys.com>
-	<2002335.9x4iUKkcnh@x2>
-	<CAFftDdqJbMwTDkYn6FbRE=j69F4mE+9i=Sw6aQTTs99hsP0KwA@mail.gmail.com>
-	<3286317.e32vfzCzRe@x2>
-	<CAFftDdpyXdgk7hUt4geKLER7s44bOieZ4ugpQXUKj5m0mVkdyg@mail.gmail.com>
-Date: Thu, 16 Jan 2014 08:42:11 -0500
-Message-ID: <CAFftDdqrpcgU1kCyrwCsDRHXhA182p38e6-CytsvPRTVYfi-zg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] audit: Audit proc cmdline value
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:39:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 8:40 AM, William Roberts
-<bill.c.roberts@gmail.com> wrote:
-> On Thu, Jan 16, 2014 at 7:11 AM, Steve Grubb <sgrubb@redhat.com> wrote:
->> On Thursday, January 16, 2014 07:03:34 AM William Roberts wrote:
->>> On Thu, Jan 16, 2014 at 6:02 AM, Steve Grubb <sgrubb@redhat.com> wrote:
->>> > On Wednesday, January 15, 2014 09:08:39 PM William Roberts wrote:
->>> >> >> > Try this,
->>> >> >> >
->>> >> >> > cp /bin/ls 'test test test'
->>> >> >> > auditctll -a always,exit -F arch=b64 -S stat -k test
->>> >> >> > ./test\ test\ test './test\ test\ test'
->>> >> >> > auditctl -D
->>> >> >> > ausearch --start recent --key test
->>> >> >> >
->>> >> >> >> On the event of weird chars, it gets hex escaped.
->>> >> >> >
->>> >> >> > and its all in 1 lump with no escaping to figure out what is what.
->>> >> >>
->>> >> >> Un-escape it. ausearch does this with paths. Then if you need to parse
->>> >> >> it, do it.
->>> >> >
->>> >> > How can you? When you unescape cmdline for the example I gave, you will
->>> >> > have "./test test test ./test test test".  Which program ran and how
->>> >> > many
->>> >> > arguments were passed? If we are trying to improve on what comm=
->>> >> > provides
->>> >> > by having the full information, I have to be able to find out exactly
->>> >> > what the program name was so it can be used for searching. If that
->>> >> > can't
->>> >> > be done, then we don't need this addition in its current form.
->>> >>
->>> >> In your example, you will have an execve record, with it parsed, will you
->>> >> not?
->>> >
->>> > Only if you change your patch.
->>>
->>> My patch has nothing to do with the emitting of an execve record. You
->>> will get an
->>> execve record with the arguments parsed out. Its not even really
->>> "parsing" as each
->>> element is in a NULL terminated char * array.
->>
->> That is what I am telling you is wrong. We can't have a string that can't be
->> parsed later. If you reformat the output as an execve record, then we have
->> something that is trustworthy.
->
-Formatting of the string does not change the trust worthiness of its value. If
-I told you your name was JoEy, I could re-type it like this Joey and
-its still not
-true. I think the part of this your confusing is that this is really
-proctitle. On desktops
-the execution environment simply takes all the cmdline args and dumps
-it there. But,
-this is not always the case. The reason your arguments and command are
-well formatted
-on exec is becuase of the interface to the kernel. Its in a char *
-array. Their is NO parsing
-that is done on the kernels behalf. Accessing each value is just a
-matter of indexing the array.
-Parsing "cmdline", which again is arbitrary and controlled via
-setproctitle() is not needed,
-because its arbitrary. However, the fact that its arbitrary does not
-affect its usefulness. Many
-values used in the audit records, like comm (prctl()), can be
-manipulated by executing programs. But it
-may help a user to deduce what is going on.
+Commit-ID:  c026b3591e4f2a4993df773183704bb31634e0bd
+Gitweb:     http://git.kernel.org/tip/c026b3591e4f2a4993df773183704bb31634e0bd
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 10 Jan 2014 21:06:03 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 16 Jan 2014 09:19:48 +0100
 
->>
->>
->>> >> cmdline does not necessarily represent the arguments or process name.
->>> >> Sometimes it does, sometimes it doesn't. Just treat the thing as one
->>> >> string, perhaps do some form of substring matching in a tool.
->>> >
->>> > You are missing the point. The point is that you are trying to place trust
->>> > in something that can be gamed. The audit system is designed such that it
->>> > cannot be fooled very easily. Each piece of the subject and object are
->>> > separated so that programs can be written to analyze events. What I am
->>> > trying to say is now you are making something that concatenates fields
->>> > with no way to regroup them later to reconstruct what really happened,
->>> >
->>> >> To make this clear, I am not trying to improve on what comm provides.
->>> >> comm provides
->>> >> 16 chars for per thread name. The key is, its per thread, and can be
->>> >> anything. The
->>> >> "cmdline" value, is an arbitrary spot that is a global entity for the
->>> >> process. So in my change, all things coming into these events will have a
->>> >> similar cmdline audit. Which may help in narrowing down on whats going on
->>> >> in the system
->>> >
->>> > It needs to be more trustworthy than this.
->>>
->>> Its as trustworthy as comm, its as trustworthy as path, etc. The audit
->>> subsystem already prints many
->>> untrusted values to aid in narrowing down the process, or to observe a
->>> running processes behavior; this
->>> is no different.
->>
->> Sure it is. comm is 1 entity on the value side of the name value pair. If it
->> is detected as being special, its encoded so that it can be correctly
->> dissected later. What you are creating cannot be correctly dissected. Please
->> try the example I gave you and think about it a bit.
->
-Your example BTW, can be parsed. I have an FSM on my
-whiteboard that will do it. But you don't need to parse it. Again,
-as I stated above it might not be set to your example. If you have
-a process that does this:
+x86, mm, perf: Allow recursive faults from interrupts
 
-prctl(PR_SET_NAME, "./test \test \test");
+Waiman managed to trigger a PMI while in a emulate_vsyscall() fault,
+the PMI in turn managed to trigger a fault while obtaining a stack
+trace. This triggered the sig_on_uaccess_error recursive fault logic
+and killed the process dead.
 
-You will see that comm now has white space and other chars.
+Fix this by explicitly excluding interrupts from the recursive fault
+logic.
 
-I think to help avoid this confusion, I will change the keyword from
-cmdline= to proctitle=
+Reported-and-Tested-by: Waiman Long <waiman.long@hp.com>
+Fixes: e00b12e64be9 ("perf/x86: Further optimize copy_from_user_nmi()")
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140110200603.GJ7572@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/fault.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-re-adding mailing list, accidentally dropped.
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 9ff85bb..9d591c8 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -641,6 +641,20 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	/* Are we prepared to handle this kernel fault? */
+ 	if (fixup_exception(regs)) {
++		/*
++		 * Any interrupt that takes a fault gets the fixup. This makes
++		 * the below recursive fault logic only apply to a faults from
++		 * task context.
++		 */
++		if (in_interrupt())
++			return;
++
++		/*
++		 * Per the above we're !in_interrupt(), aka. task context.
++		 *
++		 * In this case we need to make sure we're not recursively
++		 * faulting through the emulate_vsyscall() logic.
++		 */
+ 		if (current_thread_info()->sig_on_uaccess_error && signal) {
+ 			tsk->thread.trap_nr = X86_TRAP_PF;
+ 			tsk->thread.error_code = error_code | PF_USER;
+@@ -649,6 +663,10 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 			/* XXX: hwpoison faults will set the wrong code. */
+ 			force_sig_info_fault(signal, si_code, address, tsk, 0);
+ 		}
++
++		/*
++		 * Barring that, we can do the fixup and be happy.
++		 */
+ 		return;
+ 	}
+ 
