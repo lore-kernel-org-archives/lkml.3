@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaAPRTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:19:05 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56762 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaAPRTD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:19:03 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH 2/2] NFSv4.1: Fix a race in nfs4_write_inode
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <CA+a=Yy6uf73Y=F5-Jp+2VrzMmbTYZXqDaEj-EHX335M3ZCvEZA@mail.gmail.com>
-Date: Thu, 16 Jan 2014 12:11:11 -0500
-Cc: shaobingqing <shaobingqing@bwstor.com.cn>,
-        linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C6749CD6-1F47-42C5-8E27-A11167BF69E4@primarydata.com>
-References: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com> <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com> <1389638751-16173-2-git-send-email-trond.myklebust@primarydata.com> <CA+a=Yy6uf73Y=F5-Jp+2VrzMmbTYZXqDaEj-EHX335M3ZCvEZA@mail.gmail.com>
-To: Peng Tao <bergwolf@gmail.com>
-X-Mailer: Apple Mail (2.1827)
+	id S1753087AbaAPRTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:19:49 -0500
+Received: from imp01.mtu.ru ([62.5.255.10]:44980 "EHLO imp01.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678AbaAPRTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:19:47 -0500
+X-Spam-Flag: NO
+Message-ID: <52D814A8.8070105@pavlinux.ru>
+Date: Thu, 16 Jan 2014 21:19:36 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 0/8] Linux 3.2.53-rt76-rc1
+References: <20140116015824.201732155@goodmis.org>	<52D7A93C.9090801@pavlinux.ru>	<20140116091847.0786c8af@gandalf.local.home>	<52D7EE70.8000509@pavlinux.ru> <20140116110823.26aad085@gandalf.local.home>
+In-Reply-To: <20140116110823.26aad085@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="kR98lETc5JKhb8074nesNbbrfFKhP9gJe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--kR98lETc5JKhb8074nesNbbrfFKhP9gJe
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Jan 16, 2014, at 10:49, Peng Tao <bergwolf@gmail.com> wrote:
-> On Tue, Jan 14, 2014 at 2:45 AM, Trond Myklebust
-> <trond.myklebust@primarydata.com> wrote:
->> void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
->> @@ -1881,43 +1887,37 @@ pnfs_layoutcommit_inode(struct inode *inode, bool sync)
->>        struct nfs4_layoutcommit_data *data;
->>        struct nfs_inode *nfsi = NFS_I(inode);
->>        loff_t end_pos;
->> -       int status = 0;
->> +       int status;
->> 
->> -       dprintk("--> %s inode %lu\n", __func__, inode->i_ino);
->> -
->> -       if (!test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
->> +       if (!pnfs_layoutcommit_outstanding(inode))
-> This might be a problem. If nfsi->flags has !NFS_INO_LAYOUTCOMMIT and
-> NFS_INO_LAYOUTCOMMITTING, client cannot issue a new layoutcommit after
-> the inflight one finishes. It might not be an issue for file layout as
-> long as we only use layoutcommit to update time, but it can cause data
-> corruption for block layout.
+16.01.2014 20:08, Steven Rostedt =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+> On Thu, 16 Jan 2014 18:36:32 +0400
+> Pavel Vasilyev <pavel@pavlinux.ru> wrote:
+>=20
+>>
+>> $ xz -cd /tmp/patch-3.2.53-rt75-rt76-rc1.patch.xz | patch -p1 --dry-ru=
+n
 
-I don’t understand.
+> Did you start with v3.2.53-rt75?
 
-With the new patch, if _either_ NFS_INO_LAYOUTCOMMIT or NFS_INO_LAYOUTCOMMITTING are set, then the client will wait until NFS_INO_LAYOUTCOMMITTING can be locked, it will test for NFS_INO_LAYOUTCOMMIT, and then either issue a new layout commit or exit. How can that cause new breakage for blocks?
+No, 3.2.54, already corrected.
 
-The only issues that I’m aware of with the blocks layout and LAYOUTCOMMIT today are:
-1. encode_pnfs_block_layoutupdate() runs out of XDR buffer space after 4-5 iterations in the list_for_each_entry_safe() loop. That is because nobody has yet added support for preallocating a page buffer to store the (potentially very large) array of extents. BTW: that array looks like a perfect candidate for xdr_encode_array2() if we could teach the latter about xdr_stream...
-2. the blocks layout also needs to be able handle the case where the list of extents is so large that a single LAYOUTCOMMIT is not sufficient. There is no reason why it should not be able to send multiple LAYOUTCOMMIT rpc calls when the size exceeds the session forward channel's negotiated max_rqst_sz.
+--=20
 
---
-Trond Myklebust
-Linux NFS client maintainer
+                                                         Pavel.
 
+
+--kR98lETc5JKhb8074nesNbbrfFKhP9gJe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCgAGBQJS2BSpAAoJEPtok08Dny2hJyAP/34ac2/LyA2bc9i57FGQnkzT
+BUXzZ9V8GLvMpD881whDvvNyLA+bNghjJogR56e8MZ6rB7h3WZfHKPPSxA/PhFhz
+bgYMc5P64xvkkZMbCNDJ0Hc99oZ0Qw1uBNGxUjHs3+0T7BLi3ctYcbKi7RFf/PAp
+Xi4nNDW40NyJ3l7TIDkyD6/hlAwule/wyIqW1bbh0F4qrfgQbP2CH1a8lDlLsj1p
+R6zC/45+C+E5IN7sOg9MX06MBhA0yGCae9Brc81PXfuLLrV3566c2Bw81vwnf+4u
+powHDrUmvrkclFw0fVPYE9HZy1N2QhbvRWLsDjVQmHrD7X/T0QjI+PLwSQrprYNL
+fFJmvA1c1kyAbLnMA4l65pLLTaIOgNi7M+ZICxxWQqH35VCLCT+BSw2jZ12lOHj1
+Zn5+yWhXt6xFNlYq1jGzFnAeysZ43N150O+Ew4Fwx87YUSQ0oCpnvMwwh1P+XeHE
+NHIIQEzS4o0qtTTuP935S4fOs9GrPUxeJf1rDYK9rKbTU+mplen5WQJLY4Vf/ucw
+DZ4zGlZ2Wd0HMs+eOi3r2mLbT9QgoDCIIPcZZA4ebfIID4KAjP4QLYAdedwAE0xc
+XEnn3dUVXZT4glOSo3Zrp9Vtr15FentfSY6YDTy2HDSI9vWlnrjyYRXKS+aR6KpQ
+sWqZSJK5ybvOg5IugD0g
+=13Qu
+-----END PGP SIGNATURE-----
+
+--kR98lETc5JKhb8074nesNbbrfFKhP9gJe--
