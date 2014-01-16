@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaAPRaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:30:35 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:53647 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaAPRad (ORCPT
+	id S1751298AbaAPRbZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:31:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43234 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaAPRbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:30:33 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: Fix __of_device_is_available check
-To: Xiubo Li <Li.Xiubo@freescale.com>, robh+dt@kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xiubo Li <Li.Xiubo@freescale.com>
-In-Reply-To: <1389582448-7489-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1389582448-7489-1-git-send-email-Li.Xiubo@freescale.com>
-Date: Thu, 16 Jan 2014 17:30:27 +0000
-Message-Id: <20140116173027.E887FC40973@trevor.secretlab.ca>
+	Thu, 16 Jan 2014 12:31:23 -0500
+Date: Thu, 16 Jan 2014 18:31:10 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
+Message-ID: <20140116173110.GA9655@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu>
+ <20140108225315.GG31570@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu>
+ <20140109101921.GA26435@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu>
+ <20140110094056.GK31570@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu>
+ <20140114105721.GU7572@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1401161209280.1996@vincent-weaver-1.um.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1401161209280.1996@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 11:07:28 +0800, Xiubo Li <Li.Xiubo@freescale.com> wrote:
-> From IEEE 1275, there defined a standard 'status' property indicating the
-> operational status of one device. The 'status' property has four possible
-> values: 'okay/ok', 'disabled', 'fail' and 'fail-xxx'.
+On Thu, Jan 16, 2014 at 12:13:10PM -0500, Vince Weaver wrote:
+> On Tue, 14 Jan 2014, Peter Zijlstra wrote:
 > 
-> If it is absent, that means the status of the device is unknown or okay.
+> > On Mon, Jan 13, 2014 at 11:55:17PM -0500, Vince Weaver wrote:
 > 
-> The __of_device_is_available checks the state of the 'status' property of
-> a device. If the property is absent or set to 'okay/ok', it returns 1.
-> Otherwise it returns 0.
+> > > I don't see an existing pmu capabilities struct... or do you mean
+> > > coming up with one?
+> > 
+> > Yeah, adding one.
 > 
-> While in __of_device_is_available:
->  >	status = of_get_property(device, "status", &statlen);
->  >	if (status == NULL)
->  >		return 1;
-> The status value returned from 'of_get_property()' will be NULL in two cases:
-> Firstly: the 'device' value (device node) is NULL.
-> Secondly: the 'status' property is actaully not exist.
-> 
-> If the device node is NULL, the __of_device_is_available will return true,
-> that will mean the absent state of the 'status' property.
-> 
-> So this add the device node check before checking the 'status' property's
-> state, and if the device node is not exist, 0 will be returned.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> So would it be a struct, or just an integer with flags?
 
-Applied, thanks
+I hadn't really considered that; per the below proposed names I suppose
+I was thinking of 'unsigned long flags' with #define PMU_HAS_flags. But
+a named struct would work too I suppose.
 
-g.
+> > > Would it only hold an "overflow_interrupt_available" flag, or are
+> > > there other generic capabilities it would be handy to know about?
+> > 
+> > Possible (other) flags could be:
+> > 
+> >   PMU_HAS_INT      -- would allow sampling events
+> >   PMU_HAS_PRECISE  -- would allow any ::precise value
+> >   PMU_HAS_FILTER   -- would allow all os/user/etc. flags
+> 
+> should we export these to userspace somehow?
+> 
+> It would be handy to be able to tell you're getting EOPNOTSUP because
+> PMU_HAS_INT is not set for your pmu, rather than trying to guess why 
+> things are failing.
 
-> ---
->  drivers/of/base.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index f807d0e..ba195fb 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -415,6 +415,9 @@ static int __of_device_is_available(const struct device_node *device)
->  	const char *status;
->  	int statlen;
->  
-> +	if (!device)
-> +		return 0;
-> +
->  	status = __of_get_property(device, "status", &statlen);
->  	if (status == NULL)
->  		return 1;
-> -- 
-> 1.8.4
-> 
-> 
+Yeah I suppose we could do something like that. Maybe something like:
 
+# cat /sys/bus/event_source/devices/cpu/flags
+int precise filter
+
+?
