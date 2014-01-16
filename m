@@ -1,192 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaAPTdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:33:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65140 "EHLO mx1.redhat.com"
+	id S1751994AbaAPTeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:34:31 -0500
+Received: from sauhun.de ([89.238.76.85]:32937 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298AbaAPTdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:33:47 -0500
-Date: Thu, 16 Jan 2014 14:33:02 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: [PATCH] speedstep: clean up interrupt disabling (was: linux-next:
- build failure after merge of the tip tree)
-In-Reply-To: <20140116121415.GP31570@twins.programming.kicks-ass.net>
-Message-ID: <alpine.LRH.2.02.1401161238270.16143@file01.intranet.prod.int.rdu2.redhat.com>
-References: <20140114142627.537a702607e703c6eff63640@canb.auug.org.au> <20140114141406.GD7572@laptop.programming.kicks-ass.net> <alpine.LRH.2.02.1401141400030.19206@file01.intranet.prod.int.rdu2.redhat.com> <20140114200547.GM7572@laptop.programming.kicks-ass.net>
- <alpine.LRH.2.02.1401141629520.19206@file01.intranet.prod.int.rdu2.redhat.com> <20140116121415.GP31570@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751298AbaAPTe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 14:34:28 -0500
+Date: Thu, 16 Jan 2014 20:33:45 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Chiau Ee Chew <chiau.ee.chew@intel.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Romain Baeriswyl <romainba@abilis.com>
+Subject: Re: [PATCH 2/2] i2c designware add support of I2C standard mode
+Message-ID: <20140116193345.GB4127@katana>
+References: <20130828153429.GB7066@ab42.lan>
+ <1381244455-3836-2-git-send-email-romainba@abilis.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l76fUT7nc3MelDdI"
+Content-Disposition: inline
+In-Reply-To: <1381244455-3836-2-git-send-email-romainba@abilis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--l76fUT7nc3MelDdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 16 Jan 2014, Peter Zijlstra wrote:
+On Tue, Oct 08, 2013 at 05:00:55PM +0200, Romain Baeriswyl wrote:
+> Some legacy devices support ony I2C standard mode at 100kHz.=20
+> This patch allows to select the standard mode through the DTS=20
+> with the use of the existing clock-frequency parameter.
+>=20
+> When clock-frequency parameter is not set, the fast mode is selected.
+> Only when the parameter is set at 100000, the standard mode is selected.
+>=20
+> Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
+> Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-> > >  		retry++;
-> > >  		__asm__ __volatile__(
-> > > @@ -217,6 +220,7 @@ static void speedstep_set_state(unsigned int state)
-> > >  
-> > >  	/* enable IRQs */
-> > >  	local_irq_restore(flags);
-> > > +	preempt_enable();
-> > >  
-> > >  	if (new_state == state)
-> > >  		pr_debug("change to %u MHz succeeded after %u tries "
-> > 
-> > You need also preempt_disable/enable in speedstep_get_freqs.
-> 
-> Argh I see, this is really horrid.
-> 
-> 
-> Anyway, its Rafael's call, its his subsystem he gets to fix it when it
-> explodes.
-> 
-> /me shudders
+Pretty much OK. One change needed, though:
 
-speedstep_get_freqs disables the interrupts to measure the transition 
-latency. It is called from speedstep-ich.c (that requires the latency) and 
-from speedstep-smi.c (that passes NULL as a pointer to latency, because it 
-doesn't need it).
+> ---
+>  .../devicetree/bindings/i2c/i2c-designware.txt     |    1 +
+>  drivers/i2c/busses/i2c-designware-platdrv.c        |   17 ++++++++++++++=
++--
+>  2 files changed, 16 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/D=
+ocumentation/devicetree/bindings/i2c/i2c-designware.txt
+> index 5199b0c..16d0bef 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> @@ -9,6 +9,7 @@ Required properties :
+>  Recommended properties :
+> =20
+>   - clock-frequency : desired I2C bus clock frequency in Hz.
+> +   Only standard mode at 100kHz and fast mode at 400kHz are supported.
 
-So, you could disable interrupts in speedstep_get_freqs only when the 
-transition_latency pointer is non-NULL.
+This should not go the bindings doc, since this is a linux specific
+detail. It should go...
 
-I think speedstep_set_state doesn't need to disable interrupts at all - 
-all that it does is one "out" instruction, you don't need to synchronize 
-that "out" instruction with anything, so there is no need to disable 
-interrupts. Or - does some specification say that interrupts must be 
-disabled there?
+> +		if (clk_freq !=3D 100000 && clk_freq !=3D 400000)
+> +			return -EINVAL;
 
-I am sending this patch to clean up the mess to be applied on the top of 
-my previous patch.
+=2E.. here as an dev_err message "Only x and y supported".
 
-Mikulas
+Rest looks good, thanks!
 
 
+--l76fUT7nc3MelDdI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-Subject: speedstep: clean up interrupt disabling
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-This patch cleans up interrupt disabling in speedstep-smi and
-speedstep-lib.
+iQIcBAEBAgAGBQJS2DQZAAoJEBQN5MwUoCm2kmsQALLJAM6Xk0o0t1UK4lBSwt4k
+0JqR+ny1S48lMjcezUcr4ZKnTZ+q89ZUPYLbj67L0Su1WNz2JOe8x9FVphFscHo1
+wNGlQhps04iY/fXchmKVBId6geg+obby00LZMHo/rCYgkF2JMXJA+MM1Qzo7EIkM
+fORdk4R3FNySd3mAgSW367CMnmhTzQaQd8Zs+WkNjVOnrw6nWEFXXsf77jt8zWWX
+b7asf3mAJanLVTap4wgdl91Z6y4fQ9M+wbnztUYLDE74gCNmpQ/6iSRR7k7h8Zok
+yc+jGN6VuPaazURkUysQ/0k9Qcx02alkX7V30pnTBv+T59DRque8ZOoRbyqAno8L
+rCPuJxAKGuWQep+JUl+wTiBM7jl+/WY2wzoE8K8RxGYme+iVM1DWtZRVHZbvtouc
+J+WRepfbqsBPoYsItB24XQgYj3P3vDxhs9V7OdJNOwyqwY3/rXJIfwD/tWddUlmj
+W5y/o/KXGtYH+BV17IcwiOxMeSuEzQgdLfIJS1KhiQz7YvMShVNVZXIevhyNgjpI
+iY+AuYsNX3+OKkO1OWAXAuh6ynFrjkwFAuFGgycLNxTL4A++FLQE+cU+f+joFY5r
+fKc9j+Kfw8hyhiNVllW88lAhW05JCFVmpZoA4MRjFLz/YoFfu63wh2z3PUwdwdfe
+sUccSJhXdCNydh/E1VDk
+=AQCa
+-----END PGP SIGNATURE-----
 
-speedstep_get_freqs in speedstep-lib may be called from speedstep-smi or
-speedstep-ich. When it is called from speedstep-ich, it needs to calculate
-transition latency. When it is called from speedstep-smi, transition
-latency doesn't have to be calculated.
-
-The function speedstep_set_state in speedstep-smi needs to enable
-interrupts. Previously it enabled interrupts even if it was called with
-disabled interrupts, but it is dirty.
-
-This patch changes speedstep_get_freqs so that it disables interrupts only
-when it is called from speedstep-ich and when it is measuring the
-transition latency. This avoids much of the code dirtiness.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- drivers/cpufreq/speedstep-lib.c |   13 ++++++-------
- drivers/cpufreq/speedstep-smi.c |   11 ++++-------
- 2 files changed, 10 insertions(+), 14 deletions(-)
-
-Index: linux-3.4.75/drivers/cpufreq/speedstep-lib.c
-===================================================================
---- linux-3.4.75.orig/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:16.000000000 +0100
-+++ linux-3.4.75/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:22.000000000 +0100
-@@ -400,9 +400,6 @@ unsigned int speedstep_get_freqs(enum sp
- 
- 	pr_debug("previous speed is %u\n", prev_speed);
- 
--	preempt_disable();
--	local_irq_save(flags);
--
- 	/* switch to low state */
- 	set_state(SPEEDSTEP_LOW);
- 	*low_speed = speedstep_get_frequency(processor);
-@@ -414,15 +411,19 @@ unsigned int speedstep_get_freqs(enum sp
- 	pr_debug("low speed is %u\n", *low_speed);
- 
- 	/* start latency measurement */
--	if (transition_latency)
-+	if (transition_latency) {
-+		local_irq_save(flags);
- 		do_gettimeofday(&tv1);
-+	}
- 
- 	/* switch to high state */
- 	set_state(SPEEDSTEP_HIGH);
- 
- 	/* end latency measurement */
--	if (transition_latency)
-+	if (transition_latency) {
- 		do_gettimeofday(&tv2);
-+		local_irq_restore(flags);
-+	}
- 
- 	*high_speed = speedstep_get_frequency(processor);
- 	if (!*high_speed) {
-@@ -464,8 +465,6 @@ unsigned int speedstep_get_freqs(enum sp
- 	}
- 
- out:
--	local_irq_restore(flags);
--	preempt_enable();
- 
- 	return ret;
- }
-Index: linux-3.4.75/drivers/cpufreq/speedstep-smi.c
-===================================================================
---- linux-3.4.75.orig/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:16.000000000 +0100
-+++ linux-3.4.75/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:22.000000000 +0100
-@@ -180,16 +180,16 @@ static int speedstep_get_state(void)
- static void speedstep_set_state(unsigned int state)
- {
- 	unsigned int result = 0, command, new_state, dummy;
--	unsigned long flags;
- 	unsigned int function = SET_SPEEDSTEP_STATE;
- 	unsigned int retry = 0;
- 
- 	if (state > 0x1)
- 		return;
- 
--	/* Disable IRQs */
-+	WARN_ON_ONCE(irqs_disabled());
-+
-+	/* Disable preemption so that other processes don't run */
- 	preempt_disable();
--	local_irq_save(flags);
- 
- 	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
- 
-@@ -209,9 +209,7 @@ static void speedstep_set_state(unsigned
- 			 */
- 			pr_debug("retry %u, previous result %u, waiting...\n",
- 					retry, result);
--			local_irq_enable();
- 			mdelay(retry * 50);
--			local_irq_disable();
- 		}
- 		retry++;
- 		__asm__ __volatile__(
-@@ -226,8 +224,7 @@ static void speedstep_set_state(unsigned
- 			);
- 	} while ((new_state != state) && (retry <= SMI_TRIES));
- 
--	/* enable IRQs */
--	local_irq_restore(flags);
-+	/* enable preemption */
- 	preempt_enable();
- 
- 	if (new_state == state)
+--l76fUT7nc3MelDdI--
