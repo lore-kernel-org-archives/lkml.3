@@ -1,168 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaAPXan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:30:43 -0500
-Received: from mga03.intel.com ([143.182.124.21]:5296 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaAPXal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:30:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
-   d="scan'208";a="404107504"
-Date: Thu, 16 Jan 2014 15:35:41 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
- pdata error code
-Message-ID: <20140116233541.GA12486@psi-dev26.jf.intel.com>
-References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
- <20131220084953.GB21133@gmail.com>
- <20140115002121.GC18183@psi-dev26.jf.intel.com>
- <20140115065837.GA13462@gmail.com>
- <20140115173952.GB10933@psi-dev26.jf.intel.com>
- <20140115222603.GA28185@psi-dev26.jf.intel.com>
- <20140116095006.GA10278@gmail.com>
- <20140116172354.GA28180@psi-dev26.jf.intel.com>
+	id S1751923AbaAPXcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:32:12 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:39384 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbaAPXcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 18:32:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116172354.GA28180@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140115201224.GD5201@phenom.dumpdata.com>
+References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
+	<1389708830-5841-3-git-send-email-akinobu.mita@gmail.com>
+	<20140115201224.GD5201@phenom.dumpdata.com>
+Date: Fri, 17 Jan 2014 08:32:09 +0900
+Message-ID: <CAC5umyitWHvWiWn9B3wtTNBhbO7Rz_ghqmxhwu9caq40msnfAA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/5] x86: enable DMA CMA with swiotlb
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 09:23:54AM -0800, David Cohen wrote:
-> On Thu, Jan 16, 2014 at 10:50:06AM +0100, Ingo Molnar wrote:
-> > 
-> > * David Cohen <david.a.cohen@linux.intel.com> wrote:
-> > 
-> > > Hi Ingo and hpa,
-> > > 
-> > > On Wed, Jan 15, 2014 at 09:39:52AM -0800, David Cohen wrote:
-> > > > On Wed, Jan 15, 2014 at 07:58:37AM +0100, Ingo Molnar wrote:
-> > > > > 
-> > > > > * David Cohen <david.a.cohen@linux.intel.com> wrote:
-> > > > > 
-> > > > > > Hi Ingo,
-> > > > > > 
-> > > > > > On Fri, Dec 20, 2013 at 09:49:53AM +0100, Ingo Molnar wrote:
-> > > > > > > 
-> > > > > > > * David Cohen <david.a.cohen@linux.intel.com> wrote:
-> > > > > > > 
-> > > > > > > > Prevent sfi_handle_*_dev() to register device in case
-> > > > > > > > intel_mid_sfi_get_pdata() failed to execute.
-> > > > > > > > 
-> > > > > > > > Since 'NULL' is a valid return value, this patch makes
-> > > > > > > > sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
-> > > > > > > 
-> > > > > > > Is this bug triggering in practice? If not then please say so in the 
-> > > > > > > changelog. If yes then is this patch desired for v3.13 merging and 
-> > > > > > > also please fix the changelog to conform to the standard changelog 
-> > > > > > > style:
-> > > > > > > 
-> > > > > > >  - first describe the symptoms of the bug - how does a user notice?
-> > > > > > > 
-> > > > > > >  - then describe how the code behaves today and how that is causing
-> > > > > > >    the bug
-> > > > > > > 
-> > > > > > >  - and then only describe how it's fixed.
-> > > > > > > 
-> > > > > > > The first item is the most important one - while developers 
-> > > > > > > (naturally) tend to concentrate on the least important point, the last 
-> > > > > > > one.
-> > > > > > 
-> > > > > > Thanks for the feedback :)
-> > > > > > This new patch set was done in reply to your comment:
-> > > > > > https://lkml.org/lkml/2013/12/20/517
-> > > > > 
-> > > > > Hm, in what way does the new changelog address my first request:
-> > > > > 
-> > > > > > >  - first describe the symptoms of the bug - how does a user notice?
-> > > > > 
-> > > > > They are all phrased as bug fixes, yet _none_ of the three changelogs 
-> > > > > appears to describe specific symptoms on specific systems - they all 
-> > > > > seem to talk in the abstract, with no specific connection to reality.
-> > > > > 
-> > > > > That really makes it harder for patches to get into the (way too 
-> > > > > narrow) attention span of maintainersm, while phrasing it like this:
-> > > > > 
-> > > > >  'If an Intel-MID system boots in a specific SFI environment then it 
-> > > > >   will hang on bootup without this fix.'
-> > > > > 
-> > > > > or:
-> > > > > 
-> > > > >  'Existing Intel-MID hardware will run faster with this patch.'
-> > > > > 
-> > > > > will certainly wake up maintainers like a good coffee in the morning.
-> > > > > 
-> > > > > If a patch is a cleanup with no known bug fix effects then say so in 
-> > > > > the title and the changelog.
-> > > > 
-> > > > Fair enough.
-> > > > These patches are fixing a potential bug that exists in current kernel,
-> > > > but I triggered with patches in my development tree that depends on
-> > > > this one to be refactored first:
-> > > > https://patchwork.kernel.org/patch/3109791/
-> > > > 
-> > > > I tried to describe the potential bug, but it lacks the real use case as
-> > > > you pointed out. I'll resend the patches in a way to trigger and
-> > > > describe the situation without dependiing on non-upstreamed patches yet.
-> > > > And I'll hurry up to publish my intel mid devel tree as well.
-> > > > 
-> > > > I hope the new patch set tastes like good morning Brazilian coffee :)
-> > > 
-> > > In order to show a practical error case fixed by this patch set 
-> > > using current legacy platform code, I need to get them working 
-> > > first. But it turns out legacy platform code (for Moorestown and 
-> > > Medfield) aren't in a good shape at all. I found few cases of 
-> > > obsolete platform data being returned from platform code (intel mid 
-> > > was orphan for too long on upstream).
-> > > 
-> > > I'll have to append new patches to this set "[PATCH v2 0/3] x86: 
-> > > intel-mid: handle platform code error in better way", so it won't be 
-> > > a simple fix of patch description.
-> > 
-> > Great, more fixes to the code is the best kind of fix to a changelog.
-> 
-> IMHO it's better than say "considering this driver works, it would fail
-> this way because of SFI doing that thing..."
-> 
-> But thinking twice, I'm tempted to say these patches simply don't do
-> functional changes right now. Than I can handle fixing the platform code
-> and the new driver's upstreaming that depends on this fix perhaps on 3.15.
-> 
-> > 
-> > > In order to not block the rest of my patches on thread "[PATCH v2 
-> > > 0/4] Add Clovertrail and Merrifeld support to Intel MID", please 
-> > > consider to apply them first (maybe for 3.14 if possible).
-> > 
-> > Sure, those look fine to me, but please don't forget about these fixes 
-> > either.
-> 
-> Thanks.
-> 
-> > 
-> > > When I resend these patches here, we can consider apply them on 
-> > > 3.14-rcX (as they are bug fixes) or just postpone them to >3.14.
-> > 
-> > Please send them ASAP, don't wait for v3.14 -rc's. We'll handle the 
-> > logistics. Sending those 3 fixes with an improved changelog would be a 
-> > good start.
-> 
-> I'm currently stuck with full day trainings for the rest of the week in
-> my job. I can resend ASAP if assuming this is a non-functional change at
-> this moment.
+2014/1/16 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
+> On Tue, Jan 14, 2014 at 11:13:47PM +0900, Akinobu Mita wrote:
+>> The DMA Contiguous Memory Allocator support on x86 is disabled when
+>> swiotlb config option is enabled.  So DMA CMA is always disabled on
+>> x86_64 because swiotlb is always enabled.  This attempts to support
+>> for DMA CMA with enabling swiotlb config option.
+>>
+>> The contiguous memory allocator on x86 is integrated in the function
+>> dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
+>> for dma_alloc_coherent().
+>>
+>> x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
+>> tries to allocate with dma_generic_alloc_coherent() firstly and then
+>> swiotlb_alloc_coherent() is called as a fallback.
+>>
+>> The main part of supporting DMA CMA with swiotlb is that changing
+>> x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
+>> for dma_free_coherent() so that it can distinguish memory allocated by
+>> dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
+>> and release it with dma_generic_free_coherent() which can handle contiguous
+>> memory.  This change requires making is_swiotlb_buffer() global function.
+>>
+>> This also needs to change .free callback in the dma_map_ops for amd_gart
+>> and sta2x11, because these dma_ops are also using
+>> dma_generic_alloc_coherent().
+>>
+>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: David Woodhouse <dwmw2@infradead.org>
+>> Cc: Don Dutile <ddutile@redhat.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> Cc: Andi Kleen <andi@firstfloor.org>
+>> Cc: x86@kernel.org
+>> Cc: iommu@lists.linux-foundation.org
+>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> ---
+>> No change from the previous version
+>>
+>>  arch/x86/Kconfig               | 2 +-
+>>  arch/x86/include/asm/swiotlb.h | 7 +++++++
+>>  arch/x86/kernel/amd_gart_64.c  | 2 +-
+>>  arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
+>>  arch/x86/pci/sta2x11-fixup.c   | 6 ++----
+>>  include/linux/swiotlb.h        | 2 ++
+>>  lib/swiotlb.c                  | 2 +-
+>
+> It looks reasonable from my perspective (as swiotlb maintainer).
+>
+> Not too thrilled about the  'is_swiotlb_buffer' but that code is
+> quite small so it should be fast enough.
 
-I resent this patch set here:
-https://lkml.org/lkml/2014/1/16/498
-
-It is non-functional now (explicitly said on changelogs).
-I hope it's all good this time.
-
-Br, David Cohen
-
+Thanks.  Can I get your Acked-by for this patch?
