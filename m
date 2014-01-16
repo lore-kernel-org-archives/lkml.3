@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaAPNH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:07:59 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:52888 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaAPNH5 (ORCPT
+	id S1752599AbaAPNNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:13:36 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:54700 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaAPNNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:07:57 -0500
+	Thu, 16 Jan 2014 08:13:33 -0500
+Message-ID: <52D7DAF5.4020506@linaro.org>
+Date: Thu, 16 Jan 2014 21:13:25 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Date: Thu, 16 Jan 2014 14:07:56 +0100
-X-Google-Sender-Auth: 7lXptycOxDDV9xuF6KjdivwPWRM
-Message-ID: <CAMuHMdVLat9-EMnCX=usthZLrP2YhCCT7-a3nhSQmgLvn_ftBg@mail.gmail.com>
-Subject: Multiple CCR definitions (was: Re: mmc: omap_hsmmc: use the generic
- config for omap2plus devices)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Amarinder Bindra <a-bindra@ti.com>, Chris Ball <cjb@laptop.org>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Content-Type: text/plain; charset=UTF-8
+To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org
+CC: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Alex Shi <alex.shi@linaro.org>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH] sched: select_idle_sibling macro optimize
+References: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
+In-Reply-To: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 11:05 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
->     mmc: omap_hsmmc: use the generic config for omap2plus devices
->
->     OMAP's hs_mmc driver is used for MMC controller operation on many
->     omap2plus SoCs (OMAP2430, OMAP3, 4, 5 and AM335x).
->
->     Considering that the device tree entries are already present for these,
->     allow the driver to be built using the config ARCH_OMAP2PLUS rather
->     than individually adding a config for each SoC to enable the
->     support.
->
->     Use COMPILE_TEST to enable the build for other platforms.
->
->     Signed-off-by: Amarinder Bindra <a-bindra@ti.com>
->     Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
->     Cc: Nishanth Menon <nm@ti.com>
->     Acked-by: Felipe Balbi <balbi@ti.com>
->     Acked-by: Balaji T K <balajitk@ti.com>
->     Signed-off-by: Chris Ball <cjb@laptop.org>
+Add Mike Galbraith.
+
+Any one like to give some comments?
+
+On 01/15/2014 10:23 PM, Alex Shi wrote:
+> If the sd domain just has one group, then we must be caught the
+> 	i == target later, and then goes to deeper level domain.
+> So just skip this domain checking to save some instructions.
+> 
+> Signed-off-by: Alex Shi <alex.shi@linaro.org>
 > ---
->  drivers/mmc/host/Kconfig |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 84102bc..b8ce939 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -284,11 +284,11 @@ config MMC_OMAP
->
->  config MMC_OMAP_HS
->         tristate "TI OMAP High Speed Multimedia Card Interface support"
-> -       depends on SOC_OMAP2430 || ARCH_OMAP3 || ARCH_OMAP4
-> +       depends on ARCH_OMAP2PLUS || COMPILE_TEST
+>  kernel/sched/fair.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c7395d9..3265fbc 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4196,6 +4196,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
+>  	sd = rcu_dereference(per_cpu(sd_llc, target));
+>  	for_each_lower_domain(sd) {
+>  		sg = sd->groups;
+> +
+> +		/* skip single group domain */
+> +		if (sg == sg->next)
+> +			continue;
+> +
+>  		do {
+>  			if (!cpumask_intersects(sched_group_cpus(sg),
+>  						tsk_cpus_allowed(p)))
+> 
 
-sh-allmodconfig (http://kisskb.ellerman.id.au/kisskb/buildresult/10477672/):
-include/linux/omap-dma.h:171:8: error: expected identifier before
-numeric constant
-make[4]: *** [drivers/mmc/host/omap_hsmmc.o] Error 1
 
-It fails because sh #defines "CCR", which is one of the enum values in
-include/linux/omap-dma.h.
-
-I expect a similar failure on blackfin, which also has #define CCR.
-
-Possible solutions:
-  1. Rename CCR in sh/bfin to e.g. SH_CCR resp. BF_CCR.
-  2. Use "depends on ARCH_OMAP2PLUS || (COMPILE_TEST && ARM)
-  3. Stop using include/linux/omap-dma.h, as it says:
-
-     *  Legacy OMAP DMA handling defines and functions
-     *
-     *  NOTE: Do not use these any longer.
-     *
-     *  Use the generic dmaengine functions as defined in
-     *  include/linux/dmaengine.h.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Thanks
+    Alex
