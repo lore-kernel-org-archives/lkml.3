@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaAPAFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:05:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65437 "EHLO mga09.intel.com"
+	id S1752407AbaAPAMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:12:33 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:55830 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959AbaAPAFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:05:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,665,1384329600"; 
-   d="scan'208";a="459507586"
-Date: Thu, 16 Jan 2014 08:05:16 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [x86, kaslr] PANIC: early exception 0e rip 10:ffffffff8ae04c6e
- error 0 cr2 ffffffff81972b28
-Message-ID: <20140116000516.GB4724@localhost>
-References: <20140115121201.GA16953@localhost>
- <20140115122401.GB18065@localhost>
- <CAGXu5jL5zZwhEtPG=-1UNJ-AgKdFNeLzk-EoYdAzjMWQbBUK4Q@mail.gmail.com>
+	id S1751649AbaAPAMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 19:12:30 -0500
+Date: Thu, 16 Jan 2014 02:11:41 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, penberg@kernel.org, cl@linux-foundation.org
+Subject: Re: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently
+ instead of page->lru
+Message-ID: <20140116001141.GA8456@node.dhcp.inet.fi>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com>
+ <20140114180044.1E401C47@viggo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jL5zZwhEtPG=-1UNJ-AgKdFNeLzk-EoYdAzjMWQbBUK4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140114180044.1E401C47@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 02:32:52PM -0800, Kees Cook wrote:
-> On Wed, Jan 15, 2014 at 4:24 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > Kees,
-> >
-> > This script can reproduce the problem. Please modify the -initrd line
-> > before use.
-> >
-> > Usage:
-> >         ./kvm-0day.sh vmlinuz-3.12.0-rc4-00008-g6e6a493
-> >
-> > #!/bin/bash
-> >
-> > kernel=$1
-> >
-> > kvm=(
-> >         qemu-system-x86_64 -cpu kvm64 -enable-kvm
-> >         -kernel $kernel
-> >         -initrd /kernel-tests/initrd/yocto-minimal-x86_64.cgz
-> >         # -initrd /kernel-tests/initrd/yocto-minimal-i386.cgz
-> >         # -initrd /kernel-tests/initrd/quantal-core-i386.cgz
-> >         # -initrd /kernel-tests/initrd/quantal-core-x86_64.cgz
-> >         -smp 2
-> >         -m 256M
-> >         -net nic,vlan=0,macaddr=00:00:00:00:00:00,model=virtio
-> >         -net user,vlan=0
-> >         -net nic,vlan=1,model=e1000
-> >         -net user,vlan=1
-> >         -boot order=nc
-> >         -no-reboot
-> >         -watchdog i6300esb
-> >         -serial stdio
-> >         -display none
-> >         -monitor null
-> > )
-> >
-> > append=(
-> >         debug
-> >         sched_debug
-> >         apic=debug
-> >         ignore_loglevel
-> >         # dyndbg=\"func kobject_release +p\"
-> >         sysrq_always_enabled
-> >         panic=10
-> >         prompt_ramdisk=0
-> >         earlyprintk=ttyS0,115200
-> >         console=ttyS0,115200
-> >         console=tty0
-> >         vga=normal
-> >         root=/dev/ram0
-> >         rw
-> > )
-> >
-> > "${kvm[@]}" --append "${append[*]}"
+On Tue, Jan 14, 2014 at 10:00:44AM -0800, Dave Hansen wrote:
 > 
-> Thanks! I'm using your yocto image and this script, but I still am not
-> encountering the problem. I'm building next-20140114 using the
-> randconfig you sent in the original report. It looks like you're built
-> against a slightly different kernel version? Is there some way you can
-> push the tree you're building to git somewhere for me to fetch?
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> 'struct page' has two list_head fields: 'lru' and 'list'.
+> Conveniently, they are unioned together.  This means that code
+> can use them interchangably, which gets horribly confusing like
+> with this nugget from slab.c:
+> 
+> >	list_del(&page->lru);
+> >	if (page->active == cachep->num)
+> >		list_add(&page->list, &n->slabs_full);
+> 
+> This patch makes the slab and slub code use page->lru
+> universally instead of mixing ->list and ->lru.
+> 
+> So, the new rule is: page->lru is what the you use if you want to
+> keep your page on a list.  Don't like the fact that it's not
+> called ->list?  Too bad.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-Kees, judging from the below bisect log, next-20140114 boots fine.
-If you still have access to commit 82fa9637a2ba285bcc7c5050c73010b2c1b3d803
-in the tip tree, it's the right one to test.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-git bisect start 6e6a4932b0f569b1a5bb4fcbf5dde1b1a42f01bb v3.11 --
-git bisect good b7c09ad4014e3678e8cc01fdf663c9f43b272dc6  # 22:54     20+      0  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
-git bisect good 654fdd041227d7de1594baa61c58f2c87bd0640f  # 23:15     20+      1  Merge branch 'x86-urgent-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-git bisect good 0b936842c86392dad2c880539e824881e5d8ba77  # 23:35     20+      0  Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
-git bisect good 3dbecf0aa9692cffbb71313a380c0ecc606c5920  # 23:56     20+      0  Merge tag 'xfs-for-linus-v3.12-rc4' of
-git://oss.sgi.com/xfs/xfs
-git bisect good 13caa8ed93513dd216ede0c84d833e39fc2e3e2a  # 00:06     20+      0  Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending
-git bisect good 8ab3820fd5b2896d66da7bb2a906bc382e63e7bc  # 00:18     20+      0  x86, kaslr: Return location from decompress_kernel
-git bisect  bad 82fa9637a2ba285bcc7c5050c73010b2c1b3d803  # 00:18      0-    988  x86, kaslr: Select random position from e820 maps
-git bisect good 5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3  # 00:27     20+     52  x86, kaslr: Provide randomness functions
-# first bad commit: [82fa9637a2ba285bcc7c5050c73010b2c1b3d803] x86, kaslr: Select random position from e820 maps
-git bisect good 5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3  # 00:39     60+     52  x86, kaslr: Provide randomness functions
-git bisect good 1955a14a5ba6e3c3b11117812d11dc550ccc37ae  # 00:59     60+    149  Add linux-next specific files for 20140110
-git bisect good 8bcd53c437d5fdd04fddd8c7e29ecbdc682e7ce1  # 01:22     60+     60  Revert "x86, kaslr: Select random position from e820
-maps"
-git bisect good a6da83f98267bc8ee4e34aa899169991eb0ceb93  # 01:38     60+     42  Merge branch 'merge' of
-git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
-git bisect good cf1c1d193e37b9f79eedddc6bbd71b9f5f9751e5  # 01:45     72+   1972  Add linux-next specific files for 20140114
- 
-Thanks,
-Fengguang
-
+-- 
+ Kirill A. Shutemov
