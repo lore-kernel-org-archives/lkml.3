@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaAPTYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:24:50 -0500
-Received: from sauhun.de ([89.238.76.85]:57021 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaAPTYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:24:48 -0500
-Date: Thu, 16 Jan 2014 20:24:40 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-spi@vger.kernel.org, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, grant.likely@linaro.org,
-        rob.herring@calxeda.com, jarkko.nikula@linux.intel.com,
-        mika.westerberg@linux.intel.com
-Subject: Re: [PATCH 3/4] fix module autoloading for ACPI enumerated devices
-Message-ID: <20140116192440.GA4127@katana>
-References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
- <1389689198-2641-4-git-send-email-rui.zhang@intel.com>
- <20140116122819.GO15567@sirena.org.uk>
+	id S1751867AbaAPT0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:26:24 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:52729 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaAPT0T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 14:26:19 -0500
+Date: Thu, 16 Jan 2014 11:26:17 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
+Message-ID: <20140116192617.GA13785@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+ <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
+ <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
+ <20140115165623.GJ14405@codeaurora.org>
+ <20140116013840.GA674@codeaurora.org>
+ <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
+ <20140116180505.GA30925@codeaurora.org>
+ <20140116183326.GG25540@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140116122819.GO15567@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140116183326.GG25540@e102568-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/16, Lorenzo Pieralisi wrote:
+> On Thu, Jan 16, 2014 at 06:05:05PM +0000, Stephen Boyd wrote:
+> > On 01/16, Lorenzo Pieralisi wrote:
+> > > Do we really want to do that ? I am not sure. A cpus node is supposed to
+> > > be a container node, we should not define this binding just because we
+> > > know the kernel creates a platform device for it then.
+> > 
+> > This is just copying more of the ePAPR spec into this document.
+> > It just so happens that having a compatible field here allows a
+> > platform device to be created. I don't see why that's a problem.
+> 
+> I do not see why you cannot define a node like pmu or arch-timer and stick
+> a compatible property in there. cpus node does not represent a device, and
+> must not be created as a platform device, that's my opinion.
+> 
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I had what you're suggesting before in the original revision of
+this patch. Please take a look at the original patch series[1]. I
+suppose it could be tweaked slightly to still have a cache node
+for the L2 interrupt and the next-level-cache pointer from the
+CPUs.
 
-On Thu, Jan 16, 2014 at 12:28:19PM +0000, Mark Brown wrote:
-> On Tue, Jan 14, 2014 at 04:46:37PM +0800, Zhang Rui wrote:
-> > ACPI enumerated devices has ACPI style _HID and _CID strings,
-> > all of these strings can be used for both driver loading and matching.
-> >=20
-> > Currently, in Platform, I2C and SPI bus, the ACPI style driver matching
-> > is supported by invoking acpi_driver_match_device() in bus .match() cal=
-lback.
-> > But, the module autoloading is still broken.
->=20
-> Acked-by: Mark Brown <broonie@linaro.org>
->=20
-> modulo the PAGE_SIZE stuff Mika noted - unless this changes radically
-> please just assume I'm OK with it.
+> What would you do for big.LITTLE systems ? We are going to create two
+> cpus node because we need two platform devices ? I really think there
+> must be a better way to implement this, but I will let DT maintainers
+> make a decision.
 
-Ditto
+There is no such thing as big.LITTLE for Krait, so this is not a
+concern.
 
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
+> 
+> > > interrupts is a cpu node property and I think it should be kept as such.
+> > > 
+> > > I know it will be duplicated and I know you can't rely on a platform
+> > > device for probing (since if I am not mistaken, removing a compatible
+> > > string from cpus prevents its platform device creation), but that's an issue
+> > > related to how the kernel works, you should not define DT bindings to solve
+> > > that IMHO.
+> > 
+> > The interrupts property is also common for all cpus so it seems
+> > fine to collapse the value down into a PPI specifier indicating
+> > that all CPUs get the interrupt, similar to how we compress the
+> > information about the compatible string.
+> 
+> I think it is nicer to create a device node (as I said, like a pmu or an
+> arch-timer) and define interrupts there along with a proper compatible
+> property. This would serve the same purpose without adding properties in
+> the cpus node.
+> 
+> cpu-edac {
+> 	compatible = "qcom,cpu-edac";
+> 	interrupts = <...>;
+> };
 
+Yes, please see the original thread.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[1] https://lkml.org/lkml/2013/10/29/134
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS2DH4AAoJEBQN5MwUoCm2zsIP/iesTC0J7+9BH9yhobIeHxaG
-SSxm8jK+938hUgdZcTuZwS5+HKxWNzydkK7vop0xRDjIAHBs+WX6nDrKiq7WDQJ1
-H74j/z4T2T5l/3TeAu26/DtoN25wjU3T0NYpKkx6Dw6+02V+LZ5a1i+VWFfsYfcG
-uiTjBR6wHvIMnZ31CpU9gf1NZ/9NueIkXQxGKfDNucJZLltL4V9DNyCIhzCcR0an
-R3C/mG9iiYMbIgb3RNcZZObxerB1sADQL/srEoLHZ/+fMmhT1M4sIZ26B1I0dP6m
-OxuxAFfQ1xr+uKUBDxlqWX9CyMs9wWaQosQliMB8FKttLUrL5Cpica8WB3aTFl2M
-TwwV30DzDDNXbGyJ4n7MDqD2Zu5rTqMkdduLMvOq/siQlw9PbeKvH9w0k8bdKd2y
-iYrcLJv9wGDT73fGj4PMXlNQQ0H5u3JTAH4cg/upWzYH14E5lWouZc0ecrospFHv
-/3MndevF7eoXfao8D574QNVsMqNkcZanZb5HTuWhTPL/V0E345uv4hvLuqBjSA+n
-BqIoyH/YjmWzv1dpoimBI0NaR+g9rCs4DrJSg0+JYwRdXLlxzJkNKOWZ5XcDxpah
-KQi0++0gGviIS5UOeCEoLyTyMr9zwsTKjcjIH5wI1RpOkYsMqvt9hjuPkg7Tu4LN
-zM+uGCgxM7hBg8AogV7A
-=Mp55
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
