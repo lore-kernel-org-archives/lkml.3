@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbaAPQye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:54:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42330 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955AbaAPQyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:54:32 -0500
-Date: Thu, 16 Jan 2014 17:54:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: Fix __sched_setscheduler() nice test
-Message-ID: <20140116165425.GA9481@laptop.programming.kicks-ass.net>
-References: <52D64676.4040000@linaro.org>
- <20140115120418.GD31570@twins.programming.kicks-ass.net>
- <52D7E343.40909@linaro.org>
- <20140116141743.GT31570@twins.programming.kicks-ass.net>
- <52D7EAA4.2080208@linaro.org>
- <20140116142546.GU31570@twins.programming.kicks-ass.net>
- <52D7ED0A.2030502@linaro.org>
- <20140116154239.GR7572@laptop.programming.kicks-ass.net>
- <52D7FFCE.1030108@linaro.org>
+	id S1752803AbaAPRBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:01:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42148 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327AbaAPRBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:01:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,668,1384329600"; 
+   d="scan'208";a="467759441"
+Date: Thu, 16 Jan 2014 21:29:21 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: hongbo.zhang@freescale.com
+Cc: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@redhat.com>,
+        Richard Henderson <rth@cygnus.com>, Jakub Jelinek <jakub@redhat.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        Arthur Kepner <akepner@sgi.com>, sumit.semwal@linaro.org,
+        Pierre Ossman <drzeus@drzeus.cx>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Subject: Re: [PATCH resend 1/2] Documentation: move all DMA documentations
+ into Documentaion/dma
+Message-ID: <20140116155921.GJ25466@intel.com>
+References: <1389869405-10363-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D7FFCE.1030108@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389869405-10363-1-git-send-email-hongbo.zhang@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: sched: Fix __sched_setscheduler() nice test
+On Thu, Jan 16, 2014 at 06:50:04PM +0800, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> 
+> Since there are already seven DMA documentations under the top Documentation/,
+> it is better to create one dedicated directory for them.
 
-With the introduction of sched_attr::sched_nice we need to check if
-we've got permission to actually change the nice value.
+Well the problem is that not everything is same. Some of these mean how to use
+dma mapping API, couple are related to dmaengine, so clubing everything into
+"dma" doesnt sound right to me!
 
-Daniel found that can_nice() would always fail; and upon inspection it
-turns out that can_nice() only tests to see if we can lower the nice
-value, but it doesn't validate if we're lowering or not.
+--
+~Vinod
+> 
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> Cc: David S. Miller <davem@redhat.com>
+> Cc: Richard Henderson <rth@cygnus.com>
+> Cc: Jakub Jelinek <jakub@redhat.com>
+> Cc: James E.J. Bottomley <James.Bottomley@HansenPartnership.com>
+> Cc: Arthur Kepner <akepner@sgi.com>
+> Cc: sumit.semwal@linaro.org
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Pierre Ossman <drzeus@drzeus.cx>
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  Documentation/{ => dma}/DMA-API-HOWTO.txt   |    0
+>  Documentation/{ => dma}/DMA-API.txt         |    0
+>  Documentation/{ => dma}/DMA-ISA-LPC.txt     |    0
+>  Documentation/{ => dma}/DMA-attributes.txt  |    0
+>  Documentation/{ => dma}/dma-buf-sharing.txt |    0
+>  Documentation/{ => dma}/dmaengine.txt       |    0
+>  Documentation/{ => dma}/dmatest.txt         |    0
+>  7 files changed, 0 insertions(+), 0 deletions(-)
+>  rename Documentation/{ => dma}/DMA-API-HOWTO.txt (100%)
+>  rename Documentation/{ => dma}/DMA-API.txt (100%)
+>  rename Documentation/{ => dma}/DMA-ISA-LPC.txt (100%)
+>  rename Documentation/{ => dma}/DMA-attributes.txt (100%)
+>  rename Documentation/{ => dma}/dma-buf-sharing.txt (100%)
+>  rename Documentation/{ => dma}/dmaengine.txt (100%)
+>  rename Documentation/{ => dma}/dmatest.txt (100%)
+> 
+> diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/dma/DMA-API-HOWTO.txt
+> similarity index 100%
+> rename from Documentation/DMA-API-HOWTO.txt
+> rename to Documentation/dma/DMA-API-HOWTO.txt
+> diff --git a/Documentation/DMA-API.txt b/Documentation/dma/DMA-API.txt
+> similarity index 100%
+> rename from Documentation/DMA-API.txt
+> rename to Documentation/dma/DMA-API.txt
+> diff --git a/Documentation/DMA-ISA-LPC.txt b/Documentation/dma/DMA-ISA-LPC.txt
+> similarity index 100%
+> rename from Documentation/DMA-ISA-LPC.txt
+> rename to Documentation/dma/DMA-ISA-LPC.txt
+> diff --git a/Documentation/DMA-attributes.txt b/Documentation/dma/DMA-attributes.txt
+> similarity index 100%
+> rename from Documentation/DMA-attributes.txt
+> rename to Documentation/dma/DMA-attributes.txt
+> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma/dma-buf-sharing.txt
+> similarity index 100%
+> rename from Documentation/dma-buf-sharing.txt
+> rename to Documentation/dma/dma-buf-sharing.txt
+> diff --git a/Documentation/dmaengine.txt b/Documentation/dma/dmaengine.txt
+> similarity index 100%
+> rename from Documentation/dmaengine.txt
+> rename to Documentation/dma/dmaengine.txt
+> diff --git a/Documentation/dmatest.txt b/Documentation/dma/dmatest.txt
+> similarity index 100%
+> rename from Documentation/dmatest.txt
+> rename to Documentation/dma/dmatest.txt
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
-Therefore amend the test to only call can_nice() when we lower the nice
-value.
-
-Cc: raistlin@linux.it
-Cc: juri.lelli@gmail.com
-Fixes: d50dde5a10f3 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
-Reported-and-Tested-by: Daniel Lezcano <daniel.lezcano@linaro.org> 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 93a2836b6220..36c951b7eef8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3296,7 +3296,8 @@ static int __sched_setscheduler(struct task_struct *p,
- 	 */
- 	if (user && !capable(CAP_SYS_NICE)) {
- 		if (fair_policy(policy)) {
--			if (!can_nice(p, attr->sched_nice))
-+			if (attr->sched_nice < TASK_NICE(p) &&
-+			    !can_nice(p, attr->sched_nice))
- 				return -EPERM;
- 		}
- 
+-- 
