@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaAPUqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:46:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26578 "EHLO mga09.intel.com"
+	id S1751533AbaAPUrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:47:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:60719 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaAPUqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:46:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,669,1384329600"; 
-   d="scan'208";a="467878402"
-Date: Thu, 16 Jan 2014 12:46:14 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: walt <w41ter@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
- USB payload burst [NEW HARDWARE]
-Message-ID: <20140116204614.GB27608@xanatos>
-References: <20140109235045.GA17660@xanatos>
- <52D4791B.3030309@gmail.com>
- <20140114172056.GB12126@xanatos>
- <52D5ABBD.7090202@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D5ABBD.7090202@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751414AbaAPUqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 15:46:37 -0500
+Date: Fri, 17 Jan 2014 07:46:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-Id: <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+In-Reply-To: <20140116121955.GQ31570@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 01:27:25PM -0800, walt wrote:
-> On 01/14/2014 09:20 AM, Sarah Sharp wrote:
-> > On Mon, Jan 13, 2014 at 03:39:07PM -0800, walt wrote:
-> 
-> >> Sarah, I just fixed my xhci bug for US$19.99 :)
-> >>
-> >> #lspci | tail -1
-> >> 04:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev 03)
-> >>
-> >> This new NEC usb3 controller does everything the ASMedia controller should have
-> >> done from the start.
-> 
->  
-> > I just got a similar report from someone with a Fresco Logic host
-> > controller, so I may need you to test a work-around patch for the
-> > ASMedia host at some point.
+--Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, the Fresco Logic host issue seems unrelated.
+Hi Peter,
 
-> Oy, Sarah! ;)  I put the ASMedia adapter in my older amd64 machine, and, well,
-> the stupid thing Just Works(TM) with kernel 3.12.7!  (Yes, with the same disk
-> docking station, too.)
+On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra <peterz@infradead.org> wr=
+ote:
+>
+> I think the below ought to work
 
-Ugh.  Well, I suppose we can chalk it up to hardware failure?  I think
-you're the only one to report a verified issue with the Link TRB patch.
+To be clear, all you did was replace the body of mwait_idle() with
 
-You are sure you're running a vanilla 3.12.7 kernel, right?
+	mwait_idle_with_hints(0, 0);
 
-> I can't believe the adapter works perfectly in a different computer.  Have you
-> seen this kind of thing before?
+(and the comment above it)?  I need to apply in incremental patch in the
+merge commit.
 
-No, at least not this particular host-dying-only-on-one-machine failure
-mode.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> At the moment I have two machines using your xhci driver and both work perfectly,
-> so I thank you again :)
-> 
-> I'm not sure where to go with this next.  I could put the adapter back in the
-> other machine again if you have more patches to test.
+--Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf
+Content-Type: application/pgp-signature
 
-I think any patches I was going to send are moot with this new
-information.  The issue with your PCI add-in card only happens in
-combination with a specific motherboard, so I don't think it makes sense
-to disable the no-op TRBs for that host.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-If lots of other people start reporting the same issue with the ASMedia
-0.96 host, and reverting commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e
-"usb: xhci: Link TRB must not occur within a USB payload burst" helps
-them, then I'll reconsider that decision.
+iQIcBAEBCAAGBQJS2EUoAAoJEMDTa8Ir7ZwV5fUP/jfd/lVky9my2PddEGkcvQsn
+Jio9vlGNlwlB3caOmStVQ8jcboBf6XEELKROsEJ82t0ATGPo2D/1Yfkm4nQRl/q3
+lE1430vquUY0gAiIAIKcX74p2MKw4E4QoC9MrMUELSAbebvGpRg/qHCbHfOhe6Nb
+nHLOFg8FR70x7NHNtD4+Sg+VAhpgYIqfqbvKX5UrUJwKVod5YoXoYIyvOiCdCMDB
+euquVUs27+H3m39OkNFOcv8CcLYQjLOiwGCYcSk3H02ppx01/iZ9bJvJTfU/FkAl
+9gV6Kb4JYlxzNevigM94Muowx/Mo94eDufHhkR5dH5notqz5G5sJlbQR0QKviaOz
+2INXfjvdNCO0MLFU1rU1y+mPrEn1B1RWnuB20shIGum0oj9HRv4NkE3iqLlD2IN0
+hUVdQMZ3EuMo6AX364d9AxYRRD86JNiSgeK4M1/M/5I3mnFSIwy54GekaijlGis1
+ayAz5w4jeMCcKx8QfG+xe4iBmNg+pIrJkcR4/otQtdmVwpvDnyBrykn5S7GdF+f4
+OYXbztNu21z6wgl0UtZVyfb6YxWLJfp6f1QoypBn5+ssVXFQuhgunhGjNEU8b21b
+YaoufsNu0yjSrV35uEW+dp90vrhNeqggBiFRBtl0oZLOxHbNm6dcniamGNVyNNKN
+zRHGpaxpN3hFZw7nLEXc
+=f9/h
+-----END PGP SIGNATURE-----
 
-Thank you so much for your patience while debugging this issue, and
-being willing to try all sorts of kernels and patches.  I'm glad we
-finally figured out what the issue was, and you have working xHCI hosts
-now.
-
-Sarah Sharp
+--Signature=_Fri__17_Jan_2014_07_46_28_+1100_Ds4ZGWHAk=lCeVXf--
