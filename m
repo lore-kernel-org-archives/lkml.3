@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaAPASB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:18:01 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:23817 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaAPAR5 (ORCPT
+	id S1753204AbaAPASx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:18:53 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:48764 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639AbaAPASu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:17:57 -0500
-Message-ID: <1389831470.11912.40.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH net-next 2/2] reciprocal_divide: correction/update of
- the algorithm
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Austin S Hemmelgarn" <ahferroin7@gmail.com>,
-        Jesse Gross <jesse@nicira.com>, "Jamal Hadi Salim" <jhs@mojatatu.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        "Andy Gospodarek" <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "Jay Vosburgh" <fubar@us.ibm.com>,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Date: Thu, 16 Jan 2014 00:17:50 +0000
-In-Reply-To: <1389828228-30312-3-git-send-email-dborkman@redhat.com>
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
-	 <1389828228-30312-3-git-send-email-dborkman@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 15 Jan 2014 19:18:50 -0500
+Date: Wed, 15 Jan 2014 16:18:47 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: oom_kill: revert 3% system memory bonus for privileged
+ tasks
+In-Reply-To: <20140115234308.GB4407@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1401151614480.15665@chino.kir.corp.google.com>
+References: <20140115234308.GB4407@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20432.004
-X-TM-AS-Result: No--9.635400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
-[...]
-> --- a/include/linux/reciprocal_div.h
-> +++ b/include/linux/reciprocal_div.h
-[...]
-> + * RECIPROCAL_VALUE_TO_ZERO can be used to express an element, which
-> + * used as the argument to reciprocal_divide always yields zero.
->   */
-[...]
-> +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
-[...]
-> +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
->  {
-> -	return (u32)(((u64)A * R) >> 32);
-> +	u32 t = (u32)(((u64)a * R.m) >> 32);
-> +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
-[...]
+On Wed, 15 Jan 2014, Johannes Weiner wrote:
 
-(a - t) has type u32.
-So (a - t) >> 32 has undefined behaviour.
+> With a63d83f427fb ("oom: badness heuristic rewrite"), the OOM killer
+> tries to avoid killing privileged tasks by subtracting 3% of overall
+> memory (system or cgroup) from their per-task consumption.  But as a
+> result, all root tasks that consume less than 3% of overall memory are
+> considered equal, and so it only takes 33+ privileged tasks pushing
+> the system out of memory for the OOM killer to do something stupid and
+> kill sshd or dhclient.  For example, on a 32G machine it can't tell
+> the difference between the 1M agetty and the 10G fork bomb member.
+> 
+> The changelog describes this 3% boost as the equivalent to the global
+> overcommit limit being 3% higher for privileged tasks, but this is not
+> the same as discounting 3% of overall memory from _every privileged
+> task individually_ during OOM selection.
+> 
+> Revert back to the old priority boost of pretending root tasks are
+> only a quarter of their actual size.
+> 
 
-Ben.
+Unfortunately, I think this could potentially be too much of a bonus.  On 
+your same 32GB machine, if a root process is using 18GB and a user process 
+is using 14GB, the user process ends up getting selected while the current 
+discount of 3% still selects the root process.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+I do like the idea of scaling this bonus depending on points, however.  I 
+think it would be better if we could scale the discount but also limit it 
+to some sane value.
