@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaAPDDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:03:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaAPDDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:03:38 -0500
-Date: Thu, 16 Jan 2014 11:03:43 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an
- arbitrary pagetable
-Message-ID: <20140116030343.GF3807@dhcp-16-126.nay.redhat.com>
-References: <20140113053240.GA11237@dhcp-16-126.nay.redhat.com>
- <20140113101822.GA5388@pd.tnic>
- <20140113122320.GA1900@darkstar.nay.redhat.com>
- <52D3FCAA.7070004@linux.intel.com>
- <20140114014003.GB4327@dhcp-16-126.nay.redhat.com>
- <52D57F75.7060308@zytor.com>
- <20140115011609.GD23767@dhcp-16-126.nay.redhat.com>
- <52D6970D.3050701@zytor.com>
- <20140116014457.GA3807@dhcp-16-126.nay.redhat.com>
- <52D746D9.7030206@linux.intel.com>
+	id S1752589AbaAPDFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 22:05:16 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49572 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaAPDFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 22:05:13 -0500
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        sagi grimberg <sagig@mellanox.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	<52D6CD70.20706@mellanox.com>
+	<1389822920.5567.560.camel@haakon3.risingtidesystems.com>
+	<yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
+	<1389839550.5567.643.camel@haakon3.risingtidesystems.com>
+Date: Wed, 15 Jan 2014 22:04:58 -0500
+In-Reply-To: <1389839550.5567.643.camel@haakon3.risingtidesystems.com>
+	(Nicholas A. Bellinger's message of "Wed, 15 Jan 2014 18:32:30 -0800")
+Message-ID: <yq1ob3cwrs5.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D746D9.7030206@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/14 at 06:41pm, Arjan van de Ven wrote:
-> On 1/15/2014 5:44 PM, Dave Young wrote:
-> >On 01/15/14 at 06:11am, H. Peter Anvin wrote:
-> >>On 01/14/2014 05:16 PM, Dave Young wrote:
-> >>>>
-> >>>>Why the [Finnish] do you feel that information needs to be in a
-> >>>>different form because it is (currently!) not available as a module?
-> >>>
-> >>>I think moving them to comment can avoid including extra linux/module.h
-> >>>
-> >>
-> >>And that matters, why?
-> >
-> >At least the code will be cleaner and kernel size will be a bit smaller?
-> >
-> 
-> making something harder to grep and less standardized is hardly cleaner
-> and these things compile to nothing for non-modules.
+>>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
 
-It's not nothing, just very small increasement:
-   text	   data	    bss	    dec	    hex	filename
-7636121	1391824	9355264	18383209	1188169	vmlinux
+nab> Mmm, missed that detail.  So that would take care of the
+nab> passthrough for the WRITE case then..
 
-   text	   data	    bss	    dec	    hex	filename
-7636113	1391824	9355264	18383201	1188161	vmlinux
+nab> How about a passthrough on the READ completion side for target
+nab> fabrics doing a hardware VERIFY..?  Any preferences how this should
+nab> work..?
 
-I do not want to insist on this minor problem, if you want please keep it.
+Just attach a bip and issue a READ.
 
-Thanks
-Dave
+nab> Also, for IBLOCK responses to properly generate GUARD + REFERENCE
+nab> tag CHECK_CONDITION sense failures from an underlying device VERIFY
+nab> failure, there will also need to be a way to propagate up the
+nab> failure status through bio_endio().  I assume bio_integrity_payload
+nab> is the proper place for adding something like this..?
+
+In my qualification tooling I have a patch that passes the info up the
+stack. But it's a bit of a hack (declares a completion status on the
+stack that shared between all clones). The alternative is to create new
+errno values for each case.
+
+nab> One other item from my TODO list for IBLOCK protection support is
+nab> how to go about determining which DIF type to expose in the target,
+nab> based upon what is currently enabled on the underlying struct
+nab> block_device.  I'm currently trying to deduce the protection type
+nab> by looking at struct blk_integrity, but it would be helpful to make
+nab> this explicit with bi->prot_type.
+
+You need to match on the integrity profile string. T10-DIF-TYPE1-IP
+means it's DIF Type 1 format with IP checksum.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
