@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaAPBmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:42:50 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:44961 "EHLO fpa01n0.fpasia.hk"
+	id S1752181AbaAPBov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:44:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39288 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314AbaAPBmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:42:45 -0500
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-To: cjb@laptop.org
-Cc: s.hauer@pengutronix.de, agust@denx.de, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH 2/2] mxcmmc: Internal error: Oops: 17 [#1] ARM from sg->offset
-Date: Thu, 16 Jan 2014 09:42:48 +0800
-Message-Id: <1389836568-14864-1-git-send-email-chris.ruehl@gtsys.com.hk>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751987AbaAPBot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:44:49 -0500
+Date: Thu, 16 Jan 2014 09:44:57 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an
+ arbitrary pagetable
+Message-ID: <20140116014457.GA3807@dhcp-16-126.nay.redhat.com>
+References: <1389473370-1940-1-git-send-email-bp@alien8.de>
+ <1389473370-1940-2-git-send-email-bp@alien8.de>
+ <20140113053240.GA11237@dhcp-16-126.nay.redhat.com>
+ <20140113101822.GA5388@pd.tnic>
+ <20140113122320.GA1900@darkstar.nay.redhat.com>
+ <52D3FCAA.7070004@linux.intel.com>
+ <20140114014003.GB4327@dhcp-16-126.nay.redhat.com>
+ <52D57F75.7060308@zytor.com>
+ <20140115011609.GD23767@dhcp-16-126.nay.redhat.com>
+ <52D6970D.3050701@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D6970D.3050701@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function mxcmci_request() throw an exception on a imx27 cpu.
-This patch fix the problem by test the pointer before access it.
+On 01/15/14 at 06:11am, H. Peter Anvin wrote:
+> On 01/14/2014 05:16 PM, Dave Young wrote:
+> >>
+> >> Why the [Finnish] do you feel that information needs to be in a
+> >> different form because it is (currently!) not available as a module?
+> > 
+> > I think moving them to comment can avoid including extra linux/module.h
+> > 
+> 
+> And that matters, why?
 
-[  516.783407] Unable to handle kernel NULL pointer dereference at virtual address 00000004
-[  516.791639] pgd = c0004000
-[  516.794445] [00000004] *pgd=00000000
-[  516.798088] Internal error: Oops: 17 [#1] ARM
-[  516.802472] Modules linked in:
-[  516.805593] CPU: 0 PID: 569 Comm: mmcqd/0 Not tainted 3.13.0-rc1-next-20131125-00006-g5f6bb77-dirty #66
-[  516.815027] task: cfb8a2a0 ti: cfb88000 task.ti: cfb88000
-[  516.820484] PC is at mxcmci_request+0xd0/0x2f8
-[  516.824974] LR is at mxcmci_request+0xf8/0x2f8
-[  516.829466] pc : [<c02b6048>]    lr : [<c02b6070>]    psr: 00000013
-[  516.829466] sp : cfb89dd0  ip : cfb89dd0  fp : cfb89e1c
-[  516.840988] r10: 000001ff  r9 : 00000002  r8 : cfa10620
-[  516.846250] r7 : 00000200  r6 : cfa0f02c  r5 : cfa0f0ec  r4 : cfa10400
-[  516.852812] r3 : a0000013  r2 : cfa0f410  r1 : 00040000  r0 : 00000000
-[  516.859376] Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  516.866723] Control: 0005317f  Table: afa74000  DAC: 00000017
-[  516.872503] Process mmcqd/0 (pid: 569, stack limit = 0xcfb881c0)
-[  516.878543] Stack: (0xcfb89dd0 to 0xcfb8a000)
+At least the code will be cleaner and kernel size will be a bit smaller?
 
-(gdb) list *(mxcmci_request+0xd0)
-0xcac is at drivers/mmc/host/mxcmmc.c:350.
-345
-346        if (!mxcmci_use_dma(host))
-347            return 0;
-348
-349        for_each_sg(data->sg, sg, data->sg_len, i) {
-350            if (sg->offset & 3 || sg->length & 3 || sg->length < 512) {
-351                host->do_dma = 0;
-352                return 0;
-353            }
-354        }
-
-Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
----
- drivers/mmc/host/mxcmmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-index f7199c8..8645d6a 100644
---- a/drivers/mmc/host/mxcmmc.c
-+++ b/drivers/mmc/host/mxcmmc.c
-@@ -347,7 +347,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
- 		return 0;
- 
- 	for_each_sg(data->sg, sg, data->sg_len, i) {
--		if (sg->offset & 3 || sg->length & 3 || sg->length < 512) {
-+		if (sg && (sg->offset & 3 || sg->length & 3 || sg->length < 512)) {
- 			host->do_dma = 0;
- 			return 0;
- 		}
--- 
-1.7.10.4
-
+Thanks
+Dave
