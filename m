@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaAPAce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:32:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaAPAcc (ORCPT
+	id S1751914AbaAPAfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:35:53 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38280 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750900AbaAPAfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:32:32 -0500
-Date: Wed, 15 Jan 2014 16:32:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Matt Mackall <mpm@selenic.com>,
-        Cliff Wickman <cpw@sgi.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11 v4] update page table walker
-Message-Id: <20140115163230.fdf99574f0e1b0cf97d5cf07@linux-foundation.org>
-In-Reply-To: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jan 2014 19:35:50 -0500
+Date: Thu, 16 Jan 2014 00:35:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 4/6] arm: add early_ioremap support
+Message-ID: <20140116003542.GS15937@n2100.arm.linux.org.uk>
+References: <1389325833-16535-1-git-send-email-msalter@redhat.com> <1389325833-16535-5-git-send-email-msalter@redhat.com> <52D72883.3020500@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D72883.3020500@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 11:54:00 -0500 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Wed, Jan 15, 2014 at 04:32:03PM -0800, Laura Abbott wrote:
+> Neither x86 nor arm64 get rid of existing mapping in paging_init. Is  
+> there a reason this needs to be here for arm? Are there concerns about  
+> alias mappings?
 
-> This is ver.4 of page table walker patchset.
-> I rebased it onto mmotm-2014-01-09-16-23, refactored, and commented more.
-> Changes since ver.3 are only on 1/11 and 2/11.
+The early mappings we setup in the assembly code are imperfect - they're
+an approximation.  We map just about enough memory to get the kernel
+going, and we setup a mapping for the debug stuff using a section
+mapping, which may not be appropriate.
 
-Looks good to me.
+The permissions too are a just chosen to get things going, and the
+subsequent replacement of the page table entries is to fix all that up.
+We really don't want any old entries left behind.
 
-Patch [1/11] breaks the build ("mm/pagewalk.c:201: error: 'hmask'
-undeclared") and [10/11] fixes that up.
-
-Please resend everything after 3.14-rc1?
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
