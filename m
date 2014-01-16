@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaAPDX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:23:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10262 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751325AbaAPDXy (ORCPT
+	id S1752157AbaAPD1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 22:27:41 -0500
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:22207
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750886AbaAPD1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:23:54 -0500
-Date: Wed, 15 Jan 2014 22:23:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 09/12] tools lib traceevent: Unregister handler when
- cfg80211 plugin unloaded
-Message-ID: <20140115222349.3a0ad3de@gandalf.local.home>
-In-Reply-To: <1389839478-5887-10-git-send-email-namhyung@kernel.org>
-References: <1389839478-5887-1-git-send-email-namhyung@kernel.org>
-	<1389839478-5887-10-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 15 Jan 2014 22:27:39 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
+From: Jingchang Lu <b35083@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <dan.j.williams@intel.com>, <arnd@arndb.de>, <shawn.guo@linaro.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>
+Subject: [PATCHv9 0/2] dma: Add Freescale eDMA engine driver support
+Date: Thu, 16 Jan 2014 10:29:58 +0800
+Message-ID: <1389839400-29728-1-git-send-email-b35083@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014 11:31:15 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+This series add Freescale eDMA engine support.
 
-> The function handler should be unregistered when the plugin unloaded
-> otherwise it'll try to access invalid memory.
-> 
-> Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Jingchang Lu (2):
+	ARM: dts: vf610: Add eDMA node
+	dma: Add Freescale eDMA engine driver support
 
-You can add my Acked-by to patches 9-12 too.
+ Documentation/devicetree/bindings/dma/fsl-edma.txt |  66 ++++
+ arch/arm/boot/dts/vf610.dtsi                       |  30 ++
+ drivers/dma/Kconfig                                |  10 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/fsl-edma.c                             | 957 +++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1064 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
+ create mode 100644 drivers/dma/fsl-edma.c
 
--- Steve
-
-> ---
->  tools/lib/traceevent/plugin_cfg80211.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/tools/lib/traceevent/plugin_cfg80211.c b/tools/lib/traceevent/plugin_cfg80211.c
-> index 57e98221db20..c066b25905f8 100644
-> --- a/tools/lib/traceevent/plugin_cfg80211.c
-> +++ b/tools/lib/traceevent/plugin_cfg80211.c
-> @@ -22,3 +22,9 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
->  				       PEVENT_FUNC_ARG_VOID);
->  	return 0;
->  }
-> +
-> +void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
-> +{
-> +	pevent_unregister_print_function(pevent, process___le16_to_cpup,
-> +					 "__le16_to_cpup");
-> +}
 
