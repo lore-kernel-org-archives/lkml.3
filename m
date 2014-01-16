@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaAPX4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:56:07 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52297 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaAPXyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:54:09 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux PPC <linuxppc-dev@lists.ozlabs.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 2/8] perf core: export swevent hrtimer helpers
-Date: Thu, 16 Jan 2014 15:53:48 -0800
-Message-Id: <1389916434-2288-3-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011623-7182-0000-0000-000009946105
+	id S1751502AbaAPX7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:59:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48833 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaAPX72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 18:59:28 -0500
+Date: Thu, 16 Jan 2014 23:59:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: Don't leak a path when get_empty_filp in dentry_open
+Message-ID: <20140116235925.GY10323@ZenIV.linux.org.uk>
+References: <871u07wkwt.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u07wkwt.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the swevent hrtimer helpers currently only used in events/core.c
-to allow the addition of architecture specific sw-like pmus.
+On Thu, Jan 16, 2014 at 03:45:38PM -0800, Eric W. Biederman wrote:
+> 
+> Normally in dentry_open the passed in path is placed on the new filp
+> removing the caller from needing to worry about it.  In the rare case
+> that we can not allocate a filp the path is not consumed.  None of the
+> callers of dentry_open call path_put in their error handling when
+> dentry_open fails so call path_put for them on error and keep everyone's
+> error handling simple.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- include/linux/perf_event.h | 5 ++++-
- kernel/events/core.c       | 8 ++++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+You are misreading that code.  _No_ path in dentry_open() drops that
+sucker, no matter whether we succeed or fail.  do_dentry_open() grabs
+an extra reference on success, so those fput() on other failure exits
+just balance that.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8646e33..c5bc71a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -558,7 +558,10 @@ extern void perf_pmu_migrate_context(struct pmu *pmu,
- 				int src_cpu, int dst_cpu);
- extern u64 perf_event_read_value(struct perf_event *event,
- 				 u64 *enabled, u64 *running);
--
-+extern void perf_swevent_init_hrtimer(struct perf_event *event);
-+extern void perf_swevent_start_hrtimer(struct perf_event *event);
-+extern void perf_swevent_cancel_hrtimer(struct perf_event *event);
-+extern int perf_swevent_event_idx(struct perf_event *event);
- 
- struct perf_sample_data {
- 	u64				type;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f574401..d881d1e 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5801,7 +5801,7 @@ static int perf_swevent_init(struct perf_event *event)
- 	return 0;
- }
- 
--static int perf_swevent_event_idx(struct perf_event *event)
-+int perf_swevent_event_idx(struct perf_event *event)
- {
- 	return 0;
- }
-@@ -6030,7 +6030,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- 	return ret;
- }
- 
--static void perf_swevent_start_hrtimer(struct perf_event *event)
-+void perf_swevent_start_hrtimer(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	s64 period;
-@@ -6052,7 +6052,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
- 				HRTIMER_MODE_REL_PINNED, 0);
- }
- 
--static void perf_swevent_cancel_hrtimer(struct perf_event *event)
-+void perf_swevent_cancel_hrtimer(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 
-@@ -6064,7 +6064,7 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
- 	}
- }
- 
--static void perf_swevent_init_hrtimer(struct perf_event *event)
-+void perf_swevent_init_hrtimer(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 
--- 
-1.8.5.2
+The calling conventions are not "transfer the reference you held into
+struct file, caller must drop on failure"; it's "clone the reference
+into struct file; caller's reference remains in all cases".
 
+IOW, you are looking for path_put() in error handling in callers, when
+in fact it's on common paths (and quite often in callers of callers of
+callers).  Makes life simpler, actually.  Try to convert it to your
+variant of calling conventions and you'll see that callers become more
+complex and brittle.  As it is, this patch is simply broken - you'll get
+double path_put() out of it, not to mention the different treatment of
+refcounts depending on the kind of failure exit that had been taken.
+
+NAK.
