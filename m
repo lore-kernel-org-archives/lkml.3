@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaAPD3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:29:07 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:53625
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751435AbaAPD3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:29:04 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: <kuninori.morimoto.gx@renesas.com>, <moinejf@free.fr>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] ASoC: simple-card: fix __asoc_simple_card_dai_init
-Date: Thu, 16 Jan 2014 10:31:10 +0800
-Message-ID: <1389839470-31199-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	id S1751535AbaAPDsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 22:48:06 -0500
+Received: from mail-bn1lp0158.outbound.protection.outlook.com ([207.46.163.158]:34402
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbaAPDsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 22:48:04 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Jean-Francois Moine <moinejf@free.fr>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Problems with simple-card
+Thread-Topic: Problems with simple-card
+Thread-Index: AQHPEh5JfNZzFIpXg0+wzFuEj1ZSy5qGlpyg
+Date: Thu, 16 Jan 2014 03:47:58 +0000
+Message-ID: <81eea230fdfa45bfa6d1f9d2b941221e@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <20140115191831.5965d17e@armhf>
+In-Reply-To: <20140115191831.5965d17e@armhf>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0093C80C01
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(679001)(689001)(51704005)(199002)(189002)(164054003)(87936001)(81342001)(47446002)(80022001)(31966008)(4396001)(81686001)(76576001)(74662001)(74876001)(74316001)(83072002)(74502001)(74366001)(93516002)(90146001)(81542001)(74706001)(85852003)(56816005)(87266001)(77982001)(85306002)(69226001)(2656002)(65816001)(47976001)(63696002)(66066001)(76796001)(51856001)(80976001)(47736001)(83322001)(46102001)(53806001)(54356001)(79102001)(49866001)(50986001)(54316002)(92566001)(76786001)(56776001)(76482001)(59766001)(33646001)(93136001)(81816001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0G3mcD3015164
 
-If the CPU/CODEC DAI set_sysclk() is not support, the -ENOTSUPP will returnd.
-Here do the check like set_fmt().
+Hi,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- sound/soc/generic/simple-card.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+> I did a mistake in the v1 of my 'ASoC: simple-card: simplify code': I
+> did not initialize the pointer to the asoc_simple_card_dai_init()
+> function when DT. Then, I fixed that, and the simple card does not work
+> for me.
+> 
+> First, without any 'format' in the DT, I get a fmt for each CPU / CODEC
+> DAI: SND_SOC_DAIFMT_CBS_CFS is always set. Well, some code is executed
+> for nothing, but this is not critical.
+> 
 
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index 2a1b1b5..b6014fe 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -19,22 +19,27 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
- 				       struct asoc_simple_dai *set,
- 				       unsigned int daifmt)
- {
--	int ret = 0;
-+	int ret;
- 
- 	daifmt |= set->fmt;
- 
--	if (daifmt)
-+	if (daifmt) {
- 		ret = snd_soc_dai_set_fmt(dai, daifmt);
--
--	if (ret == -ENOTSUPP) {
--		dev_dbg(dai->dev, "ASoC: set_fmt is not supported\n");
--		ret = 0;
-+		if (ret && ret != -ENOTSUPP) {
-+			dev_err(dai->dev, "simple-card: set_fmt error\n");
-+			return ret;
-+		}
- 	}
- 
--	if (!ret && set->sysclk)
-+	if (set->sysclk) {
- 		ret = snd_soc_dai_set_sysclk(dai, 0, set->sysclk, 0);
-+		if (ret && ret != -ENOTSUPP) {
-+			dev_err(dai->dev, "simple-card: set_sysclk error\n");
-+			return ret;
-+		}
-+	}
- 
--	return ret;
-+	return 0;
- }
- 
- static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
--- 
-1.8.4
+This is the old issue that I have raised before, which is one limitation
+of snd_soc_of_parse_daifmt(). As descript above, if without any fmt in the
+DT node, and just using snd_soc_of_parse_daifmt() for each CPU/CODEC DAI fmt
+the SND_SOC_DAIFMT_CBS_CFS (none zero) is always set.
+
+@Mark and Morimoto-san, there has two ways to deal with this in my mind:
+Fist, in the snd_soc_of_parse_daifmt(), modifying the
+boolen : "[prefix]bitclock-master"
+boolen : "[prefix]frame-master"
+	==> 
+[prefix]master = "XXX" and "XXX" is :
+"cbm-cfm" --> SND_SOC_DAIFMT_CBM_CFM          
+"cbs-cfm" --> SND_SOC_DAIFMT_CBS_CFM          
+"cbm-cfs" --> SND_SOC_DAIFMT_CBM_CFS          
+"cbs-cfs" --> SND_SOC_DAIFMT_CBS_CFS         
+
+And the default value will be zero...
+
+If this method is applied, and there is no need any masks for
+snd_soc_of_parse_daifmt(), like in simple card driver:
+
+/* get CPU/CODEC common format via simple-audio-card,format */
+info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
+           (SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
+
+Second, if there hasn't any DAI fmts in DT node and at the same time the CPU
+and CODEC DAI devices don't need to care about of them, and set_dai() pointer
+could be set to be NULL, and then snd_soc_dai_set_fmt() just returned -ENOTSUPP.
 
 
+Thanks,
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
