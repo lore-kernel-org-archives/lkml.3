@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaAPAAc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:00:32 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64450 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaAPAAb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:00:31 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-b3-52d7211ca0f3
-Message-ID: <52D7211C.9030903@lge.com>
-Date: Thu, 16 Jan 2014 09:00:28 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752517AbaAPAAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:00:45 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:50490 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752420AbaAPAAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 19:00:42 -0500
+X-IronPort-AV: E=Sophos;i="4.95,665,1384300800"; 
+   d="scan'208";a="93307376"
+Date: Thu, 16 Jan 2014 00:00:40 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v4 1/9] xen-netback: Introduce TX grant map
+ definitions
+Message-ID: <20140116000040.GA5331@zion.uk.xensource.com>
+References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
+ <1389731995-9887-2-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 06/17] tools lib traceevent: Add pevent_unregister_event_handler()
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org> <1389750340-15965-7-git-send-email-namhyung@kernel.org> <20140115111839.73d85422@gandalf.local.home>
-In-Reply-To: <20140115111839.73d85422@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1389731995-9887-2-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+There is a stray blank line change in xenvif_tx_create_gop. (I removed
+that part too early and didn't bother to paste it back...)
 
-2014-01-16 AM 1:18, Steven Rostedt wrote:
-> On Wed, 15 Jan 2014 10:45:29 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->> +	if (event->handler == func && event->context == context) {
->> +		pr_stat("overriding event (%d) %s:%s with default print handler",
->
-> Should we use the word "overriding" again? Perhaps saying:
->
-> "removing override print handler (%d) %s:%s. Going back to default handler."
->
-> Or something?
+On Tue, Jan 14, 2014 at 08:39:47PM +0000, Zoltan Kiss wrote:
+[...]
+> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+> +{
+> +	int ret;
+> +	struct gnttab_unmap_grant_ref tx_unmap_op;
+> +
+> +	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
+> +		netdev_err(vif->dev,
+> +			   "Trying to unmap invalid handle! pending_idx: %x\n",
+> +			   pending_idx);
+> +		return;
+> +	}
+> +	gnttab_set_unmap_op(&tx_unmap_op,
+> +			    idx_to_kaddr(vif, pending_idx),
+> +			    GNTMAP_host_map,
+> +			    vif->grant_tx_handle[pending_idx]);
+> +	ret = gnttab_unmap_refs(&tx_unmap_op,
+> +				&vif->mmap_pages[pending_idx],
+> +				1);
+> +
+> +	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
+> +					&tx_unmap_op,
+> +					1);
 
-What about this:
+As you said in your other email, this should be removed. :-)
 
-"removing override handler for event (%d) %s:%s. Going back to default 
-handler."
+> +	BUG_ON(ret);
+> +	vif->grant_tx_handle[pending_idx] = NETBACK_INVALID_HANDLE;
+> +}
+>  
+>  static void make_tx_response(struct xenvif *vif,
+>  			     struct xen_netif_tx_request *txp,
+> @@ -1738,6 +1879,14 @@ static inline int tx_work_todo(struct xenvif *vif)
+>  	return 0;
+>  }
+>  
+> +static inline bool tx_dealloc_work_todo(struct xenvif *vif)
+> +{
+> +	if (vif->dealloc_cons != vif->dealloc_prod)
+> +		return true;
+> +
+> +	return false;
 
-Thanks,
-Namhyung
+This can be simplified as
+  return vif->dealloc_cons != vif->dealloc_prod;
 
+Wei.
