@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751071AbaAPRlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:41:32 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:35248 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaAPRla (ORCPT
+	id S1751368AbaAPRmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:42:12 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63292 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750750AbaAPRmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:41:30 -0500
-Date: Thu, 16 Jan 2014 18:41:21 +0100
-From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-To: Robin Holt <robinmholt@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, liuj97@gmail.com,
-        santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
-        iamjoonsoo.kim@lge.com, robin.m.holt@gmail.com, yinghai@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/nobootmem: Fix unused variable
-Message-ID: <20140116184121.34d1e97c@lilie>
-In-Reply-To: <CAPp3RGpt+qjFYrA928hBjseJNo4v0RKVnb-BjFJzH0uaVGcX+g@mail.gmail.com>
-References: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
-	<CAPp3RGpWhx4uoTTiSkUe9rZ2iJjMW6O2u=xdWL7BSskse=61qw@mail.gmail.com>
-	<20140116164936.1c6c3274@lilie>
-	<CAPp3RGpt+qjFYrA928hBjseJNo4v0RKVnb-BjFJzH0uaVGcX+g@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
+	Thu, 16 Jan 2014 12:42:09 -0500
+Date: Thu, 16 Jan 2014 12:42:07 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [RFC][PATCH 0/2] preempt: Track unmatched preempt_enable() to
+ preempt_disable()
+Message-ID: <20140116124207.2065b153@gandalf.local.home>
+In-Reply-To: <20140116171824.748919700@goodmis.org>
+References: <20140116171824.748919700@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011617-4966-0000-0000-000008172F24
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 16 Jan 2014 12:18:24 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> I would think you would be better off making
-> get_allocated_memblock_reserved_regions_info() and
-> get_allocated_memblock_memory_regions_info be static inline functions
-> when #ifdef CONFIG_ARCH_DISCARD_MEMBLOCK.
-Possible, of course.
-But the size variable has still to be #ifdef'd. And that's what the
-patch is about. It's just an addition to another patch. 
+> 
+> Back in the original real-time patch there was a nice debug feature
+> that tracked where preemption was disabled and not matched by a preempt
+> enable. This information made debugging scheduling while atomic much
+> easier, especially when a function was buried in a function chain
+> that happened just before the schedule. For example:
+> 
 
+> Although this bug does not happen often, this feature is extremely helpful
+> when it does. I decided to take Ingo's code, which was just written for
+> debugging the -rt patch, and clean it up for something that is suitable
+> for mainline.
+> 
 
+Hmm, I rewrote this prologue a few times, and even though patch 2 states
+this, I want to make it clear that the original feature, that this is
+based on, was written by Ingo Molnar. I had it clear in my original
+version of the prologue, but somehow it was deleted.
+
+-- Steve
