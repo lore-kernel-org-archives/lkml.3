@@ -1,238 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaAPEdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 23:33:14 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:45785 "EHLO
+	id S1752779AbaAPEd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:33:28 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:45789 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896AbaAPEdL (ORCPT
+	with ESMTP id S1752693AbaAPEdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 23:33:11 -0500
+	Wed, 15 Jan 2014 23:33:24 -0500
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, GregKH <greg@kroah.com>
-Subject: [PATCH 09/15] w1: reply only to the requester portid
-Date: Wed, 15 Jan 2014 22:29:20 -0600
-Message-Id: <1389846566-28862-10-git-send-email-David@Fries.net>
+Subject: [PATCH 10/15] w1: ds2490 reduce magic numbers
+Date: Wed, 15 Jan 2014 22:29:21 -0600
+Message-Id: <1389846566-28862-11-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1389846566-28862-1-git-send-email-David@Fries.net>
 References: <1389846566-28862-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 22:32:59 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 22:33:17 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unicast one wire replies back to the sender portid to avoid multiple
-programs getting each other's messages, especially as the response
-can't be uniquely identified with the sequence coming from the
-requesting program when both programs generate the same id.  Continue
-to broadcast events such as add/remove master/slave devices.
+Use a #define for the usb vendor request type, clear the status
+byte and use that instead of a magic offset in checking if idle.
 
 Signed-off-by: David Fries <David@Fries.net>
 Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 ---
- drivers/w1/w1.h         |    5 +++++
- drivers/w1/w1_netlink.c |   42 +++++++++++++++++++++++++-----------------
- 2 files changed, 30 insertions(+), 17 deletions(-)
+ drivers/w1/masters/ds2490.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-index a096ef4..390a730 100644
---- a/drivers/w1/w1.h
-+++ b/drivers/w1/w1.h
-@@ -210,6 +210,11 @@ struct w1_master
- 	struct w1_bus_master	*bus_master;
+diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
+index 4f7e1d7..6a3d0a1 100644
+--- a/drivers/w1/masters/ds2490.c
++++ b/drivers/w1/masters/ds2490.c
+@@ -1,5 +1,5 @@
+ /*
+- *	dscore.c
++ *	ds2490.c  USB to one wire bridge
+  *
+  * Copyright (c) 2004 Evgeniy Polyakov <zbr@ioremap.net>
+  *
+@@ -28,6 +28,10 @@
+ #include "../w1_int.h"
+ #include "../w1.h"
  
- 	u32			seq;
-+	/* port id to send netlink responses to.  The value is temporarily
-+	 * stored here while processing a message, set after locking the
-+	 * mutex, zero before unlocking the mutex.
-+	 */
-+	u32			portid;
- };
++/* USB Standard */
++/* USB Control request vendor type */
++#define VENDOR				0x40
++
+ /* COMMAND TYPE CODES */
+ #define CONTROL_CMD			0x00
+ #define COMM_CMD			0x01
+@@ -107,6 +111,8 @@
+ #define ST_HALT				0x10  /* DS2490 is currently halted */
+ #define ST_IDLE				0x20  /* DS2490 is currently idle */
+ #define ST_EPOF				0x80
++/* Status transfer size, 16 bytes status, 16 byte result flags */
++#define ST_SIZE				0x20
  
- /**
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index b63109a..a5dc219 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -45,7 +45,7 @@ void w1_netlink_send(struct w1_master *dev, struct w1_netlink_msg *msg)
+ /* Result Register flags */
+ #define RR_DETECT			0xA5 /* New device detected */
+@@ -198,7 +204,7 @@ static int ds_send_control_cmd(struct ds_device *dev, u16 value, u16 index)
+ 	int err;
  
- 	memcpy(w, msg, sizeof(struct w1_netlink_msg));
+ 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
+-			CONTROL_CMD, 0x40, value, index, NULL, 0, 1000);
++			CONTROL_CMD, VENDOR, value, index, NULL, 0, 1000);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "Failed to send command control message %x.%x: err=%d.\n",
+ 				value, index, err);
+@@ -213,7 +219,7 @@ static int ds_send_control_mode(struct ds_device *dev, u16 value, u16 index)
+ 	int err;
  
--	cn_netlink_send(m, 0, 0, GFP_KERNEL);
-+	cn_netlink_send(m, dev->portid, 0, GFP_KERNEL);
- }
+ 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
+-			MODE_CMD, 0x40, value, index, NULL, 0, 1000);
++			MODE_CMD, VENDOR, value, index, NULL, 0, 1000);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "Failed to send mode control message %x.%x: err=%d.\n",
+ 				value, index, err);
+@@ -228,7 +234,7 @@ static int ds_send_control(struct ds_device *dev, u16 value, u16 index)
+ 	int err;
  
- static void w1_send_slave(struct w1_master *dev, u64 rn)
-@@ -60,7 +60,7 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
+ 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
+-			COMM_CMD, 0x40, value, index, NULL, 0, 1000);
++			COMM_CMD, VENDOR, value, index, NULL, 0, 1000);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "Failed to send control message %x.%x: err=%d.\n",
+ 				value, index, err);
+@@ -353,7 +359,7 @@ static int ds_recv_data(struct ds_device *dev, unsigned char *buf, int size)
+ 	err = usb_bulk_msg(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_DATA_IN]),
+ 				buf, size, &count, 1000);
+ 	if (err < 0) {
+-		u8 buf[0x20];
++		u8 buf[ST_SIZE];
+ 		int count;
  
- 	if (avail < 8) {
- 		msg->ack++;
--		cn_netlink_send(msg, 0, 0, GFP_KERNEL);
-+		cn_netlink_send(msg, dev->portid, 0, GFP_KERNEL);
- 
- 		msg->len = sizeof(struct w1_netlink_msg) +
- 			sizeof(struct w1_netlink_cmd);
-@@ -131,7 +131,7 @@ static int w1_get_slaves(struct w1_master *dev,
- 	}
- 
- 	msg->ack = 0;
--	cn_netlink_send(msg, 0, 0, GFP_KERNEL);
-+	cn_netlink_send(msg, dev->portid, 0, GFP_KERNEL);
- 
- 	dev->priv = NULL;
- 	dev->priv_size = 0;
-@@ -142,7 +142,7 @@ static int w1_get_slaves(struct w1_master *dev,
- }
- 
- static int w1_send_read_reply(struct cn_msg *msg, struct w1_netlink_msg *hdr,
--		struct w1_netlink_cmd *cmd)
-+		struct w1_netlink_cmd *cmd, u32 portid)
+ 		printk(KERN_INFO "Clearing ep0x%x.\n", dev->ep[EP_DATA_IN]);
+@@ -398,7 +404,7 @@ int ds_stop_pulse(struct ds_device *dev, int limit)
  {
- 	void *data;
- 	struct w1_netlink_msg *h;
-@@ -173,7 +173,7 @@ static int w1_send_read_reply(struct cn_msg *msg, struct w1_netlink_msg *hdr,
+ 	struct ds_status st;
+ 	int count = 0, err = 0;
+-	u8 buf[0x20];
++	u8 buf[ST_SIZE];
  
- 	memcpy(c->data, cmd->data, c->len);
+ 	do {
+ 		err = ds_send_control(dev, CTL_HALT_EXE_IDLE, 0);
+@@ -450,10 +456,11 @@ int ds_detect(struct ds_device *dev, struct ds_status *st)
  
--	err = cn_netlink_send(cm, 0, 0, GFP_KERNEL);
-+	err = cn_netlink_send(cm, portid, 0, GFP_KERNEL);
- 
- 	kfree(data);
- 
-@@ -188,11 +188,11 @@ static int w1_process_command_io(struct w1_master *dev, struct cn_msg *msg,
- 	switch (cmd->cmd) {
- 	case W1_CMD_TOUCH:
- 		w1_touch_block(dev, cmd->data, cmd->len);
--		w1_send_read_reply(msg, hdr, cmd);
-+		w1_send_read_reply(msg, hdr, cmd, dev->portid);
- 		break;
- 	case W1_CMD_READ:
- 		w1_read_block(dev, cmd->data, cmd->len);
--		w1_send_read_reply(msg, hdr, cmd);
-+		w1_send_read_reply(msg, hdr, cmd, dev->portid);
- 		break;
- 	case W1_CMD_WRITE:
- 		w1_write_block(dev, cmd->data, cmd->len);
-@@ -283,7 +283,8 @@ static int w1_process_command_slave(struct w1_slave *sl, struct cn_msg *msg,
- 	return w1_process_command_io(sl->master, msg, hdr, cmd);
- }
- 
--static int w1_process_command_root(struct cn_msg *msg, struct w1_netlink_msg *mcmd)
-+static int w1_process_command_root(struct cn_msg *msg,
-+	struct w1_netlink_msg *mcmd, u32 portid)
+ static int ds_wait_status(struct ds_device *dev, struct ds_status *st)
  {
- 	struct w1_master *m;
- 	struct cn_msg *cn;
-@@ -316,7 +317,7 @@ static int w1_process_command_root(struct cn_msg *msg, struct w1_netlink_msg *mc
- 	mutex_lock(&w1_mlock);
- 	list_for_each_entry(m, &w1_masters, w1_master_entry) {
- 		if (cn->len + sizeof(*id) > PAGE_SIZE - sizeof(struct cn_msg)) {
--			cn_netlink_send(cn, 0, 0, GFP_KERNEL);
-+			cn_netlink_send(cn, portid, 0, GFP_KERNEL);
- 			cn->ack++;
- 			cn->len = sizeof(struct w1_netlink_msg);
- 			w->len = 0;
-@@ -329,7 +330,7 @@ static int w1_process_command_root(struct cn_msg *msg, struct w1_netlink_msg *mc
- 		id++;
- 	}
- 	cn->ack = 0;
--	cn_netlink_send(cn, 0, 0, GFP_KERNEL);
-+	cn_netlink_send(cn, portid, 0, GFP_KERNEL);
- 	mutex_unlock(&w1_mlock);
+-	u8 buf[0x20];
++	u8 buf[ST_SIZE];
+ 	int err, count = 0;
  
- 	kfree(cn);
-@@ -337,7 +338,7 @@ static int w1_process_command_root(struct cn_msg *msg, struct w1_netlink_msg *mc
- }
- 
- static int w1_netlink_send_error(struct cn_msg *rcmsg, struct w1_netlink_msg *rmsg,
--		struct w1_netlink_cmd *rcmd, int error)
-+		struct w1_netlink_cmd *rcmd, int portid, int error)
- {
- 	struct cn_msg *cmsg;
- 	struct w1_netlink_msg *msg;
-@@ -364,7 +365,7 @@ static int w1_netlink_send_error(struct cn_msg *rcmsg, struct w1_netlink_msg *rm
- 		cmsg->len += sizeof(*cmd);
- 	}
- 
--	error = cn_netlink_send(cmsg, 0, 0, GFP_KERNEL);
-+	error = cn_netlink_send(cmsg, portid, 0, GFP_KERNEL);
- 	kfree(cmsg);
- 
- 	return error;
-@@ -375,6 +376,7 @@ static int w1_netlink_send_error(struct cn_msg *rcmsg, struct w1_netlink_msg *rm
-  */
- struct w1_cb_block {
- 	atomic_t refcnt;
-+	u32 portid; /* Sending process port ID */
- 	struct cn_msg msg;
- 	/* cn_msg data */
- 	/* one or more variable length struct w1_cb_node */
-@@ -399,6 +401,7 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 	struct w1_netlink_cmd *cmd = NULL;
- 
- 	mutex_lock(&dev->mutex);
-+	dev->portid = node->block->portid;
- 	if (sl && w1_reset_select_slave(sl))
- 		err = -ENODEV;
- 
-@@ -417,7 +420,8 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 			err = w1_process_command_master(dev, &node->block->msg,
- 				node->m, cmd);
- 
--		w1_netlink_send_error(&node->block->msg, node->m, cmd, err);
-+		w1_netlink_send_error(&node->block->msg, node->m, cmd,
-+			node->block->portid, err);
- 		err = 0;
- 
- 		cmd_data += cmd->len + sizeof(struct w1_netlink_cmd);
-@@ -425,12 +429,14 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 	}
- 
- 	if (!cmd || err)
--		w1_netlink_send_error(&node->block->msg, node->m, cmd, err);
-+		w1_netlink_send_error(&node->block->msg, node->m, cmd,
-+			node->block->portid, err);
- 
- 	if (sl)
- 		w1_unref_slave(sl);
- 	else
- 		atomic_dec(&dev->refcnt);
-+	dev->portid = 0;
- 	mutex_unlock(&dev->mutex);
- 
- 	mutex_lock(&dev->list_mutex);
-@@ -476,10 +482,12 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 			node_count*sizeof(struct w1_cb_node);
- 		block = kmalloc(size, GFP_KERNEL);
- 		if (!block) {
--			w1_netlink_send_error(msg, m, NULL, -ENOMEM);
-+			w1_netlink_send_error(msg, m, NULL, nsp->portid,
-+				-ENOMEM);
- 			return;
+ 	do {
++		st->status = 0;
+ 		err = ds_recv_status_nodump(dev, st, buf, sizeof(buf));
+ #if 0
+ 		if (err >= 0) {
+@@ -464,7 +471,7 @@ static int ds_wait_status(struct ds_device *dev, struct ds_status *st)
+ 			printk("\n");
  		}
- 		atomic_set(&block->refcnt, 1);
-+		block->portid = nsp->portid;
- 		memcpy(&block->msg, msg, sizeof(*msg) + msg->len);
- 		node = (struct w1_cb_node *)((u8 *)block->msg.data + msg->len);
- 	}
-@@ -509,7 +517,7 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 			if (sl)
- 				dev = sl->master;
- 		} else {
--			err = w1_process_command_root(msg, m);
-+			err = w1_process_command_root(msg, m, nsp->portid);
- 			goto out_cont;
- 		}
+ #endif
+-	} while (!(buf[0x08] & ST_IDLE) && !(err < 0) && ++count < 100);
++	} while (!(st->status & ST_IDLE) && !(err < 0) && ++count < 100);
  
-@@ -538,7 +546,7 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 
- out_cont:
- 		if (err)
--			w1_netlink_send_error(msg, m, NULL, err);
-+			w1_netlink_send_error(msg, m, NULL, nsp->portid, err);
- 		msg_len -= sizeof(struct w1_netlink_msg) + m->len;
- 		m = (struct w1_netlink_msg *)(((u8 *)m) + sizeof(struct w1_netlink_msg) + m->len);
- 
+ 	if (err >= 16 && st->status & ST_EPOF) {
+ 		printk(KERN_INFO "Resetting device after ST_EPOF.\n");
 -- 
 1.7.10.4
 
