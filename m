@@ -1,160 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbaAPFs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 00:48:28 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:33504
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751048AbaAPFsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 00:48:21 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzd799hzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21a7h1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>
-CC: <scottwood@freescale.com>, <LeoLi@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 6/7] DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
-Date: Thu, 16 Jan 2014 13:47:25 +0800
-Message-ID: <1389851246-8564-7-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
+	id S1752583AbaAPFte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 00:49:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246AbaAPFsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 00:48:22 -0500
+Date: Thu, 16 Jan 2014 07:47:00 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH net-next] tun/macvtap: limit the packets queued through
+ rcvbuf
+Message-ID: <20140116054700.GC8915@redhat.com>
+References: <1389682387-28601-1-git-send-email-jasowang@redhat.com>
+ <20140114082516.GB1101@redhat.com>
+ <52D4F924.2040502@redhat.com>
+ <20140114095219.GB2846@redhat.com>
+ <52D60221.1060701@redhat.com>
+ <20140115072104.GA32078@redhat.com>
+ <52D7602F.8090800@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7602F.8090800@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Thu, Jan 16, 2014 at 12:29:35PM +0800, Jason Wang wrote:
+> On 01/15/2014 03:21 PM, Michael S. Tsirkin wrote:
+> >On Wed, Jan 15, 2014 at 11:36:01AM +0800, Jason Wang wrote:
+> >>On 01/14/2014 05:52 PM, Michael S. Tsirkin wrote:
+> >>>On Tue, Jan 14, 2014 at 04:45:24PM +0800, Jason Wang wrote:
+> >>>>>On 01/14/2014 04:25 PM, Michael S. Tsirkin wrote:
+> >>>>>>>On Tue, Jan 14, 2014 at 02:53:07PM +0800, Jason Wang wrote:
+> >>>>>>>>>We used to limit the number of packets queued through tx_queue_length. This
+> >>>>>>>>>has several issues:
+> >>>>>>>>>
+> >>>>>>>>>- tx_queue_length is the control of qdisc queue length, simply reusing it
+> >>>>>>>>>   to control the packets queued by device may cause confusion.
+> >>>>>>>>>- After commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 ("macvtap: Add
+> >>>>>>>>>   support of packet capture on macvtap device."), an unexpected qdisc
+> >>>>>>>>>   caused by non-zero tx_queue_length will lead qdisc lock contention for
+> >>>>>>>>>   multiqueue deivce.
+> >>>>>>>>>- What we really want is to limit the total amount of memory occupied not
+> >>>>>>>>>   the number of packets.
+> >>>>>>>>>
+> >>>>>>>>>So this patch tries to solve the above issues by using socket rcvbuf to
+> >>>>>>>>>limit the packets could be queued for tun/macvtap. This was done by using
+> >>>>>>>>>sock_queue_rcv_skb() instead of a direct call to skb_queue_tail(). Also two
+> >>>>>>>>>new ioctl() were introduced for userspace to change the rcvbuf like what we
+> >>>>>>>>>have done for sndbuf.
+> >>>>>>>>>
+> >>>>>>>>>With this fix, we can safely change the tx_queue_len of macvtap to
+> >>>>>>>>>zero. This will make multiqueue works without extra lock contention.
+> >>>>>>>>>
+> >>>>>>>>>Cc: Vlad Yasevich<vyasevic@redhat.com>
+> >>>>>>>>>Cc: Michael S. Tsirkin<mst@redhat.com>
+> >>>>>>>>>Cc: John Fastabend<john.r.fastabend@intel.com>
+> >>>>>>>>>Cc: Stephen Hemminger<stephen@networkplumber.org>
+> >>>>>>>>>Cc: Herbert Xu<herbert@gondor.apana.org.au>
+> >>>>>>>>>Signed-off-by: Jason Wang<jasowang@redhat.com>
+> >>>>>>>No, I don't think we can change userspace-visible behaviour like that.
+> >>>>>>>
+> >>>>>>>This will break any existing user that tries to control
+> >>>>>>>queue length through sysfs,netlink or device ioctl.
+> >>>>>But it looks like a buggy API, since tx_queue_len should be for qdisc
+> >>>>>queue length instead of device itself.
+> >>>Probably, but it's been like this since 2.6.x time.
+> >>>Also, qdisc queue is unused for tun so it seemed kind of
+> >>>reasonable to override tx_queue_len.
+> >>>
+> >>>>>If we really want to preserve the
+> >>>>>behaviour, how about using a new feature flag and change the behaviour
+> >>>>>only when the device is created (TUNSETIFF) with the new flag?
+> >>>OK this addresses the issue partially, but there's also an issue
+> >>>of permissions: tx_queue_len can only be changed if
+> >>>capable(CAP_NET_ADMIN). OTOH in your patch a regular user
+> >>>can change the amount of memory consumed per queue
+> >>>by calling TUNSETRCVBUF.
+> >>Yes, but we have the same issue for TUNSETSNDBUF.
+> >To an extent, but TUNSETSNDBUF is different. It limits how much device can queue
+> >*in the networking stack* but each queue in the stack is also
+> >limited, when we exceed that we star dropping packets.
+> >So while with infinite value (which is the default btw)
+> >you can keep host pretty busy, you will not be able to run
+> >it out of memory.
+> >
+> >The proposed TUNSETRCVBUF would keep configured amount
+> >of memory around indefinitely so you can run host out of memory.
+> >
+> >So assuming all this
+> >How about an ethtool or netlink command to configure this
+> >instead?
+> >
+> 
+> Ok, so we can add net admin check for before trying to set rcvbuf.
 
-The usage of spin_lock_irqsave() is a stronger locking mechanism than is
-required throughout the driver. The minimum locking required should be used
-instead. Interrupts will be turned off and context will be saved, it is
-unnecessary to use irqsave.
+No, in practice I think using ioctl for sndbuf was also a mistake.
+Applications have no idea what to set it to - you need to know what else
+is running on the system, after a while
+QEMU ended up setting it back to infinity otherwise things kept
+breaking.
 
-This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
-manipulation of protected fields is done using tasklet context or weaker, which
-makes spin_lock_bh() the correct choice.
+ethtool or netlink would not have this problem.
+Which of the two is preferable I'm not sure.
+I wonder what do management tools such as libvirt prefer.
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
----
- drivers/dma/fsldma.c |   25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
+> I
+> think it's better to use ioctl since we've already use it for
+> sndbuf. Using ethool means you need a dedicated new ethtool method
+> just for tuntap which seems sub-optimal.
+> Netlink looks better, but
+> we should also implement other ioctl also.
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index bbace54..437794e 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -396,10 +396,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
- 	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
- 	struct fsl_desc_sw *child;
--	unsigned long flags;
- 	dma_cookie_t cookie = -EINVAL;
- 
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 
- 	/*
- 	 * assign cookies to all of the software descriptors
-@@ -412,7 +411,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	/* put this transaction onto the tail of the pending queue */
- 	append_ld_queue(chan, desc);
- 
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
- 
- 	return cookie;
- }
-@@ -731,15 +730,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
- static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
--	unsigned long flags;
- 
- 	chan_dbg(chan, "free all channel resources\n");
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 	fsldma_cleanup_descriptors(chan);
- 	fsldma_free_desc_list(chan, &chan->ld_pending);
- 	fsldma_free_desc_list(chan, &chan->ld_running);
- 	fsldma_free_desc_list(chan, &chan->ld_completed);
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
- 
- 	dma_pool_destroy(chan->desc_pool);
- 	chan->desc_pool = NULL;
-@@ -958,7 +956,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- {
- 	struct dma_slave_config *config;
- 	struct fsldma_chan *chan;
--	unsigned long flags;
- 	int size;
- 
- 	if (!dchan)
-@@ -968,7 +965,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- 
- 	switch (cmd) {
- 	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&chan->desc_lock, flags);
-+		spin_lock_bh(&chan->desc_lock);
- 
- 		/* Halt the DMA engine */
- 		dma_halt(chan);
-@@ -979,7 +976,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- 		fsldma_free_desc_list(chan, &chan->ld_completed);
- 		chan->idle = true;
- 
--		spin_unlock_irqrestore(&chan->desc_lock, flags);
-+		spin_unlock_bh(&chan->desc_lock);
- 		return 0;
- 
- 	case DMA_SLAVE_CONFIG:
-@@ -1021,11 +1018,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 	fsl_chan_xfer_ld_queue(chan);
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
- }
- 
- /**
-@@ -1124,11 +1120,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- static void dma_do_tasklet(unsigned long data)
- {
- 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
--	unsigned long flags;
- 
- 	chan_dbg(chan, "tasklet entry\n");
- 
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 
- 	/* the hardware is now idle and ready for more */
- 	chan->idle = true;
-@@ -1136,7 +1131,7 @@ static void dma_do_tasklet(unsigned long data)
- 	/* Run all cleanup for descriptors which have been completed */
- 	fsldma_cleanup_descriptors(chan);
- 
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
- 
- 	chan_dbg(chan, "tasklet exit\n");
- }
--- 
-1.7.9.5
+I'm not sure what this last phrase means. Can you clarify pls?
 
-
-
+> >>>>>>>Take a look at my patch in msg ID 20140109071721.GD19559@redhat.com
+> >>>>>>>which gives one way to set tx_queue_len to zero without
+> >>>>>>>breaking userspace.
+> >>>>>If I read the patch correctly, it will make no way for the user who
+> >>>>>really want to change the qdisc queue length for tun.
+> >>>Why would this matter?  As far as I can see qdisc queue is currently unused.
+> >>>
+> >>User may use qdisc to do port mirroring, bandwidth limitation, traffic
+> >>prioritization or more for a VM. So we do have users and maybe more
+> >>consider the case of vpn.
+> >Well it's not used by default at least.
+> >I remember that we discussed this previously actually.
+> >
+> >If all we want to do actually is utilize no_qdisc by default,
+> >we can simply use Eric's patch:
+> >
+> >http://article.gmane.org/gmane.linux.kernel/1279597
+> >
+> >and a similar patch for macvtap.
+> >I tried it at the time and it didn't seem to help performance
+> >at all, but a lot has changed since, in particular I didn't
+> >test mq.
+> >
+> >If you now have results showing how it's beneficial, pls post them.
+> >
+> 
+> I will have a test to see the difference.
