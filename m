@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaAPJlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:41:07 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51340 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaAPJjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:39:48 -0500
-Subject: [PATCH -tip 1/3] [BUGFIX] perf-probe: Release allocated
- probe_trace_event if failed
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 16 Jan 2014 09:39:44 +0000
-Message-ID: <20140116093944.24403.30228.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140116093942.24403.50992.stgit@kbuild-fedora.novalocal>
-References: <20140116093942.24403.50992.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	id S1752557AbaAPJlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:41:37 -0500
+Received: from imp01.mtu.ru ([62.5.255.10]:57736 "EHLO imp01.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaAPJlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 04:41:35 -0500
+X-Spam-Flag: NO
+Message-ID: <52D7A93C.9090801@pavlinux.ru>
+Date: Thu, 16 Jan 2014 13:41:16 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 0/8] Linux 3.2.53-rt76-rc1
+References: <20140116015824.201732155@goodmis.org>
+In-Reply-To: <20140116015824.201732155@goodmis.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="96BsrqKFHA1CCTKRNGFbXsPlLJrHLpXMK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To fix a memory leak, release all allocated probe_trace_event
-on the error path of try_to_find_probe_trace_events.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--96BsrqKFHA1CCTKRNGFbXsPlLJrHLpXMK
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
----
- tools/perf/util/probe-event.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+16.01.2014 05:58, Steven Rostedt =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+> Dear RT Folks,
+>=20
+> This is the RT stable review cycle of patch 3.2.53-rt76-rc1.
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index a4ee6b4..579b655 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -72,6 +72,7 @@ static int e_snprintf(char *str, size_t size, const char *format, ...)
- static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
- static int convert_name_to_addr(struct perf_probe_event *pev,
- 				const char *exec);
-+static void clear_probe_trace_event(struct probe_trace_event *tev);
- static struct machine machine;
- 
- /* Initialize symbol maps and path of vmlinux/modules */
-@@ -407,6 +408,14 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- 	return ret;
- }
- 
-+static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
-+{
-+	int i;
-+
-+	for (i = 0; i < ntevs; i++)
-+		clear_probe_trace_event(tevs + i);
-+}
-+
- /* Try to find perf_probe_event with debuginfo */
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
-@@ -442,6 +451,10 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 				ret = add_module_to_probe_trace_events(*tevs,
- 						 ntevs, target);
- 		}
-+		if (ret < 0) {
-+			clear_probe_trace_events(*tevs, ntevs);
-+			zfree(tevs);
-+		}
- 		return ret < 0 ? ret : ntevs;
- 	}
- 
+Yap..., mainline is 3.2.54 !
+
+--=20
+
+                                                         Pavel.
 
 
+--96BsrqKFHA1CCTKRNGFbXsPlLJrHLpXMK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCgAGBQJS16k8AAoJEPtok08Dny2hajgP/iC8c+mWcxuAKuNjrO8REpai
+HwzEyaeCJVxKlajG3K4LhhxrzwkV6wDQg7kQ1ofj3frdThC0MYmDLMwZVCp3+8gx
+Oxg0+Scmfhqc8dmJ0mEHztA61cCfkS5Ta2NGu3q3kPZvYSb8xwBbswIrgy3P0CGs
+j543a9PfvFBkPMuDHqj3Rx9l7RlrJBOK+uD2G3+fFlrro2d/gUTmvnLZZVbm862q
+G+CAM73cx8FpsD3I99qzjxu0Q9kURQ2j4A0+GK0W8AnUbNHwirI0c/of3pguvS4f
+DqMljYVlU6DvNzG98T/6QdxhfQUUOKCqFdj5JWRVTRhcxDggxEIgtMZZ6u2e/wZE
+yD5hJpsuFE22Q4ma8irpGqBHhNN/sAaHLRXI2wouPwlfRWY1ibYgSA/woLQEJWej
+ccmma0LA6eB/O61dT9z4DhD0mEWlnF5758S7KmU3icSnDlcYCoL02XUP/28DG1tf
+cKd62Bni+vUP3Yl8DVWWynxXDyCTEvtZ5ckP4dfkZ+C9mRn1Cm4KataJL+qgDVwn
+rT/YeyUmW3McDzqivLWyNTJF8oWq4VntWc3QXhebPR34zZXEPdbipBjOvVr109U4
+b23NH2oOfkMQV4u1Cb2G2PNR4n8hxQWMcPAGUUSMFmN4vaXJR5MPpOYaFWVh/N0t
+ljo1pZEmpLaMRsluk+Zb
+=5tNM
+-----END PGP SIGNATURE-----
+
+--96BsrqKFHA1CCTKRNGFbXsPlLJrHLpXMK--
