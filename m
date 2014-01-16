@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaAPBto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:49:44 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:61642 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaAPBtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:49:40 -0500
+	id S1752484AbaAPBu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:50:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62433 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752208AbaAPBuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:50:25 -0500
+Date: Thu, 16 Jan 2014 09:50:45 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, wim@iguana.be,
+        dzickus@redhat.com, bhe@redhat.com, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: add a parameter for stop wdt before register
+Message-ID: <20140116015045.GB3807@dhcp-16-126.nay.redhat.com>
+References: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
+ <20140114121639.77fe75ec@alan.etchedpixels.co.uk>
+ <20140114162405.GG3096@redhat.com>
+ <20140115011142.GC23767@dhcp-16-126.nay.redhat.com>
+ <20140115164609.GC3180@redhat.com>
 MIME-Version: 1.0
-Date: Thu, 16 Jan 2014 08:49:38 +0700
-X-Google-Sender-Auth: LDJf3frKQ4fEUT9DGohiD4Vs7p0
-Message-ID: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com>
-Subject: Baytrail problems (was Re: Linux 3.13-rc8)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Paul Drews <paul.drews@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115164609.GC3180@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding in the appropriate people...
+On 01/15/14 at 11:46am, Vivek Goyal wrote:
+> On Wed, Jan 15, 2014 at 09:11:42AM +0800, Dave Young wrote:
+> 
+> [..]
+> > > I thought this problem was resolved (atleast conceptually) last time
+> > > when Don Zickus brought it up.
+> > > 
+> > > He mentioned that it was concluded that keep watchdog interval long
+> > > enough, say 60 seconds and keep on kicking it fast enough, say every
+> > > 10-20 seconds. That would ensure that after the crash, there is atleast
+> > > 60 - 20 = 40 seconds left before watchdog expires. And in that duration
+> > > we should try to boot into second kernel load watchdog driver early enough
+> > > from initramfs which can start kicking watchdog again.
+> > 
+> > Some drivers did stop the watchdog while module loading such as iTCO_wdt.
+> 
+> Instead of stopping why not keep on kicking it till user space takes
+> over this job. This will also make sure that if kdump kernel hangs,
+> watchdog wil do the job it is supposed to do?
 
-On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->
-> It seems to hate Baytrail/T
->
-> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
-> right but otherwise running nicely and playing 3D games to 3.13-rc8
->
-> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
->   in
+Yes, rethinking about this problem, kicking it is better than stopping it.
+But we will also have more uncertern time between userspace kicking before and
+after panic.
 
-Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
-but I guess the GPIO and ACPI ID addition ends up also enabling all
-the old code that Alan probably never ran in 3.11 because the driver
-didn't trigger on his machine.
-
-Alan, do you have a crash picture/log?
-
-> - i915 console doesn't work
-
-Daniel/Dave?
-
-> - X can be kind of hacked to work by adding mode lines wit xrandr and
->   turning the vga back on
->
-> Bugs filed on both issues. The pinctrl one is nasty as it makes the i915
-> driver crash during initialisation, so the only way you can debug it is
-> pretty much a USB debug cable.
->
-> Without pinctrl the crash goes away but the display still doesn't work.
-
-Thanks,
-
-              Linus
+Thanks
+Dave
