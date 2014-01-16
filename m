@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaAPRBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:01:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42148 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327AbaAPRBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:01:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,668,1384329600"; 
-   d="scan'208";a="467759441"
-Date: Thu, 16 Jan 2014 21:29:21 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: hongbo.zhang@freescale.com
-Cc: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@redhat.com>,
-        Richard Henderson <rth@cygnus.com>, Jakub Jelinek <jakub@redhat.com>,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        Arthur Kepner <akepner@sgi.com>, sumit.semwal@linaro.org,
-        Pierre Ossman <drzeus@drzeus.cx>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Subject: Re: [PATCH resend 1/2] Documentation: move all DMA documentations
- into Documentaion/dma
-Message-ID: <20140116155921.GJ25466@intel.com>
-References: <1389869405-10363-1-git-send-email-hongbo.zhang@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389869405-10363-1-git-send-email-hongbo.zhang@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752886AbaAPRDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:03:34 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:42349 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaAPRD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 12:03:26 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC 04/18] driver core & of: Mark of_nodes of added device as populated
+To: Rob Herring <robherring2@gmail.com>, Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <CAL_JsqJGQFstgFu=tpho91C0iv4eH9XSCAVKfXXQO4Z+yD-0tw@mail.gmail.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com> < 1387815830-8794-5-git-send-email-pawel.moll@arm.com> < CAL_JsqJGQFstgFu=tpho91C0iv4eH9XSCAVKfXXQO4Z+yD-0tw@mail.gmail.com>
+Date: Thu, 16 Jan 2014 17:03:20 +0000
+Message-Id: <20140116170320.F083BC40973@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 06:50:04PM +0800, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Wed, 8 Jan 2014 11:28:01 -0600, Rob Herring <robherring2@gmail.com> wrote:
+> On Mon, Dec 23, 2013 at 10:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > In "Device Tree powered" systems, platform devices are usually
+> > massively populated with of_platform_populate() call, executed
+> > at some level of initcalls, either by generic architecture
+> > or by platform-specific code.
+> >
+> > There are situations though where certain devices must be
+> > created (and bound with drivers) before all the others.
+> > This presents small challenge in DT-driven systems, as
+> > devices explicitly created in early code would be created
+> > again by of_platform_populate().
 > 
-> Since there are already seven DMA documentations under the top Documentation/,
-> it is better to create one dedicated directory for them.
+> Isn't this already at least partially solved with the aux data
+> support? I'm guessing the difference here is how the early device is
+> created.
 
-Well the problem is that not everything is same. Some of these mean how to use
-dma mapping API, couple are related to dmaengine, so clubing everything into
-"dma" doesnt sound right to me!
+Still, creating a device early and then trying to remember that it has
+been done does nothing but add complexity for a very small number of use
+cases. I still would much rather see things that need really early setup
+to avoid the device model entirely and do the bare minimum needed to
+allow the kernel to get to initcall time. In the cases where a subsystem
+API requires a struct device, I would consider using a dummy throwaway
+struct device for the early bits.
 
---
-~Vinod
-> 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> Cc: David S. Miller <davem@redhat.com>
-> Cc: Richard Henderson <rth@cygnus.com>
-> Cc: Jakub Jelinek <jakub@redhat.com>
-> Cc: James E.J. Bottomley <James.Bottomley@HansenPartnership.com>
-> Cc: Arthur Kepner <akepner@sgi.com>
-> Cc: sumit.semwal@linaro.org
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Pierre Ossman <drzeus@drzeus.cx>
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  Documentation/{ => dma}/DMA-API-HOWTO.txt   |    0
->  Documentation/{ => dma}/DMA-API.txt         |    0
->  Documentation/{ => dma}/DMA-ISA-LPC.txt     |    0
->  Documentation/{ => dma}/DMA-attributes.txt  |    0
->  Documentation/{ => dma}/dma-buf-sharing.txt |    0
->  Documentation/{ => dma}/dmaengine.txt       |    0
->  Documentation/{ => dma}/dmatest.txt         |    0
->  7 files changed, 0 insertions(+), 0 deletions(-)
->  rename Documentation/{ => dma}/DMA-API-HOWTO.txt (100%)
->  rename Documentation/{ => dma}/DMA-API.txt (100%)
->  rename Documentation/{ => dma}/DMA-ISA-LPC.txt (100%)
->  rename Documentation/{ => dma}/DMA-attributes.txt (100%)
->  rename Documentation/{ => dma}/dma-buf-sharing.txt (100%)
->  rename Documentation/{ => dma}/dmaengine.txt (100%)
->  rename Documentation/{ => dma}/dmatest.txt (100%)
-> 
-> diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/dma/DMA-API-HOWTO.txt
-> similarity index 100%
-> rename from Documentation/DMA-API-HOWTO.txt
-> rename to Documentation/dma/DMA-API-HOWTO.txt
-> diff --git a/Documentation/DMA-API.txt b/Documentation/dma/DMA-API.txt
-> similarity index 100%
-> rename from Documentation/DMA-API.txt
-> rename to Documentation/dma/DMA-API.txt
-> diff --git a/Documentation/DMA-ISA-LPC.txt b/Documentation/dma/DMA-ISA-LPC.txt
-> similarity index 100%
-> rename from Documentation/DMA-ISA-LPC.txt
-> rename to Documentation/dma/DMA-ISA-LPC.txt
-> diff --git a/Documentation/DMA-attributes.txt b/Documentation/dma/DMA-attributes.txt
-> similarity index 100%
-> rename from Documentation/DMA-attributes.txt
-> rename to Documentation/dma/DMA-attributes.txt
-> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma/dma-buf-sharing.txt
-> similarity index 100%
-> rename from Documentation/dma-buf-sharing.txt
-> rename to Documentation/dma/dma-buf-sharing.txt
-> diff --git a/Documentation/dmaengine.txt b/Documentation/dma/dmaengine.txt
-> similarity index 100%
-> rename from Documentation/dmaengine.txt
-> rename to Documentation/dma/dmaengine.txt
-> diff --git a/Documentation/dmatest.txt b/Documentation/dma/dmatest.txt
-> similarity index 100%
-> rename from Documentation/dmatest.txt
-> rename to Documentation/dma/dmatest.txt
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
-
--- 
+g.
