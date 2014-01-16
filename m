@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaAPQQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 11:16:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544AbaAPQQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 11:16:31 -0500
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-In-Reply-To: <20140116161015.GC16829@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
-	 <20140116161015.GC16829@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 16 Jan 2014 16:15:42 +0000
-Message-ID: <1389888942.2779.34.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752737AbaAPQSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 11:18:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52303 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238AbaAPQST (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 11:18:19 -0500
+Date: Thu, 16 Jan 2014 08:18:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, broonie@kernel.org
+Subject: Re: [PATCH] tty: Fallback to use dynamic major number
+Message-ID: <20140116161841.GA7476@kroah.com>
+References: <1389848602-30985-1-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389848602-30985-1-git-send-email-tushar.behera@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 16, 2014 at 10:33:22AM +0530, Tushar Behera wrote:
+> In a multi-platform scenario, the hard-coded major/minor numbers in
+> serial drivers may conflict with each other. A typical scenario is
+> observed with amba-pl011 and samsung-uart drivers, both of these
+> drivers use same set of major/minor numbers. If both of these drivers
+> are enabled, probe of samsung-uart driver fails because the desired
+> node is busy.
 
-On Thu, 2014-01-16 at 11:10 -0500, J. Bruce Fields wrote:
-> On Wed, Jan 15, 2014 at 10:17:49AM -0500, bfields wrote:
-> > From: "J. Bruce Fields" <bfields@redhat.com>
-> > 
-> > d_splice_alias can create duplicate directory aliases (in the !new
-> > case), or (in the new case) d_move without holding appropriate locks.
-> > 
-> > d_materialise_unique deals with both of these problems.  (The latter
-> > seems to be dealt by trylocks (see __d_unalias), which look like they
-> > could cause spurious lookup failures--but that's at least better than
-> > corrupting the dcache.)
-> > 
-> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> > ---
-> >  fs/dcache.c |   25 +------------------------
-> >  1 file changed, 1 insertion(+), 24 deletions(-)
-> > 
-> > Only lightly tested....  If this is right, then we can also just ditch
-> > d_splice_alias completely, and clean up the various d_find_alias's.
-> > 
-> > I think the only reason we have both d_splice_alias and
-> > d_materialise_unique is that the former was written for exportable
-> > filesystems and the latter for distributed filesystems.
-> > 
-> > But we have at least one exportable filesystem (fuse) using
-> > d_materialise_unique.  And I doubt d_splice_alias was ever completely
-> > correct even for on-disk filesystems.
-> > 
-> > Am I missing some subtlety?
-> 
-> Hm, I just noticed:
-> 
->     commit 0d0d110720d7960b77c03c9f2597faaff4b484ae
->     Author: Miklos Szeredi <mszeredi@suse.cz>
->     Date:   Mon Sep 16 14:52:00 2013 +0200
-> 
->     GFS2: d_splice_alias() can't return error
->     
->     unless it was given an IS_ERR(inode), which isn't the case here.  So clean
->     up the unnecessary error handling in gfs2_create_inode().
->     
->     This paves the way for real fixes (hence the stable Cc).
->     
->     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->     Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
->     Cc: stable@vger.kernel.org
-> 
-> While the statement is true for the current implementation of
-> d_splice_alias, I don't think it's actually true for any correct
-> implementation of d_splice_alias, which must be able to return at least
-> -ELOOP in the directory case.  Does gfs2 need fixing?
-> 
-> --b.
+Why would both drivers ever be loaded at the same time?  Don't they bind
+to different hardware devices, and as such, never will be in the same
+system?
 
-Yes, in that case, probably in two places,
+The driver shouldn't be registering it's tty devices if the hardware
+isn't present in the system, so how can this codepath ever happen?
 
-Steve.
+> The issue is fixed by adding a fallback in driver core, so that we can
+> use dynamic major number in case device node allocation fails for
+> hard-coded major/minor number.
 
+Did you test this out?  You still get userspace breakage with it :(
 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+> Hi Greg,
+> 
+> This is my second attempt at getting this fixed. Let me know if you are
+> okay with this.
+> 
+> Initial approach to fix this problem was by forcing samsung-uart driver
+> to use dynamic major number, but it was rejected [1] because of possible
+> user-space breakage.
+
+"possible"?  Heh, no, that should be "real".
+
+Sorry, but I think you are trying to fix a problem that never actually
+happens in real life, or in valid configurations...
+
+greg k-h
