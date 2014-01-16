@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaAPRvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:51:11 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:46501 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaAPRvJ (ORCPT
+	id S1751567AbaAPRx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:53:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46923 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaAPRxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:51:09 -0500
-Message-ID: <52D81C09.10901@linux.com>
-Date: Thu, 16 Jan 2014 18:51:05 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 16 Jan 2014 12:53:24 -0500
+Message-ID: <52D81C92.9050800@canonical.com>
+Date: Thu, 16 Jan 2014 12:53:22 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGHFgiBLd2lhdGtvd3NraQ==?= 
-	<michaelflowersky@geekingspree.com>,
-        gregkh@linuxfoundation.org, john.stultz@linaro.org,
-        dan.carpenter@oracle.com, cruzjbishop@gmail.com
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: android: fix parentheses coding style issue
- in alarm-dev.c
-References: <1389828756-9397-1-git-send-email-michaelflowersky@geekingspree.com>
-In-Reply-To: <1389828756-9397-1-git-send-email-michaelflowersky@geekingspree.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [v3.11][v3.12][v3.13][Regression]  EISA: Initialize device before
+ its resources
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Bjorn,
 
-On 01/16/2014 12:32 AM, Michał Kwiatkowski wrote:
-> This is a patch to the alarm-dev.c file that removes parentheses which
-> should not appear in return statement. This error was found by the
-> checkpatch.pl tool.
-> 
-> Signed-off-by: Michał Kwiatkowski <michaelflowersky@geekingspree.com>
-> [...]
-> +++ b/drivers/staging/android/alarm-dev.c
-> @@ -68,8 +68,8 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
->   */
->  static int is_wakeup(enum android_alarm_type type)
->  {
-> -	return (type == ANDROID_ALARM_RTC_WAKEUP ||
-> -		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
-> +	return type == ANDROID_ALARM_RTC_WAKEUP ||
-> +	       type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
->  }
+A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
+was found the following commit introduced this bug:
 
-This is the fourth patch that does the exact same, an other similar patch
-was already applied, hence this one will not apply. Please base your patches
-on -next or the staging.git tree.
+commit 26abfeed4341872364386c6a52b9acef8c81a81a
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon Apr 15 14:34:02 2013 -0600
 
--- 
-Regards,
-Levente Kurusa
+    EISA: Initialize device before its resources
+
+The regression was introduced as of v3.10-rc1.
+
+Reverting this commit has resolved the bug.  I wanted to get your
+feedback, since you are the patch author.  Should we consider reverting
+this commit in mainline and the stable trees?
+
+Thanks,
+
+Joe
+
