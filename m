@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaAPRPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:15:25 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:51917 "EHLO
+	id S1753214AbaAPRQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:16:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:51880 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753094AbaAPRPF (ORCPT
+	with ESMTP id S1753088AbaAPRPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:15:05 -0500
+	Thu, 16 Jan 2014 12:15:04 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         Emilio Lopez <emilio@elopez.com.ar>
@@ -16,46 +16,115 @@ Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         zhuzhenhua@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 0/4] Add Allwinner A31 SPI controller support
-Date: Thu, 16 Jan 2014 18:11:21 +0100
-Message-Id: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/4] clk: sunxi: Add support for PLL6 on the A31
+Date: Thu, 16 Jan 2014 18:11:22 +0100
+Message-Id: <1389892285-11745-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+The A31 has a slightly different PLL6 clock. Add support for this new clock in
+our driver.
 
-This patchset brings support for the SPI controller found in the
-Allwinner A31 SoC.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
+ drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
-Even though the controller supports DMA, the driver only supports PIO
-mode for now. This driver will be used to bring up and test DMA on the
-SoC, so support for the DMA will come eventually.
-
-It doesn't support transfer larger than the FIFO size (128 bytes) for
-now, so this is kind of a blocker against inclusion, but I expect it
-to be fixed by v2.
-
-Thanks!
-Maxime
-
-Maxime Ripard (4):
-  clk: sunxi: Add support for PLL6 on the A31
-  ARM: sun6i: dt: Add PLL6 and SPI module clocks
-  spi: sunxi: Add Allwinner A31 SPI controller driver
-  ARM: sun6i: dt: Add SPI controllers to the A31 DTSI
-
- Documentation/devicetree/bindings/clock/sunxi.txt  |   1 +
- .../devicetree/bindings/spi/spi-sun6i.txt          |  23 +
- arch/arm/boot/dts/sun6i-a31.dtsi                   |  88 +++-
- drivers/clk/sunxi/clk-sunxi.c                      |  45 ++
- drivers/spi/Makefile                               |   1 +
- drivers/spi/spi-sun6i.c                            | 463 +++++++++++++++++++++
- 6 files changed, 611 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-sun6i.txt
- create mode 100644 drivers/spi/spi-sun6i.c
-
+diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+index c2cb762..954845c 100644
+--- a/Documentation/devicetree/bindings/clock/sunxi.txt
++++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+@@ -11,6 +11,7 @@ Required properties:
+ 	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
+ 	"allwinner,sun4i-pll5-clk" - for the PLL5 clock
+ 	"allwinner,sun4i-pll6-clk" - for the PLL6 clock
++	"allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
+ 	"allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
+ 	"allwinner,sun4i-axi-clk" - for the AXI clock
+ 	"allwinner,sun4i-axi-gates-clk" - for the AXI gates
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 659e4ea..990ad5d 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
+ 	*n = DIV_ROUND_UP(div, (*k+1));
+ }
+ 
++/**
++ * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
++ * PLL6 rate is calculated as follows
++ * rate = parent_rate * n * (k + 1) / 2
++ * parent_rate is always 24Mhz
++ */
++
++static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
++				       u8 *n, u8 *k, u8 *m, u8 *p)
++{
++	u8 div;
++
++	/*
++	 * We always have 24MHz / 2, so we can just say that our
++	 * parent clock is 12MHz.
++	 */
++	parent_rate = parent_rate / 2;
++
++	/* Normalize value to a parent_rate multiple (24M / 2) */
++	div = *freq / parent_rate;
++	*freq = parent_rate * div;
++
++	/* we were called to round the frequency, we can now return */
++	if (n == NULL)
++		return;
++
++	*k = div / 32;
++	if (*k > 3)
++		*k = 3;
+ 
++	*n = DIV_ROUND_UP(div, (*k+1));
++}
+ 
+ /**
+  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
+@@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
+ 	.kwidth = 2,
+ };
+ 
++static struct clk_factors_config sun6i_a31_pll6_config = {
++	.nshift	= 8,
++	.nwidth = 5,
++	.kshift = 4,
++	.kwidth = 2,
++};
++
+ static struct clk_factors_config sun4i_apb1_config = {
+ 	.mshift = 0,
+ 	.mwidth = 5,
+@@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
+ 	.getter = sun4i_get_pll5_factors,
+ };
+ 
++static const struct factors_data sun6i_a31_pll6_data __initconst = {
++	.enable = 31,
++	.table = &sun6i_a31_pll6_config,
++	.getter = sun6i_a31_get_pll6_factors,
++};
++
+ static const struct factors_data sun4i_apb1_data __initconst = {
+ 	.table = &sun4i_apb1_config,
+ 	.getter = sun4i_get_apb1_factors,
+@@ -972,6 +1016,7 @@ free_clkdata:
+ static const struct of_device_id clk_factors_match[] __initconst = {
+ 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
+ 	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
++	{.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
+ 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
+ 	{.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
+ 	{.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
 -- 
 1.8.4.2
 
