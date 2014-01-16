@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaAPSK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:10:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43014 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799AbaAPSKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:10:52 -0500
-Date: Thu, 16 Jan 2014 19:10:44 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
-Message-ID: <20140116181044.GG22492@pd.tnic>
-References: <20140114114133.GA31473@khazad-dum.debian.net>
- <20140114115547.GA29887@pd.tnic>
- <52D55468.6000000@zytor.com>
- <20140114153534.GE29865@pd.tnic>
- <20140114162722.GF29865@pd.tnic>
- <52D59ACC.3090100@amd.com>
- <20140114203848.GP29865@pd.tnic>
- <52D81DB5.7000608@amd.com>
+	id S1751700AbaAPSMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:12:42 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:52818 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaAPSMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:12:39 -0500
+Message-ID: <52D82110.9020309@linaro.org>
+Date: Thu, 16 Jan 2014 13:12:32 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D81DB5.7000608@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 13/16] ARM: Add an emulate flag to the kprobes/uprobes
+ instruction decode functions
+References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>   <1387166930-13182-14-git-send-email-dave.long@linaro.org>  <1387551482.3404.63.camel@linaro1.home> <52D6E1FE.8000303@linaro.org> <1389863932.3530.12.camel@linaro1.home>
+In-Reply-To: <1389863932.3530.12.camel@linaro1.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 11:58:13AM -0600, Aravind Gopalakrishnan wrote:
-> We might want to still have a software fix for this just in case
-> someone uses older BIOSes..
+On 01/16/14 04:18, Jon Medhurst (Tixy) wrote:
+> On Wed, 2014-01-15 at 14:31 -0500, David Long wrote:
+>> On 12/20/13 09:58, Jon Medhurst (Tixy) wrote:
+>>> On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
+> [...]
+>>>>    {
+>>>>    #ifdef CONFIG_THUMB2_KERNEL
+>>>>    	if (thumb) {
+>>>> @@ -253,7 +253,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>>>>     * non-zero value, the corresponding nibble in pinsn is validated and modified
+>>>>     * according to the type.
+>>>>     */
+>>>> -static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+>>>> +static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
+>>>>    {
+>>>>    	probes_opcode_t insn = *pinsn;
+>>>>    	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
+>>>> @@ -317,9 +317,16 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+>>>>    		/* Replace value of nibble with new register number... */
+>>>>    		insn &= ~mask;
+>>>>    		insn |= new_bits & mask;
+>>>> +		if (modify) {
+>>>> +			/* Replace value of nibble with new register number */
+>>>> +			insn &= ~mask;
+>>>> +			insn |= new_bits & mask;
+>>>> +		}
+>>>
+>>> Huh? As is, the above addition doesn't do anything because insn has
+>>> already been modified. I guess you played with the idea that you needed
+>>> to avoid changing insn (you don't) and then didn't undo the experiment
+>>> quite right. :-)
+>>>
+>>
+>> The conditional modification of the instruction was part of Rabin's
+>> original work for uprobes, but I messed up the merge from an earlier
+>> working version of my patches.  My intention was/is to delete the old
+>> unconditional code.  Sounds like maybe you disagree though.  The intent
+>> is to only modify the instruction in the kprobes case.
+>
+> 'insn' is the local variable containing the instruction value we're
+> processing. It doesn't matter if we change that, we just need to avoid
+> updating the instruction in memory, which the code in the next chunk
+> already correctly checks for...
+>
+>>>>    	}
+>>>>
+>>>> -	*pinsn = insn;
+>>>> +	if (modify)
+>>>> +		*pinsn = insn;
+>>>> +
+>>>>    	return true;
+>>>>
+>
+> So only one of these 'if (modify)' checks is required for code
+> correctness, and I suggest keeping the second one as it's more explicit
+> and defensive.
+>
+>
 
-Are you saying there are F16h BIOSes out there which might not have the
-fix?
+OK, I see your point.  I shall simplify the code as you have suggested.
 
-Also, for PCI config space fixes, take a look at
-arch/x86/kernel/quirks.c
+-dl
 
-Also, code in arch/x86/kernel/amd_nb.c could come in handy, especially
-if you have multiple F16h sockets configurations.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
