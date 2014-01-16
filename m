@@ -1,57 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaAPIpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:45:07 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:44618 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaAPIpD (ORCPT
+	id S1751848AbaAPIvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 03:51:06 -0500
+Received: from relay.parallels.com ([195.214.232.42]:41357 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaAPIvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:45:03 -0500
-Date: Thu, 16 Jan 2014 09:44:58 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "x86: fix 27-rc crash on vsmp due to paravirt
- during module load"
-Message-ID: <20140116084458.GA9346@gmail.com>
-References: <1389838259-29411-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 16 Jan 2014 03:51:02 -0500
+Message-ID: <52D79D6B.10304@parallels.com>
+Date: Thu, 16 Jan 2014 12:50:51 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389838259-29411-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on memory
+References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com> <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org> <52D4E5F2.5080205@parallels.com> <20140114141453.374bd18e5290876177140085@linux-foundation.org> <52D64B27.30604@parallels.com> <20140115012541.ad302526.akpm@linux-foundation.org> <52D6AF5F.2040102@parallels.com> <20140115145327.6aae2e13a9a8bba619923ac9@linux-foundation.org>
+In-Reply-To: <20140115145327.6aae2e13a9a8bba619923ac9@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/16/2014 02:53 AM, Andrew Morton wrote:
+> On Wed, 15 Jan 2014 19:55:11 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+>
+>>> We could avoid the "scan 32 then scan just 1" issue with something like
+>>>
+>>> 	if (total_scan > batch_size)
+>>> 		total_scan %= batch_size;
+>>>
+>>> before the loop.  But I expect the effects of that will be unmeasurable
+>>> - on average the number of objects which are scanned in the final pass
+>>> of the loop will be batch_size/2, yes?  That's still a decent amount.
+>> Let me try to summarize. We want to scan batch_size objects in one pass,
+>> not more (to keep latency low) and not less (to avoid cpu cache
+>> pollution due to too frequent calls); if the calculated value of
+>> nr_to_scan is less than the batch_size we should accumulate it in
+>> nr_deferred instead of calling ->scan() and add nr_deferred to
+>> nr_to_scan on the next pass, i.e. in pseudo-code:
+>>
+>>     /* calculate current nr_to_scan */
+>>     max_pass = shrinker->count();
+>>     delta = max_pass * nr_user_pages_scanned / nr_user_pages;
+>>
+>>     /* add nr_deferred */
+>>     total_scan = delta + nr_deferred;
+>>
+>>     while (total_scan >= batch_size) {
+>>         shrinker->scan(batch_size);
+>>         total_scan -= batch_size;
+>>     }
+>>
+>>     /* save the remainder to nr_deferred  */
+>>     nr_deferred = total_scan;
+>>
+>> That would work, but if max_pass is < batch_size, it would not scan the
+>> objects immediately even if prio is high (we want to scan all objects).
+> Yes, that's a problem.
+>
+>> For example, dropping caches would not work on the first attempt - the
+>> user would have to call it batch_size / max_pass times.
+> And we do want drop_caches to work immediately.
+>
+>> This could be
+>> fixed by making the code proceed to ->scan() not only if total_scan is
+>>> = batch_size, but also if max_pass is < batch_size and total_scan is >=
+>> max_pass, i.e.
+>>
+>>     while (total_scan >= batch_size ||
+>>             (max_pass < batch_size && total_scan >= max_pass)) ...
+>>
+>> which is equivalent to
+>>
+>>     while (total_scan >= batch_size ||
+>>                 total_scan >= max_pass) ...
+>>
+>> The latter is the loop condition from the current patch, i.e. this patch
+>> would make the trick if shrink_slab() followed the pseudo-code above. In
+>> real life, it does not actually - we have to bias total_scan before the
+>> while loop in order to avoid dropping fs meta caches on light memory
+>> pressure due to a large number being built in nr_deferred:
+>>
+>>     if (delta < max_pass / 4)
+>>         total_scan = min(total_scan, max_pass / 2);
+> Oh, is that what's it's for.  Where did you discover this gem?
 
-* Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>From 3567b59aa80ac4417002bf58e35dce5c777d4164 Mon Sep 17 00:00:00 2001
+From: Dave Chinner <dchinner@redhat.com>
+Date: Fri, 8 Jul 2011 14:14:36 +1000
+Subject: [PATCH] vmscan: reduce wind up shrinker->nr when shrinker can't do
+ work
 
-> This reverts commit 05e12e1c4c09cd35ac9f4e6af1e42b0036375d72.
-> 
-> The old change from __init --> __init_or_module doesn't make
-> sense anymore, given that the arch/x86/kernel/vsmp_64.c code
-> is only for non-modular builds.
-> 
-> As of commit 70511134f61bd6e5eed19f767381f9fb3e762d49
-> ("Revert "x86: don't compile vsmp_64 for 32bit") this file
-> became obj-y and hence is only for built-in.  That makes
-> any "or_module" support redundant.
-> 
-> We need to distinguish between the two in order to do some
-> header cleanups.  This revert starts that process.
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>     while (total_scan >= batch_size) ...
+>>
+>> With this biasing, it is impossible to achieve the ideal behavior I've
+>> described above, because we will never accumulate max_pass objects in
+>> nr_deferred if memory pressure is low. So, if applied to the real code,
+>> this patch takes on a slightly different sense, which I tried to reflect
+>> in the comment to the code: it will call ->scan() with nr_to_scan <
+>> batch_size only if:
+>>
+>> 1) max_pass < batch_size && total_scan >= max_pass
+>>
+>> and
+>>
+>> 2) we're tight on memory, i.e. the current delta is high (otherwise
+>> total_scan will be biased as max_pass / 2 and condition 1 won't be
+>> satisfied).
+> (is max_pass misnamed?)
 
-I suspect you want to carry this as part of your header cleanups, to 
-not have to wait for upstream propagation?
+Yes, the name is misleading. I guess, it should be called freeable_cnt,
+because we actually scan up to 2*max_pass objects in one pass.
 
-Please fix the title: the original commit was right, but was mooted by 
-other changes. That's not a revert but a change that happens to be the 
-inverse of an earlier change.
+>> >From our discussion it seems condition 2 is not necessary at all, but it
+>> follows directly from the biasing rule. So I propose to tweak the
+>> biasing a bit so that total_scan won't be lowered < batch_size:
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index eea668d..78ddd5e 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -267,7 +267,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
+>> struct shrinker *shrinker,
+>>       * a large delta change is calculated directly.
+>>       */
+>>      if (delta < max_pass / 4)
+>> -        total_scan = min(total_scan, max_pass / 2);
+>> +        total_scan = min(total_scan, max(max_pass / 2, batch_size));
+>>  
+>>      /*
+>>       * Avoid risking looping forever due to too large nr value:
+>> @@ -281,7 +281,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
+>> struct shrinker *shrinker,
+>>                  nr_pages_scanned, lru_pages,
+>>                  max_pass, delta, total_scan);
+>>  
+>> -    while (total_scan >= batch_size) {
+>> +    while (total_scan >= batch_size || total_scan >= max_pass) {
+>>          unsigned long ret;
+>>  
+>>          shrinkctl->nr_to_scan = batch_size;
+>>
+>> The first hunk guarantees that total_scan will always accumulate at
+>> least batch_size objects no matter how small max_pass is. That means
+>> that when max_pass is < batch_size we will eventually get >= max_pass
+>> objects to scan and shrink the slab to 0 as we need. What do you think
+>> about that?
+> I'm a bit lost :(
 
-Thanks,
+I'll try to clean up shrink_slab_node() and resend the patch then.
 
-	Ingo
+Thanks.
