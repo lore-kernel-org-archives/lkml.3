@@ -1,210 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaAPIRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:17:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960AbaAPIRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:17:41 -0500
-Date: Thu, 16 Jan 2014 09:17:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
-Message-ID: <20140116081738.GA28157@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
- <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
- <20140114132727.GB32227@dhcp22.suse.cz>
- <20140114142610.GF32227@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
- <20140115095829.GI8782@dhcp22.suse.cz>
- <20140115121728.GJ8782@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
+	id S1751634AbaAPISu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 03:18:50 -0500
+Received: from [207.46.163.189] ([207.46.163.189]:56456 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750836AbaAPISs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 03:18:48 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: David Rientjes <rientjes@google.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: simple-card: Add snd_card's name parsing from DT
+ node support
+Thread-Topic: [PATCH] ASoC: simple-card: Add snd_card's name parsing from DT
+ node support
+Thread-Index: AQHPEneV3eXWkcd1sUuNGlCPhxSZTpqGy4UAgAA1p24=
+Date: Thu, 16 Jan 2014 08:16:54 +0000
+Message-ID: <78cfe3325da44b3ba5f444bb4c2d16fe@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389844801-29309-1-git-send-email-Li.Xiubo@freescale.com>,<alpine.DEB.2.02.1401152102330.20635@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401152102330.20635@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 0093C80C01
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(679001)(689001)(51704005)(199002)(189002)(56816005)(85852003)(83072002)(76482001)(47446002)(51856001)(2656002)(74366001)(33646001)(63696002)(74502001)(80022001)(65816001)(93516002)(74662001)(66066001)(90146001)(46102001)(74706001)(74316001)(54356001)(54316002)(31966008)(74876001)(77982001)(47736001)(83322001)(53806001)(4396001)(81816001)(85306002)(49866001)(80976001)(59766001)(56776001)(69226001)(92566001)(87266001)(76796001)(93136001)(87936001)(76786001)(76576001)(81542001)(81342001)(81686001)(47976001)(79102001)(50986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-01-14 13:24:34, Hugh Dickins wrote:
-> On Wed, 15 Jan 2014, Michal Hocko wrote:
-> > On Wed 15-01-14 10:58:29, Michal Hocko wrote:
-> > > On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
-> > > > On Tue, 14 Jan 2014, Michal Hocko wrote:
-> > [...]
-> > > > > Ouch. And thinking about this shows that out_css_put is broken as well
-> > > > > for subtree walks (those that do not start at root_mem_cgroup level). We
-> > > > > need something like the the snippet bellow.
-> > > > 
-> > > > It's the out_css_put precedent that I was following in not incrementing
-> > > > for the root.  I think that's been discussed in the past, and rightly or
-> > > > wrongly we've concluded that the caller of mem_cgroup_iter() always has
-> > > > some hold on the root, which makes it safe to skip get/put on it here.
-> > > > No doubt one of those many short cuts to avoid memcg overhead when
-> > > > there's no memcg other than the root_mem_cgroup.
-> > > 
-> > > That might be true but I guess it makes sense to get rid of some subtle
-> > > assumptions. Especially now that we have an effective per-cpu ref.
-> > > counting for css.
-> > 
-> > OK, I finally found some time to think about this some more and it seems
-> > that the issue you have reported and the above issue are in fact
-> > identical. css reference counting optimization in fact also prevent from
-> > the endless loop you are seeing here because we simply didn't call
-> > css_tryget on the root...
-> 
-> Wow.  I don't see them as the same issue, but yes, one fix for both.
+Hi David,
 
-Yeah, they have an identical culprit, that's what I wanted to write but
-then little dwarfs have have changed that to make me sound funny.
 
-> I completely missed that: so we've been leaking a "struct mem_cgroup"
-> and its attached stuff, for any memcg on which reclaim or other iteration
-> had been done, from v3.10 onwards?
+> >  sound/soc/generic/simple-card   | 0
+> >  sound/soc/generic/simple-card.  | 0
+> >  sound/soc/generic/simple-card.c | 7 ++++++-
+> >  3 files changed, 6 insertions(+), 1 deletion(-)
+> >  create mode 100644 sound/soc/generic/simple-card
+> >  create mode 100644 sound/soc/generic/simple-card.
+>
+> Probably not the intention to create these empty files.
 
-I am afraid so :/
-I've added a simple trace_printk into mem_cgroup_css_free just to be
-sure and it didn't show up after rmdir THAT_GROUP
+Yes,  I have resent this patch.
 
-> Or am I confused and overstating it?  I'd have sworn I've checked for
-> memcg leaks myself after doing tests, and not realized this; but now I
-> put in a count of those allocated, yes, I see it going up and up (with
-> my half-fix in to proceed beyond the hang) without your fix, but staying
-> steady with your fix in (which also gets around my hang).
-> 
-> > 
-> > Therefore I guess we should reintroduce the optimization. What do you
-> 
-> It's not a question of reintroducing an optimization, but of either
-> fixing the broken end of the optimization, or ripping the other end out.
+Thanks very much,
 
-Heh, I didn't have a better name for the root css exclusion so I kept
-calling it optimization.
-
-> At this point I'm for simply fixing what we know is broken; then later
-> one of us audit the other iterators to check the original assumption
-> behind the optimization is still valid (that callers of mem_cgroup_iter
-> have some kind of hold on the root they call it for).
-
-Agreed.
-
-> Ah.  But perhaps the unfreeable memcg has been protecting us from
-> nasties which can now emerge.  Hmm: I like your fix, but it's not
-> something to rush into mainline and stable immediately.  We'll have
-> to give it some exposure first.
-
-I would like to get rid of the root css refcounting optimization as well
-but when I was thinking about it I figured it would be safer to go back
-what we had in 3.10 before my patch oversimplified that code. Later
-fixes can be built on top.
-
-Stable backport will be safer as well IMO.
-
-> And given the confusion, and progressive little modifications in
-> just these few lines of code, I wonder if it won't be easier for
-> stable to combine the CSS_ONLINE one into this to make a single
-> patch.  It is a separate issue, but similar, and now it's clear
-> that it's what you intended originally, I don't think it would be
-> inappropriate to make a single patch correcting those few lines,
-> with log comment listing the three issues.
-
-I am not sure how much combining the two would be helpful. This one
-already fixes 2 issues. But if you think it is worthwhile then I won't
-block it. 
-
-> > think about the following? This is on top of the current mmotm but it
-> > certainly needs backporting to the stable kernels.
-> > ---
-> > From 560924e86059947ab9418732cb329ad149dd8f6a Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Wed, 15 Jan 2014 11:52:09 +0100
-> > Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
-> > 
-> > 19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
-> > refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
-> > doesn't put a css reference on the root of the tree walk. The mentioned
-> > commit however dropped the root check when the css reference is taken
-> > while it keept the css_put optimization fora the root in place.
-> > 
-> > This means that css_put is not called and so css along with mem_cgroup
-> > and other cgroup internal object tied by css lifetime are never freed.
-> > 
-> > Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
-> > 
-> > This patch also fixes issue reported by Hugh Dickins when
-> > mem_cgroup_iter might end up in an endless loop because a group which is
-> > under hard limit reclaim is removed in parallel with iteration.
-> > __mem_cgroup_iter_next would always return NULL because css_tryget on
-> > the root (reclaimed memcg) would fail and there are no other memcg in
-> > the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
-> > from the root and so the while (!memcg) loop would never terminate.
-> > as css_tryget is no longer called for the root of the tree walk this
-> > doesn't happen anymore.
-> > 
-> > Cc: stable@vger.kernel.org # 3.10+
-> > Reported-and-debugged-by: Hugh Dickins <hughd@google.com>
-> 
-> Definitely not debugged by me!  Debugged and understood by you.
-
-You still have debugged the second part of the problem (endless loop).
-But I will go with whatever tag you like.
-
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  mm/memcontrol.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f016d26adfd3..dd3974c9f08d 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1078,7 +1078,8 @@ skip_node:
-> >  	 * protected by css_get and the tree walk is rcu safe.
-> >  	 */
-> >  	if (next_css) {
-> > -		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-> > +		if ((next_css->flags & CSS_ONLINE) &&
-> > +				(next_css == root || css_tryget(next_css)))
-> 
-> Not quite: next_css points to one thing and root to another.
-
-Dohh, right you are next_css == root->css. I was wondering how I was
-able to see the leak being fixed and then realized that root->css has
-the same address as root...
-Anyway very well spotted.
-
-> >  			return mem_cgroup_from_css(next_css);
-> >  		else {
-> >  			prev_css = next_css;
-> > -- 
-> 
-> This is how I've re-written that block, and started testing on it;
-> the unnecessary "else {" part was looking increasingly ugly to me
-> (though let loose on it, I might change it all around more...)
-> 
-> 	if (next_css) {
-> 		if ((next_css->flags & CSS_ONLINE) &&
-> 		    (next_css == &root->css || css_tryget(next_css)))
-> 			return mem_cgroup_from_css(next_css);
-> 		prev_css = next_css;
-> 		goto skip_node;
-> 	}
-
-Yes, that looks better. Maybe put a blank line before prev_css = next_css?
-
-> Sorry for being so slow to respond, by the way: for a couple of hours
-> I couldn't test at all, and thought I was going mad - one day I send
-> you that "cg" script, the next day it starts to break, it couldn't
-> "mkdir -p /cg/cg", claiming it already existed, wha???  Turns out the
-> fix for that has gone into yesterday's mmotm (though I've not had time
-> to move on to that yet): uninitialized ret in memcg_propagate_kmem().
-
-Thanks a lot!
--- 
-Michal Hocko
-SUSE Labs
+Best Regards,
