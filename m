@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaAPM0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:26:48 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16413 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488AbaAPM0p (ORCPT
+	id S1752656AbaAPM05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:26:57 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:52248 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaAPM0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:26:45 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+AX1Cww8IV1xqw0iIUBSn2279/gSOFc/0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 3EB5850BB9F
-Date: Thu, 16 Jan 2014 07:26:29 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the libata tree with the arm-soc
- tree
-Message-ID: <20140116122629.GG29184@titan.lakedaemon.net>
-References: <20140116114831.50261e22b6fb25aac2004b43@canb.auug.org.au>
+	Thu, 16 Jan 2014 07:26:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116114831.50261e22b6fb25aac2004b43@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140116115634.GE30257@mudshark.cambridge.arm.com>
+References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
+	<20140116115634.GE30257@mudshark.cambridge.arm.com>
+Date: Thu, 16 Jan 2014 13:26:53 +0100
+Message-ID: <CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
+Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
+On 16 January 2014 12:56, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> On Thu, Jan 16, 2014 at 10:45:23AM +0000, Jean Pihet wrote:
+>> Add support for unwinding using the dwarf information in compat
+>> mode. Using the correct user stack pointer allows perf to record
+>> the frames correctly in the native and compat modes.
+>>
+>> Note that although the dwarf frame unwinding works ok using
+>> libunwind in native mode (on ARMv7 & ARMv8), some changes are
+>> required to the libunwind code for the compat mode. Those changes
+>> are posted separately on the libunwind mailing list.
+>>
+>> Tested on ARMv8 platform with v8 and compat v7 binaries, the latter
+>> are statically built.
+>
+> I guess it makes sense to include this with your earlier series adding
+> support for compat backtracing?
+>
+>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+>> ---
+>>  arch/arm64/include/asm/ptrace.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+>> index fbb0020..86d5b54 100644
+>> --- a/arch/arm64/include/asm/ptrace.h
+>> +++ b/arch/arm64/include/asm/ptrace.h
+>> @@ -133,7 +133,7 @@ struct pt_regs {
+>>       (!((regs)->pstate & PSR_F_BIT))
+>>
+>>  #define user_stack_pointer(regs) \
+>> -     ((regs)->sp)
+>> +     (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+>
+> In your previous series, compat backtracing is actually split out into a
+> separate function (compat_user_backtrace), so it would be more consistent to
+> have a compat_user_stack_pointer macro, rather than add this check here.
 
-Thanks, this looks good.
+Do you mean this change instead?
 
-Arnd, Olof, Kevin,
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 569b2187..9b88d2e 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -185,7 +185,8 @@ static inline bool arch_perf_have_user_stack_dump(void)
+        return true;
+ }
 
-This patch is in Tejun's tree because it is part of a patch series
-fixing SATA hotplug.  That series is marked for stable.
+-#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
++#define perf_user_stack_pointer(regs) \
++       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+ #else
+ static inline bool arch_perf_have_user_stack_dump(void)
+ {
 
-thx,
+If so let me prepare/test and re-submit this.
 
-Jason.
+Thx!
+Jean
 
-On Thu, Jan 16, 2014 at 11:48:31AM +1100, Stephen Rothwell wrote:
-> Hi Tejun,
-> 
-> Today's linux-next merge of the libata tree got a conflict in
-> arch/arm/boot/dts/armada-370-xp.dtsi between commit a095b1c78a35 ("ARM:
-> mvebu: sort DT nodes by address") from the arm-soc tree and commit
-> a96cc303e42a ("ARM: mvebu: update the SATA compatible string for Armada
-> 370/XP") from the libata tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/boot/dts/armada-370-xp.dtsi
-> index b6b253924893,df141a1d6448..000000000000
-> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
-> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-> @@@ -236,12 -183,13 +236,12 @@@
->   				status = "disabled";
->   			};
->   
->  -			i2c0: i2c@11000 {
->  -				compatible = "marvell,mv64xxx-i2c";
->  -				#address-cells = <1>;
->  -				#size-cells = <0>;
->  -				interrupts = <31>;
->  -				timeout-ms = <1000>;
->  -				clocks = <&coreclk 0>;
->  +			sata@a0000 {
-> - 				compatible = "marvell,orion-sata";
-> ++				compatible = "marvell,armada-370-sata";
->  +				reg = <0xa0000 0x5000>;
->  +				interrupts = <55>;
->  +				clocks = <&gateclk 15>, <&gateclk 30>;
->  +				clock-names = "0", "1";
->   				status = "disabled";
->   			};
->   
-
-
+>
+> Will
