@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaAPPmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:42:37 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53143 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaAPPmH (ORCPT
+	id S1752673AbaAPPms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:42:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40357 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191AbaAPPmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:42:07 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 4/4] sched/nohz: Fix overflow error in scheduler_tick_max_deferment()
-Date: Thu, 16 Jan 2014 16:41:52 +0100
-Message-Id: <1389886912-4783-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389886912-4783-1-git-send-email-fweisbec@gmail.com>
-References: <1389886912-4783-1-git-send-email-fweisbec@gmail.com>
+	Thu, 16 Jan 2014 10:42:46 -0500
+Date: Thu, 16 Jan 2014 16:42:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140116154239.GR7572@laptop.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115120418.GD31570@twins.programming.kicks-ass.net>
+ <52D7E343.40909@linaro.org>
+ <20140116141743.GT31570@twins.programming.kicks-ass.net>
+ <52D7EAA4.2080208@linaro.org>
+ <20140116142546.GU31570@twins.programming.kicks-ass.net>
+ <52D7ED0A.2030502@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7ED0A.2030502@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@linaro.org>
+On Thu, Jan 16, 2014 at 03:30:34PM +0100, Daniel Lezcano wrote:
+> On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
+> >On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
+> >>Already tested. The last commits do not change the issue described above.
+> >
+> >Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
+> >laptop around that should have some recent ubuntu on it, let me go find
+> >it.
+> 
+> It is a Ubuntu 12.04 and rsyslog 5.8.6-1ubuntu8.4
 
-While calculating the scheduler tick max deferment, the delta is
-converted from microseconds to nanoseconds through a multiplication
-against NSEC_PER_USEC.
+My laptop has 12.10, I've not yet tried to reproduce but while staring
+at the code I noticed a difference with the other can_nice() tests.
 
-But this microseconds operand is an unsigned int, thus the result may
-likely overflow. The result is cast to u64 but only once the operation
-is completed, which is too late to avoid overflown result.
+Could you try the below while I build a pristine tip/master for the
+laptop?
 
-This is currently not a problem because the scheduler tick max deferment
-is 1 second. But this may become an issue as we plan to make this
-value tunable.
-
-So lets fix this by casting the usecs value to u64 before multiplying by
-NSECS_PER_USEC.
-
-Also to prevent from this kind of mistake to happen again, move this
-ad-hoc jiffies -> nsecs conversion to a new helper.
-
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Alex Shi <alex.shi@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Link: http://lkml.kernel.org/r/1387315388-31676-2-git-send-email-khilman@linaro.org
-[move ad-hoc conversion to jiffies_to_nsecs helper]
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/jiffies.h | 6 ++++++
- kernel/sched/core.c     | 2 +-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index d235e88..1f44466 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -294,6 +294,12 @@ extern unsigned long preset_lpj;
-  */
- extern unsigned int jiffies_to_msecs(const unsigned long j);
- extern unsigned int jiffies_to_usecs(const unsigned long j);
-+
-+static inline u64 jiffies_to_nsecs(const unsigned long j)
-+{
-+	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
-+}
-+
- extern unsigned long msecs_to_jiffies(const unsigned int m);
- extern unsigned long usecs_to_jiffies(const unsigned int u);
- extern unsigned long timespec_to_jiffies(const struct timespec *value);
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a88f4a4..61e601f 100644
+index 0326c06953eb..e4a3f7e3d613 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2325,7 +2325,7 @@ u64 scheduler_tick_max_deferment(void)
- 	if (time_before_eq(next, now))
- 		return 0;
+@@ -3298,7 +3298,7 @@ static int __sched_setscheduler(struct task_struct *p,
+ 	 */
+ 	if (user && !capable(CAP_SYS_NICE)) {
+ 		if (fair_policy(policy)) {
+-			if (!can_nice(p, attr->sched_nice))
++			if (attr->sched_nice < TASK_NICE(p) && !can_nice(p, attr->sched_nice))
+ 				return -EPERM;
+ 		}
  
--	return jiffies_to_usecs(next - now) * NSEC_PER_USEC;
-+	return jiffies_to_nsecs(next - now);
- }
- #endif
- 
--- 
-1.8.3.1
-
