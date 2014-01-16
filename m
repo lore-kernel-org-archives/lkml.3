@@ -1,301 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaAPOrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:47:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39675 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaAPOrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:47:18 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: netdev@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org, kishon@ti.com,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V2] net/dt: Add support for overriding phy configuration from device tree
-Date: Thu, 16 Jan 2014 09:47:11 -0500
-Message-Id: <1389883631-1480-1-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <20140116135905.GV20094@book.gsilab.sittig.org>
-References: <20140116135905.GV20094@book.gsilab.sittig.org>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.207.143
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1752846AbaAPOtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:49:05 -0500
+Received: from fieldses.org ([174.143.236.118]:58375 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469AbaAPOtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:49:02 -0500
+Date: Thu, 16 Jan 2014 09:48:56 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: [PATCH 11/11] ext4: add cross rename support
+Message-ID: <20140116144856.GA16829@fieldses.org>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+ <1389219015-10980-12-git-send-email-miklos@szeredi.hu>
+ <20140113122517.GA10366@quack.suse.cz>
+ <20140115182347.GB5715@fieldses.org>
+ <CAJfpegv0TgJpd-pXxBj2n0efRUW9_GW_tYtHtfN6drOYA=25QQ@mail.gmail.com>
+ <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some hardware may be broken in interesting and board-specific ways, such
-that various bits of functionality don't work. This patch provides a
-mechanism for overriding mii registers during init based on the contents of
-the device tree data, allowing board-specific fixups without having to
-pollute generic code.
+On Thu, Jan 16, 2014 at 11:54:06AM +0100, Miklos Szeredi wrote:
+> > On Wed, Jan 15, 2014 at 7:23 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > > Do you have a man page update somewhere for the two new flags?
+> 
+> Here's the updated man page (and attached the patch)
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- Documentation/devicetree/bindings/net/phy.txt |  21 +++++
- drivers/net/phy/phy_device.c                  |  29 +++++-
- drivers/of/of_net.c                           | 124 ++++++++++++++++++++++++++
- include/linux/of_net.h                        |  12 +++
- 4 files changed, 185 insertions(+), 1 deletion(-)
+Looks good to me.  Total nits:
 
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index 7cd18fb..fc50f02 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -23,6 +23,21 @@ Optional Properties:
-   assume clause 22. The compatible list may also contain other
-   elements.
- 
-+The following properties may be added to either the phy node or the parent
-+ethernet device. If not present, the hardware defaults will be used.
-+
-+- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disable
-+- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disable
-+- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to disable
-+- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to disable
-+- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
-+- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to disable
-+- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to disable
-+- phy-mii-manual-master: 1 to enable manual master/slave configuration, 0
-+  to disable manual master/slave configuration
-+- phy-mii-as-master: 1 to configure phy to act as master, 0 to configure phy
-+  to act as slave. Ignored if manual master/slave configuration is not enabled.
-+
- Example:
- 
- ethernet-phy@0 {
-@@ -32,4 +47,10 @@ ethernet-phy@0 {
- 	interrupts = <35 1>;
- 	reg = <0>;
- 	device_type = "ethernet-phy";
-+	// Disable advertising of full duplex 1000MBit
-+	phy-mii-advertise-1000full = <0>;
-+	// Force manual phy master/slave configuration
-+	phy-mii-manual-master = <1>;
-+	// Forcibly configure phy as slave
-+	phy-mii-as-master = <0>;
- };
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index d6447b3..91793bc 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -33,6 +33,7 @@
- #include <linux/mii.h>
- #include <linux/ethtool.h>
- #include <linux/phy.h>
-+#include <linux/of_net.h>
- 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -497,6 +498,28 @@ void phy_disconnect(struct phy_device *phydev)
- }
- EXPORT_SYMBOL(phy_disconnect);
- 
-+int phy_override_from_of(struct phy_device *phydev)
-+{
-+	int reg, regval;
-+	u16 val, mask;
-+
-+	/* Check for phy register overrides from OF */
-+	for (reg = 0; reg < 16; reg++) {
-+		if (!of_get_mii_register(phydev, reg, &val, &mask)) {
-+			if (!mask)
-+				continue;
-+			regval = phy_read(phydev, reg);
-+			if (regval < 0)
-+				continue;
-+			regval &= ~mask;
-+			regval |= val;
-+			phy_write(phydev, reg, regval);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- int phy_init_hw(struct phy_device *phydev)
- {
- 	int ret;
-@@ -508,7 +531,11 @@ int phy_init_hw(struct phy_device *phydev)
- 	if (ret < 0)
- 		return ret;
- 
--	return phydev->drv->config_init(phydev);
-+	ret = phydev->drv->config_init(phydev);
-+	if (ret < 0)
-+		return ret;
-+
-+	return phy_override_from_of(phydev);
- }
- 
- /**
-diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-index 8f9be2e..4545608 100644
---- a/drivers/of/of_net.c
-+++ b/drivers/of/of_net.c
-@@ -93,3 +93,127 @@ const void *of_get_mac_address(struct device_node *np)
- 	return NULL;
- }
- EXPORT_SYMBOL(of_get_mac_address);
-+
-+/**
-+ * Provide phy register overrides from the device tree. Some hardware may
-+ * be broken in interesting and board-specific ways, so we want a mechanism
-+ * for the board data to provide overrides for default values. This should be
-+ * called during phy init.
-+ */
-+int of_get_mii_register(struct phy_device *phydev, int reg, u16 *val,
-+			u16 *mask)
-+{
-+	u32 tmp;
-+	struct device *dev = &phydev->dev;
-+	struct device_node *np = dev->of_node;
-+
-+	*val = 0;
-+	*mask = 0;
-+
-+	if (!np && dev->parent->of_node)
-+		np = dev->parent->of_node;
-+
-+	if (!np)
-+		return 0;
-+
-+	switch (reg) {
-+	case MII_ADVERTISE:
-+		if (!of_property_read_u32(np, "phy-mii-advertise-10half",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_10HALF;
-+				phydev->advertising |= SUPPORTED_10baseT_Half;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_10baseT_Half);
-+			}
-+
-+			*mask |= ADVERTISE_10HALF;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-advertise-10full",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_10FULL;
-+				phydev->advertising |= SUPPORTED_10baseT_Full;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_10baseT_Full);
-+			}
-+
-+			*mask |= ADVERTISE_10FULL;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-advertise-100half",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_100HALF;
-+				phydev->advertising |= SUPPORTED_100baseT_Half;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_100baseT_Half);
-+			}
-+
-+			*mask |= ADVERTISE_100HALF;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-advertise-100full",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_100FULL;
-+				phydev->advertising |= SUPPORTED_100baseT_Full;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_100baseT_Full);
-+			}
-+
-+			*mask |= ADVERTISE_100FULL;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-advertise-100base4",
-+					   &tmp)) {
-+			if (tmp)
-+				*val |= ADVERTISE_100BASE4;
-+			*mask |= ADVERTISE_100BASE4;
-+		}
-+		break;
-+	case MII_CTRL1000:
-+		if (!of_property_read_u32(np, "phy-mii-advertise-1000full",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_1000FULL;
-+				phydev->advertising |= SUPPORTED_1000baseT_Full;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_1000baseT_Full);
-+			}
-+
-+			*mask |= ADVERTISE_1000FULL;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-advertise-1000half",
-+					   &tmp)) {
-+			if (tmp) {
-+				*val |= ADVERTISE_1000HALF;
-+				phydev->advertising |= SUPPORTED_1000baseT_Half;
-+			} else {
-+				phydev->advertising &=
-+					~(SUPPORTED_1000baseT_Half);
-+			}
-+
-+			*mask |= ADVERTISE_1000HALF;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-as-master",
-+					   &tmp)) {
-+			if (tmp)
-+				*val |= CTL1000_AS_MASTER;
-+			*mask |= CTL1000_AS_MASTER;
-+		}
-+		if (!of_property_read_u32(np, "phy-mii-manual-master",
-+					   &tmp)) {
-+			if (tmp)
-+				*val |= CTL1000_ENABLE_MASTER;
-+			*mask |= CTL1000_ENABLE_MASTER;
-+		}
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(of_get_mii_register);
-diff --git a/include/linux/of_net.h b/include/linux/of_net.h
-index 34597c8..2e478bc 100644
---- a/include/linux/of_net.h
-+++ b/include/linux/of_net.h
-@@ -7,10 +7,14 @@
- #ifndef __LINUX_OF_NET_H
- #define __LINUX_OF_NET_H
- 
-+#include <linux/phy.h>
-+
- #ifdef CONFIG_OF_NET
- #include <linux/of.h>
- extern int of_get_phy_mode(struct device_node *np);
- extern const void *of_get_mac_address(struct device_node *np);
-+extern int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-+			       u16 *mask);
- #else
- static inline int of_get_phy_mode(struct device_node *np)
- {
-@@ -21,6 +25,14 @@ static inline const void *of_get_mac_address(struct device_node *np)
- {
- 	return NULL;
- }
-+static inline int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-+				      u16 *mask)
-+{
-+	*val = 0;
-+	*mask = 0;
-+
-+	return -EINVAL;
-+}
- #endif
- 
- #endif /* __LINUX_OF_NET_H */
--- 
-1.8.4.2
+>        RENAME_NOREPLACE
+>               Don't  overwrite  the  target of the rename.  Return an error if
+>               the target would be overwritten.
 
+s/Return an error/Fail with EEXIST/?
+
+(Since it doesn't literally return the error.)
+
+>        ENOENT flags contain RENAME_EXCHANGE and the target of the rename  does
+>               not exist
+
+s/the target of the rename/either of the two files/
+
+--b.
