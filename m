@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaAPU0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:26:09 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:35318 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751449AbaAPU0F (ORCPT
+	id S1751819AbaAPUac (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:30:32 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47883 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaAPUa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:26:05 -0500
-Date: Thu, 16 Jan 2014 15:26:03 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
- checks)
-In-Reply-To: <20140116180944.GC9655@laptop.programming.kicks-ass.net>
-Message-ID: <Pine.LNX.4.44L0.1401161515190.1109-100000@iolanthe.rowland.org>
+	Thu, 16 Jan 2014 15:30:29 -0500
+Date: Thu, 16 Jan 2014 15:29:45 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, sre@ring0.de,
+        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
+Message-ID: <20140116202945.GD10165@tuxdriver.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
+ <201312311047.30147@pali>
+ <20140106200050.GG10885@tuxdriver.com>
+ <20140116002121.GA3726@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140116002121.GA3726@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014, Peter Zijlstra wrote:
-
-> On Thu, Jan 16, 2014 at 06:43:48PM +0100, Oleg Nesterov wrote:
-> > But with or without this change the following code
-> > 
-> > 		static DEFINE_MUTEX(m1);
-> > 		static DEFINE_MUTEX(mx);
-> > 
-> > 		lockdep_set_novalidate_class(&mx);
-> > 
-> > 		// m1 -> mx
-> > 		mutex_lock(&m1);
-> > 		mutex_lock(&mx);
-> > 		mutex_unlock(&mx);
-> > 		mutex_unlock(&m1);
-> > 
-> > 		// mx -> m1 ; should trigger the warning ???
-> > 		mutex_lock(&mx);
-> > 		mutex_lock(&m1);
-> > 		mutex_unlock(&m1);
-> > 		mutex_unlock(&mx);
-> > 
-> > doesn't trigger the warning too. This is correct because
-> > lockdep_set_novalidate_class() means, well, no-validate.
-> > The question is: do we really want to avoid all validations?
+On Thu, Jan 16, 2014 at 01:21:21AM +0100, Pavel Machek wrote:
+> On Mon 2014-01-06 15:00:50, John W. Linville wrote:
+> > On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
+> > > On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
+> > > > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
+> > > > comments. More patches come from David's monitor & packet
+> > > > injection work. Patches are tested with 3.12 rc5 kernel on
+> > > > Nokia N900.
+> > > > 
+> > > > Second version contains new patch for fixing NULL pointer
+> > > > dereference which sometimes cause kernel panic and fixes code
+> > > > suggested by Pavel Machek.
+> >  
+> > > So far, there are no new comments for patches 01, 03-13 and 16. 
+> > > Are there any other problems with that patches or can be accepted 
+> > > for upstream?
+> >  
+> > They are probably fine to merge now.  Of course, I was still deleting
+> > wl12xx patches when they were originally posted, so I'll need someone
+> > to resend the patches to me...
 > 
-> Good question.
-> 
-> > Why lockdep_set_novalidate_class() was added? Unlees I missed
-> > something the problem is that (say) __driver_attach() can take
-> > the "same" lock twice, drivers/base/ lacks annotations.
-> 
-> Indeed, the driver model locking always slips my mind but yes its
-> creative. Alan Stern seems to have a good grasp on it though.
+> Ping? Did they get merged? Did you receive the patches?
 
-Mostly my "grasp" is just a firm belief that trying to manage locking
-throughout the entire driver tree is hopeless.  Individual sub-portions
-of it are usually well behaved, but the thing as a whole is a mess.
+They are already available in wireless-next.
 
-> > Perhaps we should change the meaning of lockdep_set_novalidate_class?
-> > (perhaps with rename). What do you think about the patch below?
-> > 
-> > With this patch __lockdep_no_validate__ means "automatically nested",
-> 
-> Yes, I suppose that might work, it would allow some validation.
-
-I haven't seen the patch, but I'm not so sure it will work.  Suppose we
-have two devices, D1 and D2, and some other mutex, M.  Then the locking
-pattern:
-
-	lock(D1);
-	lock(M);
-	unlock(M);
-	unlock(D1);
-
-generally should not conflict with:
-
-	lock(M);
-	lock(D2);
-	unlock(D2);
-	unlock(M);
-
-even though D1's and D2's locks belong to the same class.  For example,
-M might be a mutex embedded in the private data associated with D1, and
-D2 might be a child of D1.
-
-Alan Stern
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
