@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaAPOal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 09:30:41 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58932 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaAPOah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 09:30:37 -0500
-Message-ID: <52D7ED0A.2030502@linaro.org>
-Date: Thu, 16 Jan 2014 15:30:34 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752705AbaAPOcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 09:32:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768AbaAPOcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 09:32:42 -0500
+Date: Thu, 16 Jan 2014 15:31:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH v3 tip/core/timers 0/5] Crude timer-wheel latency hacks
+Message-ID: <20140116143157.GA28010@redhat.com>
+References: <20140116040203.GA5206@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <52D7E343.40909@linaro.org> <20140116141743.GT31570@twins.programming.kicks-ass.net> <52D7EAA4.2080208@linaro.org> <20140116142546.GU31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140116142546.GU31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140116040203.GA5206@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
-> On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
->> Already tested. The last commits do not change the issue described above.
+On 01/15, Paul E. McKenney wrote:
 >
-> Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
-> laptop around that should have some recent ubuntu on it, let me go find
-> it.
+> The following five patches provide some crude timer-wheel latency patches.
 
-It is a Ubuntu 12.04 and rsyslog 5.8.6-1ubuntu8.4
+The whole series looks fine to me,
 
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
