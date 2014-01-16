@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaAPWK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 17:10:57 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:47440 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaAPWKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 17:10:54 -0500
-Date: Thu, 16 Jan 2014 17:09:51 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20140116220951.GO6963@cmpxchg.org>
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
- <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
- <52D622B5.6070203@oracle.com>
+	id S1751427AbaAPWPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 17:15:51 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33472 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaAPWPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 17:15:50 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: [PATCH] m68k: don't use module_init in non-modular mvme16x/rtc.c code
+Date: Thu, 16 Jan 2014 17:15:14 -0500
+Message-ID: <1389910514-3802-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D622B5.6070203@oracle.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 01:55:01PM +0800, Bob Liu wrote:
-> Hi Johannes,
-> 
-> On 01/11/2014 02:10 AM, Johannes Weiner wrote:
-> > Previously, page cache radix tree nodes were freed after reclaim
-> > emptied out their page pointers.  But now reclaim stores shadow
-> > entries in their place, which are only reclaimed when the inodes
-> > themselves are reclaimed.  This is problematic for bigger files that
-> > are still in use after they have a significant amount of their cache
-> > reclaimed, without any of those pages actually refaulting.  The shadow
-> > entries will just sit there and waste memory.  In the worst case, the
-> > shadow entries will accumulate until the machine runs out of memory.
-> > 
-> 
-> I have one more question. It seems that other algorithm only remember
-> history information of a limit number of evicted pages where the number
-> is usually the same as the total cache or memory size.
-> But in your patch, I didn't see a preferred value that how many evicted
-> pages' history information should be recorded. It all depends on the
-> workingset_shadow_shrinker?
+The rtc.o is built for obj-y, i.e. always built in.  It will
+never be modular, so using module_init as an alias for __initcall
+can be somewhat misleading.
 
-That "same as total cache" number is a fairly arbitrary cut-off that
-defines how far we record eviction history.  For this patch set, we
-technically do not need more shadow entries than active pages, but
-strict enforcement would be very expensive.  So we leave it mostly to
-refaults and inode reclaim to keep the number of shadow entries low,
-with the shadow shrinker as an emergency backup.  Keep in mind that
-the shadow entries represent that part of the working set that exceeds
-available memory.  So the only way the number of shadow entries
-exceeds the number of RAM pages in the system is if your workingset is
-more than twice that of memory, otherwise the shadow entries refault
-before they can accumulate.  And because of inode reclaim, that huge
-working set would have to be backed by a very small number of files,
-otherwise the shadow entries are reclaimed along with the inodes.  But
-this theoretical workload would be entirely IO bound and a few extra
-MB wasted on shadow entries should make no difference.
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
+
+Note that direct use of __initcall is discouraged, vs. one
+of the priority categorized subgroups.  As __initcall gets
+mapped onto device_initcall, our use of device_initcall
+directly in this change means that the runtime impact is
+zero -- it will remain at level 6 in initcall ordering.
+
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@lists.linux-m68k.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/arch/m68k/mvme16x/rtc.c b/arch/m68k/mvme16x/rtc.c
+index 6ef7a81a3b12..1755e2f7137d 100644
+--- a/arch/m68k/mvme16x/rtc.c
++++ b/arch/m68k/mvme16x/rtc.c
+@@ -161,4 +161,4 @@ static int __init rtc_MK48T08_init(void)
+ 	printk(KERN_INFO "MK48T08 Real Time Clock Driver v%s\n", RTC_VERSION);
+ 	return misc_register(&rtc_dev);
+ }
+-module_init(rtc_MK48T08_init);
++device_initcall(rtc_MK48T08_init);
+-- 
+1.8.5.2
+
