@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaAPXyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 18:54:10 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60133 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaAPXyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 18:54:05 -0500
+	id S1751976AbaAPX4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 18:56:07 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52297 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354AbaAPXyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 18:54:09 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux PPC <linuxppc-dev@lists.ozlabs.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,54 +15,84 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@redhat.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 0/8] Add support for PowerPC Hypervisor supplied performance counters
-Date: Thu, 16 Jan 2014 15:53:46 -0800
-Message-Id: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 2/8] perf core: export swevent hrtimer helpers
+Date: Thu, 16 Jan 2014 15:53:48 -0800
+Message-Id: <1389916434-2288-3-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011623-1542-0000-0000-0000054CECC7
+x-cbid: 14011623-7182-0000-0000-000009946105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add basic pmus for 2 powerpc hypervisor interfaces to obtain
-performance counters: gpci ("get performance counter info") and 24x7.
+Export the swevent hrtimer helpers currently only used in events/core.c
+to allow the addition of architecture specific sw-like pmus.
 
-The counters supplied by these interfaces are continually counting and never
-need to be (and cannot be) disabled or enabled. They additionally do not
-generate any interrupts. This makes them in some regards similar to software
-counters, and as a result their implimentation shares some common code (which
-an initial patch exposes) with the sw counters.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ include/linux/perf_event.h | 5 ++++-
+ kernel/events/core.c       | 8 ++++----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-There is ongoing work to support transactions for each of these pmus.
-
-Cody P Schafer (8):
-  perf: add PMU_RANGE_ATTR() helper for use by sw-like pmus
-  perf core: export swevent hrtimer helpers
-  powerpc: add hvcalls for 24x7 and gpci (get performance counter info)
-  powerpc: add hv_gpci interface header
-  powerpc: add 24x7 interface header
-  powerpc/perf: add support for the hv gpci (get performance counter
-    info) interface
-  powerpc/perf: add support for the hv 24x7 interface
-  powerpc/perf: add kconfig option for hypervisor provided counters
-
- arch/powerpc/include/asm/hv_24x7.h     | 239 ++++++++++++++++
- arch/powerpc/include/asm/hv_gpci.h     | 490 +++++++++++++++++++++++++++++++++
- arch/powerpc/include/asm/hvcall.h      |   6 +-
- arch/powerpc/perf/Makefile             |   2 +
- arch/powerpc/perf/hv-24x7.c            | 354 ++++++++++++++++++++++++
- arch/powerpc/perf/hv-gpci.c            | 235 ++++++++++++++++
- arch/powerpc/platforms/Kconfig.cputype |   6 +
- include/linux/perf_event.h             |  22 +-
- kernel/events/core.c                   |   8 +-
- 9 files changed, 1356 insertions(+), 6 deletions(-)
- create mode 100644 arch/powerpc/include/asm/hv_24x7.h
- create mode 100644 arch/powerpc/include/asm/hv_gpci.h
- create mode 100644 arch/powerpc/perf/hv-24x7.c
- create mode 100644 arch/powerpc/perf/hv-gpci.c
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 8646e33..c5bc71a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -558,7 +558,10 @@ extern void perf_pmu_migrate_context(struct pmu *pmu,
+ 				int src_cpu, int dst_cpu);
+ extern u64 perf_event_read_value(struct perf_event *event,
+ 				 u64 *enabled, u64 *running);
+-
++extern void perf_swevent_init_hrtimer(struct perf_event *event);
++extern void perf_swevent_start_hrtimer(struct perf_event *event);
++extern void perf_swevent_cancel_hrtimer(struct perf_event *event);
++extern int perf_swevent_event_idx(struct perf_event *event);
+ 
+ struct perf_sample_data {
+ 	u64				type;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f574401..d881d1e 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5801,7 +5801,7 @@ static int perf_swevent_init(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static int perf_swevent_event_idx(struct perf_event *event)
++int perf_swevent_event_idx(struct perf_event *event)
+ {
+ 	return 0;
+ }
+@@ -6030,7 +6030,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
+ 	return ret;
+ }
+ 
+-static void perf_swevent_start_hrtimer(struct perf_event *event)
++void perf_swevent_start_hrtimer(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	s64 period;
+@@ -6052,7 +6052,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
+ 				HRTIMER_MODE_REL_PINNED, 0);
+ }
+ 
+-static void perf_swevent_cancel_hrtimer(struct perf_event *event)
++void perf_swevent_cancel_hrtimer(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+@@ -6064,7 +6064,7 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
+ 	}
+ }
+ 
+-static void perf_swevent_init_hrtimer(struct perf_event *event)
++void perf_swevent_init_hrtimer(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
 -- 
 1.8.5.2
 
