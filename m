@@ -1,143 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaAPPxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:53:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55332 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752783AbaAPPxH (ORCPT
+	id S1752381AbaAPPy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:54:56 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:56864 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaAPPyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:53:07 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [Update][RFC][PATCH 2/3] PM / runtime: Routine for checking device status during system suspend
-Date: Thu, 16 Jan 2014 17:07:07 +0100
-Message-ID: <2673469.H8s3UchFPJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140116133251.GC2494@intel.com>
-References: <5420830.W4laSGaAU9@vostro.rjw.lan> <2472996.a5CGlmW4AP@vostro.rjw.lan> <20140116133251.GC2494@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 Jan 2014 10:54:54 -0500
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Shan Wei <davidshan@tencent.com>, Christoph Lameter <cl@linux.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Cc: rds-devel@oss.oracle.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Subject: [PATCH] net: rds: fix per-cpu helper usage
+Date: Thu, 16 Jan 2014 16:54:48 +0100
+Message-Id: <1389887688-55632-1-git-send-email-gerald.schaefer@de.ibm.com>
+X-Mailer: git-send-email 1.8.4.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011615-6892-0000-0000-0000077D6ECB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 16, 2014 03:32:51 PM Mika Westerberg wrote:
-> On Wed, Jan 15, 2014 at 12:14:46AM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Add a new helper routine, pm_runtime_enabled_and_suspended(), to
-> > allow subsystems (or PM domains) to check the runtime PM status of
-> > devices during system suspend (possibly to avoid resuming those
-> > devices upfront at that time).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/base/power/runtime.c |   28 ++++++++++++++++++++++++++++
-> >  include/linux/pm_runtime.h   |    2 ++
-> >  2 files changed, 30 insertions(+)
-> > 
-> > Index: linux-pm/include/linux/pm_runtime.h
-> > ===================================================================
-> > --- linux-pm.orig/include/linux/pm_runtime.h
-> > +++ linux-pm/include/linux/pm_runtime.h
-> > @@ -53,6 +53,7 @@ extern unsigned long pm_runtime_autosusp
-> >  extern void pm_runtime_update_max_time_suspended(struct device *dev,
-> >  						 s64 delta_ns);
-> >  extern void pm_runtime_set_memalloc_noio(struct device *dev, bool enable);
-> > +extern bool pm_runtime_enabled_and_suspended(struct device *dev);
-> >  
-> >  static inline bool pm_children_suspended(struct device *dev)
-> >  {
-> > @@ -161,6 +162,7 @@ static inline unsigned long pm_runtime_a
-> >  				struct device *dev) { return 0; }
-> >  static inline void pm_runtime_set_memalloc_noio(struct device *dev,
-> >  						bool enable){}
-> > +static inline bool pm_runtime_enabled_and_suspended(struct device *dev) { return false };
-> 
-> The above probably doesn't compile if !CONFIG_PM_RUNTIME because of the
-> misplaced semicolon.
+commit ae4b46e9d "net: rds: use this_cpu_* per-cpu helper" broke per-cpu
+handling for rds. chpfirst is the result of __this_cpu_read(), so it is
+an absolute pointer and not __percpu. Therefore, __this_cpu_write()
+should not operate on chpfirst, but rather on cache->percpu->first, just
+like __this_cpu_read() did before.
 
-Of well, indeed, thanks!
-
-Update follows.
-
+Cc: <stable@vger.kernel.org> # 3.8+
+Signed-off-byd Gerald Schaefer <gerald.schaefer@de.ibm.com>
 ---
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PM / runtime: Routine for checking device status during system suspend
+ net/rds/ib_recv.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Add a new helper routine, pm_runtime_enabled_and_suspended(), to
-allow subsystems (or PM domains) to check the runtime PM status of
-devices during system suspend (possibly to avoid resuming those
-devices upfront at that time).
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/runtime.c |   28 ++++++++++++++++++++++++++++
- include/linux/pm_runtime.h   |    2 ++
- 2 files changed, 30 insertions(+)
-
-Index: linux-pm/include/linux/pm_runtime.h
-===================================================================
---- linux-pm.orig/include/linux/pm_runtime.h
-+++ linux-pm/include/linux/pm_runtime.h
-@@ -53,6 +53,7 @@ extern unsigned long pm_runtime_autosusp
- extern void pm_runtime_update_max_time_suspended(struct device *dev,
- 						 s64 delta_ns);
- extern void pm_runtime_set_memalloc_noio(struct device *dev, bool enable);
-+extern bool pm_runtime_enabled_and_suspended(struct device *dev);
- 
- static inline bool pm_children_suspended(struct device *dev)
+diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
+index 8eb9501..b7ebe23 100644
+--- a/net/rds/ib_recv.c
++++ b/net/rds/ib_recv.c
+@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 				 struct rds_ib_refill_cache *cache)
  {
-@@ -161,6 +162,7 @@ static inline unsigned long pm_runtime_a
- 				struct device *dev) { return 0; }
- static inline void pm_runtime_set_memalloc_noio(struct device *dev,
- 						bool enable){}
-+static inline bool pm_runtime_enabled_and_suspended(struct device *dev) { return false; }
+ 	unsigned long flags;
+-	struct list_head *old;
+-	struct list_head __percpu *chpfirst;
++	struct list_head *old, *chpfirst;
  
- #endif /* !CONFIG_PM_RUNTIME */
+ 	local_irq_save(flags);
  
-Index: linux-pm/drivers/base/power/runtime.c
-===================================================================
---- linux-pm.orig/drivers/base/power/runtime.c
-+++ linux-pm/drivers/base/power/runtime.c
-@@ -1194,6 +1194,34 @@ void pm_runtime_enable(struct device *de
- EXPORT_SYMBOL_GPL(pm_runtime_enable);
+@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	else /* put on front */
+ 		list_add_tail(new_item, chpfirst);
  
- /**
-+ * pm_runtime_enabled_and_suspended - Check runtime PM status of a device.
-+ * @dev: Device to handle.
-+ *
-+ * This routine is to be executed during system suspend only, after
-+ * device_prepare() has been executed for @dev.
-+ *
-+ * Return false if runtime PM is disabled for the device.  Otherwise, wait
-+ * for pending transitions to complete and check the runtime PM status of the
-+ * device after that.  Return true if it is RPM_SUSPENDED.
-+ */
-+bool pm_runtime_enabled_and_suspended(struct device *dev)
-+{
-+	unsigned long flags;
-+	bool ret;
-+
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	if (dev->power.disable_depth) {
-+		ret = false;
-+	} else {
-+		__pm_runtime_barrier(dev);
-+		ret = pm_runtime_status_suspended(dev);
-+	}
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pm_runtime_enabled_and_suspended);
-+
-+/**
-  * pm_runtime_forbid - Block runtime PM of a device.
-  * @dev: Device to handle.
-  *
+-	__this_cpu_write(chpfirst, new_item);
++	__this_cpu_write(cache->percpu->first, new_item);
+ 	__this_cpu_inc(cache->percpu->count);
+ 
+ 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
+@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	} while (old);
+ 
+ 
+-	__this_cpu_write(chpfirst, NULL);
++	__this_cpu_write(cache->percpu->first, NULL);
+ 	__this_cpu_write(cache->percpu->count, 0);
+ end:
+ 	local_irq_restore(flags);
+-- 
+1.8.4.5
 
