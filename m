@@ -1,231 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaAPPnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:43:53 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:33909 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751645AbaAPPno (ORCPT
+	id S1752120AbaAPPrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:47:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63404 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751591AbaAPPrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:43:44 -0500
-From: <srinivas.kandagatla@st.com>
+	Thu, 16 Jan 2014 10:47:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <srinivas.kandagatla@st.com>
-Subject: [PATCH v2 2/4] pinctrl: st: Add software edge trigger interrupt support.
-Date: Thu, 16 Jan 2014 15:37:31 +0000
-Message-ID: <1389886651-31990-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Paul Drews <paul.drews@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Baytrail problems (was Re: Linux 3.13-rc8)
+Date: Thu, 16 Jan 2014 17:01:19 +0100
+Message-ID: <2029519.Z7OA0cinWM@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
+References: <CA+55aFzcHCg1Azf0t4KrYx0N1z0xaeT8fNHJEW5og3VBd+UPOA@mail.gmail.com> <CACRpkdZqdaq7qqwhvfufa9BNUAeO4CFAr6g4uqXvbe5wsAYaQQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.65.51.147]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On Thursday, January 16, 2014 10:29:45 AM Linus Walleij wrote:
+> On Thu, Jan 16, 2014 at 2:49 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > Adding in the appropriate people...
+> >
+> > On Tue, Jan 14, 2014 at 7:01 PM, One Thousand Gnomes
+> > <gnomes@lxorguk.ukuu.org.uk> wrote:
+> >>
+> >> It seems to hate Baytrail/T
+> >>
+> >> My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
+> >> right but otherwise running nicely and playing 3D games to 3.13-rc8
+> >>
+> >> - crashes and burns during boot if the Baytrail pinctrl driver is compiled
+> >>   in
+> >
+> > Andy, Paul? The changes to the pinctrl driver since 3.11 look trivial,
+> > but I guess the GPIO and ACPI ID addition ends up also enabling all
+> > the old code that Alan probably never ran in 3.11 because the driver
+> > didn't trigger on his machine.
+> 
+> So that is commit f6308b36c411dc5
+> "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"?
+> 
+> This seems to have been selected for -stable as well so the
+> problem will be spreading as distros start pushing stable kernel
+> updates :-(
+> 
+> That came in through the ACPI tree, Rafael do you want to
+> revert it if there is no better quickfix?
 
-ST pin controller does not have hardware support for detecting edge
-triggered interrupts, It only has level triggering support.
-This patch attempts to fake up edge triggers from hw level trigger
-support in software. With this facility now the gpios can be easily used
-for keypads, otherwise it would be difficult for drivers like keypads to
-work with level trigger interrupts.
+Yes, I'll push either a revert or a fix before the weekend.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- drivers/pinctrl/pinctrl-st.c |  116 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 114 insertions(+), 2 deletions(-)
+> This adds an interesting twist to the general statement that
+> new PCI/ACPI IDs should go into stable BTW, maybe they
+> should not always do that.
 
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index 51e4f3a..9fb66aa 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -271,12 +271,59 @@ struct st_pctl_group {
- 	struct st_pinconf	*pin_conf;
- };
- 
-+/*
-+ * Edge triggers are not supported at hardware level, it is supported by
-+ * software by exploiting the level trigger support in hardware.
-+ * Software uses a virtual register (EDGE_CONF) for edge trigger configuration
-+ * of each gpio pin in a GPIO bank.
-+ *
-+ * Each bank has a 32 bit EDGE_CONF register which is divided in to 8 parts of
-+ * 4-bits. Each 4-bit space is allocated for each pin in a gpio bank.
-+ *
-+ * bit allocation per pin is:
-+ * Bits:  [0 - 3] | [4 - 7]  [8 - 11] ... ... ... ...  [ 28 - 31]
-+ *       --------------------------------------------------------
-+ *       |  pin-0  |  pin-2 | pin-3  | ... ... ... ... | pin -7 |
-+ *       --------------------------------------------------------
-+ *
-+ *  A pin can have one of following the values in its edge configuration field.
-+ *
-+ *	-------   ----------------------------
-+ *	[0-3]	- Description
-+ *	-------   ----------------------------
-+ *	0000	- No edge IRQ.
-+ *	0001	- Falling edge IRQ.
-+ *	0010	- Rising edge IRQ.
-+ *	0011	- Rising and Falling edge IRQ.
-+ *	-------   ----------------------------
-+ */
-+
-+#define ST_IRQ_EDGE_CONF_BITS_PER_PIN	4
-+#define ST_IRQ_EDGE_MASK		0xf
-+#define ST_IRQ_EDGE_FALLING		BIT(0)
-+#define ST_IRQ_EDGE_RISING		BIT(1)
-+#define ST_IRQ_EDGE_BOTH		(BIT(0) | BIT(1))
-+
-+#define ST_IRQ_RISING_EDGE_CONF(pin) \
-+	(ST_IRQ_EDGE_RISING << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
-+
-+#define ST_IRQ_FALLING_EDGE_CONF(pin) \
-+	(ST_IRQ_EDGE_FALLING << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
-+
-+#define ST_IRQ_BOTH_EDGE_CONF(pin) \
-+	(ST_IRQ_EDGE_BOTH << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
-+
-+#define ST_IRQ_EDGE_CONF(conf, pin) \
-+	(conf >> (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN) & ST_IRQ_EDGE_MASK)
-+
- struct st_gpio_bank {
- 	struct gpio_chip		gpio_chip;
- 	struct pinctrl_gpio_range	range;
- 	void __iomem			*base;
- 	struct st_pio_control		pc;
- 	struct	irq_domain		*domain;
-+	unsigned long			irq_edge_conf;
-+	spinlock_t                      lock;
- };
- 
- struct st_pinctrl {
-@@ -1262,18 +1309,37 @@ static int st_gpio_irq_set_type(struct irq_data *d, unsigned type)
- 	unsigned long flags;
- 	int comp, pin = d->hwirq;
- 	u32 val;
-+	u32 pin_edge_conf = 0;
- 
- 	switch (type) {
- 	case IRQ_TYPE_LEVEL_HIGH:
- 		comp = 0;
- 		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		comp = 0;
-+		pin_edge_conf = ST_IRQ_FALLING_EDGE_CONF(pin);
-+		break;
- 	case IRQ_TYPE_LEVEL_LOW:
- 		comp = 1;
- 		break;
-+	case IRQ_TYPE_EDGE_RISING:
-+		comp = 1;
-+		pin_edge_conf = ST_IRQ_RISING_EDGE_CONF(pin);
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		comp = st_gpio_get(&bank->gpio_chip, pin);
-+		pin_edge_conf = ST_IRQ_BOTH_EDGE_CONF(pin);
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
- 
-+	spin_lock_irqsave(&bank->lock, flags);
-+	bank->irq_edge_conf &=  ~(ST_IRQ_EDGE_MASK << (
-+				pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN));
-+	bank->irq_edge_conf |= pin_edge_conf;
-+	spin_unlock_irqrestore(&bank->lock, flags);
-+
- 	val = readl(bank->base + REG_PIO_PCOMP);
- 	val &= ~BIT(pin);
- 	val |= (comp << pin);
-@@ -1282,10 +1348,39 @@ static int st_gpio_irq_set_type(struct irq_data *d, unsigned type)
- 	return 0;
- }
- 
-+/*
-+ * As edge triggers are not supported at hardware level, it is supported by
-+ * software by exploiting the level trigger support in hardware.
-+ *
-+ * Steps for detection raising edge interrupt in software.
-+ *
-+ * Step 1: CONFIGURE pin to detect level LOW interrupts.
-+ *
-+ * Step 2: DETECT level LOW interrupt and in irqmux/gpio bank interrupt handler,
-+ * if the value of pin is low, then CONFIGURE pin for level HIGH interrupt.
-+ * IGNORE calling the actual interrupt handler for the pin at this stage.
-+ *
-+ * Step 3: DETECT level HIGH interrupt and in irqmux/gpio-bank interrupt handler
-+ * if the value of pin is HIGH, CONFIGURE pin for level LOW interrupt and then
-+ * DISPATCH the interrupt to the interrupt handler of the pin.
-+ *
-+ *		 step-1  ________     __________
-+ *				|     | step - 3
-+ *			        |     |
-+ *			step -2 |_____|
-+ *
-+ * falling edge is also detected int the same way.
-+ *
-+ */
- static void __gpio_irq_handler(struct st_gpio_bank *bank)
- {
- 	unsigned long port_in, port_mask, port_comp, active_irqs;
--	int n;
-+	unsigned long bank_edge_mask, flags;
-+	int n, val, ecfg;
-+
-+	spin_lock_irqsave(&bank->lock, flags);
-+	bank_edge_mask = bank->irq_edge_conf;
-+	spin_unlock_irqrestore(&bank->lock, flags);
- 
- 	for (;;) {
- 		port_in = readl(bank->base + REG_PIO_PIN);
-@@ -1298,6 +1393,22 @@ static void __gpio_irq_handler(struct st_gpio_bank *bank)
- 			break;
- 
- 		for_each_set_bit(n, &active_irqs, BITS_PER_LONG) {
-+			/* check if we are detecting fake edges ... */
-+			ecfg = ST_IRQ_EDGE_CONF(bank_edge_mask, n);
-+
-+			if (ecfg) {
-+				/* edge detection. */
-+				val = st_gpio_get(&bank->gpio_chip, n);
-+
-+				writel(BIT(n),
-+					val ? bank->base + REG_PIO_SET_PCOMP :
-+					bank->base + REG_PIO_CLR_PCOMP);
-+
-+				if (ecfg != ST_IRQ_EDGE_BOTH &&
-+					!((ecfg & ST_IRQ_EDGE_FALLING) ^ val))
-+					continue;
-+			}
-+
- 			generic_handle_irq(irq_find_mapping(bank->domain, n));
- 		}
- 	}
-@@ -1359,7 +1470,7 @@ static int st_gpio_irq_domain_map(struct irq_domain *h,
- 	struct st_gpio_bank *bank = h->host_data;
- 
- 	irq_set_chip(virq, &st_gpio_irqchip);
--	irq_set_handler(virq, handle_level_irq);
-+	irq_set_handler(virq, handle_simple_irq);
- 	set_irq_flags(virq, IRQF_VALID);
- 	irq_set_chip_data(virq, bank);
- 
-@@ -1392,6 +1503,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
- 	bank->gpio_chip.base = bank_num * ST_GPIO_PINS_PER_BANK;
- 	bank->gpio_chip.ngpio = ST_GPIO_PINS_PER_BANK;
- 	bank->gpio_chip.of_node = np;
-+	spin_lock_init(&bank->lock);
- 
- 	of_property_read_string(np, "st,bank-name", &range->name);
- 	bank->gpio_chip.label = range->name;
+Well, this is the first time we've had such a problem with ACPI IDs, but
+since we do have this problem, I'm not going to tag any commits like that for
+stable any more (and I'm not going to fast-track them any more for that
+matter).
+
+Thanks!
+
 -- 
-1.7.6.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
