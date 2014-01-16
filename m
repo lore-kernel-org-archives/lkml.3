@@ -1,93 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaAPPuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:50:18 -0500
-Received: from [207.46.163.238] ([207.46.163.238]:19514 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752302AbaAPPuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:50:15 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Topic: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Index: AQHPEVjnKHWBxAK/ME2641uqAhZ1vZqHOOyAgABJBSA=
-Date: Thu, 16 Jan 2014 15:49:37 +0000
-Message-ID: <36d57b9844a4446d9b9a3f6c82b5e757@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
- <20140116112633.GA28584@aepfle.de>
-In-Reply-To: <20140116112633.GA28584@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:1cb1:47cd:959b:a3a6]
-x-forefront-prvs: 0093C80C01
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(679001)(689001)(779001)(189002)(199002)(51704005)(24454002)(13464003)(377454003)(92566001)(93136001)(53806001)(74706001)(47976001)(551934002)(54356001)(74366001)(93516002)(4396001)(76482001)(47736001)(49866001)(50986001)(74316001)(51856001)(85306002)(81342001)(69226001)(85852003)(74662001)(76576001)(76786001)(74502001)(47446002)(76796001)(31966008)(65816001)(80022001)(83322001)(19580405001)(19580395003)(80976001)(46102001)(33646001)(74876001)(81816001)(56816005)(90146001)(83072002)(77982001)(54316002)(59766001)(63696002)(79102001)(56776001)(87266001)(81542001)(2656002)(81686001)(87936001)(3826001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:2601:8:9b00:402:1cb1:47cd:959b:a3a6;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1752648AbaAPPun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:50:43 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46115 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaAPPui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:50:38 -0500
+Date: Thu, 16 Jan 2014 16:50:32 +0100
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, tangchen@cn.fujitsu.com,
+        zhangyanfei@cn.fujitsu.com, yinghai@kernel.org,
+        grygorii.strashko@ti.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH V4 0/2] mm/memblock: Excluded memory
+Message-ID: <20140116165032.1730c040@lilie>
+In-Reply-To: <1389878827-7827-1-git-send-email-phacht@linux.vnet.ibm.com>
+References: <1389878827-7827-1-git-send-email-phacht@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011615-6892-0000-0000-0000077D6C32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0GFoODN018728
 
+Patch fits Andrew's linux-next.
 
-
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, January 16, 2014 3:27 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
-> Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-> 
-> On Tue, Jan 14, K. Y. Srinivasan wrote:
-> 
-> This function should return valid numbers:
-> 
-> > +static ssize_t fcopy_write(struct file *file, const char __user *buf,
-> > +			size_t count, loff_t *ppos)
-> > +{
-> > +	int error = 0;
-> > +
-> > +	if (count != sizeof(int))
-> > +		return 0;
-> 
-> Should be an error.
-> 
-> > +
-> > +	if (copy_from_user(&error, buf, sizeof(int)))
-> > +		return -EFAULT;
-> > +
-> > +	if (in_hand_shake) {
-> > +		fcopy_handle_handshake();
-> > +		return 0;
-> 
-> Should be sizeof(int).
-> 
-> > +	}
-> > +
-> > +	/*
-> > +	 * Complete the transaction by forwarding the result
-> > +	 * to the host. But first, cancel the timeout.
-> > +	 */
-> > +	if (cancel_delayed_work_sync(&fcopy_work))
-> > +		fcopy_respond_to_host(error);
-> > +
-> > +	return sizeof(int);
-> > +}
-Olaf,
-
-I will make the changes in the next version of this patch.
-
-Thank you,
-
-K. Y
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
