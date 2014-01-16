@@ -1,59 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaAPUO1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 15:14:27 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33718 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaAPUOX (ORCPT
+	id S1751821AbaAPUVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 15:21:38 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:36379 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaAPUVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 15:14:23 -0500
+	Thu, 16 Jan 2014 15:21:37 -0500
+Date: Thu, 16 Jan 2014 12:21:10 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kent Overstreet <kmo@daterainc.com>
+cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: next bio iters break discard?
+In-Reply-To: <20140114222424.GA7333@moria.home.lan>
+Message-ID: <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
+References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils> <20140114023346.GN9037@kmo> <yq161pnmcl2.fsf@sermon.lab.mkp.net> <20140114044841.GO9037@kmo> <yq1ob3el3mr.fsf@sermon.lab.mkp.net> <20140114222424.GA7333@moria.home.lan>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140116195115.GD4127@katana>
-References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
-	<1382326010-4554-3-git-send-email-bleung@chromium.org>
-	<20131021065804.GX3521@intel.com>
-	<CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
-	<20131114180538.GK11022@katana>
-	<CANLzEksP1nRfBaQ3-sSouOYL4C+oLKiE75eHfFdEzLmrQKn3dQ@mail.gmail.com>
-	<20131126130959.GI7427@katana>
-	<20140103155217.GG7132@katana>
-	<CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
-	<20140116195115.GD4127@katana>
-Date: Thu, 16 Jan 2014 12:14:22 -0800
-X-Google-Sender-Auth: QpVmCAuwqf0zvPM-np31o1LDd_o
-Message-ID: <CANLzEksAQmzTCTTm-Tx198i7+sDmast5Lcn6fvYZddwNbwvLkQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
-From: Benson Leung <bleung@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, khali@linux-fr.org,
-        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
-        linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Duncan Laurie <dlaurie@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Tue, 14 Jan 2014, Kent Overstreet wrote:
+> 
+> Does the below patch look like what we want? I'm assuming that if
 
-On Thu, Jan 16, 2014 at 11:51 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
-> > Our devices and our platforms have some other requirements which
-> > turned me away from using i2c_register_board_info.
->
-> Okay, so I'll drop these patches.
+You don't fill me with confidence ;)
 
+> multiple WRITE_SAME bios are merged, since they're all writing the same
+> data we can consider the entire request to be a single segment.
+> 
+> commit 1755e7ffc5745591d37b8956ce2512f4052a104a
+> Author: Kent Overstreet <kmo@daterainc.com>
+> Date:   Tue Jan 14 14:22:01 2014 -0800
+> 
+>     block: Explicitly handle discard/write same when counting segments
+> 
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index 8f8adaa..7d977f8 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -21,6 +21,12 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+>  	if (!bio)
+>  		return 0;
+>  
+> +	if (bio->bi_rw & REQ_DISCARD)
+> +		return 0;
+> +
+> +	if (bio->bi_rw & REQ_WRITE_SAME)
+> +		return 1;
+> +
+>  	fbio = bio;
+>  	cluster = blk_queue_cluster(q);
+>  	seg_size = 0;
 
-Sorry if I was unclear, but I am not able to use
-i2c_register_board_info for these devices because of the requirement
-to use "probe."
+For me this just shifts the crash,
+from __blk_recalc_rq_segments() to blk_rq_map_sg():
 
-Currently, I am doing explicit instantiation of devices using
-i2c_new_probed_device.
+blk_rq_map_sg
+scsi_init_sgtable
+scsi_init_io
+scsi_setup_blk_pc_cmnd
+sd_prep_fn
+blk_peek_request
+scsi_request_fn
+__blk_run_queue
+blk_run_queue
+scsi_run_queue
+scsi_next_command
+scsi_io_completion
+scsi_finish_command
+scsi_softirq_done
+blk_done_softirq
+__do_softirq
+irq_exit
+do_IRQ
+common_interrupt
+<EOI>
+cpuidle_idle_call
+arch_cpu_idle
+cpu_startup_entry
+start_secondary
 
+It's GPF'ing on struct scatter_list *sg 0x800000001473e064 in
 
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+static inline void sg_assign_page(struct scatterlist *sg, struct page *page)
+{
+	unsigned long page_link = sg->page_link & 0x3;
+
+It appears to be in the static inline __blk_segment_map_sg(),
+and that GPF'ing address is what it just got from sg_next().
+
+Sorry, this isn't the kind of dump you'll be used to, but it's the
+best I can do at the moment, and I've just had to reboot the machine.
+
+O, tried again and it hit the BUG_ON(count > sdb->table.nents)
+on line 1048 of drivers/scsi/scsi_lib.c:
+
+scsi_init_sgtable
+<IRQ> scsi_init_io
+scsi_setup_blk_pc_cmnd
+sd_setup_discard_cmnd
+sd_prep_fn
+blk_peek_request
+etc. as before
+
+I'll have to leave the machine shortly - I'm rather hoping
+you can do your own discard testing to see such crashes.
+
+Thanks,
+Hugh
