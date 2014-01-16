@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaAPNNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:13:36 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:54700 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaAPNNd (ORCPT
+	id S1752729AbaAPNPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:15:30 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49675 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaAPNP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:13:33 -0500
-Message-ID: <52D7DAF5.4020506@linaro.org>
-Date: Thu, 16 Jan 2014 21:13:25 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org
-CC: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Alex Shi <alex.shi@linaro.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH] sched: select_idle_sibling macro optimize
-References: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
-In-Reply-To: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 08:15:26 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv3 0/8] zram stats rework and code cleanup
+Date: Thu, 16 Jan 2014 16:12:08 +0300
+Message-Id: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.8.5.3.493.gb139ac2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Mike Galbraith.
+This patchset includes zram stats clean up and enhancements.
 
-Any one like to give some comments?
+Sergey Senozhatsky (8):
+  zram: drop `init_done' struct zram member
+  zram: do not pass rw argument to __zram_make_request()
+  zram: remove good and bad compress stats
+  zram: use atomic64_t for all zram stats
+  zram: remove zram stats code duplication
+  zram: report failed read and write stats
+  zram: drop not used table `count' member
+  zram: move zram size warning to documentation
 
-On 01/15/2014 10:23 PM, Alex Shi wrote:
-> If the sd domain just has one group, then we must be caught the
-> 	i == target later, and then goes to deeper level domain.
-> So just skip this domain checking to save some instructions.
-> 
-> Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> ---
->  kernel/sched/fair.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c7395d9..3265fbc 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4196,6 +4196,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
->  	sd = rcu_dereference(per_cpu(sd_llc, target));
->  	for_each_lower_domain(sd) {
->  		sg = sd->groups;
-> +
-> +		/* skip single group domain */
-> +		if (sg == sg->next)
-> +			continue;
-> +
->  		do {
->  			if (!cpumask_intersects(sched_group_cpus(sg),
->  						tsk_cpus_allowed(p)))
-> 
-
+ Documentation/blockdev/zram.txt |   5 ++
+ drivers/block/zram/zram_drv.c   | 175 +++++++++++++---------------------------
+ drivers/block/zram/zram_drv.h   |  10 +--
+ 3 files changed, 64 insertions(+), 126 deletions(-)
 
 -- 
-Thanks
-    Alex
+1.8.5.3.493.gb139ac2
+
