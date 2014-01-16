@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaAPNPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:15:30 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49675 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287AbaAPNP0 (ORCPT
+	id S1752780AbaAPNPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:15:36 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:44095 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaAPNP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:15:26 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv3 0/8] zram stats rework and code cleanup
-Date: Thu, 16 Jan 2014 16:12:08 +0300
-Message-Id: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.8.5.3.493.gb139ac2
+	Thu, 16 Jan 2014 08:15:29 -0500
+Date: Thu, 16 Jan 2014 14:15:21 +0100
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree
+ (akpm-current related)
+Message-ID: <20140116141521.015fea81@lilie>
+In-Reply-To: <20140116173638.5a1f01f8efb8cb7d48e021b0@canb.auug.org.au>
+References: <20140116173638.5a1f01f8efb8cb7d48e021b0@canb.auug.org.au>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011613-0342-0000-0000-00000777E1E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset includes zram stats clean up and enhancements.
+Hi Stephen,
 
-Sergey Senozhatsky (8):
-  zram: drop `init_done' struct zram member
-  zram: do not pass rw argument to __zram_make_request()
-  zram: remove good and bad compress stats
-  zram: use atomic64_t for all zram stats
-  zram: remove zram stats code duplication
-  zram: report failed read and write stats
-  zram: drop not used table `count' member
-  zram: move zram size warning to documentation
+thanks for reminding me...
 
- Documentation/blockdev/zram.txt |   5 ++
- drivers/block/zram/zram_drv.c   | 175 +++++++++++++---------------------------
- drivers/block/zram/zram_drv.h   |  10 +--
- 3 files changed, 64 insertions(+), 126 deletions(-)
+Am Thu, 16 Jan 2014 17:36:38 +1100
+schrieb Stephen Rothwell <sfr@canb.auug.org.au>:
+> mm/nobootmem.c: In function 'free_low_memory_core_early':
+> mm/nobootmem.c:119:26: warning: unused variable
+> 'size' [-Wunused-variable]
+> Introduced by commit dd3ff251123c ("mm/nobootmem: free_all_bootmem
+> again") from the akpm-current tree.
 
--- 
-1.8.5.3.493.gb139ac2
+Will send a new version of the patch today.
+
+Philipp
 
