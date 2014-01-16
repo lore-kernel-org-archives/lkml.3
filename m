@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaAPSgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:36:55 -0500
-Received: from www.sr71.net ([198.145.64.142]:43227 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874AbaAPSgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:36:52 -0500
-Message-ID: <52D82668.1060400@sr71.net>
-Date: Thu, 16 Jan 2014 10:35:20 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751642AbaAPSjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:39:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61751 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750937AbaAPSjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 13:39:08 -0500
+Date: Thu, 16 Jan 2014 13:39:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [RFC][PATCH 0/2] preempt: Track unmatched preempt_enable() to
+ preempt_disable()
+Message-ID: <20140116133906.50bcbc93@gandalf.local.home>
+In-Reply-To: <20140116174536.GB9655@laptop.programming.kicks-ass.net>
+References: <20140116171824.748919700@goodmis.org>
+	<20140116174536.GB9655@laptop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, penberg@kernel.org, cl@linux-foundation.org
-Subject: Re: [RFC][PATCH 4/9] mm: slabs: reset page at free
-References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180054.20A1B660@viggo.jf.intel.com> <alpine.DEB.2.02.1401141847230.32645@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401141847230.32645@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 06:48 PM, David Rientjes wrote:
->> > +/*
->> > + * Custom allocators (like the slabs) use 'struct page' fields
->> > + * for all kinds of things.  This resets the page's state so that
->> > + * the buddy allocator will be happy with it.
->> > + */
->> > +static inline void allocator_reset_page(struct page *page)
-> This is ambiguous as to what "allocator" you're referring to unless we 
-> look at the comment.  I think it would be better to name it 
-> slab_reset_page() or something similar.
+On Thu, 16 Jan 2014 18:45:36 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-I stuck it in mm.h and deliberately didn't call it 'slab_something' so
-that zsmalloc (in staging) could use this as well.  The "allocator" part
-of the name was to indicate that any allocator could use it.
+> On Thu, Jan 16, 2014 at 12:18:24PM -0500, Steven Rostedt wrote:
+> 
+> Didn't see anything horrible in there, so fine with me.
+> 
+> Another thing I recently ran into was:
+> 
+>   local_irq_disable();
+>   preempt_disable();
+>   local_irq_enable();
+> 
+>   local_irq_disable();
+>   preempt_enable();
+>   local_irq_enable();
+> 
+> I'm not sure any of our debugging catches that, I meant to extend
+> lockdep, but maybe it could also be hooked into something else.
 
+Hmm, what's wrong with the above?
+
+Note, the preemptirqsoff tracer will trace that as not being
+preemptible between that first local_irq_disable() to the
+local_irq_enable(). In fact, that's basically what the preemptirqsoff
+tracer was made for ;-)
+
+-- Steve
