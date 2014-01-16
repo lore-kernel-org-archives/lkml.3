@@ -1,122 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaAPTrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 14:47:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9283 "EHLO mx1.redhat.com"
+	id S1751842AbaAPTv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 14:51:26 -0500
+Received: from sauhun.de ([89.238.76.85]:55761 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384AbaAPTrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 14:47:45 -0500
-Date: Thu, 16 Jan 2014 17:47:34 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, acme@ghostprotocols.net
-Subject: Re: [PATCH 2/3] perf tools: Spare double comparison of callchain
- first entry
-Message-ID: <20140116194734.GA2373@infradead.org>
-References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
- <1389713836-13375-3-git-send-email-fweisbec@gmail.com>
- <87y52h930t.fsf@sejong.aot.lge.com>
- <20140115165927.GA21574@localhost.localdomain>
- <87d2js9132.fsf@sejong.aot.lge.com>
- <20140116173454.GA5328@localhost.localdomain>
+	id S1751274AbaAPTvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 14:51:23 -0500
+Date: Thu, 16 Jan 2014 20:51:15 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Benson Leung <bleung@chromium.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, khali@linux-fr.org,
+        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names from
+ 0
+Message-ID: <20140116195115.GD4127@katana>
+References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
+ <1382326010-4554-3-git-send-email-bleung@chromium.org>
+ <20131021065804.GX3521@intel.com>
+ <CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
+ <20131114180538.GK11022@katana>
+ <CANLzEksP1nRfBaQ3-sSouOYL4C+oLKiE75eHfFdEzLmrQKn3dQ@mail.gmail.com>
+ <20131126130959.GI7427@katana>
+ <20140103155217.GG7132@katana>
+ <CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9dgjiU4MmWPVapMU"
 Content-Disposition: inline
-In-Reply-To: <20140116173454.GA5328@localhost.localdomain>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 16, 2014 at 06:34:58PM +0100, Frederic Weisbecker escreveu:
-> On Thu, Jan 16, 2014 at 10:17:53AM +0900, Namhyung Kim wrote: 
-> > I think if the sort key doesn't contain "symbol", unmatch case would be
-> > increased as more various callchains would go into a same entry.
-> 
-> You mean -g fractal,0.5,callee,address ?
-> 
-> Hmm, actually I haven't seen much difference there.
 
-I guess he will, but will wait for Namhyung's final ack here, ok?
+--9dgjiU4MmWPVapMU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- Arnaldo
- 
-> > >
-> > >> 
-> > >> >
-> > >> > This results in less comparisons performed by the CPU.
-> > >> 
-> > >> Do you have any numbers?  I suspect it'd not be a big change, but just
-> > >> curious.
-> > >
-> > > So I compared before/after the patchset (which include the cursor restore removal)
-> > > with:
-> > >
-> > > 	1) Some big hackbench-like load that generates > 200 MB perf.data
-> > >
-> > > 	perf record -g -- perf bench sched messaging -l $SOME_BIG_NUMBER
-> > >
-> > > 	2) Compare before/after with the following reports:
-> > >
-> > > 	perf stat perf report --stdio > /dev/null
-> > > 	perf stat perf report --stdio -s sym > /dev/null
-> > > 	perf stat perf report --stdio -G > /dev/null
-> > > 	perf stat perf report --stdio -g fractal,0.5,caller,address > /dev/null 
-> > >
-> > > And most of the time I had < 0.01% difference on time completion in favour of the patchset
-> > > (which may be due to the removed cursor restore patch eventually).
-> > >
-> > > So, all in one, there was no real interesting difference. If you want the true results I can definetly relaunch the tests.
-> > 
-> > So as an extreme case, could you please also test "-s cpu" case and
-> > share the numbers?
-> 
-> There is indeed a tiny difference here.
-> 
-> Before the patchset:
-> 
-> fweisbec@Aivars:~/linux-2.6-tip/tools/perf$ sudo ./perf stat -r 20 ./perf report --stdio -s cpu > /dev/null
-> 
->  Performance counter stats for './perf report --stdio -s cpu' (20 runs):
-> 
->        3343,047232      task-clock (msec)         #    0,999 CPUs utilized            ( +-  0,12% )
->                  6      context-switches          #    0,002 K/sec                    ( +-  3,82% )
->                  0      cpu-migrations            #    0,000 K/sec                  
->            128 076      page-faults               #    0,038 M/sec                    ( +-  0,00% )
->     13 044 840 323      cycles                    #    3,902 GHz                      ( +-  0,12% )
->    <not supported>      stalled-cycles-frontend  
->    <not supported>      stalled-cycles-backend   
->     16 341 506 514      instructions              #    1,25  insns per cycle          ( +-  0,00% )
->      4 042 448 707      branches                  # 1209,211 M/sec                    ( +-  0,00% )
->         26 819 441      branch-misses             #    0,66% of all branches          ( +-  0,09% )
-> 
->        3,345286450 seconds time elapsed                                          ( +-  0,12% )
-> 
-> After the patchset:
-> 
-> fweisbec@Aivars:~/linux-2.6-tip/tools/perf$ sudo ./perf stat -r 20 ./perf report --stdio -s cpu > /dev/null
-> 
->  Performance counter stats for './perf report --stdio -s cpu' (20 runs):
-> 
->        3365,739972      task-clock (msec)         #    0,999 CPUs utilized            ( +-  0,12% )
->                  6      context-switches          #    0,002 K/sec                    ( +-  2,99% )
->                  0      cpu-migrations            #    0,000 K/sec                  
->            128 076      page-faults               #    0,038 M/sec                    ( +-  0,00% )
->     13 133 593 870      cycles                    #    3,902 GHz                      ( +-  0,12% )
->    <not supported>      stalled-cycles-frontend  
->    <not supported>      stalled-cycles-backend   
->     16 626 286 378      instructions              #    1,27  insns per cycle          ( +-  0,00% )
->      4 119 555 502      branches                  # 1223,967 M/sec                    ( +-  0,00% )
->         28 687 283      branch-misses             #    0,70% of all branches          ( +-  0,09% )
-> 
->        3,367984867 seconds time elapsed                                          ( +-  0,12% )
-> 
-> 
-> Which makes about 0.6% difference on the overhead.
-> Now it had less overhead in common cases (default sorting, -s sym, -G, etc...).
-> I guess it's not really worrysome, it's mostly unvisible at this scale.
+
+> Our devices and our platforms have some other requirements which
+> turned me away from using i2c_register_board_info.
+
+Okay, so I'll drop these patches.
+
+
+--9dgjiU4MmWPVapMU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS2DgzAAoJEBQN5MwUoCm22TEP/3QwocSIiYTHfi2G+go0hlzi
+raoUbSHZWeJnf9BWCN9DPVR6nxw9PCiaGIHBdHZTpMOyS7Gspu8wt7Jgdsl00Kzv
+Sre2nGDQfuXMqsuOw+G2rvdi4yOIcbsNl1frgTc63nm5IuBbewdQqTmSCcg7rkwZ
+mW5+1PMH+S1c4fmRLpc8zuEumEI5w4jINz7/mMHIZQEtr4VGMqdoj9i8jr3Jkbk/
+k3JRW0cUA23aVka6dvMj/BLMn4MwLUNyfJUDyN9fQP7NNFm1EgRvJvoFXxELwVA0
+NbXA5EuUPo+aTD6If5yT94eTjJKziCCPYssFvxwBA+3TRYGSO7yvkldoOg7Z1udh
+TqCgPTjSw/+Ozy9ZUD1KPjjdRo2qyjSnnfK8RD4Al21LMxt/FPVMr/Kl9EbjtbkM
+x5tQI3qp2J5EE7/Si6xhEKCP0y1BMGfeyGI/fgVgJBHjocYR/+jSt2LkfwkRBJF7
+aONst2rU4zBoSn+gxMk2t5PnIBOHeX9kilGGjtLitCCW5x2E+LaS4N7KbAizOcX0
+LZVu7S78iDWoVWEPqzFC6hZ7CFiG+YiYnmQPulB+Wxt1pi6Sy0WesyQMn/Fsg5Q3
+yKapq8ed0NSB7OCgqE+EwMFUXscQzw1kTOPuWmrwuJSVC4bLjL3nZbwjks/gwqsB
+OPBThC4eR5ZJU1tHzdsn
+=nR6j
+-----END PGP SIGNATURE-----
+
+--9dgjiU4MmWPVapMU--
