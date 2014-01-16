@@ -1,158 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaAPIvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:51:06 -0500
-Received: from relay.parallels.com ([195.214.232.42]:41357 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaAPIvC (ORCPT
+	id S1752054AbaAPIvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 03:51:53 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:51478 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909AbaAPIvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:51:02 -0500
-Message-ID: <52D79D6B.10304@parallels.com>
-Date: Thu, 16 Jan 2014 12:50:51 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Thu, 16 Jan 2014 03:51:51 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s0G8pMNu029853, This message is accepted by code: ctloc85258
+Message-ID: <52D79E31.6000300@realtek.com>
+Date: Thu, 16 Jan 2014 16:54:09 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on memory
-References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com> <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org> <52D4E5F2.5080205@parallels.com> <20140114141453.374bd18e5290876177140085@linux-foundation.org> <52D64B27.30604@parallels.com> <20140115012541.ad302526.akpm@linux-foundation.org> <52D6AF5F.2040102@parallels.com> <20140115145327.6aae2e13a9a8bba619923ac9@linux-foundation.org>
-In-Reply-To: <20140115145327.6aae2e13a9a8bba619923ac9@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+To: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        "micky_ching@realsil.com.cn" <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
+References: <1389685656-880-1-git-send-email-rogerable@realtek.com> <1389685656-880-2-git-send-email-rogerable@realtek.com> <20140114130409.GB11820@lee--X1>
+In-Reply-To: <20140114130409.GB11820@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 02:53 AM, Andrew Morton wrote:
-> On Wed, 15 Jan 2014 19:55:11 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+On 01/14/2014 09:04 PM, Lee Jones wrote:
+>> From: Roger Tseng <rogerable@realtek.com>
+>>
+>> Realtek USB card reader provides a channel to transfer command or data to flash
+>> memory cards. This driver exports host instances for mmc and memstick subsystems
+>> and handles basic works.
+>>
+>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+
+[snip]
+
+>> +static int rtsx_usb_bulk_transfer_sglist(struct rtsx_ucr *ucr,
+>> +             unsigned int pipe, struct scatterlist *sg, int num_sg,
+>> +             unsigned int length, unsigned int *act_len, int timeout)
+>> +{
+>> +     int ret;
+>> +
+>> +     dev_dbg(&ucr->pusb_intf->dev, "%s: xfer %u bytes, %d entries\n",
+>> +                     __func__, length, num_sg);
+>> +     ret = usb_sg_init(&ucr->current_sg, ucr->pusb_dev, pipe, 0,
+>> +                     sg, num_sg, length, GFP_NOIO);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ucr->sg_timer.expires = jiffies + msecs_to_jiffies(timeout);
+>> +     add_timer(&ucr->sg_timer);
+>> +     usb_sg_wait(&ucr->current_sg);
+>> +     del_timer(&ucr->sg_timer);
+>> +
+>> +     if (act_len)
+>> +             *act_len = ucr->current_sg.bytes;
+>> +
+>> +     return ucr->current_sg.status;
+>> +}
 >
->>> We could avoid the "scan 32 then scan just 1" issue with something like
->>>
->>> 	if (total_scan > batch_size)
->>> 		total_scan %= batch_size;
->>>
->>> before the loop.  But I expect the effects of that will be unmeasurable
->>> - on average the number of objects which are scanned in the final pass
->>> of the loop will be batch_size/2, yes?  That's still a decent amount.
->> Let me try to summarize. We want to scan batch_size objects in one pass,
->> not more (to keep latency low) and not less (to avoid cpu cache
->> pollution due to too frequent calls); if the calculated value of
->> nr_to_scan is less than the batch_size we should accumulate it in
->> nr_deferred instead of calling ->scan() and add nr_deferred to
->> nr_to_scan on the next pass, i.e. in pseudo-code:
->>
->>     /* calculate current nr_to_scan */
->>     max_pass = shrinker->count();
->>     delta = max_pass * nr_user_pages_scanned / nr_user_pages;
->>
->>     /* add nr_deferred */
->>     total_scan = delta + nr_deferred;
->>
->>     while (total_scan >= batch_size) {
->>         shrinker->scan(batch_size);
->>         total_scan -= batch_size;
->>     }
->>
->>     /* save the remainder to nr_deferred  */
->>     nr_deferred = total_scan;
->>
->> That would work, but if max_pass is < batch_size, it would not scan the
->> objects immediately even if prio is high (we want to scan all objects).
-> Yes, that's a problem.
+> Code looks fine, but shouldn't this live an a USB driver?
 >
->> For example, dropping caches would not work on the first attempt - the
->> user would have to call it batch_size / max_pass times.
-> And we do want drop_caches to work immediately.
+We have studied drivers in usb/storage, the place that most likely to 
+put the driver. All of them are for STANDARD usb mass storage 
+class(something like USB_CLASS_MASS_STORAGE). But this is not the same 
+case. This driver is for our vendor-class device with completely 
+different protocol. It is really an USB interfaced flash card command 
+converter(or channel) device rather than a real storage. It also has two 
+derived modules(rtsx_usb_sdmmc, rtsx_usb_memstick) for other two subsystems.
+
+We also have another driver: rtsx_pcr.c resident in mfd/ for similar 
+devices but of PCIe interface. It is nature for us to choose the same 
+place for this variant.
+
+[snip]
+
+>> +     }
+>> +
+>> +     /* set USB interface data */
+>> +     usb_set_intfdata(intf, ucr);
+>> +
+>> +     ucr->vendor_id = id->idVendor;
+>> +     ucr->product_id = id->idProduct;
+>> +     ucr->cmd_buf = ucr->rsp_buf = ucr->iobuf;
+>> +
+>> +     mutex_init(&ucr->dev_mutex);
+>> +
+>> +     ucr->pusb_intf = intf;
+>> +
+>> +     /* initialize */
+>> +     ret = rtsx_usb_init_chip(ucr);
+>> +     if (ret)
+>> +             goto out_init_fail;
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(rtsx_usb_cells); i++) {
+>> +             rtsx_usb_cells[i].platform_data = &ucr;
 >
->> This could be
->> fixed by making the code proceed to ->scan() not only if total_scan is
->>> = batch_size, but also if max_pass is < batch_size and total_scan is >=
->> max_pass, i.e.
->>
->>     while (total_scan >= batch_size ||
->>             (max_pass < batch_size && total_scan >= max_pass)) ...
->>
->> which is equivalent to
->>
->>     while (total_scan >= batch_size ||
->>                 total_scan >= max_pass) ...
->>
->> The latter is the loop condition from the current patch, i.e. this patch
->> would make the trick if shrink_slab() followed the pseudo-code above. In
->> real life, it does not actually - we have to bias total_scan before the
->> while loop in order to avoid dropping fs meta caches on light memory
->> pressure due to a large number being built in nr_deferred:
->>
->>     if (delta < max_pass / 4)
->>         total_scan = min(total_scan, max_pass / 2);
-> Oh, is that what's it's for.  Where did you discover this gem?
+> You've already put this in your drvdata (or ntfdata, as it's called
+> here). Why do you also need it in platform_data?
 
->From 3567b59aa80ac4417002bf58e35dce5c777d4164 Mon Sep 17 00:00:00 2001
-From: Dave Chinner <dchinner@redhat.com>
-Date: Fri, 8 Jul 2011 14:14:36 +1000
-Subject: [PATCH] vmscan: reduce wind up shrinker->nr when shrinker can't do
- work
+Derived modules rtsx_usb_sdmmc and rtsx_usb_memstick will retrieve this 
+from platform_data. They will not be aware of usb interface struct.
 
->>     while (total_scan >= batch_size) ...
->>
->> With this biasing, it is impossible to achieve the ideal behavior I've
->> described above, because we will never accumulate max_pass objects in
->> nr_deferred if memory pressure is low. So, if applied to the real code,
->> this patch takes on a slightly different sense, which I tried to reflect
->> in the comment to the code: it will call ->scan() with nr_to_scan <
->> batch_size only if:
->>
->> 1) max_pass < batch_size && total_scan >= max_pass
->>
->> and
->>
->> 2) we're tight on memory, i.e. the current delta is high (otherwise
->> total_scan will be biased as max_pass / 2 and condition 1 won't be
->> satisfied).
-> (is max_pass misnamed?)
+[snip]
 
-Yes, the name is misleading. I guess, it should be called freeable_cnt,
-because we actually scan up to 2*max_pass objects in one pass.
+>> +#ifdef CONFIG_PM
+>> +static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
+>> +{
+>> +     struct rtsx_ucr *ucr =
+>> +             (struct rtsx_ucr *)usb_get_intfdata(intf);
+>> +
+>> +     dev_dbg(&intf->dev, "%s called with pm message 0x%04u\n",
+>> +                     __func__, message.event);
+>> +
+>> +     mutex_lock(&ucr->dev_mutex);
+>> +     rtsx_usb_turn_off_led(ucr);
+>
+> That's it? That's all you do during suspend? :)
+>
+Yes. The rest of power things like turning-off card power or clock 
+should be taken care by cores of derived modules(mmc, memstick). We put 
+only one task here to make sure the LED is off, preventing any module 
+from turn it on but doesn't turn off before suspend.
+>> +     mutex_unlock(&ucr->dev_mutex);
+>> +     return 0;
+>> +}
+>> +
+>> +static int rtsx_usb_resume(struct usb_interface *intf)
+>> +{
+>
+> Don't you want to turn the LED back on here?
+>
+> Or will that happen automatically when you write/read to/from it again?
+>
+Yes, it would blink again during use. The turn-off before suspend is not 
+a permanent power off.
+>> +     return 0;
+>> +}
+>> +
+>> +static int rtsx_usb_reset_resume(struct usb_interface *intf)
+>> +{
+>> +     struct rtsx_ucr *ucr =
+>> +             (struct rtsx_ucr *)usb_get_intfdata(intf);
+>> +
+>> +     rtsx_usb_reset_chip(ucr);
+>> +     return 0;
+>> +}
+>> +
+>> +#else /* CONFIG_PM */
+>> +
+>> +#define rtsx_usb_suspend NULL
+>> +#define rtsx_usb_resume NULL
+>> +#define rtsx_usb_reset_resume NULL
+>> +
+>> +#endif /* CONFIG_PM */
+>> +
+>> +
+>> +static int rtsx_usb_pre_reset(struct usb_interface *intf)
+>> +{
+>> +     struct rtsx_ucr *ucr = (struct rtsx_ucr *)usb_get_intfdata(intf);
+>> +
+>> +     mutex_lock(&ucr->dev_mutex);
+>
+> Is this normal?
 
->> >From our discussion it seems condition 2 is not necessary at all, but it
->> follows directly from the biasing rule. So I propose to tweak the
->> biasing a bit so that total_scan won't be lowered < batch_size:
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index eea668d..78ddd5e 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -267,7 +267,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
->> struct shrinker *shrinker,
->>       * a large delta change is calculated directly.
->>       */
->>      if (delta < max_pass / 4)
->> -        total_scan = min(total_scan, max_pass / 2);
->> +        total_scan = min(total_scan, max(max_pass / 2, batch_size));
->>  
->>      /*
->>       * Avoid risking looping forever due to too large nr value:
->> @@ -281,7 +281,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
->> struct shrinker *shrinker,
->>                  nr_pages_scanned, lru_pages,
->>                  max_pass, delta, total_scan);
->>  
->> -    while (total_scan >= batch_size) {
->> +    while (total_scan >= batch_size || total_scan >= max_pass) {
->>          unsigned long ret;
->>  
->>          shrinkctl->nr_to_scan = batch_size;
->>
->> The first hunk guarantees that total_scan will always accumulate at
->> least batch_size objects no matter how small max_pass is. That means
->> that when max_pass is < batch_size we will eventually get >= max_pass
->> objects to scan and shrink the slab to 0 as we need. What do you think
->> about that?
-> I'm a bit lost :(
+Yes. It is used to prevent commands during port reset. Same to the one 
+in usb/storage/usb.c.
 
-I'll try to clean up shrink_slab_node() and resend the patch then.
+[snip]
+>
+>> +#include <linux/usb.h>
+>> +
+>> +/* related module names */
+>> +#define RTSX_USB_SD_CARD             0
+>> +#define RTSX_USB_MS_CARD             1
+>> +
+>> +#define DRV_NAME_RTSX_USB            "rtsx_usb"
+>> +#define DRV_NAME_RTSX_USB_SDMMC              "rtsx_usb_sdmmc"
+>> +#define DRV_NAME_RTSX_USB_MS         "rtsx_usb_ms"
+>
+> Can you just put the names in the correct places please?
+>
+Do you mean just remove these definitions and fill the string directly 
+at the using place?
 
-Thanks.
+>> +/* endpoint numbers */
+>> +#define EP_BULK_OUT          1
+>> +#define EP_BULK_IN           2
+>> +#define EP_INTR_IN           3
+>
+> I assume these aren't defined anywhere else?
+>
+It should not be defined anywhere else since it is really depends on the 
+hardware design but not any general spec.
+
+[snip]
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+>
+> ------Please consider the environment before printing this e-mail.
+>
