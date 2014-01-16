@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaAPGqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 01:46:25 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:4508 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaAPGqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 01:46:23 -0500
-Message-ID: <1389854777.2126.20.camel@j-VirtualBox>
-Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
- too many tries
-From: Jason Low <jason.low2@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Date: Wed, 15 Jan 2014 22:46:17 -0800
-In-Reply-To: <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
-References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
-	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
-	 <1389840330.2944.104.camel@j-VirtualBox>
-	 <CA+55aFwszXHtjOW53eBLV4aMD-cv0dg7xyBa0BtN1LS4XajwLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751883AbaAPGqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 01:46:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584AbaAPGq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 01:46:28 -0500
+Date: Thu, 16 Jan 2014 14:46:28 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an
+ arbitrary pagetable
+Message-ID: <20140116064627.GC6356@dhcp-16-126.nay.redhat.com>
+References: <20140113122320.GA1900@darkstar.nay.redhat.com>
+ <52D3FCAA.7070004@linux.intel.com>
+ <20140114014003.GB4327@dhcp-16-126.nay.redhat.com>
+ <52D57F75.7060308@zytor.com>
+ <20140115011609.GD23767@dhcp-16-126.nay.redhat.com>
+ <52D6970D.3050701@zytor.com>
+ <20140116014457.GA3807@dhcp-16-126.nay.redhat.com>
+ <52D746D9.7030206@linux.intel.com>
+ <20140116030343.GF3807@dhcp-16-126.nay.redhat.com>
+ <52D75A55.2080503@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D75A55.2080503@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 10:14 +0700, Linus Torvalds wrote:
-> On Thu, Jan 16, 2014 at 9:45 AM, Jason Low <jason.low2@hp.com> wrote:
-> >
-> > Any comments on the below change which unlocks the mutex before taking
-> > the lock->wait_lock to wake up a waiter? Thanks.
+On 01/15/14 at 08:04pm, H. Peter Anvin wrote:
+> On 01/15/2014 07:03 PM, Dave Young wrote:
+> >>
+> >> making something harder to grep and less standardized is hardly cleaner
+> >> and these things compile to nothing for non-modules.
+> > 
+> > It's not nothing, just very small increasement:
+> >    text	   data	    bss	    dec	    hex	filename
+> > 7636121	1391824	9355264	18383209	1188169	vmlinux
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> > 7636113	1391824	9355264	18383201	1188161	vmlinux
+> > 
+> > I do not want to insist on this minor problem, if you want please keep it.
+> > 
 > 
-> Hmm. Doesn't that mean that a new lock owner can come in *before*
-> you've called debug_mutex_unlock and the lockdep stuff, and get the
-> lock? And then debug_mutex_lock() will be called *before* the unlocker
-> called debug_mutex_unlock(), which I'm sure confuses things.
+> Now *that* we can fix by making these macros expand to nothing if you
+> are compiling for a nonmodule, right?  That will benefit code that
+> legitimately can compile as a module but is configured "y", too.
 
-If obtaining the wait_lock for debug_mutex_unlock is the issue, then
-perhaps we can address that by taking care of
-#ifdef CONFIG_DEBUG_MUTEXES. In the CONFIG_DEBUG_MUTEXES case, we can
-take the wait_lock first, and in the regular case, take the wait_lock
-after releasing the mutex.
+I'm not sure expanding to nothing is a good fix.
 
-#ifdef CONFIG_DEBUG_MUTEXES
-	spin_lock_mutex(&lock->wait_lock, flags);
-#endif
+For built-in module we still can retrieve the module info in userspace via
+/usr/sbin/modinfo, if we expand the Macros to nothing then userspace will
+not see thus infomation anymore.
 
-        mutex_release(&lock->dep_map, nested, _RET_IP_);
-        debug_mutex_unlock(lock);
-        if (__mutex_slowpath_needs_to_unlock())
-                atomic_set(&lock->count, 1);
+Another advantage of built-in module is it has module specific parameters which
+should not necessary a generic kernel parameter.
 
-#ifndef CONFIG_DEBUG_MUTEXES
-	spin_lock_mutex(&lock->wait_lock, flags);
-#endif
+If the *module* is really a nonmodule, IMHO it should add the information to
+or add other macros macros instead of reuse the MODULE_*.
 
+BTW, for macros in this file, for a nonmodule "license GPL" is unnecessary at all.
+
+Thanks
+Dave
