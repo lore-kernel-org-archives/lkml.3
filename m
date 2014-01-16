@@ -1,129 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaAPSdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 13:33:35 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55119 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700AbaAPSdb convert rfc822-to-8bit (ORCPT
+	id S1751923AbaAPSfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 13:35:05 -0500
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:48830 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750937AbaAPSfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 13:33:31 -0500
-Date: Thu, 16 Jan 2014 18:33:26 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
-Message-ID: <20140116183326.GG25540@e102568-lin.cambridge.arm.com>
-References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
- <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
- <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
- <20140115165623.GJ14405@codeaurora.org>
- <20140116013840.GA674@codeaurora.org>
- <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
- <20140116180505.GA30925@codeaurora.org>
-MIME-Version: 1.0
-In-Reply-To: <20140116180505.GA30925@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 16 Jan 2014 18:33:27.0336 (UTC) FILETIME=[726B7A80:01CF12E9]
-X-MC-Unique: 114011618332902801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Thu, 16 Jan 2014 13:35:02 -0500
+Date: Thu, 16 Jan 2014 12:34:59 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Hansen <dave@sr71.net>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, penberg@kernel.org
+Subject: Re: [RFC][PATCH 5/9] mm: rearrange struct page
+In-Reply-To: <20140114180055.21691733@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.10.1401161233060.30036@nuc>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180055.21691733@viggo.jf.intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 06:05:05PM +0000, Stephen Boyd wrote:
-> On 01/16, Lorenzo Pieralisi wrote:
-> > On Thu, Jan 16, 2014 at 01:38:40AM +0000, Stephen Boyd wrote:
-> > > On 01/15, Stephen Boyd wrote:
-> > > > 
-> > > > Ah sorry, I forgot to put the compatible property here like in
-> > > > the dts change. I'll do that in the next revision. Yes we need a
-> > > > compatible property here to match the platform driver.
-> > > > 
-> > > 
-> > > This is the replacement patch
-> > > 
-> > > -----8<------
-> > > From: Stephen Boyd <sboyd@codeaurora.org>
-> > > Subject: [PATCH v9] devicetree: bindings: Document Krait CPU/L1 EDAC
-> > > 
-> > > The Krait CPU/L1 error reporting device is made up a per-CPU
-> > > interrupt. While we're here, document the next-level-cache
-> > > property that's used by the Krait EDAC driver.
-> > > 
-> > > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> > > Cc: Mark Rutland <mark.rutland@arm.com>
-> > > Cc: Kumar Gala <galak@codeaurora.org>
-> > > Cc: <devicetree@vger.kernel.org>
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > > ---
-> > >  Documentation/devicetree/bindings/arm/cpus.txt | 58 ++++++++++++++++++++++++++
-> > >  1 file changed, 58 insertions(+)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> > > index 91304353eea4..03a529e791c4 100644
-> > > --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> > > +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> > > @@ -62,6 +62,20 @@ nodes to be present and contain the properties described below.
-> > >  		Value type: <u32>
-> > >  		Definition: must be set to 0
-> > >  
-> > > +	- compatible
-> > > +		Usage: optional
-> > > +		Value type: <string>
-> > > +		Definition: should be one of the compatible strings listed
-> > > +			    in the cpu node compatible property. This property
-> > > +			    shall only be present if all the cpu nodes have the
-> > > +			    same compatible property.
-> > 
-> > Do we really want to do that ? I am not sure. A cpus node is supposed to
-> > be a container node, we should not define this binding just because we
-> > know the kernel creates a platform device for it then.
-> 
-> This is just copying more of the ePAPR spec into this document.
-> It just so happens that having a compatible field here allows a
-> platform device to be created. I don't see why that's a problem.
+On Tue, 14 Jan 2014, Dave Hansen wrote:
 
-I do not see why you cannot define a node like pmu or arch-timer and stick
-a compatible property in there. cpus node does not represent a device, and
-must not be created as a platform device, that's my opinion.
+>
+> This makes it *MUCH* more clear how the first few fields of
+> 'struct page' get used by the slab allocators.
 
-What would you do for big.LITTLE systems ? We are going to create two
-cpus node because we need two platform devices ? I really think there
-must be a better way to implement this, but I will let DT maintainers
-make a decision.
-
-> > interrupts is a cpu node property and I think it should be kept as such.
-> > 
-> > I know it will be duplicated and I know you can't rely on a platform
-> > device for probing (since if I am not mistaken, removing a compatible
-> > string from cpus prevents its platform device creation), but that's an issue
-> > related to how the kernel works, you should not define DT bindings to solve
-> > that IMHO.
-> 
-> The interrupts property is also common for all cpus so it seems
-> fine to collapse the value down into a PPI specifier indicating
-> that all CPUs get the interrupt, similar to how we compress the
-> information about the compatible string.
-
-I think it is nicer to create a device node (as I said, like a pmu or an
-arch-timer) and define interrupts there along with a proper compatible
-property. This would serve the same purpose without adding properties in
-the cpus node.
-
-cpu-edac {
-	compatible = "qcom,cpu-edac";
-	interrupts = <...>;
-};
-
-Thanks,
-Lorenzo
-
+I think this adds to the confusion. What you want to know is which other
+fields overlap a certain field. After this patch you wont have that
+anymore.
