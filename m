@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaAPM4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 07:56:03 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60559 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369AbaAPM4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 07:56:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,667,1384329600"; 
-   d="scan'208";a="467638794"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: 8250_dw: fix compilation warning when !CONFIG_PM_SLEEP
-Date: Thu, 16 Jan 2014 14:55:57 +0200
-Message-Id: <1389876957-6052-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1752697AbaAPM6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 07:58:12 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36522 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751389AbaAPM6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 07:58:10 -0500
+Date: Thu, 16 Jan 2014 12:57:27 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
+Message-ID: <20140116125727.GI30257@mudshark.cambridge.arm.com>
+References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
+ <20140116115634.GE30257@mudshark.cambridge.arm.com>
+ <CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_PM will be set if either or both CONFIG_PM_SLEEP and
-CONFIG_PM_RUNTIME is set. Compiling the driver with !CONFIG_PM_SLEEP causes
-following compilation warnings:
+On Thu, Jan 16, 2014 at 12:26:53PM +0000, Jean Pihet wrote:
+> On 16 January 2014 12:56, Will Deacon <will.deacon@arm.com> wrote:
+> > In your previous series, compat backtracing is actually split out into a
+> > separate function (compat_user_backtrace), so it would be more consistent to
+> > have a compat_user_stack_pointer macro, rather than add this check here.
+> 
+> Do you mean this change instead?
 
-drivers/tty/serial/8250/8250_dw.c:404:12: warning: ‘dw8250_suspend’ defined but not used [-Wunused-function]
-drivers/tty/serial/8250/8250_dw.c:413:12: warning: ‘dw8250_resume’ defined but not used [-Wunused-function]
+I don't think so...
 
-Fix this by using CONFIG_PM_SLEEP instead.
+> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+> index 569b2187..9b88d2e 100644
+> --- a/kernel/events/internal.h
+> +++ b/kernel/events/internal.h
+> @@ -185,7 +185,8 @@ static inline bool arch_perf_have_user_stack_dump(void)
+>         return true;
+>  }
+> 
+> -#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
+> +#define perf_user_stack_pointer(regs) \
+> +       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This doesn't belong in core code; compat_user_mode and the fields of regs
+are arm64-specific. So I suppose you need to rework your original patch to
+call compat_user_stack_pointer (which we already define in compat.h for
+arm64) if compat_user_mode(regs)).
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 06525f10e364..47e6c57de3a6 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -400,7 +400,7 @@ static int dw8250_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int dw8250_suspend(struct device *dev)
- {
- 	struct dw8250_data *data = dev_get_drvdata(dev);
-@@ -418,7 +418,7 @@ static int dw8250_resume(struct device *dev)
- 
- 	return 0;
- }
--#endif /* CONFIG_PM */
-+#endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_RUNTIME
- static int dw8250_runtime_suspend(struct device *dev)
--- 
-1.8.5.2
+The problem there is the inconsistency with respect to the regs argument:
 
+  user_stack_pointer(regs)	// Returns user stack pointer for regs
+  current_user_stack_pointer()	// Returns current user stack pointer
+  compat_user_stack_pointer()	// Doesn't take a regs argument!
+
+On top of that, x86 treats those last two functions differently when current
+is a compat task.
+
+So the simplest thing would be to make compat_user_stack_pointer expand to
+user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
+original patch fixing user_stack_pointer.
+
+Will
