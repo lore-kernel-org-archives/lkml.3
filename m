@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaAPRx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:53:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46923 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaAPRxY (ORCPT
+	id S1751601AbaAPRxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:53:39 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:49867 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaAPRxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:53:24 -0500
-Message-ID: <52D81C92.9050800@canonical.com>
-Date: Thu, 16 Jan 2014 12:53:22 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [v3.11][v3.12][v3.13][Regression]  EISA: Initialize device before
- its resources
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 12:53:35 -0500
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH] Add Xilinx AXI Video DMA Engine driver
+Date: Thu, 16 Jan 2014 23:23:22 +0530
+Message-Id: <1389894803-4147-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+Hi,
 
-A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
-was found the following commit introduced this bug:
+This is the driver for Xilinx AXI Video Direct Memory Access Engine.
+It is a soft IP core, which provides high-bandwidth direct memory
+access between memory and AXI4-Stream video type target peripherals 
+including peripherals which support AXI4-Stream Video Protocol. The
+core provides efficient two dimensional DMA operations with independent
+asynchronous read and write channel operation.
 
-commit 26abfeed4341872364386c6a52b9acef8c81a81a
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon Apr 15 14:34:02 2013 -0600
+For more information on the IP, please refer to
+http://www.xilinx.com/support/documentation/ip_documentation/axi_vdma/v6_1/pg020_axi_vdma.pdf
 
-    EISA: Initialize device before its resources
+This patch also provides a test client, which assumes read and write channels
+of the core are configured in a back-to-back connection.  It transfers 
+data on the write channel, read and verify the data on the read channel. 
 
-The regression was introduced as of v3.10-rc1.
+Use cases:
+++++++++++
+1. Xilinx Video Targeted Reference design
+   http://www.wiki.xilinx.com/Zynq+Base+TRD+14.5
+2. Common Display Framework
+   http://events.linuxfoundation.org/sites/events/files/slides/20131024-elce.pdf
 
-Reverting this commit has resolved the bug.  I wanted to get your
-feedback, since you are the patch author.  Should we consider reverting
-this commit in mainline and the stable trees?
+Regards,
+Srikanth
 
-Thanks,
+Srikanth Thokala (1):
+  dma: Add Xilinx AXI Video Direct Memory Access Engine driver support
 
-Joe
+ .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   71 +
+ .../bindings/dma/xilinx/xilinx_vdma_test.txt       |   39 +
+ drivers/dma/Kconfig                                |   23 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/xilinx/Makefile                        |    2 +
+ drivers/dma/xilinx/xilinx_vdma.c                   | 1497 ++++++++++++++++++++
+ drivers/dma/xilinx/xilinx_vdma_test.c              |  629 ++++++++
+ 7 files changed, 2262 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma_test.txt
+ create mode 100644 drivers/dma/xilinx/Makefile
+ create mode 100644 drivers/dma/xilinx/xilinx_vdma.c
+ create mode 100644 drivers/dma/xilinx/xilinx_vdma_test.c
+
+-- 
+1.7.9.5
 
