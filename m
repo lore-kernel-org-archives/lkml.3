@@ -1,96 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaAPNjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 08:39:21 -0500
-Received: from [65.55.88.11] ([65.55.88.11]:25532 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752803AbaAPNjP (ORCPT
+	id S1752864AbaAPNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 08:39:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38347 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaAPNjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 08:39:15 -0500
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(z579eh3416lzbb2dI98dI9371I15bfK1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz8275dh1de097h186068hz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h19b6n1155h)
-Date: Thu, 16 Jan 2014 14:37:53 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 16 Jan 2014 08:39:21 -0500
+Date: Thu, 16 Jan 2014 05:38:44 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-2dc9fb1a7bf013ce24dd34bc25283b60b966f015@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1389677157-30513-3-git-send-email-namhyung@kernel.org>
+References: <1389677157-30513-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Factor out sample__resolve_callchain(
+ )
+Git-Commit-ID: 2dc9fb1a7bf013ce24dd34bc25283b60b966f015
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Marc C <marc.ceeeee@gmail.com>, Michal Simek <michal.simek@xilinx.com>,
-        Mark Brown <broonie@kernel.org>, David Brown <davidb@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] ARM: brcmstb: dts: add a reference DTS for Broadcom
- 7445
-References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com> <61E0E2A7-F7FC-4397-8E92-06CC409912B9@gmail.com> <52D72FCD.1030005@gmail.com> <201401161219.01038.arnd@arndb.de>
-In-Reply-To: <201401161219.01038.arnd@arndb.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <0ed449b4-dad4-47a0-9f7d-c3423d4e50f1@TX2EHSMHS007.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 16 Jan 2014 05:38:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 12:19 PM, Arnd Bergmann wrote:
-> On Thursday 16 January 2014, Marc C wrote:
->>> And then you can add a regular device driver to drivers/reset that provides a
->>> device_reset() API to other drivers, or a system-reset function to be registered as
->>> arm_pm_restart. This driver would use syscon_regmap_lookup_by_phandle() to get access
->>> to a regmap pointer, and then use either hardcoded offsets into the regmap, or get
->>> those offsets from numbers in the devicetree, as provided in the example above.
->>
->> I was able to port a standalone "reboot" driver using syscon + regmap. However, for the
->> SMP initialization case, it turns out that syscon is configured after SMP init. Do you
->> have any advice for this type of situation?
->>
->> I'd hate to go around in circles, but without resorting to hard-coded offsets, perhaps I
->> can just add the remaining "non-regmap" register offsets in the DT?
-> 
-> You are not the first one to stumble over this problem. There are
-> two ways to get out of it, and we should probably implement both in
-> the long run:
-> 
-> 1. Other platforms also require the syscon driver to be active before
-> the regular device driver probing starts. Michal Simek has the same
-> issue in the zynq clock driver that you have for SMP initialization.
-> We have talked about this with Mark Brown already, and I think we will
-> find a solution for this in the end, but it's not as straightforward
-> as I first hoped. We can probably use help in this area.
+Commit-ID:  2dc9fb1a7bf013ce24dd34bc25283b60b966f015
+Gitweb:     http://git.kernel.org/tip/2dc9fb1a7bf013ce24dd34bc25283b60b966f015
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 14 Jan 2014 14:25:35 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 15 Jan 2014 15:32:43 -0300
 
-I wouldn't say issue because we have created workaround which should be acceptable.
-For more info.
-https://lkml.org/lkml/2014/1/6/349  patch 2/7 is that what we have done
-to get it work.
-Also I hope that this can go to mainline before any nice solution will be find
-not to stop work on others drivers which use regmap.
+perf tools: Factor out sample__resolve_callchain()
 
-But there is definitely a space for doing this better.
+The report__resolve_callchain() can be shared with perf top code as it
+doesn't really depend on the perf report code.  Factor it out as
+sample__resolve_callchain().  The same goes to the hist_entry__append_
+callchain() too.
 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Link: http://lkml.kernel.org/r/1389677157-30513-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c | 24 +++---------------------
+ tools/perf/builtin-top.c    | 22 +++++++---------------
+ tools/perf/util/callchain.c | 23 +++++++++++++++++++++++
+ tools/perf/util/callchain.h |  6 ++++++
+ 4 files changed, 39 insertions(+), 36 deletions(-)
 
-> 2. There is actually no reason for the SMP code to be called this early,
-> and multiple platforms would like to move SMP init to a later stage.
-> Stephen Boyd has recently started reworking the way we do SMP init,
-> and he may have some more insight.
-> 
-> In the meantime, I'd suggest you do the binding under the assumption
-> that it will work eventually, and then work around the current limitations
-> in the SMP code by looking for the device nodes you need and map them
-> manually, as you did in the previous versions of your patch set.
-
-Yep, that's exactly what we have done just because of other driver developing
-till this is resolved.
-
-Thanks,
-Michal
-
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 46864dd..3c53ec2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -75,24 +75,6 @@ static int report__config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
+ }
+ 
+-static int report__resolve_callchain(struct report *rep, struct symbol **parent,
+-				     struct perf_evsel *evsel, struct addr_location *al,
+-				     struct perf_sample *sample)
+-{
+-	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+-		return machine__resolve_callchain(al->machine, evsel, al->thread, sample,
+-						  parent, al, rep->max_stack);
+-	}
+-	return 0;
+-}
+-
+-static int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
+-{
+-	if (!symbol_conf.use_callchain)
+-		return 0;
+-	return callchain_append(he->callchain, &callchain_cursor, sample->period);
+-}
+-
+ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_location *al,
+ 				      struct perf_sample *sample, struct perf_evsel *evsel,
+ 				      union perf_event *event)
+@@ -103,7 +85,7 @@ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_locati
+ 	struct hist_entry *he;
+ 	struct mem_info *mi, *mx;
+ 	uint64_t cost;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
+ 
+ 	if (err)
+ 		return err;
+@@ -155,7 +137,7 @@ static int report__add_branch_hist_entry(struct perf_tool *tool, struct addr_loc
+ 	unsigned i;
+ 	struct hist_entry *he;
+ 	struct branch_info *bi, *bx;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
+ 
+ 	if (err)
+ 		return err;
+@@ -208,7 +190,7 @@ static int report__add_hist_entry(struct perf_tool *tool, struct perf_evsel *evs
+ 	struct report *rep = container_of(tool, struct report, tool);
+ 	struct symbol *parent = NULL;
+ 	struct hist_entry *he;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	int err = sample__resolve_callchain(sample, &parent, evsel, al, rep->max_stack);
+ 
+ 	if (err)
+ 		return err;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 569dd87..76cd510 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -743,15 +743,10 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	if (al.sym == NULL || !al.sym->ignore) {
+ 		struct hist_entry *he;
+ 
+-		if ((sort__has_parent || symbol_conf.use_callchain) &&
+-		    sample->callchain) {
+-			err = machine__resolve_callchain(machine, evsel,
+-							 al.thread, sample,
+-							 &parent, &al,
+-							 top->max_stack);
+-			if (err)
+-				return;
+-		}
++		err = sample__resolve_callchain(sample, &parent, evsel, &al,
++						top->max_stack);
++		if (err)
++			return;
+ 
+ 		he = perf_evsel__add_hist_entry(evsel, &al, sample);
+ 		if (he == NULL) {
+@@ -759,12 +754,9 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 			return;
+ 		}
+ 
+-		if (symbol_conf.use_callchain) {
+-			err = callchain_append(he->callchain, &callchain_cursor,
+-					       sample->period);
+-			if (err)
+-				return;
+-		}
++		err = hist_entry__append_callchain(he, sample);
++		if (err)
++			return;
+ 
+ 		if (sort__has_sym)
+ 			perf_top__record_precise_ip(top, he, evsel->idx, ip);
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index e3970e3..9eb4f57 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -17,6 +17,8 @@
+ 
+ #include "hist.h"
+ #include "util.h"
++#include "sort.h"
++#include "machine.h"
+ #include "callchain.h"
+ 
+ __thread struct callchain_cursor callchain_cursor;
+@@ -531,3 +533,24 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
+ 
+ 	return 0;
+ }
++
++int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent,
++			      struct perf_evsel *evsel, struct addr_location *al,
++			      int max_stack)
++{
++	if (sample->callchain == NULL)
++		return 0;
++
++	if (symbol_conf.use_callchain || sort__has_parent) {
++		return machine__resolve_callchain(al->machine, evsel, al->thread,
++						  sample, parent, al, max_stack);
++	}
++	return 0;
++}
++
++int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
++{
++	if (!symbol_conf.use_callchain)
++		return 0;
++	return callchain_append(he->callchain, &callchain_cursor, sample->period);
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 08b25af..8ad97e9 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -145,10 +145,16 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
+ }
+ 
+ struct option;
++struct hist_entry;
+ 
+ int record_parse_callchain(const char *arg, struct record_opts *opts);
+ int record_parse_callchain_opt(const struct option *opt, const char *arg, int unset);
+ int record_callchain_opt(const struct option *opt, const char *arg, int unset);
+ 
++int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent,
++			      struct perf_evsel *evsel, struct addr_location *al,
++			      int max_stack);
++int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
++
+ extern const char record_callchain_help[];
+ #endif	/* __PERF_CALLCHAIN_H */
