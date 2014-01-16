@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaAPD6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 22:58:36 -0500
-Received: from ozlabs.org ([203.10.76.45]:55549 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051AbaAPD6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 22:58:35 -0500
-Date: Thu, 16 Jan 2014 14:58:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the tip tree
-Message-Id: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J"
+	id S1751607AbaAPECN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 23:02:13 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57623 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaAPECK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 23:02:10 -0500
+Date: Wed, 15 Jan 2014 20:02:03 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: [PATCH v3 tip/core/timers 0/5] Crude timer-wheel latency hacks
+Message-ID: <20140116040203.GA5206@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011604-0928-0000-0000-00000574DDCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello!
 
-Hi all,
+The following five patches provide some crude timer-wheel latency patches.
+I understand that a more comprehensive solution is in progress, but in the
+meantime, these patches work well in cases where a given CPU has either
+zero or one timers pending, which is a common case for NO_HZ_FULL kernels.
+Note that these patches do not help in the case where a given timer wheel
+has a pair of widely separated timers, while the more comprehensive
+solution is likely to handle more gracefully.  So, on the off-chance
+that this is helpful to someone, the individual patches are as follows:
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+1.	Add ->all_timers field to tbase_vec to count all timers, not
+	just the non-deferrable ones.
 
-arch/x86/kernel/process.c: In function 'mwait_idle':
-/scratch/sfr/next/arch/x86/kernel/process.c:434:3: error: implicit declarat=
-ion of function '__monitor' [-Werror=3Dimplicit-function-declaration]
-   __monitor((void *)&current_thread_info()->flags, 0, 0);
-   ^
-arch/x86/kernel/process.c:437:4: error: implicit declaration of function '_=
-_sti_mwait' [-Werror=3Dimplicit-function-declaration]
-    __sti_mwait(0, 0);
-    ^
+2.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
 
-Caused by commit 16824255394f ("x86, acpi, idle: Restructure the mwait
-idle routines") interacting with commit 7760518cce95 ("x86 idle: restore
-mwait_idle()") from the idle tree.
+3.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
+	to empty.
 
-I am not sure how to fix this so I just reverted the idle tree commit for
-now (since it reverted cleanly). Please let me know if there is a better
-solution.
+4.	Avoid jiffy-at-a-time stepping after a timer is added to an
+	initially empty timer wheel.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+5.	Make internal_add_timer() update ->next_timer if ->active_timers == 0,
+	courtesy of Oleg Nesterov.
 
---Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J
-Content-Type: application/pgp-signature
+Differences from v2:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+o	Add patch #5 from Oleg.
 
-iQIcBAEBCAAGBQJS11jpAAoJEMDTa8Ir7ZwVMhAP/3Nb2kS9uiLOeZhqRnyHJAf8
-BBUzCbvJwqQ5+CnWlvQ+wW4N9v5iEHDCpruy/SSueuiy6fNXpu6m/Cziam4gOZSe
-vdO4UWWWInS/FG/+aE0uZgYfA3SdPnhBj+P6nycsNhlycgnJvvBg5Zg7qxl6KElJ
-KoJDGNSvmpkqXv6xjtTtHpn577MFahBNOpFFKH7gAVr3KwQADg2qDbR4ZBLslRal
-KM6WoHjGRYb+acaGEol5H3nTRPTgWBz79Qkk7Mu2GktXzZpAbrXzeFy7QHxj7QgW
-nKus+HbaUt73mwDZfDcnJeDo9gRiGHNFRkUowIpZnpc5rnEmK+WS1O3GLHJtDFQz
-QK4lEqNozVok5Io6rfEChca/lPzS9LEMhsn8PdyVs7oyd84MPNpFbBxoNlwBu6BG
-SK9rXCi8xD5AkI9jHMm5E3s9Dq49Hbn2D8YrXJwTj/2xC4XYgSIEP69/OAxT1cLu
-6z+Y//cHbfmQZet/wt3/E9DWfRkgL7rWSJxnpOm9+ASKVY0XZkuwV+PMrkH7psZZ
-4BKnli7IS/0T6ixJ3nXc/idrclhIUJb2yVJ0pybzicksv04cBSd9ZMCyEHU9rraF
-4wicd/QqtINA382QwyLchKWYwsIY0NI2a3pug7s8sl9ztLsrs083bM9e9pAw8kvA
-BGNyn2AQbYe5nqV1Yy29
-=T0hJ
------END PGP SIGNATURE-----
+o	Move the check for adding to an empty timer wheel from mod_timer()
+	to internal_add_timer(), as suggested by Oleg Nesterov.
 
---Signature=_Thu__16_Jan_2014_14_58_29_+1100_4A/t1m6mGxcZLQ5J--
+o	Addressed review comments from Oleg, Steven Rostedt, Josh Triplett,
+	and Fengguang Wu.
+
+Differences from v1:
+
+o	Fix an embarrassing bug located by Oleg Nesterov where the
+	timer wheel could be judged to be empty even if it contained
+	deferrable timers.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/kernel/timer.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
