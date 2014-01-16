@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaAPBmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 20:42:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27776 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaAPBm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 20:42:27 -0500
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: sagi grimberg <sagig@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	<52D6CD70.20706@mellanox.com>
-	<1389822920.5567.560.camel@haakon3.risingtidesystems.com>
-Date: Wed, 15 Jan 2014 20:42:11 -0500
-In-Reply-To: <1389822920.5567.560.camel@haakon3.risingtidesystems.com>
-	(Nicholas A. Bellinger's message of "Wed, 15 Jan 2014 13:55:20 -0800")
-Message-ID: <yq1wqi0wvm4.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1752725AbaAPBmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 20:42:50 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:44961 "EHLO fpa01n0.fpasia.hk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaAPBmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 20:42:45 -0500
+From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+To: cjb@laptop.org
+Cc: s.hauer@pengutronix.de, agust@denx.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Subject: [PATCH 2/2] mxcmmc: Internal error: Oops: 17 [#1] ARM from sg->offset
+Date: Thu, 16 Jan 2014 09:42:48 +0800
+Message-Id: <1389836568-14864-1-git-send-email-chris.ruehl@gtsys.com.hk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
+Function mxcmci_request() throw an exception on a imx27 cpu.
+This patch fix the problem by test the pointer before access it.
 
-nab> The issue is that existing fs/bio-integrity.c code always assumes
-nab> client/initiator mode, in that it will attempt to
-nab> bio_integrity_generate() protection information in the submit_bio
-nab> WRITE path, and bio_integrity_verify() of protection information in
-nab> the bio_endio READ completion path.
+[  516.783407] Unable to handle kernel NULL pointer dereference at virtual address 00000004
+[  516.791639] pgd = c0004000
+[  516.794445] [00000004] *pgd=00000000
+[  516.798088] Internal error: Oops: 17 [#1] ARM
+[  516.802472] Modules linked in:
+[  516.805593] CPU: 0 PID: 569 Comm: mmcqd/0 Not tainted 3.13.0-rc1-next-20131125-00006-g5f6bb77-dirty #66
+[  516.815027] task: cfb8a2a0 ti: cfb88000 task.ti: cfb88000
+[  516.820484] PC is at mxcmci_request+0xd0/0x2f8
+[  516.824974] LR is at mxcmci_request+0xf8/0x2f8
+[  516.829466] pc : [<c02b6048>]    lr : [<c02b6070>]    psr: 00000013
+[  516.829466] sp : cfb89dd0  ip : cfb89dd0  fp : cfb89e1c
+[  516.840988] r10: 000001ff  r9 : 00000002  r8 : cfa10620
+[  516.846250] r7 : 00000200  r6 : cfa0f02c  r5 : cfa0f0ec  r4 : cfa10400
+[  516.852812] r3 : a0000013  r2 : cfa0f410  r1 : 00040000  r0 : 00000000
+[  516.859376] Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[  516.866723] Control: 0005317f  Table: afa74000  DAC: 00000017
+[  516.872503] Process mmcqd/0 (pid: 569, stack limit = 0xcfb881c0)
+[  516.878543] Stack: (0xcfb89dd0 to 0xcfb8a000)
 
-Only if the submit_bio() caller hasn't attached protection information
-already. If you submit a bio with a bip already attached the block layer
-will not generate/verify.
+(gdb) list *(mxcmci_request+0xd0)
+0xcac is at drivers/mmc/host/mxcmmc.c:350.
+345
+346        if (!mxcmci_use_dma(host))
+347            return 0;
+348
+349        for_each_sg(data->sg, sg, data->sg_len, i) {
+350            if (sg->offset & 3 || sg->length & 3 || sg->length < 512) {
+351                host->do_dma = 0;
+352                return 0;
+353            }
+354        }
 
+Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+---
+ drivers/mmc/host/mxcmmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+index f7199c8..8645d6a 100644
+--- a/drivers/mmc/host/mxcmmc.c
++++ b/drivers/mmc/host/mxcmmc.c
+@@ -347,7 +347,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
+ 		return 0;
+ 
+ 	for_each_sg(data->sg, sg, data->sg_len, i) {
+-		if (sg->offset & 3 || sg->length & 3 || sg->length < 512) {
++		if (sg && (sg->offset & 3 || sg->length & 3 || sg->length < 512)) {
+ 			host->do_dma = 0;
+ 			return 0;
+ 		}
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.7.10.4
+
