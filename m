@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaAPRPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 12:15:06 -0500
-Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:57704 "EHLO
-	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaAPRPC (ORCPT
+	id S1753162AbaAPRP0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 12:15:26 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:51908 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753093AbaAPRPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 12:15:02 -0500
-X-Greylist: delayed 1411 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jan 2014 12:15:01 EST
-Message-ID: <1389891087.6697.26.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] ARM: orion: provide C-style interrupt handler for
- MULTI_IRQ_HANDLER
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 16 Jan 2014 16:51:27 +0000
-In-Reply-To: <20140116164833.GH29184@titan.lakedaemon.net>
-References: <1389775235.10695.51.camel@dagon.hellion.org.uk>
-	 <1389859831-9883-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	 <20140116164833.GH29184@titan.lakedaemon.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 12:15:04 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 4/4] ARM: sun6i: dt: Add SPI controllers to the A31 DTSI
+Date: Thu, 16 Jan 2014 18:11:25 +0100
+Message-Id: <1389892285-11745-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 11:48 -0500, Jason Cooper wrote:
-> Sebastian,
-> 
-> On Thu, Jan 16, 2014 at 09:10:31AM +0100, Sebastian Hesselbarth wrote:
-> > DT-enabled Marvell Kirkwood and Dove SoCs make use of an irqchip
-> > driver. As expected for irqchip drivers, it uses a C-style
-> > interrupt handler and therefore selects MULTI_IRQ_HANDLER.
-> > 
-> > Now, compiling a kernel with both non-DT and DT support enabled,
-> > selecting MULTI_IRQ_HANDLER will break ASM irq handler used by
-> > non-DT boards.
-> > 
-> > Therefore, we provide a C-style irq handler even for non-DT boards,
-> > if MULTI_IRQ_HANDLER is set. By installing the C-style irq handler
-> > in orion_irq_init this is transparent to all non-DT board files.
-> > 
-> > While the regression report was filed on Marvell Kirkwood, also
-> > Marvell Dove non-DT boards are affected and fixed by this patch.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > Tested-by: Ian Campbell <ijc@hellion.org.uk>
-> > Reported-by: Ian Campbell <ijc@hellion.org.uk>
-> > Fixes: 2326f04321a9 ("ARM: kirkwood: convert to DT irqchip and clocksource")
-> > Fixes: f07d73e33d0e ("ARM: dove: convert to DT irqchip and clocksource")
-> > ---
-> > Compared to the two patch version sent on Ian's regression report,
-> > I cooked this down to a single patch only touching plat-orion/irq.c.
-> > I also dropped Orion5x and MV78x00, as they not yet select MULTI_IRQ_HANDLER
-> > at all. Instead I added a comment about taking care of them, as soon as
-> > they move over to an irqchip driver themselves.
-> > 
-> > I have not yet Cc'ed this patch to -stable to get some discussion and
-> > an Acked-by from Jason or Andrew, too.
-> > 
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Ian Campbell <ijc@hellion.org.uk>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  arch/arm/plat-orion/irq.c | 47 +++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 47 insertions(+)
-> 
-> Applied to mvebu/fixes with Andrew's Ack.  It's too late for v3.13, so
-> it'll be the first thing sent for v3.14.
+The A31 has 4 SPI controllers. Add them in the DTSI.
 
-Please can it also be tagged for stable backport to 3.12+3.13.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/sun6i-a31.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-Thanks,
-Ian.
-
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index ae058eb..288cc8e 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -340,6 +340,46 @@
+ 			status = "disabled";
+ 		};
+ 
++		spi0: spi@01c68000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c68000 0x1000>;
++			interrupts = <0 65 4>;
++			clocks = <&ahb1_gates 20>, <&spi0_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 20>;
++			status = "disabled";
++		};
++
++		spi1: spi@01c69000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c69000 0x1000>;
++			interrupts = <0 66 4>;
++			clocks = <&ahb1_gates 21>, <&spi1_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 21>;
++			status = "disabled";
++		};
++
++		spi2: spi@01c6a000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c6a000 0x1000>;
++			interrupts = <0 67 4>;
++			clocks = <&ahb1_gates 22>, <&spi2_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 22>;
++			status = "disabled";
++		};
++
++		spi3: spi@01c6b000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c6b000 0x1000>;
++			interrupts = <0 68 4>;
++			clocks = <&ahb1_gates 23>, <&spi3_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 23>;
++			status = "disabled";
++		};
++
+ 		gic: interrupt-controller@01c81000 {
+ 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
+ 			reg = <0x01c81000 0x1000>,
+-- 
+1.8.4.2
 
