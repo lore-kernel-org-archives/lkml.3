@@ -1,43 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaAPLpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 06:45:31 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:56191 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaAPLp1 (ORCPT
+	id S1752458AbaAPLwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 06:52:53 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:39807 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaAPLwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 06:45:27 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, gleb@kernel.org.com, kvm@vger.kernel.org
-Subject: [GIT PULL] KVM changes for 3.13 final
-Date: Thu, 16 Jan 2014 12:45:16 +0100
-Message-Id: <1389872716-1451-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 16 Jan 2014 06:52:50 -0500
+Date: Thu, 16 Jan 2014 12:52:45 +0100
+From: Robert Richter <rric@kernel.org>
+To: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, wangnan0@huawei.com,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>, sdu.liu@huawei.com,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
+ op_overflow_handler()
+Message-ID: <20140116115245.GB8360@rric.localhost>
+References: <52B3F66D.6060707@huawei.com>
+ <20140113084555.GU20315@rric.localhost>
+ <52D4984B.9090600@huawei.com>
+ <20140114150553.GC20315@rric.localhost>
+ <52D5EC44.30101@huawei.com>
+ <20140115102445.GE20315@rric.localhost>
+ <52D73148.4090408@huawei.com>
+ <52D7A750.50906@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7A750.50906@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+(cc'ing Will)
 
-The following changes since commit 7e22e91102c6b9df7c4ae2168910e19d2bb14cd6:
+Weng,
 
-  Linux 3.13-rc8 (2014-01-12 17:04:18 +0700)
+thanks for testing.
 
-are available in the git repository at:
+On 16.01.14 17:33:04, Weng Meiling wrote:
+> Using the same test case, the problem also exists in the same kernel with the new patch applied:
+> 
+> 
+> # opcontrol --start
+> 
+> Using 2.6+ OProfile kernel interface.
+> Using log file /var/lib/oprofile/samples/oprofiled.log
+> Daemon started.
+> [  508.456878] INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=685 c=684 q=83)
+> [  571.496856] INFO: rcu_sched self-detected stall on CPU { 0}  (t=8404 jiffies g=685 c=684 q=83)
+> [  634.526855] INFO: rcu_sched self-detected stall on CPU { 0}  (t=14707 jiffies g=685 c=684 q=83)
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+Yes, the patch does not prevent an interrupt storm. The same happened
+on x86 and was there solved also by limiting the minimum cycle period
+as the kernel was not able to ratelimit.
 
-for you to fetch changes up to 0dce7cd67fd9055c4a2ff278f8af1431e646d346:
+> ARM: events: increase minimum cycle period to 100k
 
-  kvm: x86: fix apic_base enable check (2014-01-15 13:42:14 +0100)
+> -event:0xFF counters:0 um:zero minimum:500 name:CPU_CYCLES : CPU cycle
+> +event:0xFF counters:0 um:zero minimum:100000 name:CPU_CYCLES : CPU cycle
 
-----------------------------------------------------------------
-Fix for a brown paper bag bug.  Thanks to Drew Jones for noticing.
+However, an arbitrary hardcoded value migth not fit for all kind of
+cpus esp. on ARM where the variety is high. It also looks like there
+is no way other than patching the events file to force lower values
+than the minimum on cpus there this might be necessary.
 
-----------------------------------------------------------------
-Andrew Jones (1):
-      kvm: x86: fix apic_base enable check
+The problem of too low sample periods could be solved on ARM by using
+perf's interrupt throttling, you might play around with:
 
- arch/x86/kvm/lapic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ /proc/sys/kernel/perf_event_max_sample_rate:100000
+
+I am not quite sure whether this works esp. for kernel counters and
+how userland can be notified about throttling. Throttling could be
+worth for operf too, not only for the oprofile kernel driver.
+
+>From a quick look it seems there is also code in x86 that dynamically
+adjusts the rate which might be worth being implemented for ARM too.
+
+-Robert
