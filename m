@@ -1,156 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaAPII6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 03:08:58 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:57306 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaAPIIz (ORCPT
+	id S1752050AbaAPILK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 03:11:10 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:54316 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaAPILI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 03:08:55 -0500
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCHv2 2/2] pwm: imx: support polarity inversion
-Date: Thu, 16 Jan 2014 09:06:25 +0100
-Message-Id: <1389859585-14006-3-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1389859585-14006-1-git-send-email-LW@KARO-electronics.de>
-References: <1389859585-14006-1-git-send-email-LW@KARO-electronics.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 16 Jan 2014 03:11:08 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ijc@hellion.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: orion: provide C-style interrupt handler for MULTI_IRQ_HANDLER
+Date: Thu, 16 Jan 2014 09:10:31 +0100
+Message-Id: <1389859831-9883-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1389775235.10695.51.camel@dagon.hellion.org.uk>
+References: <1389775235.10695.51.camel@dagon.hellion.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i.MX PWM controller supports inverting the polarity of the PWM
-output. Make this feature available in the pxm-imx driver.
+DT-enabled Marvell Kirkwood and Dove SoCs make use of an irqchip
+driver. As expected for irqchip drivers, it uses a C-style
+interrupt handler and therefore selects MULTI_IRQ_HANDLER.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+Now, compiling a kernel with both non-DT and DT support enabled,
+selecting MULTI_IRQ_HANDLER will break ASM irq handler used by
+non-DT boards.
+
+Therefore, we provide a C-style irq handler even for non-DT boards,
+if MULTI_IRQ_HANDLER is set. By installing the C-style irq handler
+in orion_irq_init this is transparent to all non-DT board files.
+
+While the regression report was filed on Marvell Kirkwood, also
+Marvell Dove non-DT boards are affected and fixed by this patch.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Ian Campbell <ijc@hellion.org.uk>
+Reported-by: Ian Campbell <ijc@hellion.org.uk>
+Fixes: 2326f04321a9 ("ARM: kirkwood: convert to DT irqchip and clocksource")
+Fixes: f07d73e33d0e ("ARM: dove: convert to DT irqchip and clocksource")
 ---
- Documentation/devicetree/bindings/pwm/imx-pwm.txt |    5 +-
- drivers/pwm/pwm-imx.c                             |   42 +++++++++++++++++++++
- 2 files changed, 45 insertions(+), 2 deletions(-)
+Compared to the two patch version sent on Ian's regression report,
+I cooked this down to a single patch only touching plat-orion/irq.c.
+I also dropped Orion5x and MV78x00, as they not yet select MULTI_IRQ_HANDLER
+at all. Instead I added a comment about taking care of them, as soon as
+they move over to an irqchip driver themselves.
 
-diff --git a/Documentation/devicetree/bindings/pwm/imx-pwm.txt b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-index b50d7a6d..d0b04b5 100644
---- a/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-+++ b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-@@ -3,8 +3,9 @@ Freescale i.MX PWM controller
- Required properties:
- - compatible: should be "fsl,<soc>-pwm"
- - reg: physical base address and length of the controller's registers
--- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
--  the cells format.
-+- #pwm-cells: may be 2 for backwards compatibility or 3 to support
-+  switching the output polarity. See pwm.txt in this directory for a
-+  description of the cells format.
- - interrupts: The interrupt for the pwm controller
- 
- Example:
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 3b00a82..05461bb 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -36,6 +36,7 @@
- #define MX3_PWMCR_DOZEEN		(1 << 24)
- #define MX3_PWMCR_WAITEN		(1 << 23)
- #define MX3_PWMCR_DBGEN			(1 << 22)
-+#define MX3_PWMCR_POUTC			(1 << 18)
- #define MX3_PWMCR_CLKSRC_IPG_HIGH	(2 << 16)
- #define MX3_PWMCR_CLKSRC_IPG		(1 << 16)
- #define MX3_PWMCR_EN			(1 << 0)
-@@ -138,6 +139,9 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
- 	if (test_bit(PWMF_ENABLED, &pwm->flags))
- 		cr |= MX3_PWMCR_EN;
- 
-+	if (pwm->polarity == PWM_POLARITY_INVERSED)
-+		cr |= MX3_PWMCR_POUTC;
+I have not yet Cc'ed this patch to -stable to get some discussion and
+an Acked-by from Jason or Andrew, too.
+
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/plat-orion/irq.c | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+
+diff --git a/arch/arm/plat-orion/irq.c b/arch/arm/plat-orion/irq.c
+index c492e1b3dfdb..807df142444b 100644
+--- a/arch/arm/plat-orion/irq.c
++++ b/arch/arm/plat-orion/irq.c
+@@ -15,8 +15,51 @@
+ #include <linux/io.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
++#include <asm/exception.h>
+ #include <plat/irq.h>
+ #include <plat/orion-gpio.h>
++#include <mach/bridge-regs.h>
 +
- 	writel(cr, imx->mmio_base + MX3_PWMCR);
- 
- 	return 0;
-@@ -155,6 +159,11 @@ static void imx_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
- 	else
- 		val &= ~MX3_PWMCR_EN;
- 
-+	if (chip->pwms[0].polarity == PWM_POLARITY_INVERSED)
-+		val |= MX3_PWMCR_POUTC;
-+	else
-+		val &= ~MX3_PWMCR_POUTC;
++#ifdef CONFIG_MULTI_IRQ_HANDLER
++/*
++ * Compiling with both non-DT and DT support enabled, will
++ * break asm irq handler used by non-DT boards. Therefore,
++ * we provide a C-style irq handler even for non-DT boards,
++ * if MULTI_IRQ_HANDLER is set.
++ *
++ * Notes:
++ * - this is prepared for Kirkwood and Dove only, update
++ *   accordingly if you add Orion5x or MV78x00.
++ * - Orion5x uses different macro names and has only one
++ *   set of CAUSE/MASK registers.
++ * - MV78x00 uses the same macro names but has a third
++ *   set of CAUSE/MASK registers.
++ *
++ */
 +
- 	writel(val, imx->mmio_base + MX3_PWMCR);
- }
- 
-@@ -198,6 +207,17 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	clk_disable_unprepare(imx->clk_per);
- }
- 
-+static int imx_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				enum pwm_polarity polarity)
++static void __iomem *orion_irq_base = IRQ_VIRT_BASE;
++
++asmlinkage void
++__exception_irq_entry orion_legacy_handle_irq(struct pt_regs *regs)
 +{
-+	struct imx_chip *imx = to_imx_chip(chip);
++	u32 stat;
 +
-+	dev_dbg(imx->chip.dev, "%s: polarity set to %s\n", __func__,
-+		polarity == PWM_POLARITY_INVERSED ? "inverted" : "normal");
-+
-+	return 0;
-+}
-+
- static struct pwm_ops imx_pwm_ops = {
- 	.enable = imx_pwm_enable,
- 	.disable = imx_pwm_disable,
-@@ -209,6 +229,7 @@ struct imx_pwm_data {
- 	int (*config)(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns);
- 	void (*set_enable)(struct pwm_chip *chip, bool enable);
-+	unsigned output_polarity:1;
- };
- 
- static struct imx_pwm_data imx_pwm_data_v1 = {
-@@ -219,6 +240,7 @@ static struct imx_pwm_data imx_pwm_data_v1 = {
- static struct imx_pwm_data imx_pwm_data_v2 = {
- 	.config = imx_pwm_config_v2,
- 	.set_enable = imx_pwm_set_enable_v2,
-+	.output_polarity = 1,
- };
- 
- static const struct of_device_id imx_pwm_dt_ids[] = {
-@@ -271,6 +293,26 @@ static int imx_pwm_probe(struct platform_device *pdev)
- 		return PTR_ERR(imx->mmio_base);
- 
- 	data = of_id->data;
-+	if (data->output_polarity) {
-+		const struct device_node *np = pdev->dev.of_node;
-+		u32 num_cells;
-+
-+		dev_dbg(&pdev->dev, "PWM supports output inversion\n");
-+		ret = of_property_read_u32(np, "#pwm-cells", &num_cells);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "missing property '#pwm-cells'\n");
-+			return ret;
-+		}
-+		if (num_cells == 3) {
-+			imx_pwm_ops.set_polarity = imx_pwm_set_polarity;
-+			imx->chip.of_xlate = of_pwm_xlate_with_flags;
-+		} else if (num_cells != 2) {
-+			dev_err(&pdev->dev, "'#pwm-cells' must be <2> or <3>\n");
-+			return -EINVAL;
-+		}
-+		imx->chip.of_pwm_n_cells = num_cells;
++	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_LOW_OFF);
++	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_LOW_OFF);
++	if (stat) {
++		unsigned int hwirq = __fls(stat);
++		handle_IRQ(hwirq, regs);
++		return;
 +	}
-+
- 	imx->config = data->config;
- 	imx->set_enable = data->set_enable;
++	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_HIGH_OFF);
++	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_HIGH_OFF);
++	if (stat) {
++		unsigned int hwirq = 32 + __fls(stat);
++		handle_IRQ(hwirq, regs);
++		return;
++	}
++}
++#endif
  
+ void __init orion_irq_init(unsigned int irq_start, void __iomem *maskaddr)
+ {
+@@ -35,6 +78,10 @@ void __init orion_irq_init(unsigned int irq_start, void __iomem *maskaddr)
+ 	ct->chip.irq_unmask = irq_gc_mask_set_bit;
+ 	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_MASK_CACHE,
+ 			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
++
++#ifdef CONFIG_MULTI_IRQ_HANDLER
++	set_handle_irq(orion_legacy_handle_irq);
++#endif
+ }
+ 
+ #ifdef CONFIG_OF
 -- 
-1.7.2.5
+1.8.5.2
 
