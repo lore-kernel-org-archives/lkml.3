@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010AbaAPPYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:24:18 -0500
-Received: from sam.nabble.com ([216.139.236.26]:54612 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271AbaAPPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:24:15 -0500
-Date: Thu, 16 Jan 2014 07:24:15 -0800 (PST)
-From: rahulk <rahulk1208@gmail.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1389885855032-788341.post@n7.nabble.com>
-In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
-References: <20130809015010.208118575@linuxfoundation.org>
-Subject: Re: [ 000/102] 3.10.6-stable review
+	id S1752866AbaAPP2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:28:11 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:34426 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaAPP2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:28:08 -0500
+Message-ID: <52D7FA85.9020504@linaro.org>
+Date: Thu, 16 Jan 2014 16:28:05 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net> <52D7E343.40909@linaro.org> <20140116141743.GT31570@twins.programming.kicks-ass.net> <52D7EAA4.2080208@linaro.org> <20140116142546.GU31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140116142546.GU31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I am working on Xilinx zc702 board with Kernel 3.10.0. Now i want to upgrade
-the kernel. While doing these upgradation activity 3.10.4 and 3.10.5 kernel
-with xilinx patch sucessfully run on the board. But 3.10.6 kernel with
-xilinx patch is not working on the board. Kernel get stuck after console
-message "Starting kernel ..." in 3.10.6 kernel. As per my understanding
-after these meassage kernel is not getting the entry point of kernel to
-Uncompress it. The console messages are given below
+On 01/16/2014 03:25 PM, Peter Zijlstra wrote:
+> On Thu, Jan 16, 2014 at 03:20:20PM +0100, Daniel Lezcano wrote:
+>> Already tested. The last commits do not change the issue described above.
+>
+> Bummer, ok, what version of Ubuntu/rsyslogd are you using? I have a
+> laptop around that should have some recent ubuntu on it, let me go find
+> it.
+>
 
-zynq-uboot> run sdboot
-Copying Linux from SD to RAM...
-Device: SDHCI
-Manufacturer ID: 87
-OEM: 494f
-Name: SD
-Tran Speed: 50000000
-Rd Block Len: 512
-SD version 2.0
-High Capacity: No
-Capacity: 977 MiB
-Bus Width: 4-bit
-reading uImage
+Removing the lines below fix the issue.
 
-6229968 bytes read
-reading devicetree.dtb
+These changes were introduced by the commit 
+d50dde5a10f305253cbc3855307f608f8a3c5f73.
 
-10125 bytes read
-reading uramdisk.image.gz
+I don't get the connection between what is supposed to do the patch as 
+described in the commit log and these four lines added.
 
-4075970 bytes read
-## Booting kernel from Legacy Image at 03000000 ...
-   Image Name:   Linux-3.10.6-vestas
-   Image Type:   ARM Linux Kernel Image (uncompressed)
-   Data Size:    6229904 Bytes = 5.9 MiB
-   Load Address: 00008000
-   Entry Point:  00008000
-   Verifying Checksum ... OK
-## Loading init Ramdisk from Legacy Image at 02000000 ...
-   Image Name:
-   Image Type:   ARM Linux RAMDisk Image (gzip compressed)
-   Data Size:    4075906 Bytes = 3.9 MiB
-   Load Address: 00000000
-   Entry Point:  00000000
-   Verifying Checksum ... OK
-## Flattened Device Tree blob at 02a00000
-   Booting using the fdt blob at 0x02a00000
-   Loading Kernel Image ... OK
-OK
-   Loading Ramdisk to 1fc1c000, end 1ffff182 ... OK
-   Loading Device Tree to 1fc16000, end 1fc1b78c ... OK
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 141baa3..acabef1 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -15,7 +15,7 @@
 
-Starting kernel ...
+  #include <uapi/asm/unistd.h>
+dlezcano@mai:~/Work/src/cpuidle-next (sched/idle-balance)$ git diff
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 93a2836..673edff 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3295,10 +3295,6 @@ recheck:
+          * Allow unprivileged RT tasks to decrease priority:
+          */
+         if (user && !capable(CAP_SYS_NICE)) {
+-               if (fair_policy(policy)) {
+-                       if (!can_nice(p, attr->sched_nice))
+-                               return -EPERM;
+-               }
+
+                 if (rt_policy(policy)) {
+                         unsigned long rlim_rtprio =
 
 
 
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-
-
-
-
-
-
---
-View this message in context: http://linux-kernel.2935.n7.nabble.com/000-102-3-10-6-stable-review-tp699811p788341.html
-Sent from the Linux Kernel mailing list archive at Nabble.com.
