@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaAPJbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 04:31:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42836 "EHLO mx1.redhat.com"
+	id S1752419AbaAPJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 04:32:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37118 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280AbaAPJar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 04:30:47 -0500
-Message-ID: <52D7A6BD.3050903@redhat.com>
-Date: Thu, 16 Jan 2014 10:30:37 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751591AbaAPJcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 04:32:23 -0500
+Date: Thu, 16 Jan 2014 10:32:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20140116093220.GC28157@dhcp22.suse.cz>
+References: <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
+ <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
+ <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
+ <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
+ <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org>
+ <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com>
+ <20140110221432.GD6963@cmpxchg.org>
+ <alpine.DEB.2.02.1401121404530.20999@chino.kir.corp.google.com>
+ <20140115143449.GN8782@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1401151319580.10727@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: Re: [PATCH net-next 1/2] random32: add prandom_u32_lt_N and convert
- "misuses" of reciprocal_divide
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>  <1389828228-30312-2-git-send-email-dborkman@redhat.com> <1389842050.31367.396.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1389842050.31367.396.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401151319580.10727@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 04:14 AM, Eric Dumazet wrote:
-> On Thu, 2014-01-16 at 00:23 +0100, Daniel Borkmann wrote:
->
->> @@ -1220,7 +1219,7 @@ static unsigned int fanout_demux_hash(struct packet_fanout *f,
->>   				      struct sk_buff *skb,
->>   				      unsigned int num)
->>   {
->> -	return reciprocal_divide(skb->rxhash, num);
->> +	return (u32)(((u64) skb->rxhash * num) >> 32);
->>   }
->>
->
-> This is unfortunate.
+On Wed 15-01-14 13:23:10, David Rientjes wrote:
+> On Wed, 15 Jan 2014, Michal Hocko wrote:
+[...]
+> > Which depends on yours only to revert your part. I plan to repost it but
+> > that still doesn't mean it will get merged because Johannes still has
+> > some argumnets against. I would like to start the discussion again
+> > because now we are so deep in circles that it is hard to come up with a
+> > reasonable outcome. It is still hard to e.g. agree on an actual fix
+> > for a real problem https://lkml.org/lkml/2013/12/12/129.
+> > 
+> 
+> This is concerning because it's merged in -mm without being tested by Eric 
+> and is marked for stable while violating the stable kernel rules criteria.
 
-Hm, I agree, it would be better to have a function here. It was mostly
-for the purpose of the 2nd patch to migrate users since the structure
-was introduced, and thus they become incompatible.
+Are you questioning the patch fixes the described issue?
 
-> (This reverts one of your patch : f55d112e529386 )
->
-> Please add a helper to explain what's going on here, and on many other
-> spots we do this computation (as in get_rps_cpu()).
-> Few people really understand this.
-
-Indeed, that's why we also thought that we should fix some spots in
-the second patch, also with the thought in mind, when upcoming users
-have to use a structure to enforce this call combination.
-
-Anyway, we'll wait for some more feedback anyway regarding the 2nd patch
-and then respin.
-
-> Or keep reciprocal_divide() as is, and introduce a new set of functions
-> for people really wanting the precise divides.
-
-That might also be a possible option, we could consider. Thanks!
-
->
->
->
+Please note that the exit_robust_list and PF_EXITING as a culprit has
+been identified by Eric. Of course I would prefer if it was tested by
+anybody who can reproduce it.
+-- 
+Michal Hocko
+SUSE Labs
