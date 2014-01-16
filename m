@@ -1,201 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaAPPXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 10:23:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45445 "EHLO mx2.suse.de"
+	id S1753010AbaAPPYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 10:24:18 -0500
+Received: from sam.nabble.com ([216.139.236.26]:54612 "EHLO sam.nabble.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271AbaAPPXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 10:23:01 -0500
-Date: Thu, 16 Jan 2014 16:22:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
-Message-ID: <20140116152259.GG28157@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
- <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
- <20140114132727.GB32227@dhcp22.suse.cz>
- <20140114142610.GF32227@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
- <20140115095829.GI8782@dhcp22.suse.cz>
- <20140115121728.GJ8782@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
- <20140116081738.GA28157@dhcp22.suse.cz>
+	id S1751271AbaAPPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 10:24:15 -0500
+Date: Thu, 16 Jan 2014 07:24:15 -0800 (PST)
+From: rahulk <rahulk1208@gmail.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1389885855032-788341.post@n7.nabble.com>
+In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
+References: <20130809015010.208118575@linuxfoundation.org>
+Subject: Re: [ 000/102] 3.10.6-stable review
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116081738.GA28157@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-01-14 09:17:38, Michal Hocko wrote:
-> On Wed 15-01-14 13:24:34, Hugh Dickins wrote:
-> > On Wed, 15 Jan 2014, Michal Hocko wrote:
-[...]
-> > > From 560924e86059947ab9418732cb329ad149dd8f6a Mon Sep 17 00:00:00 2001
-> > > From: Michal Hocko <mhocko@suse.cz>
-> > > Date: Wed, 15 Jan 2014 11:52:09 +0100
-> > > Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
-> > > 
-> > > 19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
-> > > refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
-> > > doesn't put a css reference on the root of the tree walk. The mentioned
-> > > commit however dropped the root check when the css reference is taken
-> > > while it keept the css_put optimization fora the root in place.
-> > > 
-> > > This means that css_put is not called and so css along with mem_cgroup
-> > > and other cgroup internal object tied by css lifetime are never freed.
-> > > 
-> > > Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
-> > > 
-> > > This patch also fixes issue reported by Hugh Dickins when
-> > > mem_cgroup_iter might end up in an endless loop because a group which is
-> > > under hard limit reclaim is removed in parallel with iteration.
-> > > __mem_cgroup_iter_next would always return NULL because css_tryget on
-> > > the root (reclaimed memcg) would fail and there are no other memcg in
-> > > the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
-> > > from the root and so the while (!memcg) loop would never terminate.
-> > > as css_tryget is no longer called for the root of the tree walk this
-> > > doesn't happen anymore.
-> > > 
-> > > Cc: stable@vger.kernel.org # 3.10+
-> > > Reported-and-debugged-by: Hugh Dickins <hughd@google.com>
-> > 
-> > Definitely not debugged by me!  Debugged and understood by you.
-> 
-> You still have debugged the second part of the problem (endless loop).
-> But I will go with whatever tag you like.
-> 
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > ---
-> > >  mm/memcontrol.c | 3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index f016d26adfd3..dd3974c9f08d 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -1078,7 +1078,8 @@ skip_node:
-> > >  	 * protected by css_get and the tree walk is rcu safe.
-> > >  	 */
-> > >  	if (next_css) {
-> > > -		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-> > > +		if ((next_css->flags & CSS_ONLINE) &&
-> > > +				(next_css == root || css_tryget(next_css)))
-> > 
-> > Not quite: next_css points to one thing and root to another.
-> 
-> Dohh, right you are next_css == root->css. I was wondering how I was
-> able to see the leak being fixed and then realized that root->css has
-> the same address as root...
-> Anyway very well spotted.
-> 
-> > >  			return mem_cgroup_from_css(next_css);
-> > >  		else {
-> > >  			prev_css = next_css;
-> > > -- 
-> > 
-> > This is how I've re-written that block, and started testing on it;
-> > the unnecessary "else {" part was looking increasingly ugly to me
-> > (though let loose on it, I might change it all around more...)
-> > 
-> > 	if (next_css) {
-> > 		if ((next_css->flags & CSS_ONLINE) &&
-> > 		    (next_css == &root->css || css_tryget(next_css)))
-> > 			return mem_cgroup_from_css(next_css);
-> > 		prev_css = next_css;
-> > 		goto skip_node;
-> > 	}
-> 
-> Yes, that looks better. Maybe put a blank line before prev_css = next_css?
-> 
-> > Sorry for being so slow to respond, by the way: for a couple of hours
-> > I couldn't test at all, and thought I was going mad - one day I send
-> > you that "cg" script, the next day it starts to break, it couldn't
-> > "mkdir -p /cg/cg", claiming it already existed, wha???  Turns out the
-> > fix for that has gone into yesterday's mmotm (though I've not had time
-> > to move on to that yet): uninitialized ret in memcg_propagate_kmem().
-> 
-> Thanks a lot!
+Hi,
+I am working on Xilinx zc702 board with Kernel 3.10.0. Now i want to upgrade
+the kernel. While doing these upgradation activity 3.10.4 and 3.10.5 kernel
+with xilinx patch sucessfully run on the board. But 3.10.6 kernel with
+xilinx patch is not working on the board. Kernel get stuck after console
+message "Starting kernel ..." in 3.10.6 kernel. As per my understanding
+after these meassage kernel is not getting the entry point of kernel to
+Uncompress it. The console messages are given below
 
-What about this? I have incorporated your root->css fix and else removal
-+ added a comment to clarify importance of root css refcount exclusion.
-I still prefer this going to the stable separately from CSS_ONLINE fix.
----
->From 543df5c82f6eec622f669ea322ba6ff03924fded Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 16 Jan 2014 16:17:13 +0100
-Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
+zynq-uboot> run sdboot
+Copying Linux from SD to RAM...
+Device: SDHCI
+Manufacturer ID: 87
+OEM: 494f
+Name: SD
+Tran Speed: 50000000
+Rd Block Len: 512
+SD version 2.0
+High Capacity: No
+Capacity: 977 MiB
+Bus Width: 4-bit
+reading uImage
 
-19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
-refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
-doesn't put a css reference on the root of the tree walk. The mentioned
-commit however dropped the root check when the css reference is taken
-while it keept the css_put optimization fora the root in place.
+6229968 bytes read
+reading devicetree.dtb
 
-This means that css_put is not called and so css along with mem_cgroup
-and other cgroup internal object tied by css lifetime are never freed.
+10125 bytes read
+reading uramdisk.image.gz
 
-Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
+4075970 bytes read
+## Booting kernel from Legacy Image at 03000000 ...
+   Image Name:   Linux-3.10.6-vestas
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    6229904 Bytes = 5.9 MiB
+   Load Address: 00008000
+   Entry Point:  00008000
+   Verifying Checksum ... OK
+## Loading init Ramdisk from Legacy Image at 02000000 ...
+   Image Name:
+   Image Type:   ARM Linux RAMDisk Image (gzip compressed)
+   Data Size:    4075906 Bytes = 3.9 MiB
+   Load Address: 00000000
+   Entry Point:  00000000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 02a00000
+   Booting using the fdt blob at 0x02a00000
+   Loading Kernel Image ... OK
+OK
+   Loading Ramdisk to 1fc1c000, end 1ffff182 ... OK
+   Loading Device Tree to 1fc16000, end 1fc1b78c ... OK
 
-This patch also fixes issue reported by Hugh Dickins when
-mem_cgroup_iter might end up in an endless loop because a group which is
-under hard limit reclaim is removed in parallel with iteration.
-__mem_cgroup_iter_next would always return NULL because css_tryget on
-the root (reclaimed memcg) would fail and there are no other memcg in
-the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
-from the root and so the while (!memcg) loop would never terminate.
-as css_tryget is no longer called for the root of the tree walk this
-doesn't happen anymore.
+Starting kernel ...
 
-[hughd@google.com: Fixed root vs. root->css fix]
-[hughd@google.com: Get rid of else branch because it is ugly]
-Cc: stable@vger.kernel.org # 3.10+
-<Hugh's-selection>-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f016d26adfd3..969f14d32b30 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1076,14 +1076,22 @@ skip_node:
- 	 * skipped and we should continue the tree walk.
- 	 * last_visited css is safe to use because it is
- 	 * protected by css_get and the tree walk is rcu safe.
-+	 *
-+	 * We do not take a reference on the root of the tree walk
-+	 * because we might race with the root removal when it would
-+	 * be the only node in the iterated hierarchy and mem_cgroup_iter
-+	 * would end up in an endless loop because it expects that at
-+	 * least one valid node will be returned. Root cannot disappear
-+	 * because caller of the iterator should hold it already so
-+	 * skipping css reference should be safe.
- 	 */
- 	if (next_css) {
--		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-+		if ((next_css->flags & CSS_ONLINE) &&
-+				(next_css == root->css || css_tryget(next_css)))
- 			return mem_cgroup_from_css(next_css);
--		else {
--			prev_css = next_css;
--			goto skip_node;
--		}
-+
-+		prev_css = next_css;
-+		goto skip_node;
- 	}
- 
- 	return NULL;
--- 
-1.8.5.2
 
--- 
-Michal Hocko
-SUSE Labs
+
+
+
+
+
+
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/000-102-3-10-6-stable-review-tp699811p788341.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
