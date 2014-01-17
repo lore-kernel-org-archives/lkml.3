@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaAQGrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 01:47:40 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:33723 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaAQGrh (ORCPT
+	id S1752074AbaAQGxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 01:53:20 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61466 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaAQGxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 01:47:37 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH RFC 1/6] net: rfkill: gpio: fix gpio name buffer size off by 1
-Date: Fri, 17 Jan 2014 14:47:26 +0800
-Message-Id: <1389941251-32692-2-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389941251-32692-1-git-send-email-wens@csie.org>
-References: <1389941251-32692-1-git-send-email-wens@csie.org>
+	Fri, 17 Jan 2014 01:53:17 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-2a-52d8d35c8427
+Date: Fri, 17 Jan 2014 15:54:11 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 4/8] zram: use atomic64_t for all zram stats
+Message-ID: <20140117065411.GH26602@bbox>
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389877936-15543-5-git-send-email-sergey.senozhatsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389877936-15543-5-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-snprintf should be passed the complete size of the buffer, including
-the space for '\0'. The previous code resulted in the *_reset and
-*_shutdown strings being truncated.
+On Thu, Jan 16, 2014 at 04:12:12PM +0300, Sergey Senozhatsky wrote:
+> This is a preparation patch for stats code duplication removal.
+> 
+> 1) use atomic64_t for `pages_zero' and `pages_stored' zram stats.
+> 2) `compr_size' and `pages_zero' struct zram_stats members did not
+> follow the existing device attr naming scheme: zram_stats.ATTR has
+> ATTR_show() function. rename them:
+> -- compr_size -> compr_data_size
+> -- pages_zero -> zero_pages
+> 
+> Minchan Kim's note:
+>  If we really have trouble with atomic stat operation, we could
+>  change it with percpu_counter so that it could solve atomic overhead and
+>  unnecessary memory space by introducing unsigned long instead of 64bit
+>  atomic_t.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- net/rfkill/rfkill-gpio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index bd2a5b9..97ec12a 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -117,8 +117,8 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 	if (!rfkill->shutdown_name)
- 		return -ENOMEM;
- 
--	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
--	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
-+	snprintf(rfkill->reset_name, len + 7 , "%s_reset", rfkill->name);
-+	snprintf(rfkill->shutdown_name, len + 10, "%s_shutdown", rfkill->name);
- 
- 	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
- 
 -- 
-1.8.5.2
-
+Kind regards,
+Minchan Kim
