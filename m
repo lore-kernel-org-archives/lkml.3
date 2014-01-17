@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaAQVVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:21:32 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:59184 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaAQVV3 (ORCPT
+	id S1753634AbaAQVYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:24:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32982 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaAQVYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:21:29 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, chegu_vinod@hp.com, peterz@infradead.org,
-        mgorman@suse.de, mingo@redhat.com
-Subject: [PATCH 7/7] numa,sched: do statistics calculation using local variables only
-Date: Fri, 17 Jan 2014 16:12:09 -0500
-Message-Id: <1389993129-28180-8-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389993129-28180-1-git-send-email-riel@redhat.com>
-References: <1389993129-28180-1-git-send-email-riel@redhat.com>
+	Fri, 17 Jan 2014 16:24:12 -0500
+Date: Fri, 17 Jan 2014 22:24:10 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: ath9k-devel@venema.h4ckr.net, kernel-janitors@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        users@rt2x00.serialmonkey.com
+Subject: Re: [PATCH 0/11] use ether_addr_equal_64bits
+Message-ID: <20140117212410.GA13930@amd.pavel.ucw.cz>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Mon 2013-12-30 19:14:56, Julia Lawall wrote:
+> Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
+> used when each argument is an array within a structure that contains at
+> least two bytes of data beyond the array.
 
-The current code in task_numa_placement calculates the difference
-between the old and the new value, but also temporarily stores half
-of the old value in the per-process variables.
-
-The NUMA balancing code looks at those per-process variables, and
-having other tasks temporarily see halved statistics could lead to
-unwanted numa migrations. This can be avoided by doing all the math
-in local variables.
-
-This change also simplifies the code a little.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0d395a0..0f48382 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1484,12 +1484,9 @@ static void task_numa_placement(struct task_struct *p)
- 			long diff, f_diff, f_weight;
- 
- 			i = task_faults_idx(nid, priv);
--			diff = -p->numa_faults[i];
--			f_diff = -p->numa_faults_from[i];
- 
- 			/* Decay existing window, copy faults since last scan */
--			p->numa_faults[i] >>= 1;
--			p->numa_faults[i] += p->numa_faults_buffer[i];
-+			diff = p->numa_faults_buffer[i] - p->numa_faults[i] / 2;
- 			fault_types[priv] += p->numa_faults_buffer[i];
- 			p->numa_faults_buffer[i] = 0;
- 
-@@ -1503,13 +1500,12 @@ static void task_numa_placement(struct task_struct *p)
- 			f_weight = (1024 * runtime *
- 				   p->numa_faults_from_buffer[i]) /
- 				   (total_faults * period + 1);
--			p->numa_faults_from[i] >>= 1;
--			p->numa_faults_from[i] += f_weight;
-+			f_diff = f_weight - p->numa_faults_from[i] / 2;
- 			p->numa_faults_from_buffer[i] = 0;
- 
-+			p->numa_faults[i] += diff;
-+			p->numa_faults_from[i] += f_diff;
- 			faults += p->numa_faults[i];
--			diff += p->numa_faults[i];
--			f_diff += p->numa_faults_from[i];
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
+I mean, yes, it is probably faster, and yes, most structures probably
+contain two more bytes, but... is the uglyness worth the speedup? I'd
+say this should not be done except in very time-critical places...
+									Pavel
 -- 
-1.8.4.2
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
