@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaAQBZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:25:16 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43101 "EHLO
+	id S1751889AbaAQBaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:30:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43549 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaAQBZN (ORCPT
+	with ESMTP id S1751557AbaAQBaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:25:13 -0500
+	Thu, 16 Jan 2014 20:30:08 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: arm@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 0/2] Enable clock controllers on MSM
-Date: Thu, 16 Jan 2014 17:25:02 -0800
-Message-Id: <1389921904-3777-1-git-send-email-sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: footbridge: Switch to sched_clock_register()
+Date: Thu, 16 Jan 2014 17:30:07 -0800
+Message-Id: <1389922207-5154-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add the clock controller nodes, enable the clock drivers
-on MSM based platforms, and hook it up enough to get the serial console
-working. This is based on the merge of Mike's clk-next branch with
-linux-next-20140116. The changes need the clk-next branch because that's
-where the DTS include files landed.
+The 32 bit sched_clock interface supports 64 bits since 3.13-rc1.
+Upgrade to the 64 bit function to allow us to remove the 32 bit
+registration interface.
 
-Perhaps this can be applied after 3.14-rc1 is out?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Stephen Boyd (2):
-  ARM: dts: msm: Add clock controller nodes and hook into uart
-  ARM: msm_defconfig: Enable MSM clock drivers
+Based on rmk/for-next
 
- arch/arm/boot/dts/qcom-msm8660-surf.dts | 11 +++++++++++
- arch/arm/boot/dts/qcom-msm8960-cdp.dts  | 18 ++++++++++++++++++
- arch/arm/boot/dts/qcom-msm8974.dtsi     | 24 ++++++++++++++++++++++++
- arch/arm/configs/msm_defconfig          |  4 ++++
- 4 files changed, 57 insertions(+)
+ arch/arm/mach-footbridge/dc21285-timer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-footbridge/dc21285-timer.c b/arch/arm/mach-footbridge/dc21285-timer.c
+index 3971104d32d4..5d2725fd878c 100644
+--- a/arch/arm/mach-footbridge/dc21285-timer.c
++++ b/arch/arm/mach-footbridge/dc21285-timer.c
+@@ -125,7 +125,7 @@ void __init footbridge_timer_init(void)
+ 	clockevents_config_and_register(ce, rate, 0x4, 0xffffff);
+ }
+ 
+-static u32 notrace footbridge_read_sched_clock(void)
++static u64 notrace footbridge_read_sched_clock(void)
+ {
+ 	return ~*CSR_TIMER3_VALUE;
+ }
+@@ -138,5 +138,5 @@ void __init footbridge_sched_clock(void)
+ 	*CSR_TIMER3_CLR = 0;
+ 	*CSR_TIMER3_CNTL = TIMER_CNTL_ENABLE | TIMER_CNTL_DIV16;
+ 
+-	setup_sched_clock(footbridge_read_sched_clock, 24, rate);
++	sched_clock_register(footbridge_read_sched_clock, 24, rate);
+ }
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
