@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaAQSBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:01:54 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:54913 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752144AbaAQSBu (ORCPT
+	id S1753200AbaAQSDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:03:13 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56089 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaAQSDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:01:50 -0500
-Date: Fri, 17 Jan 2014 13:01:49 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
- checks)
-In-Reply-To: <20140117163111.GA5764@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1401171253010.1162-100000@iolanthe.rowland.org>
+	Fri, 17 Jan 2014 13:03:10 -0500
+Date: Fri, 17 Jan 2014 18:03:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140117180304.GB17314@sirena.org.uk>
+References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
+ <20140114125242.GE15567@sirena.org.uk>
+ <CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
+ <20140114134528.GG15567@sirena.org.uk>
+ <CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
+ <20140114145002.GR15567@sirena.org.uk>
+ <CAMuHMdVhmtA0ogEqu-jj8Kvii5CwV8qfHn+GzgQ9uFKzH7Ua6w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sZvnRN25x3w09J/6"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVhmtA0ogEqu-jj8Kvii5CwV8qfHn+GzgQ9uFKzH7Ua6w@mail.gmail.com>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014, Oleg Nesterov wrote:
 
-> On 01/16, Alan Stern wrote:
-> >
-> > On Thu, 16 Jan 2014, Peter Zijlstra wrote:
-> >
-> > > On Thu, Jan 16, 2014 at 06:43:48PM +0100, Oleg Nesterov wrote:
-> >
-> > > > Perhaps we should change the meaning of lockdep_set_novalidate_class?
-> > > > (perhaps with rename). What do you think about the patch below?
-> > > >
-> > > > With this patch __lockdep_no_validate__ means "automatically nested",
-> > >
-> > > Yes, I suppose that might work, it would allow some validation.
-> >
-> > I haven't seen the patch, but I'm not so sure it will work.  Suppose we
-> > have two devices, D1 and D2, and some other mutex, M.  Then the locking
-> > pattern:
-> >
-> > 	lock(D1);
-> > 	lock(M);
-> > 	unlock(M);
-> > 	unlock(D1);
-> >
-> > generally should not conflict with:
-> >
-> > 	lock(M);
-> > 	lock(D2);
-> > 	unlock(D2);
-> > 	unlock(M);
-> 
-> Yes, sure. This change assumes that the only problem in drivers/base is
-> dev->parent->mutex / dev->mutex dependency. If the locking is even more
-> "broken" (wrt lockdep), we can't replace lockdep_set_novalidate_class()
-> with lockdep_set_auto_nested().
+--sZvnRN25x3w09J/6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I suspect it is even more "broken".  But I can't point to specific 
-examples.
+On Tue, Jan 14, 2014 at 04:18:06PM +0100, Geert Uytterhoeven wrote:
 
-> And, otoh, with this change lockdep can miss the real problems too, for
-> example:
-> 
-> 	func1(dev)
-> 	{
-> 		device_lock(dev->parent);
-> 		mutex_lock(MUTEX);
-> 		device_lock(dev);
-> 		...
-> 	}
-> 
-> 	func2(dev)
-> 	{
-> 		device_lock(dev);
-> 		mutex_lock(MUTEX);
-> 		...
-> 	}
-> 
-> lockdep will only notice dev -> MUTEX dependency.
-> 
-> I booted the kernel (under kvm) with this change and there is nothing
-> in dmesg, but of course this is not the real testing.
-> 
-> So do you think that dev->mutex should not be validated at all ?
+>   2. Make the documentation match the code.
+>       It seems this is what you prefer?
 
-My guess is that if your change is deployed widely, there will be 
-reports of violations.  That's only a guess.
+Yes.
 
-Still, you could go ahead and try it, just to see what happens.
+--sZvnRN25x3w09J/6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Just in case... Of course, if we actually add auto_nested we should not
-> use a single class unless dev->mutex will be the only user.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-That's a good point.  I don't know of any other classes using 
-LOCKDEP_NO_VALIDATE, but there may be one or two.
+iQIcBAEBAgAGBQJS2XBVAAoJELSic+t+oim9rHgP/i1/nQxfZvBNbsL3JGNA4oqE
+CCErqNWnEAQnunlwXvcVjkyppjlkdmILGpygpWPW//DQxFm+icVg+xMjl8xpqK0n
+3vVTsI7CUfWO1lyYlNPlPGcduzfk32U1FrigKePVWpDHi03VPcTdmG4Vx1iux1e/
+YONtZBLpyVDhCpIXvGrAz5sM9PREXUSn1Bc5N5Ry7onQHSwpLV0akSsFFg/ZL9kb
+H2DZUnXrxM/pKMny3PA/5+dYvDBE8haYMbkLVOJuPByl82no3c26EH9Zi1jhjjSf
+aUKouybx76QOC+H1/dWGNDiu5DMKY2EUaXkPlrknT/Xo6w+Wu00Q4q0SZUygJPt3
+z2gfS0A4nRZ+tr/v+PE5nXzdm3Ci2LFSKXQGXlkNc5AaXxUgqTVVrRD9MA0FUy2f
+2dnZz/MSsGYXHbSNdEeVXfBQPBu0R+/WK6uSSNP06wFjUsnOM6UR1nXMmMEpPBho
+B8pE1g9YpELgli7mkUoAIkJpR1C6nrWdsDkkzbyx/n65/XK29Uzz5klrKYvoPwWg
+bBLgenpIoYLBz4qFBPdg5H2UXbM6awW8KoV3xfCWBCm3P0sU7EiIGT3mfQkkx4Tp
+U7rGee/P2O1NiiZNA3Qrv4LsWijFPFMIkJrudmZANmc4Rb6SXGoNNiXDfvQNQacr
+op5/f+i2J5AkrAS0Id/h
+=M5cx
+-----END PGP SIGNATURE-----
 
-Also, take a look at commit 356c05d58af0.  It's a similar situation 
-(not exactly the same).
-
-Alan Stern
-
+--sZvnRN25x3w09J/6--
