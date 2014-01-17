@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaAQPV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:21:28 -0500
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:45673
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752693AbaAQPSq (ORCPT
+	id S1752917AbaAQPVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:21:36 -0500
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:46515 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752689AbaAQPSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 10:18:46 -0500
-Message-Id: <20140117151838.048751141@linux.com>
-Date: Fri, 17 Jan 2014 09:18:47 -0600
+Message-Id: <20140117151837.930994765@linux.com>
+Date: Fri, 17 Jan 2014 09:18:46 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 35/41] tile: Replace __get_cpu_var uses
+        Thomas Gleixner <tglx@linutronix.de>, sparclinux@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 34/41] sparc: Replace __get_cpu_var uses
 References: <20140117151812.770437629@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_tile
+Content-Disposition: inline; filename=this_sparc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
 __get_cpu_var() is used for multiple purposes in the kernel source. One of
 them is address calculation via the form &__get_cpu_var(x).  This calculates
@@ -131,306 +129,340 @@ variable.
 	__this_cpu_inc(y)
 
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: sparclinux@vger.kernel.org
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/arch/tile/include/asm/mmu_context.h
+Index: linux/arch/sparc/include/asm/cpudata_32.h
 ===================================================================
---- linux.orig/arch/tile/include/asm/mmu_context.h	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/include/asm/mmu_context.h	2013-12-18 13:40:08.322514483 -0600
-@@ -84,7 +84,7 @@ static inline void enter_lazy_tlb(struct
- 	 * clear any pending DMA interrupts.
- 	 */
- 	if (current->thread.tile_dma_state.enabled)
--		install_page_table(mm->pgd, __get_cpu_var(current_asid));
-+		install_page_table(mm->pgd, __this_cpu_read(current_asid));
- #endif
+--- linux.orig/arch/sparc/include/asm/cpudata_32.h	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/include/asm/cpudata_32.h	2013-12-02 16:07:59.764356512 -0600
+@@ -26,6 +26,6 @@ typedef struct {
+ 
+ DECLARE_PER_CPU(cpuinfo_sparc, __cpu_data);
+ #define cpu_data(__cpu) per_cpu(__cpu_data, (__cpu))
+-#define local_cpu_data() __get_cpu_var(__cpu_data)
++#define local_cpu_data() __this_cpu_read(__cpu_data)
+ 
+ #endif /* _SPARC_CPUDATA_H */
+Index: linux/arch/sparc/include/asm/cpudata_64.h
+===================================================================
+--- linux.orig/arch/sparc/include/asm/cpudata_64.h	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/include/asm/cpudata_64.h	2013-12-02 16:07:59.764356512 -0600
+@@ -33,7 +33,7 @@ typedef struct {
+ 
+ DECLARE_PER_CPU(cpuinfo_sparc, __cpu_data);
+ #define cpu_data(__cpu)		per_cpu(__cpu_data, (__cpu))
+-#define local_cpu_data()	__get_cpu_var(__cpu_data)
++#define local_cpu_data()	__this_cpu_read(__cpu_data)
+ 
+ extern const struct seq_operations cpuinfo_op;
+ 
+Index: linux/arch/sparc/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/kprobes.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/kprobes.c	2013-12-02 16:07:59.764356512 -0600
+@@ -83,7 +83,7 @@ static void __kprobes save_previous_kpro
+ 
+ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+ {
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe.status;
+ 	kcb->kprobe_orig_tnpc = kcb->prev_kprobe.orig_tnpc;
+ 	kcb->kprobe_orig_tstate_pil = kcb->prev_kprobe.orig_tstate_pil;
+@@ -92,7 +92,7 @@ static void __kprobes restore_previous_k
+ static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+ 				struct kprobe_ctlblk *kcb)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ 	kcb->kprobe_orig_tnpc = regs->tnpc;
+ 	kcb->kprobe_orig_tstate_pil = (regs->tstate & TSTATE_PIL);
  }
- 
-@@ -96,12 +96,12 @@ static inline void switch_mm(struct mm_s
- 		int cpu = smp_processor_id();
- 
- 		/* Pick new ASID. */
--		int asid = __get_cpu_var(current_asid) + 1;
-+		int asid = __this_cpu_read(current_asid) + 1;
- 		if (asid > max_asid) {
- 			asid = min_asid;
- 			local_flush_tlb();
+@@ -155,7 +155,7 @@ static int __kprobes kprobe_handler(stru
+ 				ret = 1;
+ 				goto no_kprobe;
+ 			}
+-			p = __get_cpu_var(current_kprobe);
++			p = __this_cpu_read(current_kprobe);
+ 			if (p->break_handler && p->break_handler(p, regs))
+ 				goto ss_probe;
  		}
--		__get_cpu_var(current_asid) = asid;
-+		__this_cpu_write(current_asid, asid);
- 
- 		/* Clear cpu from the old mm, and set it in the new one. */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-Index: linux/arch/tile/kernel/irq.c
+Index: linux/arch/sparc/kernel/leon_smp.c
 ===================================================================
---- linux.orig/arch/tile/kernel/irq.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/irq.c	2013-12-18 13:40:08.322514483 -0600
-@@ -79,7 +79,7 @@ static DEFINE_SPINLOCK(available_irqs_lo
-  */
- void tile_dev_intr(struct pt_regs *regs, int intnum)
+--- linux.orig/arch/sparc/kernel/leon_smp.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/leon_smp.c	2013-12-02 16:07:59.764356512 -0600
+@@ -354,7 +354,7 @@ static void leon_ipi_resched(int cpu)
+ 
+ void leonsmp_ipi_interrupt(void)
  {
--	int depth = __get_cpu_var(irq_depth)++;
-+	int depth = __this_cpu_inc_return(irq_depth);
- 	unsigned long original_irqs;
- 	unsigned long remaining_irqs;
- 	struct pt_regs *old_regs;
-@@ -126,7 +126,7 @@ void tile_dev_intr(struct pt_regs *regs,
+-	struct leon_ipi_work *work = &__get_cpu_var(leon_ipi_work);
++	struct leon_ipi_work *work = this_cpu_ptr(&leon_ipi_work);
  
- 		/* Count device irqs; Linux IPIs are counted elsewhere. */
- 		if (irq != IRQ_RESCHEDULE)
--			__get_cpu_var(irq_stat).irq_dev_intr_count++;
-+			__this_cpu_inc(irq_stat.irq_dev_intr_count);
+ 	if (work->single) {
+ 		work->single = 0;
+Index: linux/arch/sparc/kernel/nmi.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/nmi.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/nmi.c	2013-12-02 16:07:59.764356512 -0600
+@@ -111,20 +111,20 @@ notrace __kprobes void perfctr_irq(int i
+ 		pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
  
- 		generic_handle_irq(irq);
+ 	sum = local_cpu_data().irq0_irqs;
+-	if (__get_cpu_var(nmi_touch)) {
+-		__get_cpu_var(nmi_touch) = 0;
++	if (__this_cpu_read(nmi_touch)) {
++		__this_cpu_write(nmi_touch, 0);
+ 		touched = 1;
  	}
-@@ -136,10 +136,10 @@ void tile_dev_intr(struct pt_regs *regs,
- 	 * including any that were reenabled during interrupt
- 	 * handling.
- 	 */
--	if (depth == 0)
--		unmask_irqs(~__get_cpu_var(irq_disable_mask));
-+	if (depth == 1)
-+		unmask_irqs(~__this_cpu_read(irq_disable_mask));
- 
--	__get_cpu_var(irq_depth)--;
-+	__this_cpu_dec(irq_depth);
- 
- 	/*
- 	 * Track time spent against the current process again and
-@@ -157,7 +157,7 @@ void tile_dev_intr(struct pt_regs *regs,
- static void tile_irq_chip_enable(struct irq_data *d)
- {
- 	get_cpu_var(irq_disable_mask) &= ~(1UL << d->irq);
--	if (__get_cpu_var(irq_depth) == 0)
-+	if (__this_cpu_read(irq_depth) == 0)
- 		unmask_irqs(1UL << d->irq);
- 	put_cpu_var(irq_disable_mask);
- }
-@@ -203,7 +203,7 @@ static void tile_irq_chip_ack(struct irq
-  */
- static void tile_irq_chip_eoi(struct irq_data *d)
- {
--	if (!(__get_cpu_var(irq_disable_mask) & (1UL << d->irq)))
-+	if (!(__this_cpu_read(irq_disable_mask) & (1UL << d->irq)))
- 		unmask_irqs(1UL << d->irq);
- }
- 
-Index: linux/arch/tile/kernel/messaging.c
-===================================================================
---- linux.orig/arch/tile/kernel/messaging.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/messaging.c	2013-12-18 13:40:08.322514483 -0600
-@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(HV_MsgState, msg_s
- void init_messaging(void)
- {
- 	/* Allocate storage for messages in kernel space */
--	HV_MsgState *state = &__get_cpu_var(msg_state);
-+	HV_MsgState *state = this_cpu_ptr(&msg_state);
- 	int rc = hv_register_message_state(state);
- 	if (rc != HV_OK)
- 		panic("hv_register_message_state: error %d", rc);
-@@ -68,7 +68,7 @@ void hv_message_intr(struct pt_regs *reg
- #endif
- 
- 	while (1) {
--		rmi = hv_receive_message(__get_cpu_var(msg_state),
-+		rmi = hv_receive_message(__this_cpu_read(msg_state),
- 					 (HV_VirtAddr) message,
- 					 sizeof(message));
- 		if (rmi.msglen == 0)
-@@ -96,7 +96,7 @@ void hv_message_intr(struct pt_regs *reg
- 			struct hv_driver_cb *cb =
- 				(struct hv_driver_cb *)him->intarg;
- 			cb->callback(cb, him->intdata);
--			__get_cpu_var(irq_stat).irq_hv_msg_count++;
-+			__this_cpu_inc(irq_stat.irq_hv_msg_count);
- 		}
+-	if (!touched && __get_cpu_var(last_irq_sum) == sum) {
++	if (!touched && __this_cpu_read(last_irq_sum) == sum) {
+ 		__this_cpu_inc(alert_counter);
+ 		if (__this_cpu_read(alert_counter) == 30 * nmi_hz)
+ 			die_nmi("BUG: NMI Watchdog detected LOCKUP",
+ 				regs, panic_on_timeout);
+ 	} else {
+-		__get_cpu_var(last_irq_sum) = sum;
++		__this_cpu_write(last_irq_sum, sum);
+ 		__this_cpu_write(alert_counter, 0);
  	}
- 
-Index: linux/arch/tile/kernel/process.c
-===================================================================
---- linux.orig/arch/tile/kernel/process.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/process.c	2013-12-18 13:40:08.322514483 -0600
-@@ -64,7 +64,7 @@ early_param("idle", idle_setup);
- 
- void arch_cpu_idle(void)
+-	if (__get_cpu_var(wd_enabled)) {
++	if (__this_cpu_read(wd_enabled)) {
+ 		pcr_ops->write_pic(0, pcr_ops->nmi_picl_value(nmi_hz));
+ 		pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_enable);
+ 	}
+@@ -166,7 +166,7 @@ static void report_broken_nmi(int cpu, i
+ void stop_nmi_watchdog(void *unused)
  {
--	__get_cpu_var(irq_stat).idle_timestamp = jiffies;
-+	__this_cpu_write(irq_stat.idle_timestamp, jiffies);
- 	_cpu_idle();
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+-	__get_cpu_var(wd_enabled) = 0;
++	__this_cpu_write(wd_enabled, 0);
+ 	atomic_dec(&nmi_active);
  }
  
-Index: linux/arch/tile/kernel/setup.c
-===================================================================
---- linux.orig/arch/tile/kernel/setup.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/setup.c	2013-12-18 13:40:08.322514483 -0600
-@@ -1220,7 +1220,8 @@ static void __init validate_hv(void)
- 	 * various asid variables to their appropriate initial states.
- 	 */
- 	asid_range = hv_inquire_asid(0);
--	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-+	min_asid = asid_range.start;
-+	__this_cpu_write(current_asid, min_asid);
- 	max_asid = asid_range.start + asid_range.size - 1;
+@@ -219,7 +219,7 @@ error:
  
- 	if (hv_confstr(HV_CONFSTR_CHIP_MODEL, (HV_VirtAddr)chip_model,
-Index: linux/arch/tile/kernel/single_step.c
-===================================================================
---- linux.orig/arch/tile/kernel/single_step.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/single_step.c	2013-12-18 13:40:08.322514483 -0600
-@@ -740,7 +740,7 @@ static DEFINE_PER_CPU(unsigned long, ss_
- 
- void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
+ void start_nmi_watchdog(void *unused)
  {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	struct thread_info *info = (void *)current_thread_info();
- 	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-@@ -766,7 +766,7 @@ void gx_singlestep_handle(struct pt_regs
+-	__get_cpu_var(wd_enabled) = 1;
++	__this_cpu_write(wd_enabled, 1);
+ 	atomic_inc(&nmi_active);
  
- void single_step_once(struct pt_regs *regs)
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+@@ -230,7 +230,7 @@ void start_nmi_watchdog(void *unused)
+ 
+ static void nmi_adjust_hz_one(void *unused)
  {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
+-	if (!__get_cpu_var(wd_enabled))
++	if (!__this_cpu_read(wd_enabled))
+ 		return;
  
- 	*ss_pc = regs->pc;
-Index: linux/arch/tile/kernel/smp.c
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+Index: linux/arch/sparc/kernel/pci_sun4v.c
 ===================================================================
---- linux.orig/arch/tile/kernel/smp.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/smp.c	2013-12-18 13:40:08.322514483 -0600
-@@ -188,7 +188,7 @@ void flush_icache_range(unsigned long st
- /* Called when smp_send_reschedule() triggers IRQ_RESCHEDULE. */
- static irqreturn_t handle_reschedule_ipi(int irq, void *token)
+--- linux.orig/arch/sparc/kernel/pci_sun4v.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/pci_sun4v.c	2013-12-02 16:07:59.764356512 -0600
+@@ -48,7 +48,7 @@ static int iommu_batch_initialized;
+ /* Interrupts must be disabled.  */
+ static inline void iommu_batch_start(struct device *dev, unsigned long prot, unsigned long entry)
  {
--	__get_cpu_var(irq_stat).irq_resched_count++;
-+	__this_cpu_inc(irq_stat.irq_resched_count);
- 	scheduler_ipi();
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
  
- 	return IRQ_HANDLED;
-Index: linux/arch/tile/kernel/smpboot.c
-===================================================================
---- linux.orig/arch/tile/kernel/smpboot.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/smpboot.c	2013-12-18 13:40:08.322514483 -0600
-@@ -41,7 +41,7 @@ void __init smp_prepare_boot_cpu(void)
- 	int cpu = smp_processor_id();
- 	set_cpu_online(cpu, 1);
- 	set_cpu_present(cpu, 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
+ 	p->dev		= dev;
+ 	p->prot		= prot;
+@@ -94,7 +94,7 @@ static long iommu_batch_flush(struct iom
  
- 	init_messaging();
- }
-@@ -158,7 +158,7 @@ static void start_secondary(void)
- 	/* printk(KERN_DEBUG "Initializing CPU#%d\n", cpuid); */
- 
- 	/* Initialize the current asid for our first page table. */
--	__get_cpu_var(current_asid) = min_asid;
-+	__this_cpu_write(current_asid, min_asid);
- 
- 	/* Set up this thread as another owner of the init_mm */
- 	atomic_inc(&init_mm.mm_count);
-@@ -201,7 +201,7 @@ void online_secondary(void)
- 	notify_cpu_starting(smp_processor_id());
- 
- 	set_cpu_online(smp_processor_id(), 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
- 
- 	/* Set up tile-specific state for this cpu. */
- 	setup_cpu(0);
-Index: linux/arch/tile/kernel/time.c
-===================================================================
---- linux.orig/arch/tile/kernel/time.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/time.c	2013-12-18 13:40:08.322514483 -0600
-@@ -162,7 +162,7 @@ static DEFINE_PER_CPU(struct clock_event
- 
- void setup_tile_timer(void)
+ static inline void iommu_batch_new_entry(unsigned long entry)
  {
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
  
- 	/* Fill in fields that are speed-specific. */
- 	clockevents_calc_mult_shift(evt, cycles_per_sec, TILE_MINSEC);
-@@ -182,7 +182,7 @@ void setup_tile_timer(void)
- void do_timer_interrupt(struct pt_regs *regs, int fault_num)
+ 	if (p->entry + p->npages == entry)
+ 		return;
+@@ -106,7 +106,7 @@ static inline void iommu_batch_new_entry
+ /* Interrupts must be disabled.  */
+ static inline long iommu_batch_add(u64 phys_page)
  {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
  
- 	/*
- 	 * Mask the timer interrupt here, since we are a oneshot timer
-@@ -194,7 +194,7 @@ void do_timer_interrupt(struct pt_regs *
- 	irq_enter();
+ 	BUG_ON(p->npages >= PGLIST_NENTS);
  
- 	/* Track interrupt count. */
--	__get_cpu_var(irq_stat).irq_timer_count++;
-+	__this_cpu_inc(irq_stat.irq_timer_count);
+@@ -120,7 +120,7 @@ static inline long iommu_batch_add(u64 p
+ /* Interrupts must be disabled.  */
+ static inline long iommu_batch_end(void)
+ {
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
  
- 	/* Call the generic timer handler */
- 	evt->event_handler(evt);
-@@ -235,7 +235,7 @@ cycles_t ns2cycles(unsigned long nsecs)
- 	 * We do not have to disable preemption here as each core has the same
- 	 * clock frequency.
- 	 */
--	struct clock_event_device *dev = &__raw_get_cpu_var(tile_timer);
-+	struct clock_event_device *dev = raw_cpu_ptr(&tile_timer);
- 	return ((u64)nsecs * dev->mult) >> dev->shift;
- }
+ 	BUG_ON(p->npages >= PGLIST_NENTS);
  
-Index: linux/arch/tile/mm/highmem.c
+Index: linux/arch/sparc/kernel/perf_event.c
 ===================================================================
---- linux.orig/arch/tile/mm/highmem.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/mm/highmem.c	2013-12-18 13:40:08.322514483 -0600
-@@ -103,7 +103,7 @@ static void kmap_atomic_register(struct
- 	spin_lock(&amp_lock);
+--- linux.orig/arch/sparc/kernel/perf_event.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/perf_event.c	2013-12-02 16:07:59.764356512 -0600
+@@ -1013,7 +1013,7 @@ static void update_pcrs_for_enable(struc
  
- 	/* With interrupts disabled, now fill in the per-cpu info. */
--	amp = &__get_cpu_var(amps).per_type[type];
-+	amp = this_cpu_ptr(&amps.per_type[type]);
- 	amp->page = page;
- 	amp->cpu = smp_processor_id();
- 	amp->va = va;
-Index: linux/arch/tile/mm/init.c
-===================================================================
---- linux.orig/arch/tile/mm/init.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/mm/init.c	2013-12-18 13:40:08.322514483 -0600
-@@ -593,14 +593,14 @@ static void __init kernel_physical_mappi
- 	interrupt_mask_set_mask(-1ULL);
- 	rc = flush_and_install_context(__pa(pgtables),
- 				       init_pgprot((unsigned long)pgtables),
--				       __get_cpu_var(current_asid),
-+				       __this_cpu_read(current_asid),
- 				       cpumask_bits(my_cpu_mask));
- 	interrupt_mask_restore_mask(irqmask);
- 	BUG_ON(rc != 0);
+ static void sparc_pmu_enable(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
  
- 	/* Copy the page table back to the normal swapper_pg_dir. */
- 	memcpy(pgd_base, pgtables, sizeof(pgtables));
--	__install_page_table(pgd_base, __get_cpu_var(current_asid),
-+	__install_page_table(pgd_base, __this_cpu_read(current_asid),
- 			     swapper_pgprot);
+ 	if (cpuc->enabled)
+@@ -1031,7 +1031,7 @@ static void sparc_pmu_enable(struct pmu
  
- 	/*
-Index: linux/arch/tile/include/asm/irqflags.h
-===================================================================
---- linux.orig/arch/tile/include/asm/irqflags.h	2013-12-18 13:37:21.000000000 -0600
-+++ linux/arch/tile/include/asm/irqflags.h	2013-12-18 13:40:24.781984237 -0600
-@@ -140,12 +140,12 @@ extern unsigned int debug_smp_processor_
+ static void sparc_pmu_disable(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
  
- /*
-  * Read the set of maskable interrupts.
-- * We avoid the preemption warning here via __this_cpu_ptr since even
-+ * We avoid the preemption warning here via raw_cpu_ptr since even
-  * if irqs are already enabled, it's harmless to read the wrong cpu's
-  * enabled mask.
+ 	if (!cpuc->enabled)
+@@ -1065,7 +1065,7 @@ static int active_event_index(struct cpu
+ 
+ static void sparc_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 
+ 	if (flags & PERF_EF_RELOAD) {
+@@ -1080,7 +1080,7 @@ static void sparc_pmu_start(struct perf_
+ 
+ static void sparc_pmu_stop(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 
+ 	if (!(event->hw.state & PERF_HES_STOPPED)) {
+@@ -1096,7 +1096,7 @@ static void sparc_pmu_stop(struct perf_e
+ 
+ static void sparc_pmu_del(struct perf_event *event, int _flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned long flags;
+ 	int i;
+ 
+@@ -1133,7 +1133,7 @@ static void sparc_pmu_del(struct perf_ev
+ 
+ static void sparc_pmu_read(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+@@ -1145,7 +1145,7 @@ static DEFINE_MUTEX(pmc_grab_mutex);
+ 
+ static void perf_stop_nmi_watchdog(void *unused)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
+ 
+ 	stop_nmi_watchdog(NULL);
+@@ -1356,7 +1356,7 @@ static int collect_events(struct perf_ev
+ 
+ static int sparc_pmu_add(struct perf_event *event, int ef_flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int n0, ret = -EAGAIN;
+ 	unsigned long flags;
+ 
+@@ -1498,7 +1498,7 @@ static int sparc_pmu_event_init(struct p
   */
- #define arch_local_irqs_enabled() \
--	(*__this_cpu_ptr(&interrupts_enabled_mask))
-+	(*raw_cpu_ptr(&interrupts_enabled_mask))
+ static void sparc_pmu_start_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
  
- /* Re-enable all maskable interrupts. */
- #define arch_local_irq_enable() \
+ 	perf_pmu_disable(pmu);
+ 	cpuhw->group_flag |= PERF_EVENT_TXN;
+@@ -1511,7 +1511,7 @@ static void sparc_pmu_start_txn(struct p
+  */
+ static void sparc_pmu_cancel_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
+ 	perf_pmu_enable(pmu);
+@@ -1524,13 +1524,13 @@ static void sparc_pmu_cancel_txn(struct
+  */
+ static int sparc_pmu_commit_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int n;
+ 
+ 	if (!sparc_pmu)
+ 		return -EINVAL;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	n = cpuc->n_events;
+ 	if (check_excludes(cpuc->event, 0, n))
+ 		return -EINVAL;
+@@ -1601,7 +1601,7 @@ static int __kprobes perf_event_nmi_hand
+ 
+ 	regs = args->regs;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	/* If the PMU has the TOE IRQ enable bits, we need to do a
+ 	 * dummy write to the %pcr to clear the overflow bits and thus
+Index: linux/arch/sparc/kernel/sun4d_smp.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/sun4d_smp.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/sun4d_smp.c	2013-12-02 16:07:59.764356512 -0600
+@@ -204,7 +204,7 @@ static void __init smp4d_ipi_init(void)
+ 
+ void sun4d_ipi_interrupt(void)
+ {
+-	struct sun4d_ipi_work *work = &__get_cpu_var(sun4d_ipi_work);
++	struct sun4d_ipi_work *work = this_cpu_ptr(&sun4d_ipi_work);
+ 
+ 	if (work->single) {
+ 		work->single = 0;
+Index: linux/arch/sparc/kernel/time_64.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/time_64.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/kernel/time_64.c	2013-12-02 16:07:59.764356512 -0600
+@@ -766,7 +766,7 @@ void setup_sparc64_timer(void)
+ 			     : /* no outputs */
+ 			     : "r" (pstate));
+ 
+-	sevt = &__get_cpu_var(sparc64_events);
++	sevt = this_cpu_ptr(&sparc64_events);
+ 
+ 	memcpy(sevt, &sparc64_clockevent, sizeof(*sevt));
+ 	sevt->cpumask = cpumask_of(smp_processor_id());
+Index: linux/arch/sparc/mm/tlb.c
+===================================================================
+--- linux.orig/arch/sparc/mm/tlb.c	2013-12-02 16:07:59.774356233 -0600
++++ linux/arch/sparc/mm/tlb.c	2013-12-02 16:07:59.764356512 -0600
+@@ -53,14 +53,14 @@ out:
+ 
+ void arch_enter_lazy_mmu_mode(void)
+ {
+-	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++	struct tlb_batch *tb = this_cpu_ptr(&tlb_batch);
+ 
+ 	tb->active = 1;
+ }
+ 
+ void arch_leave_lazy_mmu_mode(void)
+ {
+-	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++	struct tlb_batch *tb = this_cpu_ptr(&tlb_batch);
+ 
+ 	if (tb->tlb_nr)
+ 		flush_tlb_pending();
 
