@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaAQKIF (ORCPT <rfc822;w@1wt.eu>);
+	id S1752513AbaAQKIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:08:10 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60016 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752492AbaAQKIF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 05:08:05 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:39710 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752471AbaAQKH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:07:57 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
-        Christoph Lameter <cl@linux.com>
-CC: Daniel Borkmann <dborkman@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        "Jesse Gross" <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        "Stephen Hemminger" <stephen@networkplumber.org>,
-        Matt Mackall <mpm@selenic.com>, "Pekka Enberg" <penberg@kernel.org>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "Veaceslav Falico" <vfalico@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Subject: RE: [PATCH net-next 2/2] reciprocal_divide: correction/update of
- the algorithm
-Thread-Topic: [PATCH net-next 2/2] reciprocal_divide: correction/update of
- the algorithm
-Thread-Index: AQHPEt98Z7WBrBo+/0up6rnEAEb4SpqIsDOQ
-Date: Fri, 17 Jan 2014 10:05:37 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45EB06@AcuExch.aculab.com>
-References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
- <1389828228-30312-3-git-send-email-dborkman@redhat.com>
- <alpine.DEB.2.10.1401161036110.29778@nuc>
- <20140116172406.GA17529@order.stressinduktion.org>
-In-Reply-To: <20140116172406.GA17529@order.stressinduktion.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+Date: Fri, 17 Jan 2014 10:07:23 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
+Message-ID: <20140117100723.GB16003@mudshark.cambridge.arm.com>
+References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
+ <20140116115634.GE30257@mudshark.cambridge.arm.com>
+ <CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
+ <20140116125727.GI30257@mudshark.cambridge.arm.com>
+ <CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
+ <CAFrcx1=QWPFeuNDc0JatiykGnRuvPyOgwwCxnW7pSAiNa9RsxA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1=QWPFeuNDc0JatiykGnRuvPyOgwwCxnW7pSAiNa9RsxA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0HA8FX9023755
 
-From: Hannes Frederic Sowa
-> On Thu, Jan 16, 2014 at 10:37:37AM -0600, Christoph Lameter wrote:
-> > On Thu, 16 Jan 2014, Daniel Borkmann wrote:
-> >
-> > > - * or else the performance is slower than a normal divide.
-> > > - */
-> > > -extern u32 reciprocal_value(u32 B);
-> > > +struct reciprocal_value {
-> > > +	u32 m;
-> > > +	u8 sh1, sh2;
-> > > +};
-> > >
-> > > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
-> > >
-> > > -static inline u32 reciprocal_divide(u32 A, u32 R)
-> > > +struct reciprocal_value reciprocal_value(u32 d);
-> >
-> > A function that returns a struct? That works? Which gcc versions support
-> > it?
+On Fri, Jan 17, 2014 at 09:00:09AM +0000, Jean Pihet wrote:
+> On 16 January 2014 14:47, Jean Pihet <jean.pihet@linaro.org> wrote:
+> >> So the simplest thing would be to make compat_user_stack_pointer expand to
+> >> user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
+> >> original patch fixing user_stack_pointer.
 > 
-> Sure, that works and I actually like it. This is supported by the c standard,
-> but please don't ask me since which one. ;)
+> I see 2 issues in your proposal:
+> 
+> 1) user_stack_pointer(regs) calls compat_user_stack_pointer if
+> compat_user_mode(regs)) and compat_user_stack_pointer expands to
+> user_stack_pointer. I see a circular dependency in the macros.
 
-I think it has always been supported.
-Originally by adding an extra hidden argument that points to an on-stack
-structure.
-More recent ABI tend to allow 'small' structures be returned in registers.
-(Typically ones that would fit in the register(s) used for an integral result).
+Not today it doesn't, so you just need to avoid writing the circular
+dependency and instead make user_stack_pointer access (regs)->compat_sp
+instead.
 
-This doesn't mean that it is a good idea!
+> 2) current_pt_regs() returns the current task regs although perf
+> passes a regs struct that had been recorded previously.
 
-OTOH if the function is 'static inline' (and inlined) it probably doesn't matter.
+Yes, but compat_user_stack_pointer doesn't take a regs paramater anyway, so
+there's no change in behaviour here.
 
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Will
