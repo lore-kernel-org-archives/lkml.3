@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaAQNZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:25:08 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34732 "EHLO
+	id S1752583AbaAQNZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:25:05 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34731 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435AbaAQNY7 (ORCPT
+	with ESMTP id S1752441AbaAQNY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 08:24:59 -0500
 From: Chen-Yu Tsai <wens@csie.org>
@@ -13,9 +13,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
         Srinivas Kandagatla <srinivas.kandagatla@st.com>,
         linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH net-next v3 2/8] net: stmmac: Add support for optional reset control
-Date: Fri, 17 Jan 2014 21:24:41 +0800
-Message-Id: <1389965087-21971-3-git-send-email-wens@csie.org>
+Subject: [PATCH net-next v3 1/8] net: stmmac: Enable stmmac main clock when probing hardware
+Date: Fri, 17 Jan 2014 21:24:40 +0800
+Message-Id: <1389965087-21971-2-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1389965087-21971-1-git-send-email-wens@csie.org>
 References: <1389965087-21971-1-git-send-email-wens@csie.org>
@@ -23,155 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DWMAC has a reset assert line, which is used on some SoCs. Add an
-optional reset control to stmmac driver core.
-
-To support reset control deferred probing, this patch changes the driver
-probe function to return the actual error, instead of just -EINVAL.
+The stmmac driver does not enable the main clock during the probe phase.
+If the clock was not enabled by the boot loader or was disabled by the
+kernel, hardware features and the MDIO bus would not be probed properly.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- Documentation/devicetree/bindings/net/stmmac.txt      |  3 +++
- drivers/net/ethernet/stmicro/stmmac/Kconfig           |  1 +
- drivers/net/ethernet/stmicro/stmmac/stmmac.h          |  2 ++
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 19 ++++++++++++++++++-
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c      |  4 ++--
- drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |  4 ++--
- 6 files changed, 28 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 26 +++++++++++------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-index eba0e5e..d132513 100644
---- a/Documentation/devicetree/bindings/net/stmmac.txt
-+++ b/Documentation/devicetree/bindings/net/stmmac.txt
-@@ -30,6 +30,9 @@ Required properties:
- 
- Optional properties:
- - mac-address: 6 bytes, mac address
-+- resets: Should contain a phandle to the STMMAC reset signal, if any
-+- reset-names: Should contain the reset signal name "stmmaceth", if a
-+	reset phandle is given
- 
- Examples:
- 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-index 6e52c0f..b59d1ef 100644
---- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
-+++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-@@ -5,6 +5,7 @@ config STMMAC_ETH
- 	select PHYLIB
- 	select CRC32
- 	select PTP_1588_CLOCK
-+	select RESET_CONTROLLER
- 	---help---
- 	  This is the driver for the Ethernet IPs are built around a
- 	  Synopsys IP Core and only tested on the STMicroelectronics
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-index 73709e9..c1c141f 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-@@ -32,6 +32,7 @@
- #include <linux/pci.h>
- #include "common.h"
- #include <linux/ptp_clock_kernel.h>
-+#include <linux/reset.h>
- 
- struct stmmac_priv {
- 	/* Frequently used values are kept adjacent for cache effect */
-@@ -91,6 +92,7 @@ struct stmmac_priv {
- 	int wolopts;
- 	int wol_irq;
- 	struct clk *stmmac_clk;
-+	struct reset_control *stmmac_rst;
- 	int clk_csr;
- 	struct timer_list eee_ctrl_timer;
- 	int lpi_irq;
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 0d2c4cb..0c5c120 100644
+index cddcf76..0d2c4cb 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -51,6 +51,7 @@
- #include <linux/net_tstamp.h>
- #include "stmmac_ptp.h"
- #include "stmmac.h"
-+#include <linux/reset.h>
+@@ -1680,8 +1680,6 @@ static int stmmac_open(struct net_device *dev)
+ 	struct stmmac_priv *priv = netdev_priv(dev);
+ 	int ret;
  
- #define STMMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
- #define JUMBO_LEN	9000
-@@ -2728,10 +2729,24 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
- 	if (IS_ERR(priv->stmmac_clk)) {
- 		dev_warn(priv->device, "%s: warning: cannot get CSR clock\n",
- 			 __func__);
-+		ret = PTR_ERR(priv->stmmac_clk);
- 		goto error_clk_get;
- 	}
- 	clk_prepare_enable(priv->stmmac_clk);
+-	clk_prepare_enable(priv->stmmac_clk);
+-
+ 	stmmac_check_ether_addr(priv);
  
-+	priv->stmmac_rst = devm_reset_control_get(priv->device,
-+						  STMMAC_RESOURCE_NAME);
-+	if (IS_ERR(priv->stmmac_rst)) {
-+		if (PTR_ERR(priv->stmmac_rst) == -EPROBE_DEFER) {
-+			ret = -EPROBE_DEFER;
-+			goto error_hw_init;
-+		}
-+		dev_info(priv->device, "no reset control found\n");
-+		priv->stmmac_rst = NULL;
+ 	if (priv->pcs != STMMAC_PCS_RGMII && priv->pcs != STMMAC_PCS_TBI &&
+@@ -1819,7 +1817,6 @@ static int stmmac_release(struct net_device *dev)
+ #ifdef CONFIG_STMMAC_DEBUG_FS
+ 	stmmac_exit_fs();
+ #endif
+-	clk_disable_unprepare(priv->stmmac_clk);
+ 
+ 	stmmac_release_ptp(priv);
+ 
+@@ -2727,10 +2724,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 	if ((phyaddr >= 0) && (phyaddr <= 31))
+ 		priv->plat->phy_addr = phyaddr;
+ 
++	priv->stmmac_clk = devm_clk_get(priv->device, STMMAC_RESOURCE_NAME);
++	if (IS_ERR(priv->stmmac_clk)) {
++		dev_warn(priv->device, "%s: warning: cannot get CSR clock\n",
++			 __func__);
++		goto error_clk_get;
 +	}
-+	if (priv->stmmac_rst)
-+		reset_control_deassert(priv->stmmac_rst);
++	clk_prepare_enable(priv->stmmac_clk);
 +
  	/* Init MAC and get the capabilities */
  	ret = stmmac_hw_init(priv);
  	if (ret)
-@@ -2808,7 +2823,7 @@ error_hw_init:
- error_clk_get:
+-		goto error_free_netdev;
++		goto error_hw_init;
+ 
+ 	ndev->netdev_ops = &stmmac_netdev_ops;
+ 
+@@ -2768,12 +2773,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 		goto error_netdev_register;
+ 	}
+ 
+-	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
+-	if (IS_ERR(priv->stmmac_clk)) {
+-		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+-		goto error_clk_get;
+-	}
+-
+ 	/* If a specific clk_csr value is passed from the platform
+ 	 * this means that the CSR Clock Range selection cannot be
+ 	 * changed at run-time and it is fixed. Viceversa the driver'll try to
+@@ -2801,12 +2800,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 	return priv;
+ 
+ error_mdio_register:
+-	clk_put(priv->stmmac_clk);
+-error_clk_get:
+ 	unregister_netdev(ndev);
+ error_netdev_register:
+ 	netif_napi_del(&priv->napi);
+-error_free_netdev:
++error_hw_init:
++	clk_disable_unprepare(priv->stmmac_clk);
++error_clk_get:
  	free_netdev(ndev);
  
--	return NULL;
-+	return ERR_PTR(ret);
- }
- 
- /**
-@@ -2832,6 +2847,8 @@ int stmmac_dvr_remove(struct net_device *ndev)
+ 	return NULL;
+@@ -2833,6 +2832,7 @@ int stmmac_dvr_remove(struct net_device *ndev)
  		stmmac_mdio_unregister(ndev);
  	netif_carrier_off(ndev);
  	unregister_netdev(ndev);
-+	if (priv->stmmac_rst)
-+		reset_control_assert(priv->stmmac_rst);
- 	clk_disable_unprepare(priv->stmmac_clk);
++	clk_disable_unprepare(priv->stmmac_clk);
  	free_netdev(ndev);
  
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-index 37ba2e0..2916089 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-@@ -100,9 +100,9 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
- 	stmmac_default_data();
- 
- 	priv = stmmac_dvr_probe(&(pdev->dev), &plat_dat, addr);
--	if (!priv) {
-+	if (IS_ERR(priv)) {
- 		pr_err("%s: main driver probe failed", __func__);
--		ret = -ENODEV;
-+		ret = PTR_ERR(priv);
- 		goto err_out;
- 	}
- 	priv->dev->irq = pdev->irq;
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index 6d0bf22..cc6b89a7 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -152,9 +152,9 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
- 	}
- 
- 	priv = stmmac_dvr_probe(&(pdev->dev), plat_dat, addr);
--	if (!priv) {
-+	if (IS_ERR(priv)) {
- 		pr_err("%s: main driver probe failed", __func__);
--		return -ENODEV;
-+		return PTR_ERR(priv);
- 	}
- 
- 	/* Get MAC address if available (DT) */
+ 	return 0;
 -- 
 1.8.5.2
 
