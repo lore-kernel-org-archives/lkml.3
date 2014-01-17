@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaAQOph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:45:37 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33879 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751094AbaAQOpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:45:35 -0500
-Date: Fri, 17 Jan 2014 14:44:57 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH] of: add function to count number of u32 elements in a
- property
-Message-ID: <20140117144456.GG19578@e106331-lin.cambridge.arm.com>
-References: <27256277.YJ687suYy5@phil>
- <1669323.jqjZBfkRx4@phil>
- <20140116124527.GD19578@e106331-lin.cambridge.arm.com>
- <3781679.27UF2dWtKL@phil>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3781679.27UF2dWtKL@phil>
-Thread-Topic: [PATCH] of: add function to count number of u32 elements in a
- property
-Accept-Language: en-GB, en-US
+	id S1752212AbaAQOrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:47:22 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51303 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaAQOrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:47:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
+   d="scan'208";a="466700021"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+Thread-Topic: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+Thread-Index: AQHPDzsFvFwJDOMjVUqdOlZ/jiA8spqASnOAgAGzAYD///USAIAHFB8w
+Date: Fri, 17 Jan 2014 14:47:15 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014E575D@SHSMSX102.ccr.corp.intel.com>
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
+ <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
+ <20140112092019.GA3664@pd.tnic> <52D35ABB.8070904@intel.com>
+ <20140113103808.GC5388@pd.tnic>
+In-Reply-To: <20140113103808.GC5388@pd.tnic>
+Accept-Language: zh-CN, en-US
 Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0HElRw9025216
 
-On Thu, Jan 16, 2014 at 06:04:42PM +0000, Heiko StÃ¼bner wrote:
-> The need to know the number of array elements in a property is
-> a common pattern. To prevent duplication of open-coded implementations
-> add a helper function that also centralises strict sanity checking
-> and DTB format details.
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Monday, January 13, 2014 6:38 PM
+> To: Ren, Qiaowei
+> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+> bound tables
 > 
-> Suggested-by: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
-> Hi Mark,
-> did you mean it like this? I've tested it with the sram-reserve change and
-> it made the part of the determining the number elements a lot nicer :-)
-
-Yes! This looks pretty nice! :)
-
+> On Mon, Jan 13, 2014 at 11:17:15AM +0800, Ren Qiaowei wrote:
+> > Yes, I run this with lockdep enabled.
 > 
->  drivers/of/base.c  |   32 ++++++++++++++++++++++++++++++++
->  include/linux/of.h |    8 ++++++++
->  2 files changed, 40 insertions(+)
+> Ok, but you still are doing memory allocation in the exception handler,
+> AFAICT:
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index f807d0e..0f40ea5 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -920,6 +920,38 @@ int of_property_read_u32_index(const struct device_node *np,
->  EXPORT_SYMBOL_GPL(of_property_read_u32_index);
->  
->  /**
-> + * of_property_count_u32_elems - Count the number of u32 values in a property
-> + *
-> + * @np:		device node from which the property value is to be read.
-> + * @propname:	name of the property to be searched.
-> + *
-> + * Search for a property in a device node and count the number of u32 elements
-> + * in it. Returns number of elements on sucess, -EINVAL if the property does
-> + * not exist or its length does not match a multiple of u32 and -ENODATA if the
-> + * property does not have a value.
-> + */
-> +int of_property_count_u32_elems(const struct device_node *np,
-> +				const char *propname)
-> +{
-> +	int elem_size = sizeof(u32);
-> +	int len;
-> +	struct property *prop = of_find_property(np, propname, &len);
-> +
-> +	if (!prop)
-> +		return -EINVAL;
-> +	if (!prop->value)
-> +		return -ENODATA;
-> +
-> +	if (prop->length % elem_size != 0) {
-> +		pr_err("size of %s is not a multiple of u32\n", propname);
-> +		return -EINVAL;
-> +	}
-> +
-> +	return len / elem_size;
-> +}
-> +EXPORT_SYMBOL_GPL(of_property_count_u32_elems);
+> do_bounds
+> |->do_mpx_bt_fault
+>    |->allocate_bt
+>       |->sys_mmap_pgoff
+>          |->vm_mmap_pgoff
+>             |->do_mmap_pgoff
+>                |->mmap_region
+>                   |-> kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+> 
+Sorry for my late reply.
 
-As Rob said in his reply, it would be nice to split this into a static
-helper that took elem size as a parameter, so we can have the full suite
-of of_property_count_{u8,u16,u32,u64}_elems.
+Petkov, could you please detail the problem? Memory allocation can't be done in the eception handler? I guess it is like do_page_fault(), right?
 
-Also, I think you can get rid of len and always use prop->length, as
-other helpers seem to do.
-
-Cheers for putting this together!
-
-Mark.
+Thanks,
+Qiaowei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
