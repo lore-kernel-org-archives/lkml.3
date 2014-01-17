@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaAQMKH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:10:07 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:55309 "EHLO
+	id S1752488AbaAQMKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:10:12 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:55316 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751276AbaAQMKE (ORCPT
+	with ESMTP id S1751537AbaAQMKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:10:04 -0500
-Date: Fri, 17 Jan 2014 13:07:45 +0100
+	Fri, 17 Jan 2014 07:10:05 -0500
+Date: Fri, 17 Jan 2014 13:06:41 +0100
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] ARM: sun6i: dt: Add PLL6 and SPI module clocks
-Message-ID: <20140117120745.GB3867@lukather>
-References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
- <1389892285-11745-3-git-send-email-maxime.ripard@free-electrons.com>
- <20140116181528.GY8153@joshc.qualcomm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Gerardo Di Iorio <arete74@gmail.com>,
+        dev@linux-sunxi.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: sunxi: change the AllWinner A1X to sunxi
+Message-ID: <20140117120641.GA3867@lukather>
+References: <20140109153404.GA21055@kvmhost>
+ <20140115091006.GF3377@lukather>
+ <3612364.BZBltgonI0@wuerfel>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
 Content-Disposition: inline
-In-Reply-To: <20140116181528.GY8153@joshc.qualcomm.com>
+In-Reply-To: <3612364.BZBltgonI0@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---NMuMz9nt05w80d4+
+--XsQoSWH+UP9D9v3l
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Josh,
+Hi Arnd,
 
-On Thu, Jan 16, 2014 at 12:15:28PM -0600, Josh Cartwright wrote:
-> On Thu, Jan 16, 2014 at 06:11:23PM +0100, Maxime Ripard wrote:
-> > The module clocks in the A31 are still compatible with the A10 one. Add=
- the SPI
-> > module clocks and the PLL6 in the device tree to allow their use by the=
- SPI
-> > controllers.
+On Wed, Jan 15, 2014 at 10:40:56AM +0100, Arnd Bergmann wrote:
+> On Wednesday 15 January 2014 10:10:06 Maxime Ripard wrote:
+> > On Thu, Jan 09, 2014 at 04:34:04PM +0100, Gerardo Di Iorio wrote:
+> > > Change the AllWinner A1X SOCs to Allwinner Sunxi SOCs
+> > >=20
+> > > Signed-off-by: Gerardo Di Iorio <arete74@gmail.com>
+> > > ---
+> > >  arch/arm/mach-sunxi/Kconfig | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >=20
+> > > diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+> > > index 547004c..adb2574 100644
+> > > --- a/arch/arm/mach-sunxi/Kconfig
+> > > +++ b/arch/arm/mach-sunxi/Kconfig
+> > > @@ -1,5 +1,5 @@
+> > >  config ARCH_SUNXI
+> > > -       bool "Allwinner A1X SOCs" if ARCH_MULTI_V7
+> > > +       bool "Allwinner Sunxi SOCs" if ARCH_MULTI_V7
 > >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  arch/arm/boot/dts/sun6i-a31.dtsi | 48 +++++++++++++++++++++++++++++++-=
---------
-> >  1 file changed, 38 insertions(+), 10 deletions(-)
-> >=20
-> > diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i=
--a31.dtsi
-> > index 5256ad9..ae058eb 100644
-> > --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> > +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> > @@ -73,16 +73,12 @@
-> >  			clocks =3D <&osc24M>;
-> >  		};
-> > =20
-> > -		/*
-> > -		 * This is a dummy clock, to be used as placeholder on
-> > -		 * other mux clocks when a specific parent clock is not
-> > -		 * yet implemented. It should be dropped when the driver
-> > -		 * is complete.
-> > -		 */
-> > -		pll6: pll6 {
-> > -			#clock-cells =3D <0>;
-> > -			compatible =3D "fixed-clock";
-> > -			clock-frequency =3D <0>;
-> > +		pll6: clk@01c20028 {
-> > +			#clock-cells =3D <1>;
-> > +			compatible =3D "allwinner,sun6i-a31-pll6-clk";
-> > +			reg =3D <0x01c20028 0x4>;
-> > +			clocks =3D <&osc24M>;
-> > +			clock-output-names =3D "pll6";
-> >  		};
-> > =20
-> >  		cpu: cpu@01c20050 {
-> > @@ -182,6 +178,38 @@
-> >  					"apb2_uart1", "apb2_uart2", "apb2_uart3",
-> >  					"apb2_uart4", "apb2_uart5";
-> >  		};
-> > +
-> > +		spi0_clk: clk@01c200a0 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun4i-mod0-clk";
-> > +			reg =3D <0x01c200a0 0x4>;
-> > +			clocks =3D <&osc24M>, <&pll6>;
+> > I wonder if the sunxi (apart the weird letter case) is actually
+> > needed. Maybe we can just put "Allwinner SoCs" (it would be great if
+> > you could fix the SoCs case too).
 >=20
-> This looks weird.  You've set the pll6 #clock-cells =3D <1>, but you
-> aren't using a specifier here.  Same below, as well.  The binding
-> documentation indicates that #clock-cells should be 0 for the pll6 node.
+> If you want to have exact naming, try to find something that excludes the
+> old Sun3i (F20) and earlier chips (unless someone is already planning
+> to work on them). Maybe also mention the "Boxchip" name, although that
+> seems to be falling out of use these days.
 
-Ah, right, it's a dumb copy/paste mistake.
+I'm not sure that's good to exclude chips. We have a number of SoCs we
+don't support even on later families (A31s, A23, mostly). I'm not sure
+we want to have an ever growing list of SoCs supported (or
+not-supported).
 
-I'd expect dtc to output a warning/error in such case, but apparently
-it doesn't.
+"sunXi" would be fine I guess, or "A-series" like suggested on IRC.
 
-Thanks!
 Maxime
 
 --=20
@@ -109,26 +78,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---NMuMz9nt05w80d4+
+--XsQoSWH+UP9D9v3l
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS2R0RAAoJEBx+YmzsjxAgZIMP/jSdAvtwBrXo5RfquYcPwaf/
-eRbUfbUwhBxi1TgMOodxqr/RvgKZAix8cGXAZbn/lPevwCCF+YaB5ydCJrcnb9HK
-yvFjFmb0kweYpMZDkfL3KNDEkgiK5l5+ayxT0A1C6kEv6yi/oXTsVOhP6sds1rVg
-p3my6L3Id/hwq/2RD9QidzSTJVyR1OURCR3Uq8RHZIg9s6znQngLLytpVVsIUg2U
-x6sDA9VzGfbJJkWC9xewGrZrYtUNTNAt8LoTLcHN60hdGRrILAF+HXisyy5tdww9
-o1ZiHNnsn8M3DMABNQ2MBNMmy9CgTJqcUIIVlPkR/EyGFW4Fb4gcxT8+yTwgCfRy
-Qw38N4F3W8WNpOu1OZtMy8/0J7OU5Mlkqqvygq5z9/hZ1hJVk87c/WkwpDLye25Y
-oIhXE+Sv5p3n+uGaCj+rBpDtUkw8Vzyw4KrSYUC9PpOctBHO0NNEz1nVcBtrfqKy
-j/DcZ8WJccfeCKb7q/7UpAGi5pe1kpCnOFdHaZlT+X0LioVeVp0rRbfPMdv9bCqo
-d4FbJUAPmjVK1ECavcXdY4rMWxno9KI75SWU5yaBlQNUkFPlJFWYjasKkS55N56c
-BCpTnlTg2DdBeOL7sQSZHAJGJ629H3AgiSi08B4l3n7JRvz/a61YTwfMjbofmGR/
-tuPPDWIS9SEylXuuXdq3
-=Ple6
+iQIcBAEBAgAGBQJS2RzRAAoJEBx+YmzsjxAgD7EP/0GIXbmLyAU6HzZwDWc/n/l0
+s0AigP+0meLmeRjbMmUlb5hWZm/XramWsL2diXfFNBmb4yACQiAR9knWbKUfkEXM
+Mh6Y+/n4eZ9EehnVmjKQDEMEeROzqRsRygMJmr6qT2OhwAZqfzEQ6zQI8LzUGafR
+CWdAXHIOOXOj9ZGSZhqbv+0ieig+KuhJIVAcvDLTwPaYU0JvqCkIlmrDcV4vvBI6
+8VGi/uSIxE03W211VleG4psh5MjiI4+hMyK+FnByTMyxMMEePQf5vFY2E/DejQAm
+bGbo4/D7r8WJszMuCApCXiT/R0UH74Mlj15Tbs6Y0I9s0+m4o3f9UQCDDbPydrZ5
+c5oFEkIzplh/VTjm49wvT53KDoy21RFn1pvu5xRurlvs5aovSL6PNaxUfUMZypz3
+S4NYZZbYHgZG/Wl9gJyp3LNOJYfjHofN+ADq1Q0u3AeEw2akAUQy6hTlXpcM/kqO
+09Z5Oj6p0yR9XZa10vZ2FAcWN8WrQcFtsNH/xifagNvNmCeh6eKQ+hgx7q2iknZH
+wX0sGcUO/jq1Ukr7OpveO5ZCTllkDFXw9LIVUvqkdQqO2vrxbBmrTYyoODjkgisl
+BMZOE9PoICJ29jeNrrdBwRUy+yVEC9Zkpj7O8SR64IM9buZZwDM1LtEvDQfjITCy
+vt5uqLsC6+IATA7hBvoP
+=E81I
 -----END PGP SIGNATURE-----
 
---NMuMz9nt05w80d4+--
+--XsQoSWH+UP9D9v3l--
