@@ -1,140 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaAQTVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:21:55 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:54270 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaAQTUD (ORCPT
+	id S1753599AbaAQTWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:22:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60137 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363AbaAQTWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:20:03 -0500
-From: Marc Carino <marc.ceeeee@gmail.com>
-To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v4 6/8] ARM: brcmstb: add misc. DT bindings for brcmstb
-Date: Fri, 17 Jan 2014 11:19:25 -0800
-Message-Id: <1389986367-4010-7-git-send-email-marc.ceeeee@gmail.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
+	Fri, 17 Jan 2014 14:22:49 -0500
+Date: Fri, 17 Jan 2014 11:22:27 -0800
+From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
+Message-ID: <tip-fb09b78151361f5001ad462e4b242b10845830e2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
+        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
+References: <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] x86, mpx:
+  Add MPX related opcodes to the x86 opcode map
+Git-Commit-ID: fb09b78151361f5001ad462e4b242b10845830e2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 17 Jan 2014 11:22:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the bindings that the Broadcom STB platform needs
-for proper bootup.
+Commit-ID:  fb09b78151361f5001ad462e4b242b10845830e2
+Gitweb:     http://git.kernel.org/tip/fb09b78151361f5001ad462e4b242b10845830e2
+Author:     Qiaowei Ren <qiaowei.ren@intel.com>
+AuthorDate: Sun, 12 Jan 2014 17:20:02 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 17 Jan 2014 11:04:09 -0800
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+x86, mpx: Add MPX related opcodes to the x86 opcode map
+
+This patch adds all the MPX instructions to x86 opcode map, so the x86
+instruction decoder can decode MPX instructions.
+
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Link: http://lkml.kernel.org/r/1389518403-7715-4-git-send-email-qiaowei.ren@intel.com
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++++++++++++++++
- 1 files changed, 95 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+ arch/x86/lib/x86-opcode-map.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
-new file mode 100644
-index 0000000..3c436cc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
-@@ -0,0 +1,95 @@
-+ARM Broadcom STB platforms Device Tree Bindings
-+-----------------------------------------------
-+Boards with Broadcom Brahma15 ARM-based BCMxxxx (generally BCM7xxx variants)
-+SoC shall have the following DT organization:
-+
-+Required root node properties:
-+    - compatible: "brcm,bcm<chip_id>", "brcm,brcmstb"
-+
-+example:
-+/ {
-+    #address-cells = <2>;
-+    #size-cells = <2>;
-+    model = "Broadcom STB (bcm7445)";
-+    compatible = "brcm,bcm7445", "brcm,brcmstb";
-+
-+Further, syscon nodes that map platform-specific registers used for general
-+system control is required:
-+
-+    - compatible: "brcm,bcm<chip_id>-sun-top-ctrl", "syscon"
-+    - compatible: "brcm,bcm<chip_id>-hif-cpubiuctrl", "syscon"
-+    - compatible: "brcm,bcm<chip_id>-hif-continuation", "syscon"
-+
-+example:
-+    rdb {
-+        #address-cells = <1>;
-+        #size-cells = <1>;
-+        compatible = "simple-bus";
-+        ranges = <0 0x00 0xf0000000 0x1000000>;
-+
-+        sun_top_ctrl: syscon@404000 {
-+            compatible = "brcm,bcm7445-sun-top-ctrl", "syscon";
-+            reg = <0x404000 0x51c>;
-+        };
-+
-+        hif_cpubiuctrl: syscon@3e2400 {
-+            compatible = "brcm,bcm7445-hif-cpubiuctrl", "syscon";
-+            reg = <0x3e2400 0x5b4>;
-+        };
-+
-+        hif_continuation: syscon@452000 {
-+            compatible = "brcm,bcm7445-hif-continuation", "syscon";
-+            reg = <0x452000 0x100>;
-+        };
-+    };
-+
-+Lastly, nodes that allow for support of SMP initialization and reboot are
-+required:
-+
-+smpboot
-+-------
-+Required properties:
-+
-+    - compatible
-+        The string "brcm,brcmstb-smpboot".
-+
-+    - syscon-cpu
-+        A phandle / integer array property which lets the BSP know the location
-+        of certain CPU power-on registers.
-+
-+        The layout of the property is as follows:
-+            o a phandle to the "hif_cpubiuctrl" syscon node
-+            o offset to the base CPU power zone register
-+            o offset to the base CPU reset register
-+
-+    - syscon-cont
-+        A phandle pointing to the syscon node which describes the CPU boot
-+        continuation registers.
-+            o a phandle to the "hif_continuation" syscon node
-+
-+example:
-+    smpboot {
-+        compatible = "brcm,brcmstb-smpboot";
-+        syscon-cpu = <&hif_cpubiuctrl 0x88 0x178>;
-+        syscon-cont = <&hif_continuation>;
-+    };
-+
-+reboot
-+-------
-+Required properties
-+
-+    - compatible
-+        The string property "brcm,brcmstb-reboot".
-+
-+    - syscon
-+        A phandle / integer array that points to the syscon node which describes
-+        the general system reset registers.
-+            o a phandle to "sun_top_ctrl"
-+            o offset to the "reset source enable" register
-+            o offset to the "software master reset" register
-+
-+example:
-+    reboot {
-+        compatible = "brcm,brcmstb-reboot";
-+        syscon = <&sun_top_ctrl 0x304 0x308>;
-+    };
--- 
-1.7.1
-
+diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
+index 533a85e..1a2be7c 100644
+--- a/arch/x86/lib/x86-opcode-map.txt
++++ b/arch/x86/lib/x86-opcode-map.txt
+@@ -346,8 +346,8 @@ AVXcode: 1
+ 17: vmovhps Mq,Vq (v1) | vmovhpd Mq,Vq (66),(v1)
+ 18: Grp16 (1A)
+ 19:
+-1a:
+-1b:
++1a: BNDCL Ev,Gv | BNDCU Ev,Gv | BNDMOV Gv,Ev | BNDLDX Gv,Ev,Gv
++1b: BNDCN Ev,Gv | BNDMOV Ev,Gv | BNDMK Gv,Ev | BNDSTX Ev,GV,Gv
+ 1c:
+ 1d:
+ 1e:
