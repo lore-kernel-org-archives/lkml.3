@@ -1,166 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaAQPSe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:18:34 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:34954 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaAQPSc convert rfc822-to-8bit (ORCPT
+	id S1752677AbaAQPSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:18:44 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:44760 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752590AbaAQPSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:18:32 -0500
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Tomas Henzl <thenzl@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, "hare@suse.de" <hare@suse.de>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Subject: RE: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-Thread-Topic: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-Thread-Index: AQHPE5bhSo2Q8m9EmU6r3yzisfAyz5qJBvuQ
-Date: Fri, 17 Jan 2014 15:17:23 +0000
-Message-ID: <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net>
-References: <20140116195112.GA9658@beardog.cce.hp.com>
- <52D948A5.1070706@redhat.com>
-In-Reply-To: <52D948A5.1070706@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.193.49.14]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 17 Jan 2014 10:18:37 -0500
+Message-Id: <20140117151834.455697264@linux.com>
+Date: Fri, 17 Jan 2014 09:18:13 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
+        linux-mm@kvack.org
+Subject: [PATCH 01/41] mm: Replace __get_cpu_var uses with this_cpu_ptr
+References: <20140117151812.770437629@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_mm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace places where __get_cpu_var() is used for an address calculation
+with this_cpu_ptr().
 
+Cc: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> -----Original Message-----
-> From: Tomas Henzl [mailto:thenzl@redhat.com]
-> Sent: Friday, January 17, 2014 9:14 AM
-> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
-> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
-> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-> 
-> On 01/16/2014 08:51 PM, Mike Miller wrote:
-> > From: Mike Miller <mike.miller@hp.com>
-> >
-> > This patch has every ID we have in our svn repository. Some
-> > controllers were cancelled, others added, now the cancelled ones are
-> > back. Apparently the debate rages on about which controllers are
-> > cancelled, which are not, whatever. Please accept this patch. It is
-> > dependent upon the patches I sent yesterday.
-> > This patch made/tested against kernel-3.13.0-rc8
-> >
-> > Signed-off-by: Mike Miller <mike.miller@hp.com>
-> > ---
-> >  drivers/scsi/hpsa.c |   12 ++++++++++++
-> >  1 files changed, 12 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
-> > 348b207..3affec5 100644
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -100,6 +100,7 @@ static const struct pci_device_id
-> hpsa_pci_device_id[] = {
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> 0x3354},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> 0x3355},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> 0x3356},
-> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1920},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1921},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1922},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1923},
-> > @@ -108,15 +109,19 @@ static const struct pci_device_id
-> hpsa_pci_device_id[] = {
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1926},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1928},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x1929},
-> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> 0x192A},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21BD},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21BE},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21BF},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C0},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C2},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C3},
-> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C4},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C5},
-> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C6},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C7},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C8},
-> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21C9},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21CA},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21CB},
-> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> 0x21CC},
-> > @@ -149,22 +154,29 @@ static struct board_type products[] = {
-> >  	{0x3354103C, "Smart Array P420i", &SA5_access},
-> >  	{0x3355103C, "Smart Array P220i", &SA5_access},
-> >  	{0x3356103C, "Smart Array P721m", &SA5_access},
-> > +	{0x1920103C, "Smart Array P430i", &SA5_access},
-> >  	{0x1921103C, "Smart Array P830i", &SA5_access},
-> >  	{0x1922103C, "Smart Array P430", &SA5_access},
-> >  	{0x1923103C, "Smart Array P431", &SA5_access},
-> >  	{0x1924103C, "Smart Array P830", &SA5_access},
-> > +	{0x1925103C, "Smart Array P831", &SA5_access},
-> >  	{0x1926103C, "Smart Array P731m", &SA5_access},
-> >  	{0x1928103C, "Smart Array P230i", &SA5_access},
-> >  	{0x1929103C, "Smart Array P530", &SA5_access},
-> > +	{0x192A103C, "Smart Array P531", &SA5_access},
-> >  	{0x21BD103C, "Smart Array", &SA5_access},
-> >  	{0x21BE103C, "Smart Array", &SA5_access},
-> >  	{0x21BF103C, "Smart Array", &SA5_access},
-> >  	{0x21C0103C, "Smart Array", &SA5_access},
-> > +	{0x21C1103C, "Smart Array", &SA5_access},
-> 
-> I think that both tables should be in sync - but there is no 0x21c1 in
-> hpsa_pci_device_id (and the 0x1925), could you clarify that?
-> 
-> Thanks, Tomas
-
-Crap. It seems like these menial tasks get the better of me. I'll correct and resubmit.
-
--- mikem
-
-> 
-> >  	{0x21C2103C, "Smart Array", &SA5_access},
-> >  	{0x21C3103C, "Smart Array", &SA5_access},
-> > +	{0x21C4103C, "Smart Array", &SA5_access},
-> >  	{0x21C5103C, "Smart Array", &SA5_access},
-> > +	{0x21C6103C, "Smart Array", &SA5_access},
-> >  	{0x21C7103C, "Smart Array", &SA5_access},
-> >  	{0x21C8103C, "Smart Array", &SA5_access},
-> > +	{0x21C9103C, "Smart Array", &SA5_access},
-> >  	{0x21CA103C, "Smart Array", &SA5_access},
-> >  	{0x21CB103C, "Smart Array", &SA5_access},
-> >  	{0x21CC103C, "Smart Array", &SA5_access},
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
-> > in the body of a message to majordomo@vger.kernel.org More
-> majordomo
-> > info at  http://vger.kernel.org/majordomo-info.html
+Index: linux/lib/radix-tree.c
+===================================================================
+--- linux.orig/lib/radix-tree.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/lib/radix-tree.c	2013-12-18 21:50:02.530389966 -0600
+@@ -221,7 +221,7 @@
+ 		 * succeed in getting a node here (and never reach
+ 		 * kmem_cache_alloc)
+ 		 */
+-		rtp = &__get_cpu_var(radix_tree_preloads);
++		rtp = this_cpu_ptr(&radix_tree_preloads);
+ 		if (rtp->nr) {
+ 			ret = rtp->nodes[rtp->nr - 1];
+ 			rtp->nodes[rtp->nr - 1] = NULL;
+@@ -277,14 +277,14 @@
+ 	int ret = -ENOMEM;
+ 
+ 	preempt_disable();
+-	rtp = &__get_cpu_var(radix_tree_preloads);
++	rtp = this_cpu_ptr(&radix_tree_preloads);
+ 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
+ 		preempt_enable();
+ 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
+ 		if (node == NULL)
+ 			goto out;
+ 		preempt_disable();
+-		rtp = &__get_cpu_var(radix_tree_preloads);
++		rtp = this_cpu_ptr(&radix_tree_preloads);
+ 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
+ 			rtp->nodes[rtp->nr++] = node;
+ 		else
+Index: linux/mm/memcontrol.c
+===================================================================
+--- linux.orig/mm/memcontrol.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/memcontrol.c	2013-12-18 21:50:02.534389891 -0600
+@@ -2432,7 +2432,7 @@
+  */
+ static void drain_local_stock(struct work_struct *dummy)
+ {
+-	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
++	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
+ 	drain_stock(stock);
+ 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
+ }
+Index: linux/mm/memory-failure.c
+===================================================================
+--- linux.orig/mm/memory-failure.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/memory-failure.c	2013-12-18 21:50:02.534389891 -0600
+@@ -1286,7 +1286,7 @@
+ 	unsigned long proc_flags;
+ 	int gotten;
+ 
+-	mf_cpu = &__get_cpu_var(memory_failure_cpu);
++	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
+ 	for (;;) {
+ 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
+ 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
+Index: linux/mm/page-writeback.c
+===================================================================
+--- linux.orig/mm/page-writeback.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/page-writeback.c	2013-12-18 21:50:02.538389816 -0600
+@@ -1628,7 +1628,7 @@
+ 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
+ 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
+ 	 */
+-	p =  &__get_cpu_var(bdp_ratelimits);
++	p =  this_cpu_ptr(&bdp_ratelimits);
+ 	if (unlikely(current->nr_dirtied >= ratelimit))
+ 		*p = 0;
+ 	else if (unlikely(*p >= ratelimit_pages)) {
+@@ -1640,7 +1640,7 @@
+ 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
+ 	 * the dirty throttling and livelock other long-run dirtiers.
+ 	 */
+-	p = &__get_cpu_var(dirty_throttle_leaks);
++	p = this_cpu_ptr(&dirty_throttle_leaks);
+ 	if (*p > 0 && current->nr_dirtied < ratelimit) {
+ 		unsigned long nr_pages_dirtied;
+ 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
+Index: linux/mm/swap.c
+===================================================================
+--- linux.orig/mm/swap.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/swap.c	2013-12-18 21:50:02.538389816 -0600
+@@ -409,7 +409,7 @@
+ 
+ 		page_cache_get(page);
+ 		local_irq_save(flags);
+-		pvec = &__get_cpu_var(lru_rotate_pvecs);
++		pvec = this_cpu_ptr(&lru_rotate_pvecs);
+ 		if (!pagevec_add(pvec, page))
+ 			pagevec_move_tail(pvec);
+ 		local_irq_restore(flags);
+Index: linux/mm/vmalloc.c
+===================================================================
+--- linux.orig/mm/vmalloc.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/vmalloc.c	2013-12-18 21:50:02.538389816 -0600
+@@ -1488,7 +1488,7 @@
+ 	if (!addr)
+ 		return;
+ 	if (unlikely(in_interrupt())) {
+-		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
++		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
+ 		if (llist_add((struct llist_node *)addr, &p->list))
+ 			schedule_work(&p->wq);
+ 	} else
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/slub.c	2013-12-18 21:50:02.542389740 -0600
+@@ -2176,7 +2176,7 @@
+ 
+ 	page = new_slab(s, flags, node);
+ 	if (page) {
+-		c = __this_cpu_ptr(s->cpu_slab);
++		c = raw_cpu_ptr(s->cpu_slab);
+ 		if (c->page)
+ 			flush_slab(s, c);
+ 
+@@ -2396,7 +2396,7 @@
+ 	 * and the retrieval of the tid.
+ 	 */
+ 	preempt_disable();
+-	c = __this_cpu_ptr(s->cpu_slab);
++	c = this_cpu_ptr(s->cpu_slab);
+ 
+ 	/*
+ 	 * The transaction ids are globally unique per cpu and per operation on
+@@ -2651,7 +2651,7 @@
+ 	 * during the cmpxchg then the free will succedd.
+ 	 */
+ 	preempt_disable();
+-	c = __this_cpu_ptr(s->cpu_slab);
++	c = this_cpu_ptr(s->cpu_slab);
+ 
+ 	tid = c->tid;
+ 	preempt_enable();
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2013-12-18 21:50:02.550389590 -0600
++++ linux/mm/vmstat.c	2013-12-18 21:50:13.586182025 -0600
+@@ -489,7 +489,7 @@
+ 			continue;
+ 
+ 		if (__this_cpu_read(p->pcp.count))
+-			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
++			drain_zone_pages(zone, this_cpu_ptr(&p->pcp));
+ #endif
+ 	}
+ 	fold_diff(global_diff);
+@@ -1218,7 +1218,7 @@
+ static void vmstat_update(struct work_struct *w)
+ {
+ 	refresh_cpu_vm_stats();
+-	schedule_delayed_work(&__get_cpu_var(vmstat_work),
++	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
+ 		round_jiffies_relative(sysctl_stat_interval));
+ }
+ 
 
