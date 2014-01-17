@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaAQHbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 02:31:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22014 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaAQHbg (ORCPT
+	id S1752023AbaAQHhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 02:37:36 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39671 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaAQHhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 02:31:36 -0500
-Date: Fri, 17 Jan 2014 10:31:12 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, apw@canonical.com,
-        gregkh@linuxfoundation.org, jasowang@redhat.com,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Message-ID: <20140117073112.GP7444@mwanda>
-References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
- <20140116094200.GA16328@aepfle.de>
+	Fri, 17 Jan 2014 02:37:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140116094200.GA16328@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 17 Jan 2014 13:07:13 +0530
+Message-ID: <CA+V-a8vcvTRpP-cE6SKd1KgWgzSbOXvSNW+5Jh8wqOfr1za4SQ@mail.gmail.com>
+Subject: Kconfig errors
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 10:42:01AM +0100, Olaf Hering wrote:
-> On Tue, Jan 14, K. Y. Srinivasan wrote:
-> 
-> > +enum hv_fcopy_op {
-> > +	START_FILE_COPY = 0,
-> > +	WRITE_TO_FILE,
-> > +	COMPLETE_FCOPY,
-> > +	CANCEL_FCOPY,
-> > +};
-> > +
-> > +struct hv_fcopy_hdr {
-> > +	enum hv_fcopy_op operation;
-> > +	uuid_le service_id0; /* currently unused */
-> > +	uuid_le service_id1; /* currently unused */
-> > +} __attribute__((packed));
-> 
-> Is enum a fixed size?
+Hi,
 
-No, it's not.  The compiler has a lot of latitude in choosing the size
-for enums.
+On Linux-next branch I see following errors for davinci_all_defconfig
+& da8xx_omapl_defconfig configs,
 
-regards,
-dan carpenter
+arch/arm/Kconfig:1966:error: recursive dependency detected!
+arch/arm/Kconfig:1966:    symbol ZBOOT_ROM depends on AUTO_ZRELADDR
+arch/arm/Kconfig:2154:    symbol AUTO_ZRELADDR is selected by ZBOOT_ROM
+#
+# configuration written to .config
+#
 
+Regards,
+--Prabhakar Lad
