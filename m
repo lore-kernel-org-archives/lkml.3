@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaAQT3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:29:36 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53557 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaAQT3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:29:34 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-zigbee-devel@lists.sourceforge.net,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        netdev@vger.kernel.org,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] Bluetooth: remove direct compilation of 6lowpan_iphc.c
-Date: Fri, 17 Jan 2014 12:29:24 -0700
-Message-Id: <1389986964-5177-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	id S1753348AbaAQTlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:41:03 -0500
+Received: from hofr.at ([212.69.189.236]:45827 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592AbaAQTlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 14:41:00 -0500
+Date: Fri, 17 Jan 2014 20:40:58 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users@vger.kernel.org,
+        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
+        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
+Message-ID: <20140117194058.GA20157@opentech.at>
+References: <20131229171154.GA23586@opentech.at> <20140117144729.GB5785@linutronix.de> <20140117145955.GA5637@opentech.at> <52D94891.80109@linutronix.de> <20140117153323.GA23566@opentech.at> <20140117113218.7392363d@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117113218.7392363d@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Fri, 17 Jan 2014, Steven Rostedt wrote:
 
-It's now built as a separate utility module, and enabling BT selects
-that module in Kconfig. This fixes:
+> On Fri, 17 Jan 2014 16:33:23 +0100
+> Nicholas Mc Guire <der.herr@hofr.at> wrote:
+> 
+> > On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
+> > 
+> > > On 01/17/2014 03:59 PM, Nicholas Mc Guire wrote:
+> > > > On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
+> > > > 
+> > > >> This is what I am going to apply. It also dropped the get_cpu_light()
+> > > >> call which was added in a patch to remove the get_cpu_var() and is now
+> > > >> no longer required since we have the get_locked_var() thingy now.
+> > > >>
+> > > > 
+> > > > I do not think you can drop that - what is preventing migration now ?
+> > > 
+> > > Nothing but I do not see the need for it.
+> > > 
+> > > > 
+> > > > #define get_locked_var(lvar, var)                                       \
+> > > >         (*({                                                            \
+> > > >                 local_lock(lvar);                                       \
+> > > >                 &__get_cpu_var(var);                                    \
+> > > >         }))
+> > > > 
+> > q> > No migrate_disable here - so how is this protected against migration ?
+> 
+> I was just about to reply to this, that local_lock() grabs a spinlock
+> which does do a migrate disable. But you also noticed that the
+> get_local_var() does a migrate disable too. We now have double the
+> protection, so we are safe as Sebastion has done it.
+>
+...well that motivates a further migration cleanup patch replacing
+the spin_*lock* by spin_*lock*_local variants to drop that recursive call
+and while checking call paths - do a little API cleanup for softirq_lock
 
-net/ieee802154/built-in.o:(___ksymtab_gpl+lowpan_process_data+0x0): multiple definition of `__ksymtab_lowpan_process_data'
-net/bluetooth/built-in.o:(___ksymtab_gpl+lowpan_process_data+0x0): first defined here
-net/ieee802154/built-in.o:(___ksymtab_gpl+lowpan_header_compress+0x0): multiple definition of `__ksymtab_lowpan_header_compress'
-net/bluetooth/built-in.o:(___ksymtab_gpl+lowpan_header_compress+0x0): first defined here
-net/ieee802154/built-in.o: In function `lowpan_header_compress':
-net/ieee802154/6lowpan_iphc.c:606: multiple definition of `lowpan_header_compress'
-net/bluetooth/built-in.o:/home/swarren/shared/git_wa/kernel/kernel.git/net/bluetooth/../ieee802154/6lowpan_iphc.c:606: first defined here
-net/ieee802154/built-in.o: In function `lowpan_process_data':
-net/ieee802154/6lowpan_iphc.c:344: multiple definition of `lowpan_process_data'
-net/bluetooth/built-in.o:/home/swarren/shared/git_wa/kernel/kernel.git/net/bluetooth/../ieee802154/6lowpan_iphc.c:344: first defined here
-make[1]: *** [net/built-in.o] Error 1
-
-(this change probably simply wasn't "git add"d to a53d34c3465b)
-
-Fixes: a53d34c3465b ("net: move 6lowpan compression code to separate module")
-Fixes: 18722c247023 ("Bluetooth: Enable 6LoWPAN support for BT LE devices")
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- net/bluetooth/Makefile | 4 ----
- 1 file changed, 4 deletions(-)
-
-diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
-index cc6827e2ce68..80cb215826e8 100644
---- a/net/bluetooth/Makefile
-+++ b/net/bluetooth/Makefile
-@@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
- 	hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
- 	a2mp.o amp.o 6lowpan.o
- 
--ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
--  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
--endif
--
- subdir-ccflags-y += -D__CHECK_ENDIAN__
--- 
-1.8.1.5
-
+thx!
+hofrat
