@@ -1,82 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaAQQmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:42:54 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:52296 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751248AbaAQQmv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:42:51 -0500
-Subject: Re: [PATCH] of: fix of_update_property()
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com>
-Date: Fri, 17 Jan 2014 18:42:47 +0200
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <07586E1B-FDB0-4D91-8467-15E9435FD9CD@antoniou-consulting.com>
-References: <1389933996-19306-1-git-send-email-Li.Xiubo@freescale.com> <CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1752710AbaAQQnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:43:20 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:45985 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679AbaAQQnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 11:43:18 -0500
+Message-ID: <52D95DA2.7000509@koalo.de>
+Date: Fri, 17 Jan 2014 17:43:14 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Daniel Matuschek <daniel@matuschek.net>, alsa-devel@alsa-project.org
+CC: Dimitris.Papastamos@wolfsonmicro.com, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
+ PLL generation
+References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+In-Reply-To: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+I have tested your patch.
+There is a (non blocking) error message regarding .idle_bias_off, but I
+assume that should not have something to do with your patch. Can we just
+set idle_bias_off to false here?
 
+Otherwise, it looks good to me.
 
-On Jan 17, 2014, at 4:49 PM, Rob Herring wrote:
-
-> On Thu, Jan 16, 2014 at 10:46 PM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
->> The of_update_property() is intent to update a property in a node
+On 01/14/2014 08:34 PM, Daniel Matuschek wrote:
+> WM8804 can run with PLL frequencies of 256xfs and 128xfs for
+> most sample rates. At 192kHz only 128xfs is supported. The
+> existing driver selects 128xfs automatically for some lower
+> samples rates. By using an additional mclk_div divider, it
+> is now possible to control the behaviour. This allows using
+> 256xfs PLL frequency on all sample rates up to 96kHz. It
+> should allow lower jitter and better signal quality. The
+> behavior has to be controlled by the sound card driver,
+> because some sample frequency share the same setting. e.g.
+> 192kHz and 96kHz use 24.576MHz master clock. The only
+> difference is the MCLK divider.
 > 
-[ snip ]
-
->>                return of_add_property(np, newprop);
+> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
 > 
-> Isn't there also a race that if you do 2 updates for a non-existent
-> property and both threads try to add the property, the first one will
-> succeed and the 2nd will fail. The 2nd one needs to retry as well.
+> ---
+>  sound/soc/codecs/wm8804.c |   17 ++++++++++++++---
+>  sound/soc/codecs/wm8804.h |    4 ++++
+>  2 files changed, 18 insertions(+), 3 deletions(-)
 > 
-> Also, couldn't the node itself be removed while trying to do the update?
+> diff --git a/sound/soc/codecs/wm8804.c b/sound/soc/codecs/wm8804.c
+> index 1704b1e..4619bf8 100644
+> --- a/sound/soc/codecs/wm8804.c
+> +++ b/sound/soc/codecs/wm8804.c
+> @@ -63,6 +63,7 @@ struct wm8804_priv {
+>      struct regmap *regmap;
+>      struct regulator_bulk_data supplies[WM8804_NUM_SUPPLIES];
+>      struct notifier_block disable_nb[WM8804_NUM_SUPPLIES];
+> +    int mclk_div;
+>  };
 > 
-> There seem to be multiple problems with this code, but doing multiple
-> simultaneous, conflicting updates seems like an unlikely case.
+>  static int txsrc_get(struct snd_kcontrol *kcontrol,
+> @@ -318,7 +319,7 @@ static struct {
 > 
-
-There are multiple problems with this function.
-
-First of all, the firing of the notifier at the beginning with OF_RECONFIG_UPDATE_PROPERTY
-even though we have no idea if the property is found.
-
-The locking is no good; the lock should be taken before the search by switching to using
-__of_find_property. Threading is just not handled well at all at the moment. 
-Retrying is just bogus.
-
-The biggest problem is the semantics; IMHO we should just remove the option to create
-a property if it doesn't exist. I don't think there are many callers that use update property
-expecting to be created if it doesn't exist.
-
-> Rob
+>  #define FIXED_PLL_SIZE ((1ULL << 22) * 10)
+>  static int pll_factors(struct pll_div *pll_div, unsigned int target,
+> -               unsigned int source)
+> +               unsigned int source, unsigned int mclk_div)
+>  {
+>      u64 Kpart;
+>      unsigned long int K, Ndiv, Nmod, tmp;
+> @@ -330,7 +331,8 @@ static int pll_factors(struct pll_div *pll_div,
+> unsigned int target,
+>       */
+>      for (i = 0; i < ARRAY_SIZE(post_table); i++) {
+>          tmp = target * post_table[i].div;
+> -        if (tmp >= 90000000 && tmp <= 100000000) {
+> +        if ((tmp >= 90000000 && tmp <= 100000000) &&
+> +            (mclk_div == post_table[i].mclkdiv)) {
+>              pll_div->freqmode = post_table[i].freqmode;
+>              pll_div->mclkdiv = post_table[i].mclkdiv;
+>              target *= post_table[i].div;
+> @@ -387,8 +389,12 @@ static int wm8804_set_pll(struct snd_soc_dai *dai,
+> int pll_id,
+>      } else {
+>          int ret;
+>          struct pll_div pll_div;
+> +        struct wm8804_priv *wm8804;
 > 
->> @@ -1593,7 +1594,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
->>        raw_spin_unlock_irqrestore(&devtree_lock, flags);
->> 
->>        if (!found)
->> -               return -ENODEV;
->> +               goto retry;
->> 
->> #ifdef CONFIG_PROC_DEVICETREE
->>        /* try to add to proc as well if it was initialized */
->> --
->> 1.8.4
->> 
->> 
-
-Regards
-
--- Pantelis
+> -        ret = pll_factors(&pll_div, freq_out, freq_in);
+> +        wm8804 = snd_soc_codec_get_drvdata(codec);
+> +
+> +        ret = pll_factors(&pll_div, freq_out, freq_in,
+> +            wm8804->mclk_div);
+>          if (ret)
+>              return ret;
+> 
+> @@ -452,6 +458,7 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
+>                   int div_id, int div)
+>  {
+>      struct snd_soc_codec *codec;
+> +    struct wm8804_priv *wm8804;
+> 
+>      codec = dai->codec;
+>      switch (div_id) {
+> @@ -459,6 +466,10 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
+>          snd_soc_update_bits(codec, WM8804_PLL5, 0x30,
+>                      (div & 0x3) << 4);
+>          break;
+> +    case WM8804_MCLK_DIV:
+> +        wm8804 = snd_soc_codec_get_drvdata(codec);
+> +        wm8804->mclk_div = div;
+> +        break;
+>      default:
+>          dev_err(dai->dev, "Unknown clock divider: %d\n", div_id);
+>          return -EINVAL;
+> diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
+> index 8ec14f5..e72d4f4 100644
+> --- a/sound/soc/codecs/wm8804.h
+> +++ b/sound/soc/codecs/wm8804.h
+> @@ -57,5 +57,9 @@
+>  #define WM8804_CLKOUT_SRC_OSCCLK        4
+> 
+>  #define WM8804_CLKOUT_DIV            1
+> +#define WM8804_MCLK_DIV                2
+> +
+> +#define WM8804_MCLKDIV_256FS            0
+> +#define WM8804_MCLKDIV_128FS            1
+> 
+>  #endif  /* _WM8804_H */
