@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaAQTUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:20:08 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45372 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592AbaAQTUA (ORCPT
+	id S1753499AbaAQTUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:20:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43897 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338AbaAQTUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:20:00 -0500
-From: Marc Carino <marc.ceeeee@gmail.com>
-To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v4 4/8] ARM: do CPU-specific init for Broadcom Brahma15 cores
-Date: Fri, 17 Jan 2014 11:19:23 -0800
-Message-Id: <1389986367-4010-5-git-send-email-marc.ceeeee@gmail.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
+	Fri, 17 Jan 2014 14:20:33 -0500
+Message-ID: <52D9827B.4060401@infradead.org>
+Date: Fri, 17 Jan 2014 11:20:27 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcel Holtmann <marcel@holtmann.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
+References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>	<52D578A7.8020000@infradead.org> <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com> <52D980ED.6000603@wwwdotorg.org>
+In-Reply-To: <52D980ED.6000603@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perform any CPU-specific initialization required on the
-Broadcom Brahma-15 core.
+On 01/17/2014 11:13 AM, Stephen Warren wrote:
+> On 01/14/2014 03:54 PM, Dmitry Eremin-Solenikov wrote:
+>> Hello,
+>>
+>>
+>> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>>
+>>> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> This tree fails (more than usual) the powerpc allyesconfig build.
+>>>>
+>>>> Changes since 20140113:
+>>>>
+>>>
+>>>
+>>> on i386:
+>>>
+>>> net/built-in.o: In function `header_create':
+>>> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
+>>> net/built-in.o: In function `bt_6lowpan_recv':
+>>> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+>>
+>> Ah, nice Makefile hack there.
+>> David, Marcel, could you please consider the attached patch.
+> 
+> I think you forgot to "git add net/bluetooth/Makefile" into that patch;
+> don't you need the following too (I certainly do, to build next-20140117)
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- arch/arm/mm/proc-v7.S |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Yes, that fixes the problems.
 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index bd17819..98ea423 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -193,6 +193,7 @@ __v7_cr7mp_setup:
- 	b	1f
- __v7_ca7mp_setup:
- __v7_ca15mp_setup:
-+__v7_b15mp_setup:
- 	mov	r10, #0
- 1:
- #ifdef CONFIG_SMP
-@@ -494,6 +495,16 @@ __v7_ca15mp_proc_info:
- 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
- 
- 	/*
-+	 * Broadcom Corporation Brahma-B15 processor.
-+	 */
-+	.type	__v7_b15mp_proc_info, #object
-+__v7_b15mp_proc_info:
-+	.long	0x420f00f0
-+	.long	0xff0ffff0
-+	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
-+	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
-+
-+	/*
- 	 * Qualcomm Inc. Krait processors.
- 	 */
- 	.type	__krait_proc_info, #object
+>> diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
+>> index cc6827e2ce68..80cb215826e8 100644
+>> --- a/net/bluetooth/Makefile
+>> +++ b/net/bluetooth/Makefile
+>> @@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
+>>  	hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
+>>  	a2mp.o amp.o 6lowpan.o
+>>  
+>> -ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
+>> -  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
+>> -endif
+>> -
+>>  subdir-ccflags-y += -D__CHECK_ENDIAN__
+> 
+> Should I send this as a separate followup patch?
+> --
+
+I think so.  It was not part of the posted patch.
+
+Thanks.
+
 -- 
-1.7.1
-
+~Randy
