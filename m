@@ -1,435 +1,1229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaAQLvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 06:51:05 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:48457 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaAQLvA (ORCPT
+	id S1752120AbaAQL7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 06:59:06 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:38971 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaAQL7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 06:51:00 -0500
+	Fri, 17 Jan 2014 06:59:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D00C33.4060305@samsung.com>
-References: <1389337208-11325-1-git-send-email-yuvaraj.cd@samsung.com>
-	<1389337208-11325-2-git-send-email-yuvaraj.cd@samsung.com>
-	<52D00C33.4060305@samsung.com>
-Date: Fri, 17 Jan 2014 17:20:58 +0530
-Message-ID: <CAKuRcOKEvvq7s8EwKq97KL2RY1bX_pVtQvtncoi6VsopdpXafg@mail.gmail.com>
-Subject: Re: [PATCH V6 1/2] PHY: Exynos: Add Exynos5250 SATA PHY driver
-From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Mark Rutland <mark.rutland@arm.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        sunil joshi <joshi@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        linux-ide@vger.kernel.org, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>
+In-Reply-To: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
+References: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
+Date: Fri, 17 Jan 2014 12:59:00 +0100
+Message-ID: <CANq1E4Q7eFfZOqZM3SKkUEdwnJq088F=W1y_xsCgdis3r8AxEA@mail.gmail.com>
+Subject: Re: [PATCH v3] HID: New hid-cp2112 driver
+From: David Herrmann <dh.herrmann@gmail.com>
+To: David Barksdale <dbarksdale@uplogix.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        =?ISO-8859-1?Q?Jakub_K=E1kona?= <kjakub@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Sorry for the late reply.
+Hi
 
-On Fri, Jan 10, 2014 at 8:35 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Yuvaraj,
+This patch is in a much better state than before! I have a bunch of
+comments below, mostly nitpicks and coding-style issues. If you fix
+the coding style and minor issues below, I think we can merge it.
+
+Thanks
+David
+
+On Thu, Jan 16, 2014 at 10:52 PM, David Barksdale
+<dbarksdale@uplogix.com> wrote:
+> This patch adds support for the Silicon Labs CP2112
+> "Single-Chip HID USB to SMBus Master Bridge."
 >
-> In general this version looks pretty good, but I have some questions inline.
-Please find my comments inline.
+> This is a HID device driver which registers as an i2c adapter
+> and gpiochip to expose these functions of the CP2112. The
+> customizable USB descriptor fields are exposed as sysfs attributes.
+> The SMBus byte-read, byte-data-read/write, and word-data-read
+> transfer modes have been tested by talking to an i2c sensor.
+> The GPIO functions and USB descriptor field programming have also
+> been tested.
 >
-> On 10.01.2014 08:00, Yuvaraj Kumar C D wrote:
-> [snip]
+> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
 >
->> diff --git a/drivers/phy/phy-exynos5250-sata-i2c.c
->> b/drivers/phy/phy-exynos5250-sata-i2c.c
->> new file mode 100644
->> index 0000000..206e337
->> --- /dev/null
->> +++ b/drivers/phy/phy-exynos5250-sata-i2c.c
->> @@ -0,0 +1,40 @@
->> +/*
->> + * Copyright (C) 2013 Samsung Electronics Co.Ltd
->> + * Author:
->> + *     Yuvaraj C D <yuvaraj.cd@samsung.com>
->> + *
->> + * This program is free software; you can redistribute  it and/or modify
->> it
->> + * under  the terms of  the GNU General  Public License as published by
->> the
->> + * Free Software Foundation;  either version 2 of the  License, or (at
->> your
->> + * option) any later version.
->> + *
->> + */
->> +
->> +#include <linux/i2c.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +
->> +static int exynos_sata_i2c_probe(struct i2c_client *client,
->> +               const struct i2c_device_id *i2c_id)
->> +{
->> +       return 0;
->> +}
->> +
->> +static const struct i2c_device_id sataphy_i2c_device_match[] = {
->> +       { "exynos-sataphy-i2c", 0 },
->> +};
->> +
->> +static struct i2c_driver sataphy_i2c_driver = {
->> +       .probe          = exynos_sata_i2c_probe,
->> +       .id_table       = sataphy_i2c_device_match,
->> +       .driver   = {
->> +               .name = "exynos-sataphy-i2c",
->> +               .owner = THIS_MODULE,
->> +       },
->> +};
->> +
->> +static int __init exynos5250_phy_i2c_init(void)
->> +{
->> +       return i2c_add_driver(&sataphy_i2c_driver);
->> +}
->> +module_init(exynos5250_phy_i2c_init);
+> --
+> Changes since v1:
+> * Prefix symbols to avoid name collision.
+> * Define CP2112 device ID.
+> * Missing break.
+> * Use module_hid_driver().
+> * Fix cp2122 typo.
+> * Fix probe and remove functions.
+> * Remove #if in hid_have_special_driver[].
+> * Improve symbolic constants for timeouts.
+> * Wrap DMA functions to kmalloc buffers.
+> * Added a short description of the device.
+> * Add request formatting functions for readability.
+> * Whitespace changes.
+> * Fix endianess of word transfers.
 >
+> Changes since v2:
+> * Sysfs attrs for accessing PROM values.
+> * GPIO support.
+> * Keep HID device open after probe.
+> * More details in Kconfig help.
+> * Links to documentation.
 >
-> Hmm, is this driver even necessary now?
-Yes.It will not necessary now with of_find_i2c_device_by_node.I will
-remove phy-exynos5250-sata-i2c.c
+> ---
+>  drivers/hid/Kconfig      |   9 +
+>  drivers/hid/Makefile     |   1 +
+>  drivers/hid/hid-core.c   |   1 +
+>  drivers/hid/hid-cp2112.c | 944 +++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/hid/hid-ids.h    |   1 +
+>  5 files changed, 956 insertions(+)
 >
-> Wolfram, would it be possible to use an i2c_client without a driver bound to
-> it?
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 34e2d39..246a233 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -175,6 +175,15 @@ config HID_PRODIKEYS
+>           multimedia keyboard, but will lack support for the musical keyboard
+>           and some additional multimedia keys.
 >
+> +config HID_CP2112
+> +       tristate "Silicon Labs CP2112 HID USB-to-SMBus Bridge support"
+> +       depends on USB_HID
+> +       ---help---
+> +       Support for Silicon Labs CP2112 HID USB to SMBus Master Bridge.
+> +       This is a HID device driver which registers as an i2c adapter
+> +       and gpiochip to expose these functions of the CP2112. The
+> +       customizable USB descriptor fields are exposed as sysfs attributes.
+> +
+>  config HID_CYPRESS
+>         tristate "Cypress mouse and barcode readers" if EXPERT
+>         depends on HID
+> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+> index 30e4431..fc712dd 100644
+> --- a/drivers/hid/Makefile
+> +++ b/drivers/hid/Makefile
+> @@ -41,6 +41,7 @@ obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
+>  obj-$(CONFIG_HID_BELKIN)       += hid-belkin.o
+>  obj-$(CONFIG_HID_CHERRY)       += hid-cherry.o
+>  obj-$(CONFIG_HID_CHICONY)      += hid-chicony.o
+> +obj-$(CONFIG_HID_CP2112)       += hid-cp2112.o
+>  obj-$(CONFIG_HID_CYPRESS)      += hid-cypress.o
+>  obj-$(CONFIG_HID_DRAGONRISE)   += hid-dr.o
+>  obj-$(CONFIG_HID_EMS_FF)       += hid-emsff.o
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 253fe23..1a53d68 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1692,6 +1692,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_CYGNAL, USB_DEVICE_ID_CYGNAL_CP2112) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_1) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3) },
+> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+> new file mode 100644
+> index 0000000..d6bf4e7
+> --- /dev/null
+> +++ b/drivers/hid/hid-cp2112.c
+> @@ -0,0 +1,944 @@
+> +/*
+> +  hid-cp2112.c - Silicon Labs HID USB to SMBus master bridge
+> +  Copyright (c) 2013,2014 Uplogix, Inc.
+> +  David Barksdale <dbarksdale@uplogix.com>
+> +
+> +  This program is free software; you can redistribute it and/or modify
+> +  it under the terms of the GNU General Public License as published by
+> +  the Free Software Foundation; either version 2 of the License, or
+> +  (at your option) any later version.
+> +
+> +  This program is distributed in the hope that it will be useful,
+> +  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +  GNU General Public License for more details.
+> +
+> +  You should have received a copy of the GNU General Public License
+> +  along with this program; if not, write to the Free Software
+> +  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+We usually skip the FSF address as it changes all the time.. See other
+hid-drivers for a cut-down license-header. But of-course, as
+copyright-holder you're free to keep this one.
+And btw., kernel is GPL-2 only, so it's usually not useful to change
+your license to GPL-2+and-later as you depend on GPL2-only code. But
+yeah, just nitpicks..
+
+> + */
+> +
+> +/*
+> +  The Silicon Labs CP2112 chip is a USB HID device which provides an
+> +  SMBus controller for talking to slave devices and 8 GPIO pins. The
+> +  host communicates with the CP2112 via raw HID reports.
+> +
+> +  Data Sheet:
+> +    http://www.silabs.com/Support%20Documents/TechnicalDocs/CP2112.pdf
+> +  Programming Interface Specification:
+> +    http://www.silabs.com/Support%20Documents/TechnicalDocs/AN495.pdf
+> + */
+
+For multi-line comments we usually prefix each line with a " * ".
+
+> +
+> +#include <linux/gpio.h>
+> +#include <linux/hid.h>
+> +#include <linux/i2c.h>
+> +#include <linux/module.h>
+> +#include <linux/nls.h>
+> +#include "hid-ids.h"
+> +
+> +enum {
+> +       CP2112_GPIO_CONFIG = 0x02,
+> +       CP2112_GPIO_GET = 0x03,
+> +       CP2112_GPIO_SET = 0x04,
+> +       CP2112_GET_VERSION_INFO = 0x05,
+> +       CP2112_SMBUS_CONFIG = 0x06,
+> +       CP2112_DATA_READ_REQUEST = 0x10,
+> +       CP2112_DATA_WRITE_READ_REQUEST = 0x11,
+> +       CP2112_DATA_READ_FORCE_SEND = 0x12,
+> +       CP2112_DATA_READ_RESPONSE = 0x13,
+> +       CP2112_DATA_WRITE_REQUEST = 0x14,
+> +       CP2112_TRANSFER_STATUS_REQUEST = 0x15,
+> +       CP2112_TRANSFER_STATUS_RESPONSE = 0x16,
+> +       CP2112_CANCEL_TRANSFER = 0x17,
+> +       CP2112_LOCK_BYTE = 0x20,
+> +       CP2112_USB_CONFIG = 0x21,
+> +       CP2112_MANUFACTURER_STRING = 0x22,
+> +       CP2112_PRODUCT_STRING = 0x23,
+> +       CP2112_SERIAL_STRING = 0x24,
+> +};
+> +
+> +enum {
+> +       STATUS0_IDLE = 0x00,
+> +       STATUS0_BUSY = 0x01,
+> +       STATUS0_COMPLETE = 0x02,
+> +       STATUS0_ERROR = 0x03,
+> +};
+> +
+> +enum {
+> +       STATUS1_TIMEOUT_NACK = 0x00,
+> +       STATUS1_TIMEOUT_BUS = 0x01,
+> +       STATUS1_ARBITRATION_LOST = 0x02,
+> +       STATUS1_READ_INCOMPLETE = 0x03,
+> +       STATUS1_WRITE_INCOMPLETE = 0x04,
+> +       STATUS1_SUCCESS = 0x05,
+> +};
+
+Could you try putting tabs between the NAME and the "=" so all these
+are properly aligned?
+
+> +
+> +/* All values are in big-endian */
+> +struct __attribute__ ((__packed__)) cp2112_smbus_config_report {
+> +       uint8_t report; /* CP2112_SMBUS_CONFIG */
+> +       uint32_t clock_speed; /* Hz */
+> +       uint8_t device_address; /* Stored in the upper 7 bits */
+> +       uint8_t auto_send_read; /* 1 = enabled, 0 = disabled */
+> +       uint16_t write_timeout; /* ms, 0 = no timeout */
+> +       uint16_t read_timeout; /* ms, 0 = no timeout */
+> +       uint8_t scl_low_timeout; /* 1 = enabled, 0 = disabled */
+> +       uint16_t retry_time; /* # of retries, 0 = no limit */
+> +};
+
+Just as a hint: We have "u8"-"u64" in the kernel, which is much
+shorter than "uint8_t". In case you wanna save some typing next time
+:) Also, aligning the comments via tabs makes it better readable.
+
+> +
+> +struct  __attribute__ ((__packed__)) cp2112_usb_config_report {
+> +       uint8_t report; /* CP2112_USB_CONFIG */
+> +       uint16_t vid; /* Vendor ID - little endian */
+> +       uint16_t pid; /* Product ID - little endian */
+> +       uint8_t max_power; /* Power requested in 2mA units */
+> +       uint8_t power_mode; /* 0x00 = bus powered
+> +                              0x01 = self powered & regulator off
+> +                              0x02 = self powered & regulator on */
+> +       uint8_t release_major;
+> +       uint8_t release_minor;
+> +       uint8_t mask; /* What fields to program */
+> +};
+> +
+> +/* Number of times to request transfer status before giving up waiting for a
+> +   transfer to complete. */
+> +static const int XFER_TIMEOUT = 100;
+
+Seems a bit high, doesn't it? But I have no idea how the device really
+works, so maybe it's fine. But it would be interesting whether you
+ever experienced some load where it succeeded only after the 50th
+attempt or so. Otherwise, we could really reduce this one.
+
+> +
+> +/* Time in ms to wait for a CP2112_DATA_READ_RESPONSE or
+> +   CP2112_TRANSFER_STATUS_RESPONSE. */
+> +static const int RESPONSE_TIMEOUT = 50;
+> +
+> +static const struct hid_device_id cp2112_devices[] = {
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_CYGNAL, USB_DEVICE_ID_CYGNAL_CP2112) },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(hid, cp2112_devices);
+> +
+> +struct cp2112_device {
+> +       struct i2c_adapter adap;
+
+You cannot do that. i2c_adapter has it's own ref-count. You need to
+allocate it separately via kzalloc(). But to be honest, looking at
+drivers/i2c/i2c-core.c I really wonder how that code ever worked. They
+allocate *struct device* statically, never call device_initialize()
+and put ref-counts on static-memory. Oh god..
+
+If you ever get problems due to code accessing your "i2c_adapter"
+after hid_remove(), please go scream at the i2c maintainers. You can
+fix this by changing your code to allocate the i2c_adapter dynamically
+and calling device_initialize() with a ->release() pointer yourself.
+
+> +       struct hid_device *hdev;
+> +       wait_queue_head_t wait;
+> +       uint8_t read_data[61];
+> +       uint8_t read_length;
+> +       int xfer_status;
+> +       atomic_t read_avail;
+> +       atomic_t xfer_avail;
+> +       struct gpio_chip gc;
+
+For "gpio_chip" this is actually fine. They use dynamic "struct
+device" objects which you don't have to manage.
+
+> +};
+> +
+> +static int gpio_push_pull = 0xFF;
+> +module_param(gpio_push_pull, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(gpio_push_pull, "GPIO push-pull configuration bitmask");
+> +
+> +static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct cp2112_device *dev = container_of(chip, struct cp2112_device,
+> +                                                gc);
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[5];
+> +       int ret;
+> +
+> +       ret = hdev->hid_get_raw_report(hdev, CP2112_GPIO_CONFIG, buf,
+> +                                      sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret != sizeof (buf)) {
+> +               hid_err(hdev, "error requesting GPIO config: %d\n", ret);
+> +               return ret;
+> +       }
+> +       buf[1] &= ~(1 << offset);
+> +       buf[2] = gpio_push_pull;
+> +       ret = hdev->hid_output_raw_report(hdev, buf,
+> +                                         sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "error setting GPIO config: %d\n", ret);
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void cp2112_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +       struct cp2112_device *dev = container_of(chip, struct cp2112_device,
+> +                                                gc);
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[3];
+> +       int ret;
+> +
+> +       buf[0] = CP2112_GPIO_SET;
+> +       buf[1] = value ? 0xff : 0;
+> +       buf[2] = 1 << offset;
+> +       ret = hdev->hid_output_raw_report(hdev, buf,
+> +                                         sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret < 0)
+> +               hid_err(hdev, "error setting GPIO values: %d\n", ret);
+> +}
+> +
+> +static int cp2112_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct cp2112_device *dev = container_of(chip, struct cp2112_device,
+> +                                                gc);
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[2];
+> +       int ret;
+> +
+> +       ret = hdev->hid_get_raw_report(hdev, CP2112_GPIO_GET, buf,
+> +                                      sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret != sizeof (buf)) {
+> +               hid_err(hdev, "error requesting GPIO values: %d\n", ret);
+> +               return ret;
+> +       }
+> +       return (buf[1] >> offset) & 1;
+> +}
+> +
+> +static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+> +                                       unsigned offset, int value)
+> +{
+> +       struct cp2112_device *dev = container_of(chip, struct cp2112_device,
+> +                                                gc);
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[5];
+> +       int ret;
+> +
+> +       cp2112_gpio_set(chip, offset, value);
+> +       ret = hdev->hid_get_raw_report(hdev, CP2112_GPIO_CONFIG, buf,
+> +                                      sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret != sizeof (buf)) {
+> +               hid_err(hdev, "error requesting GPIO config: %d\n", ret);
+> +               return ret;
+> +       }
+> +       buf[1] |= 1 << offset;
+> +       buf[2] = gpio_push_pull;
+> +       ret = hdev->hid_output_raw_report(hdev, buf,
+> +                                         sizeof (buf), HID_FEATURE_REPORT);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "error setting GPIO config: %d\n", ret);
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int cp2112_wait(struct cp2112_device *dev, atomic_t *avail)
+> +{
+> +       int ret = 0;
+> +
+> +       ret = wait_event_interruptible_timeout(dev->wait,
+> +               atomic_read(avail), msecs_to_jiffies(RESPONSE_TIMEOUT));
+> +       if (-ERESTARTSYS == ret)
+> +               return ret;
+> +       if (!ret)
+> +               return -ETIMEDOUT;
+> +       atomic_set(avail, 0);
+
+That's racy. It works because your device sends responses only after
+requests, but if you encounter timeouts or get unrequested responses,
+you will overwrite previous data here.
+
+What you want is to have a "request_pending" boolean which tells
+raw_event() whether we're currently really looking for an event.
+However, on the other hand your protocol doesn't provide
+sequence-numbers of timestamps, so you cannot reliably match request
+and response, so it's inherently racy if a timeout fires. Not sure
+whether it's then worth to fix. But see below for an example.
+
+> +       return 0;
+> +}
+> +
+> +static int cp2112_hid_get(struct hid_device *hdev, unsigned char report_number,
+> +                         uint8_t *data, size_t count,
+> +                         unsigned char report_type)
+> +{
+> +       uint8_t *buf;
+> +       int ret;
+> +
+> +       buf = kmalloc(count, GFP_KERNEL);
+> +       if (!buf)
+> +               return -ENOMEM;
+> +       ret = hdev->hid_get_raw_report(hdev, report_number, buf, count,
+> +                                      report_type);
+> +       memcpy(data, buf, count);
+> +       kfree(buf);
+> +       return ret;
+> +}
+> +
+> +static int cp2112_hid_output(struct hid_device *hdev, uint8_t *data,
+> +                            size_t count, unsigned char report_type)
+> +{
+> +       uint8_t *buf;
+> +       int ret;
+> +
+> +       buf = kmemdup(data, count, GFP_KERNEL);
+> +       if (!buf)
+> +               return -ENOMEM;
+> +       ret = hdev->hid_output_raw_report(hdev, buf, count, report_type);
+> +       kfree(buf);
+> +       return ret;
+> +}
+> +
+> +static int cp2112_xfer_status(struct cp2112_device *dev)
+> +{
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[2];
+> +       int ret;
+> +
+> +       buf[0] = CP2112_TRANSFER_STATUS_REQUEST;
+> +       buf[1] = 0x01;
+> +       atomic_set(&dev->xfer_avail, 0);
+> +       ret = cp2112_hid_output(hdev, buf, 2, HID_OUTPUT_REPORT);
+> +       if (ret < 0) {
+> +               hid_warn(hdev, "Error requesting status: %d\n", ret);
+> +               return ret;
+> +       }
+> +       ret = cp2112_wait(dev, &dev->xfer_avail);
+> +       if (ret)
+> +               return ret;
+> +       return dev->xfer_status;
+
+Imagine you send your request and cp2112_wait() waits for the
+response, but before you can inspect "dev->xfer_status", your device
+sends another stray response with an error code. It will overwrite
+dev->xfer_status with the error code again and you will return an
+error here.
+
+You *could* fix this by having a flag which tells raw_event() whether
+it should ignore stray messages. On the other hand, in case
+cp2112_wait() times out and you immediately start a new request, the
+previous response might come in and be matches incorrectly as answer
+for your new request. This can only be fixed if your protocol has
+sequence numbers or similar barriers.
+
+So I think it's fine to keep your code as is, but please add a comment
+in your cp2112_wait() function why you don't care for such errors.
+
+> +}
+> +
+> +static int cp2112_read(struct cp2112_device *dev, uint8_t *data, size_t size)
+> +{
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[3];
+> +       int ret;
+> +
+> +       buf[0] = CP2112_DATA_READ_FORCE_SEND;
+> +       *(uint16_t *)&buf[1] = htons(size);
+> +       atomic_set(&dev->read_avail, 0);
+> +       ret = cp2112_hid_output(hdev, buf, 3, HID_OUTPUT_REPORT);
+> +       if (ret < 0) {
+> +               hid_warn(hdev, "Error requesting data: %d\n", ret);
+> +               return ret;
+> +       }
+> +       ret = cp2112_wait(dev, &dev->read_avail);
+> +       if (ret)
+> +               return ret;
+> +       hid_dbg(hdev, "read %d of %d bytes requested\n",
+> +               dev->read_length, size);
+> +       if (size > dev->read_length)
+> +               size = dev->read_length;
+> +       memcpy(data, dev->read_data, size);
+> +       return dev->read_length;
+
+Please add empty lines between each group of calls. This is hardly
+readable. And please also do that in all other functions. Generally,
+only few people complain about too much empty lines, so be generous :)
+
+> +}
+> +
+> +static int cp2112_read_req(uint8_t *buf, uint8_t slave_address, uint16_t length)
+> +{
+> +       if (length < 1 || length > 512)
+> +               return -EINVAL;
+> +       buf[0] = CP2112_DATA_READ_REQUEST;
+> +       buf[1] = slave_address << 1;
+> +       *(uint16_t *)&buf[2] = htons(length);
+> +       return 4;
+> +}
+> +
+> +static int cp2112_write_read_req(uint8_t *buf, uint8_t slave_address,
+> +                                uint16_t length, uint8_t command,
+> +                                uint8_t *data, uint8_t data_length)
+> +{
+> +       if (length < 1 || length > 512 || data_length > 15)
+> +               return -EINVAL;
+> +       buf[0] = CP2112_DATA_WRITE_READ_REQUEST;
+> +       buf[1] = slave_address << 1;
+> +       *(uint16_t *)&buf[2] = htons(length);
+> +       buf[4] = data_length + 1;
+> +       buf[5] = command;
+> +       memcpy(&buf[6], data, data_length);
+> +       return data_length + 6;
+> +}
+> +
+> +static int cp2112_write_req(uint8_t *buf, uint8_t slave_address,
+> +                           uint8_t command, uint8_t *data, uint8_t data_length)
+> +{
+> +       if (data_length > 60)
+> +               return -EINVAL;
+> +       buf[0] = CP2112_DATA_WRITE_REQUEST;
+> +       buf[1] = slave_address << 1;
+> +       buf[2] = data_length + 1;
+> +       buf[3] = command;
+> +       memcpy(&buf[4], data, data_length);
+> +       return data_length + 4;
+> +}
+> +
+> +static int cp2112_xfer(struct i2c_adapter *adap, uint16_t addr,
+> +                      unsigned short flags, char read_write, uint8_t command,
+> +                      int size, union i2c_smbus_data *data)
+> +{
+> +       struct cp2112_device *dev = (struct cp2112_device *)adap->algo_data;
+> +       struct hid_device *hdev = dev->hdev;
+> +       uint8_t buf[64];
+> +       uint16_t word;
+> +       size_t count;
+> +       size_t read_length = 0;
+> +       size_t timeout;
+> +       int ret;
+> +
+> +       hid_dbg(hdev, "%s addr 0x%x flags 0x%x cmd 0x%x size %d\n",
+> +               read_write == I2C_SMBUS_WRITE ? "write" : "read",
+> +               addr, flags, command, size);
+> +       switch (size) {
+> +       case I2C_SMBUS_BYTE:
+> +               read_length = 1;
+> +               if (I2C_SMBUS_READ == read_write)
+> +                       count = cp2112_read_req(buf, addr, read_length);
+> +               else
+> +                       count = cp2112_write_req(buf, addr, data->byte, NULL,
+> +                                                0);
+> +               break;
+> +       case I2C_SMBUS_BYTE_DATA:
+> +               read_length = 1;
+> +               if (I2C_SMBUS_READ == read_write)
+> +                       count = cp2112_write_read_req(buf, addr, read_length,
+> +                                                     command, NULL, 0);
+> +               else
+> +                       count = cp2112_write_req(buf, addr, command,
+> +                                                &data->byte, 1);
+> +               break;
+> +       case I2C_SMBUS_WORD_DATA:
+> +               read_length = 2;
+> +               word = htons(data->word);
+> +               if (I2C_SMBUS_READ == read_write)
+> +                       count = cp2112_write_read_req(buf, addr, read_length,
+> +                                                     command, NULL, 0);
+> +               else
+> +                       count = cp2112_write_req(buf, addr, command,
+> +                                                (uint8_t *)&word, 2);
+> +               break;
+> +       case I2C_SMBUS_PROC_CALL:
+> +               size = I2C_SMBUS_WORD_DATA;
+> +               read_write = I2C_SMBUS_READ;
+> +               read_length = 2;
+> +               word = htons(data->word);
+> +               count = cp2112_write_read_req(buf, addr, read_length, command,
+> +                                             (uint8_t *)&word, 2);
+> +               break;
+> +       case I2C_SMBUS_I2C_BLOCK_DATA:
+> +               size = I2C_SMBUS_BLOCK_DATA;
+> +               /* fallthrough */
+> +       case I2C_SMBUS_BLOCK_DATA:
+> +               if (I2C_SMBUS_READ == read_write) {
+> +                       count = cp2112_write_read_req(buf, addr,
+> +                                                     I2C_SMBUS_BLOCK_MAX,
+> +                                                     command, NULL, 0);
+> +               } else {
+> +                       count = cp2112_write_req(buf, addr, command,
+> +                                                data->block,
+> +                                                data->block[0] + 1);
+> +               }
+> +               break;
+> +       case I2C_SMBUS_BLOCK_PROC_CALL:
+> +               size = I2C_SMBUS_BLOCK_DATA;
+> +               read_write = I2C_SMBUS_READ;
+> +               count = cp2112_write_read_req(buf, addr, I2C_SMBUS_BLOCK_MAX,
+> +                                             command, data->block,
+> +                                             data->block[0] + 1);
+> +               break;
+> +       default:
+> +               hid_warn(hdev, "Unsupported transaction %d\n", size);
+> +               return -EOPNOTSUPP;
+> +       }
+> +       if (count < 0)
+> +               return count;
+> +       ret = hid_hw_power(hdev, PM_HINT_FULLON);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "power management error: %d\n", ret);
+> +               return ret;
+> +       }
+> +       ret = cp2112_hid_output(hdev, buf, count, HID_OUTPUT_REPORT);
+> +       if (ret < 0) {
+> +               hid_warn(hdev, "Error starting transaction: %d\n", ret);
+> +               goto power_normal;
+> +       }
+> +       for (timeout = 0; timeout < XFER_TIMEOUT; ++timeout) {
+> +               ret = cp2112_xfer_status(dev);
+> +               if (-EBUSY == ret)
+> +                       continue;
+> +               if (ret < 0)
+> +                       goto power_normal;
+> +               break;
+> +       }
+> +       if (XFER_TIMEOUT <= timeout) {
+> +               hid_warn(hdev, "Transfer timed out, cancelling.\n");
+> +               buf[0] = CP2112_CANCEL_TRANSFER;
+> +               buf[1] = 0x01;
+> +               ret = cp2112_hid_output(hdev, buf, 2, HID_OUTPUT_REPORT);
+> +               if (ret < 0) {
+> +                       hid_warn(hdev, "Error cancelling transaction: %d\n",
+> +                                ret);
+> +               }
+> +               ret = -ETIMEDOUT;
+> +               goto power_normal;
+> +       }
+> +       if (I2C_SMBUS_WRITE == read_write) {
+> +               ret = 0;
+> +               goto power_normal;
+> +       }
+> +       if (I2C_SMBUS_BLOCK_DATA == size)
+> +               read_length = ret;
+> +       ret = cp2112_read(dev, buf, read_length);
+> +       if (ret < 0)
+> +               goto power_normal;
+> +       if (ret != read_length) {
+> +               hid_warn(hdev, "short read: %d < %d\n", ret, read_length);
+> +               ret = -EIO;
+> +               goto power_normal;
+> +       }
+> +       switch (size) {
+> +       case I2C_SMBUS_BYTE:
+> +       case I2C_SMBUS_BYTE_DATA:
+> +               data->byte = buf[0];
+> +               break;
+> +       case I2C_SMBUS_WORD_DATA:
+> +               data->word = ntohs(*(uint16_t *)buf);
+> +               break;
+> +       case I2C_SMBUS_BLOCK_DATA:
+> +               if (read_length > I2C_SMBUS_BLOCK_MAX) {
+> +                       ret = -EPROTO;
+> +                       goto power_normal;
+> +               }
+> +               memcpy(data->block, buf, read_length);
+> +               break;
+> +       }
+> +       ret = 0;
+> +power_normal:
+> +       hid_hw_power(hdev, PM_HINT_NORMAL);
+> +       hid_dbg(hdev, "transfer finished: %d\n", ret);
+> +       return ret;
+> +}
+> +
+> +static uint32_t cp2112_functionality(struct i2c_adapter *adap)
+> +{
+> +       return I2C_FUNC_SMBUS_BYTE |
+> +               I2C_FUNC_SMBUS_BYTE_DATA |
+> +               I2C_FUNC_SMBUS_WORD_DATA |
+> +               I2C_FUNC_SMBUS_BLOCK_DATA |
+> +               I2C_FUNC_SMBUS_I2C_BLOCK |
+> +               I2C_FUNC_SMBUS_PROC_CALL |
+> +               I2C_FUNC_SMBUS_BLOCK_PROC_CALL;
+> +}
+> +
+> +static const struct i2c_algorithm smbus_algorithm = {
+> +       .smbus_xfer     = cp2112_xfer,
+> +       .functionality  = cp2112_functionality,
+> +};
+> +
+> +static int cp2112_get_usb_config(struct hid_device *hdev,
+> +                                struct cp2112_usb_config_report *cfg)
+> +{
+> +       int ret;
+> +
+> +       ret = cp2112_hid_get(hdev, CP2112_USB_CONFIG, (uint8_t *)cfg,
+> +                            sizeof (*cfg), HID_FEATURE_REPORT);
+> +       if (ret != sizeof (*cfg)) {
+> +               hid_err(hdev, "error reading usb config: %d\n", ret);
+> +               if (ret < 0)
+> +                       return ret;
+> +               return -EIO;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int cp2112_set_usb_config(struct hid_device *hdev,
+> +                                struct cp2112_usb_config_report *cfg)
+> +{
+> +       int ret;
+> +
+> +       BUG_ON(cfg->report != CP2112_USB_CONFIG);
+> +       ret = cp2112_hid_output(hdev, (uint8_t *)cfg, sizeof (*cfg),
+> +                               HID_FEATURE_REPORT);
+> +       if (ret != sizeof (*cfg)) {
+> +               hid_err(hdev, "error writing usb config: %d\n", ret);
+> +               if (ret < 0)
+> +                       return ret;
+> +               return -EIO;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void chmod_sysfs_attrs(struct hid_device *hdev);
+> +
+> +#define CP2112_CONFIG_ATTR(name, store, format, ...) \
+> +static ssize_t name##_store(struct device *kdev, \
+> +                           struct device_attribute *attr, const char *buf, \
+> +                           size_t count) \
+> +{ \
+> +       struct hid_device *hdev = container_of(kdev, struct hid_device, dev); \
+> +       struct cp2112_usb_config_report cfg; \
+> +       int ret = cp2112_get_usb_config(hdev, &cfg); \
+> +       if (ret) \
+> +               return ret; \
+> +       store; \
+> +       ret = cp2112_set_usb_config(hdev, &cfg); \
+> +       if (ret) \
+> +               return ret; \
+> +       chmod_sysfs_attrs(hdev); \
+> +       return count; \
+> +} \
+> +static ssize_t name##_show(struct device *kdev, \
+> +                          struct device_attribute *attr, char *buf) \
+> +{ \
+> +       struct hid_device *hdev = container_of(kdev, struct hid_device, dev); \
+> +       struct cp2112_usb_config_report cfg; \
+> +       int ret = cp2112_get_usb_config(hdev, &cfg); \
+> +       if (ret) \
+> +               return ret; \
+> +       return scnprintf(buf, PAGE_SIZE, format, __VA_ARGS__); \
+> +} \
+> +DEVICE_ATTR_RW(name);
+> +
+> +CP2112_CONFIG_ATTR(vendor_id, ({
+> +       uint16_t vid;
+> +       if (sscanf(buf, "%hi", &vid) != 1)
+> +               return -EINVAL;
+> +       cfg.vid = cpu_to_le16(vid);
+> +       cfg.mask = 0x01;
+> +}), "0x%04x\n", le16_to_cpu(cfg.vid));
+> +
+> +CP2112_CONFIG_ATTR(product_id, ({
+> +       uint16_t pid;
+> +       if (sscanf(buf, "%hi", &pid) != 1)
+> +               return -EINVAL;
+> +       cfg.pid = cpu_to_le16(pid);
+> +       cfg.mask = 0x02;
+> +}), "0x%04x\n", le16_to_cpu(cfg.pid));
+> +
+> +CP2112_CONFIG_ATTR(max_power, ({
+> +       int mA;
+> +       if (sscanf(buf, "%i", &mA) != 1)
+> +               return -EINVAL;
+> +       cfg.max_power = (mA + 1) / 2;
+> +       cfg.mask = 0x04;
+> +}), "%u mA\n", cfg.max_power * 2);
+> +
+> +CP2112_CONFIG_ATTR(power_mode, ({
+> +       if (sscanf(buf, "%hhi", &cfg.power_mode) != 1)
+> +               return -EINVAL;
+> +       cfg.mask = 0x08;
+> +}), "%u\n", cfg.power_mode);
+> +
+> +CP2112_CONFIG_ATTR(release_version, ({
+> +       if (sscanf(buf, "%hhi.%hhi", &cfg.release_major, &cfg.release_minor)
+> +           != 2)
+> +               return -EINVAL;
+> +       cfg.mask = 0x10;
+> +}), "%u.%u\n", cfg.release_major, cfg.release_minor);
+> +
+> +#undef CP2112_CONFIG_ATTR
+> +
+> +struct cp2112_pstring_attribute {
+> +       struct device_attribute attr;
+> +       unsigned char report;
+> +};
+> +
+> +static ssize_t pstr_store(struct device *kdev,
+> +                         struct device_attribute *kattr, const char *buf,
+> +                         size_t count)
+> +{
+> +       struct hid_device *hdev = container_of(kdev, struct hid_device, dev);
+> +       struct cp2112_pstring_attribute *attr =
+> +               container_of(kattr, struct cp2112_pstring_attribute, attr);
+> +       uint8_t tmp[63];
+> +       int ret;
+> +
+> +       memset(tmp, 0, sizeof (tmp));
+> +       tmp[0] = attr->report;
+> +       tmp[2] = 0x03;
+> +       ret = utf8s_to_utf16s(buf, count, UTF16_LITTLE_ENDIAN,
+> +                             (wchar_t *)&tmp[3], (sizeof(tmp) - 3) / 2);
+> +       tmp[1] = ret * 2 + 2;
+> +       ret = cp2112_hid_output(hdev, tmp, tmp[1] + 1, HID_FEATURE_REPORT);
+> +       if (ret != tmp[1] + 1) {
+> +               hid_err(hdev, "error writing %s string: %d\n", kattr->attr.name,
+> +                       ret);
+> +               if (ret < 0)
+> +                       return ret;
+> +               return -EIO;
+> +       }
+> +       chmod_sysfs_attrs(hdev);
+> +       return count;
+> +}
+> +
+> +static ssize_t pstr_show(struct device *kdev,
+> +                        struct device_attribute *kattr, char *buf)
+> +{
+> +       struct hid_device *hdev = container_of(kdev, struct hid_device, dev);
+> +       struct cp2112_pstring_attribute *attr =
+> +               container_of(kattr, struct cp2112_pstring_attribute, attr);
+> +       uint8_t tmp[63];
+> +       uint8_t length;
+> +       int ret;
+> +
+> +       ret = cp2112_hid_get(hdev, attr->report, tmp, sizeof (tmp),
+> +                            HID_FEATURE_REPORT);
+> +       if (ret < 3) {
+> +               hid_err(hdev, "error reading %s string: %d\n", kattr->attr.name,
+> +                       ret);
+> +               if (ret < 0)
+> +                       return ret;
+> +               return -EIO;
+> +       }
+> +       length = tmp[1] > ret - 1 ? ret - 1 : tmp[1] - 2;
+> +       ret = utf16s_to_utf8s((wchar_t *)&tmp[3], length / 2,
+> +                             UTF16_LITTLE_ENDIAN, buf, PAGE_SIZE - 1);
+> +       buf[ret++] = '\n';
+> +       return ret;
+> +}
+> +
+> +#define CP2112_PSTR_ATTR(name, _report) \
+> +struct cp2112_pstring_attribute dev_attr_##name = { \
+> +       .attr = __ATTR(name, (S_IWUSR | S_IRUGO), pstr_show, pstr_store), \
+> +       .report = _report, \
+> +};
+> +
+> +CP2112_PSTR_ATTR(manufacturer, CP2112_MANUFACTURER_STRING);
+> +CP2112_PSTR_ATTR(product, CP2112_PRODUCT_STRING);
+> +CP2112_PSTR_ATTR(serial, CP2112_SERIAL_STRING);
+> +
+> +#undef CP2112_PSTR_ATTR
+> +
+> +static void chmod_sysfs_attrs(struct hid_device *hdev)
+> +{
+> +       uint8_t buf[2];
+> +       int ret;
+> +
+> +       ret = cp2112_hid_get(hdev, CP2112_LOCK_BYTE, buf, sizeof (buf),
+> +                            HID_FEATURE_REPORT);
+> +       if (ret != sizeof (buf)) {
+> +               hid_err(hdev, "error reading lock byte: %d\n", ret);
+> +               return;
+> +       }
+> +#define CHMOD_ATTR(_attr, rw) \
+> +       if (sysfs_chmod_file(&hdev->dev.kobj, &dev_attr_##_attr.attr, \
+> +                            (rw) ? S_IWUSR | S_IRUGO : S_IRUGO) < 0) \
+> +               hid_err(hdev, "error chmoding sysfs file %s\n", \
+> +                       dev_attr_##_attr.attr.name);
+> +       CHMOD_ATTR(vendor_id, buf[1] & 0x01);
+> +       CHMOD_ATTR(product_id, buf[1] & 0x02);
+> +       CHMOD_ATTR(max_power, buf[1] & 0x04);
+> +       CHMOD_ATTR(power_mode, buf[1] & 0x08);
+> +       CHMOD_ATTR(release_version, buf[1] & 0x10);
+> +       CHMOD_ATTR(manufacturer.attr, buf[1] & 0x20);
+> +       CHMOD_ATTR(product.attr, buf[1] & 0x40);
+> +       CHMOD_ATTR(serial.attr, buf[1] & 0x80);
+> +#undef CHMOD_ATTR
+
+You cannot do that. Please provide proper attributes with the correct
+CHMOD line directly. Changing the access-rights afterwards is racy
+(someone might access it in between).
+
+> +}
+> +
+> +static int create_sysfs_attrs(struct cp2112_device *dev)
+> +{
+> +       struct device *kdev = &dev->hdev->dev;
+> +       int ret;
+> +
+> +       ret = device_create_file(kdev, &dev_attr_vendor_id);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_product_id);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_max_power);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_power_mode);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_release_version);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_manufacturer.attr);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_product.attr);
+> +       if (ret)
+> +               return ret;
+> +       ret = device_create_file(kdev, &dev_attr_serial.attr);
+> +       if (ret)
+> +               return ret;
+> +       chmod_sysfs_attrs(dev->hdev);
+> +       return 0;
+
+You can use attribute-groups, they can be registered in batches
+instead of once for each file. Furthermore, we should register these
+files *before* adding the HID device. But I guess hid-core doesn't
+provide a way to do that. We should fix that some day.
+
+> +}
+> +
+> +static void remove_sysfs_attrs(struct cp2112_device *dev)
+> +{
+> +       struct device *kdev = &dev->hdev->dev;
+> +
+> +       device_remove_file(kdev, &dev_attr_vendor_id);
+> +       device_remove_file(kdev, &dev_attr_product_id);
+> +       device_remove_file(kdev, &dev_attr_max_power);
+> +       device_remove_file(kdev, &dev_attr_power_mode);
+> +       device_remove_file(kdev, &dev_attr_release_version);
+> +       device_remove_file(kdev, &dev_attr_manufacturer.attr);
+> +       device_remove_file(kdev, &dev_attr_product.attr);
+> +       device_remove_file(kdev, &dev_attr_serial.attr);
+> +}
+> +
+> +static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> +{
+> +       struct cp2112_device *dev;
+> +       uint8_t buf[3];
+> +       struct cp2112_smbus_config_report config;
+> +       int ret;
+> +
+> +       ret = hid_parse(hdev);
+> +       if (ret) {
+> +               hid_err(hdev, "parse failed\n");
+> +               return ret;
+> +       }
+> +       ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+> +       if (ret) {
+> +               hid_err(hdev, "hw start failed\n");
+> +               return ret;
+> +       }
+> +       ret = hid_hw_open(hdev);
+> +       if (ret) {
+> +               hid_err(hdev, "hw open failed\n");
+> +               goto err_hid_stop;
+> +       }
+> +       ret = hid_hw_power(hdev, PM_HINT_FULLON);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "power management error: %d\n", ret);
+> +               goto err_hid_close;
+> +       }
+> +       ret = cp2112_hid_get(hdev, CP2112_GET_VERSION_INFO, buf, sizeof (buf),
+> +                            HID_FEATURE_REPORT);
+> +       if (ret != sizeof (buf)) {
+> +               hid_err(hdev, "error requesting version\n");
+> +               if (ret >= 0)
+> +                       ret = -EIO;
+> +               goto err_power_normal;
+> +       }
+> +       hid_info(hdev, "Part Number: 0x%02X Device Version: 0x%02X\n",
+> +                buf[1], buf[2]);
+> +       ret = cp2112_hid_get(hdev, CP2112_SMBUS_CONFIG, (uint8_t *)&config,
+> +                            sizeof(config), HID_FEATURE_REPORT);
+> +       if (ret != sizeof(config)) {
+> +               hid_err(hdev, "error requesting SMBus config\n");
+> +               if (ret >= 0)
+> +                       ret = -EIO;
+> +               goto err_power_normal;
+> +       }
+> +       config.retry_time = htons(1);
+> +       ret = cp2112_hid_output(hdev, (uint8_t *)&config, sizeof(config),
+> +                               HID_FEATURE_REPORT);
+> +       if (ret != sizeof(config)) {
+> +               hid_err(hdev, "error setting SMBus config\n");
+> +               if (ret >= 0)
+> +                       ret = -EIO;
+> +               goto err_power_normal;
+> +       }
+> +       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+> +       if (!dev) {
+> +               hid_err(hdev, "out of memory\n");
+> +               ret = -ENOMEM;
+> +               goto err_power_normal;
+> +       }
+> +       dev->hdev = hdev;
+> +       hid_set_drvdata(hdev, (void *)dev);
+
+That (void*) cast is not needed.
+
+> +       dev->adap.owner         = THIS_MODULE;
+> +       dev->adap.class         = I2C_CLASS_HWMON;
+> +       dev->adap.algo          = &smbus_algorithm;
+> +       dev->adap.algo_data     = dev;
+> +       dev->adap.dev.parent    = &hdev->dev;
+> +       snprintf(dev->adap.name, sizeof(dev->adap.name),
+> +                "CP2112 SMBus Bridge on hiddev%d", hdev->minor);
+> +       init_waitqueue_head(&dev->wait);
+> +       hid_device_io_start(hdev);
+> +       ret = i2c_add_adapter(&dev->adap);
+> +       hid_device_io_stop(hdev);
+> +       if (ret) {
+> +               hid_err(hdev, "error registering i2c adapter\n");
+> +               kfree(dev);
+> +               goto err_power_normal;
+
+Please move that kfree() into the error path and add "goto err_free;"
+or something like that.
+
+> +       }
+> +       hid_dbg(hdev, "adapter registered\n");
+> +       dev->gc.label = "cp2112_gpio";
+> +       dev->gc.direction_input = cp2112_gpio_direction_input;
+> +       dev->gc.direction_output = cp2112_gpio_direction_output;
+> +       dev->gc.set = cp2112_gpio_set;
+> +       dev->gc.get = cp2112_gpio_get;
+> +       dev->gc.base = -1;
+> +       dev->gc.ngpio = 8;
+> +       dev->gc.can_sleep = 1;
+> +       dev->gc.dev = &hdev->dev;
+> +       ret = gpiochip_add(&dev->gc);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "error registering gpio chip\n");
+> +               goto err_power_normal;
+
+You're leaking "dev" here. So change this to "goto err_free;" as
+suggested above. You also need to remove the i2c-adapter here, so you
+actually want "goto err_i2c;" and do the i2c_del_adapter() in the
+error-path.
+
+> +       }
+> +       ret = create_sysfs_attrs(dev);
+> +       if (ret < 0) {
+> +               hid_err(hdev, "error creating sysfs attrs\n");
+> +               goto err_gpiochip_remove;
+> +       }
+> +       hid_hw_power(hdev, PM_HINT_NORMAL);
+> +       return ret;
+
+Please add an empty line after each if () { } check. It's much easier
+to read if it looks like this:
+
+r = try_something();
+if (r) {
+  recover();
+}
+
+r = try_something_else();
+if (r) {
+  recover_more();
+}
+
+r = try_more()
+...
+
+> +err_gpiochip_remove:
+> +       if (gpiochip_remove(&dev->gc) < 0)
+> +               hid_err(hdev, "error removing gpio chip\n");
+
+Oh good, who designed gpiochip_remove() to allow failure? Note that
+you horribly fail here if that call really returns non-0. Anyhow,
+nothing we can do, I guess.
+
+> +err_power_normal:
+> +       hid_hw_power(hdev, PM_HINT_NORMAL);
+> +err_hid_close:
+> +       hid_hw_close(hdev);
+> +err_hid_stop:
+> +       hid_hw_stop(hdev);
+> +       return ret;
+> +}
+> +
+> +static void cp2112_remove(struct hid_device *hdev)
+> +{
+> +       struct cp2112_device *dev = hid_get_drvdata(hdev);
+> +
+> +       remove_sysfs_attrs(dev);
+> +       hid_hw_close(hdev);
+> +       hid_hw_stop(hdev);
+> +       i2c_del_adapter(&dev->adap);
+> +       if (gpiochip_remove(&dev->gc))
+> +               hid_err(hdev, "unable to remove gpio chip\n");
+> +       kfree(dev);
+
+Why do you have an different order here than the initialization? You
+should just invert the init-order here:
+
+      remove_sysfs_attrs(dev);
+      if (gpiochip_remove(&dev->gc))
+              hid_err(hdev, "unable to remove gpio chip\n");
+      i2c_del_adapter(&dev->adap);
+      hid_hw_close(hdev);
+      hid_hw_stop(hdev);
+      kfree(dev);
+
+or is there a strong reason to not do so?
+
+> +}
+> +
+> +static int cp2112_raw_event(struct hid_device *hdev, struct hid_report *report,
+> +                           uint8_t *data, int size)
+> +{
+> +       struct cp2112_device *dev = hid_get_drvdata(hdev);
+> +
+> +       switch (data[0]) {
+> +       case CP2112_TRANSFER_STATUS_RESPONSE:
+> +               hid_dbg(hdev, "xfer status: %02x %02x %04x %04x\n",
+> +                       data[1], data[2], htons(*(uint16_t *)&data[3]),
+> +                       htons(*(uint16_t *)&data[5]));
+> +               switch (data[1]) {
+> +               case STATUS0_IDLE:
+> +                       dev->xfer_status = -EAGAIN;
+> +                       break;
+> +               case STATUS0_BUSY:
+> +                       dev->xfer_status = -EBUSY;
+> +                       break;
+> +               case STATUS0_COMPLETE:
+> +                       dev->xfer_status = ntohs(*(uint16_t *)&data[5]);
+> +                       break;
+> +               case STATUS0_ERROR:
+> +                       switch (data[2]) {
+> +                       case STATUS1_TIMEOUT_NACK:
+> +                       case STATUS1_TIMEOUT_BUS:
+> +                               dev->xfer_status = -ETIMEDOUT;
+> +                               break;
+> +                       default:
+> +                               dev->xfer_status = -EIO;
+> +                       }
+> +                       break;
+> +               default:
+> +                       dev->xfer_status = -EINVAL;
+> +                       break;
+> +               }
+> +               atomic_set(&dev->xfer_avail, 1);
+> +               break;
+> +       case CP2112_DATA_READ_RESPONSE:
+> +               hid_dbg(hdev, "read response: %02x %02x\n", data[1], data[2]);
+> +               dev->read_length = data[2];
+> +               if (dev->read_length > sizeof(dev->read_data))
+> +                       dev->read_length = sizeof(dev->read_data);
+> +               memcpy(dev->read_data, &data[3], dev->read_length);
+> +               atomic_set(&dev->read_avail, 1);
+> +               break;
+> +       default:
+> +               hid_err(hdev, "unknown report\n");
+> +               return 0;
+> +       }
+> +       wake_up_interruptible(&dev->wait);
+> +       return 1;
+> +}
+> +
+> +static struct hid_driver cp2112_driver = {
+> +       .name = "cp2112",
+> +       .id_table = cp2112_devices,
+> +       .probe = cp2112_probe,
+> +       .remove = cp2112_remove,
+> +       .raw_event = cp2112_raw_event,
+> +};
+> +
+> +module_hid_driver(cp2112_driver);
+> +MODULE_DESCRIPTION("Silicon Labs HID USB to SMBus master bridge");
+> +MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
+> +MODULE_LICENSE("GPL");
+> +
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index f9304cb..887ba48 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -240,6 +240,7 @@
 >
->> diff --git a/drivers/phy/phy-exynos5250-sata.c
->> b/drivers/phy/phy-exynos5250-sata.c
->> new file mode 100644
->> index 0000000..6e5ff8d
->> --- /dev/null
->> +++ b/drivers/phy/phy-exynos5250-sata.c
->> @@ -0,0 +1,238 @@
->> +/*
->> + * Samsung SATA SerDes(PHY) driver
->> + *
->> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->> + * Authors: Girish K S <ks.giri@samsung.com>
->> + *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/delay.h>
->> +#include <linux/io.h>
->> +#include <linux/i2c.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/phy/phy.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/regmap.h>
->> +#include <linux/spinlock.h>
->> +#include <linux/mfd/syscon.h>
->> +
->> +#define EXYNOS5_SATA_RESET             0x4
->> +#define RESET_CMN_RST_N                        (1 << 1)
->> +#define LINK_RESET                     0xF0000
+>  #define USB_VENDOR_ID_CYGNAL           0x10c4
+>  #define USB_DEVICE_ID_CYGNAL_RADIO_SI470X      0x818a
+> +#define USB_DEVICE_ID_CYGNAL_CP2112    0xEA90
+
+We use lower-case hex-numbers in this file, so please use 0xea90.
+
 >
->
-> nit: Lowercase is preferred in hexadecimal notation.
-> + all other occurrences in this file.
-Ok.
->
->
->> +#define EXYNOS5_SATA_MODE0             0x10
->> +#define EXYNOS5_SATAPHY_PMU_ENABLE     (1 << 0)
->> +#define SATA_SPD_GEN3                  (2 << 0)
->> +#define EXYNOS5_SATA_CTRL0             0x14
->> +#define CTRL0_P0_PHY_CALIBRATED_SEL    (1 << 9)
->> +#define CTRL0_P0_PHY_CALIBRATED                (1 << 8)
->> +#define EXYNOS5_SATA_PHSATA_CTRLM      0xE0
->> +#define PHCTRLM_REF_RATE               (1 << 1)
->> +#define PHCTRLM_HIGH_SPEED             (1 << 0)
->> +#define EXYNOS5_SATA_PHSATA_STATM      0xF0
->> +#define PHSTATM_PLL_LOCKED             (1 << 0)
->> +#define EXYNOS_SATA_PHY_EN             (1 << 0)
->> +#define SATAPHY_CONTROL_OFFSET         0x0724
->> +
->> +struct exynos_sata_phy {
->> +       struct phy *phy;
->> +       struct clk *phyclk;
->> +       void __iomem *regs;
->> +       void __iomem *pmureg;
->> +       struct i2c_client *client;
->> +};
->> +
->> +static bool wait_for_reg_status(void __iomem *base, u32 reg, u32
->> checkbit,
->> +                               u32 status)
->> +{
->> +       unsigned long timeout = jiffies + usecs_to_jiffies(1000);
->
->
-> nit: It would be better to define the timeout using a macro to not use magic
-> numbers.
-Ok
->
->
->> +
->> +       while (time_before(jiffies, timeout)) {
->> +               if ((readl(base + reg) & checkbit) == status)
->> +                       return true;
->> +       }
->> +
->> +       return false;
->> +}
->> +
->> +static int exynos_sata_phy_power_on(struct phy *phy)
->> +{
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
->
->
-> regmap_update_bits can return an error. Wouldn't it be better to return it
-> as return value of this function instead of returning 0 all the time? As a
-> side effect, this would make the function smaller by two lines.
-Yes.Will incorporate in next version.
->
->
->> +
->> +       return 0;
->> +}
->> +
->> +static int exynos_sata_phy_power_off(struct phy *phy)
->> +{
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, ~EXYNOS_SATA_PHY_EN);
->
->
-> Same here.
-Yes.Will incorporate in next version.
->
->
->> +
->> +       return 0;
->> +}
->> +
->> +static int exynos_sata_phy_init(struct phy *phy)
->> +{
->> +       u32 val = 0;
->> +       int ret = 0;
->> +       u8 buf[] = { 0x3A, 0x0B };
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
->
->
-> regmap_update_bits returns an error code.
-Yes.Will incorporate in next version.
->
->
->> +
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= 0xFF;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= LINK_RESET;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +       val &= ~PHCTRLM_REF_RATE;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +
->> +       /* High speed enable for Gen3 */
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +       val |= PHCTRLM_HIGH_SPEED;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_CTRL0);
->> +       val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_MODE0);
->> +       val |= SATA_SPD_GEN3;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_MODE0);
->> +
->> +       ret = i2c_master_send(sata_phy->client, buf, sizeof(buf));
->> +       if (ret < 0)
->> +               return -ENXIO;
->
->
-> Wouldn't it be better to return the same error code as i2c_master_send
-> returned?
-Yes.Will incorporate in next version.
->
->
->> +
->> +       /* release cmu reset */
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val &= ~RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       return (wait_for_reg_status(sata_phy->regs,
->> EXYNOS5_SATA_PHSATA_STATM,
->> +               PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
->> +
->
->
-> nit: Stray blank line.
-Ok.will remove
->
-> Also it might be more readable after making wait_for_reg_status() return an
-> integer error code (0 and e.g. -EFAULT) and rewriting the last line to:
->
->         ret = wait_for_reg_status(sata_phy->regs,
->                                         EXYNOS5_SATA_PHSATA_STATM,
->                                         PHSTATM_PLL_LOCKED, 1);
->         if (ret < 0)
->                 dev_err(&sata_phy->client->dev,
->                         "PHY PLL locking failed\n");
->
->         return ret;
->
-Ok.
-> By the way, isn't this initialization really needed whenever the PHY is
-> powered on?
-In Exynos5250, we do require to power on the phy before writing
-anything into phy controller register space.
-As you know,phy_ops have separate callbacks power_on and init .So I
-just used those to separate these functionalities.
->
->
->> +}
->> +
->> +static struct phy_ops exynos_sata_phy_ops = {
->> +       .init           = exynos_sata_phy_init,
->> +       .power_on       = exynos_sata_phy_power_on,
->> +       .power_off      = exynos_sata_phy_power_off,
->> +       .owner          = THIS_MODULE,
->> +};
->> +
->> +static int exynos_sata_phy_probe(struct platform_device *pdev)
->> +{
->> +       struct exynos_sata_phy *sata_phy;
->> +       struct device *dev = &pdev->dev;
->> +       struct resource *res;
->> +       struct phy_provider *phy_provider;
->> +       struct device_node *node;
->> +       int ret = 0;
->> +
->> +       sata_phy = devm_kzalloc(dev, sizeof(*sata_phy), GFP_KERNEL);
->> +       if (!sata_phy)
->> +               return -ENOMEM;
->> +
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +
->> +       sata_phy->regs = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(sata_phy->regs))
->> +               return PTR_ERR(sata_phy->regs);
->> +
->> +       sata_phy->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
->> +                                       "samsung,syscon-phandle");
->
->
-> pmureg is defined as (void __iomem *) in struct exynos_sata_phy, but
-> syscon_regmap_lookup_by_phandle() returns (struct regmap *). Moreover it
-> does not return NULL on error, but rather ERR_PTR(). Please correct this.
-Ohh!my mistake.Will correct in next version.
->
->
->> +       if (!sata_phy->pmureg) {
->> +               dev_err(dev, "syscon regmap lookup failed.\n");
->> +               return PTR_ERR(sata_phy->pmureg);
->> +       }
->> +
->> +       node = of_parse_phandle(dev->of_node,
->> +                       "samsung,exynos-sataphy-i2c-phandle", 0);
->> +       if (!node)
->> +               return -ENODEV;
->
->
-> An error here means that a required DT property was not specified or was
-> specified incorrectly. IMHO -EINVAL would be better here.
-ok
->
->
->> +
->> +       sata_phy->client = of_find_i2c_device_by_node(node);
->> +       if (!sata_phy->client)
->> +               return -EPROBE_DEFER;
->> +
->> +       dev_set_drvdata(dev, sata_phy);
->> +
->> +       sata_phy->phyclk = devm_clk_get(dev, "sata_phyctrl");
->> +       if (IS_ERR(sata_phy->phyclk)) {
->> +               dev_err(dev, "failed to get clk for PHY\n");
->> +               return PTR_ERR(sata_phy->phyclk);
->> +       }
->> +
->> +       ret = clk_prepare_enable(sata_phy->phyclk);
->> +       if (ret < 0) {
->> +               dev_err(dev, "failed to enable source clk\n");
->> +               return ret;
->> +       }
->> +
->> +       sata_phy->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
->> +       if (IS_ERR(sata_phy->phy)) {
->> +               clk_disable_unprepare(sata_phy->phyclk);
->> +               dev_err(dev, "failed to create PHY\n");
->> +               return PTR_ERR(sata_phy->phy);
->> +       }
->> +
->> +       phy_set_drvdata(sata_phy->phy, sata_phy);
->> +
->> +       phy_provider = devm_of_phy_provider_register(dev,
->> +                                       of_phy_simple_xlate);
->> +       if (IS_ERR(phy_provider)) {
->> +               clk_disable_unprepare(sata_phy->phyclk);
->> +               return PTR_ERR(phy_provider);
->> +       }
->> +
->> +       return 0;
->> +}
->> +
->> +static const struct of_device_id exynos_sata_phy_of_match[] = {
->> +       { .compatible = "samsung,exynos5250-sata-phy" },
->> +       { },
->> +};
->> +MODULE_DEVICE_TABLE(of, exynos_sata_phy_of_match);
->> +
->> +static struct platform_driver exynos_sata_phy_driver = {
->> +       .probe  = exynos_sata_phy_probe,
->
->
-> If this driver can be compiled as module, don't you also need remove?
-Will add in next version.
->
-> Best regards,
-> Tomasz
+>  #define USB_VENDOR_ID_CYPRESS          0x04b4
+>  #define USB_DEVICE_ID_CYPRESS_MOUSE    0x0001
+> --
+> tg: (152b734..) upstream/hid-cp2112 (depends on: upstream/master)
