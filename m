@@ -1,140 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaAQVIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:08:48 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:37070 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaAQVIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:08:45 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 16:08:44 EST
-Date: Fri, 17 Jan 2014 22:02:01 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: "Dorau, Lukasz" <lukasz.dorau@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        sebastian.riemer@profitbricks.com, richard.weinberger@gmail.com
-Subject: Re: Why is (2 < 2) true? Is it a gcc bug?
-Message-ID: <20140117210201.GA390@x4>
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
- <CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
- <CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
+	id S1752718AbaAQVLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:11:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:11224 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaAQVLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 16:11:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,676,1384329600"; 
+   d="scan'208";a="468478577"
+Message-ID: <1389993104.3040.445.camel@empanada>
+Subject: [PATCH] tracing/README: Add event file usage to tracing mini-HOWTO
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Jan 2014 15:11:44 -0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.01.17 at 11:58 -0800, Alexei Starovoitov wrote:
-> On Fri, Jan 17, 2014 at 9:58 AM, Alexei Starovoitov
-> <alexei.starovoitov@gmail.com> wrote:
-> > On Fri, Jan 17, 2014 at 5:37 AM, Dorau, Lukasz <lukasz.dorau@intel.com> wrote:
-> >> Hi
-> >>
-> >> My story is very simply...
-> >> I applied the following patch:
-> >>
-> >> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> >> --- a/drivers/scsi/isci/init.c
-> >> +++ b/drivers/scsi/isci/init.c
-> >> @@ -698,8 +698,11 @@ static int isci_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-> >>         if (err)
-> >>                 goto err_host_alloc;
-> >>
-> >> -       for_each_isci_host(i, isci_host, pdev)
-> >> +       for_each_isci_host(i, isci_host, pdev) {
-> >> +               pr_err("(%d < %d) == %d\n",\
-> >> +                      i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
-> >>                 scsi_scan_host(to_shost(isci_host));
-> >> +       }
-> >>
-> >>         return 0;
-> >>
-> >> --
-> >> 1.8.3.1
-> >>
-> >> Then I issued the command 'modprobe isci' on platform with two SCU controllers (Patsburg D or T chipset)
-> >> and received the following, very strange, output:
-> >>
-> >> (0 < 2) == 1
-> >> (1 < 2) == 1
-> >> (2 < 2) == 1
-> >>
-> >> Can anyone explain why (2 < 2) is true? Is it a gcc bug?
-> >
-> > gcc sees that i < array_size is the same as i < 2 as part of loop condition, so
-> > it optimizes (i < sci_max_controllers) into constant 1.
-> > and emits printk like:
-> >   printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
-> >
-> >> (The kernel was compiled using gcc version 4.8.2.)
-> >
-> > it actually looks to be gcc 4.8 bug.
-> > Can you try gcc 4.7 ?
-> >
-> 
-> It is interesting GCC 4.8 bug,
-> since it seems to expose issues in two compiler passes.
-> 
-> here is test case:
-> 
-> struct isci_host;
-> struct isci_orom;
-> 
-> struct isci_pci_info {
->   struct isci_host *hosts[2];
->   struct isci_orom *orom;
-> } v = {{(struct isci_host *)1,(struct isci_host *)1}, 0};
-> 
-> int printf(const char *fmt, ...);
-> 
-> int isci_pci_probe()
-> {
->   int i;
->   struct isci_host *isci_host;
-> 
->   for (i = 0, isci_host = v.hosts[i];
->        i < 2 && isci_host;
->        isci_host = v.hosts[++i]) {
->     printf("(%d < %d) == %d\n", i, 2, (i < 2));
->   }
-> 
->   return 0;
-> }
-> 
-> int main()
-> {
->   isci_pci_probe();
-> }
-> 
-> $ gcc bug.c
-> $./a.out
-> 0 < 2) == 1
-> (1 < 2) == 1
-> $ gcc bug.c -O2
-> $ ./a.out
-> (0 < 2) == 1
-> (1 < 2) == 1
-> Segmentation fault (core dumped)
+It would be useful to have a cheat-sheet for everything under
+tracing/events/ alongside the existing text describing the other files
+in the tracing/ dir.
 
-Your testcase is invalid:
+Add short descriptions of the directories and files under events/
+along with examples, similar to the existing text for the other files
+in tracing/.
 
-markus@x4 tmp % clang -fsanitize=undefined -Wall -Wextra -O2 bug.c
-markus@x4 tmp % ./a.out
-(0 < 2) == 1
-(1 < 2) == 1
-bug.c:16:20: runtime error: index 2 out of bounds for type 'struct isci_host *[2]'
+Also clean up a few minor alignment problems noticed when adding the
+new text.
 
-As Jakub Jelinek said on IRC, changing the loop to e.g.:
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+---
+ kernel/trace/trace.c | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
 
-  for (i = 0;
-       i < 2 && (isci_host = v.hosts[i]);
-       i++) {
-
-fixes the issue.
-
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e32a2f4..058c0ee 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3523,9 +3523,9 @@ static const char readme_msg[] =
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 	"\n  available_filter_functions - list of functions that can be filtered on\n"
+ 	"  set_ftrace_filter\t- echo function name in here to only trace these functions\n"
+-	"            accepts: func_full_name, *func_end, func_begin*, *func_middle*\n"
+-	"            modules: Can select a group via module\n"
+-	"             Format: :mod:<module-name>\n"
++	"             accepts: func_full_name, *func_end, func_begin*, *func_middle*\n"
++	"             modules: Can select a group via module\n"
++	"              Format: :mod:<module-name>\n"
+ 	"             example: echo :mod:ext3 > set_ftrace_filter\n"
+ 	"            triggers: a command to perform when function is hit\n"
+ 	"              Format: <function>:<trigger>[:count]\n"
+@@ -3573,6 +3573,37 @@ static const char readme_msg[] =
+ 	"  stack_trace_filter\t- Like set_ftrace_filter but limits what stack_trace traces\n"
+ #endif
+ #endif /* CONFIG_STACK_TRACER */
++	"  events/\t\t- Directory containing all trace event subsystems:\n"
++	"      enable\t\t- Write 0/1 to enable/disable tracing of all events\n"
++	"  events/<system>/\t- Directory containing all trace events for <system>:\n"
++	"      enable\t\t- Write 0/1 to enable/disable tracing of all <system> events\n"
++	"      filter\t\t- If set, only events passing filter are traced\n"
++	"  events/<system>/<event>/\t- Directory containing control files for <event>:\n"
++	"      enable\t\t- Write 0/1 to enable/disable tracing of <event>\n"
++	"      filter\t\t- If set, only events passing filter are traced\n"
++	"      trigger\t\t- If set, a command to perform when event is hit\n"
++	"            Format: <trigger>[:count][if <filter>]\n"
++	"           trigger: traceon, traceoff\n"
++	"                    enable_event:<system>:<event>\n"
++	"                    disable_event:<system>:<event>\n"
++#ifdef CONFIG_STACKTRACE
++	"                    stacktrace\n"
++#endif
++#ifdef CONFIG_TRACER_SNAPSHOT
++	"                    snapshot\n"
++#endif
++	"           example: echo traceoff > events/block/block_unplug/trigger\n"
++	"                    echo traceoff:3 > events/block/block_unplug/trigger\n"
++	"                    echo 'enable_event:kmem:kmalloc:3 if nr_rq > 1' > events/block/block_unplug/trigger\n"
++	"           The first disables tracing every time block_unplug is hit.\n"
++	"           The second disables tracing the first 3 times block_unplug is hit.\n"
++	"           The third enables the kmalloc event the first 3 times block_unplug\n"
++	"             is hit and has value of greater than 1 for the 'nr_rq' event field.\n"
++	"           To remove a trigger without a count:\n"
++	"             echo '!<trigger> > <system>/<event>/trigger\n"
++	"           To remove a trigger with a count:\n"
++	"             echo '!<trigger>:0 > <system>/<event>/trigger\n"
++	"           Filters can be ignored when removing a trigger.\n"
+ ;
+ 
+ static ssize_t
 -- 
-Markus
+1.8.3.1
+
+
+
