@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaAQUPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:15:50 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:38200 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaAQUPs (ORCPT
+	id S1753687AbaAQUQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:16:30 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52026 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaAQUQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 15:15:48 -0500
-Date: Fri, 17 Jan 2014 14:14:54 -0600
-From: Mike Miller <mike.miller@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, thenzl@redhat.com,
-        hare@suse.de
-Subject: [PATCH 1/1] scsi: hpsa resubmit all PCI IDs 
-Message-ID: <20140117201454.GC9658@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Fri, 17 Jan 2014 15:16:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPcyv4ixMVV5-9NPR_Nx-hgwAGBS8uh1DQabjimCaNfYt30kiA@mail.gmail.com>
+References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+ <20140114004622.27138.54103.stgit@viggo.jf.intel.com> <CAMAG_eduH4M2OPVh-R4Q6KG1DDcinEDzC-fQyXj1mLdZG=49hw@mail.gmail.com>
+ <CAPcyv4hzNT15R41zSOM98f-0aQ60HBZoD_DAvf6VED7iXoCZ8w@mail.gmail.com> <CAPcyv4ixMVV5-9NPR_Nx-hgwAGBS8uh1DQabjimCaNfYt30kiA@mail.gmail.com>
+From: saeed bishara <saeed.bishara@gmail.com>
+Date: Fri, 17 Jan 2014 22:16:06 +0200
+Message-ID: <CAMAG_efOD03wLtetfNAfymsCs6kVEqoJx6e7qY2txBBMDgbmfQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] net_dma: simple removal
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Whipple <whipple@securedatainnovations.ch>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Miller <mike.miller@hp.com>
+Dan,
 
-This patch has every ID we have in our svn repository. Some controllers were
-cancelled, others added, now the cancelled ones are back. This patch made
-against linux-3.13.0-rc8. Now the tables are in sync with one another.
-Thanks to Tomas Henzl for pointing out the earlier problem.
+isn't this issue similar to direct io case?
+can you please look at the following article
+http://lwn.net/Articles/322795/
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
----
- drivers/scsi/hpsa.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+regarding performance improvement using NET_DMA, I don't have concrete
+numbers, but it should be around 15-20%. my system is i/o coherent.
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 348b207..614b9cb 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -91,7 +91,6 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3233},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
-@@ -100,6 +99,7 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
-@@ -108,15 +108,20 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x192A},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BF},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C0},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C1},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C2},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C6},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CA},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CB},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CC},
-@@ -149,22 +154,29 @@ static struct board_type products[] = {
- 	{0x3354103C, "Smart Array P420i", &SA5_access},
- 	{0x3355103C, "Smart Array P220i", &SA5_access},
- 	{0x3356103C, "Smart Array P721m", &SA5_access},
-+	{0x1920103C, "Smart Array P430i", &SA5_access},
- 	{0x1921103C, "Smart Array P830i", &SA5_access},
- 	{0x1922103C, "Smart Array P430", &SA5_access},
- 	{0x1923103C, "Smart Array P431", &SA5_access},
- 	{0x1924103C, "Smart Array P830", &SA5_access},
-+	{0x1925103C, "Smart Array P831", &SA5_access},
- 	{0x1926103C, "Smart Array P731m", &SA5_access},
- 	{0x1928103C, "Smart Array P230i", &SA5_access},
- 	{0x1929103C, "Smart Array P530", &SA5_access},
-+	{0x192A103C, "Smart Array P531", &SA5_access},
- 	{0x21BD103C, "Smart Array", &SA5_access},
- 	{0x21BE103C, "Smart Array", &SA5_access},
- 	{0x21BF103C, "Smart Array", &SA5_access},
- 	{0x21C0103C, "Smart Array", &SA5_access},
-+	{0x21C1103C, "Smart Array", &SA5_access},
- 	{0x21C2103C, "Smart Array", &SA5_access},
- 	{0x21C3103C, "Smart Array", &SA5_access},
-+	{0x21C4103C, "Smart Array", &SA5_access},
- 	{0x21C5103C, "Smart Array", &SA5_access},
-+	{0x21C6103C, "Smart Array", &SA5_access},
- 	{0x21C7103C, "Smart Array", &SA5_access},
- 	{0x21C8103C, "Smart Array", &SA5_access},
-+	{0x21C9103C, "Smart Array", &SA5_access},
- 	{0x21CA103C, "Smart Array", &SA5_access},
- 	{0x21CB103C, "Smart Array", &SA5_access},
- 	{0x21CC103C, "Smart Array", &SA5_access},
+saeed
+
+On Wed, Jan 15, 2014 at 11:33 PM, Dan Williams <dan.j.williams@intel.com> wrote:
+> On Wed, Jan 15, 2014 at 1:31 PM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> On Wed, Jan 15, 2014 at 1:20 PM, saeed bishara <saeed.bishara@gmail.com> wrote:
+>>> Hi Dan,
+>>>
+>>> I'm using net_dma on my system and I achieve meaningful performance
+>>> boost when running Iperf receive.
+>>>
+>>> As far as I know the net_dma is used by many embedded systems out
+>>> there and might effect their performance.
+>>> Can you please elaborate on the exact scenario that cause the memory corruption?
+>>>
+>>> Is the scenario mentioned here caused by "real life" application or
+>>> this is more of theoretical issue found through manual testing, I was
+>>> trying to find the thread describing the failing scenario and couldn't
+>>> find it, any pointer will be appreciated.
+>>
+>> Did you see the referenced commit?
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=77873803363c
+>>
+>> This is a real issue in that any app that forks() while receiving data
+>> can cause the dma data to be lost.  The problem is that the copy
+>> operation falls back to cpu at many locations.  Any one of those
+>> instance could touch a mapped page and trigger a copy-on-write event.
+>> The dma completes to the wrong location.
+>>
+>
+> Btw, do you have benchmark data showing that NET_DMA is beneficial on
+> these platforms?  I would have expected worse performance on platforms
+> without i/o coherent caches.
