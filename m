@@ -1,221 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaAQO7k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:59:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36319 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415AbaAQO5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:57:43 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "David A. Long" <dave.long@linaro.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/19] perf probe: Release all dynamically allocated parameters
-Date: Fri, 17 Jan 2014 11:57:21 -0300
-Message-Id: <1389970645-12075-16-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1389970645-12075-1-git-send-email-acme@infradead.org>
-References: <1389970645-12075-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752722AbaAQPAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:00:00 -0500
+Received: from hofr.at ([212.69.189.236]:41127 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450AbaAQO75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:59:57 -0500
+Date: Fri, 17 Jan 2014 15:59:55 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users@vger.kernel.org,
+        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
+        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
+Message-ID: <20140117145955.GA5637@opentech.at>
+References: <20131229171154.GA23586@opentech.at> <20140117144729.GB5785@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117144729.GB5785@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
 
-To fix a memory leak, release all dynamically allocated
-options/parameters in params data structure. This also
-introduces/exports some init/clear routines.
+> This is what I am going to apply. It also dropped the get_cpu_light()
+> call which was added in a patch to remove the get_cpu_var() and is now
+> no longer required since we have the get_locked_var() thingy now.
+>
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "David A. Long" <dave.long@linaro.org>
-Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140116093947.24403.80118.stgit@kbuild-fedora.novalocal
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-probe.c    | 48 ++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/probe-event.c | 22 ++++++++++++++++++++
- tools/perf/util/probe-event.h |  6 ++++++
- 3 files changed, 71 insertions(+), 5 deletions(-)
+I do not think you can drop that - what is preventing migration now ?
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 43ff33d0007b..78948882e3de 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -59,7 +59,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target;
-+	char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -98,7 +98,10 @@ static int set_target(const char *ptr)
- 	 * short module name.
- 	 */
- 	if (!params.target && ptr && *ptr == '/') {
--		params.target = ptr;
-+		params.target = strdup(ptr);
-+		if (!params.target)
-+			return -ENOMEM;
-+
- 		found = 1;
- 		buf = ptr + (strlen(ptr) - 3);
- 
-@@ -116,6 +119,9 @@ static int parse_probe_event_argv(int argc, const char **argv)
- 	char *buf;
- 
- 	found_target = set_target(argv[0]);
-+	if (found_target < 0)
-+		return found_target;
-+
- 	if (found_target && argc == 1)
- 		return 0;
- 
-@@ -217,7 +223,6 @@ static int opt_show_lines(const struct option *opt __maybe_unused,
- 
- 	params.show_lines = true;
- 	ret = parse_line_range_desc(str, &params.line_range);
--	INIT_LIST_HEAD(&params.line_range.line_list);
- 
- 	return ret;
- }
-@@ -263,7 +268,28 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
--int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
-+static void init_params(void)
-+{
-+	line_range__init(&params.line_range);
-+}
-+
-+static void cleanup_params(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < params.nevents; i++)
-+		clear_perf_probe_event(params.events + i);
-+	if (params.dellist)
-+		strlist__delete(params.dellist);
-+	line_range__clear(&params.line_range);
-+	free(params.target);
-+	if (params.filter)
-+		strfilter__delete(params.filter);
-+	memset(&params, 0, sizeof(params));
-+}
-+
-+static int
-+__cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	const char * const probe_usage[] = {
- 		"perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]",
-@@ -417,6 +443,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		ret = show_available_funcs(params.target, params.filter,
- 					params.uprobes);
- 		strfilter__delete(params.filter);
-+		params.filter = NULL;
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show functions."
- 			       " (%d)\n", ret);
-@@ -456,6 +483,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-+		params.filter = NULL;
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show vars. (%d)\n", ret);
- 		return ret;
-@@ -464,7 +492,6 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	if (params.dellist) {
- 		ret = del_perf_probe_events(params.dellist);
--		strlist__delete(params.dellist);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to delete events. (%d)\n", ret);
- 			return ret;
-@@ -483,3 +510,14 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	}
- 	return 0;
- }
-+
-+int cmd_probe(int argc, const char **argv, const char *prefix)
-+{
-+	int ret;
-+
-+	init_params();
-+	ret = __cmd_probe(argc, argv, prefix);
-+	cleanup_params();
-+
-+	return ret;
-+}
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 579b655c0f93..c68711c50f47 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -794,6 +794,28 @@ int show_available_vars(struct perf_probe_event *pevs __maybe_unused,
- }
- #endif
- 
-+void line_range__clear(struct line_range *lr)
-+{
-+	struct line_node *ln;
-+
-+	free(lr->function);
-+	free(lr->file);
-+	free(lr->path);
-+	free(lr->comp_dir);
-+	while (!list_empty(&lr->line_list)) {
-+		ln = list_first_entry(&lr->line_list, struct line_node, list);
-+		list_del(&ln->list);
-+		free(ln);
-+	}
-+	memset(lr, 0, sizeof(*lr));
-+}
-+
-+void line_range__init(struct line_range *lr)
-+{
-+	memset(lr, 0, sizeof(*lr));
-+	INIT_LIST_HEAD(&lr->line_list);
-+}
-+
- static int parse_line_num(char **ptr, int *val, const char *what)
- {
- 	const char *start = *ptr;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index d481c46e0796..fcaf7273e85a 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -120,6 +120,12 @@ extern void clear_perf_probe_event(struct perf_probe_event *pev);
- /* Command string to line-range */
- extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
- 
-+/* Release line range members */
-+extern void line_range__clear(struct line_range *lr);
-+
-+/* Initialize line range */
-+extern void line_range__init(struct line_range *lr);
-+
- /* Internal use: Return kernel/module path */
- extern const char *kernel_get_module_path(const char *module);
- 
--- 
-1.8.1.4
+#define get_locked_var(lvar, var)                                       \
+        (*({                                                            \
+                local_lock(lvar);                                       \
+                &__get_cpu_var(var);                                    \
+        }))
 
+No migrate_disable here - so how is this protected against migration ?
+Note that I did send out mail on this because I believe get_locked_var
+should actually be doing a a migrate_disable/enable but got no feedback on that
+yet.
+
+So for now I think you need to retain the get_cpu_light/put_cpu_light
+   
+thx!
+hofrat
+ 
+> From: Nicholas Mc Guire <der.herr@hofr.at>
+> Date: Sun, 29 Dec 2013 18:11:54 +0100
+> Subject: [PATCH] net: ip_send_unicast_reply: add missing local serialization
+> 
+> in response to the oops in ip_output.c:ip_send_unicast_reply under high
+> network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen
+> <Sami.Pietikainen@wapice.com>, this patch adds local serialization in
+> ip_send_unicast_reply.
+> 
+> from ip_output.c:
+> /*
+>  *      Generic function to send a packet as reply to another packet.
+>  *      Used to send some TCP resets/acks so far.
+>  *
+>  *      Use a fake percpu inet socket to avoid false sharing and contention.
+>  */
+> static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
+> ...
+> 
+> which was added in commit be9f4a44 in linux-stable. The git log, wich
+> introduced the PER_CPU unicast_sock, states:
+> <snip>
+> commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
+> Author: Eric Dumazet <edumazet@google.com>
+> Date:   Thu Jul 19 07:34:03 2012 +0000
+> 
+>     ipv4: tcp: remove per net tcp_sock
+> 
+>     tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
+>     per network namespace.
+> 
+>     This leads to bad behavior on multiqueue NICS, because many cpus
+>     contend for the socket lock and once socket lock is acquired, extra
+>     false sharing on various socket fields slow down the operations.
+> 
+>     To better resist to attacks, we use a percpu socket. Each cpu can
+>     run without contention, using appropriate memory (local node)
+> <snip>
+> 
+> The per-cpu here thus is assuming exclusivity serializing per cpu - so
+> the use of get_cpu_ligh introduced in
+> net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the
+> preempt_disable in favor of a migrate_disable is probably wrong as this
+> only handles the referencial consistency but not the serialization. To
+> evade a preempt_disable here a local lock would be needed.
+> 
+> Therapie:
+>  * add local lock:
+>  * and re-introduce local serialization:
+> 
+> Tested on x86 with high network load using the testcase from Sami Pietikainen
+>   while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
+> 
+> Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
+> Cc: stable-rt@vger.kernel.org
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  net/ipv4/ip_output.c | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+> index e9fa68c..8bb3b4a 100644
+> --- a/net/ipv4/ip_output.c
+> +++ b/net/ipv4/ip_output.c
+> @@ -79,6 +79,7 @@
+>  #include <linux/mroute.h>
+>  #include <linux/netlink.h>
+>  #include <linux/tcp.h>
+> +#include <linux/locallock.h>
+>  
+>  int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
+>  EXPORT_SYMBOL(sysctl_ip_default_ttl);
+> @@ -1468,6 +1469,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
+>  	.uc_ttl		= -1,
+>  };
+>  
+> +/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
+> +static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
+> +
+>  void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+>  			   __be32 saddr, const struct ip_reply_arg *arg,
+>  			   unsigned int len)
+> @@ -1505,8 +1509,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+>  	if (IS_ERR(rt))
+>  		return;
+>  
+> -	get_cpu_light();
+> -	inet = &__get_cpu_var(unicast_sock);
+> +	inet = &get_locked_var(unicast_lock, unicast_sock);
+>  
+>  	inet->tos = arg->tos;
+>  	sk = &inet->sk;
+> @@ -1530,7 +1533,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+>  		ip_push_pending_frames(sk, &fl4);
+>  	}
+>  
+> -	put_cpu_light();
+> +	put_locked_var(unicast_lock, unicast_sock);
+>  
+>  	ip_rt_put(rt);
+>  }
+> -- 
+> 1.8.5.2
+> 
