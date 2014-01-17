@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270AbaAQJs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 04:48:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56104 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751829AbaAQJsX (ORCPT
+	id S1752410AbaAQJtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 04:49:25 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:39296 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752131AbaAQJsZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 04:48:23 -0500
-Date: Fri, 17 Jan 2014 09:48:19 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Daniel Matuschek <daniel@matuschek.net>
-Cc: alsa-devel@alsa-project.org, Dimitris.Papastamos@wolfsonmicro.com,
-        tiwai@suse.de, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        perex@perex.cz, broonie@kernel.org
-Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
-	PLL generation
-Message-ID: <20140117094819.GA2826@opensource.wolfsonmicro.com>
-References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+	Fri, 17 Jan 2014 04:48:25 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Chen-Yu Tsai'" <wens@csie.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: RE: [PATCH RFC 1/6] net: rfkill: gpio: fix gpio name buffer size
+ off by 1
+Thread-Topic: [PATCH RFC 1/6] net: rfkill: gpio: fix gpio name buffer size
+ off by 1
+Thread-Index: AQHPE0+5GjqUl9o9BUy7yae5v6yQmpqIqomg
+Date: Fri, 17 Jan 2014 09:46:08 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45EA9D@AcuExch.aculab.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+ <1389941251-32692-2-git-send-email-wens@csie.org>
+In-Reply-To: <1389941251-32692-2-git-send-email-wens@csie.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 08:34:10PM +0100, Daniel Matuschek wrote:
-> WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-> most sample rates. At 192kHz only 128xfs is supported. The
-> existing driver selects 128xfs automatically for some lower
-> samples rates. By using an additional mclk_div divider, it
-> is now possible to control the behaviour. This allows using
-> 256xfs PLL frequency on all sample rates up to 96kHz. It
-> should allow lower jitter and better signal quality. The
-> behavior has to be controlled by the sound card driver,
-> because some sample frequency share the same setting. e.g.
-> 192kHz and 96kHz use 24.576MHz master clock. The only
-> difference is the MCLK divider.
-> 
-> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
+From: Chen-Yu Tsai
+> snprintf should be passed the complete size of the buffer, including
+> the space for '\0'. The previous code resulted in the *_reset and
+> *_shutdown strings being truncated.
+...
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+...
+> -	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
+> -	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
+> +	snprintf(rfkill->reset_name, len + 7 , "%s_reset", rfkill->name);
+> +	snprintf(rfkill->shutdown_name, len + 10, "%s_shutdown", rfkill->name);
 
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+I can't find the context for the above, but they look very dubious.
+I'd expect: snprintf(foo, sizeof foo, ...).
+If you are trying to truncate rfkill->name you need to use %.*s.
+
+	David
 
 
-Sorry about the slight delay travelling with limited internet at
-the mo.
 
-Thanks,
-Charles
