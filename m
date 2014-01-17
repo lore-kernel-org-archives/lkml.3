@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaAQJRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 04:17:52 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38302 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaAQJRs (ORCPT
+	id S1752228AbaAQJS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 04:18:58 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:38740 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaAQJSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 04:17:48 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: i2c: mt9p031: Check return value of clk_prepare_enable/clk_set_rate
-Date: Fri, 17 Jan 2014 14:47:33 +0530
-Message-Id: <1389950253-31251-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 17 Jan 2014 04:18:53 -0500
+X-Originating-IP: 50.43.14.201
+Date: Fri, 17 Jan 2014 01:18:46 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: gcc tickets for sparse attributes
+Message-ID: <20140117091845.GB577@leaf>
+References: <52D8BF2C.9090604@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D8BF2C.9090604@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Thu, Jan 16, 2014 at 09:27:08PM -0800, H. Peter Anvin wrote:
+> I have filed gcc tickets asking for direct support in gcc for some
+> sparse extensions that we use heavily in the kernel:
+> 
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59850
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59851
+> 
+> However, I would also like support for the context extensions, but I'm
+> not knowledgeable enough to describe the semantics accurately.  Would
+> anyone be willing to file a ticket describing how the context extension
+> works well enough that it could be implemented?
 
-clk_set_rate(), clk_prepare_enable() functions can fail, so check the return
-values to avoid surprises.
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59856
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/i2c/mt9p031.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+Also:
 
-diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-index e5ddf47..dbe34d7 100644
---- a/drivers/media/i2c/mt9p031.c
-+++ b/drivers/media/i2c/mt9p031.c
-@@ -222,12 +222,15 @@ static int mt9p031_clk_setup(struct mt9p031 *mt9p031)
- 
- 	struct i2c_client *client = v4l2_get_subdevdata(&mt9p031->subdev);
- 	struct mt9p031_platform_data *pdata = mt9p031->pdata;
-+	int ret;
- 
- 	mt9p031->clk = devm_clk_get(&client->dev, NULL);
- 	if (IS_ERR(mt9p031->clk))
- 		return PTR_ERR(mt9p031->clk);
- 
--	clk_set_rate(mt9p031->clk, pdata->ext_freq);
-+	ret = clk_set_rate(mt9p031->clk, pdata->ext_freq);
-+	if (ret < 0)
-+		return ret;
- 
- 	mt9p031->pll.ext_clock = pdata->ext_freq;
- 	mt9p031->pll.pix_clock = pdata->target_freq;
-@@ -286,8 +289,11 @@ static int mt9p031_power_on(struct mt9p031 *mt9p031)
- 		return ret;
- 
- 	/* Emable clock */
--	if (mt9p031->clk)
--		clk_prepare_enable(mt9p031->clk);
-+	if (mt9p031->clk) {
-+		ret = clk_prepare_enable(mt9p031->clk);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/* Now RESET_BAR must be high */
- 	if (gpio_is_valid(mt9p031->reset)) {
--- 
-1.7.9.5
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59855
 
+- Josh Triplett
