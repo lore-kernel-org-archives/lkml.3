@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaAQBn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:43:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaAQBn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:43:56 -0500
-Date: Thu, 16 Jan 2014 20:43:51 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, riel@redhat.com,
-        aarcange@redhat.com, aquini@redhat.com, mst@redhat.com,
-        vdavydov@parallels.com, amit.shah@redhat.com, dfediuck@redhat.com,
-        alitke@redhat.com
-Subject: Re: [RFC PATCH 3/4] virtio_balloon: add pressure notification via a
- new virtqueue
-Message-ID: <20140116204351.7d48c2b9@redhat.com>
-In-Reply-To: <20140116203819.0e7be6d4@redhat.com>
-References: <1389889445-3855-1-git-send-email-lcapitulino@redhat.com>
-	<1389889445-3855-4-git-send-email-lcapitulino@redhat.com>
-	<87y52ftus0.fsf@rustcorp.com.au>
-	<20140116203819.0e7be6d4@redhat.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751919AbaAQBrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:47:00 -0500
+Received: from mail.kernelconcepts.de ([212.60.202.196]:36666 "EHLO
+	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaAQBq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 20:46:56 -0500
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jan 2014 20:46:56 EST
+Message-ID: <52D88B6E.6010709@kernelconcepts.de>
+Date: Fri, 17 Jan 2014 02:46:22 +0100
+From: Simon Budig <simon.budig@kernelconcepts.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>,
+        linux-input@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Silvio F <silvio.fricke@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 3/3] Input: edt-ft5x06: Add DT support
+References: <1389859338-11685-1-git-send-email-LW@KARO-electronics.de> <1389859338-11685-4-git-send-email-LW@KARO-electronics.de> <20140117002649.GA837@core.coreip.homeip.net>
+In-Reply-To: <20140117002649.GA837@core.coreip.homeip.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="BALh93kiskoxb6g728lvuBjJemlgJjl5R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014 20:38:19 -0500
-Luiz Capitulino <lcapitulino@redhat.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--BALh93kiskoxb6g728lvuBjJemlgJjl5R
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> > What does qemu do with this information?
-> 
-> There are two possible scenarios:
-> 
->  1. The balloon driver is currently inflating when it gets under
->     pressure
-> 
->     QEMU resets "num_pages" to the current balloon size. This
->     cancels the on-going inflate
-> 
->  2. The balloon driver is not inflating, eg. it's possibly sleeping
-> 
->    QEMU issues a deflate
-> 
-> But note that those scenarios are not supposed to be used with the
-> current device, they are part of the automatic ballooning feature.
-> I CC'ed you on the QEMU patch, you can find it here case you didn't
-> see it:
-> 
->  http://marc.info/?l=kvm&m=138988966315690&w=2
+Hi Dmitry
 
-By "current device" I meant "outside of automatic ballooning scope".
+On 17/01/14 01:26, Dmitry Torokhov wrote:
+>> +  The following properties provide default values for the
+>> +  corresponding parameters (see Documentation/input/edt-ft5x06.txt)
+>> +- edt,threshold: allows setting the "click"-threshold in the range fr=
+om 20 to 80.
+>> +- edt,gain: sensitivity (0..31) (lower value -> higher sensitivity)
+>> +- edt,offset: edge compensation (0..31)
+>> +- edt,report-rate: report rate (3..14)
+>=20
+> I wonder if we really need to have it in device tree? Can users needing=
+
+> top tweak the settings do it via udev rules?
+
+IMO it makes sense to have these in the device tree. These values need
+to be adjusted if you have glass or acrylics in front of the touch
+glass. The defaults are tailored to the touchscreen without any
+(additional) material in front of it.
+
+So manufacturers need to provide different defaults depending on the way
+a specific device is built. So these properties can be viewed in the
+same way you specify display resolution or display type in the device tre=
+e.
+
+Bye,
+         Simon
+
+
+--=20
+       Simon Budig                        kernel concepts GmbH
+       simon.budig@kernelconcepts.de      Sieghuetter Hauptweg 48
+       +49-271-771091-17                  D-57072 Siegen
+
+
+
+--BALh93kiskoxb6g728lvuBjJemlgJjl5R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlLYi24ACgkQO2O/RXesiHAlCgCglXbccRZKZoEn4WzdUpJ35ZtU
+DjkAn2w6BsHgr66lFkpu7k6/QyWW3err
+=iVxg
+-----END PGP SIGNATURE-----
+
+--BALh93kiskoxb6g728lvuBjJemlgJjl5R--
