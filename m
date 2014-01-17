@@ -1,58 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaAQIrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 03:47:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:62468 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaAQIrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 03:47:33 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-2a-52d8ee2306b6
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: [PATCH] cris: cryptocop: fix GFP_ATOMIC macro usage
-Date: Fri, 17 Jan 2014 09:47:18 +0100
-Message-id: <1389948438-26437-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t9jAV2VdzeCDF7sZ7R4fmgWs8WK1euY
-	LS7vmsNmsfbIXXaLPb9jHFg9rq8L8OjbsorR4/MmuQDmKC6blNSczLLUIn27BK6MlR0TWAqW
-	sldsffqJtYGxm62LkZNDQsBEYtPPOYwQtpjEhXvrgeJcHEICixglbr98BOW0MknMXdzDClLF
-	JmAo0fW2C6xbRMBGYlP3YWYQm1mgTuLBsk1gNcJA8d0fbrOA2CwCqhLtk6+BxXkFPCR6HjwE
-	2sYBtE1BYs4kmwmM3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBHv+mdQOxpUNFocY
-	BTgYlXh4JcRvBAmxJpYVV+YeYpTgYFYS4d16EyjEm5JYWZValB9fVJqTWnyIUZqDRUmc90Cr
-	daCQQHpiSWp2ampBahFMlomDU6qBUUF9fiL32fK3Hd6v+9j6HwZXnn6Zu7NlW7WvX9Q2Zuv9
-	dbUxJmHrVn2srv598Tbfoa+mnb0cd+fxeAnM0lj17eUrlWjDPY8epl4SuGu/nT9ozpdGEban
-	C89P3GXRyMf1WkfmkMy7PLuoH68Nti34NfuN+t0nFhdPHu+W9hJ7t2u39IOEbS8WTVViKc5I
-	NNRiLipOBAB/r01b+AEAAA==
+	id S1751932AbaAQIxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 03:53:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59699 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331AbaAQIxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 03:53:10 -0500
+Date: Fri, 17 Jan 2014 08:53:05 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmstat: Do not display stats for TLB flushes unless
+ debugging
+Message-ID: <20140117085305.GS4963@suse.de>
+References: <1389278098-27154-1-git-send-email-mgorman@suse.de>
+ <1389278098-27154-2-git-send-email-mgorman@suse.de>
+ <20140116111205.GN4963@suse.de>
+ <alpine.DEB.2.02.1401161515540.4182@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401161515540.4182@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
-flags and LACK of __GFP_WAIT flag. To check if caller wanted to perform an
-atomic allocation, the code must test __GFP_WAIT flag presence.
+On Thu, Jan 16, 2014 at 03:22:12PM -0800, David Rientjes wrote:
+> On Thu, 16 Jan 2014, Mel Gorman wrote:
+> 
+> > diff --git a/mm/vmstat.c b/mm/vmstat.c
+> > index 7249614..def5dd2 100644
+> > --- a/mm/vmstat.c
+> > +++ b/mm/vmstat.c
+> > @@ -851,12 +851,14 @@ const char * const vmstat_text[] = {
+> >  	"thp_zero_page_alloc",
+> >  	"thp_zero_page_alloc_failed",
+> >  #endif
+> > +#ifdef CONFIG_DEBUG_TLBFLUSH
+> >  #ifdef CONFIG_SMP
+> >  	"nr_tlb_remote_flush",
+> >  	"nr_tlb_remote_flush_received",
+> > -#endif
+> > +#endif /* CONFIG_SMP */
+> >  	"nr_tlb_local_flush_all",
+> >  	"nr_tlb_local_flush_one",
+> > +#endif /* CONFIG_DEBUG_TLBFLUSH */
+> >  
+> >  #endif /* CONFIG_VM_EVENTS_COUNTERS */
+> >  };
+> 
+> Hmm, so why are NR_TLB_REMOTE_FLUSH{,_RECEIVED} defined for !CONFIG_SMP in 
+> linux-next?
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Because there are times when I am a complete muppet and this
+is one of them. This is a revised version of the patch "x86:
+mm: Account for TLB flushes only when debugging" which is
+x86-mm-account-for-tlb-flushes-only-when-debugging.patch in mmotm
+
+Thanks David.
+
+---8<---
+x86: mm: Account for TLB flushes only when debugging
+
+Bisection between 3.11 and 3.12 fingered commit 9824cf97 (mm: vmstats:
+tlb flush counters).  The counters are undeniably useful but how often
+do we really need to debug TLB flush related issues? It does not justify
+taking the penalty everywhere so make it a debugging option.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- arch/cris/arch-v32/drivers/cryptocop.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/tlbflush.h    |  6 +++---
+ arch/x86/kernel/cpu/mtrr/generic.c |  4 ++--
+ arch/x86/mm/tlb.c                  | 14 +++++++-------
+ include/linux/vm_event_item.h      |  4 +++-
+ include/linux/vmstat.h             |  8 ++++++++
+ mm/vmstat.c                        |  4 +++-
+ 6 files changed, 26 insertions(+), 14 deletions(-)
 
-diff --git a/arch/cris/arch-v32/drivers/cryptocop.c b/arch/cris/arch-v32/drivers/cryptocop.c
-index 877da19..7f2e60a 100644
---- a/arch/cris/arch-v32/drivers/cryptocop.c
-+++ b/arch/cris/arch-v32/drivers/cryptocop.c
-@@ -306,7 +306,7 @@ static void free_cdesc(struct cryptocop_dma_desc *cdesc)
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index e6d90ba..04905bf 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -62,7 +62,7 @@ static inline void __flush_tlb_all(void)
  
- static struct cryptocop_dma_desc *alloc_cdesc(int alloc_flag)
+ static inline void __flush_tlb_one(unsigned long addr)
  {
--	int use_pool = (alloc_flag & GFP_ATOMIC) ? 1 : 0;
-+	int use_pool = (alloc_flag & __GFP_WAIT) ? 0 : 1;
- 	struct cryptocop_dma_desc *cdesc;
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 	__flush_tlb_single(addr);
+ }
  
- 	if (use_pool) {
--- 
-1.7.9.5
-
+@@ -93,13 +93,13 @@ static inline void __flush_tlb_one(unsigned long addr)
+  */
+ static inline void __flush_tlb_up(void)
+ {
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ }
+ 
+ static inline void flush_tlb_all(void)
+ {
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb_all();
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+index ce2d0a2..0e25a1b 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -683,7 +683,7 @@ static void prepare_set(void) __acquires(set_atomicity_lock)
+ 	}
+ 
+ 	/* Flush all TLBs via a mov %cr3, %reg; mov %reg, %cr3 */
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ 
+ 	/* Save MTRR state */
+@@ -697,7 +697,7 @@ static void prepare_set(void) __acquires(set_atomicity_lock)
+ static void post_set(void) __releases(set_atomicity_lock)
+ {
+ 	/* Flush TLBs (no need to flush caches - they are disabled) */
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	__flush_tlb();
+ 
+ 	/* Intel (P6) standard MTRRs */
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index ae699b3..05446c1 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -103,7 +103,7 @@ static void flush_tlb_func(void *info)
+ 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
+ 		return;
+ 
+-	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+ 		if (f->flush_end == TLB_FLUSH_ALL)
+ 			local_flush_tlb();
+@@ -131,7 +131,7 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 	info.flush_start = start;
+ 	info.flush_end = end;
+ 
+-	count_vm_event(NR_TLB_REMOTE_FLUSH);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH);
+ 	if (is_uv_system()) {
+ 		unsigned int cpu;
+ 
+@@ -151,7 +151,7 @@ void flush_tlb_current_task(void)
+ 
+ 	preempt_disable();
+ 
+-	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	local_flush_tlb();
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+@@ -215,7 +215,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 
+ 	/* tlb_flushall_shift is on balance point, details in commit log */
+ 	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
+-		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
++		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+ 		if (has_large_page(mm, start, end)) {
+@@ -224,7 +224,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 		}
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+-			count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
++			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 			__flush_tlb_single(addr);
+ 		}
+ 
+@@ -262,7 +262,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
+ 
+ static void do_flush_tlb_all(void *info)
+ {
+-	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	__flush_tlb_all();
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
+ 		leave_mm(smp_processor_id());
+@@ -270,7 +270,7 @@ static void do_flush_tlb_all(void *info)
+ 
+ void flush_tlb_all(void)
+ {
+-	count_vm_event(NR_TLB_REMOTE_FLUSH);
++	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH);
+ 	on_each_cpu(do_flush_tlb_all, NULL, 1);
+ }
+ 
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index c557c6d..3a712e2 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -71,12 +71,14 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		THP_ZERO_PAGE_ALLOC,
+ 		THP_ZERO_PAGE_ALLOC_FAILED,
+ #endif
++#ifdef CONFIG_DEBUG_TLBFLUSH
+ #ifdef CONFIG_SMP
+ 		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
+ 		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
+-#endif
++#endif /* CONFIG_SMP */
+ 		NR_TLB_LOCAL_FLUSH_ALL,
+ 		NR_TLB_LOCAL_FLUSH_ONE,
++#endif /* CONFIG_DEBUG_TLBFLUSH */
+ 		NR_VM_EVENT_ITEMS
+ };
+ 
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index e4b9480..80ebba9 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -83,6 +83,14 @@ static inline void vm_events_fold_cpu(int cpu)
+ #define count_vm_numa_events(x, y) do { (void)(y); } while (0)
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
++#ifdef CONFIG_DEBUG_TLBFLUSH
++#define count_vm_tlb_event(x)	   count_vm_event(x)
++#define count_vm_tlb_events(x, y)  count_vm_events(x, y)
++#else
++#define count_vm_tlb_event(x)     do {} while (0)
++#define count_vm_tlb_events(x, y) do { (void)(y); } while (0)
++#endif
++
+ #define __count_zone_vm_events(item, zone, delta) \
+ 		__count_vm_events(item##_NORMAL - ZONE_NORMAL + \
+ 		zone_idx(zone), delta)
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7249614..def5dd2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -851,12 +851,14 @@ const char * const vmstat_text[] = {
+ 	"thp_zero_page_alloc",
+ 	"thp_zero_page_alloc_failed",
+ #endif
++#ifdef CONFIG_DEBUG_TLBFLUSH
+ #ifdef CONFIG_SMP
+ 	"nr_tlb_remote_flush",
+ 	"nr_tlb_remote_flush_received",
+-#endif
++#endif /* CONFIG_SMP */
+ 	"nr_tlb_local_flush_all",
+ 	"nr_tlb_local_flush_one",
++#endif /* CONFIG_DEBUG_TLBFLUSH */
+ 
+ #endif /* CONFIG_VM_EVENTS_COUNTERS */
+ };
