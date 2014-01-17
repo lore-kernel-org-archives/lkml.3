@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaAQOVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:21:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50019 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaAQOVn (ORCPT
+	id S1752128AbaAQOV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:21:58 -0500
+Received: from mail.sensor-technik.de ([80.150.181.156]:16880 "EHLO
+	mail.sensor-technik.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaAQOVq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:21:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
-Date: Fri, 17 Jan 2014 15:21:35 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, Charles.Garcia-Tobin@arm.com,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
+	Fri, 17 Jan 2014 09:21:46 -0500
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 09:21:45 EST
+X-IronPort-AV: E=Sophos;i="4.95,674,1384297200"; 
+   d="scan'208,223";a="527015"
+From: Waibel Georg <Georg.Waibel@sensor-technik.de>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
+ configured as gpio output
+Thread-Topic: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
+ configured as gpio output
+Thread-Index: Ac8Tjf3aVV6M/uKQT66xiOgnnC2hVQ==
+Date: Fri, 17 Jan 2014 14:11:18 +0000
+Message-ID: <E1C9442006A9AE48A7A4B85E0D01C4D474F059@stwexdb.stww2k.local>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.25.230.8]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401171521.35940.arnd@arndb.de>
-X-Provags-ID: V02:K0:Fg+6wyPl53C+NnYy0Uqau6XcVgcyPxdjySGq5W4HHUr
- mqQnKAeW/Xw976PUGLzJGZjbptTBDuFUhWeMRNdBkHiVMqEqCm
- vgXyha5e1kiksh6L13XYMRGfMO5toZ2WLrii91fqvPAiIN+DIw
- LaWfj74h+V2A831eQY+qagwcJZW51cAaLz5HLLwBL9Db3X2cry
- HuVswRxf3oiPUfJa3sgqGX/IRGWJ4zI4/snbdyD2rRg3tEc0WU
- PgJ/VldHU9+VbHtWXbpOhHVTSf7QxAo0hxgv2F8OcfPTeKce56
- cInig342AWI6W0FVTK0bRefHOkmH84L5/QASabTKZYD5K+hbPD
- 9qyV54fyZ0flHUq+QMW4=
+X-TBoneOriginalFrom: Waibel Georg <Georg.Waibel@sensor-technik.de>
+X-TBoneOriginalTo: Linus Walleij <linus.walleij@linaro.org>, Alexandre Courbot
+	<gnurou@gmail.com>
+X-TBoneOriginalCC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-TBoneDomainSigned: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 January 2014, Hanjun Guo wrote:
-> 
-> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> 
-> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
-> name from the ACPI timer table is matched with all the registered
-> timer controllers and matching initialisation routine is invoked.
+>From cb384950a1153e856ec03109a5156e660a89bf6d Mon Sep 17 00:00:00 2001
+From: Georg Waibel <georg.waibel@sensor-technik.de>
+Date: Fri, 17 Jan 2014 14:51:38 +0100
+Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if configured
+ as gpio output
 
-I wouldn't anticipate this infrastructure to be required. Shouldn't all
-ARMv8 machines have an architected timer?
+Register PSR was used to read the pin status in the mxc_gpio driver. This
+register reflects the pin status if a pin is configured as gpio input.
+If a pin is configured as an gpio output register PSR is not updated and
+returns 0 instead of the actual pin status. Thus attempting to read back the
+status of an gpio output pin via PSR returns a wrong value.
 
-	Arnd
+Reading register DR instead of PSR fixes this issue:
+- If pin is gpio output: DR returns the value written to DR by software
+- If pin is gpio input: DR returns the value of register PSR und thus the
+  pin status
+
+This behaviour is valid for all processors >= iMX31. Verified on iMX6q.
+See the iMX reference manuals gpio section for details.
+
+Signed-off-by: Georg Waibel <georg.waibel@sensor-technik.de>
+---
+ drivers/gpio/gpio-mxc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
+index 3307f6d..3717e09 100644
+--- a/drivers/gpio/gpio-mxc.c
++++ b/drivers/gpio/gpio-mxc.c
+@@ -407,6 +407,7 @@ static int mxc_gpio_probe(struct platform_device *pdev)
+ 	struct resource *iores;
+ 	int irq_base;
+ 	int err;
++	int dat;
+ 
+ 	mxc_gpio_get_hw(pdev);
+ 
+@@ -447,8 +448,9 @@ static int mxc_gpio_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	dat = (mxc_gpio_hwtype == IMX21_GPIO) ? GPIO_PSR : GPIO_DR;
+ 	err = bgpio_init(&port->bgc, &pdev->dev, 4,
+-			 port->base + GPIO_PSR,
++			 port->base + dat,
+ 			 port->base + GPIO_DR, NULL,
+ 			 port->base + GPIO_GDIR, NULL, 0);
+ 	if (err)
+-- 
+1.7.9.5
