@@ -1,172 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaAQPtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:49:06 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:38856 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaAQPtE (ORCPT
+	id S1752107AbaAQPwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:52:43 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:62388 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaAQPwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:49:04 -0500
-From: Bruce Liu <damuzi000@gmail.com>
-To: peppe.cavallaro@st.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bruce Liu <damuzi000@gmail.com>
-Subject: [PATCH] [PATCH net-next v2] net: stmmac: fix NULL pointer dereference in stmmac_get_tx_hwtstamp
-Date: Fri, 17 Jan 2014 23:47:59 +0800
-Message-Id: <1389973679-2755-1-git-send-email-damuzi000@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 17 Jan 2014 10:52:41 -0500
+Date: Fri, 17 Jan 2014 16:53:30 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [oops?] what protects buf->ops->confirm() from rmmod fuse
+ unmapping buf->ops?
+Message-ID: <20140117155330.GH24171@tucsk.piliscsaba.szeredi.hu>
+References: <20140117045949.GZ10323@ZenIV.linux.org.uk>
+ <CAJfpeguAvP5Sxo5T7foc4Y=JWk-sA38X91w=gM8kfJ2wZe8MRA@mail.gmail.com>
+ <20140117114832.GB10323@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117114832.GB10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When timestamping is enabled, stmmac_tx_clean will call
-stmmac_get_tx_hwtstamp to get tx TS.
-But the skb can be NULL because the last of its tx_skbuff is NULL
-if this packet frame is filled in more than one descriptors.
+On Fri, Jan 17, 2014 at 11:48:32AM +0000, Al Viro wrote:
+> On Fri, Jan 17, 2014 at 10:49:30AM +0100, Miklos Szeredi wrote:
+> 
+> > Can't we just move the  fuse_dev_pipe_buf_ops to some non-modular
+> > place (splice.c).  It's a hack, yes, but it seems to be the simplest
+> > fix.
+> 
+> Umm...  Not even that much of a hack, really, when you consider that it
+> ends up identical to socket pipe_buf_ops (page_cache_release() and
+> put_page() are the same thing, so sock_pipe_buf_release() is the same
+> as generic_pipe_buf_release()).  Might as well merge them (and
+> take to pipe.c or splice.c)...
 
-To fix the issue, change the code:
-- Store TX skb to the tx_skbuff[] of frame's last segment.
-- Check skb is not NULL in stmmac_get_tx_hwtstamp.
+Okay, patch below.
 
-Signed-off-by: Bruce Liu <damuzi000@gmail.com>
+Thanks,
+Miklos
+----
+
+Subject: fuse: fix pipe_buf_operations
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+Having this struct in module memory could Oops when if the module is
+unloaded while the buffer still persists in a pipe.
+
+Since sock_pipe_buf_ops is essentially the same as fuse_dev_pipe_buf_steal
+merge them into nosteal_pipe_buf_ops (this is the same as
+default_pipe_buf_ops except stealing the page from the buffer is not
+allowed).
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: stable@vger.kernel.org
 ---
- drivers/net/ethernet/stmicro/stmmac/chain_mode.c  |    3 +-
- drivers/net/ethernet/stmicro/stmmac/ring_mode.c   |    2 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   35 +++++++++++----------
- 3 files changed, 21 insertions(+), 19 deletions(-)
+ fs/fuse/dev.c             |   22 +++++-----------------
+ fs/splice.c               |   19 +++++++++++++++++++
+ include/linux/pipe_fs_i.h |    2 ++
+ net/core/skbuff.c         |   32 +-------------------------------
+ 4 files changed, 27 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/chain_mode.c b/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
-index d234ab5..72d282b 100644
---- a/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
-@@ -51,6 +51,7 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
- 	priv->hw->desc->prepare_tx_desc(desc, 1, bmax, csum, STMMAC_CHAIN_MODE);
- 
- 	while (len != 0) {
-+		priv->tx_skbuff[entry] = NULL;
- 		entry = (++priv->cur_tx) % txsize;
- 		desc = priv->dma_tx + entry;
- 
-@@ -62,7 +63,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
- 			priv->hw->desc->prepare_tx_desc(desc, 0, bmax, csum,
- 							STMMAC_CHAIN_MODE);
- 			priv->hw->desc->set_tx_owner(desc);
--			priv->tx_skbuff[entry] = NULL;
- 			len -= bmax;
- 			i++;
- 		} else {
-@@ -73,7 +73,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
- 			priv->hw->desc->prepare_tx_desc(desc, 0, len, csum,
- 							STMMAC_CHAIN_MODE);
- 			priv->hw->desc->set_tx_owner(desc);
--			priv->tx_skbuff[entry] = NULL;
- 			len = 0;
- 		}
- 	}
-diff --git a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
-index 1ef9d8a..a96c7c2 100644
---- a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
-@@ -58,6 +58,7 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
- 		priv->hw->desc->prepare_tx_desc(desc, 1, bmax, csum,
- 						STMMAC_RING_MODE);
- 		wmb();
-+		priv->tx_skbuff[entry] = NULL;
- 		entry = (++priv->cur_tx) % txsize;
- 
- 		if (priv->extend_desc)
-@@ -73,7 +74,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
- 						STMMAC_RING_MODE);
- 		wmb();
- 		priv->hw->desc->set_tx_owner(desc);
--		priv->tx_skbuff[entry] = NULL;
- 	} else {
- 		desc->des2 = dma_map_single(priv->device, skb->data,
- 					    nopaged_len, DMA_TO_DEVICE);
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 797b56a..5cf52ad 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -332,7 +332,7 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
- 		return;
- 
- 	/* exit if skb doesn't support hw tstamp */
--	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
-+	if (likely(!skb || !(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
- 		return;
- 
- 	if (priv->adv_ts)
-@@ -1161,21 +1161,24 @@ static void dma_free_tx_skbufs(struct stmmac_priv *priv)
- 	int i;
- 
- 	for (i = 0; i < priv->dma_tx_size; i++) {
--		if (priv->tx_skbuff[i] != NULL) {
--			struct dma_desc *p;
--			if (priv->extend_desc)
--				p = &((priv->dma_etx + i)->basic);
--			else
--				p = priv->dma_tx + i;
-+		struct dma_desc *p;
- 
--			if (priv->tx_skbuff_dma[i])
--				dma_unmap_single(priv->device,
--						 priv->tx_skbuff_dma[i],
--						 priv->hw->desc->get_tx_len(p),
--						 DMA_TO_DEVICE);
-+		if (priv->extend_desc)
-+			p = &((priv->dma_etx + i)->basic);
-+		else
-+			p = priv->dma_tx + i;
-+
-+		if (priv->tx_skbuff_dma[i]) {
-+			dma_unmap_single(priv->device,
-+					 priv->tx_skbuff_dma[i],
-+					 priv->hw->desc->get_tx_len(p),
-+					 DMA_TO_DEVICE);
-+			priv->tx_skbuff_dma[i] = 0;
-+		}
-+
-+		if (priv->tx_skbuff[i] != NULL) {
- 			dev_kfree_skb_any(priv->tx_skbuff[i]);
- 			priv->tx_skbuff[i] = NULL;
--			priv->tx_skbuff_dma[i] = 0;
- 		}
- 	}
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1296,22 +1296,6 @@ static ssize_t fuse_dev_read(struct kioc
+ 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
  }
-@@ -1844,8 +1847,6 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
  
- 	first = desc;
- 
--	priv->tx_skbuff[entry] = skb;
+-static int fuse_dev_pipe_buf_steal(struct pipe_inode_info *pipe,
+-				   struct pipe_buffer *buf)
+-{
+-	return 1;
+-}
 -
- 	/* To program the descriptors according to the size of the frame */
- 	if (priv->mode == STMMAC_RING_MODE) {
- 		is_jumbo = priv->hw->ring->is_jumbo_frm(skb->len,
-@@ -1873,6 +1874,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 		int len = skb_frag_size(frag);
+-static const struct pipe_buf_operations fuse_dev_pipe_buf_ops = {
+-	.can_merge = 0,
+-	.map = generic_pipe_buf_map,
+-	.unmap = generic_pipe_buf_unmap,
+-	.confirm = generic_pipe_buf_confirm,
+-	.release = generic_pipe_buf_release,
+-	.steal = fuse_dev_pipe_buf_steal,
+-	.get = generic_pipe_buf_get,
+-};
+-
+ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 				    struct pipe_inode_info *pipe,
+ 				    size_t len, unsigned int flags)
+@@ -1358,7 +1342,11 @@ static ssize_t fuse_dev_splice_read(stru
+ 		buf->page = bufs[page_nr].page;
+ 		buf->offset = bufs[page_nr].offset;
+ 		buf->len = bufs[page_nr].len;
+-		buf->ops = &fuse_dev_pipe_buf_ops;
++		/*
++		 * Need to be careful about this.  Having buf->ops in module
++		 * code can Oops if the buffer persists after module unload.
++		 */
++		buf->ops = &nosteal_pipe_buf_ops;
  
-+		priv->tx_skbuff[entry] = NULL;
- 		entry = (++priv->cur_tx) % txsize;
- 		if (priv->extend_desc)
- 			desc = (struct dma_desc *)(priv->dma_etx + entry);
-@@ -1882,7 +1884,6 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 		desc->des2 = skb_frag_dma_map(priv->device, frag, 0, len,
- 					      DMA_TO_DEVICE);
- 		priv->tx_skbuff_dma[entry] = desc->des2;
--		priv->tx_skbuff[entry] = NULL;
- 		priv->hw->desc->prepare_tx_desc(desc, 0, len, csum_insertion,
- 						priv->mode);
- 		wmb();
-@@ -1890,6 +1891,8 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 		wmb();
- 	}
+ 		pipe->nrbufs++;
+ 		page_nr++;
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -555,6 +555,25 @@ static const struct pipe_buf_operations
+ 	.get = generic_pipe_buf_get,
+ };
  
-+	priv->tx_skbuff[entry] = skb;
++static int generic_pipe_buf_nosteal(struct pipe_inode_info *pipe,
++				    struct pipe_buffer *buf)
++{
++	return 1;
++}
 +
- 	/* Finalize the latest segment. */
- 	priv->hw->desc->close_tx_desc(desc);
++/* Pipe buffer operations for a socket and similar. */
++const struct pipe_buf_operations nosteal_pipe_buf_ops = {
++	.can_merge = 0,
++	.map = generic_pipe_buf_map,
++	.unmap = generic_pipe_buf_unmap,
++	.confirm = generic_pipe_buf_confirm,
++	.release = generic_pipe_buf_release,
++	.steal = generic_pipe_buf_nosteal,
++	.get = generic_pipe_buf_get,
++};
++EXPORT_SYMBOL(nosteal_pipe_buf_ops);
++
++
+ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+ 			    unsigned long vlen, loff_t offset)
+ {
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -157,6 +157,8 @@ int generic_pipe_buf_confirm(struct pipe
+ int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
+ void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
  
--- 
-1.7.9.5
-
++extern const struct pipe_buf_operations nosteal_pipe_buf_ops;
++
+ /* for F_SETPIPE_SZ and F_GETPIPE_SZ */
+ long pipe_fcntl(struct file *, unsigned int, unsigned long arg);
+ struct pipe_inode_info *get_pipe_info(struct file *file);
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -74,36 +74,6 @@
+ struct kmem_cache *skbuff_head_cache __read_mostly;
+ static struct kmem_cache *skbuff_fclone_cache __read_mostly;
+ 
+-static void sock_pipe_buf_release(struct pipe_inode_info *pipe,
+-				  struct pipe_buffer *buf)
+-{
+-	put_page(buf->page);
+-}
+-
+-static void sock_pipe_buf_get(struct pipe_inode_info *pipe,
+-				struct pipe_buffer *buf)
+-{
+-	get_page(buf->page);
+-}
+-
+-static int sock_pipe_buf_steal(struct pipe_inode_info *pipe,
+-			       struct pipe_buffer *buf)
+-{
+-	return 1;
+-}
+-
+-
+-/* Pipe buffer operations for a socket. */
+-static const struct pipe_buf_operations sock_pipe_buf_ops = {
+-	.can_merge = 0,
+-	.map = generic_pipe_buf_map,
+-	.unmap = generic_pipe_buf_unmap,
+-	.confirm = generic_pipe_buf_confirm,
+-	.release = sock_pipe_buf_release,
+-	.steal = sock_pipe_buf_steal,
+-	.get = sock_pipe_buf_get,
+-};
+-
+ /**
+  *	skb_panic - private function for out-of-line support
+  *	@skb:	buffer
+@@ -1830,7 +1800,7 @@ int skb_splice_bits(struct sk_buff *skb,
+ 		.partial = partial,
+ 		.nr_pages_max = MAX_SKB_FRAGS,
+ 		.flags = flags,
+-		.ops = &sock_pipe_buf_ops,
++		.ops = &nosteal_pipe_buf_ops,
+ 		.spd_release = sock_spd_release,
+ 	};
+ 	struct sk_buff *frag_iter;
