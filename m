@@ -1,109 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaAQNZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:25:11 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34729 "EHLO
+	id S1752702AbaAQNZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:25:17 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34755 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbaAQNY7 (ORCPT
+	with ESMTP id S1752476AbaAQNZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:24:59 -0500
+	Fri, 17 Jan 2014 08:25:01 -0500
 From: Chen-Yu Tsai <wens@csie.org>
 To: netdev@vger.kernel.org
 Cc: Chen-Yu Tsai <wens@csie.org>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
         Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
         linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH net-next v3 0/8] net: stmmac: Add Allwinner A20 GMAC ethernet
-Date: Fri, 17 Jan 2014 21:24:39 +0800
-Message-Id: <1389965087-21971-1-git-send-email-wens@csie.org>
+Subject: [PATCH net-next v3 7/8] net: stmmac: Use driver data and callbacks tied with compatible strings
+Date: Fri, 17 Jan 2014 21:24:46 +0800
+Message-Id: <1389965087-21971-8-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389965087-21971-1-git-send-email-wens@csie.org>
+References: <1389965087-21971-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The stmmac driver core allows passing feature flags and callbacks via
+platform data. Add a similar stmmac_of_data to pass flags and callbacks
+tied to compatible strings. This allows us to extend stmmac with glue
+layers for different SoCs.
 
-This is v3 of the  Allwinner A20 GMAC glue layer for stmmac.
-I have split the series into stmmac driver changes for net-next,
-and clock and DT patches for their respective trees.
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  | 44 +++++++++++++++++-----
+ include/linux/stmmac.h                             | 18 +++++++++
+ 2 files changed, 52 insertions(+), 10 deletions(-)
 
-
-The Allwinner A20 SoC integrates an early version of dwmac
-IP from Synopsys. On top of that is a hardware glue layer.
-This layer needs to be configured before the dwmac can be
-used.
-
-Part of the glue layer is a clock mux, which controls the
-source and direction of the TX clock used by GMAC.
-
-The glue layer is implemented with existing feature flags 
-and callbacks found in stmmac driver core. A new stmmac_of_data
-structure, which is a subset of the original platform data,
-has been added to tie these values with compatible strings.
-The purpose of this is to avoid future glue layers assuming
-they can pass other data or directly modify values used by
-the driver core. This is found in patch #7.
-
-The callbacks have also been extended to pass board specific
-data. This is found in patch #3.
-
-This version of dwmac IP requires store and forward DMA mode.
-The relevant device tree property was documented, but not
-implemented. Patch #6 adds this to stmmac platform driver.
-
-Changes since v2:
-
-  * Dropped non CONFIG_RESET_CONTROLLER routines, make stmmac
-    select CONFIG_RESET_CONTROLLER
-  * Split out "Deprecate snps,phy-addr and auto-detect PHY address"
-    from "Use driver data and callbacks tied with compatible strings"
-  * Added comments on how sunxi glue layer uses GMAC clock
-  * Rebased onto net-next
-  * Corrected typo in blackfin commit message
-
-Changes since v1:
-
-  * Added optional reset control to stmmac driver core
-  * Added non CONFIG_RESET_CONROLLER routines for the above change
-  * Extended callback API, as discussed with Srinivas
-  * Used new stmmac_of_data to pass features and callbacks,
-    instead of platform data, as discussed
-  * Seperated clock module glue layer into clock driver
-
-
-Cheers,
-ChenYu
-
-
-Chen-Yu Tsai (8):
-  net: stmmac: Enable stmmac main clock when probing hardware
-  net: stmmac: Add support for optional reset control
-  net: stmmac: Allocate and pass soc/board specific data to callbacks
-  blackfin: Update stmmac callback signatures
-  net: stmmac: Honor DT parameter to force DMA store and forward mode
-  net: stmmac: Deprecate snps,phy-addr and auto-detect PHY address
-  net: stmmac: Use driver data and callbacks tied with compatible
-    strings
-  net: stmmac: sunxi platform extensions for GMAC in Allwinner A20 SoC's
-
- .../bindings/net/allwinner,sun7i-a20-gmac.txt      |  27 ++++
- Documentation/devicetree/bindings/net/stmmac.txt   |   4 +-
- Documentation/networking/stmmac.txt                |  12 +-
- arch/blackfin/mach-bf609/boards/ezkit.c            |   2 +-
- drivers/net/ethernet/stmicro/stmmac/Kconfig        |  12 ++
- drivers/net/ethernet/stmicro/stmmac/Makefile       |   1 +
- drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c  | 141 +++++++++++++++++++++
- drivers/net/ethernet/stmicro/stmmac/stmmac.h       |   5 +
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  45 +++++--
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c   |   4 +-
- .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |  80 +++++++++---
- include/linux/stmmac.h                             |  24 +++-
- 12 files changed, 316 insertions(+), 41 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun7i-a20-gmac.txt
- create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c
-
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 82110f1..bf119db 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -26,8 +26,20 @@
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_net.h>
++#include <linux/of_device.h>
+ #include "stmmac.h"
+ 
++static const struct of_device_id stmmac_dt_ids[] = {
++	/* SoC specific glue layers should come before generic bindings */
++	{ .compatible = "st,spear600-gmac"},
++	{ .compatible = "snps,dwmac-3.610"},
++	{ .compatible = "snps,dwmac-3.70a"},
++	{ .compatible = "snps,dwmac-3.710"},
++	{ .compatible = "snps,dwmac"},
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
++
+ #ifdef CONFIG_OF
+ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ 				  struct plat_stmmacenet_data *plat,
+@@ -35,10 +47,32 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct stmmac_dma_cfg *dma_cfg;
++	const struct of_device_id *device;
+ 
+ 	if (!np)
+ 		return -ENODEV;
+ 
++	device = of_match_device(stmmac_dt_ids, &pdev->dev);
++	if (!device)
++		return -ENODEV;
++
++	if (device->data) {
++		const struct stmmac_of_data *data = device->data;
++		plat->has_gmac = data->has_gmac;
++		plat->enh_desc = data->enh_desc;
++		plat->tx_coe = data->tx_coe;
++		plat->rx_coe = data->rx_coe;
++		plat->bugged_jumbo = data->bugged_jumbo;
++		plat->pmt = data->pmt;
++		plat->riwt_off = data->riwt_off;
++		plat->fix_mac_speed = data->fix_mac_speed;
++		plat->bus_setup = data->bus_setup;
++		plat->setup = data->setup;
++		plat->free = data->free;
++		plat->init = data->init;
++		plat->exit = data->exit;
++	}
++
+ 	*mac = of_get_mac_address(np);
+ 	plat->interface = of_get_phy_mode(np);
+ 
+@@ -259,16 +293,6 @@ static int stmmac_pltfr_resume(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(stmmac_pltfr_pm_ops,
+ 			stmmac_pltfr_suspend, stmmac_pltfr_resume);
+ 
+-static const struct of_device_id stmmac_dt_ids[] = {
+-	{ .compatible = "st,spear600-gmac"},
+-	{ .compatible = "snps,dwmac-3.610"},
+-	{ .compatible = "snps,dwmac-3.70a"},
+-	{ .compatible = "snps,dwmac-3.710"},
+-	{ .compatible = "snps,dwmac"},
+-	{ /* sentinel */ }
+-};
+-MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
+-
+ struct platform_driver stmmac_pltfr_driver = {
+ 	.probe = stmmac_pltfr_probe,
+ 	.remove = stmmac_pltfr_remove,
+diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
+index 0a5a7ac..1367974 100644
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -121,4 +121,22 @@ struct plat_stmmacenet_data {
+ 	void *custom_data;
+ 	void *bsp_priv;
+ };
++
++/* of_data for SoC glue layer device tree bindings */
++
++struct stmmac_of_data {
++	int has_gmac;
++	int enh_desc;
++	int tx_coe;
++	int rx_coe;
++	int bugged_jumbo;
++	int pmt;
++	int riwt_off;
++	void (*fix_mac_speed)(void *priv, unsigned int speed);
++	void (*bus_setup)(void __iomem *ioaddr);
++	void *(*setup)(struct platform_device *pdev);
++	void (*free)(struct platform_device *pdev, void *priv);
++	int (*init)(struct platform_device *pdev, void *priv);
++	void (*exit)(struct platform_device *pdev, void *priv);
++};
+ #endif
 -- 
 1.8.5.2
 
