@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaAQBEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:04:39 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52421 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750898AbaAQBEh (ORCPT
+	id S1751599AbaAQBGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:06:36 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35151 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaAQBGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:04:37 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] cpuidle: don't use modular platform register in non-modular ARM drivers
-Date: Fri, 17 Jan 2014 02:18:38 +0100
-Message-ID: <3872763.be1TKi9G4j@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389910767-4040-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1389910767-4040-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 16 Jan 2014 20:06:34 -0500
+Date: Thu, 16 Jan 2014 17:06:31 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: next bio iters break discard?
+Message-ID: <20140117010631.GR9037@kmo>
+References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
+ <20140114023346.GN9037@kmo>
+ <yq161pnmcl2.fsf@sermon.lab.mkp.net>
+ <20140114044841.GO9037@kmo>
+ <yq1ob3el3mr.fsf@sermon.lab.mkp.net>
+ <20140114222424.GA7333@moria.home.lan>
+ <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 16, 2014 05:19:27 PM Paul Gortmaker wrote:
-> These two drivers are configured with Kconfig options that are
-> both declared as bool.  Hence it is not possible for the code
-> to be built as modular.  However the code is currently using the
-> module_platform_driver() macro for driver registration.
+On Thu, Jan 16, 2014 at 12:21:10PM -0800, Hugh Dickins wrote:
+> On Tue, 14 Jan 2014, Kent Overstreet wrote:
+> > 
+> > Does the below patch look like what we want? I'm assuming that if
 > 
-> While this currently works, we really don't want to be including
-> the module.h header in non-modular code, which we'll be forced
-> to do, pending some upcoming code relocation from init.h into
-> module.h.  So we fix it now by using the non-modular equivalent.
+> You don't fill me with confidence ;)
 > 
-> With some macro detangulation, and a little help from cpp, we can
-> see that module_platform_driver(calxeda_cpuidle_plat_driver) gets
-> roughly translated into:
+> > multiple WRITE_SAME bios are merged, since they're all writing the same
+> > data we can consider the entire request to be a single segment.
+> > 
+> > commit 1755e7ffc5745591d37b8956ce2512f4052a104a
+> > Author: Kent Overstreet <kmo@daterainc.com>
+> > Date:   Tue Jan 14 14:22:01 2014 -0800
+> > 
+> >     block: Explicitly handle discard/write same when counting segments
+> > 
+> > diff --git a/block/blk-merge.c b/block/blk-merge.c
+> > index 8f8adaa..7d977f8 100644
+> > --- a/block/blk-merge.c
+> > +++ b/block/blk-merge.c
+> > @@ -21,6 +21,12 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+> >  	if (!bio)
+> >  		return 0;
+> >  
+> > +	if (bio->bi_rw & REQ_DISCARD)
+> > +		return 0;
+> > +
+> > +	if (bio->bi_rw & REQ_WRITE_SAME)
+> > +		return 1;
+> > +
+> >  	fbio = bio;
+> >  	cluster = blk_queue_cluster(q);
+> >  	seg_size = 0;
 > 
->   static int __init calxeda_cpuidle_plat_driver_init(void)
->   {
->         return platform_driver_register(&calxeda_cpuidle_plat_driver);
->   }
->   module_init(calxeda_cpuidle_plat_driver_init);
+> For me this just shifts the crash,
+> from __blk_recalc_rq_segments() to blk_rq_map_sg():
 > 
->   static void __exit calxeda_cpuidle_plat_driver_exit(void)
->   {
->         platform_driver_unregister(&calxeda_cpuidle_plat_driver);
->   }
->   module_exit(calxeda_cpuidle_plat_driver_exit);
+> blk_rq_map_sg
+> scsi_init_sgtable
+> scsi_init_io
+> scsi_setup_blk_pc_cmnd
+> sd_prep_fn
+> blk_peek_request
+> scsi_request_fn
+> __blk_run_queue
+> blk_run_queue
+> scsi_run_queue
+> scsi_next_command
+> scsi_io_completion
+> scsi_finish_command
+> scsi_softirq_done
+> blk_done_softirq
+> __do_softirq
+> irq_exit
+> do_IRQ
+> common_interrupt
+> <EOI>
+> cpuidle_idle_call
+> arch_cpu_idle
+> cpu_startup_entry
+> start_secondary
 > 
-> [and similarly for the other file, cpuidle-zynq.c]
+> It's GPF'ing on struct scatter_list *sg 0x800000001473e064 in
 > 
-> And since we've already established that the code is non-modular,
-> we can completely drop any code relating to module_exit.  For non
-> modular code, module_init beomes __initcall.  But direct use of
-> __initcall is discouraged, vs. one of the priority categorized
-> subgroups.  As __initcall gets mapped onto device_initcall, our
-> use of device_initcall directly in this change means that the
-> runtime impact is zero -- they will remain at level 6 in the
-> initcall ordering.
+> static inline void sg_assign_page(struct scatterlist *sg, struct page *page)
+> {
+> 	unsigned long page_link = sg->page_link & 0x3;
 > 
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> It appears to be in the static inline __blk_segment_map_sg(),
+> and that GPF'ing address is what it just got from sg_next().
+> 
+> Sorry, this isn't the kind of dump you'll be used to, but it's the
+> best I can do at the moment, and I've just had to reboot the machine.
+> 
+> O, tried again and it hit the BUG_ON(count > sdb->table.nents)
+> on line 1048 of drivers/scsi/scsi_lib.c:
+> 
+> scsi_init_sgtable
+> <IRQ> scsi_init_io
+> scsi_setup_blk_pc_cmnd
+> sd_setup_discard_cmnd
+> sd_prep_fn
+> blk_peek_request
+> etc. as before
+> 
+> I'll have to leave the machine shortly - I'm rather hoping
+> you can do your own discard testing to see such crashes.
 
-I'd appreciate some ACKs from the ARM people.
-
-Thanks!
-
-> diff --git a/drivers/cpuidle/cpuidle-calxeda.c b/drivers/cpuidle/cpuidle-calxeda.c
-> index 6e51114057d0..631e2cd9bce6 100644
-> --- a/drivers/cpuidle/cpuidle-calxeda.c
-> +++ b/drivers/cpuidle/cpuidle-calxeda.c
-> @@ -78,4 +78,8 @@ static struct platform_driver calxeda_cpuidle_plat_driver = {
->          .probe = calxeda_cpuidle_probe,
->  };
->  
-> -module_platform_driver(calxeda_cpuidle_plat_driver);
-> +static int __init calxeda_cpuidle_plat_driver_init(void)
-> +{
-> +	return platform_driver_register(&calxeda_cpuidle_plat_driver);
-> +}
-> +device_initcall(calxeda_cpuidle_plat_driver_init);
-> diff --git a/drivers/cpuidle/cpuidle-zynq.c b/drivers/cpuidle/cpuidle-zynq.c
-> index aded75928028..a1aae519a573 100644
-> --- a/drivers/cpuidle/cpuidle-zynq.c
-> +++ b/drivers/cpuidle/cpuidle-zynq.c
-> @@ -85,4 +85,8 @@ static struct platform_driver zynq_cpuidle_driver = {
->  	.probe = zynq_cpuidle_probe,
->  };
->  
-> -module_platform_driver(zynq_cpuidle_driver);
-> +static int __init zynq_cpuidle_driver_init(void)
-> +{
-> +	return platform_driver_register(&zynq_cpuidle_driver);
-> +}
-> +device_initcall(zynq_cpuidle_driver_init);
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+My simple hdparm/scsi_debug based test isn't hitting it - any suggestions on how
+to reproduce it?
