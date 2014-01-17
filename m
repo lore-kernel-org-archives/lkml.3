@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaAQOzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:55:46 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34498 "EHLO mga09.intel.com"
+	id S1752245AbaAQO4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:56:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38117 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaAQOzm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:55:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,674,1384329600"; 
-   d="scan'208";a="468284558"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: Why is (2 < 2) true? Is it a gcc bug?
-Thread-Topic: Why is (2 < 2) true? Is it a gcc bug?
-Thread-Index: Ac8TiNMTmnptR9ryRvWTI5/er276UQAA1SoAAAH3iWA=
-Date: Fri, 17 Jan 2014 14:55:39 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6A3592@IRSMSX105.ger.corp.intel.com>
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
- <CAFLxGvz3FKU4rgjF_uZsggjvw8TQw_Hcp42GC8Zr-wg5kiwc-w@mail.gmail.com>
-In-Reply-To: <CAFLxGvz3FKU4rgjF_uZsggjvw8TQw_Hcp42GC8Zr-wg5kiwc-w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751246AbaAQO4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:56:31 -0500
+Date: Fri, 17 Jan 2014 14:56:27 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH] sched: Calculate effective load even if local weight is 0
+Message-ID: <20140117145627.GY4963@suse.de>
+References: <20140106113912.GC6178@suse.de>
+ <CAM4v1pNQsoJxgC9Kwe+ca=hSbDYr3huNrchzqWEvs26AfypmSw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAM4v1pNQsoJxgC9Kwe+ca=hSbDYr3huNrchzqWEvs26AfypmSw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 17, 2014 2:58 PM Richard Weinberger <richard.weinberger@gmail.com> wrote:
+On Mon, Jan 13, 2014 at 01:22:40PM +0530, Preeti Murthy wrote:
+> Hi,
 > 
-> Can you reproduce this using a standalone test?
-> I.e:
-> #include <assert.h>
+> On Mon, Jan 6, 2014 at 5:09 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > (Rik, you authored this patch so it should be sent from you and needs a
+> > signed-off assuming people are ok with the changelog.)
+> >
+> > Thomas Hellstrom bisected a regression where erratic 3D performance is
+> > experienced on virtual machines as measured by glxgears. It identified
+> > commit 58d081b5 (sched/numa: Avoid overloading CPUs on a preferred NUMA
+> > node) as the problem which had modified the behaviour of effective_load.
+> >
+> > Effective load calculates the difference to the system-wide load if a
+> > scheduling entity was moved to another CPU. The task group is not heavier
+> > as a result of the move but overall system load can increase/decrease as a
+> > result of the change. Commit 58d081b5 (sched/numa: Avoid overloading CPUs
+> > on a preferred NUMA node) changed effective_load to make it suitable for
+> > calculating if a particular NUMA node was compute overloaded. To reduce
+> > the cost of the function, it assumed that a current sched entity weight
+> > of 0 was uninteresting but that is not the case.
+> >
+> > wake_affine uses a weight of 0 for sync wakeups on the grounds that it
+> > is assuming the waking task will sleep and not contribute to load in the
+> > near future. In this case, we still want to calculate the effective load
+> > of the sched entity hierarchy. As effective_load is no longer used by
 > 
-> int main()
-> {
->         assert(2 < 2 != 1);
+> Would it be worth mentioning that besides sync wakeups, wake_affine() uses a
+> weight of 0 for the sched entity, for effective load calculation on
+> the prev_cpu as well?
+> This is so as to find the effect of  moving this task away from the
+> prev_cpu. Here
+> too we are interested in calculating the effective load of the root
+> task group of this
+> sched entity on the prev_cpu and the below restored check will be relevant.
 > 
->         return 0;
-> }
+> Without the below check the difference in the loads of the wake affine
+> CPU and the
+> prev_cpu can get messed up.
 > 
 
-No, I can't of course.
+I was too slow getting to this mail unfortunately. The patch is already
+merged upstream with the changelog as-is.
 
-Lukasz
-
+-- 
+Mel Gorman
+SUSE Labs
