@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaAQW3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:29:39 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60414 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752734AbaAQW3h (ORCPT
+	id S1752847AbaAQWnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:43:19 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46077 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaAQWnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:29:37 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [GIT PULL] Last minute ACPI fix for v3.13
-Date: Fri, 17 Jan 2014 23:43:39 +0100
-Message-ID: <1607643.bXgUGr2Zse@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+	Fri, 17 Jan 2014 17:43:17 -0500
+Date: Fri, 17 Jan 2014 23:43:15 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Oleksij Rempel <linux@rempel-privat.de>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, ath9k-devel@venema.h4ckr.net,
+        kernel-janitors@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        users@rt2x00.serialmonkey.com
+Subject: Re: [PATCH 0/11] use ether_addr_equal_64bits
+Message-ID: <20140117224315.GC13930@amd.pavel.ucw.cz>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+ <20140117212410.GA13930@amd.pavel.ucw.cz>
+ <52D9A85E.8070306@rempel-privat.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D9A85E.8070306@rempel-privat.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri 2014-01-17 23:02:06, Oleksij Rempel wrote:
+> Am 17.01.2014 22:24, schrieb Pavel Machek:
+> > On Mon 2013-12-30 19:14:56, Julia Lawall wrote:
+> >> Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
+> >> used when each argument is an array within a structure that contains at
+> >> least two bytes of data beyond the array.
+> > 
+> > I mean, yes, it is probably faster, and yes, most structures probably
+> > contain two more bytes, but... is the uglyness worth the speedup? I'd
+> > say this should not be done except in very time-critical places...
+> 
+> This code run on every received beacon, almost on every wifi driver (If
+> i understand what you mean.)
 
-Please pull from the git repository at
+That does not look like "sufficiently often" to me. Can you measure
+the improvement at least in some microbenchmark? Is there even
+theoretical chance to get one?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-3.13-fixup
+You are comparing few bytes, number of cacheline accesses stays same,
+there is likely _0_ speedup. And even if you saved 1T, that will be
+compeletely lost in the noise.
 
-to receive a last-minute ACPI fix for 3.13 as commit 
-b40f93bb008ed5d83aa608b21c8c65c5111512e1
+In some kind of routing code, cache-hot... maybe it would make
+sense. But once per interrupt?
 
-  Revert "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"
-
-on top of commit 7e22e91102c6b9df7c4ae2168910e19d2bb14cd6
-
-  Linux 3.13-rc8
-
-This reverts a commit that causes the Alan Cox' ASUS T100TA to "crash and
-burn" during boot if the Baytrail pinctrl driver is compiled in.
-
-Thanks!
-
-
----------------
-
-Rafael J. Wysocki (1):
-      Revert "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"
-
----------------
-
- drivers/acpi/acpi_lpss.c           | 1 -
- drivers/pinctrl/pinctrl-baytrail.c | 1 -
- 2 files changed, 2 deletions(-)
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
