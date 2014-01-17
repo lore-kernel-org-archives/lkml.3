@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaAQTUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:20:11 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52045 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412AbaAQTT7 (ORCPT
+	id S1753469AbaAQTUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:20:08 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45372 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752592AbaAQTUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:19:59 -0500
+	Fri, 17 Jan 2014 14:20:00 -0500
 From: Marc Carino <marc.ceeeee@gmail.com>
 To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
 Cc: Florian Fainelli <f.fainelli@gmail.com>,
@@ -14,9 +14,9 @@ Cc: Florian Fainelli <f.fainelli@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v4 3/8] ARM: brcmstb: add debug UART for earlyprintk support
-Date: Fri, 17 Jan 2014 11:19:22 -0800
-Message-Id: <1389986367-4010-4-git-send-email-marc.ceeeee@gmail.com>
+Subject: [PATCH v4 4/8] ARM: do CPU-specific init for Broadcom Brahma15 cores
+Date: Fri, 17 Jan 2014 11:19:23 -0800
+Message-Id: <1389986367-4010-5-git-send-email-marc.ceeeee@gmail.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
 References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
@@ -24,62 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the UART definitions needed to support earlyprintk on brcmstb machines.
+Perform any CPU-specific initialization required on the
+Broadcom Brahma-15 core.
 
 Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
 Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
- arch/arm/Kconfig.debug |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+ arch/arm/mm/proc-v7.S |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 5765abf..266c699 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -94,6 +94,17 @@ choice
- 		depends on ARCH_BCM2835
- 		select DEBUG_UART_PL01X
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index bd17819..98ea423 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -193,6 +193,7 @@ __v7_cr7mp_setup:
+ 	b	1f
+ __v7_ca7mp_setup:
+ __v7_ca15mp_setup:
++__v7_b15mp_setup:
+ 	mov	r10, #0
+ 1:
+ #ifdef CONFIG_SMP
+@@ -494,6 +495,16 @@ __v7_ca15mp_proc_info:
+ 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
  
-+	config DEBUG_BRCMSTB_UART
-+		bool "Use BRCMSTB UART for low-level debug"
-+		depends on ARCH_BRCMSTB
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the first serial port on these devices.
+ 	/*
++	 * Broadcom Corporation Brahma-B15 processor.
++	 */
++	.type	__v7_b15mp_proc_info, #object
++__v7_b15mp_proc_info:
++	.long	0x420f00f0
++	.long	0xff0ffff0
++	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
++	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
 +
-+		  If you have a Broadcom STB chip and would like early print
-+		  messages to appear over the UART, select this option.
-+
- 	config DEBUG_CLPS711X_UART1
- 		bool "Kernel low-level debugging messages via UART1"
- 		depends on ARCH_CLPS711X
-@@ -988,6 +999,7 @@ config DEBUG_UART_PHYS
- 	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
- 	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
- 	default 0x20201000 if DEBUG_BCM2835
-+	default 0xf0406b00 if DEBUG_BRCMSTB_UART
- 	default 0x4000e400 if DEBUG_LL_UART_EFM32
- 	default 0x40090000 if ARCH_LPC32XX
- 	default 0x40100000 if DEBUG_PXA_UART1
-@@ -1029,6 +1041,7 @@ config DEBUG_UART_VIRT
- 	default 0xf0009000 if DEBUG_CNS3XXX
- 	default 0xf01fb000 if DEBUG_NOMADIK_UART
- 	default 0xf0201000 if DEBUG_BCM2835
-+	default 0xfc406b00 if DEBUG_BRCMSTB_UART
- 	default 0xf11f1000 if ARCH_VERSATILE
- 	default 0xf1600000 if ARCH_INTEGRATOR
- 	default 0xf1c28000 if DEBUG_SUNXI_UART0
-@@ -1091,7 +1104,8 @@ config DEBUG_UART_8250_WORD
- 	default y if DEBUG_PICOXCELL_UART || DEBUG_SOCFPGA_UART || \
- 		ARCH_KEYSTONE || \
- 		DEBUG_DAVINCI_DMx_UART0 || DEBUG_DAVINCI_DA8XX_UART1 || \
--		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1
-+		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1 || \
-+		DEBUG_BRCMSTB_UART
- 
- config DEBUG_UART_8250_FLOW_CONTROL
- 	bool "Enable flow control for 8250 UART"
++	/*
+ 	 * Qualcomm Inc. Krait processors.
+ 	 */
+ 	.type	__krait_proc_info, #object
 -- 
 1.7.1
 
