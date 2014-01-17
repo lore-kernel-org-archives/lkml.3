@@ -1,170 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaAQDq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 22:46:26 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:53410 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaAQDqX (ORCPT
+	id S1751442AbaAQDwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 22:52:55 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:58771 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaAQDwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 22:46:23 -0500
+	Thu, 16 Jan 2014 22:52:53 -0500
+Message-ID: <52D8A8DB.4080809@huawei.com>
+Date: Fri, 17 Jan 2014 11:51:55 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1389360637.5854.53.camel@pizza.hi.pengutronix.de>
-References: <1389337217-29032-1-git-send-email-wens@csie.org>
- <1389337217-29032-2-git-send-email-wens@csie.org> <1389360637.5854.53.camel@pizza.hi.pengutronix.de>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Fri, 17 Jan 2014 11:46:02 +0800
-X-Google-Sender-Auth: W2fFZR6uqf20z-RoTlhqJt8RI4s
-Message-ID: <CAGb2v647_Am_spers6X0+16JShNa-Xo9Fozc1eZnYzbeU-wgoQ@mail.gmail.com>
-Subject: Re: [PATCH v2 01/16] reset: add non CONFIG_RESET_CONTROLLER routines
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        netdev <netdev@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Barry Song <Baohua.Song@csr.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: <linux-acpi@vger.kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
+        <intel-gfx@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH v2] ACPI: Fix acpi_evaluate_object() return value check
+References: <1389922191-28664-1-git-send-email-wangyijing@huawei.com> <52D8A672.8070808@linaro.org>
+In-Reply-To: <52D8A672.8070808@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>> diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
+>> index dfff090..7ea00e5 100644
+>> --- a/drivers/gpu/drm/i915/intel_acpi.c
+>> +++ b/drivers/gpu/drm/i915/intel_acpi.c
+>> @@ -35,7 +35,7 @@ static int intel_dsm(acpi_handle handle, int func)
+>>  	union acpi_object params[4];
+>>  	union acpi_object *obj;
+>>  	u32 result;
+>> -	int ret = 0;
+> 
+> The 'ret' is removed, but
 
-On Fri, Jan 10, 2014 at 9:30 PM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> Hi,
->
-> [Added Ivan, Stephen and Barry to Cc:]
->
-> Am Freitag, den 10.01.2014, 15:00 +0800 schrieb Chen-Yu Tsai:
->> Some drivers are shared between platforms that may or may not
->> have RESET_CONTROLLER selected for them.
->
-> I expected that drivers compiled for platforms without reset controllers
-> but use the reset API should select or depend on RESET_CONTROLLER.
-> Stubbing out device_reset and reset_control_get will turn a compile time
-> error into a runtime error for everyone forgetting to do this when
-> writing a new driver that needs the reset.
+Ah, it's my mistake, will updata it right now, thanks!
 
-Since this was the intended behavior, I'll drop this patch and select
-RESET_CONTROLLER for the stmmac driver for now.
+> 
+>> +	acpi_status status;
+>>  
+>>  	input.count = 4;
+>>  	input.pointer = params;
+>> @@ -50,8 +50,8 @@ static int intel_dsm(acpi_handle handle, int func)
+>>  	params[3].package.count = 0;
+>>  	params[3].package.elements = NULL;
+>>  
+>> -	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> -	if (ret) {
+>> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> +	if (ACPI_FAILURE(status)) {
+>>  		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+>>  		return ret;
+> 
+> you still use it here, so you should -EINVAL or something else here.
+
+OK
+
+> 
+>>  	}
+>> @@ -141,7 +141,8 @@ static void intel_dsm_platform_mux_info(void)
+>>  	struct acpi_object_list input;
+>>  	union acpi_object params[4];
+>>  	union acpi_object *pkg;
+>> -	int i, ret;
+>> +	acpi_status status;
+>>  
+>> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> -	if (err) {
+>> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> +	if (ACPI_FAILURE(status)) {
+>>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+>>  		return err;
+> 
+> here too.
+
+OK, thanks.
+
+> 
+>>  	}
+>> @@ -134,7 +135,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>>  	struct acpi_object_list input;
+>>  	union acpi_object params[4];
+>>  	union acpi_object *obj;
+>> -	int err;
+>> +	acpi_status status;
+>>  
+>>  	input.count = 4;
+>>  	input.pointer = params;
+>> @@ -148,8 +149,8 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>>  	params[3].type = ACPI_TYPE_INTEGER;
+>>  	params[3].integer.value = arg;
+>>  
+>> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> -	if (err) {
+>> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+>> +	if (ACPI_FAILURE(status)) {
+>>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+>>  		return err;
+> 
+> and here.
+
+thanks.
+
+> 
+>>  	}
+>> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+>> index d51f45a..3c21f1b 100644
+>> --- a/drivers/pci/pci-label.c
+>> +++ b/drivers/pci/pci-label.c
+>> @@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
+>>  	union acpi_object *obj;
+>>  	int len = 0;
+>>  
+>> -	int err;
+>> +	acpi_status status;
+>>  
+>>  	input.count = 4;
+>>  	input.pointer = params;
+>> @@ -228,8 +228,8 @@ dsm_get_label(acpi_handle handle, int func,
+>>  	params[3].package.count = 0;
+>>  	params[3].package.elements = NULL;
+>>  
+>> -	err = acpi_evaluate_object(handle, "_DSM", &input, output);
+>> -	if (err)
+>> +	status = acpi_evaluate_object(handle, "_DSM", &input, output);
+>> +	if (ACPI_FAILURE(status))
+>>  		return -1;
+> 
+> can we return specific error such as -EINVAL instead of hard code?
+
+I will try to add some more useful debug info here. thanks!
+
+> 
+> Thanks
+> Hanjun
+> 
+> .
+> 
 
 
-Thanks
-ChenYu
+-- 
+Thanks!
+Yijing
 
->
->>  Add dummy functions
->> when RESET_CONTROLLER is not selected, thereby eliminating the
->> need for drivers to enclose reset_control_*() calls within
->> #ifdef CONFIG_RESET_CONTROLLER, #endif
->>
->> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->
-> This was already proposed by Ivan and Barry earlier, and so far we
-> didn't get to a proper conclusion:
->
-> https://lkml.org/lkml/2013/10/10/179
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/174758.html
->
-> If included, the stubs should at least return an error to indicate a
-> reset couldn't be performed, but then I lose the compile time error for
-> drivers which should select RESET_CONTROLLER but don't.
->
-> Also this alone won't help you if you build multi-arch kernels where one
-> platform enables RESET_CONTROLLER and the other expects it to be
-> disabled.
->
-> regards
-> Philipp
->
->> ---
->>  include/linux/reset.h | 39 +++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 39 insertions(+)
->>
->> diff --git a/include/linux/reset.h b/include/linux/reset.h
->> index 6082247..38aa616 100644
->> --- a/include/linux/reset.h
->> +++ b/include/linux/reset.h
->> @@ -4,6 +4,8 @@
->>  struct device;
->>  struct reset_control;
->>
->> +#ifdef CONFIG_RESET_CONTROLLER
->> +
->>  int reset_control_reset(struct reset_control *rstc);
->>  int reset_control_assert(struct reset_control *rstc);
->>  int reset_control_deassert(struct reset_control *rstc);
->> @@ -14,4 +16,41 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
->>
->>  int device_reset(struct device *dev);
->>
->> +#else /* !CONFIG_RESET_CONTROLLER */
->> +
->> +static inline int reset_control_reset(struct reset_control *rstc)
->> +{
->> +     return 0;
->> +}
->> +
->> +static inline int reset_control_assert(struct reset_control *rstc)
->> +{
->> +     return 0;
->> +}
->> +
->> +static inline int reset_control_deassert(struct reset_control *rstc)
->> +{
->> +     return 0;
->> +}
->
-> Those should probably have a WARN_ON(1) like the GPIO API stubs.
->
->> +
->> +static inline struct reset_control *reset_control_get(struct device *dev,
->> +             const char *id)
->> +{
->> +     return NULL;
->> +}
-> [...]
->> +static inline struct reset_control *devm_reset_control_get(struct device *dev,
->> +             const char *id)
->> +{
->> +     return NULL;
->> +}
->
-> These should return ERR_PTR(-ENOSYS).
->
->> +
->> +static inline int device_reset(struct device *dev)
->> +{
->> +     return 0;
->> +}
->
-> And this should return -ENOSYS.
->
-> Drivers that also need to run on platforms with CONFIG_RESET_CONTROLLER
-> disabled (and that don't need the reset) should ignore -ENOSYS and
-> -ENOENT return values from device_reset/(devm_)reset_control_get.
->
-> I wonder if it might be a good idea to add a RESET_CONTROLLER_OPTIONAL
-> that drivers need to select to enable the API stubs? That way we could
-> keep the compile time error for new drivers that need resets but forget
-> to select RESET_CONTROLLER.
-> Or add a
-> #warning If this driver can work without reset, please select CONFIG_RESET_CONTROLLER_OPTIONAL
->
-> Another possibility would be to add device_reset_optional and
-> (devm_)reset_control_get_optional variants and only provide stubs for
-> those, but not for device_reset/(devm_)reset_control_get. Then drivers
-> that need to work on platforms without the reset controller API enabled
-> could explicitly use the _optional variants, and all other drivers would
-> still be checked at compile time.
->
-> regards
-> Philipp
->
