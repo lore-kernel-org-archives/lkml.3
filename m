@@ -1,155 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaAQSBs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:01:48 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43039 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaAQSBp (ORCPT
+	id S1753181AbaAQSBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:01:54 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:54913 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752144AbaAQSBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:01:45 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+	Fri, 17 Jan 2014 13:01:50 -0500
+Date: Fri, 17 Jan 2014 13:01:49 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
-Date: Fri, 17 Jan 2014 11:58:51 -0600
-Message-Id: <1389981531-15539-1-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <87lhyemr3y.fsf@linaro.org>
-References: <87lhyemr3y.fsf@linaro.org>
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
+ checks)
+In-Reply-To: <20140117163111.GA5764@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1401171253010.1162-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both the PM_RUNTIME and PM_SLEEP callbacks call into the common
-msm_otg_{suspend,resume} routines, however these routines are only being
-built when CONFIG_PM_SLEEP.  In addition, msm_otg_{suspend,resume} also
-depends on msm_hsusb_config_vddcx(), which is only built when
-CONFIG_PM_SLEEP.
+On Fri, 17 Jan 2014, Oleg Nesterov wrote:
 
-Fix the CONFIG_PM_RUNTIME, !CONFIG_PM_SLEEP case by changing the
-preprocessor conditional, and moving msm_hsusb_config_vddcx().
+> On 01/16, Alan Stern wrote:
+> >
+> > On Thu, 16 Jan 2014, Peter Zijlstra wrote:
+> >
+> > > On Thu, Jan 16, 2014 at 06:43:48PM +0100, Oleg Nesterov wrote:
+> >
+> > > > Perhaps we should change the meaning of lockdep_set_novalidate_class?
+> > > > (perhaps with rename). What do you think about the patch below?
+> > > >
+> > > > With this patch __lockdep_no_validate__ means "automatically nested",
+> > >
+> > > Yes, I suppose that might work, it would allow some validation.
+> >
+> > I haven't seen the patch, but I'm not so sure it will work.  Suppose we
+> > have two devices, D1 and D2, and some other mutex, M.  Then the locking
+> > pattern:
+> >
+> > 	lock(D1);
+> > 	lock(M);
+> > 	unlock(M);
+> > 	unlock(D1);
+> >
+> > generally should not conflict with:
+> >
+> > 	lock(M);
+> > 	lock(D2);
+> > 	unlock(D2);
+> > 	unlock(M);
+> 
+> Yes, sure. This change assumes that the only problem in drivers/base is
+> dev->parent->mutex / dev->mutex dependency. If the locking is even more
+> "broken" (wrt lockdep), we can't replace lockdep_set_novalidate_class()
+> with lockdep_set_auto_nested().
 
-While we're here, eliminate the CONFIG_PM conditional for setting
-up the dev_pm_ops.
+I suspect it is even more "broken".  But I can't point to specific 
+examples.
 
-This address the following errors Russell King has hit doing randconfig
-builds:
+> And, otoh, with this change lockdep can miss the real problems too, for
+> example:
+> 
+> 	func1(dev)
+> 	{
+> 		device_lock(dev->parent);
+> 		mutex_lock(MUTEX);
+> 		device_lock(dev);
+> 		...
+> 	}
+> 
+> 	func2(dev)
+> 	{
+> 		device_lock(dev);
+> 		mutex_lock(MUTEX);
+> 		...
+> 	}
+> 
+> lockdep will only notice dev -> MUTEX dependency.
+> 
+> I booted the kernel (under kvm) with this change and there is nothing
+> in dmesg, but of course this is not the real testing.
+> 
+> So do you think that dev->mutex should not be validated at all ?
 
-drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_suspend':
-drivers/usb/phy/phy-msm-usb.c:1691:2: error: implicit declaration of function 'msm_otg_suspend'
-drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_resume':
-drivers/usb/phy/phy-msm-usb.c:1699:2: error: implicit declaration of function 'msm_otg_resume'
+My guess is that if your change is deployed widely, there will be 
+reports of violations.  That's only a guess.
 
-Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
-v1->v2: Change conditional to simply CONFIG_PM (thanks ccov and khilman!)
+Still, you could go ahead and try it, just to see what happens.
 
- drivers/usb/phy/phy-msm-usb.c | 57 ++++++++++++++++++++-----------------------
- 1 file changed, 26 insertions(+), 31 deletions(-)
+> Just in case... Of course, if we actually add auto_nested we should not
+> use a single class unless dev->mutex will be the only user.
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 8546c8d..5b169a7 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -159,32 +159,6 @@ put_3p3:
- 	return rc;
- }
- 
--#ifdef CONFIG_PM_SLEEP
--#define USB_PHY_SUSP_DIG_VOL  500000
--static int msm_hsusb_config_vddcx(int high)
--{
--	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
--	int min_vol;
--	int ret;
--
--	if (high)
--		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
--	else
--		min_vol = USB_PHY_SUSP_DIG_VOL;
--
--	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
--	if (ret) {
--		pr_err("%s: unable to set the voltage for regulator "
--			"HSUSB_VDDCX\n", __func__);
--		return ret;
--	}
--
--	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
--
--	return ret;
--}
--#endif
--
- static int msm_hsusb_ldo_set_mode(int on)
- {
- 	int ret = 0;
-@@ -440,7 +414,32 @@ static int msm_otg_reset(struct usb_phy *phy)
- #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
- #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
- 
--#ifdef CONFIG_PM_SLEEP
-+#if CONFIG_PM
-+
-+#define USB_PHY_SUSP_DIG_VOL  500000
-+static int msm_hsusb_config_vddcx(int high)
-+{
-+	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
-+	int min_vol;
-+	int ret;
-+
-+	if (high)
-+		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
-+	else
-+		min_vol = USB_PHY_SUSP_DIG_VOL;
-+
-+	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
-+	if (ret) {
-+		pr_err("%s: unable to set the voltage for regulator "
-+			"HSUSB_VDDCX\n", __func__);
-+		return ret;
-+	}
-+
-+	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
-+
-+	return ret;
-+}
-+
- static int msm_otg_suspend(struct msm_otg *motg)
- {
- 	struct usb_phy *phy = &motg->phy;
-@@ -1733,22 +1732,18 @@ static int msm_otg_pm_resume(struct device *dev)
- }
- #endif
- 
--#ifdef CONFIG_PM
- static const struct dev_pm_ops msm_otg_dev_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
- 	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
- 				msm_otg_runtime_idle)
- };
--#endif
- 
- static struct platform_driver msm_otg_driver = {
- 	.remove = msm_otg_remove,
- 	.driver = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
--#ifdef CONFIG_PM
- 		.pm = &msm_otg_dev_pm_ops,
--#endif
- 	},
- };
- 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+That's a good point.  I don't know of any other classes using 
+LOCKDEP_NO_VALIDATE, but there may be one or two.
+
+Also, take a look at commit 356c05d58af0.  It's a similar situation 
+(not exactly the same).
+
+Alan Stern
 
