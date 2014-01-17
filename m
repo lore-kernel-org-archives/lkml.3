@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbaAQB6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:58:46 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:37162 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaAQB6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:58:44 -0500
+	id S1751961AbaAQB7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:59:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194AbaAQB7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 20:59:42 -0500
+Message-ID: <52D88E66.40801@redhat.com>
+Date: Thu, 16 Jan 2014 20:59:02 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1401161521340.1084@eggly.anvils>
-References: <alpine.LSU.2.11.1401161521340.1084@eggly.anvils>
-Date: Fri, 17 Jan 2014 09:58:43 +0800
-Message-ID: <CACVXFVO_+YYLsj1JwRW2HeeimFz841RQ_Uu3KhhSDnVLep2_5A@mail.gmail.com>
-Subject: Re: [PATCH] percpu_counter: unbreak __percpu_counter_add()
-From: Ming Lei <tom.leiming@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shaohua Li <shli@fusionio.com>, Jens Axboe <axboe@kernel.dk>,
-        Fan Du <fan.du@windriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] sched/numa: document CLONE_VM behavior
+References: <1389812509.4971.34.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1389812509.4971.34.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 7:26 AM, Hugh Dickins <hughd@google.com> wrote:
-> Commit 74e72f894d56 ("lib/percpu_counter.c: fix __percpu_counter_add()")
-> looked very plausible, but its arithmetic was badly wrong: obvious once
-> you see the fix, but maddening to get there from the weird tmpfs ENOSPCs
->
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->
->  lib/percpu_counter.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- 3.13-rc8+/lib/percpu_counter.c      2014-01-15 09:53:27.768111792 -0800
-> +++ linux/lib/percpu_counter.c  2014-01-16 14:58:54.156555308 -0800
-> @@ -82,7 +82,7 @@ void __percpu_counter_add(struct percpu_
->                 unsigned long flags;
->                 raw_spin_lock_irqsave(&fbc->lock, flags);
->                 fbc->count += count;
-> -                __this_cpu_sub(*fbc->counters, count);
-> +               __this_cpu_sub(*fbc->counters, count - amount);
+On 01/15/2014 02:01 PM, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> 
+> The changelog for Rik's "sched/numa: Stay on the same node if CLONE_VM" patch
+> serves well documented in the code.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 
-Hammmm, you are right, thanks for the fix, and I really tested the patch
-with reinserting module of 'null_blk' after lots of IOs, now I know the
-reason:  the scale of my test is still too small to cover the slow path
-in case of the batch of 1000000, and only the part in fast path is verified
-to be OK.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-
-Thanks,
 -- 
-Ming Lei
+All rights reversed
