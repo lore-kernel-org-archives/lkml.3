@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaAQUEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:04:23 -0500
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:45026 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600AbaAQUEV (ORCPT
+	id S1753437AbaAQUHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:07:33 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61707 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689AbaAQUHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 15:04:21 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Chris Ball <chris@printf.net>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH] mmc: sdhci: fix possible scheduling while atomic
-Date: Fri, 17 Jan 2014 11:57:10 -0800
-Message-Id: <1389988630-9481-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.5.2
+	Fri, 17 Jan 2014 15:07:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v4 8/8] ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
+Date: Fri, 17 Jan 2014 21:06:55 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com> <1389986367-4010-9-git-send-email-marc.ceeeee@gmail.com>
+In-Reply-To: <1389986367-4010-9-git-send-email-marc.ceeeee@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401172106.55668.arnd@arndb.de>
+X-Provags-ID: V02:K0:GcWja+RMa2xyChhAa6bmza9bAzNHXUDcHdyxph0aaSQ
+ k3L/qgalh14OxB1CVzu5g7DbwDLsUBBY7x+//5tKmlSCOTbDRD
+ gCHp6jFAHzgQqg5KNAtrV4gZMM9Hmv3D9q/kEznqB1FwruEpeL
+ 100W1/rt/CNTmywYZj8dmspYUR2CvPehvNM/7zTfOylD8YodCS
+ Z4PQFXfAT9iNt4R9X8PTbxoZBpSbWaXdjxsIHBGE032XeMyPTN
+ uGKOuXEtWRvaFzcYJGSlNPlTFLol0/9+Vb0QE2jv1HoJyj5rnJ
+ +EVbEoKWlWI2kXsVy8l7Tt+Ttm4qZBfl3qnxATvyYAA+ZHYBu6
+ tT62/WPfYj6wVyHE1V8c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdhci_execute_tuning() takes host->lock without disabling interrupts.
-Use spin_lock_irq{save,restore} instead so that we avoid taking an
-interrupt and scheduling while holding host->lock.
+On Friday 17 January 2014, Marc Carino wrote:
+> +       serial@f0406b00 {
+> +               compatible = "ns16550a";
+> +               reg = <0x00 0xf0406b00 0x00 0x20>;
+> +               reg-shift = <2>;
+> +               reg-io-width = <4>;
+> +               interrupts = <0 75 0x4>;
+> +               clock-frequency = <0x4d3f640>;
+> +       };
+> +
+> +       rdb {
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               compatible = "simple-bus";
+> +               ranges = <0 0x00 0xf0000000 0x1000000>;
+> +
+> +               sun_top_ctrl: syscon@404000 {
+> +                       compatible = "brcm,bcm7445-sun-top-ctrl",
+> +                                    "syscon";
+> +                       reg = <0x404000 0x51c>;
+> +               };
+> +
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/mmc/host/sdhci.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Yes, this looks better, but as a minor comment, the serial device above
+should really be part of the rdb bus now, since that encompasses the
+0xf0000000 device range.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index ec3eb30..84c80e7 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1857,12 +1857,13 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 	unsigned long timeout;
- 	int err = 0;
- 	bool requires_tuning_nonuhs = false;
-+	unsigned long flags;
- 
- 	host = mmc_priv(mmc);
- 
- 	sdhci_runtime_pm_get(host);
- 	disable_irq(host->irq);
--	spin_lock(&host->lock);
-+	spin_lock_irqsave(&host->lock, flags);
- 
- 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
- 
-@@ -1882,14 +1883,14 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 	    requires_tuning_nonuhs)
- 		ctrl |= SDHCI_CTRL_EXEC_TUNING;
- 	else {
--		spin_unlock(&host->lock);
-+		spin_unlock_irqrestore(&host->lock, flags);
- 		enable_irq(host->irq);
- 		sdhci_runtime_pm_put(host);
- 		return 0;
- 	}
- 
- 	if (host->ops->platform_execute_tuning) {
--		spin_unlock(&host->lock);
-+		spin_unlock_irqrestore(&host->lock, flags);
- 		enable_irq(host->irq);
- 		err = host->ops->platform_execute_tuning(host, opcode);
- 		sdhci_runtime_pm_put(host);
-@@ -1963,7 +1964,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 		host->cmd = NULL;
- 		host->mrq = NULL;
- 
--		spin_unlock(&host->lock);
-+		spin_unlock_irqrestore(&host->lock, flags);
- 		enable_irq(host->irq);
- 
- 		/* Wait for Buffer Read Ready interrupt */
-@@ -1971,7 +1972,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 					(host->tuning_done == 1),
- 					msecs_to_jiffies(50));
- 		disable_irq(host->irq);
--		spin_lock(&host->lock);
-+		spin_lock_irqsave(&host->lock, flags);
- 
- 		if (!host->tuning_done) {
- 			pr_info(DRIVER_NAME ": Timeout waiting for "
-@@ -2046,7 +2047,7 @@ out:
- 		err = 0;
- 
- 	sdhci_clear_set_irqs(host, SDHCI_INT_DATA_AVAIL, ier);
--	spin_unlock(&host->lock);
-+	spin_unlock_irqrestore(&host->lock, flags);
- 	enable_irq(host->irq);
- 	sdhci_runtime_pm_put(host);
- 
--- 
-1.8.5.2
-
+	Arnd
