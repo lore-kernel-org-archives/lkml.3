@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaAQNBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:01:08 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49619 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaAQNBD (ORCPT
+	id S1752315AbaAQNFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:05:47 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:41835 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaAQNFo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:01:03 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 20/20] ARM64 / clocksource: Use clocksource_acpi_init()
-Date: Fri, 17 Jan 2014 20:25:14 +0800
-Message-Id: <1389961514-13562-21-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+	Fri, 17 Jan 2014 08:05:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <C6749CD6-1F47-42C5-8E27-A11167BF69E4@primarydata.com>
+References: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
+ <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com>
+ <1389638751-16173-2-git-send-email-trond.myklebust@primarydata.com>
+ <CA+a=Yy6uf73Y=F5-Jp+2VrzMmbTYZXqDaEj-EHX335M3ZCvEZA@mail.gmail.com> <C6749CD6-1F47-42C5-8E27-A11167BF69E4@primarydata.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Fri, 17 Jan 2014 21:05:22 +0800
+Message-ID: <CA+a=Yy74dnd8a=uvyHgcLkp=54Qi-42N_7X=iJPQR5=b5oNA7Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] NFSv4.1: Fix a race in nfs4_write_inode
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: shaobingqing <shaobingqing@bwstor.com.cn>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clocksource_acpi_init() on ARM64 to initialise timers
-in ACPI way when DT is not available.
+On Fri, Jan 17, 2014 at 1:11 AM, Trond Myklebust
+<trond.myklebust@primarydata.com> wrote:
+>
+> On Jan 16, 2014, at 10:49, Peng Tao <bergwolf@gmail.com> wrote:
+>> On Tue, Jan 14, 2014 at 2:45 AM, Trond Myklebust
+>> <trond.myklebust@primarydata.com> wrote:
+>>> void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
+>>> @@ -1881,43 +1887,37 @@ pnfs_layoutcommit_inode(struct inode *inode, bool sync)
+>>>        struct nfs4_layoutcommit_data *data;
+>>>        struct nfs_inode *nfsi = NFS_I(inode);
+>>>        loff_t end_pos;
+>>> -       int status = 0;
+>>> +       int status;
+>>>
+>>> -       dprintk("--> %s inode %lu\n", __func__, inode->i_ino);
+>>> -
+>>> -       if (!test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
+>>> +       if (!pnfs_layoutcommit_outstanding(inode))
+>> This might be a problem. If nfsi->flags has !NFS_INO_LAYOUTCOMMIT and
+>> NFS_INO_LAYOUTCOMMITTING, client cannot issue a new layoutcommit after
+>> the inflight one finishes. It might not be an issue for file layout as
+>> long as we only use layoutcommit to update time, but it can cause data
+>> corruption for block layout.
+>
+> I don’t understand.
+>
+> With the new patch, if _either_ NFS_INO_LAYOUTCOMMIT or NFS_INO_LAYOUTCOMMITTING are set, then the client will wait until NFS_INO_LAYOUTCOMMITTING can be locked, it will test for NFS_INO_LAYOUTCOMMIT, and then either issue a new layout commit or exit. How can that cause new breakage for blocks?
+>
+ah, sorry, I read the old code as your patch... yeah, so you actually
+fixed the issue instead of introducing it.
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/arm64/kernel/time.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+> The only issues that I’m aware of with the blocks layout and LAYOUTCOMMIT today are:
+> 1. encode_pnfs_block_layoutupdate() runs out of XDR buffer space after 4-5 iterations in the list_for_each_entry_safe() loop. That is because nobody has yet added support for preallocating a page buffer to store the (potentially very large) array of extents. BTW: that array looks like a perfect candidate for xdr_encode_array2() if we could teach the latter about xdr_stream...
+This can also be fixed by limiting the number of extents allowed to be
+sent in one single layoutcommit.
 
-diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
-index 29c39d5..6e453ac 100644
---- a/arch/arm64/kernel/time.c
-+++ b/arch/arm64/kernel/time.c
-@@ -67,6 +67,12 @@ void __init time_init(void)
- 
- 	clocksource_of_init();
- 
-+	/*
-+	 * Since ACPI or FDT will only one be available in the system,
-+	 * we can use clocksource_acpi_init() here safely
-+	 */
-+	clocksource_acpi_init();
-+
- 	arch_timer_rate = arch_timer_get_rate();
- 	if (!arch_timer_rate)
- 		panic("Unable to initialise architected timer.\n");
--- 
-1.7.9.5
+> 2. the blocks layout also needs to be able handle the case where the list of extents is so large that a single LAYOUTCOMMIT is not sufficient. There is no reason why it should not be able to send multiple LAYOUTCOMMIT rpc calls when the size exceeds the session forward channel's negotiated max_rqst_sz.
+>
+You are absolutely right.
 
+Thanks,
+Tao
