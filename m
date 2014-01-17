@@ -1,170 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaAQMqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:46:47 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56361 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaAQMqo (ORCPT
+	id S1752683AbaAQMrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:47:36 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:42610 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513AbaAQMrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:46:44 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 12/20] ARM64 / ACPI: Use Parked Address in GIC structure for spin table SMP initialisation
-Date: Fri, 17 Jan 2014 20:25:06 +0800
-Message-Id: <1389961514-13562-13-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+	Fri, 17 Jan 2014 07:47:33 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-4a-52d92662c19b
+Message-id: <52D92660.5060308@samsung.com>
+Date: Fri, 17 Jan 2014 13:47:28 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330
+ Thunderbird/17.0.5
+MIME-version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: sk == 0xffffffff fix - not for commit
+References: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
+ <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
+ <52A6BAC6.4090407@samsung.com>
+ <1386685557.30495.344.camel@edumazet-glaptop2.roam.corp.google.com>
+ <52D7F8EF.1050407@samsung.com>
+ <1389889754.31367.406.camel@edumazet-glaptop2.roam.corp.google.com>
+ <52D91FAF.8090109@samsung.com>
+In-reply-to: <52D91FAF.8090109@samsung.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t/xy7pJajeDDH7/4Lc4eL/eYs75FhaL
+	fe/Pslk0L17PZrFu/WImiwebL7JaXGh7xWpxtukNu8XlXXPYLBYta2W2WHvkLrvFguMtrBbH
+	FohZfN3bxeLA57Fl5U0mj52z7rJ7tF1bxeSxf+4ado91f14xeWz5/Z3No+d7skffllWMHsdv
+	bGfyWDppIZPH501yAdxRXDYpqTmZZalF+nYJXBmr/p9gLdirULFtxWvmBsYOqS5GTg4JAROJ
+	N8f3MUPYYhIX7q1n62Lk4hASWMooce3XayYI5zOjRPvyiywgVbwCWhJv539lBbFZBFQlJra1
+	sIPYbALGEnsPdjCC2KICYRJT395hg6gXlPgx+R5QLweHiICmxPZGKZCZzAJfmCXmnLsCNkdY
+	wF5i1vcjjBDLfjJJfFnbygSS4BTQljg/9R+YzSxgJvGoZR0zhC0vsXnNW+YJjAKzkOyYhaRs
+	FpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCouzrDsalx6wOMQpwMCrx8EqI3wgS
+	Yk0sK67MPcQowcGsJMIbwHEzSIg3JbGyKrUoP76oNCe1+BAjEwenVANjfuGfm8sTj51w7ct0
+	3LdE7aRUj9Wq+daNTSGbVKSqRdXbN+sqiEqUHZu3lu8Hl1MkU9jWs7mpLc/2TWs/LM/Wep9B
+	pG110adCBy8LCYXJxhbmu5ZZK533cDdT3+uuUvJHRr9Y8ELtfE/37trWu9fsfLwljukd4t21
+	LmBCruu8qZKMc2ZdL1RiKc5INNRiLipOBADsOnd4kAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parked Address in GIC structure can be used as cpu release address
-for spin table SMP initialisation.
+W dniu 17.01.2014 13:18, Andrzej Pietrasiewicz pisze:
+> W dniu 16.01.2014 17:29, Eric Dumazet pisze:
+>> On Thu, 2014-01-16 at 16:21 +0100, Andrzej Pietrasiewicz wrote:
+>>> W dniu 10.12.2013 15:25, Eric Dumazet pisze:
+>>>> On Tue, 2013-12-10 at 07:55 +0100, Andrzej Pietrasiewicz wrote:
+>>>>> W dniu 09.12.2013 16:31, Eric Dumazet pisze:
+>>>>>> On Mon, 2013-12-09 at 12:47 +0100, Andrzej Pietrasiewicz wrote:
+>>>>>>> NOT FOR COMMITTING TO MAINLINE.
+>>>>>>>
+>>>>>>> With g_ether loaded the sk occasionally becomes 0xffffffff.
+>>>>>>> It happens usually after transferring few hundreds of kilobytes to few
+>>>>>>> tens of megabytes. If sk is 0xffffffff then dereferencing it causes
+>>>>>>> kernel panic.
+>>>>>>>
+>>>>>>> This is a *workaround*. I don't know enough net code to understand the core
+>>>>>>> of the problem. However, with this patch applied the problems are gone,
+>>>>>>> or at least pushed farther away.
+>>>>>>
+>>>>>> Is it happening on SMP or UP ?
+>>>>>
+>>>>> UP build, S5PC110
+>>>>
+>>>> OK
+>>>>
+>>>> I believe you need additional debugging to track the exact moment
+>>>> 0xffffffff is fed to 'sk'
+>>>>
+>>>> It looks like a very strange bug, involving a problem in some assembly
+>>>> helper, register save/restore, compiler bug or stack corruption or
+>>>> something.
+>>>>
+>>>
+>>> I started with adding WARN_ON(sk == 0xffffffff); just before return in
+>>> __inet_lookup_established(), and the problem was gone. So this looks
+>>> very strange, like a toolchain problem.
+>>
+>> Or a timing issue. Adding a WARN_ON() adds extra instructions and might
+>> really change the assembly output.
+>>
+>>>
+>>> I used gcc-linaro-arm-linux-gnueabihf-4.8-2013.05.
+>>>
+>>> If I change the toolchain to
+>>>
+>>> gcc-linaro-arm-linux-gnueabihf-4.7-2013.04-20130415
+>>>
+>>> the problem seems to have gone away.
+>>
+>> Its totally possible some barrier was not properly handled by the
+>> compiler. You could disassemble the function on both toolchains and
+>> try to spot the issue.
+>>
+>
+> So I gave it a try.
+>
+> Below is a part of assembly code (ARM) which corresponds to the last
+> lines of the __inet_lookup_established():
+>
+> C source:
+> =========
+> found:
+> 	rcu_read_unlock();
+> 	return sk;
+> }
+>
+> assembly for toolchain 4.7:
+> ===========================
+> c0333bb8:	ebf4bb6e 	bl	c0062978 <__rcu_read_unlock>
+> c0333bbc:	e51b0030 	ldr	r0, [fp, #-48]	; 0x30
+> c0333bc0:	e24bd028 	sub	sp, fp, #40	; 0x28
+> c0333bc4:	e89daff0 	ldm	sp, {r4, r5, r6, r7, r8, r9, sl, fp, sp, pc}
+> c0333bc8:	e5132018 	ldr	r2, [r3, #-24]
+>
+>
+> assembly for toolchain 4.8:
+> ===========================
+> c033ff5c:	ebf4927e 	bl	c006495c <__rcu_read_unlock>
+> c033ff60:	e24bd028 	sub	sp, fp, #40	; 0x28
+> c033ff64:	e51b0030 	ldr	r0, [fp, #-48]	; 0x30
+> c033ff68:	e89daff0 	ldm	sp, {r4, r5, r6, r7, r8, r9, sl, fp, sp, pc}
+> c033ff6c:	e5113018 	ldr	r3, [r1, #-24]
+>
+> What can be seen is that the usage of registers is slightly different,
+> and, what is more important, the _order_ of ldr/sub is different.
+> Now, if I swap the instructions at offsets c033ff60 and c033ff64
+> in the 4.8-generated vmlinux, the problem seems gone! Well, at least
+> the binary behaves the same way as the 4.7-generated one.
+>
+> Here is a _hypothesis_ of what _might_ be happening:
+>
+> The function in question puts its return value in the register r0.
+> In both cases the return value is fetched from a memory location
+> relative #-48 to what the frame pointer points to. However,
+> in the 4.7-generated binary the ldr executes in the branch delay slot,
+> whereas in the 4.8-generated binary it is the sub which executes
+> in the branch delay slot. That way, in the 4.7-generated binary the return
+> value is fetched before __rcu_read_unlock begins, but in the
+> 4.8-generated binary it is fetched some time later. Which might be
+> enough for someone else to schedule in and break the data to be
+> copied to r0 and returned from the function.
+>
+> As I said, this is just a hypothesis.
+>
 
-This patch gets parked address from MADT and use it for SMP
-initialisation when DT is not available.
+Please disregard what I have written.
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/arm64/include/asm/acpi.h      |    7 +++++++
- arch/arm64/kernel/smp_spin_table.c |   12 ++++++++----
- drivers/acpi/plat/arm-core.c       |   24 +++++++++++++++++++++++-
- 3 files changed, 38 insertions(+), 5 deletions(-)
+There is no delay slot on ARM :O
 
-diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index 097394c..856a2e7 100644
---- a/arch/arm64/include/asm/acpi.h
-+++ b/arch/arm64/include/asm/acpi.h
-@@ -89,6 +89,8 @@ extern int arm_cpu_to_apicid[NR_CPUS];
- 
- extern const char *acpi_get_enable_method(int cpu);
- 
-+extern int acpi_get_cpu_release_address(int cpu, u64 *release_address);
-+
- #else	/* !CONFIG_ACPI */
- #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
- #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
-@@ -100,6 +102,11 @@ static inline const char *acpi_get_enable_method(int cpu)
- 	return NULL;
- }
- 
-+static inline int acpi_get_cpu_release_address(int cpu, u64 *release_address)
-+{
-+	return -ENODEV;
-+}
-+
- #endif
- 
- #endif /*_ASM_ARM64_ACPI_H*/
-diff --git a/arch/arm64/kernel/smp_spin_table.c b/arch/arm64/kernel/smp_spin_table.c
-index 44c2280..ce86189 100644
---- a/arch/arm64/kernel/smp_spin_table.c
-+++ b/arch/arm64/kernel/smp_spin_table.c
-@@ -25,6 +25,7 @@
- #include <asm/cpu_ops.h>
- #include <asm/cputype.h>
- #include <asm/smp_plat.h>
-+#include <asm/acpi.h>
- 
- extern void secondary_holding_pen(void);
- volatile unsigned long secondary_holding_pen_release = INVALID_HWID;
-@@ -47,7 +48,6 @@ static void write_pen_release(u64 val)
- 	__flush_dcache_area(start, size);
- }
- 
--
- static int smp_spin_table_cpu_init(struct device_node *dn, unsigned int cpu)
- {
- 	/*
-@@ -55,10 +55,14 @@ static int smp_spin_table_cpu_init(struct device_node *dn, unsigned int cpu)
- 	 */
- 	if (of_property_read_u64(dn, "cpu-release-addr",
- 				 &cpu_release_addr[cpu])) {
--		pr_err("CPU %d: missing or invalid cpu-release-addr property\n",
--		       cpu);
- 
--		return -1;
-+		/* try ACPI way */
-+		if (acpi_get_cpu_release_address(cpu, &cpu_release_addr[cpu])) {
-+			pr_err("CPU %d: missing or invalid cpu-release-addr property\n",
-+				cpu);
-+
-+			return -1;
-+		}
- 	}
- 
- 	return 0;
-diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-index 2704633..7f1d709 100644
---- a/drivers/acpi/plat/arm-core.c
-+++ b/drivers/acpi/plat/arm-core.c
-@@ -60,6 +60,9 @@ static int available_cpus;
- int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
- static int boot_cpu_apic_id = -1;
- 
-+/* Parked Address in ACPI GIC structure */
-+static u64 parked_address[NR_CPUS];
-+
- #define BAD_MADT_ENTRY(entry, end) (					\
- 	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
- 	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
-@@ -193,6 +196,7 @@ static int __init
- acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
- {
- 	struct acpi_madt_generic_interrupt *processor = NULL;
-+	int cpu;
- 
- 	processor = (struct acpi_madt_generic_interrupt *)header;
- 
-@@ -208,9 +212,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
- 	 * to not preallocating memory for all NR_CPUS
- 	 * when we use CPU hotplug.
- 	 */
--	acpi_register_gic_cpu_interface(processor->gic_id,
-+	cpu = acpi_register_gic_cpu_interface(processor->gic_id,
- 			processor->flags & ACPI_MADT_ENABLED);
- 
-+	/*
-+	 * We need the parked address for SMP initialization with
-+	 * spin-table enable method
-+	 */
-+	if (cpu >= 0 && processor->parked_address)
-+		parked_address[cpu] = processor->parked_address;
-+
- 	return 0;
- }
- 
-@@ -269,6 +280,17 @@ static int __init acpi_parse_madt_gic_entries(void)
- 	return 0;
- }
- 
-+/* Parked Address in ACPI GIC structure can be used as cpu release addr */
-+int acpi_get_cpu_release_address(int cpu, u64 *release_address)
-+{
-+	if (!release_address || !parked_address[cpu])
-+		return -EINVAL;
-+
-+	*release_address = parked_address[cpu];
-+
-+	return 0;
-+}
-+
- /*
-  * Parse GIC distributor related entries in MADT
-  * returns 0 on success, < 0 on error
--- 
-1.7.9.5
+A nice hypothesis, though ;)
+
+AP
+
 
