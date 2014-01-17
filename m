@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaAQIMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 03:12:23 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:49193 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255AbaAQIMW (ORCPT
+	id S1752254AbaAQINs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 03:13:48 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:58484 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaAQINq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 03:12:22 -0500
+	Fri, 17 Jan 2014 03:13:46 -0500
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH] audit: Modify a set of system calls in audit class definitions
-Date: Fri, 17 Jan 2014 17:12:07 +0900
-Message-Id: <1389946327-4476-1-git-send-email-takahiro.akashi@linaro.org>
+To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com
+Cc: arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, patches@linaro.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v2 0/6] arm64: Add audit support
+Date: Fri, 17 Jan 2014 17:13:13 +0900
+Message-Id: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1383733546-2846-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1383733546-2846-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each asm-generic/audit_xx.h defines a set of system calls for respective
-audit permssion class (read, write, change attribute or exec).
-This patch changes two entries:
+This patchset adds system call audit support on arm64.
+Both 32-bit (AUIDT_ARCH_ARM[EB]) and 64-bit tasks (AUDIT_ARCH_AARCH64[EB])
+are supported, but presuming 32-LE on 64-LE or 32-BE on 64-BE.
 
-1) fchown in audit_change_attr.h
-  Make fchown included by its own because in asm-generic/unistd.h, for example,
-  fchown always exists while chown is optional. This change is necessary at
-  least for arm64.
+There are some prerequisites for this patch to work correctly:
+* "generic compat system call audit support" patch
+* "correct a type mismatch in audit_syscall_exit()" patch
+   (already accepted and queued in 3.14)
+* "Modify a set of system calls in audit class" patch
+* userspace audit tool (v2.3.2 + my patch for arm64)
 
-2) truncate64 in audit_write.h
-  Add missing truncate64/ftruncate64 as well as truncate/ftruncate
+All those were already or will be soon posted separately.
+Please review them as well for better understandings.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- include/asm-generic/audit_change_attr.h |    4 +++-
- include/asm-generic/audit_write.h       |    6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+This code was tested on both 32-bit and 64-bit LE userland 
+in the following two ways:
+1) basic operations with auditctl/autrace
+  # auditctl -a exit,always -S openat -F path=/etc/inittab
+  # auditctl -a exit,always -F dir=/tmp -F perm=rw
+  # auditctl -a task,always
+  # autrace /bin/ls
+    by comparing output from autrace with one from strace
 
-diff --git a/include/asm-generic/audit_change_attr.h b/include/asm-generic/audit_change_attr.h
-index 89b73e5..a186553 100644
---- a/include/asm-generic/audit_change_attr.h
-+++ b/include/asm-generic/audit_change_attr.h
-@@ -4,9 +4,11 @@ __NR_chmod,
- __NR_fchmod,
- #ifdef __NR_chown
- __NR_chown,
--__NR_fchown,
- __NR_lchown,
- #endif
-+#ifdef __NR_fchown
-+__NR_fchown,
-+#endif
- __NR_setxattr,
- __NR_lsetxattr,
- __NR_fsetxattr,
-diff --git a/include/asm-generic/audit_write.h b/include/asm-generic/audit_write.h
-index e7020c5..274575d 100644
---- a/include/asm-generic/audit_write.h
-+++ b/include/asm-generic/audit_write.h
-@@ -10,6 +10,12 @@ __NR_truncate,
- #ifdef __NR_truncate64
- __NR_truncate64,
- #endif
-+#ifdef __NR_ftruncate
-+__NR_ftruncate,
-+#endif
-+#ifdef __NR_ftruncate64
-+__NR_ftruncate64,
-+#endif
- #ifdef __NR_bind
- __NR_bind,		/* bind can affect fs object only in one way... */
- #endif
+2) audit-test-code (+ my workarounds for arm/arm64)
+  by running "audit-tool", "filter" and "syscalls" test categories.
+
+Changes v1 -> v2:
+* Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+  Please note that a required header, unistd_32.h, is automatically
+  generated from unistd32.h.
+* Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+  system call in audit_syscall_entry() [6/6]
+* Include "Add regs_return_value() in syscall.h" patch [2/6],
+  which was not intentionally included in v1 because it could be added
+  by "kprobes support".
+
+
+AKASHI Takahiro (6):
+  audit: Enable arm64 support
+  arm64: Add regs_return_value() in syscall.h
+  arm64: Add audit support
+  arm64: audit: Add 32-bit (compat) syscall support
+  arm64: audit: Add makefile rule to create unistd_32.h for compat
+    syscalls
+  arm64: audit: Add audit hook in ptrace/syscall_trace
+
+ arch/arm64/Makefile                  |    4 ++++
+ arch/arm64/include/asm/audit.h       |   20 ++++++++++++++++++++
+ arch/arm64/include/asm/ptrace.h      |    5 +++++
+ arch/arm64/include/asm/syscall.h     |   22 ++++++++++++++++++++++
+ arch/arm64/include/asm/thread_info.h |    1 +
+ arch/arm64/kernel/entry.S            |    3 +++
+ arch/arm64/kernel/ptrace.c           |   12 ++++++++++++
+ arch/arm64/kernel/syscalls/Makefile  |   20 ++++++++++++++++++++
+ include/uapi/linux/audit.h           |    2 ++
+ init/Kconfig                         |    2 +-
+ 10 files changed, 90 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/include/asm/audit.h
+ create mode 100644 arch/arm64/kernel/syscalls/Makefile
+
 -- 
 1.7.9.5
 
