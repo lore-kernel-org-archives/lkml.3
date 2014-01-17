@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaAQDwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 22:52:55 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58771 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaAQDwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 22:52:53 -0500
-Message-ID: <52D8A8DB.4080809@huawei.com>
-Date: Fri, 17 Jan 2014 11:51:55 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: <linux-acpi@vger.kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
-        <intel-gfx@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH v2] ACPI: Fix acpi_evaluate_object() return value check
-References: <1389922191-28664-1-git-send-email-wangyijing@huawei.com> <52D8A672.8070808@linaro.org>
-In-Reply-To: <52D8A672.8070808@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	id S1751545AbaAQEEB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 23:04:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:45626 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaAQED6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 23:03:58 -0500
+Date: Fri, 17 Jan 2014 15:03:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: Re: linux-next: build failure after merge of the kvm tree
+Message-Id: <20140117150343.0720327c08c8134662e936b2@canb.auug.org.au>
+In-Reply-To: <20140110140043.1e090e614df48b230202ab3d@canb.auug.org.au>
+References: <20140110140043.1e090e614df48b230202ab3d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Jan_2014_15_03_43_+1100_jEFcC6Ct2g8h=9tW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
->> index dfff090..7ea00e5 100644
->> --- a/drivers/gpu/drm/i915/intel_acpi.c
->> +++ b/drivers/gpu/drm/i915/intel_acpi.c
->> @@ -35,7 +35,7 @@ static int intel_dsm(acpi_handle handle, int func)
->>  	union acpi_object params[4];
->>  	union acpi_object *obj;
->>  	u32 result;
->> -	int ret = 0;
-> 
-> The 'ret' is removed, but
+--Signature=_Fri__17_Jan_2014_15_03_43_+1100_jEFcC6Ct2g8h=9tW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ah, it's my mistake, will updata it right now, thanks!
+Hi all,
 
-> 
->> +	acpi_status status;
->>  
->>  	input.count = 4;
->>  	input.pointer = params;
->> @@ -50,8 +50,8 @@ static int intel_dsm(acpi_handle handle, int func)
->>  	params[3].package.count = 0;
->>  	params[3].package.elements = NULL;
->>  
->> -	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> -	if (ret) {
->> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> +	if (ACPI_FAILURE(status)) {
->>  		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
->>  		return ret;
-> 
-> you still use it here, so you should -EINVAL or something else here.
+On Fri, 10 Jan 2014 14:00:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the kvm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> arch/powerpc/kvm/../../../virt/kvm/kvm_main.c: In function 'kvm_vcpu_on_s=
+pin':
+> arch/powerpc/kvm/../../../virt/kvm/kvm_main.c:1807:4: error: implicit dec=
+laration of function 'kvm_vcpu_eligible_for_directed_yield' [-Werror=3Dimpl=
+icit-function-declaration]
+>     if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+>     ^
+>=20
+> Caused by commit 7940876e1330 ("kvm: make local functions static").
+>=20
+> I have used the kvm tree from next-20140109 for today.
 
-OK
+I am still getting this build failure.
 
-> 
->>  	}
->> @@ -141,7 +141,8 @@ static void intel_dsm_platform_mux_info(void)
->>  	struct acpi_object_list input;
->>  	union acpi_object params[4];
->>  	union acpi_object *pkg;
->> -	int i, ret;
->> +	acpi_status status;
->>  
->> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> -	if (err) {
->> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> +	if (ACPI_FAILURE(status)) {
->>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
->>  		return err;
-> 
-> here too.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-OK, thanks.
+--Signature=_Fri__17_Jan_2014_15_03_43_+1100_jEFcC6Ct2g8h=9tW
+Content-Type: application/pgp-signature
 
-> 
->>  	}
->> @@ -134,7 +135,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
->>  	struct acpi_object_list input;
->>  	union acpi_object params[4];
->>  	union acpi_object *obj;
->> -	int err;
->> +	acpi_status status;
->>  
->>  	input.count = 4;
->>  	input.pointer = params;
->> @@ -148,8 +149,8 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
->>  	params[3].type = ACPI_TYPE_INTEGER;
->>  	params[3].integer.value = arg;
->>  
->> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> -	if (err) {
->> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->> +	if (ACPI_FAILURE(status)) {
->>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
->>  		return err;
-> 
-> and here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-thanks.
+iQIcBAEBCAAGBQJS2KujAAoJEMDTa8Ir7ZwVQq8P/iPRaYjO6tA3t6BoHf8nEbG4
+scgP1hRvS8FzSNWLix6p/O7ZEZcD2+4FqlEfJIxdXybx6ogY3472NsvCNcHva8fa
+0qk9cUd0Mv3vPh7itirLT08TxlD51uSCG2wN/qWEtfnYxE80SyAt9Blmz3mzlq9Q
+Qnjv5thLSyxvfGYo9c3OQ7tz/oGtQyY7M+mk2USC2ls9OhlBElayrFN9mED31OyQ
+8RGjYg3fr+EhSbLkN9alx8KRlnQPBkNtYuRQPqMt3mQ9ikPGfYTS+UwnnP0X9QL3
+s/NvGcUoHWaATf9mdl9o6u6aPWgvGW3NaCRINngqari6wxTJDz5bVEatgIo0pYs2
+fX5kTVUQeUb4ljH45/pu52vJpQ2yhlbpnNtKrJeq0EitE0dBzN288q6iQPvEZPDe
+8h2BjkjHLJ5rxUBQwV61tQxeH++MP/GlBylYPXdqkgM2uTEa7/55iNNxzwgAibJV
+Ktp4uVQT3SIw5h8eEzSL3nbj/7JZtmvMH3ECXcEqRQQRRWF3LjB8Bv999QPEJ9yb
+vKQTYedqCZez9IkEvDfCJ4kOQrxCpElGXDU1RsLwNg/Van3cUrmBbnOvsbiZoOm9
+V5VncU9iEow285GxCGbQzibdmI3CH2UWiTn0Ikn7/q3rNHP56H7v5qUWtvb2EHc4
+6m+8O/8Pyl1Ic3tLd+qs
+=Df5A
+-----END PGP SIGNATURE-----
 
-> 
->>  	}
->> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
->> index d51f45a..3c21f1b 100644
->> --- a/drivers/pci/pci-label.c
->> +++ b/drivers/pci/pci-label.c
->> @@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
->>  	union acpi_object *obj;
->>  	int len = 0;
->>  
->> -	int err;
->> +	acpi_status status;
->>  
->>  	input.count = 4;
->>  	input.pointer = params;
->> @@ -228,8 +228,8 @@ dsm_get_label(acpi_handle handle, int func,
->>  	params[3].package.count = 0;
->>  	params[3].package.elements = NULL;
->>  
->> -	err = acpi_evaluate_object(handle, "_DSM", &input, output);
->> -	if (err)
->> +	status = acpi_evaluate_object(handle, "_DSM", &input, output);
->> +	if (ACPI_FAILURE(status))
->>  		return -1;
-> 
-> can we return specific error such as -EINVAL instead of hard code?
-
-I will try to add some more useful debug info here. thanks!
-
-> 
-> Thanks
-> Hanjun
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
-
+--Signature=_Fri__17_Jan_2014_15_03_43_+1100_jEFcC6Ct2g8h=9tW--
