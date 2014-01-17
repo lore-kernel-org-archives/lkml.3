@@ -1,130 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaAQHmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 02:42:07 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:40161 "EHLO extserv.mm-sol.com"
+	id S1752093AbaAQHnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 02:43:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7967 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaAQHmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 02:42:04 -0500
-Message-ID: <1389944445.2794.48.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v2 1/2] i2c: qup: Add device tree bindings information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Bill Brown <bill.e.brown@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	id S1751155AbaAQHnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 02:43:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
+   d="scan'208";a="460348327"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Yijing Wang <wangyijing@huawei.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: linux-acpi@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        James Ralston <james.d.ralston@intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 17 Jan 2014 09:40:45 +0200
-In-Reply-To: <20140116232047.GK30911@sonymobile.com>
-References: <1389659437-16406-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1389659437-16406-2-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1389689841.2794.8.camel@iivanov-dev.int.mm-sol.com>
-	 <20140116232047.GK30911@sonymobile.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Dave Airlie <airlied@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH v3] ACPI: Fix acpi_evaluate_object() return value check
+In-Reply-To: <1389932513-27684-1-git-send-email-wangyijing@huawei.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1389932513-27684-1-git-send-email-wangyijing@huawei.com>
+User-Agent: Notmuch/0.17+27~gabca3dcf08ba (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 17 Jan 2014 09:46:48 +0200
+Message-ID: <87d2jr82zb.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 17 Jan 2014, Yijing Wang <wangyijing@huawei.com> wrote:
+> Fix acpi_evaluate_object() return value check,
+> shoud acpi_status not int.
 
-Hi, 
+Please spellcheck.
 
-On Thu, 2014-01-16 at 15:20 -0800, Bjorn Andersson wrote: 
-> On Tue 14 Jan 00:57 PST 2014, Ivan T. Ivanov wrote:
-> 
-> > 
-> > Thanks Bjorn, 
-> > 
-> > I have prepared second version, but never send it out :-).
-> > One thing suggested by Mark was missed in this version.
-> 
-> Yeah, Mattew told me you we're assigned to other things and asked me to send
-> out an update as I had gotten it to work on our boards.
-> 
-> I did modify the wording of most of these to match how it is written in the
-> other Qualcomm definitions.
-> 
-> @Mark, would you rather have me change this to your suggested wording?
-> 
-> > 
-> > 
-> > On Mon, 2014-01-13 at 16:30 -0800, Bjorn Andersson wrote: 
-> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > 
-> [snip]
-> > > + - clocks: Should contain the core clock and the AHB clock.
-> > 
-> > + - clocks: a list of phandle + clock-specifier pairs for each entry in
-> > +           clock-names
-> > 
-> 
-> This is in line with how it's written in other drivers, so if the DT
-> maintainers doesn't disagree I would like to keep phandles out of the
-> description. This specific line is a verbatime copy of the msm_serial
-> documentation (same block, different mode)...
-> 
-> > > + - clock-names: Should be "core" for the core clock and "iface" for the
-> > > +                AHB clock.
-> > > +
-> > > + - #address-cells: Should be <1> Address cells for i2c device address
-> > > + - #size-cells: Should be <0> as i2c addresses have no size component
-> > > +
-> > > +Optional properties:
-> > > + - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
-> > > +                    default is 100kHz if omitted.
-> > > +
-> > > +Child nodes should conform to i2c bus binding.
-> > > +
-> > > +Example:
-> > > +
-> > > + i2c2: i2c@f9924000 {
-> > > + 	compatible = "qcom,i2c-qup";
-> > > + 	reg = <0xf9924000 0x1000>;
-> > > + 	interrupts = <0 96 0>;
-> > > +
-> > > + 	clocks = <&gcc_blsp1_qup2_i2c_apps_clk>, <&gcc_blsp1_ahb_clk>;
-> > 
-> > In the light of the latest patches from Stephen, this could be 
-> > 
-> > + 	clocks = <&gcc GCC_BLSP1_QUP2_I2C_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
-> 
-> Yes, that's exactly what I have in my dts. However as this is just an example
-> I didn't feel it was worth tainting the documentation with all those capital
-> letters ;)
-> So unless DT maintainers disagree I would like to just keep it as an example.
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+> v2->v3: Fix compile error pointed out by Hanjun.
+> v1->v2: Add CC to related subsystem MAINTAINERS
+> ---
+>  drivers/gpu/drm/i915/intel_acpi.c              |   24 ++++++++++++++----------
+>  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    9 +++++----
+>  drivers/gpu/drm/nouveau/nouveau_acpi.c         |   23 +++++++++++++----------
+>  drivers/pci/pci-label.c                        |    9 ++++++---
+>  4 files changed, 38 insertions(+), 27 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
+> index dfff090..87e8f74 100644
+> --- a/drivers/gpu/drm/i915/intel_acpi.c
+> +++ b/drivers/gpu/drm/i915/intel_acpi.c
+> @@ -35,7 +35,8 @@ static int intel_dsm(acpi_handle handle, int func)
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+>  	u32 result;
+> -	int ret = 0;
+> +	acpi_status status;
+> +	int ret;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -50,10 +51,11 @@ static int intel_dsm(acpi_handle handle, int func)
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (ret) {
+> -		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+> -		return ret;
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+> +		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %s\n",
+> +				acpi_format_exception(status));
+> +		return -EINVAL;
+>  	}
+>  
+>  	obj = (union acpi_object *)output.pointer;
+> @@ -141,7 +143,8 @@ static void intel_dsm_platform_mux_info(void)
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *pkg;
+> -	int i, ret;
+> +	acpi_status status;
+> +	int i;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -156,10 +159,11 @@ static void intel_dsm_platform_mux_info(void)
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
+> -				   &output);
+> -	if (ret) {
+> -		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+> +	acpi_status = acpi_evaluate_object(intel_dsm_priv.dhandle,
+> +			"_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+> +		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %s\n",
+> +				acpi_format_exception(status));
+>  		goto out;
+>  	}
 
-Until, we get some meaningful board DTS files for Qualcomm platforms, it
-is easy for people which will like to test or use drivers to just copy
-and paste these definitions.
+In the two hunks above, one of the error paths calls
+kfree(output.pointer), the other doesn't. Which one is wrong?
 
-Regards,
-Ivan
+The fix for that should probably be a follow-up patch; this patch is
 
-> 
-> Regards,
-> Bjorn
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
 
 
+>  
+> diff --git a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> index 1291204..c5e7a2b 100644
+> --- a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> @@ -114,15 +114,16 @@ mxm_shadow_dsm(struct nouveau_mxm *mxm, u8 version)
+>  	struct acpi_buffer retn = { ACPI_ALLOCATE_BUFFER, NULL };
+>  	union acpi_object *obj;
+>  	acpi_handle handle;
+> -	int ret;
+> +	acpi_status status;
+>  
+>  	handle = ACPI_HANDLE(&device->pdev->dev);
+>  	if (!handle)
+>  		return false;
+>  
+> -	ret = acpi_evaluate_object(handle, "_DSM", &list, &retn);
+> -	if (ret) {
+> -		nv_debug(mxm, "DSM MXMS failed: %d\n", ret);
+> +	status = acpi_evaluate_object(handle, "_DSM", &list, &retn);
+> +	if (ACPI_FAILURE(status)) {
+> +		nv_debug(mxm, "DSM MXMS failed: %s\n",
+> +				acpi_format_exception(status));
+>  		return false;
+>  	}
+>  
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> index ba0183f..de3068b 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> @@ -82,7 +82,8 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+> -	int i, err;
+> +	acpi_status status;
+> +	int i;
+>  	char args_buff[4];
+>  
+>  	input.count = 4;
+> @@ -101,10 +102,11 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+>  		args_buff[i] = (arg >> i * 8) & 0xFF;
+>  	params[3].buffer.pointer = args_buff;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (err) {
+> -		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+> -		return err;
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+> +		pr_info("failed to evaluate _DSM: %s\n",
+> +				acpi_format_exception(status));
+> +		return -EINVAL;
+>  	}
+>  
+>  	obj = (union acpi_object *)output.pointer;
+> @@ -134,7 +136,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+> -	int err;
+> +	acpi_status status;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -148,10 +150,11 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>  	params[3].type = ACPI_TYPE_INTEGER;
+>  	params[3].integer.value = arg;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (err) {
+> -		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+> -		return err;
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+> +		pr_info("failed to evaluate _DSM: %s\n",
+> +				acpi_format_exception(status));
+> +		return -EINVAL;
+>  	}
+>  
+>  	obj = (union acpi_object *)output.pointer;
+> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+> index d51f45a..7ba4de6 100644
+> --- a/drivers/pci/pci-label.c
+> +++ b/drivers/pci/pci-label.c
+> @@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
+>  	union acpi_object *obj;
+>  	int len = 0;
+>  
+> -	int err;
+> +	acpi_status status;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -228,9 +228,12 @@ dsm_get_label(acpi_handle handle, int func,
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, output);
+> -	if (err)
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, output);
+> +	if (ACPI_FAILURE(status)) {
+> +		pr_info("failed to evaluate _DSM: %s\n",
+> +				acpi_format_exception(status));
+>  		return -1;
+> +	}
+>  
+>  	obj = (union acpi_object *)output->pointer;
+>  
+> -- 
+> 1.7.1
+>
+>
+
+-- 
+Jani Nikula, Intel Open Source Technology Center
