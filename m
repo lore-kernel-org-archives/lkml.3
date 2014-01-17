@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaAQRyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:54:14 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:43248 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661AbaAQRyM (ORCPT
+	id S1752993AbaAQRyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:54:40 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42392 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaAQRyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:54:12 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
-References: <20140117132232.GC15937@n2100.arm.linux.org.uk>
-	<1389979580-14812-1-git-send-email-joshc@codeaurora.org>
-Date: Fri, 17 Jan 2014 09:54:09 -0800
-In-Reply-To: <1389979580-14812-1-git-send-email-joshc@codeaurora.org> (Josh
-	Cartwright's message of "Fri, 17 Jan 2014 11:26:20 -0600")
-Message-ID: <87lhyemr3y.fsf@linaro.org>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.2 (gnu/linux)
+	Fri, 17 Jan 2014 12:54:38 -0500
+Message-ID: <52D96E5C.4040506@codeaurora.org>
+Date: Fri, 17 Jan 2014 09:54:36 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/7] ARM: perf_event: Support percpu irqs for the CPU
+ PMU
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org> <1389808535-23852-2-git-send-email-sboyd@codeaurora.org> <20140115205427.GB26193@codeaurora.org> <20140117150411.GI16003@mudshark.cambridge.arm.com>
+In-Reply-To: <20140117150411.GI16003@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Cartwright <joshc@codeaurora.org> writes:
-
-> Both the PM_RUNTIME and PM_SLEEP callbacks call into the common
-> msm_otg_{suspend,resume} routines, however these routines are only being
-> built when CONFIG_PM_SLEEP.  In addition, msm_otg_{suspend,resume} also
-> depends on msm_hsusb_config_vddcx(), which is only built when
-> CONFIG_PM_SLEEP.
+On 01/17/14 07:04, Will Deacon wrote:
+> Hi Stephen,
 >
-> Fix the CONFIG_PM_RUNTIME, !CONFIG_PM_SLEEP case by changing the
-> preprocessor conditional, and moving msm_hsusb_config_vddcx().
+> On Wed, Jan 15, 2014 at 08:54:27PM +0000, Stephen Boyd wrote:
+>> On 01/15, Stephen Boyd wrote:
+>>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+>>> index 789d846a9184..e76750980b38 100644
+>>> --- a/arch/arm/kernel/perf_event.c
+>>> +++ b/arch/arm/kernel/perf_event.c
+>>> @@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
+>>>  
+>>>  static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+>>>  {
+>>> -	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+>>> -	struct platform_device *plat_device = armpmu->plat_device;
+>>> -	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
+>>> +	struct arm_pmu *armpmu;
+>>> +	struct platform_device *plat_device;
+>>> +	struct arm_pmu_platdata *plat;
+>>> +
+>>> +	if (irq_is_percpu(irq))
+>>> +		dev = *(struct arm_pmu_cpu **)dev;
+>> Oh. I just realized that struct arm_pmu_cpu doesn't even exist. This
+>> still compiles though because we're dealing with a void pointer.
+>>
+>> Perhaps its better to just do
+>>
+>> 	dev = *(void **)dev;
+>>
+>> here. Can you fix that up when applying? Otherwise I'll do it on
+>> the next send if there are more comments.
+> Shouldn't that actually be some per_cpu accessor like this_cpu_ptr?
 >
-> While we're here, eliminate the CONFIG_PM conditional for setting
-> up the dev_pm_ops.
->
-> This address the following errors Russell King has hit doing randconfig
-> builds:
->
-> drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_suspend':
-> drivers/usb/phy/phy-msm-usb.c:1691:2: error: implicit declaration of function 'msm_otg_suspend'
-> drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_resume':
-> drivers/usb/phy/phy-msm-usb.c:1699:2: error: implicit declaration of function 'msm_otg_resume'
->
-> Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 
-[...]
+Nope. The genirq layer unwraps the per_cpu pointer and passes it to the
+handler.
 
-> @@ -440,7 +414,32 @@ static int msm_otg_reset(struct usb_phy *phy)
->  #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
->  #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
->  
-> -#ifdef CONFIG_PM_SLEEP
-> +#if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-nit: you should just use CONFIG_PM here since that is what it's for.
-
-c.f. kernel/power/Kconfig:
-
-config PM
-        def_bool y
-        depends on PM_SLEEP || PM_RUNTIME
-
-Kevin
