@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaAQMgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:36:47 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37995 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaAQMgp (ORCPT
+	id S1752359AbaAQMkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:40:23 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43783 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaAQMkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:36:45 -0500
+	Fri, 17 Jan 2014 07:40:22 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -20,10 +20,12 @@ Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         patches@linaro.org, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 06/20] ARM64 / ACPI: Introduce some PCI functions when PCI is enabled
-Date: Fri, 17 Jan 2014 20:25:00 +0800
-Message-Id: <1389961514-13562-7-git-send-email-hanjun.guo@linaro.org>
+        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: [PATCH 07/20] ARM64 / ACPI: Enable ARM64 in Kconfig
+Date: Fri, 17 Jan 2014 20:25:01 +0800
+Message-Id: <1389961514-13562-8-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
 References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
@@ -31,108 +33,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce some PCI functions to make ACPI can be compiled when
-CONFIG_PCI is enabled, these functions should be revisited when
-implemented on ARM64.
+Add Kconfigs to build ACPI on ARM64, and make ACPI runable on ARM64.
 
+acpi_idle driver is x86/IA64 dependent now, so make CONFIG_ACPI_PROCESSOR
+depends on X86 || IA64, and implement it on ARM/ARM64 in the furture.
+
+In order to make arm-core.c can both run on ARM and ARM64, introduce
+CONFIG_ACPI_ARM to support it.
+
+Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+Signed-off-by: Al Stone <al.stone@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/arm64/Makefile          |    1 +
- arch/arm64/pci/Makefile      |    1 +
- arch/arm64/pci/pci.c         |   33 +++++++++++++++++++++++++++++++++
- drivers/acpi/plat/arm-core.c |   19 +++++++++++++++++++
- 4 files changed, 54 insertions(+)
- create mode 100644 arch/arm64/pci/Makefile
- create mode 100644 arch/arm64/pci/pci.c
+ arch/arm64/Kconfig         |    2 ++
+ drivers/acpi/Kconfig       |   11 ++++++++---
+ drivers/acpi/plat/Makefile |    2 +-
+ 3 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 2fceb71..fcaa58e 100644
---- a/arch/arm64/Makefile
-+++ b/arch/arm64/Makefile
-@@ -45,6 +45,7 @@ export	TEXT_OFFSET GZFLAGS
- core-y		+= arch/arm64/kernel/ arch/arm64/mm/
- core-$(CONFIG_KVM) += arch/arm64/kvm/
- core-$(CONFIG_XEN) += arch/arm64/xen/
-+drivers-$(CONFIG_PCI)	+= arch/arm64/pci/
- libs-y		:= arch/arm64/lib/ $(libs-y)
- libs-y		+= $(LIBGCC)
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6d4dd22..2b1fb1d 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -279,6 +279,8 @@ source "net/Kconfig"
  
-diff --git a/arch/arm64/pci/Makefile b/arch/arm64/pci/Makefile
-new file mode 100644
-index 0000000..b8d5dbd
---- /dev/null
-+++ b/arch/arm64/pci/Makefile
-@@ -0,0 +1 @@
-+obj-y                 += pci.o
-diff --git a/arch/arm64/pci/pci.c b/arch/arm64/pci/pci.c
-new file mode 100644
-index 0000000..4e46790
---- /dev/null
-+++ b/arch/arm64/pci/pci.c
-@@ -0,0 +1,33 @@
-+#include <linux/acpi.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/pci.h>
-+
-+/**
-+ * raw_pci_read - Platform-specific PCI config space access.
-+ *
-+ * Default empty implementation.  Replace with an architecture-specific setup
-+ * routine, if necessary.
-+ */
-+int __weak raw_pci_read(unsigned int domain, unsigned int bus,
-+			unsigned int devfn, int reg, int len, u32 *val)
-+{
-+	return -EINVAL;
-+}
-+
-+int __weak raw_pci_write(unsigned int domain, unsigned int bus,
-+			unsigned int devfn, int reg, int len, u32 val)
-+{
-+	return -EINVAL;
-+}
-+
-+/* Root bridge scanning */
-+struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
-+{
-+	return NULL;
-+}
-+
-+void __init pci_acpi_crs_quirks(void)
-+{
-+	return;
-+}
-diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-index 3c8521d..1835b21 100644
---- a/drivers/acpi/plat/arm-core.c
-+++ b/drivers/acpi/plat/arm-core.c
-@@ -100,6 +100,25 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
- }
- EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+ source "drivers/Kconfig"
  
-+int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
-+{
-+	return -1;
-+}
++source "drivers/acpi/Kconfig"
 +
-+int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
-+{
-+	/* TBD */
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(acpi_register_ioapic);
+ source "fs/Kconfig"
+ 
+ source "arch/arm64/kvm/Kconfig"
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 4770de5..cae5dc9 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -2,13 +2,16 @@
+ # ACPI Configuration
+ #
+ 
++config ACPI_ARM
++	bool
 +
-+int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
-+{
-+	/* TBD */
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(acpi_unregister_ioapic);
-+
- /*
-  * success: return IRQ number (>0)
-  * failure: return =< 0
+ menuconfig ACPI
+ 	bool "ACPI (Advanced Configuration and Power Interface) Support"
+ 	depends on !IA64_HP_SIM
+-	depends on IA64 || X86
+-	depends on PCI
++	depends on ((IA64 || X86) && PCI) || ARM64
+ 	select PNP
+-	default y
++	select ACPI_ARM if ARM64
++	default y if !ARM64
+ 	help
+ 	  Advanced Configuration and Power Interface (ACPI) support for 
+ 	  Linux requires an ACPI-compliant platform (hardware/firmware),
+@@ -149,6 +152,7 @@ config ACPI_PROCESSOR
+ 	tristate "Processor"
+ 	select THERMAL
+ 	select CPU_IDLE
++	depends on X86 || IA64
+ 	default y
+ 	help
+ 	  This driver installs ACPI as the idle handler for Linux and uses
+@@ -250,6 +254,7 @@ config ACPI_DEBUG
+ config ACPI_PCI_SLOT
+ 	bool "PCI slot detection driver"
+ 	depends on SYSFS
++	depends on PCI
+ 	default n
+ 	help
+ 	  This driver creates entries in /sys/bus/pci/slots/ for all PCI
+diff --git a/drivers/acpi/plat/Makefile b/drivers/acpi/plat/Makefile
+index 46bc65e..3a61176 100644
+--- a/drivers/acpi/plat/Makefile
++++ b/drivers/acpi/plat/Makefile
+@@ -1 +1 @@
+-obj-$(CONFIG_ARM64)	+= arm-core.o
++obj-$(CONFIG_ACPI_ARM)	+= arm-core.o
 -- 
 1.7.9.5
 
