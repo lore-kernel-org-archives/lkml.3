@@ -1,138 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaAQP0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:26:00 -0500
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:46875 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752629AbaAQPSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:18:41 -0500
-Message-Id: <20140117151835.920139508@linux.com>
-Date: Fri, 17 Jan 2014 09:18:27 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
-        Alex Shi <alex.shi@intel.com>
-Subject: [PATCH 15/41] mm: Use raw_cpu ops for determining current NUMA node
-References: <20140117151812.770437629@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=preempt_fix_numa_node
+	id S1753440AbaAQPbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:31:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39219 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753240AbaAQPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 10:31:10 -0500
+Message-ID: <52D94CBB.5020701@suse.de>
+Date: Fri, 17 Jan 2014 16:31:07 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+CC: Tomas Henzl <thenzl@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+References: <20140116195112.GA9658@beardog.cce.hp.com> <52D948A5.1070706@redhat.com> <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net>
+In-Reply-To: <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
+On 01/17/2014 04:17 PM, Miller, Mike (OS Dev) wrote:
+> 
+> 
+>> -----Original Message-----
+>> From: Tomas Henzl [mailto:thenzl@redhat.com]
+>> Sent: Friday, January 17, 2014 9:14 AM
+>> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
+>> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
+>> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+>>
+>> On 01/16/2014 08:51 PM, Mike Miller wrote:
+>>> From: Mike Miller <mike.miller@hp.com>
+>>>
+>>> This patch has every ID we have in our svn repository. Some
+>>> controllers were cancelled, others added, now the cancelled ones are
+>>> back. Apparently the debate rages on about which controllers are
+>>> cancelled, which are not, whatever. Please accept this patch. It is
+>>> dependent upon the patches I sent yesterday.
+>>> This patch made/tested against kernel-3.13.0-rc8
+>>>
+>>> Signed-off-by: Mike Miller <mike.miller@hp.com>
+>>> ---
+>>>  drivers/scsi/hpsa.c |   12 ++++++++++++
+>>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
+>>> 348b207..3affec5 100644
+>>> --- a/drivers/scsi/hpsa.c
+>>> +++ b/drivers/scsi/hpsa.c
+>>> @@ -100,6 +100,7 @@ static const struct pci_device_id
+>> hpsa_pci_device_id[] = {
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>> 0x3354},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>> 0x3355},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>> 0x3356},
+>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1920},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1921},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1922},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1923},
+>>> @@ -108,15 +109,19 @@ static const struct pci_device_id
+>> hpsa_pci_device_id[] = {
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1926},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1928},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x1929},
+>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>> 0x192A},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21BD},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21BE},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21BF},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C0},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C2},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C3},
+>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C4},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C5},
+>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C6},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C7},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C8},
+>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21C9},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21CA},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21CB},
+>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>> 0x21CC},
+>>> @@ -149,22 +154,29 @@ static struct board_type products[] = {
+>>>  	{0x3354103C, "Smart Array P420i", &SA5_access},
+>>>  	{0x3355103C, "Smart Array P220i", &SA5_access},
+>>>  	{0x3356103C, "Smart Array P721m", &SA5_access},
+>>> +	{0x1920103C, "Smart Array P430i", &SA5_access},
+>>>  	{0x1921103C, "Smart Array P830i", &SA5_access},
+>>>  	{0x1922103C, "Smart Array P430", &SA5_access},
+>>>  	{0x1923103C, "Smart Array P431", &SA5_access},
+>>>  	{0x1924103C, "Smart Array P830", &SA5_access},
+>>> +	{0x1925103C, "Smart Array P831", &SA5_access},
+>>>  	{0x1926103C, "Smart Array P731m", &SA5_access},
+>>>  	{0x1928103C, "Smart Array P230i", &SA5_access},
+>>>  	{0x1929103C, "Smart Array P530", &SA5_access},
+>>> +	{0x192A103C, "Smart Array P531", &SA5_access},
+>>>  	{0x21BD103C, "Smart Array", &SA5_access},
+>>>  	{0x21BE103C, "Smart Array", &SA5_access},
+>>>  	{0x21BF103C, "Smart Array", &SA5_access},
+>>>  	{0x21C0103C, "Smart Array", &SA5_access},
+>>> +	{0x21C1103C, "Smart Array", &SA5_access},
+>>
+>> I think that both tables should be in sync - but there is no 0x21c1 in
+>> hpsa_pci_device_id (and the 0x1925), could you clarify that?
+>>
+>> Thanks, Tomas
+> 
+> Crap. It seems like these menial tasks get the better of me. I'll correct and resubmit.
+> 
+Hmm. Seeing that hpsa is now well capable of supporting even older
+SmartArray controllers, is there really a point in updating the
+PCI-ID list every time?
+Wouldn't you be better off by just using the catch-all phrase
+and remove all the individual IDs?
 
-With the preempt checking logic for __this_cpu_ops we will get false
-positives from locations in the code that use numa_node_id.
+That way you would just have to update _one_ list ...
 
-Before the  __this_cpu ops where introduced there were
-no checks for preemption present either. smp_raw_processor_id()
-was used. See http://www.spinics.net/lists/linux-numa/msg00641.html
+Cheers,
 
-Therefore we need to use raw_cpu_read here to avoid false postives.
-
-Note that this issue has been discussed in prior years.
-If the process changes nodes after retrieving the current numa node then
-that is acceptable since most uses of numa_node etc are for optimization
-and not for correctness.
-
-There were suggestions to implement a raw_numa_node_id in order to
-do preempt checks for numa_node_id as well. But I think we better
-defer that to another patch since that would mean investigating
-how numa_node_id() is used throughout the kernel which would increase
-the scope of this patchset significantly. After all preemption was never
-checked before when numa_node_id() was used.
-
-Some sample traces:
-
-__this_cpu_read operation in preemptible [00000000] code: login/1456
-caller is __this_cpu_preempt_check+0x2b/0x2d
-CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- 000000000000013c ffff88001f31ba58 ffffffff8147cf5e ffff88001f31bfd8
- ffff88001f31ba88 ffffffff8127eea9 0000000000000000 ffff88001f3975c0
- 00000000f7707000 ffff88001f3975c0 ffff88001f31bac0 ffffffff8127eeef
-Call Trace:
- [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
- [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
- [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
- [<ffffffff81030ff5>] ? show_stack+0x3b/0x3d
- [<ffffffff810ebee3>] get_task_policy+0x1d/0x49
- [<ffffffff810ed705>] get_vma_policy+0x14/0x76
- [<ffffffff810ed8ff>] alloc_pages_vma+0x35/0xff
- [<ffffffff810dad97>] handle_mm_fault+0x290/0x73b
- [<ffffffff810503da>] __do_page_fault+0x3fe/0x44d
- [<ffffffff8109b360>] ? trace_hardirqs_on_caller+0x142/0x19e
- [<ffffffff8109b3c9>] ? trace_hardirqs_on+0xd/0xf
- [<ffffffff81278bed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
- [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
- [<ffffffff81050451>] do_page_fault+0x9/0xc
- [<ffffffff81483602>] page_fault+0x22/0x30
- [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
- [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
- [<ffffffff810be4c3>] ? file_read_actor+0x3a/0x15a
- [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
- [<ffffffff810bffab>] generic_file_aio_read+0x38e/0x624
- [<ffffffff810f6d69>] do_sync_read+0x54/0x73
- [<ffffffff810f7890>] vfs_read+0x9d/0x12a
- [<ffffffff810f7a59>] SyS_read+0x47/0x7e
- [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
-
-
-caller is __this_cpu_preempt_check+0x2b/0x2d
-CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- 00000000000000e8 ffff88001f31bbf8 ffffffff8147cf5e ffff88001f31bfd8
- ffff88001f31bc28 ffffffff8127eea9 ffffffff823c5c40 00000000000213da
- 0000000000000000 0000000000000000 ffff88001f31bc60 ffffffff8127eeef
-Call Trace:
- [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
- [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
- [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
- [<ffffffff810e006e>] ? install_special_mapping+0x11/0xe4
- [<ffffffff810ec8a8>] alloc_pages_current+0x8f/0xbc
- [<ffffffff810bec6b>] __page_cache_alloc+0xb/0xd
- [<ffffffff810c7e90>] __do_page_cache_readahead+0xf4/0x219
- [<ffffffff810c7e0e>] ? __do_page_cache_readahead+0x72/0x219
- [<ffffffff810c827c>] ra_submit+0x1c/0x20
- [<ffffffff810c850c>] ondemand_readahead+0x28c/0x2b4
- [<ffffffff810c85e9>] page_cache_sync_readahead+0x38/0x3a
- [<ffffffff810bfe7e>] generic_file_aio_read+0x261/0x624
- [<ffffffff810f6d69>] do_sync_read+0x54/0x73
- [<ffffffff810f7890>] vfs_read+0x9d/0x12a
- [<ffffffff810f7a59>] SyS_read+0x47/0x7e
- [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
-
-Cc: linux-mm@kvack.org
-Cc: Alex Shi <alex.shi@intel.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/include/linux/topology.h
-===================================================================
---- linux.orig/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
-+++ linux/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
-@@ -188,7 +188,7 @@ DECLARE_PER_CPU(int, numa_node);
- /* Returns the number of the current Node. */
- static inline int numa_node_id(void)
- {
--	return __this_cpu_read(numa_node);
-+	return raw_cpu_read(numa_node);
- }
- #endif
- 
-@@ -245,7 +245,7 @@ static inline void set_numa_mem(int node
- /* Returns the number of the nearest Node with memory */
- static inline int numa_mem_id(void)
- {
--	return __this_cpu_read(_numa_mem_);
-+	return raw_cpu_read(_numa_mem_);
- }
- #endif
- 
-
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
