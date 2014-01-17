@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaAQTE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:04:28 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:34779 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaAQTET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:04:19 -0500
+	id S1753329AbaAQTFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:05:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59939 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753132AbaAQTFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 14:05:00 -0500
+Message-ID: <52D97ECA.8040301@zytor.com>
+Date: Fri, 17 Jan 2014 11:04:42 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140117180304.GB17314@sirena.org.uk>
-References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
-	<20140114125242.GE15567@sirena.org.uk>
-	<CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
-	<20140114134528.GG15567@sirena.org.uk>
-	<CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
-	<20140114145002.GR15567@sirena.org.uk>
-	<CAMuHMdVhmtA0ogEqu-jj8Kvii5CwV8qfHn+GzgQ9uFKzH7Ua6w@mail.gmail.com>
-	<20140117180304.GB17314@sirena.org.uk>
-Date: Fri, 17 Jan 2014 20:04:19 +0100
-X-Google-Sender-Auth: NPPheYGyIPoe6ID5Ugf8NGX_Sgg
-Message-ID: <CAMuHMdXBvAYEU3z9cV5Es9bt7p2bGYUYbjQ-ki9N3hj_grTdRw@mail.gmail.com>
-Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Qiaowei Ren <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] x86, mpx: add MPX related opcodes to the x86 opcode
+ map
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 7:03 PM, Mark Brown <broonie@kernel.org> wrote:
->>   2. Make the documentation match the code.
->>       It seems this is what you prefer?
->
-> Yes.
+On 01/12/2014 01:20 AM, Qiaowei Ren wrote:
+> This patch adds all the MPX instructions to x86 opcode map, and then
+> the x86 instruction decoder can decode MPX instructions used in kernel.
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/lib/x86-opcode-map.txt |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks, will do.
+This patch seems rather trivial and uncontroversial, so I'm going to
+pull it in.
 
--- 
-Gr{oetje,eeting}s,
+	-hpa
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
