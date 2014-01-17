@@ -1,48 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaAQOm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:42:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61651 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaAQOmw (ORCPT
+	id S1752351AbaAQOph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:45:37 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33879 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751094AbaAQOpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:42:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Subject: Re: [PATCH v16] dmaengine: Add MOXA ART DMA engine driver
-Date: Fri, 17 Jan 2014 15:42:21 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org, vinod.koul@intel.com,
-        djbw@fb.com, linux@arm.linux.org.uk, mark.rutland@arm.com,
-        andriy.shevchenko@linux.intel.com, lars@metafoo.de
-References: <1387189499-26300-1-git-send-email-jonas.jensen@gmail.com> <1389948365-13999-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1389948365-13999-1-git-send-email-jonas.jensen@gmail.com>
+	Fri, 17 Jan 2014 09:45:35 -0500
+Date: Fri, 17 Jan 2014 14:44:57 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH] of: add function to count number of u32 elements in a
+ property
+Message-ID: <20140117144456.GG19578@e106331-lin.cambridge.arm.com>
+References: <27256277.YJ687suYy5@phil>
+ <1669323.jqjZBfkRx4@phil>
+ <20140116124527.GD19578@e106331-lin.cambridge.arm.com>
+ <3781679.27UF2dWtKL@phil>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401171542.21970.arnd@arndb.de>
-X-Provags-ID: V02:K0:lFbGwU/hQJLuYmabe2oHj6UYZpBem5/Kt5V1ohK8+lk
- 1vxVfWX0LFkwXEMo2j89nnG4pACGtZBNlnTRDCg5aODwl3b3n1
- tIB6X3KASMhaSGWfgievARrMDrha9QbAyE2aGHvz67kFSH3sdO
- KKDP014z4jrYduYLkKfQRgxAhI5MSjPMHrXI/Mh8Yz2V0MVAsa
- 0KRLmnrU7nxU2d9GZzd1bqXtQeefdk45Vvlbssb5dbmSfEIfeJ
- q5+FU3ddmLF1/IBxAvZ/5TwX+7tMYzE0uRZz993wBtt0+Gq55H
- 9ccdcuPBRohYEHF6HbH3uM/Lcd2vh1+fl0mqcAd4gTdzUWOcX5
- B4Dl0bGa1B9BiNpIIQPk=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3781679.27UF2dWtKL@phil>
+Thread-Topic: [PATCH] of: add function to count number of u32 elements in a
+ property
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 January 2014, Jonas Jensen wrote:
-> The MOXA ART SoC has a DMA controller capable of offloading expensive
-> memory operations, such as large copies. This patch adds support for
-> the controller including four channels. Two of these are used to
-> handle MMC copy on the UC-7112-LX hardware. The remaining two can be
-> used in a future audio driver or client application.
+On Thu, Jan 16, 2014 at 06:04:42PM +0000, Heiko Stübner wrote:
+> The need to know the number of array elements in a property is
+> a common pattern. To prevent duplication of open-coded implementations
+> add a helper function that also centralises strict sanity checking
+> and DTB format details.
 > 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> Suggested-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 > ---
+> Hi Mark,
+> did you mean it like this? I've tested it with the sram-reserve change and
+> it made the part of the determining the number elements a lot nicer :-)
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Yes! This looks pretty nice! :)
+
+> 
+>  drivers/of/base.c  |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/of.h |    8 ++++++++
+>  2 files changed, 40 insertions(+)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index f807d0e..0f40ea5 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -920,6 +920,38 @@ int of_property_read_u32_index(const struct device_node *np,
+>  EXPORT_SYMBOL_GPL(of_property_read_u32_index);
+>  
+>  /**
+> + * of_property_count_u32_elems - Count the number of u32 values in a property
+> + *
+> + * @np:		device node from which the property value is to be read.
+> + * @propname:	name of the property to be searched.
+> + *
+> + * Search for a property in a device node and count the number of u32 elements
+> + * in it. Returns number of elements on sucess, -EINVAL if the property does
+> + * not exist or its length does not match a multiple of u32 and -ENODATA if the
+> + * property does not have a value.
+> + */
+> +int of_property_count_u32_elems(const struct device_node *np,
+> +				const char *propname)
+> +{
+> +	int elem_size = sizeof(u32);
+> +	int len;
+> +	struct property *prop = of_find_property(np, propname, &len);
+> +
+> +	if (!prop)
+> +		return -EINVAL;
+> +	if (!prop->value)
+> +		return -ENODATA;
+> +
+> +	if (prop->length % elem_size != 0) {
+> +		pr_err("size of %s is not a multiple of u32\n", propname);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return len / elem_size;
+> +}
+> +EXPORT_SYMBOL_GPL(of_property_count_u32_elems);
+
+As Rob said in his reply, it would be nice to split this into a static
+helper that took elem size as a parameter, so we can have the full suite
+of of_property_count_{u8,u16,u32,u64}_elems.
+
+Also, I think you can get rid of len and always use prop->length, as
+other helpers seem to do.
+
+Cheers for putting this together!
+
+Mark.
