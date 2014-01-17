@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaAQHCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 02:02:17 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48310 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaAQHCP (ORCPT
+	id S1751996AbaAQHCk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 02:02:40 -0500
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:26923 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751920AbaAQHCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 02:02:15 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-8b-52d8d5758931
-Date: Fri, 17 Jan 2014 16:03:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 7/8] zram: drop not used table `count' member
-Message-ID: <20140117070308.GJ26602@bbox>
-References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
+	Fri, 17 Jan 2014 02:02:38 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
+From: Jingchang Lu <b35083@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <dan.j.williams@intel.com>, <arnd@arndb.de>, <shawn.guo@linaro.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>
+Subject: [PATCHv10 0/2] dma: Add Freescale eDMA engine driver support
+Date: Fri, 17 Jan 2014 14:04:42 +0800
+Message-ID: <1389938684-29467-1-git-send-email-b35083@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389877936-15543-8-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 04:12:15PM +0300, Sergey Senozhatsky wrote:
-> struct table `count' member is not used.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+This series add Freescale eDMA engine support.
 
-There is no gain with this patch in memory space ponit of view but it
-might reveal the lurking bug.
+Jingchang Lu (2):
+	ARM: dts: vf610: Add eDMA node
+	dma: Add Freescale eDMA engine driver support
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+ Documentation/devicetree/bindings/dma/fsl-edma.txt |  76 ++++
+ arch/arm/boot/dts/vf610.dtsi                       |  30 ++
+ drivers/dma/Kconfig                                |  10 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/fsl-edma.c                             | 956 +++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1073 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
+ create mode 100644 drivers/dma/fsl-edma.c
 
-> ---
->  drivers/block/zram/zram_drv.h | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 58d4ac5..1d5b1f5 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -64,7 +64,6 @@ enum zram_pageflags {
->  struct table {
->  	unsigned long handle;
->  	u16 size;	/* object size (excluding header) */
-> -	u8 count;	/* object ref count (not yet used) */
->  	u8 flags;
->  } __aligned(4);
->  
-> -- 
-> 1.8.5.3.493.gb139ac2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Kind regards,
-Minchan Kim
