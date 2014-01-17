@@ -1,139 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaAQP0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:26:06 -0500
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:46517 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752626AbaAQPSl (ORCPT
+	id S1753232AbaAQP0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:26:00 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:46875 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752629AbaAQPSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 10:18:41 -0500
-Message-Id: <20140117151835.721256087@linux.com>
-Date: Fri, 17 Jan 2014 09:18:25 -0600
+Message-Id: <20140117151835.920139508@linux.com>
+Date: Fri, 17 Jan 2014 09:18:27 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 13/41] drivers/net/ethernet/tile: Replace __get_cpu_var uses for address calculation
+        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
+        Alex Shi <alex.shi@intel.com>
+Subject: [PATCH 15/41] mm: Use raw_cpu ops for determining current NUMA node
 References: <20140117151812.770437629@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_driver_net_ethernet_tile
+Content-Disposition: inline; filename=preempt_fix_numa_node
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace with this_cpu_ptr.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+With the preempt checking logic for __this_cpu_ops we will get false
+positives from locations in the code that use numa_node_id.
+
+Before the  __this_cpu ops where introduced there were
+no checks for preemption present either. smp_raw_processor_id()
+was used. See http://www.spinics.net/lists/linux-numa/msg00641.html
+
+Therefore we need to use raw_cpu_read here to avoid false postives.
+
+Note that this issue has been discussed in prior years.
+If the process changes nodes after retrieving the current numa node then
+that is acceptable since most uses of numa_node etc are for optimization
+and not for correctness.
+
+There were suggestions to implement a raw_numa_node_id in order to
+do preempt checks for numa_node_id as well. But I think we better
+defer that to another patch since that would mean investigating
+how numa_node_id() is used throughout the kernel which would increase
+the scope of this patchset significantly. After all preemption was never
+checked before when numa_node_id() was used.
+
+Some sample traces:
+
+__this_cpu_read operation in preemptible [00000000] code: login/1456
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 000000000000013c ffff88001f31ba58 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31ba88 ffffffff8127eea9 0000000000000000 ffff88001f3975c0
+ 00000000f7707000 ffff88001f3975c0 ffff88001f31bac0 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff81030ff5>] ? show_stack+0x3b/0x3d
+ [<ffffffff810ebee3>] get_task_policy+0x1d/0x49
+ [<ffffffff810ed705>] get_vma_policy+0x14/0x76
+ [<ffffffff810ed8ff>] alloc_pages_vma+0x35/0xff
+ [<ffffffff810dad97>] handle_mm_fault+0x290/0x73b
+ [<ffffffff810503da>] __do_page_fault+0x3fe/0x44d
+ [<ffffffff8109b360>] ? trace_hardirqs_on_caller+0x142/0x19e
+ [<ffffffff8109b3c9>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffff81278bed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff81050451>] do_page_fault+0x9/0xc
+ [<ffffffff81483602>] page_fault+0x22/0x30
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be4c3>] ? file_read_actor+0x3a/0x15a
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810bffab>] generic_file_aio_read+0x38e/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 00000000000000e8 ffff88001f31bbf8 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31bc28 ffffffff8127eea9 ffffffff823c5c40 00000000000213da
+ 0000000000000000 0000000000000000 ffff88001f31bc60 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810e006e>] ? install_special_mapping+0x11/0xe4
+ [<ffffffff810ec8a8>] alloc_pages_current+0x8f/0xbc
+ [<ffffffff810bec6b>] __page_cache_alloc+0xb/0xd
+ [<ffffffff810c7e90>] __do_page_cache_readahead+0xf4/0x219
+ [<ffffffff810c7e0e>] ? __do_page_cache_readahead+0x72/0x219
+ [<ffffffff810c827c>] ra_submit+0x1c/0x20
+ [<ffffffff810c850c>] ondemand_readahead+0x28c/0x2b4
+ [<ffffffff810c85e9>] page_cache_sync_readahead+0x38/0x3a
+ [<ffffffff810bfe7e>] generic_file_aio_read+0x261/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+Cc: linux-mm@kvack.org
+Cc: Alex Shi <alex.shi@intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/net/ethernet/tile/tilegx.c
+Index: linux/include/linux/topology.h
 ===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilegx.c	2013-12-02 16:07:54.574500726 -0600
-+++ linux/drivers/net/ethernet/tile/tilegx.c	2013-12-02 16:07:54.564501002 -0600
-@@ -427,7 +427,7 @@ static void tile_net_pop_all_buffers(int
- /* Provide linux buffers to mPIPE. */
- static void tile_net_provide_needed_buffers(void)
+--- linux.orig/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
++++ linux/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
+@@ -188,7 +188,7 @@ DECLARE_PER_CPU(int, numa_node);
+ /* Returns the number of the current Node. */
+ static inline int numa_node_id(void)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int instance, kind;
- 	for (instance = 0; instance < NR_MPIPE_MAX &&
- 		     info->mpipe[instance].has_iqueue; instance++)	{
-@@ -653,7 +653,7 @@ drop:
-  */
- static int tile_net_poll(struct napi_struct *napi, int budget)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned int work = 0;
- 	gxio_mpipe_idesc_t *idesc;
- 	int instance, i, n;
-@@ -699,7 +699,7 @@ done:
- /* Handle an ingress interrupt from an instance on the current cpu. */
- static irqreturn_t tile_net_handle_ingress_irq(int irq, void *id)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	napi_schedule(&info->mpipe[(uint64_t)id].napi);
- 	return IRQ_HANDLED;
+-	return __this_cpu_read(numa_node);
++	return raw_cpu_read(numa_node);
  }
-@@ -762,7 +762,7 @@ static enum hrtimer_restart tile_net_han
- /* Make sure the egress timer is scheduled. */
- static void tile_net_schedule_egress_timer(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
+ #endif
  
- 	if (!info->egress_timer_scheduled) {
- 		hrtimer_start(&info->egress_timer,
-@@ -779,7 +779,7 @@ static void tile_net_schedule_egress_tim
-  */
- static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
+@@ -245,7 +245,7 @@ static inline void set_numa_mem(int node
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned long irqflags;
- 	bool pending = false;
- 	int i, instance;
-@@ -1933,7 +1933,7 @@ static void tso_egress(struct net_device
-  */
- static int tile_net_tx_tso(struct sk_buff *skb, struct net_device *dev)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int channel = priv->echannel;
- 	int instance = priv->instance;
-@@ -2002,7 +2002,7 @@ static unsigned int tile_net_tx_frags(st
- /* Help the kernel transmit a packet. */
- static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int instance = priv->instance;
- 	struct mpipe_data *md = &mpipe_data[instance];
-@@ -2141,7 +2141,7 @@ static int tile_net_set_mac_address(stru
- static void tile_net_netpoll(struct net_device *dev)
- {
- 	int instance = mpipe_instance(dev);
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
- 
- 	disable_percpu_irq(md->ingress_irq);
-@@ -2248,7 +2248,7 @@ static void tile_net_dev_init(const char
- /* Per-cpu module initialization. */
- static void tile_net_init_module_percpu(void *unused)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int my_cpu = smp_processor_id();
- 	int instance;
- 
-Index: linux/drivers/net/ethernet/tile/tilepro.c
-===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilepro.c	2013-12-02 16:07:54.574500726 -0600
-+++ linux/drivers/net/ethernet/tile/tilepro.c	2013-12-02 16:07:54.564501002 -0600
-@@ -993,13 +993,13 @@ static void tile_net_register(void *dev_
- 	PDEBUG("tile_net_register(queue_id %d)\n", queue_id);
- 
- 	if (!strcmp(dev->name, "xgbe0"))
--		info = &__get_cpu_var(hv_xgbe0);
-+		info = this_cpu_ptr(&hv_xgbe0);
- 	else if (!strcmp(dev->name, "xgbe1"))
--		info = &__get_cpu_var(hv_xgbe1);
-+		info = this_cpu_ptr(&hv_xgbe1);
- 	else if (!strcmp(dev->name, "gbe0"))
--		info = &__get_cpu_var(hv_gbe0);
-+		info = this_cpu_ptr(&hv_gbe0);
- 	else if (!strcmp(dev->name, "gbe1"))
--		info = &__get_cpu_var(hv_gbe1);
-+		info = this_cpu_ptr(&hv_gbe1);
- 	else
- 		BUG();
+-	return __this_cpu_read(_numa_mem_);
++	return raw_cpu_read(_numa_mem_);
+ }
+ #endif
  
 
