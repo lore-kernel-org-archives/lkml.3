@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaAQO2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:28:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57033 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaAQO2M (ORCPT
+	id S1752185AbaAQO20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:28:26 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:60290 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaAQO2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:28:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on race
-Date: Fri, 17 Jan 2014 15:28:01 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-8-git-send-email-arnd@arndb.de> <52D90A2F.2030903@xs4all.nl>
-In-Reply-To: <52D90A2F.2030903@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 17 Jan 2014 09:28:21 -0500
+Message-ID: <1389968897.31367.489.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net] net: core: orphan frags before queuing to slow qdisc
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Date: Fri, 17 Jan 2014 06:28:17 -0800
+In-Reply-To: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
+References: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401171528.02016.arnd@arndb.de>
-X-Provags-ID: V02:K0:1e2IBGZnm/7leUpn/EQvuf/KykYf1Wp8WYqgFcH63mK
- tenFC6w9RD7K+IixSwFUynabXTyy8xMra3MjlKAOhfiMvkCaGY
- eTANPukQ/QISoLpHt/q5q+6ytmf4A2M3X75rhAo2BWcT3K0Jvo
- yjdRNbhpLvpev82tEHIU50aBgws0e8JKdVOTeaCAGnIk/XN9tQ
- cQpcQswawm8q0LUcqM5tO2MCg81MtUtMbFrUuVyXelhRGjINUU
- OVvdTxCkPqPMuGgpu8XkN3ezLCTq17ojL5VNMiMCbj9RzXiGw5
- eAy0chPm4+KhbwpGXIPAqKHxSHgivDgdg/t8KIJpYq0C7GPxLP
- /OrMMeJUi3ayWjzuZgAI=
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 January 2014, Hans Verkuil wrote:
-> > @@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
-> >       struct cadet *dev = video_drvdata(file);
-> >       unsigned char readbuf[RDS_BUFFER];
-> >       int i = 0;
-> > +     DEFINE_WAIT(wait);
-> >  
-> >       mutex_lock(&dev->lock);
-> >       if (dev->rdsstat == 0)
-> >               cadet_start_rds(dev);
-> > -     if (dev->rdsin == dev->rdsout) {
-> > +     while (1) {
-> > +             prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
-> > +             if (dev->rdsin != dev->rdsout)
-> > +                     break;
-> > +
-> >               if (file->f_flags & O_NONBLOCK) {
-> >                       i = -EWOULDBLOCK;
-> >                       goto unlock;
-> >               }
-> >               mutex_unlock(&dev->lock);
-> > -             interruptible_sleep_on(&dev->read_queue);
-> > +             schedule();
-> >               mutex_lock(&dev->lock);
-> >       }
-> > +
+On Fri, 2014-01-17 at 17:42 +0800, Jason Wang wrote:
+> Many qdiscs can queue a packet for a long time, this will lead an issue
+> with zerocopy skb. It means the frags will not be orphaned in an expected
+> short time, this breaks the assumption that virtio-net will transmit the
+> packet in time.
 > 
-> This seems overly complicated. Isn't it enough to replace interruptible_sleep_on
-> by 'wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);'?
+> So if guest packets were queued through such kind of qdisc and hit the
+> limitation of the max pending packets for virtio/vhost. All packets that
+> go to another destination from guest will also be blocked.
 > 
-> Or am I missing something subtle?
+> A case for reproducing the issue:
+> 
+> - Boot two VMs and connect them to the same bridge kvmbr.
+> - Setup tbf with a very low rate/burst on eth0 which is a port of kvmbr.
+> - Let VM1 send lots of packets thorugh eth0
+> - After a while, VM1 is unable to send any packets out since the number of
+>   pending packets (queued to tbf) were exceeds the limitation of vhost/virito
 
-The existing code sleeps with &dev->lock released because the cadet_handler()
-function needs to grab (and release) the same lock before it can wake up
-the reader thread.
+So whats the problem ? If the limit is low, you cannot sent packets.
 
-Doing the simple wait_event_interruptible() would result in a deadlock here.
+Solution : increase the limit, or tell the vm to lower its rate.
 
-	Arnd
+Oh wait, are you bitten because you did some prior skb_orphan() to allow
+the vm to send unlimited number of skbs ???
+
+> 
+> Solve this issue by orphaning the frags before queuing it to a slow qdisc (the
+> one without TCQ_F_CAN_BYPASS).
+
+Why orphaning the frags only solves the problem ? A skb without zerocopy
+frags should also be blocked for a while.
+
+Seriously, lets admit this zero copy stuff is utterly broken.
+
+
+TCQ_F_CAN_BYPASS is not enough. Some NIC have separate queues with
+strict priorities.
+
+It seems to me that you are pushing to use FIFO (the only qdisc setting
+TCQ_F_CAN_BYPASS), by adding yet another test in fast path (I do not
+know how we can still call it a fast path), while we already have smart
+qdisc to avoid the inherent HOL and unfairness problems of FIFO.
+
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  net/core/dev.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 0ce469e..1209774 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -2700,6 +2700,12 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
+>  	contended = qdisc_is_running(q);
+>  	if (unlikely(contended))
+>  		spin_lock(&q->busylock);
+> +	if (!(q->flags & TCQ_F_CAN_BYPASS) &&
+> +	    unlikely(skb_orphan_frags(skb, GFP_ATOMIC))) {
+> +		kfree_skb(skb);
+> +		rc = NET_XMIT_DROP;
+> +		goto out;
+> +	}
+
+Are you aware that copying stuff takes time ?
+
+If yes, why is it done after taking the busylock spinlock ?
+
+>  
+>  	spin_lock(root_lock);
+>  	if (unlikely(test_bit(__QDISC_STATE_DEACTIVATED, &q->state))) {
+> @@ -2739,6 +2745,7 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
+>  		}
+>  	}
+>  	spin_unlock(root_lock);
+> +out:
+>  	if (unlikely(contended))
+>  		spin_unlock(&q->busylock);
+>  	return rc;
+
+
+
