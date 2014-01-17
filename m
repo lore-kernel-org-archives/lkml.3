@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaAQPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:23:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37642 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaAQPXz (ORCPT
+	id S1753167AbaAQPY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:24:29 -0500
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:36179 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752639AbaAQPSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:23:55 -0500
-Date: Fri, 17 Jan 2014 16:23:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
-Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
-Message-ID: <20140117152352.GL11314@laptop.programming.kicks-ass.net>
-References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org>
- <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org>
- <20140117140939.GH11314@laptop.programming.kicks-ass.net>
- <52D947B3.3010601@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D947B3.3010601@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 17 Jan 2014 10:18:43 -0500
+Message-Id: <20140117151836.570968999@linux.com>
+Date: Fri, 17 Jan 2014 09:18:33 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 21/41] block: Replace __this_cpu_ptr with raw_cpu_ptr
+References: <20140117151812.770437629@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_block
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 04:09:39PM +0100, Daniel Lezcano wrote:
-> On 01/17/2014 03:09 PM, Peter Zijlstra wrote:
-> >On Fri, Jan 17, 2014 at 10:04:04AM +0100, Daniel Lezcano wrote:
-> >>+	schedstat_inc(rq, sched_goidle);
-> >>+#ifdef CONFIG_SMP
-> >>+	/* Trigger the post schedule to do an idle_enter for CFS */
-> >>+	rq->post_schedule = 1;
-> >>+#endif
-> >>+	return rq->idle;
-> >
-> >Urgh, that retains the stupid idle crap like it is.
-> >
-> >I've not yet tested this, but is there a reason something like the below
-> >couldn't work?
-> 
-> I tested it by running hackbench and it seems to work as expected.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-Thanks, I was still looking through the throttling. I'll keep it then
-:-)
+__this_cpu_ptr is being phased out.
+
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/fs/ext4/mballoc.c
+===================================================================
+--- linux.orig/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
++++ linux/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
+@@ -4085,7 +4085,7 @@ static void ext4_mb_group_or_file(struct
+ 	 * per cpu locality group is to reduce the contention between block
+ 	 * request from multiple CPUs.
+ 	 */
+-	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
++	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
+ 
+ 	/* we're going to use group allocation */
+ 	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
+Index: linux/fs/buffer.c
+===================================================================
+--- linux.orig/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
++++ linux/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
+@@ -1312,7 +1312,7 @@ static void bh_lru_install(struct buffer
+ 		}
+ 		while (out < BH_LRU_SIZE)
+ 			bhs[out++] = NULL;
+-		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
++		memcpy(this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
+ 	}
+ 	bh_lru_unlock();
+ 
+
