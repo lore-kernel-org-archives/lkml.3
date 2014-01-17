@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622AbaAQTZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:25:42 -0500
-Received: from relay.parallels.com ([195.214.232.42]:54339 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628AbaAQTZj (ORCPT
+	id S1753718AbaAQT0c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:26:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53764 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697AbaAQT01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:25:39 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: [PATCH 1/3] mm: vmscan: shrink_slab: rename max_pass -> freeable
-Date: Fri, 17 Jan 2014 23:25:29 +0400
-Message-ID: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 Jan 2014 14:26:27 -0500
+Message-ID: <52D983DF.3070202@canonical.com>
+Date: Fri, 17 Jan 2014 14:26:23 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.24.241]
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [v3.11][v3.12][v3.13][Regression] EISA: Initialize device before
+ its resources
+References: <52D81C92.9050800@canonical.com> <CAErSpo64e52Vv8bJ54cPcpnZ=OHMaxt2-D6dA4HCrrLnKo1n7g@mail.gmail.com> <52D82169.2000107@canonical.com> <20140117170204.GA13939@google.com>
+In-Reply-To: <20140117170204.GA13939@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name `max_pass' is misleading, because this variable actually keeps
-the estimate number of freeable objects, not the maximal number of
-objects we can scan in this pass, which can be twice that. Rename it to
-reflect its actual meaning.
+On 01/17/2014 12:02 PM, Bjorn Helgaas wrote:
+> On Thu, Jan 16, 2014 at 01:14:01PM -0500, Joseph Salisbury wrote:
+>> On 01/16/2014 01:12 PM, Bjorn Helgaas wrote:
+>>> On Thu, Jan 16, 2014 at 10:53 AM, Joseph Salisbury
+>>> <joseph.salisbury@canonical.com> wrote:
+>>>> Hi Bjorn,
+>>>>
+>>>> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
+>>>> was found the following commit introduced this bug:
+>>> Sorry about that, and thanks for the report.  Did you mean to include
+>>> URL for the bug?
+>> Yes, sorry about that:
+>> http://pad.lv/1251816
+> Hi Joseph,
+>
+> Can you attach the 3.8.0-32-generic config (the one matching the successful
+> boot at https://launchpadlibrarian.net/156685076/BootDmesg.txt) to the bug?
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Glauber Costa <glommer@gmail.com>
----
- mm/vmscan.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+I attached the config file to the bug:
+https://launchpadlibrarian.net/162754666/config.common.ubuntu
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eea668d..31aa997 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -224,15 +224,15 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	unsigned long freed = 0;
- 	unsigned long long delta;
- 	long total_scan;
--	long max_pass;
-+	long freeable;
- 	long nr;
- 	long new_nr;
- 	int nid = shrinkctl->nid;
- 	long batch_size = shrinker->batch ? shrinker->batch
- 					  : SHRINK_BATCH;
- 
--	max_pass = shrinker->count_objects(shrinker, shrinkctl);
--	if (max_pass == 0)
-+	freeable = shrinker->count_objects(shrinker, shrinkctl);
-+	if (freeable == 0)
- 		return 0;
- 
- 	/*
-@@ -244,14 +244,14 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 
- 	total_scan = nr;
- 	delta = (4 * nr_pages_scanned) / shrinker->seeks;
--	delta *= max_pass;
-+	delta *= freeable;
- 	do_div(delta, lru_pages + 1);
- 	total_scan += delta;
- 	if (total_scan < 0) {
- 		printk(KERN_ERR
- 		"shrink_slab: %pF negative objects to delete nr=%ld\n",
- 		       shrinker->scan_objects, total_scan);
--		total_scan = max_pass;
-+		total_scan = freeable;
- 	}
- 
- 	/*
-@@ -260,26 +260,26 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	 * shrinkers to return -1 all the time. This results in a large
- 	 * nr being built up so when a shrink that can do some work
- 	 * comes along it empties the entire cache due to nr >>>
--	 * max_pass.  This is bad for sustaining a working set in
-+	 * freeable. This is bad for sustaining a working set in
- 	 * memory.
- 	 *
- 	 * Hence only allow the shrinker to scan the entire cache when
- 	 * a large delta change is calculated directly.
- 	 */
--	if (delta < max_pass / 4)
--		total_scan = min(total_scan, max_pass / 2);
-+	if (delta < freeable / 4)
-+		total_scan = min(total_scan, freeable / 2);
- 
- 	/*
- 	 * Avoid risking looping forever due to too large nr value:
- 	 * never try to free more than twice the estimate number of
- 	 * freeable entries.
- 	 */
--	if (total_scan > max_pass * 2)
--		total_scan = max_pass * 2;
-+	if (total_scan > freeable * 2)
-+		total_scan = freeable * 2;
- 
- 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
- 				nr_pages_scanned, lru_pages,
--				max_pass, delta, total_scan);
-+				freeable, delta, total_scan);
- 
- 	while (total_scan >= batch_size) {
- 		unsigned long ret;
--- 
-1.7.10.4
+I also attached a tar file with the complete config directory for that
+kernel version.
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/+attachment/3951156/+files/raring-config.tar
+
+>
+> The only way I can match up the output:
+>
+>   EISA: Probing bus 0 at eisa.0
+>   Cannot allocate resource for EISA slot 1
+>   Cannot allocate resource for EISA slot 2
+>   Cannot allocate resource for EISA slot 4
+>   Cannot allocate resource for EISA slot 5
+>   EISA: Detected 0 cards.
+>
+> with the code is if we have root->force_probe set, and the only way I see for
+> that to happen is if we're in the virtual_eisa_root_init() path and
+> CONFIG_EISA_VLB_PRIMING=y:
+>
+>   #if defined(CONFIG_ALPHA_JENSEN) || defined(CONFIG_EISA_VLB_PRIMING)
+>   #define EISA_FORCE_PROBE_DEFAULT 1
+>   #else
+>   #define EISA_FORCE_PROBE_DEFAULT 0
+>   #endif
+>
+>   static int force_probe = EISA_FORCE_PROBE_DEFAULT;
+>
+>   virtual_eisa_root_init
+>     eisa_bus_root.force_probe = force_probe
+>     eisa_root_register(&eisa_bus_root)
+>       eisa_probe(root)
+> 	printk("EISA: Probing bus %d at %s")
+> 	if (eisa_request_resources)         
+> 	  printk("EISA: Cannot allocate resource for mainboard")    # we don't see this
+> 	if (eisa_init_device)               
+> 	  eisa_release_resources
+> 	  kfree
+> 	  if (!root->force_probe)           
+> 	    return -ENODEV
+> 	    goto force_probe
+> 	printk("EISA: Mainboard %s detected")       # we don't see this
+>
+> 	force_probe:
+> 	for (i = 1; ...; i++)
+> 	  if (eisa_request_resources(i))
+> 	    printk("Cannot allocate resource for EISA slot %d", i)
+> 	printk("EISA: Detected %d cards")
+>
+> Bjorn
 
