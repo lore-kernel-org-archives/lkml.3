@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaAQCYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 21:24:21 -0500
-Received: from [207.46.163.151] ([207.46.163.151]:45106 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667AbaAQCYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 21:24:19 -0500
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCHv9 2/2] dma: Add Freescale eDMA engine driver support
-Thread-Topic: [PATCHv9 2/2] dma: Add Freescale eDMA engine driver support
-Thread-Index: AQHPEmrvyxjbmA0a8EaGX9qH7zMJ1pqHMCUAgAD/lUA=
-Date: Fri, 17 Jan 2014 02:22:26 +0000
-Message-ID: <8e515b3695ea4c33a61f354b77be0b6b@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1389839400-29728-1-git-send-email-b35083@freescale.com>
- <1389839400-29728-3-git-send-email-b35083@freescale.com>
- <201401161202.49333.arnd@arndb.de>
-In-Reply-To: <201401161202.49333.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0094E3478A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(679001)(689001)(13464003)(51704005)(24454002)(199002)(189002)(377454003)(83072002)(31966008)(87936001)(47446002)(85306002)(81342001)(81686001)(87266001)(76576001)(74876001)(85852003)(4396001)(93516002)(74706001)(81542001)(74366001)(74502001)(2656002)(90146001)(74662001)(56816005)(80022001)(66066001)(69226001)(65816001)(47976001)(63696002)(76796001)(51856001)(19580395003)(19580405001)(80976001)(47736001)(50986001)(83322001)(79102001)(53806001)(54356001)(49866001)(46102001)(54316002)(77982001)(56776001)(59766001)(76482001)(76786001)(92566001)(93136001)(74316001)(33646001)(81816001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB467;H:BL2PR03MB467.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751987AbaAQCdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 21:33:46 -0500
+Received: from mail-gg0-f181.google.com ([209.85.161.181]:53744 "EHLO
+	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbaAQCdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 21:33:42 -0500
+Message-ID: <1389926017.31367.464.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next v2 3/3] reciprocal_divide: correction/update of
+ the algorithm
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: netdev@vger.kernel.org, Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        linux-kernel@vger.kernel.org, Jesse Gross <jesse@nicira.com>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Daniel Borkmann <dborkman@redhat.com>
+Date: Thu, 16 Jan 2014 18:33:37 -0800
+In-Reply-To: <1389918519-23779-4-git-send-email-hannes@stressinduktion.org>
+References: <1389918519-23779-1-git-send-email-hannes@stressinduktion.org>
+	 <1389918519-23779-4-git-send-email-hannes@stressinduktion.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0H2OOPp021794
 
-
-
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Thursday, January 16, 2014 7:03 PM
-> To: Lu Jingchang-B35083
-> Cc: vinod.koul@intel.com; dan.j.williams@intel.com; shawn.guo@linaro.org;
-> pawel.moll@arm.com; mark.rutland@arm.com; swarren@wwwdotorg.org; linux-
-> kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> devicetree@vger.kernel.org; Wang Huan-B18965
-> Subject: Re: [PATCHv9 2/2] dma: Add Freescale eDMA engine driver support
+On Fri, 2014-01-17 at 01:28 +0100, Hannes Frederic Sowa wrote:
+> Jakub Zawadzki noticed that some divisions by reciprocal_divide()
+> were not correct [1][2], which he could also show with BPF code after
+> divisions are transformed into reciprocal_value() for runtime invariant
+> which can be passed to reciprocal_divide() later on; reverse in BPF dump
+> ended up with a different, off-by-one K.
 > 
-> On Thursday 16 January 2014, Jingchang Lu wrote:
-> > Add Freescale enhanced direct memory(eDMA) controller support.
-> > This module can be found on Vybrid and LS-1 SoCs.
-> >
-> > Signed-off-by: Alison Wang <b18965@freescale.com>
-> > Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> This has been fixed by Eric Dumazet in commit aee636c4809fa5 ("bpf: do not
+> use reciprocal divide"). This follow-up patch improves reciprocal_value()
+> and reciprocal_divide() to work in all cases, so future use is safe.
 > 
-> Very nice! All my previous comments have been addressed, so
+> Known problems with the old implementation were that division by 1 always
+> returned 0 and some off-by-ones when the dividend and divisor where
+> very large.  This seemed to not be problematic with its current users
+> in networking, mm/slab.c and lib/flex_array.c, but future users would
+> need to check for this specifically and it might not be obvious at first.
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> In order to fix that, we propose an extension from the original
+> implementation from commit 6a2d7a955d8d resp. [3][4], by using
+> the algorithm proposed in "Division by Invariant Integers Using
+> Multiplication" [5], TorbjÃ¶rn Granlund and Peter L. Montgomery, that is,
+> pseudocode for q = n/d where q,n,d is in u32 universe:
 > 
-> One small comment still:
+> 1) Initialization:
 > 
-> > +
-> > +static DEFINE_MUTEX(fsl_edma_mutex);
-> > +
+>   int l = ceil(log_2 d)
+>   uword m' = floor((1<<32)*((1<<l)-d)/d)+1
+>   int sh_1 = min(l,1)
+>   int sh_2 = max(l-1,0)
 > 
-> I think this mutex should be part of struct fsl_edma_engine, not global.
-Yes, it should be for each edma controller, I will define it in struct fsl_edma_engine. Thanks.
+> 2) For q = n/d, all uword:
+> 
+>   uword t = (n*m')>>32
+>   q = (t+((n-t)>>sh_1))>>sh_2
+> 
+> The assembler implementation from Agner Fog [6] also helped a lot
+> while implementing. We have tested the implementation on x86_64,
+> ppc64, i686, s390x; on x86_64/haswell we're still half the latency
+> compared to normal divide.
+> 
+> Joint work with Daniel Borkmann.
+> 
+>   [1] http://www.wireshark.org/~darkjames/reciprocal-buggy.c
+>   [2] http://www.wireshark.org/~darkjames/set-and-dump-filter-k-bug.c
+>   [3] https://gmplib.org/~tege/division-paper.pdf
+>   [4] http://homepage.cs.uiowa.edu/~jones/bcd/divide.html
+>   [5] http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.1.2556
+>   [6] http://www.agner.org/optimize/asmlib.zip
+> 
+> Fixes: 6a2d7a955d8d ("SLAB: use a multiply instead of a divide in obj_to_index()")
 
 
-Best Regards,
-Jingchang
+I already demonstrated this slab patch was fine.
+
+The current algo works well (no off-by-one error) when the dividend is
+a multiple of the divisor.
+
+You are adding extra overhead, while we know its not necessary.
+
+By using "Fixes: ... " you are asking a backport to stable branches,
+which seems really silly in this case, especially with this monolithic
+patch changing 12 files in different subsystems.
+
+If you believe flex_array has a problem, please fix flex_array only,
+by a small patch (Maybe a revert ?)
+
+Then, introduce your new helpers if we really think they are needed.
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
