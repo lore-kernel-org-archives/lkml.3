@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaAQVBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:01:00 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:36461 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaAQVAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:00:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <cover.1389904166.git.agordeev@redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 17 Jan 2014 14:00:32 -0700
-Message-ID: <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian King <brking@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kalle Valo <kvalo@qca.qualcomm.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        wil6210@qca.qualcomm.com, ath10k@lists.infradead.org,
-        linux-nvme@lists.infradead.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752558AbaAQVBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:01:43 -0500
+Received: from gate.crashing.org ([63.228.1.57]:46336 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369AbaAQVBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 16:01:40 -0500
+Message-ID: <1389992443.7406.35.camel@pasglop>
+Subject: Re: [Q] Why does kexec use device_shutdown rather than ubind them
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        kexec@lists.infradead.org
+Date: Sat, 18 Jan 2014 08:00:43 +1100
+In-Reply-To: <20140117141327.GC24394@redhat.com>
+References: <1389929988.7406.18.camel@pasglop> <871u07fbvl.fsf@xmission.com>
+	 <1389938353.7406.22.camel@pasglop> <20140117141327.GC24394@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 9:02 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> This series is against "next" branch in Bjorn's repo:
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
->
-> Changes from v1 to v2:
->   - added a regression fix "ahci: Fix broken fallback to single
->     MSI mode" as patch 1/9;
->   - the series is reordered to move the regression fix in front;
->   - at Bjorn's request pci_enable_msi() is un-deprecated;
->   - as result, pci_enable_msi_range(pdev, 1, 1) styled calls
->     rolled back to pci_enable_msi(pdev);
->   - nvme bug fix moved out as a separate patch 5/9 "nvme: Fix
->     invalid call to irq_set_affinity_hint()"
->   - patches changelog elaborated a bit;
->
-> Bjorn,
->
-> As the release is supposedly this weekend, do you prefer
-> the patches to go to your tree or to individual trees after
-> the release?
+On Fri, 2014-01-17 at 09:13 -0500, Vivek Goyal wrote:
+> On Fri, Jan 17, 2014 at 04:59:13PM +1100, Benjamin Herrenschmidt wrote:
+> > On Thu, 2014-01-16 at 20:52 -0800, Eric W. Biederman wrote:
+> > > 
+> > > I think we have largely survied until now because kdump is so popular
+> > > and kdump winds up having to reinitialize devices from any random
+> > > state.
+> > 
+> > kdump also doesn't care too much if the device is still DMA'ing to the
+> > old kernel memory :-)
+> 
+> In principle kdump does not care about ongoing DMAs but in practice it
+> is giving us some headaches with IOMMU. Various kind of issues crop up
+> during IOMMU intialization in second kernel while DMA is ongoing and
+> unfortunately no good solution has made into upstream yet.
+> 
+> Well, ongoing DMA and IOMMU seems to be orthogonal to using ->remove()
+> in kexec. So I will stop here. :-)
 
-I'd be happy to merge them, except for the fact that they probably
-wouldn't have any time in -next before I ask Linus to pull them.  So
-how about if we wait until after the release, ask the area maintainers
-to take them, and if they don't take them, I'll put them in my tree
-for v3.15?
+Right, it's an orthogonal problem. I think hot resetting the bus might
+solve it too though. It's even worse on ppc because the resulting iommu
+errors trigger those "EEH freeze" that we have here blocking the devices
+out etc...
 
-Bjorn
+Ben.
+
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
