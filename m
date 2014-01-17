@@ -1,87 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaAQTUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:20:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43897 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338AbaAQTUd (ORCPT
+	id S1753530AbaAQTVG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:21:06 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:47432 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457AbaAQTUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:20:33 -0500
-Message-ID: <52D9827B.4060401@infradead.org>
-Date: Fri, 17 Jan 2014 11:20:27 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
-References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>	<52D578A7.8020000@infradead.org> <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com> <52D980ED.6000603@wwwdotorg.org>
-In-Reply-To: <52D980ED.6000603@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jan 2014 14:20:07 -0500
+From: Marc Carino <marc.ceeeee@gmail.com>
+To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
+Subject: [PATCH v4 8/8] ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
+Date: Fri, 17 Jan 2014 11:19:27 -0800
+Message-Id: <1389986367-4010-9-git-send-email-marc.ceeeee@gmail.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
+References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 11:13 AM, Stephen Warren wrote:
-> On 01/14/2014 03:54 PM, Dmitry Eremin-Solenikov wrote:
->> Hello,
->>
->>
->> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>>
->>> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> This tree fails (more than usual) the powerpc allyesconfig build.
->>>>
->>>> Changes since 20140113:
->>>>
->>>
->>>
->>> on i386:
->>>
->>> net/built-in.o: In function `header_create':
->>> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
->>> net/built-in.o: In function `bt_6lowpan_recv':
->>> (.text+0x166b3c): undefined reference to `lowpan_process_data'
->>
->> Ah, nice Makefile hack there.
->> David, Marcel, could you please consider the attached patch.
-> 
-> I think you forgot to "git add net/bluetooth/Makefile" into that patch;
-> don't you need the following too (I certainly do, to build next-20140117)
+Add a sample DTS which will allow bootup of a board populated
+with the BCM7445 chip.
 
-Yes, that fixes the problems.
+Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ arch/arm/boot/dts/bcm7445.dts |  111 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 111 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/bcm7445.dts
 
->> diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
->> index cc6827e2ce68..80cb215826e8 100644
->> --- a/net/bluetooth/Makefile
->> +++ b/net/bluetooth/Makefile
->> @@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
->>  	hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
->>  	a2mp.o amp.o 6lowpan.o
->>  
->> -ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
->> -  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
->> -endif
->> -
->>  subdir-ccflags-y += -D__CHECK_ENDIAN__
-> 
-> Should I send this as a separate followup patch?
-> --
-
-I think so.  It was not part of the posted patch.
-
-Thanks.
-
+diff --git a/arch/arm/boot/dts/bcm7445.dts b/arch/arm/boot/dts/bcm7445.dts
+new file mode 100644
+index 0000000..6f2d532
+--- /dev/null
++++ b/arch/arm/boot/dts/bcm7445.dts
+@@ -0,0 +1,111 @@
++/dts-v1/;
++/include/ "skeleton.dtsi"
++
++/ {
++	#address-cells = <2>;
++	#size-cells = <2>;
++	model = "Broadcom STB (bcm7445)";
++	compatible = "brcm,bcm7445", "brcm,brcmstb";
++	interrupt-parent = <&gic>;
++
++	chosen {};
++
++	memory {
++		device_type = "memory";
++		reg = <0x00 0x00000000 0x00 0x40000000>,
++		      <0x00 0x40000000 0x00 0x40000000>,
++		      <0x00 0x80000000 0x00 0x40000000>;
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "brcm,brahma-b15";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "brcm,brahma-b15";
++			device_type = "cpu";
++			reg = <1>;
++		};
++
++		cpu@2 {
++			compatible = "brcm,brahma-b15";
++			device_type = "cpu";
++			reg = <2>;
++		};
++
++		cpu@3 {
++			compatible = "brcm,brahma-b15";
++			device_type = "cpu";
++			reg = <3>;
++		};
++	};
++
++	gic: interrupt-controller@ffd00000 {
++		compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic";
++		reg = <0x00 0xffd01000 0x00 0x1000>,
++		      <0x00 0xffd02000 0x00 0x2000>,
++		      <0x00 0xffd04000 0x00 0x2000>,
++		      <0x00 0xffd06000 0x00 0x2000>;
++		interrupt-controller;
++		#interrupt-cells = <3>;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 13 0xf08>,
++			     <1 14 0xf08>,
++			     <1 11 0xf08>,
++			     <1 10 0xf08>;
++	};
++
++	serial@f0406b00 {
++		compatible = "ns16550a";
++		reg = <0x00 0xf0406b00 0x00 0x20>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++		interrupts = <0 75 0x4>;
++		clock-frequency = <0x4d3f640>;
++	};
++
++	rdb {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		ranges = <0 0x00 0xf0000000 0x1000000>;
++
++		sun_top_ctrl: syscon@404000 {
++			compatible = "brcm,bcm7445-sun-top-ctrl",
++				     "syscon";
++			reg = <0x404000 0x51c>;
++		};
++
++		hif_cpubiuctrl: syscon@3e2400 {
++			compatible = "brcm,bcm7445-hif-cpubiuctrl",
++				     "syscon";
++			reg = <0x3e2400 0x5b4>;
++		};
++
++		hif_continuation: syscon@452000 {
++			compatible = "brcm,bcm7445-hif-continuation",
++				     "syscon";
++			reg = <0x452000 0x100>;
++		};
++	};
++
++	smpboot {
++		compatible = "brcm,brcmstb-smpboot";
++		syscon-cpu = <&hif_cpubiuctrl 0x88 0x178>;
++		syscon-cont = <&hif_continuation>;
++	};
++
++	reboot {
++		compatible = "brcm,brcmstb-reboot";
++		syscon = <&sun_top_ctrl 0x304 0x308>;
++	};
++};
 -- 
-~Randy
+1.7.1
+
