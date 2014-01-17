@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaAQSuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:50:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43253 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819AbaAQSuJ (ORCPT
+	id S1753388AbaAQSud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:50:33 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46456 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214AbaAQSub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:50:09 -0500
-Message-ID: <52D97B57.9000000@infradead.org>
-Date: Fri, 17 Jan 2014 10:49:59 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 17 Jan 2014 13:50:31 -0500
+Date: Fri, 17 Jan 2014 10:50:29 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Make pgtbl macro more robust
+Message-ID: <20140117185029.GC13785@codeaurora.org>
+References: <1389015593-31716-1-git-send-email-cov@codeaurora.org>
 MIME-Version: 1.0
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
-References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>	<52D578A7.8020000@infradead.org> <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-In-Reply-To: <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389015593-31716-1-git-send-email-cov@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 02:54 PM, Dmitry Eremin-Solenikov wrote:
-> Hello,
+On 01/06, Christopher Covington wrote:
+> The pgtbl macro couldn't handle the specific
+> (TEXT_OFFSET - PG_DIR_SIZE) value that the combination of
+> MSM platforms and LPAE created:
 > 
+> head.S:163: Error: invalid constant (203000) after fixup
 > 
-> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>
->> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> This tree fails (more than usual) the powerpc allyesconfig build.
->>>
->>> Changes since 20140113:
->>>
->>
->>
->> on i386:
->>
->> net/built-in.o: In function `header_create':
->> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
->> net/built-in.o: In function `bt_6lowpan_recv':
->> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+> Regardless of whether this combination of configuration options
+> will work on currently support platforms at run time, make it
+> at least assemble properly.
 > 
-> Ah, nice Makefile hack there.
-> David, Marcel, could you please consider the attached patch.
+> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+
+Looks good to me.
+
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+
+I think you can put it in the patch tracker. Russell?
+
+> ---
+>  arch/arm/kernel/head.S | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> 
-
-Hi,
-I guess that the Makefile hack is still causing problems.
-With today's linux-next (20140117), I see these build errors (or warnings
-in the case of loadable modules):
-
-
-when 802.15.4 and Bluetooth are built as loadable modules:
-
-WARNING: net/ieee802154/6lowpan_iphc: 'lowpan_header_compress' exported twice. Previous export was in net/bluetooth/bluetooth.ko
-WARNING: net/ieee802154/6lowpan_iphc: 'lowpan_process_data' exported twice. Previous export was in net/bluetooth/bluetooth.ko
-
-when they are builtin to the kernel image:
-
-net/ieee802154/built-in.o: In function `lowpan_header_compress':
-(.text+0x3d00): multiple definition of `lowpan_header_compress'
-net/bluetooth/built-in.o:(.text+0x2e8f0): first defined here
-net/ieee802154/built-in.o: In function `lowpan_process_data':
-(.text+0x3230): multiple definition of `lowpan_process_data'
-net/bluetooth/built-in.o:(.text+0x2de20): first defined here
-
+> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> index 9cf6063..af30cac 100644
+> --- a/arch/arm/kernel/head.S
+> +++ b/arch/arm/kernel/head.S
+> @@ -52,7 +52,8 @@
+>  	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - PG_DIR_SIZE
+>  
+>  	.macro	pgtbl, rd, phys
+> -	add	\rd, \phys, #TEXT_OFFSET - PG_DIR_SIZE
+> +	add	\rd, \phys, #TEXT_OFFSET
+> +	sub	\rd, \rd, #PG_DIR_SIZE
+>  	.endm
+>  
+>  /*
 
 -- 
-~Randy
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
