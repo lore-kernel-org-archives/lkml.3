@@ -1,124 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaAQBGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:06:36 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:35151 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaAQBGe (ORCPT
+	id S1751818AbaAQBHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:07:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55543 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751609AbaAQBHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:06:34 -0500
-Date: Thu, 16 Jan 2014 17:06:31 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next bio iters break discard?
-Message-ID: <20140117010631.GR9037@kmo>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
- <20140114023346.GN9037@kmo>
- <yq161pnmcl2.fsf@sermon.lab.mkp.net>
- <20140114044841.GO9037@kmo>
- <yq1ob3el3mr.fsf@sermon.lab.mkp.net>
- <20140114222424.GA7333@moria.home.lan>
- <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
+	Thu, 16 Jan 2014 20:07:16 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Subject: Re: [PATCH] speedstep: clean up interrupt disabling (was: linux-next: build failure after merge of the tip tree)
+Date: Fri, 17 Jan 2014 02:21:18 +0100
+Message-ID: <5695714.71aNYAnsh1@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <alpine.LRH.2.02.1401161238270.16143@file01.intranet.prod.int.rdu2.redhat.com>
+References: <20140114142627.537a702607e703c6eff63640@canb.auug.org.au> <20140116121415.GP31570@twins.programming.kicks-ass.net> <alpine.LRH.2.02.1401161238270.16143@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 12:21:10PM -0800, Hugh Dickins wrote:
-> On Tue, 14 Jan 2014, Kent Overstreet wrote:
+On Thursday, January 16, 2014 02:33:02 PM Mikulas Patocka wrote:
+> 
+> On Thu, 16 Jan 2014, Peter Zijlstra wrote:
+> 
+> > > >  		retry++;
+> > > >  		__asm__ __volatile__(
+> > > > @@ -217,6 +220,7 @@ static void speedstep_set_state(unsigned int state)
+> > > >  
+> > > >  	/* enable IRQs */
+> > > >  	local_irq_restore(flags);
+> > > > +	preempt_enable();
+> > > >  
+> > > >  	if (new_state == state)
+> > > >  		pr_debug("change to %u MHz succeeded after %u tries "
+> > > 
+> > > You need also preempt_disable/enable in speedstep_get_freqs.
 > > 
-> > Does the below patch look like what we want? I'm assuming that if
-> 
-> You don't fill me with confidence ;)
-> 
-> > multiple WRITE_SAME bios are merged, since they're all writing the same
-> > data we can consider the entire request to be a single segment.
+> > Argh I see, this is really horrid.
 > > 
-> > commit 1755e7ffc5745591d37b8956ce2512f4052a104a
-> > Author: Kent Overstreet <kmo@daterainc.com>
-> > Date:   Tue Jan 14 14:22:01 2014 -0800
 > > 
-> >     block: Explicitly handle discard/write same when counting segments
+> > Anyway, its Rafael's call, its his subsystem he gets to fix it when it
+> > explodes.
 > > 
-> > diff --git a/block/blk-merge.c b/block/blk-merge.c
-> > index 8f8adaa..7d977f8 100644
-> > --- a/block/blk-merge.c
-> > +++ b/block/blk-merge.c
-> > @@ -21,6 +21,12 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
-> >  	if (!bio)
-> >  		return 0;
-> >  
-> > +	if (bio->bi_rw & REQ_DISCARD)
-> > +		return 0;
-> > +
-> > +	if (bio->bi_rw & REQ_WRITE_SAME)
-> > +		return 1;
-> > +
-> >  	fbio = bio;
-> >  	cluster = blk_queue_cluster(q);
-> >  	seg_size = 0;
+> > /me shudders
 > 
-> For me this just shifts the crash,
-> from __blk_recalc_rq_segments() to blk_rq_map_sg():
+> speedstep_get_freqs disables the interrupts to measure the transition 
+> latency. It is called from speedstep-ich.c (that requires the latency) and 
+> from speedstep-smi.c (that passes NULL as a pointer to latency, because it 
+> doesn't need it).
 > 
-> blk_rq_map_sg
-> scsi_init_sgtable
-> scsi_init_io
-> scsi_setup_blk_pc_cmnd
-> sd_prep_fn
-> blk_peek_request
-> scsi_request_fn
-> __blk_run_queue
-> blk_run_queue
-> scsi_run_queue
-> scsi_next_command
-> scsi_io_completion
-> scsi_finish_command
-> scsi_softirq_done
-> blk_done_softirq
-> __do_softirq
-> irq_exit
-> do_IRQ
-> common_interrupt
-> <EOI>
-> cpuidle_idle_call
-> arch_cpu_idle
-> cpu_startup_entry
-> start_secondary
+> So, you could disable interrupts in speedstep_get_freqs only when the 
+> transition_latency pointer is non-NULL.
 > 
-> It's GPF'ing on struct scatter_list *sg 0x800000001473e064 in
+> I think speedstep_set_state doesn't need to disable interrupts at all - 
+> all that it does is one "out" instruction, you don't need to synchronize 
+> that "out" instruction with anything, so there is no need to disable 
+> interrupts. Or - does some specification say that interrupts must be 
+> disabled there?
 > 
-> static inline void sg_assign_page(struct scatterlist *sg, struct page *page)
-> {
-> 	unsigned long page_link = sg->page_link & 0x3;
-> 
-> It appears to be in the static inline __blk_segment_map_sg(),
-> and that GPF'ing address is what it just got from sg_next().
-> 
-> Sorry, this isn't the kind of dump you'll be used to, but it's the
-> best I can do at the moment, and I've just had to reboot the machine.
-> 
-> O, tried again and it hit the BUG_ON(count > sdb->table.nents)
-> on line 1048 of drivers/scsi/scsi_lib.c:
-> 
-> scsi_init_sgtable
-> <IRQ> scsi_init_io
-> scsi_setup_blk_pc_cmnd
-> sd_setup_discard_cmnd
-> sd_prep_fn
-> blk_peek_request
-> etc. as before
-> 
-> I'll have to leave the machine shortly - I'm rather hoping
-> you can do your own discard testing to see such crashes.
+> I am sending this patch to clean up the mess to be applied on the top of 
+> my previous patch.
 
-My simple hdparm/scsi_debug based test isn't hitting it - any suggestions on how
-to reproduce it?
+Well, I really don't appreciate sending me stuff like this two days before a
+merge window.  So I've dropped the speedstep_smi patch and please send me
+something I can queue up for 3.15 without making Peter shudder.
+
+Thanks!
+
+
+> From: Mikulas Patocka <mpatocka@redhat.com>
+> Subject: speedstep: clean up interrupt disabling
+> 
+> This patch cleans up interrupt disabling in speedstep-smi and
+> speedstep-lib.
+> 
+> speedstep_get_freqs in speedstep-lib may be called from speedstep-smi or
+> speedstep-ich. When it is called from speedstep-ich, it needs to calculate
+> transition latency. When it is called from speedstep-smi, transition
+> latency doesn't have to be calculated.
+> 
+> The function speedstep_set_state in speedstep-smi needs to enable
+> interrupts. Previously it enabled interrupts even if it was called with
+> disabled interrupts, but it is dirty.
+> 
+> This patch changes speedstep_get_freqs so that it disables interrupts only
+> when it is called from speedstep-ich and when it is measuring the
+> transition latency. This avoids much of the code dirtiness.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> 
+> ---
+>  drivers/cpufreq/speedstep-lib.c |   13 ++++++-------
+>  drivers/cpufreq/speedstep-smi.c |   11 ++++-------
+>  2 files changed, 10 insertions(+), 14 deletions(-)
+> 
+> Index: linux-3.4.75/drivers/cpufreq/speedstep-lib.c
+> ===================================================================
+> --- linux-3.4.75.orig/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:16.000000000 +0100
+> +++ linux-3.4.75/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:22.000000000 +0100
+> @@ -400,9 +400,6 @@ unsigned int speedstep_get_freqs(enum sp
+>  
+>  	pr_debug("previous speed is %u\n", prev_speed);
+>  
+> -	preempt_disable();
+> -	local_irq_save(flags);
+> -
+>  	/* switch to low state */
+>  	set_state(SPEEDSTEP_LOW);
+>  	*low_speed = speedstep_get_frequency(processor);
+> @@ -414,15 +411,19 @@ unsigned int speedstep_get_freqs(enum sp
+>  	pr_debug("low speed is %u\n", *low_speed);
+>  
+>  	/* start latency measurement */
+> -	if (transition_latency)
+> +	if (transition_latency) {
+> +		local_irq_save(flags);
+>  		do_gettimeofday(&tv1);
+> +	}
+>  
+>  	/* switch to high state */
+>  	set_state(SPEEDSTEP_HIGH);
+>  
+>  	/* end latency measurement */
+> -	if (transition_latency)
+> +	if (transition_latency) {
+>  		do_gettimeofday(&tv2);
+> +		local_irq_restore(flags);
+> +	}
+>  
+>  	*high_speed = speedstep_get_frequency(processor);
+>  	if (!*high_speed) {
+> @@ -464,8 +465,6 @@ unsigned int speedstep_get_freqs(enum sp
+>  	}
+>  
+>  out:
+> -	local_irq_restore(flags);
+> -	preempt_enable();
+>  
+>  	return ret;
+>  }
+> Index: linux-3.4.75/drivers/cpufreq/speedstep-smi.c
+> ===================================================================
+> --- linux-3.4.75.orig/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:16.000000000 +0100
+> +++ linux-3.4.75/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:22.000000000 +0100
+> @@ -180,16 +180,16 @@ static int speedstep_get_state(void)
+>  static void speedstep_set_state(unsigned int state)
+>  {
+>  	unsigned int result = 0, command, new_state, dummy;
+> -	unsigned long flags;
+>  	unsigned int function = SET_SPEEDSTEP_STATE;
+>  	unsigned int retry = 0;
+>  
+>  	if (state > 0x1)
+>  		return;
+>  
+> -	/* Disable IRQs */
+> +	WARN_ON_ONCE(irqs_disabled());
+> +
+> +	/* Disable preemption so that other processes don't run */
+>  	preempt_disable();
+> -	local_irq_save(flags);
+>  
+>  	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
+>  
+> @@ -209,9 +209,7 @@ static void speedstep_set_state(unsigned
+>  			 */
+>  			pr_debug("retry %u, previous result %u, waiting...\n",
+>  					retry, result);
+> -			local_irq_enable();
+>  			mdelay(retry * 50);
+> -			local_irq_disable();
+>  		}
+>  		retry++;
+>  		__asm__ __volatile__(
+> @@ -226,8 +224,7 @@ static void speedstep_set_state(unsigned
+>  			);
+>  	} while ((new_state != state) && (retry <= SMI_TRIES));
+>  
+> -	/* enable IRQs */
+> -	local_irq_restore(flags);
+> +	/* enable preemption */
+>  	preempt_enable();
+>  
+>  	if (new_state == state)
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
