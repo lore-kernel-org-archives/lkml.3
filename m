@@ -1,141 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489AbaAQWJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:09:07 -0500
-Received: from fieldses.org ([174.143.236.118]:33870 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177AbaAQWJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:09:04 -0500
-Date: Fri, 17 Jan 2014 17:08:58 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: [PATCH 11/11] ext4: add cross rename support
-Message-ID: <20140117220858.GA31416@fieldses.org>
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
- <1389219015-10980-12-git-send-email-miklos@szeredi.hu>
- <20140113122517.GA10366@quack.suse.cz>
- <20140115182347.GB5715@fieldses.org>
- <CAJfpegv0TgJpd-pXxBj2n0efRUW9_GW_tYtHtfN6drOYA=25QQ@mail.gmail.com>
- <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
- <52D90B93.5010209@gmail.com>
+	id S1753107AbaAQWOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:14:17 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:63600 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbaAQWOO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 17:14:14 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D90B93.5010209@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "Mark Brown" <broonie@kernel.org>,
+        "Emilio Lopez" <emilio@elopez.com.ar>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1389892285-11745-2-git-send-email-maxime.ripard@free-electrons.com>
+Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com,
+        "Maxime Ripard" <maxime.ripard@free-electrons.com>
+References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1389892285-11745-2-git-send-email-maxime.ripard@free-electrons.com>
+Message-ID: <20140117221402.4167.78251@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 1/4] clk: sunxi: Add support for PLL6 on the A31
+Date: Fri, 17 Jan 2014 14:14:02 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 11:53:07PM +1300, Michael Kerrisk (man-pages) wrote:
-> Hi Miklos,
+Quoting Maxime Ripard (2014-01-16 09:11:22)
+> The A31 has a slightly different PLL6 clock. Add support for this new clock in
+> our driver.
 > 
-> A few comments below, including one piece in the code that really must be fixed.
-> 
-> On 01/16/2014 11:54 PM, Miklos Szeredi wrote:
-> >> On Wed, Jan 15, 2014 at 7:23 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> >>> Do you have a man page update somewhere for the two new flags?
-> > 
-> > Here's the updated man page (and attached the patch)
-> > 
-> > Michael, could you please review the interface?
-> > 
-> > I forgot to CC you when posing the patch series.  I can resend it if you want,
-> > or you can fetch the latest version of the cross-rename series from:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
-> 
-> [...]
-> 
-> >        renameat2()  has an additional flags argument.  renameat2() call with a
-> >        zero flags argument is equivalent to renameat().
-> > 
-> >        The flags argument is a bitfield consisting of zero or more of the fol-
-> >        lowing constants defined in <linux/fs.h>:
-> > 
-> >        RENAME_NOREPLACE
-> >               Don't  overwrite  the  target of the rename.  Return an error if
-> >               the target would be overwritten.
-> > 
-> >        RENAME_EXCHANGE
-> >               Atomically exchange the source and destination.  Both must exist
-> >               but  may  be of a different type (e.g. one a non-empty directory
-> >               and the other a symbolic link).
-> 
-> Somewhere here it would be good to explain the consequences if
-> 
->    (flags & (RENAME_NOREPLACE | RENAME_EXCHANGE)) == 
->                    (RENAME_NOREPLACE | RENAME_EXCHANGE)
-> 
-> Okay -- it's EINVAL, but here the man page text should say something like
-> "these two flags can't be specified together", right?
-> 
-> > RETURN VALUE
-> >        On success, renameat() and renameat2()  return  0.   On  error,  -1  is
-> >        returned and errno is set to indicate the error.
-> > 
-> > ERRORS
-> >        The  same errors that occur for rename(2) can also occur for renameat()
-> >        and  renameat2().   The  following  additional  errors  can  occur  for
-> >        renameat() and renameat2():
-> > 
-> >        EBADF  olddirfd or newdirfd is not a valid file descriptor.
-> > 
-> >        ENOTDIR
-> >               oldpath  is relative and olddirfd is a file descriptor referring
-> >               to a file other than a directory; or  similar  for  newpath  and
-> >               newdirfd
-> > 
-> >        The following additional errors are defined for renameat2():
-> > 
-> >        EOPNOTSUPP
-> >               The filesystem does not support a flag in flags
-> 
-> This is not the usual error for an invalid bit flag. Please make it EINVAL.
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-I agree that EINVAL makes sense for an invalid bit flag.
- 
-But renameat2() can also fail when the caller passes a perfectly valid
-flags field but the paths resolve to a filesystem that doesn't support
-the RENAME_EXCHANGE operation.  EOPNOTSUPP looks more appropriate in
-that case.
+This looks good to me. I guess it will be going in for 3.15 based on the
+comments in the coverletter.
 
-> (See the man pages for the *at() calls that have a 'flags" argument.)
+Regards,
+Mike
 
-Aren't those flags mostly handled in the vfs?  In which case they work
-everywhere, so there isn't the same distinction between "flag is
-defined" and "behavior requested by flag is unsupported for the given
-objects".
-
---b.
-
-> >        EINVAL Invalid combination of flags
+> ---
+>  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
+>  drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
+>  2 files changed, 46 insertions(+)
 > 
-> (This is okay.)
-> 
-> Looks otherwise okay to me (and I agree with Bruce's comments).
-> 
-> Cheers,
-> 
-> Michael
-> 
-> 
-> 
+> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+> index c2cb762..954845c 100644
+> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+> @@ -11,6 +11,7 @@ Required properties:
+>         "allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
+>         "allwinner,sun4i-pll5-clk" - for the PLL5 clock
+>         "allwinner,sun4i-pll6-clk" - for the PLL6 clock
+> +       "allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
+>         "allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
+>         "allwinner,sun4i-axi-clk" - for the AXI clock
+>         "allwinner,sun4i-axi-gates-clk" - for the AXI gates
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index 659e4ea..990ad5d 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
+>         *n = DIV_ROUND_UP(div, (*k+1));
+>  }
+>  
+> +/**
+> + * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
+> + * PLL6 rate is calculated as follows
+> + * rate = parent_rate * n * (k + 1) / 2
+> + * parent_rate is always 24Mhz
+> + */
+> +
+> +static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
+> +                                      u8 *n, u8 *k, u8 *m, u8 *p)
+> +{
+> +       u8 div;
+> +
+> +       /*
+> +        * We always have 24MHz / 2, so we can just say that our
+> +        * parent clock is 12MHz.
+> +        */
+> +       parent_rate = parent_rate / 2;
+> +
+> +       /* Normalize value to a parent_rate multiple (24M / 2) */
+> +       div = *freq / parent_rate;
+> +       *freq = parent_rate * div;
+> +
+> +       /* we were called to round the frequency, we can now return */
+> +       if (n == NULL)
+> +               return;
+> +
+> +       *k = div / 32;
+> +       if (*k > 3)
+> +               *k = 3;
+>  
+> +       *n = DIV_ROUND_UP(div, (*k+1));
+> +}
+>  
+>  /**
+>   * sun4i_get_apb1_factors() - calculates m, p factors for APB1
+> @@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
+>         .kwidth = 2,
+>  };
+>  
+> +static struct clk_factors_config sun6i_a31_pll6_config = {
+> +       .nshift = 8,
+> +       .nwidth = 5,
+> +       .kshift = 4,
+> +       .kwidth = 2,
+> +};
+> +
+>  static struct clk_factors_config sun4i_apb1_config = {
+>         .mshift = 0,
+>         .mwidth = 5,
+> @@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
+>         .getter = sun4i_get_pll5_factors,
+>  };
+>  
+> +static const struct factors_data sun6i_a31_pll6_data __initconst = {
+> +       .enable = 31,
+> +       .table = &sun6i_a31_pll6_config,
+> +       .getter = sun6i_a31_get_pll6_factors,
+> +};
+> +
+>  static const struct factors_data sun4i_apb1_data __initconst = {
+>         .table = &sun4i_apb1_config,
+>         .getter = sun4i_get_apb1_factors,
+> @@ -972,6 +1016,7 @@ free_clkdata:
+>  static const struct of_device_id clk_factors_match[] __initconst = {
+>         {.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
+>         {.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
+> +       {.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
+>         {.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
+>         {.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
+>         {.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
 > -- 
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1.8.4.2
+> 
