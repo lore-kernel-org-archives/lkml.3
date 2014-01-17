@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566AbaAQOia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:38:30 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52942 "HELO
+	id S1752623AbaAQOiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:38:51 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61317 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751357AbaAQOiD (ORCPT
+	with SMTP id S1752205AbaAQOiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:38:03 -0500
+	Fri, 17 Jan 2014 09:38:01 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Linux PM list <linux-pm@vger.kernel.org>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC/RFT][PATCH 0/5] PM / QoS: Introduce latency tolerance device PM QoS type
-Date: Fri, 17 Jan 2014 15:42:13 +0100
-Message-ID: <5434847.aCyiWHNRe7@vostro.rjw.lan>
+Subject: [RFC/RFT][PATCH 2/5] PM / QoS: Add no_constraints_value field to struct pm_qos_constraints
+Date: Fri, 17 Jan 2014 15:44:42 +0100
+Message-ID: <19067088.JLdRPV4Ja3@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <5434847.aCyiWHNRe7@vostro.rjw.lan>
+References: <5434847.aCyiWHNRe7@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,46 +25,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On some platforms hardware may switch to an energy-saving mode on the fly
-on the basis of certain utilization metrics used by it.  That usually is
-desirable from the energy conservation standpoint, but it generally causes
-latencies to increase which may adversely affect some operations.  For this
-reason, the platforms in question usually provide some interfaces for software
-to indicate its latency tolerance and possibly to prevent the energy-saving
-modes from being selected too aggressively.
+Add a new field, no_constraints_value, to struct pm_qos_constraints
+representing a list of PM QoS constraint requests to be returned by
+pm_qos_get_value() when that list of requests is empty.
 
-The following series of patches introduces a device PM QoS type allowing
-those interfaces to be used by kernel code and user space.  It is designed
-in analogy with the existing resume latency device PM QoS type, which allows
-some pieces of the existing device PM QoS code to be re-used and makes the
-new user space interface fit into the existing framework.
+That field will be equal to default_value for all of the existing
+global PM QoS classes and for the resume latency device PM QoS type,
+but it will be different from default_value for the new latency
+tolerance device PM QoS type introduced by the next changeset.
 
-Patch [1/5] modifies the names of symbols, variables, functions and structure
-fields associated with the existing resume latency device PM QoS type to
-avoid any confusion with the new one introduced by the subsequent patches.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/power/qos.c |    1 +
+ include/linux/pm_qos.h   |    1 +
+ kernel/power/qos.c       |    5 ++++-
+ 3 files changed, 6 insertions(+), 1 deletion(-)
 
-Patch [2/5] introduces a new field in struct pm_qos_constraints for specifying
-a special value to be returned as the effective requirement when the given list
-of PM QoS requirements is empty.  That field is necessary for the new latency
-tolerance device PM QoS type.
+Index: linux-pm/drivers/base/power/qos.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/qos.c
++++ linux-pm/drivers/base/power/qos.c
+@@ -190,6 +190,7 @@ static int dev_pm_qos_constraints_alloca
+ 	plist_head_init(&c->list);
+ 	c->target_value = PM_QOS_RESUME_LATENCY_DEFAULT_VALUE;
+ 	c->default_value = PM_QOS_RESUME_LATENCY_DEFAULT_VALUE;
++	c->no_constraint_value = PM_QOS_RESUME_LATENCY_DEFAULT_VALUE;
+ 	c->type = PM_QOS_MIN;
+ 	c->notifiers = n;
+ 
+Index: linux-pm/include/linux/pm_qos.h
+===================================================================
+--- linux-pm.orig/include/linux/pm_qos.h
++++ linux-pm/include/linux/pm_qos.h
+@@ -77,6 +77,7 @@ struct pm_qos_constraints {
+ 	struct plist_head list;
+ 	s32 target_value;	/* Do not change to 64 bit */
+ 	s32 default_value;
++	s32 no_constraint_value;
+ 	enum pm_qos_type type;
+ 	struct blocking_notifier_head *notifiers;
+ };
+Index: linux-pm/kernel/power/qos.c
+===================================================================
+--- linux-pm.orig/kernel/power/qos.c
++++ linux-pm/kernel/power/qos.c
+@@ -66,6 +66,7 @@ static struct pm_qos_constraints cpu_dma
+ 	.list = PLIST_HEAD_INIT(cpu_dma_constraints.list),
+ 	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+ 	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
++	.no_constraint_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+ 	.type = PM_QOS_MIN,
+ 	.notifiers = &cpu_dma_lat_notifier,
+ };
+@@ -79,6 +80,7 @@ static struct pm_qos_constraints network
+ 	.list = PLIST_HEAD_INIT(network_lat_constraints.list),
+ 	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+ 	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
++	.no_constraint_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+ 	.type = PM_QOS_MIN,
+ 	.notifiers = &network_lat_notifier,
+ };
+@@ -93,6 +95,7 @@ static struct pm_qos_constraints network
+ 	.list = PLIST_HEAD_INIT(network_tput_constraints.list),
+ 	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+ 	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
++	.no_constraint_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+ 	.type = PM_QOS_MAX,
+ 	.notifiers = &network_throughput_notifier,
+ };
+@@ -128,7 +131,7 @@ static const struct file_operations pm_q
+ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
+ {
+ 	if (plist_head_empty(&c->list))
+-		return c->default_value;
++		return c->no_constraint_value;
+ 
+ 	switch (c->type) {
+ 	case PM_QOS_MIN:
 
-Patch [3/5] introduces the latency tolerance device PM QoS type along with
-documentation.
-
-Patch [4/5] modifies the ACPI LPSS (Low-Power Subsystem) driver to hook up
-LPSS devices to the new latency tolerance device PM QoS interface.
-
-Patch [5/5] modifies the dev_pm_qos_add_ancestor_request() routine so that it
-can be used by drivers of devices without hardware latency tolerance support
-for specifying their requirements via the ancestors of those devies.
-
-Comments welcome!
-
-Thanks,
-Rafael
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
