@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaAQP5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:57:22 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56027 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaAQP5T (ORCPT
+	id S1752297AbaAQP6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:58:47 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:20318 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaAQP6p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:57:19 -0500
-Date: Fri, 17 Jan 2014 15:57:08 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        grant.likely@linaro.org, mika.westerberg@linux.intel.com,
-        grant.likely@secretlab.ca
-Message-ID: <20140117155708.GS17314@sirena.org.uk>
-References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
- <1389689198-2641-4-git-send-email-rui.zhang@intel.com>
- <20140116122704.GD2617@katana>
- <1389877509.3010.15.camel@rzhang1-mobl4>
- <20140116194651.GO17314@sirena.org.uk>
- <52D8DDD4.10704@linux.intel.com>
+	Fri, 17 Jan 2014 10:58:45 -0500
+From: "Sumner, William" <bill.sumner@hp.com>
+To: Vivek Goyal <vgoyal@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+Subject: RE: [Q] Why does kexec use device_shutdown rather than ubind them
+Thread-Topic: [Q] Why does kexec use device_shutdown rather than ubind them
+Thread-Index: AQHPEzYBqjsv6I9LPkCCCCrHrMQkvZqIWb6+gAASVICAAIoWgIAAGlYQ
+Date: Fri, 17 Jan 2014 15:57:34 +0000
+Message-ID: <875D89B79D1D86448A583A7302C022A055ACA571@G4W3299.americas.hpqcorp.net>
+References: <1389929988.7406.18.camel@pasglop> <871u07fbvl.fsf@xmission.com>
+ <1389938353.7406.22.camel@pasglop> <20140117141327.GC24394@redhat.com>
+In-Reply-To: <20140117141327.GC24394@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZmeoGP/RI+eIV+cU"
-Content-Disposition: inline
-In-Reply-To: <52D8DDD4.10704@linux.intel.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] fix module autoloading for ACPI enumerated devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Vivek, Ben, Eric,
 
---ZmeoGP/RI+eIV+cU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please take a look at a proposed patch to intel-iommu: "[PATCHv3 0/6] Crashdump Accepting Active IOMMU"
 
-On Fri, Jan 17, 2014 at 09:37:56AM +0200, Jarkko Nikula wrote:
-> On 01/16/2014 09:46 PM, Mark Brown wrote:
+This is specifically for kdump; however, would some small variation of this technique be applicable to kexec ?
 
-> >This is needed for ACPI because we rewrite the device names to give us
-> >stable names.  With OF for I2C and SPI nothing bus specific is done that
-> >affects this stuff so the default behaviour works.
+Thanks,
+Bill
 
-> Sidenote: actually this modalias/module loading issue is different
-> and not related to stable ACPI i2c/spi slave device names.
+-----Original Message-----
+From: kexec [mailto:kexec-bounces@lists.infradead.org] On Behalf Of Vivek Goyal
+Sent: Friday, January 17, 2014 8:13 AM
+To: Benjamin Herrenschmidt
+Cc: Matthew Garrett; kexec@lists.infradead.org; linux-kernel@vger.kernel.org; Eric W. Biederman; Andrew Morton; Linus Torvalds
+Subject: Re: [Q] Why does kexec use device_shutdown rather than ubind them
 
-Oh, I'd been under the impression that it was the rewrite that was
-triggering this?
+On Fri, Jan 17, 2014 at 04:59:13PM +1100, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-01-16 at 20:52 -0800, Eric W. Biederman wrote:
+> > 
+> > I think we have largely survied until now because kdump is so popular
+> > and kdump winds up having to reinitialize devices from any random
+> > state.
+> 
+> kdump also doesn't care too much if the device is still DMA'ing to the
+> old kernel memory :-)
 
---ZmeoGP/RI+eIV+cU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In principle kdump does not care about ongoing DMAs but in practice it
+is giving us some headaches with IOMMU. Various kind of issues crop up
+during IOMMU intialization in second kernel while DMA is ongoing and
+unfortunately no good solution has made into upstream yet.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Well, ongoing DMA and IOMMU seems to be orthogonal to using ->remove()
+in kexec. So I will stop here. :-)
 
-iQIcBAEBAgAGBQJS2VLQAAoJELSic+t+oim9/IoP/jwV9eQlcNzANS8xR3W2qTzP
-F44eYYTUYbgUffFQkSi1KrJZrCgn6x9/tqBj8+fwUMuahcIy+PIQX4GoPvvcpSh7
-6lZZF6av22aPhecIkYN+NA/MdDS1WB8EJzWULruq8G7nCpiywTcZRkQDk295m/oR
-cFMCpYq0PbqqXPrLWbsL+cCPuA4wv4vYwVHyIPTj5DKc66nFl6TOXOJxeL4V3ZMR
-sdaYUudgn4YOxxVSeb6wS72EehecyXaP0ufOCgTyMpUzx7DF4icmhqkBrrfzuGqC
-4R6Tojn+SJlZG9AN8iLFpsXyizGS2tnViPewN7ilgletimPelAnPisdwHI7ujPUp
-mUbp8pSVW0DEJ6omD6tZo/UECfaWFpmlgJga+t+nzr6sq/KMcycxC2hl3f7HdSFI
-Dzt8VZd4TAfA586nDTwJUaRsmLYv7oNJYeth+y0TodUWXLHmA7K6jbiJ0U1xp3r6
-V9+zFnz3DFo0lFu35i3Cn7BZlmg3BVdz/aSFv+8jCHiNSamkQ47OrZNW96BTjLEh
-5XZdm102m/l7of3WUV0UHxUkAk3kI7KkA3JzFvtOw0kEIi4hX2OVmIvvt7ucexhT
-kPeiUXjbTXcnVXe9VdNk3+W4PL/c8pZd7vSveUeaoU6BhR2gqcJKVp+Vgavl6EsY
-mxuJhPk0NehTlEiyVzjo
-=FIsn
------END PGP SIGNATURE-----
+Thanks
+Vivek
 
---ZmeoGP/RI+eIV+cU--
+_______________________________________________
+kexec mailing list
+kexec@lists.infradead.org
+http://lists.infradead.org/mailman/listinfo/kexec
