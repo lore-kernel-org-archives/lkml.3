@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaAQQxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:53:18 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51407 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaAQQxP (ORCPT
+	id S1752706AbaAQQyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:54:11 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36855 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752155AbaAQQyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:53:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 3/3] power: reset: use syscon driver to parse reboot register from scu
-Date: Fri, 17 Jan 2014 17:52:46 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Feng Kan <fkan@apm.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-References: <1389748055-23534-1-git-send-email-fkan@apm.com> <1389748055-23534-4-git-send-email-fkan@apm.com>
-In-Reply-To: <1389748055-23534-4-git-send-email-fkan@apm.com>
+	Fri, 17 Jan 2014 11:54:10 -0500
+Date: Fri, 17 Jan 2014 16:53:34 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+Cc: Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH v2] of: add functions to count number of elements in a
+ property
+Message-ID: <20140117165333.GH19578@e106331-lin.cambridge.arm.com>
+References: <27256277.YJ687suYy5@phil>
+ <3781679.27UF2dWtKL@phil>
+ <20140117144456.GG19578@e106331-lin.cambridge.arm.com>
+ <1434798.oSb68sYmYT@phil>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401171752.47393.arnd@arndb.de>
-X-Provags-ID: V02:K0:Xkn0L5yZVTo99Zz8+IK7M5KRMWpGclMl5HUt4UC3qfC
- 4FbSK9fOzDd/Qv8FA2xRz/A9LHINO+Wd6ds01+z2umQP7rjFUh
- /EGr/xxSosWxPdxFVSzKGAXNZDtKT8yFLingTULgEcwt7Qgia3
- k+57ZdCeUkGHXYrPoIldbsdvCWppYM+VV/eB9+b0GM3ylPeVWu
- SmYSjg17QqC2Hdvcm9L89L8yFOZHPdnsAfjPBps+grYLNeb1Jp
- SEnkt6RAejkA9D+pjsbbr/ucJWkvsmIai82JM9NnYFpnr63jUa
- X5wA+zDn8MMTzoFV1ZQEHk01lS/DcR0r+nkANG8W+OOxutpKvv
- b41PIRoy7ZsABla8R+zU=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1434798.oSb68sYmYT@phil>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014, Feng Kan wrote:
-> +static int __init xgene_reboot_init(void)
->  {
->         arm_pm_restart = xgene_restart;
->         return 0;
->  }
->  device_initcall(xgene_reboot_init);
+On Fri, Jan 17, 2014 at 03:44:14PM +0000, Heiko Stübner wrote:
+> The need to know the number of array elements in a property is
+> a common pattern. To prevent duplication of open-coded implementations
+> add a helper static function that also centralises strict sanity
+> checking and DTB format details, as well as a set of wrapper functions
+> for u8, u16, u32 and u64.
+> 
+> Suggested-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+> changes since v1:
+> address comments from Rob Herring and Mark Rutland:
+> - provide a helper and a set of wrappers for u8-u64
+> - get rid of extra len variable, prop->length is enough
+> - include node name in error message
+> 
+>  drivers/of/base.c  |   98 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of.h |   32 +++++++++++++++++
+>  2 files changed, 130 insertions(+)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index f807d0e..b6e6d4a 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -862,6 +862,104 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+>  EXPORT_SYMBOL(of_find_node_by_phandle);
+>  
+>  /**
+> + * of_count_property_elems_of_size - Count the number of elements in a property
+> + *
+> + * @np:		device node from which the property value is to be read.
+> + * @propname:	name of the property to be searched.
+> + * @elem_size:	size of the individual element
+> + */
+> +static int of_count_property_elems_of_size(const struct device_node *np,
+> +				const char *propname, int elem_size)
 
-This won't work on a generic kernel, since you unconditionally set the
-pm_restart function to your own, which is broken for everything else.
+As a minor nit, it would be nicer to have 'count' and 'property' switch
+places in the name (i.e. call this of_property_count_elems_of_size).
+That way it's concistent with the naming of the wrappers.
 
-Please keep the platform_driver to attach to the reboot device
-as you had before. It might be good to turn this into a generic
-"syscon-reset" driver that gets both the register number and
-the contents to write from the device node.
+> +{
+> +	struct property *prop = of_find_property(np, propname, NULL);
+> +
+> +	if (!prop)
+> +		return -EINVAL;
+> +	if (!prop->value)
+> +		return -ENODATA;
+> +
+> +	if (prop->length % elem_size != 0) {
+> +		pr_err("size of %s in node %s is not a multiple of %d\n",
+> +		       propname, np->name, elem_size);
 
-	Arnd
+It would be nice to use np->full_name so you get the absolute path of
+the node -- it makes finding them easier later.
+
+Otherwise, the patch looks good to me, thanks for implementing it!
+
+With those changes:
+
+Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+
+Cheers,
+Mark.
