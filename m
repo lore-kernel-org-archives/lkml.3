@@ -1,525 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913AbaAQBKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:10:53 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:51365 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751395AbaAQBKt (ORCPT
+	id S1751917AbaAQBMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:12:14 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50701 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750937AbaAQBML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:10:49 -0500
+	Thu, 16 Jan 2014 20:12:11 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Len Brown <lenb@kernel.org>, kosaki.motohiro@gmail.com,
+        dyoung@redhat.com, rientjes@google.com, linux-acpi@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug [v5]
+Date: Fri, 17 Jan 2014 02:26:12 +0100
+Message-ID: <2048690.9OePJDLjDY@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1389886551-32647-1-git-send-email-prarit@redhat.com>
+References: <1389822660.1792.349.camel@misato.fc.hp.com> <1389886551-32647-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201401151339.58593.arnd@arndb.de>
-References: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
-	<1389742458-7693-2-git-send-email-tinamdar@apm.com>
-	<201401151339.58593.arnd@arndb.de>
-Date: Thu, 16 Jan 2014 17:10:47 -0800
-Message-ID: <CACoXjc=ZT9fEm_KdY4WFSoS8n5FmO+hn9LjsR4m8YZG2iBbt5A@mail.gmail.com>
-Subject: Re: [RFC PATCH V2 1/4] pci: APM X-Gene PCIe controller driver
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 4:39 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 15 January 2014, Tanmay Inamdar wrote:
->> This patch adds the AppliedMicro X-Gene SOC PCIe controller driver.
->> X-Gene PCIe controller supports maxmum upto 8 lanes and GEN3 speed.
->> X-Gene has maximum 5 PCIe ports supported.
->>
->> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
->
-> This already looks much better than the first version, but I have a more
-> comments. Most importantly, it would help to know how the root ports
-> are structured. Is this a standard root complex and multiple ports,
-> multiple root complexes with one port each, or a nonstandard organization
-> that is a mix of those two models?
+On Thursday, January 16, 2014 10:35:51 AM Prarit Bhargava wrote:
+> When booting a kdump kernel on a system that has specific memory hotplug
+> regions the boot will fail with warnings like:
 
-This is multiple root complexes with one port each.
+The timestamps are still present, sigh.
 
->
->> +
->> +/* When the address bit [17:16] is 2'b01, the Configuration access will be
->> + * treated as Type 1 and it will be forwarded to external PCIe device.
->> + */
->> +static void __iomem *xgene_pcie_get_cfg_base(struct pci_bus *bus)
->> +{
->> +     struct xgene_pcie_port *port = xgene_pcie_bus_to_port(bus);
->> +     u64 addr = (u64)port->cfg_base;
->> +
->> +     if (bus->number >= (port->first_busno + 1))
->> +             addr |= AXI_EP_CFG_ACCESS;
->> +
->> +     return (void *)addr;
->> +}
->
-> Wrong type, it should be 'void __iomem *'. Also you can't assume that
-> bit operations work on virtual __iomem addresses, so it should be better
-> to just add a constant integer to the pointer, which is a valid
-> operation.
+OK, please see
 
-ok.
+http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=00159a2013269bc0a617de885e4b921349192bd0
 
->
-> I also wonder why you need to do this at all. If there isn't a global
-> config space for all ports, but rather a separate type0/type1 config
-> cycle based on the bus number, I see that as an indication that the
-> ports are in fact separate domains and should each start with bus 0.
+and tell me if it looks good to you.
 
-It is not a standard ECAM layout. We also have a separate RTDID
-register as well to program bus, device, function. While accessing EP
-config space, we have to set the bit 17:16 as 2b'01. The same config
-space address is utilized for enabling a customized nonstandard PCIe
-DMA feature. The bits are defined to differentiate the access purpose.
-The feature is not supported in this driver yet.
+Thanks!
 
-Secondly I don't think it will matter if each port starts with bus 0.
-As long as we set the correct BDF in RTDID and set correct bits in
-config address, the config reads and writes would work. Right?
+> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.10.0-65.el7.x86_64 #1
+> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+> ffff8800341bd950
+> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+> 00000000000084d0
+> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+> 0000000000000200
+> [    2.989821] Call Trace:
+> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+> [    3.004817]  [<ffffffff815b87ee>] ?
+> __alloc_pages_direct_compact+0xac/0x196
+> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.181956] Mem-Info:
+> [    3.184490] Node 0 DMA per-cpu:
+> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+> [    3.193353] Node 0 DMA32 per-cpu:
+> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+> [    3.202410]  free_cma:0
+> 
+> because the system has run out of memory at boot time.  This occurs
+> because of the following sequence in the boot:
+> 
+> Main kernel boots and sets E820 map.  The second kernel is booted with a
+> map generated by the kdump service using memmap= and memmap=exactmap.
+> These parameters are added to the kernel parameters of the kdump
+> kernel.   The kdump kernel has limited memory resources so as not
+> to severely impact the main kernel.
+> 
+> The system then panics and the kdump kernel boots (which is a
+> completely new kernel boot).  During this boot ACPI is initialized and the
+> kernel (as can be seen above) traverses the ACPI namespace and finds an
+> entry for a memory device to be hotadded.
+> 
+> ie)
+> 
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> 
+> At this point the kernel adds page table information and the the kdump
+> kernel runs out of memory.
+> 
+> This can also be reproduced by using the memmap=exactmap and mem=X
+> parameters on the main kernel and booting.
+> 
+> This patchset resolves the problem by adding a kernel parameter,
+> acpi_no_memhotplug, to disable ACPI memory hotplug.
+> 
+> [v2]: changed acpi_no_memhotplug to bool
+> [v3]: cleaned up Documentation/kernel-parameters.txt
+> [v4]: add __initdata to acpi_no_memhotplug
+> [v5]: remove kexec, kdump only
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: kosaki.motohiro@gmail.com
+> Cc: dyoung@redhat.com
+> Cc: rientjes@google.com
+> Cc: linux-acpi@vger.kernel.org
+> Cc: kexec@lists.infradead.org
+> ---
+>  Documentation/kernel-parameters.txt |    3 +++
+>  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+>  2 files changed, 15 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index b9e9bd8..6201229 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			no: ACPI OperationRegions are not marked as reserved,
+>  			no further checks are performed.
+>  
+> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kdump
+> +			   kernels.
+> +
+>  	add_efi_memmap	[EFI; X86] Include EFI memory map in
+>  			kernel's map of available physical RAM.
+>  
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 551dad7..383cd80 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+>  	acpi_memory_device_free(mem_device);
+>  }
+>  
+> +static bool __initdata acpi_no_memhotplug;
+> +
+>  void __init acpi_memory_hotplug_init(void)
+>  {
+> +	if (acpi_no_memhotplug)
+> +		return;
+> +
+>  	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+>  }
+> +
+> +static int __init disable_acpi_memory_hotplug(char *str)
+> +{
+> +	acpi_no_memhotplug = true;
+> +	return 1;
+> +}
+> +__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
+> 
 
->
->> +static void xgene_pcie_setup_lanes(struct xgene_pcie_port *port)
->> +{
->> +     void *csr_base = port->csr_base;
->> +     u32 val;
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_8);
->> +     val = eq_pre_cursor_lane0_set(val, 0x7);
->> +     val = eq_pre_cursor_lane1_set(val, 0x7);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_8);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_9);
->> +     val = eq_pre_cursor_lane0_set(val, 0x7);
->> +     val = eq_pre_cursor_lane1_set(val, 0x7);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_9);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_10);
->> +     val = eq_pre_cursor_lane0_set(val, 0x7);
->> +     val = eq_pre_cursor_lane1_set(val, 0x7);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_10);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_11);
->> +     val = eq_pre_cursor_lane0_set(val, 0x7);
->> +     val = eq_pre_cursor_lane1_set(val, 0x7);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_11);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_4);
->> +     val = (val & ~0x30) | (1 << 4);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_4);
->> +}
->
-> Please document what you are actually setting here. If the configuration
-> of the lanes is always the same, why do you have to set it here. If not,
-> why do you set constant values?
-
-Good point. Let me check if these values should be constant or tune-able.
-
->
->> +static void xgene_pcie_setup_link(struct xgene_pcie_port *port)
->> +{
->> +     void *csr_base = port->csr_base;
->> +     u32 val;
->> +
->> +     val = readl(csr_base + BRIDGE_CFG_14);
->> +     val |= DIRECT_TO_8GTS_MASK;
->> +     val |= SUPPORT_5GTS_MASK;
->> +     val |= SUPPORT_8GTS_MASK;
->> +     val |= DIRECT_TO_5GTS_MASK;
->> +     writel(val, csr_base + BRIDGE_CFG_14);
->> +
->> +     val = readl(csr_base + BRIDGE_CFG_14);
->> +     val &= ~ADVT_INFINITE_CREDITS;
->> +     writel(val, csr_base + BRIDGE_CFG_14);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_0);
->> +     val |= (val & ~0xf) | 7;
->> +     val |= (val & ~0xf00) | ((7 << 8) & 0xf00);
->> +     writel(val, csr_base + BRIDGE_8G_CFG_0);
->> +
->> +     val = readl(csr_base + BRIDGE_8G_CFG_0);
->> +     val |= DWNSTRM_EQ_SKP_PHS_2_3;
->> +     writel(val, csr_base + BRIDGE_8G_CFG_0);
->> +}
->
-> Same here.
->
->> +static void xgene_pcie_program_core(void *csr_base)
->> +{
->> +     u32 val;
->> +
->> +     val = readl(csr_base + BRIDGE_CFG_0);
->> +     val |= AER_OPTIONAL_ERROR_EN;
->> +     writel(val, csr_base + BRIDGE_CFG_0);
->> +     writel(0x0, csr_base + INTXSTATUSMASK);
->> +     val = readl(csr_base + BRIDGE_CTRL_1);
->> +     val = (val & ~0xffff) | XGENE_PCIE_DEV_CTRL;
->> +     writel(val, csr_base + BRIDGE_CTRL_1);
->> +}
->
-> 'program_core'?
-
-Some of the PCIe core related misc configurations.
-
->
->> +static void xgene_pcie_poll_linkup(struct xgene_pcie_port *port, u32 *lanes)
->> +{
->> +     void *csr_base = port->csr_base;
->> +     u32 val32;
->> +     u64 start_time, time;
->> +
->> +     /*
->> +      * A component enters the LTSSM Detect state within
->> +      * 20ms of the end of fundamental core reset.
->> +      */
->> +     msleep(XGENE_LTSSM_DETECT_WAIT);
->> +     port->link_up = 0;
->> +     start_time = jiffies;
->> +     do {
->> +             val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
->> +             if (val32 & LINK_UP_MASK) {
->> +                     port->link_up = 1;
->> +                     port->link_speed = PIPE_PHY_RATE_RD(val32);
->> +                     val32 = readl(csr_base + BRIDGE_STATUS_0);
->> +                     *lanes = val32 >> 26;
->> +             }
->> +             time = jiffies_to_msecs(jiffies - start_time);
->> +     } while ((!port->link_up) || (time <= XGENE_LTSSM_L0_WAIT));
->> +}
->
-> Maybe another msleep() in the loop? It seems weird to first do an
-> unconditional sleep but then busy-wait for the result.
-
-ok.
-
->
->> +static void xgene_pcie_setup_primary_bus(struct xgene_pcie_port *port,
->> +                                      u32 first_busno, u32 last_busno)
->> +{
->> +     u32 val;
->> +     void *cfg_addr = port->cfg_base;
->> +
->> +     val = readl(cfg_addr + PCI_PRIMARY_BUS);
->> +     val &= ~PCI_PRIMARY_BUS_MASK;
->> +     val |= (last_busno << 16) | ((first_busno + 1) << 8) | (first_busno);
->> +     writel(val, cfg_addr + PCI_PRIMARY_BUS);
->> +}
->
-> Please explain what you are doing here. As mentioned above, I would expect
-> that each domain has visibility of all 255 buses. You shouldn't need any hacks
-> where you try to artificially squeeze the ports into a single domain when
-> they are separate in hardware.
-
-ok. I will check and get back.
-
->
->> +/*
->> + * read configuration values from DTS
->> + */
->> +static int xgene_pcie_read_dts_config(struct xgene_pcie_port *port)
->
-> The comment and function name don't seem to match what the function
-> does. The main purpose of this function seems to be to ioremap
-> the resources, which have nothing to with configuration.
-
-ok.
-
->
->> +{
->> +     struct device_node *np = port->node;
->> +     struct resource csr_res;
->> +     struct resource cfg_res;
->> +
->> +     /* Get CSR space registers address */
->> +     if (of_address_to_resource(np, 0, &csr_res))
->> +             return -EINVAL;
->> +
->> +     port->csr_base = devm_ioremap_nocache(port->dev, csr_res.start,
->> +                                           resource_size(&csr_res));
->
-> You can also use platform_get_resource() to access the resource
-> that is already there, rather than creating another one.
-
-ok.
-
->
->> +static void xgene_pcie_setup_ob_reg(struct xgene_pcie_port *port,
->> +                                 u32 addr, u32 restype)
->> +{
->> +     struct resource *res = NULL;
->> +     void *base = port->csr_base + addr;
->> +     resource_size_t size;
->> +     u64 cpu_addr = 0;
->> +     u64 pci_addr = 0;
->> +     u64 mask = 0;
->> +     u32 min_size = 0;
->
-> A general note: don't initialize local variables to a bogus valus (e.g. 0)
-> in their declaration. It prevents the compiler from warning about
-> incorrect uses.
-
-ok.
-
->
->> +     u32 flag = EN_REG;
->
-> This one on the other hand is ok, because you are actually going to
-> use that value.
->
->> +     switch (restype) {
->> +     case IORESOURCE_MEM:
->> +             res = &port->mem.res;
->> +             pci_addr = port->mem.pci_addr;
->> +             min_size = SZ_128M;
->> +             break;
->> +     case IORESOURCE_IO:
->> +             res = &port->io.res;
->> +             pci_addr = port->io.pci_addr;
->> +             min_size = 128;
->> +             flag |= OB_LO_IO;
->> +             break;
->> +     }
->
-> I assume this works ok, but seems wrong in one detail: If the resource
-> is marked IORESOURCE_IO, res->start is supposed to be in I/O space, not
-> in memory space, which would make it the wrong number to program
-> into the hardware registers.
-
-Yes for using ioport resource. However we have decided to defer using
-it since 'pci_ioremap_io' is not yet supported from arm64 side.
-
->From HW point of view, for memory mapped IO space, it is nothing but a
-piece taken out of the ranges in address map for outbound accesses. So
-while configuring registers from SOC side, it should take the CPU
-address which is address from SOC address map. Right?
-
-Later on we can have a separate io resource like 'realio' similar to
-what pci-mvebu.c does.
-
->
->> +static int xgene_pcie_parse_map_ranges(struct xgene_pcie_port *port)
->> +{
->> +     struct device_node *np = port->node;
->> +     struct of_pci_range range;
->> +     struct of_pci_range_parser parser;
->> +     struct device *dev = port->dev;
->> +
->> +     if (of_pci_range_parser_init(&parser, np)) {
->> +             dev_err(dev, "missing ranges property\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     /* Get the I/O, memory, config ranges from DT */
->
-> The comment needs updating now that you don't read config space here any more.
-
-ok.
-
->
->> +/* X-Gene PCIe support maximum 3 inbound memory regions
->> + * This function helps to select a region based on size of region
->> + */
->> +static int xgene_pcie_select_ib_reg(u64 size)
->> +{
->> +     static u8 ib_reg_mask;
->> +
->> +     if ((size > 4) && (size < SZ_16M) && !(ib_reg_mask & (1 << 1))) {
->> +             ib_reg_mask |= (1 << 1);
->> +             return 1;
->> +     }
->> +
->> +     if ((size > SZ_1K) && (size < SZ_1T) && !(ib_reg_mask & (1 << 0))) {
->> +             ib_reg_mask |= (1 << 0);
->> +             return 0;
->> +     }
->> +
->> +     if ((size > SZ_1M) && (size < SZ_1T) && !(ib_reg_mask & (1 << 2))) {
->> +             ib_reg_mask |= (1 << 2);
->> +             return 2;
->> +     }
->> +     return -EINVAL;
->> +}
->
-> Shouldn't the ib_reg_mask variable be per host bridge? Static variables
-> are dangerous if you ever get multiple instances of the hardware in one
-> system.
-
-Yes. You are right. Thanks.
-
->
->> +static int xgene_pcie_parse_map_dma_ranges(struct xgene_pcie_port *port)
->> +{
->> +     struct device_node *np = port->node;
->> +     struct of_pci_range range;
->> +     struct of_pci_range_parser parser;
->> +     struct device *dev = port->dev;
->> +     int region;
->> +
->> +     if (pci_dma_range_parser_init(&parser, np)) {
->> +             dev_err(dev, "missing dma-ranges property\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     /* Get the dma-ranges from DT */
->> +     for_each_of_pci_range(&parser, &range) {
->> +             u64 restype = range.flags & IORESOURCE_TYPE_BITS;
->> +             u64 end = range.cpu_addr + range.size - 1;
->> +             dev_dbg(port->dev, "0x%08x 0x%016llx..0x%016llx -> 0x%016llx\n",
->> +                     range.flags, range.cpu_addr, end, range.pci_addr);
->> +             region = xgene_pcie_select_ib_reg(range.size);
->> +             if (region == -EINVAL) {
->> +                     dev_warn(port->dev, "invalid pcie dma-range config\n");
->> +                     continue;
->> +             }
->> +             xgene_pcie_setup_ib_reg(port, &range, restype, region);
->> +     }
->> +     return 0;
->> +}
->
-> I guess is could even be a local variable in this function, which you pass
-> by reference.
->
->> +
->> +static int xgene_pcie_setup(int nr, struct pci_sys_data *sys)
->> +{
->> +     struct xgene_pcie_port *pp = xgene_pcie_sys_to_port(sys);
->> +
->> +     if (pp == NULL)
->> +             return 0;
->> +
->> +     sys->mem_offset = pp->mem.res.start - pp->mem.pci_addr;
->> +     pci_add_resource_offset(&sys->resources, &pp->mem.res,
->> +                             sys->mem_offset);
->> +     return 1;
->> +}
->
-> Please follow the regular error handling conventions, which are to
-> pass a negative errno value on error and zero on success.
-
-ok.
-
->
-> Also, what would be a reason for the port to be zero here? If
-> it's something that can't happen in practice, don't try to handle
-> it gracefully. You can use BUG_ON() for fatal conditions that
-> are supposed to be impossible to reach.
-
-This function is a hook to upper layer. We register nr_controllers in
-hw_pci structure as MAX_PORTS we support. It can happen that number of
-ports actually enabled from device tree are less than the number in
-nr_controllers.
-
->
->> +static struct pci_bus __init *xgene_pcie_scan_bus(int nr,
->> +                                               struct pci_sys_data *sys)
->> +{
->> +     struct xgene_pcie_port *pp = xgene_pcie_sys_to_port(sys);
->> +
->> +     pp->first_busno = sys->busnr;
->> +     xgene_pcie_setup_primary_bus(pp, sys->busnr, 0xff);
->> +     return pci_scan_root_bus(NULL, sys->busnr, &xgene_pcie_ops,
->> +                              sys, &sys->resources);
->> +}
->
-> You have a number of helper functions that don't seem to gain
-> much at all. Just move the call to pci_scan_root_bus() into
-> xgene_pcie_setup_primary_bus() here, and use that as the .scan
-> callback.
->
-
-I can do that if I can get rid of setup_primary_bus api. Let me check.
-
->
->> +     if (!port->link_up)
->> +             dev_info(port->dev, "(rc) link down\n");
->> +     else
->> +             dev_info(port->dev, "(rc) x%d gen-%d link up\n",
->> +                             lanes, port->link_speed + 1);
->> +#ifdef CONFIG_PCI_DOMAINS
->> +     xgene_pcie_hw.domain++;
->> +#endif
->> +     xgene_pcie_hw.private_data[index++] = port;
->> +     platform_set_drvdata(pdev, port);
->> +     return 0;
->> +}
->
-> Do you have multiple domains or not? I don't see how it can work if you
-> make the domain setup conditional on a kernel configuration option.
-> If you in fact have multiple domains, make sure in Kconfig that
-> CONFIG_PCI_DOMAINS is enabled. Otherwise don't mess with the domain
-> number...
-
-It is enabled in Kconfig.
-
->
->> +static const struct of_device_id xgene_pcie_match_table[] __initconst = {
->> +     {.compatible = "apm,xgene-pcie",},
->> +     {},
->> +};
->
-> Another general note: Your "compatible" strings are rather unspecific.
-> Do you have a version number for this IP block? I suppose that it's related
-> to one that has been used in other chips before, or will be used in future
-> chips, if it's not actually licensed from some other company.
-
-I will have to check this.
-
->
->> +static int __init xgene_pcie_init(void)
->> +{
->> +     void *private;
->> +     int ret;
->> +
->> +     pr_info("X-Gene: PCIe driver\n");
->> +
->> +     /* allocate private data to keep xgene_pcie_port information */
->> +     private = kzalloc((XGENE_PCIE_MAX_PORTS * sizeof(void *)), GFP_KERNEL);
->
-> This should not be done unconditionally: There is no point in printing
-> a message or allocating memory if you don't actually run on a system
-> with this device.
-
-I am doing this here because I have one instance of hw_pci structure
-with multiple pcie controllers. I can't do it from probe since it will
-be called once per instance in device tree.
-
->
->> +     if (private == NULL)
->> +             return -ENOMEM;
->
-> Style: if you are testing for an object, just write 'if (private)' or
-> 'if (!private)', but don't compare against NULL.
-
-ok.
-
->
->> +     xgene_pcie_hw.private_data = private;
->> +     ret = platform_driver_probe(&xgene_pcie_driver,
->> +                                 xgene_pcie_probe_bridge);
->> +     if (ret)
->> +             return ret;
->> +     pci_common_init(&xgene_pcie_hw);
->> +     return 0;
->
-> This seems wrong: You should not use platform_driver_probe() because
-> that has issues with deferred probing.
-
-I think 'platform_driver_probe' prevents the deferred probing.
-'pci_common_init' needs to be called only once with current driver
-structure. The probes for all pcie ports should be finished (ports
-initialized) before 'pci_common_init' gets called.
-
->
->         Arnd
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
