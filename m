@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaAQUAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:00:00 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:4049 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaAQT75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:59:57 -0500
-X-IronPort-AV: E=Sophos;i="4.95,675,1384329600"; 
-   d="scan'208";a="9893234"
-Message-ID: <52D98B99.5050604@broadcom.com>
-Date: Fri, 17 Jan 2014 11:59:21 -0800
-From: Sherman Yin <syin@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753488AbaAQUAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:00:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753435AbaAQUAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 15:00:04 -0500
+Date: Fri, 17 Jan 2014 19:59:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: Improve documentation of page_order
+Message-ID: <20140117195957.GG4963@suse.de>
+References: <520B0B75.4030708@huawei.com>
+ <20130814085711.GK2296@suse.de>
+ <20130814155205.GA2706@gmail.com>
+ <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
+ <20130814222241.GQ2296@suse.de>
+ <20140117143221.GA24851@suse.de>
+ <52D97C3E.2080709@codeaurora.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "arm@kernel.org" <arm@kernel.org>
-CC: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-References: <1386787041-6035-1-git-send-email-syin@broadcom.com>	<1387592016-13740-1-git-send-email-syin@broadcom.com>	<1387592016-13740-4-git-send-email-syin@broadcom.com> <CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>
-In-Reply-To: <CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <52D97C3E.2080709@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-16 05:19 AM, Linus Walleij wrote:
-> On Sat, Dec 21, 2013 at 3:13 AM, Sherman Yin <syin@broadcom.com> wrote:
->
-> '> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
->>
->> Signed-off-by: Sherman Yin <syin@broadcom.com>
->> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> ---
->> v4: - PINCTRL selected in Kconfig, PINCTRL_CAPRI selected in bcm_defconfig
->>      - make use of regmap
->>      - change CAPRI_PIN_UPDATE from macro to inline function.
->>      - Handle pull-up strength arg in Ohm instead of enum
->
-> Patch applied. It is really good now! It's late before the merge
-> window, but you've done a tremendous work on this driver and
-> I don't want to delay its deployment further.
+On Fri, Jan 17, 2014 at 10:53:50AM -0800, Laura Abbott wrote:
+> On 1/17/2014 6:32 AM, Mel Gorman wrote:
+> >Developers occasionally try and optimise PFN scanners by using page_order
+> >but miss that in general it requires zone->lock. This has happened twice for
+> >compaction.c and rejected both times.  This patch clarifies the documentation
+> >of page_order and adds a note to compaction.c why page_order is not used.
+> >
+> >Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >---
+> >  mm/compaction.c | 5 ++++-
+> >  mm/internal.h   | 8 +++++---
+> >  2 files changed, 9 insertions(+), 4 deletions(-)
+> >
+> >diff --git a/mm/compaction.c b/mm/compaction.c
+> >index f58bcd0..f91d26b 100644
+> >--- a/mm/compaction.c
+> >+++ b/mm/compaction.c
+> >@@ -522,7 +522,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> >  		if (!isolation_suitable(cc, page))
+> >  			goto next_pageblock;
+> >
+> >-		/* Skip if free */
+> >+		/*
+> >+		 * Skip if free. page_order cannot be used without zone->lock
+> >+		 * as nothing prevents parallel allocations or buddy merging.
+> >+		 */
+> >  		if (PageBuddy(page))
+> >  			continue;
+> >
+> >diff --git a/mm/internal.h b/mm/internal.h
+> >index 684f7aa..09cd8be 100644
+> >--- a/mm/internal.h
+> >+++ b/mm/internal.h
+> >@@ -144,9 +144,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> >  #endif
+> >
+> >  /*
+> >- * function for dealing with page's order in buddy system.
+> >- * zone->lock is already acquired when we use these.
+> >- * So, we don't need atomic page->flags operations here.
+> >+ * This functions returns the order of a free page in the buddy system.
+> >+ * In general, page_zone(page)->lock must be held by the caller to prevent
+> >+ * the page being allocated in parallel and returning garbage as the order.
+> >+ * If the caller does not hold page_zone(page), they must guarantee that
+>                                   page_zone(page)->lock here?
 
-Great, thanks for the support and reviews!
+*sigh*
 
-> But note:
->
->>   arch/arm/configs/bcm_defconfig  |    1 +
->>   arch/arm/mach-bcm/Kconfig       |    1 +
->
-> I've optimistically applied these two hunks of the patch as well,
-> but if there is any conflict with the ARM SoC tree I will just rebase
-> the patch and pull these *out*.
->
-> ARM SoC maintainers: be warned if something collides.
+Yes, thanks.
 
-Ok, will keep an eye on this and fix accordingly.  Should be simple fixes.
-
-Regards,
-Sherman
-
+-- 
+Mel Gorman
+SUSE Labs
