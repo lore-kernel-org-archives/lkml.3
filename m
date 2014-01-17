@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaAQMQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:16:18 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:45306 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaAQMQQ (ORCPT
+	id S1752540AbaAQMRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:17:31 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:58177 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaAQMR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:16:16 -0500
-Date: Fri, 17 Jan 2014 13:16:15 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: sohny thomas <sohny.kernel@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org, davem@davemloft.net,
-        kumuda <kumuda@linux.vnet.ibm.com>
-Subject: Re: ipv6: default route for link local address is not added while assigning a address
-Message-ID: <20140117121615.GC26022@order.stressinduktion.org>
-Mail-Followup-To: sohny thomas <sohny.kernel@gmail.com>,
-	netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-	yoshfuji@linux-ipv6.org, davem@davemloft.net,
-	kumuda <kumuda@linux.vnet.ibm.com>
-References: <52D2F201.1090903@gmail.com> <52D3A885.2080107@gmail.com> <52D8EB12.6070901@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Fri, 17 Jan 2014 07:17:28 -0500
+Date: Fri, 17 Jan 2014 04:17:23 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140117121723.GA18375@infradead.org>
+References: <20140115151749.GF23999@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D8EB12.6070901@gmail.com>
+In-Reply-To: <20140115151749.GF23999@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Jan 15, 2014 at 10:17:49AM -0500, J. Bruce Fields wrote:
+> From: "J. Bruce Fields" <bfields@redhat.com>
+> 
+> d_splice_alias can create duplicate directory aliases (in the !new
+> case), or (in the new case) d_move without holding appropriate locks.
+> 
+> d_materialise_unique deals with both of these problems.  (The latter
+> seems to be dealt by trylocks (see __d_unalias), which look like they
+> could cause spurious lookup failures--but that's at least better than
+> corrupting the dcache.)
 
-On Fri, Jan 17, 2014 at 02:04:26PM +0530, sohny thomas wrote:
-> Any updates on my reply, Any more info is required.
-> Can this be pulled into the kernel tree?
+I'm a bit worried about those spurious failures, maybe we should
+retry in that case?
 
-Your patch was posted to the wrong mailing list. Please repost to
-netdev@vger.kernel.org so <http://patchwork.ozlabs.org/project/netdev/list/>
-picks it up.
+Also looking over the changes I wonder if the explicit cecking for
+aliases for every non-directory might have a major performance impact,
+all the dcache growling already was a major issues in NFS workloads
+years ago and I dumb it's become any better.
 
-Thanks,
+Also looking at this area I'd like to suggest that if you end up
+merging the two I'd continue using the d_splice_alias name and
+calling conventions.
 
-  Hannes
+Also the inode == NULL case really should be split out from
+d_materialise_unique into a separate helper.  It shares almost no
+code, is entirely undocumented to the point that I don't really
+understand what the purpose is, and the only caller that can get
+there (fuse) already branches around that case in the caller anyway.
 
