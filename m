@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaAQL7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 06:59:19 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60204 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaAQL7M (ORCPT
+	id S1752337AbaAQMAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:00:23 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:45135 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaAQMAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 06:59:12 -0500
-X-Nat-Received: from [202.181.97.72]:56006 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1389959943.347
-To: rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 3.13-rc5] module: Add missing newline in printk call.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201312231603.IGB09833.HLJtFMOOFSFQVO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201312231603.IGB09833.HLJtFMOOFSFQVO@I-love.SAKURA.ne.jp>
-Message-Id: <201401172058.DHJ34830.OFFSOLVJHOMtFQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 17 Jan 2014 20:58:59 +0900
-Mime-Version: 1.0
+	Fri, 17 Jan 2014 07:00:20 -0500
+Date: Fri, 17 Jan 2014 07:00:16 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lukasz Dorau <lukasz.dorau@intel.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] libahci: correct a misleading comment
+Message-ID: <20140117120016.GB8598@htj.dyndns.org>
+References: <20140117114319.2784.3961.stgit@gklab-154-244.igk.intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17012014 #7344181, status: clean
+Content-Disposition: inline
+In-Reply-To: <20140117114319.2784.3961.stgit@gklab-154-244.igk.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty, would you pick up this patch?
-
-This message was added in 3.13-rc1. Thus, should be fixed in 3.13.
-
-Tetsuo Handa wrote:
-> From cc90e27d5cda227e7a0cbeb5de3cc1cbb1595dfa Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 23 Dec 2013 15:52:42 +0900
-> Subject: [PATCH] module: Add missing newline in printk call.
+On Fri, Jan 17, 2014 at 12:43:20PM +0100, Lukasz Dorau wrote:
+> There is an error in a comment introduced by:
+> 	commit fa070ee6dc70bcc19737a2406d741b089b3149d5
+> 	libahci: fix turning on LEDs in ahci_start_port()
 > 
-> Add missing \n and also follow commit bddb12b3 "kernel/module.c: use pr_foo()".
+> Correct it.
 > 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
 > ---
->  kernel/module.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+>  drivers/ata/libahci.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index f5a3b1e..d24fcf2 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -815,10 +815,8 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
->  		return -EFAULT;
->  	name[MODULE_NAME_LEN-1] = '\0';
->  
-> -	if (!(flags & O_NONBLOCK)) {
-> -		printk(KERN_WARNING
-> -		       "waiting module removal not supported: please upgrade");
-> -	}
-> +	if (!(flags & O_NONBLOCK))
-> +		pr_warn("waiting module removal not supported: please upgrade\n");
->  
->  	if (mutex_lock_interruptible(&module_mutex) != 0)
->  		return -EINTR;
-> -- 
-> 1.7.1
-> 
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index c482f8c..1f526e6 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -780,8 +780,8 @@ static void ahci_start_port(struct ata_port *ap)
+>  							       4);
+>  				/*
+>  				 * If busy, give a breather but do not
+> -				 * release EH ownership by using msleep()
+> -				 * instead of ata_msleep().  EM Transmit
+> +				 * release EH ownership by using ata_msleep()
+> +				 * instead of msleep().  EM Transmit
+
+Can't the sentence be parsed to mean the same thing either way?  "(do
+not release EH ownership) by using msleep..." or "do not (release EH
+ownership by using ata_msleep)..."
+
+With the context, I don't think which way to group things is
+ambiguous.  In fact, saying "instead of msleep()" is kinda confusing
+because using ata_msleep() should be the default.
+
+Thanks.
+
+-- 
+tejun
