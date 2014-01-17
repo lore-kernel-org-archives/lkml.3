@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaAQBMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:12:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50701 "HELO
+	id S1751956AbaAQBOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:14:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60367 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750937AbaAQBML (ORCPT
+	with SMTP id S1751401AbaAQBOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:12:11 -0500
+	Thu, 16 Jan 2014 20:14:22 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Len Brown <lenb@kernel.org>, kosaki.motohiro@gmail.com,
-        dyoung@redhat.com, rientjes@google.com, linux-acpi@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug [v5]
-Date: Fri, 17 Jan 2014 02:26:12 +0100
-Message-ID: <2048690.9OePJDLjDY@vostro.rjw.lan>
+To: Zhang Rui <rui.zhang@intel.com>, grant.likely@linaro.org
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        wsa@the-dreams.de, broonie@linaro.org, gregkh@linuxfoundation.org,
+        rob.herring@calxeda.com, jarkko.nikula@linux.intel.com
+Subject: Re: [PATCH 3/4] fix module autoloading for ACPI enumerated devices
+Date: Fri, 17 Jan 2014 02:28:23 +0100
+Message-ID: <3559262.qTvGllE4Ix@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389886551-32647-1-git-send-email-prarit@redhat.com>
-References: <1389822660.1792.349.camel@misato.fc.hp.com> <1389886551-32647-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1389859475.3010.5.camel@rzhang1-mobl4>
+References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com> <20140115150834.GX2494@intel.com> <1389859475.3010.5.camel@rzhang1-mobl4>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,172 +27,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 16, 2014 10:35:51 AM Prarit Bhargava wrote:
-> When booting a kdump kernel on a system that has specific memory hotplug
-> regions the boot will fail with warnings like:
+On Thursday, January 16, 2014 04:04:35 PM Zhang Rui wrote:
+> On Wed, 2014-01-15 at 17:08 +0200, Mika Westerberg wrote:
+> > On Tue, Jan 14, 2014 at 04:46:37PM +0800, Zhang Rui wrote:
+> > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > > index 3a94b79..2f4aea2 100644
+> > > --- a/drivers/base/platform.c
+> > > +++ b/drivers/base/platform.c
+> > > @@ -677,7 +677,13 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
+> > >  			     char *buf)
+> > >  {
+> > >  	struct platform_device	*pdev = to_platform_device(dev);
+> > > -	int len = snprintf(buf, PAGE_SIZE, "platform:%s\n", pdev->name);
+> > > +	int len;
+> > > +
+> > > +	len = acpi_device_modalias(dev, buf, PAGE_SIZE -1);
+> > 
+> > Here you have PAGE_SIZE -1...
+> > 
+> > > +	if (len != -ENODEV)
+> > > +		return len;
+> > > +
+> > > +	len = snprintf(buf, PAGE_SIZE, "platform:%s\n", pdev->name);
+> > >  
+> > >  	return (len >= PAGE_SIZE) ? (PAGE_SIZE - 1) : len;
+> > >  }
+> > > @@ -699,6 +705,10 @@ static int platform_uevent(struct device *dev, struct kobj_uevent_env *env)
+> > >  	if (rc != -ENODEV)
+> > >  		return rc;
+> > >  
+> > > +	rc = acpi_device_uevent_modalias(dev, env);
+> > > +	if (rc != -ENODEV)
+> > > +		return rc;
+> > > +
+> > >  	add_uevent_var(env, "MODALIAS=%s%s", PLATFORM_MODULE_PREFIX,
+> > >  			pdev->name);
+> > >  	return 0;
+> > > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> > > index d74c0b3..c4c5588 100644
+> > > --- a/drivers/i2c/i2c-core.c
+> > > +++ b/drivers/i2c/i2c-core.c
+> > > @@ -104,6 +104,11 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
+> > >  static int i2c_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+> > >  {
+> > >  	struct i2c_client	*client = to_i2c_client(dev);
+> > > +	int rc;
+> > > +
+> > > +	rc = acpi_device_uevent_modalias(dev, env);
+> > > +	if (rc != -ENODEV)
+> > > +		return rc;
+> > >  
+> > >  	if (add_uevent_var(env, "MODALIAS=%s%s",
+> > >  			   I2C_MODULE_PREFIX, client->name))
+> > > @@ -409,6 +414,12 @@ static ssize_t
+> > >  show_modalias(struct device *dev, struct device_attribute *attr, char *buf)
+> > >  {
+> > >  	struct i2c_client *client = to_i2c_client(dev);
+> > > +	int len;
+> > > +
+> > > +	len = acpi_device_modalias(dev, buf, PAGE_SIZE -1);
+> > 
+> > and here
+> > 
+> > > +	if (len != -ENODEV)
+> > > +		return len;
+> > > +
+> > >  	return sprintf(buf, "%s%s\n", I2C_MODULE_PREFIX, client->name);
+> > >  }
+> > >  
+> > > diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> > > index 349ebba..ab70eda 100644
+> > > --- a/drivers/spi/spi.c
+> > > +++ b/drivers/spi/spi.c
+> > > @@ -58,6 +58,11 @@ static ssize_t
+> > >  modalias_show(struct device *dev, struct device_attribute *a, char *buf)
+> > >  {
+> > >  	const struct spi_device	*spi = to_spi_device(dev);
+> > > +	int len;
+> > > +
+> > > +	len = acpi_device_modalias(dev, buf, PAGE_SIZE);
+> > 
+> > but here it is PAGE_SIZE.
+> > 
+> good catch.
+> 
+> > Perhaps it should be PAGE_SIZE in all sites?
+> 
+> dev_attr_show() will give a warning message if modalias_show() returns
+> PAGE_SIZE, thus I'd prefer to use PAGE_SIZE - 1 for all sites.
 
-The timestamps are still present, sigh.
-
-OK, please see
-
-http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=00159a2013269bc0a617de885e4b921349192bd0
-
-and tell me if it looks good to you.
+So I changed the PAGE_SIZE to PAGE_SIZE - 1 in the last instance and queued
+up the whole series for 3.14 in linux-pm.git/linux-next.  Please have a look
+at that and let me know if there's anything wrong with it.
 
 Thanks!
-
-> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
-> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-> 3.10.0-65.el7.x86_64 #1
-> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
-> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
-> ffff8800341bd950
-> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
-> 00000000000084d0
-> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
-> 0000000000000200
-> [    2.989821] Call Trace:
-> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
-> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
-> [    3.004817]  [<ffffffff815b87ee>] ?
-> __alloc_pages_direct_compact+0xac/0x196
-> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
-> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
-> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
-> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
-> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
-> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
-> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
-> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
-> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.181956] Mem-Info:
-> [    3.184490] Node 0 DMA per-cpu:
-> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
-> [    3.193353] Node 0 DMA32 per-cpu:
-> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
-> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
-> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
-> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
-> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
-> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
-> [    3.202410]  free_cma:0
-> 
-> because the system has run out of memory at boot time.  This occurs
-> because of the following sequence in the boot:
-> 
-> Main kernel boots and sets E820 map.  The second kernel is booted with a
-> map generated by the kdump service using memmap= and memmap=exactmap.
-> These parameters are added to the kernel parameters of the kdump
-> kernel.   The kdump kernel has limited memory resources so as not
-> to severely impact the main kernel.
-> 
-> The system then panics and the kdump kernel boots (which is a
-> completely new kernel boot).  During this boot ACPI is initialized and the
-> kernel (as can be seen above) traverses the ACPI namespace and finds an
-> entry for a memory device to be hotadded.
-> 
-> ie)
-> 
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> 
-> At this point the kernel adds page table information and the the kdump
-> kernel runs out of memory.
-> 
-> This can also be reproduced by using the memmap=exactmap and mem=X
-> parameters on the main kernel and booting.
-> 
-> This patchset resolves the problem by adding a kernel parameter,
-> acpi_no_memhotplug, to disable ACPI memory hotplug.
-> 
-> [v2]: changed acpi_no_memhotplug to bool
-> [v3]: cleaned up Documentation/kernel-parameters.txt
-> [v4]: add __initdata to acpi_no_memhotplug
-> [v5]: remove kexec, kdump only
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: kosaki.motohiro@gmail.com
-> Cc: dyoung@redhat.com
-> Cc: rientjes@google.com
-> Cc: linux-acpi@vger.kernel.org
-> Cc: kexec@lists.infradead.org
-> ---
->  Documentation/kernel-parameters.txt |    3 +++
->  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
->  2 files changed, 15 insertions(+)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index b9e9bd8..6201229 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			no: ACPI OperationRegions are not marked as reserved,
->  			no further checks are performed.
->  
-> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kdump
-> +			   kernels.
-> +
->  	add_efi_memmap	[EFI; X86] Include EFI memory map in
->  			kernel's map of available physical RAM.
->  
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 551dad7..383cd80 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
->  	acpi_memory_device_free(mem_device);
->  }
->  
-> +static bool __initdata acpi_no_memhotplug;
-> +
->  void __init acpi_memory_hotplug_init(void)
->  {
-> +	if (acpi_no_memhotplug)
-> +		return;
-> +
->  	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
->  }
-> +
-> +static int __init disable_acpi_memory_hotplug(char *str)
-> +{
-> +	acpi_no_memhotplug = true;
-> +	return 1;
-> +}
-> +__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
-> 
 
 -- 
 I speak only for myself.
