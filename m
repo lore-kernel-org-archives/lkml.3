@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaAQStN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:49:13 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56130 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaAQStK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:49:10 -0500
-Date: Fri, 17 Jan 2014 18:48:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, lgirdwood@gmail.com, perex@perex.cz,
-        tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140117184857.GH17314@sirena.org.uk>
-References: <1389861887-32721-1-git-send-email-Li.Xiubo@freescale.com>
- <52D854A3.5090109@metafoo.de>
+	id S1753309AbaAQSt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:49:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733AbaAQStL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 13:49:11 -0500
+Message-ID: <52D97ACD.10209@redhat.com>
+Date: Fri, 17 Jan 2014 13:47:41 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PK5kSfjks5jzTD3m"
-Content-Disposition: inline
-In-Reply-To: <52D854A3.5090109@metafoo.de>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: core: Use devm_kzalloc() instead
- kzalloc()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org, mingo@redhat.com,
+        chegu_vinod@hp.com, mgorman@suse.de, Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH 6/6] numa,sched: normalize faults_from stats and weigh
+ by CPU use
+References: <1389939456-9541-1-git-send-email-riel@redhat.com> <1389939456-9541-7-git-send-email-riel@redhat.com> <20140117095459.GF11314@laptop.programming.kicks-ass.net> <52D94380.5040901@redhat.com> <20140117150409.GJ11314@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140117150409.GJ11314@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/17/2014 10:04 AM, Peter Zijlstra wrote:
+> On Fri, Jan 17, 2014 at 09:51:44AM -0500, Rik van Riel wrote:
+>> On 01/17/2014 04:54 AM, Peter Zijlstra wrote:
+>>> On Fri, Jan 17, 2014 at 01:17:36AM -0500, riel@redhat.com wrote:
+>>>> +			/*
+>>>> +			 * Normalize the faults_from, so all tasks in a group
+>>>> +			 * count according to CPU use, instead of by the raw
+>>>> +			 * number of faults. This prevents the situation where
+>>>> +			 * the garbage collector totally dominates the stats,
+>>>> +			 * and the access patterns of the worker threads are
+>>>> +			 * ignored.
+>>>> +			 */
+>>>
+>>> Instead of focusing on the one example (GC) here, I would suggest
+>>> saying something along the lines of: Tasks with little runtime have
+>>> little over-all impact on throughput and thus their faults are less
+>>> important.
+>>
+>> Thanks for the review, I have updated the comment
+>> accordingly.
+>>
+>> Does anybody else have comments on this series, or should
+>> I start begging for Acked-by: and Reviewed-by: lines? :)
+> 
+> I still need to get me head around part of the previous patches, and I
+> suppose Mel might have a look, give it a few days ;-)
 
---PK5kSfjks5jzTD3m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, you didn't spot the divide by zero that Vinod somehow
+managed to trigger :)
 
-On Thu, Jan 16, 2014 at 10:52:35PM +0100, Lars-Peter Clausen wrote:
-> On 01/16/2014 09:44 AM, Xiubo Li wrote:
-> >Makes the code slightly shorter
+I am also going to add another patch, that prevents the temporary
+values from "p->numa_faults[i] >>= 1;" becoming visible, by using
+local variables for those calculations.
 
-> >Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Expect a v2 soonish.
 
-> I don't like this. I don't think it is a good design pattern to call
-> devm function from within (especial non-devm) library functions. It
-> creates an asymmetric API. The memory is allocated when
-> snd_dmaengine_pcm_register() is called, but it is not freed when
-> snd_dmaengine_pcm_unregister() is called. This goes against the
-> principle of least surprise.
-
-Yes, I tend to agree - unless we only support managed registration the
-API shouldn't do managed things internally.
-
---PK5kSfjks5jzTD3m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS2XsVAAoJELSic+t+oim9uNsQAJ2JwxMmow9JY0Vy0YCjZCNh
-mqQB0CRPLmYrQGUXv9iqCEcLfHxkB1t8TTeTGMvTqCW8Xhomc0GWUDXMRAi5x8wr
-PPMdpxrBtb0qFHUynnovgyBEN7XOBT9/rBt5c5PLTabh3+Qqjl0cx/Z9zMDMvDWE
-5b++M+uqonqvTsewDoW1lF8wSLJVMDsvgojnMINKeJPfuTcd5Np41uoUbutdHlf2
-XFWcOGQ5Ky2HiRBvOqpIi1XGJwdqAUa0OrwqjPRpiBh9z27F8ZoDBg8l6SGE3q2p
-6TgK6pBVQTa5n78pc+ixvORCGWE3GSXtkDH+nqP/PaxG2QBLRUCKWkT2P8QlAUtF
-j4IIVoTjOhB2uo37uRLwJBNJPZXL6qePomTv4HBd7J1yXxEUbsNGHLfWHO3PA5O7
-3pcqlXXR3H0hlcEV7YsNs88lAh/G8W4eJGdBbbQ+6AqvuevrwGwdK3h2xxHNa4YM
-iAGSQrbQw3jim3O8xkDwsuvB1/SYPMsKS9IVjHD4sP1QtjBq8Cg/lBH6pop7lI0Q
-Ka3vu4p7WSUh27o+iz+/WUZc9yeljgWr485oQtqU/+z+d5vvkhTh2+gsHdFVU3mf
-KPpPAZB8QhnRPUbAHvhDvc+6quD6u+KV6iF+rq09l1pF6nJ7rvilgEnfQPQ911xS
-EsT9FxYGZl/KBimmXsq3
-=5UKI
------END PGP SIGNATURE-----
-
---PK5kSfjks5jzTD3m--
+-- 
+All rights reversed
