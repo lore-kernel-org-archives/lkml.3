@@ -1,101 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaAQP11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:27:27 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:49436 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753326AbaAQP1O (ORCPT
+	id S1753368AbaAQP1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:27:24 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:60363 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753327AbaAQP1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 10:27:14 -0500
-Message-Id: <20140117151834.753524446@linux.com>
-Date: Fri, 17 Jan 2014 09:18:16 -0600
+Message-Id: <20140117151836.233114147@linux.com>
+Date: Fri, 17 Jan 2014 09:18:30 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org
-Subject: [PATCH 04/41] kernel misc: Replace __get_cpu_var uses
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 18/41] percpu: Add preemption checks to __this_cpu ops
 References: <20140117151812.770437629@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_misc
+Content-Disposition: inline; filename=preempt_check_this_cpu_ops
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uses of __get_cpu_var for address calculation with this_cpu_ptr.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-Cc: akpm@linux-foundation.org
+We define a check function in order to avoid trouble with the
+include files. Then the higher level __this_cpu macros are
+modified to invoke the preemption check.
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/kernel/printk/printk.c
+Index: linux/include/linux/percpu.h
 ===================================================================
---- linux.orig/kernel/printk/printk.c	2013-12-02 16:07:47.434699125 -0600
-+++ linux/kernel/printk/printk.c	2013-12-02 16:07:47.434699125 -0600
-@@ -2447,7 +2447,7 @@ static void wake_up_klogd_work_func(stru
- 	int pending = __this_cpu_xchg(printk_pending, 0);
+--- linux.orig/include/linux/percpu.h	2013-12-19 11:35:44.171220808 -0600
++++ linux/include/linux/percpu.h	2013-12-19 11:35:44.171220808 -0600
+@@ -172,6 +172,12 @@
  
- 	if (pending & PRINTK_PENDING_SCHED) {
--		char *buf = __get_cpu_var(printk_sched_buf);
-+		char *buf = this_cpu_ptr(printk_sched_buf);
- 		pr_warn("[sched_delayed] %s", buf);
- 	}
+ extern void __bad_size_call_parameter(void);
  
-@@ -2465,7 +2465,7 @@ void wake_up_klogd(void)
- 	preempt_disable();
- 	if (waitqueue_active(&log_wait)) {
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
--		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+		irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	}
- 	preempt_enable();
- }
-@@ -2478,14 +2478,14 @@ int printk_sched(const char *fmt, ...)
- 	int r;
++#ifdef CONFIG_DEBUG_PREEMPT
++extern void __this_cpu_preempt_check(const char *op);
++#else
++static inline void __this_cpu_preempt_check(const char *op) { }
++#endif
++
+ #define __pcpu_size_call_return(stem, variable)				\
+ ({	typeof(variable) pscr_ret__;					\
+ 	__verify_pcpu_ptr(&(variable));					\
+@@ -724,18 +730,24 @@
  
- 	local_irq_save(flags);
--	buf = __get_cpu_var(printk_sched_buf);
-+	buf = this_cpu_ptr(printk_sched_buf);
- 
- 	va_start(args, fmt);
- 	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
- 	va_end(args);
- 
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
--	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+	irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	local_irq_restore(flags);
- 
- 	return r;
-Index: linux/kernel/smp.c
-===================================================================
---- linux.orig/kernel/smp.c	2013-12-02 16:07:47.434699125 -0600
-+++ linux/kernel/smp.c	2013-12-02 16:07:47.434699125 -0600
-@@ -177,7 +177,7 @@ static void generic_exec_single(int cpu,
+ /*
+  * Generic percpu operations for context that are safe from preemption/interrupts.
+- * Checks will be added here soon.
   */
- void generic_smp_call_function_single_interrupt(void)
+ #ifndef __this_cpu_read
+-# define __this_cpu_read(pcp)	__pcpu_size_call_return(raw_cpu_read_, (pcp))
++# define __this_cpu_read(pcp) \
++	(__this_cpu_preempt_check("read"),__pcpu_size_call_return(raw_cpu_read_, (pcp)))
+ #endif
+ 
+ #ifndef __this_cpu_write
+-# define __this_cpu_write(pcp, val)	__pcpu_size_call(raw_cpu_write_, (pcp), (val))
++# define __this_cpu_write(pcp, val)					\
++do { __this_cpu_preempt_check("write");					\
++     __pcpu_size_call(raw_cpu_write_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_add
+-# define __this_cpu_add(pcp, val)	__pcpu_size_call(raw_cpu_add_, (pcp), (val))
++# define __this_cpu_add(pcp, val)					 \
++do { __this_cpu_preempt_check("add");					\
++	__pcpu_size_call(raw_cpu_add_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_sub
+@@ -751,16 +763,23 @@
+ #endif
+ 
+ #ifndef __this_cpu_and
+-# define __this_cpu_and(pcp, val)	__pcpu_size_call(raw_cpu_and_, (pcp), (val))
++# define __this_cpu_and(pcp, val)					\
++do { __this_cpu_preempt_check("and");					\
++	__pcpu_size_call(raw_cpu_and_, (pcp), (val));			\
++} while (0)
++
+ #endif
+ 
+ #ifndef __this_cpu_or
+-# define __this_cpu_or(pcp, val)	__pcpu_size_call(raw_cpu_or_, (pcp), (val))
++# define __this_cpu_or(pcp, val)					\
++do { __this_cpu_preempt_check("or");					\
++	__pcpu_size_call(raw_cpu_or_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_add_return
+ # define __this_cpu_add_return(pcp, val)	\
+-	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
++	(__this_cpu_preempt_check("add_return"),__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val))
+ #endif
+ 
+ #define __this_cpu_sub_return(pcp, val)	__this_cpu_add_return(pcp, -(typeof(pcp))(val))
+@@ -769,17 +788,17 @@
+ 
+ #ifndef __this_cpu_xchg
+ # define __this_cpu_xchg(pcp, nval)	\
+-	__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval)
++	(__this_cpu_preempt_check("xchg"),__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval))
+ #endif
+ 
+ #ifndef __this_cpu_cmpxchg
+ # define __this_cpu_cmpxchg(pcp, oval, nval)	\
+-	__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval)
++	(__this_cpu_preempt_check("cmpxchg"),__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval))
+ #endif
+ 
+ #ifndef __this_cpu_cmpxchg_double
+ # define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-	__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++	(__this_cpu_preempt_check("cmpxchg_double"),__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
+ #endif
+ 
+ #endif /* __LINUX_PERCPU_H */
+Index: linux/lib/smp_processor_id.c
+===================================================================
+--- linux.orig/lib/smp_processor_id.c	2013-12-19 11:35:44.171220808 -0600
++++ linux/lib/smp_processor_id.c	2013-12-19 11:36:06.110597585 -0600
+@@ -7,7 +7,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/sched.h>
+ 
+-notrace unsigned int debug_smp_processor_id(void)
++notrace static unsigned int check_preemption_disabled(char *what)
  {
--	struct call_single_queue *q = &__get_cpu_var(call_single_queue);
-+	struct call_single_queue *q = this_cpu_ptr(&call_single_queue);
- 	LIST_HEAD(list);
+ 	int this_cpu = raw_smp_processor_id();
  
- 	/*
-@@ -245,7 +245,7 @@ int smp_call_function_single(int cpu, sm
- 			struct call_single_data *csd = &d;
+@@ -38,9 +38,9 @@
+ 	if (!printk_ratelimit())
+ 		goto out_enable;
  
- 			if (!wait)
--				csd = &__get_cpu_var(csd_data);
-+				csd = this_cpu_ptr(&csd_data);
+-	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+-			"code: %s/%d\n",
+-			preempt_count() - 1, current->comm, current->pid);
++	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
++		what, preempt_count() - 1, current->comm, current->pid);
++
+ 	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
+ 	dump_stack();
  
- 			csd_lock(csd);
+@@ -50,5 +50,17 @@
+ 	return this_cpu;
+ }
  
-@@ -393,7 +393,7 @@ void smp_call_function_many(const struct
- 		return;
- 	}
++notrace unsigned int debug_smp_processor_id(void)
++{
++	return check_preemption_disabled("smp_processor_id()");
++}
+ EXPORT_SYMBOL(debug_smp_processor_id);
  
--	cfd = &__get_cpu_var(cfd_data);
-+	cfd = this_cpu_ptr(&cfd_data);
- 
- 	cpumask_and(cfd->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, cfd->cpumask);
++notrace void __this_cpu_preempt_check(const char *op)
++{
++	char text[40];
++
++	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
++	check_preemption_disabled(text);
++}
++EXPORT_SYMBOL(__this_cpu_preempt_check);
 
