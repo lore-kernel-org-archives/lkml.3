@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaAQU1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:27:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7306 "EHLO mga02.intel.com"
+	id S1753669AbaAQUaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:30:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899AbaAQU1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 15:27:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,675,1384329600"; 
-   d="scan'208";a="468458866"
-From: Andi Kleen <andi@firstfloor.org>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: "Dorau\, Lukasz" <lukasz.dorau@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        sebastian.riemer@profitbricks.com, richard.weinberger@gmail.com
-Subject: Re: Why is (2 < 2) true? Is it a gcc bug?
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-	<CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
-	<CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
-Date: Fri, 17 Jan 2014 12:27:47 -0800
-In-Reply-To: <CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
-	(Alexei Starovoitov's message of "Fri, 17 Jan 2014 11:58:28 -0800")
-Message-ID: <878uue1hh8.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752600AbaAQUa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 15:30:28 -0500
+Date: Fri, 17 Jan 2014 21:29:51 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
+        pbonzini@redhat.com, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: SVM: fix NMI window after iret
+Message-ID: <20140117202950.GA10616@hpx.cz>
+References: <1389988362-15260-1-git-send-email-rkrcmar@redhat.com>
+ <20140117201831.GA20561@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140117201831.GA20561@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexei Starovoitov <alexei.starovoitov@gmail.com> writes:
->
-> disable Value Range Propagation pass:
-> -fdisable-tree-vrp1 -fdisable-tree-vrp2
->
-> and complete unroll pass:
-> -fdisable-tree-cunrolli
+2014-01-17 12:18-0800, Greg KH:
+> On Fri, Jan 17, 2014 at 08:52:42PM +0100, Radim Krčmář wrote:
+> > We should open NMI window right after an iret, but SVM exits before it.
+> > We wanted to single step using the trap flag and then open it.
+> > (or we could emulate the iret instead)
+> > We don't do it since commit 3842d135ff2 (likely), because the iret exit
+> > handler does not request an event, so NMI window remains closed until
+> > the next exit.
+> > 
+> > Fix this by making KVM_REQ_EVENT request in the iret handler.
+> > 
+> > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> > ---
+> >  (btw. kvm-unit-tests weren't executed on SVM since Nov 2010, at least)
+> > 
+> >  arch/x86/kvm/svm.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> 
+> 
+> <formletter>
+> 
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
+> 
+> </formletter>
 
-Can you file a gcc bug with test case?
+Welp, at the last second, I decided it is not that critical to have it
+in stable and forgot to clean the git-send-email command line too.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Please ignore this patch in stable.
