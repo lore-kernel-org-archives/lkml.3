@@ -1,67 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaAQWSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:18:20 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:34817 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaAQWSP convert rfc822-to-8bit (ORCPT
+	id S1753497AbaAQWTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:19:12 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:62191 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115AbaAQWTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:18:15 -0500
+	Fri, 17 Jan 2014 17:19:10 -0500
+Date: Fri, 17 Jan 2014 15:19:06 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [v3.11][v3.12][v3.13][Regression] EISA: Initialize device before
+ its resources
+Message-ID: <20140117221906.GA6219@google.com>
+References: <52D81C92.9050800@canonical.com>
+ <CAErSpo64e52Vv8bJ54cPcpnZ=OHMaxt2-D6dA4HCrrLnKo1n7g@mail.gmail.com>
+ <52D82169.2000107@canonical.com>
+ <20140117170204.GA13939@google.com>
+ <52D983DF.3070202@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1389961718-8130-2-git-send-email-LW@KARO-electronics.de>
-References: <1389961718-8130-1-git-send-email-LW@KARO-electronics.de>
-	<1389961718-8130-2-git-send-email-LW@KARO-electronics.de>
-Date: Fri, 17 Jan 2014 16:18:14 -0600
-Message-ID: <CAL_JsqKTJBZyHjsEYRgYdr6gqGSNtUK1HnOOM5ediH-xZci1mA@mail.gmail.com>
-Subject: Re: [PATCHv3 1/4] DT: Add vendor prefix for Emerging Display Technologies
-From: Rob Herring <robherring2@gmail.com>
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Silvio F <silvio.fricke@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D983DF.3070202@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 6:28 AM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
->
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
-> ---
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On Fri, Jan 17, 2014 at 02:26:23PM -0500, Joseph Salisbury wrote:
+> On 01/17/2014 12:02 PM, Bjorn Helgaas wrote:
+> > On Thu, Jan 16, 2014 at 01:14:01PM -0500, Joseph Salisbury wrote:
+> >> On 01/16/2014 01:12 PM, Bjorn Helgaas wrote:
+> >>> On Thu, Jan 16, 2014 at 10:53 AM, Joseph Salisbury
+> >>> <joseph.salisbury@canonical.com> wrote:
+> >>>> Hi Bjorn,
+> >>>>
+> >>>> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
+> >>>> was found the following commit introduced this bug:
+> >>> Sorry about that, and thanks for the report.  Did you mean to include
+> >>> URL for the bug?
+> >> Yes, sorry about that:
+> >> http://pad.lv/1251816
+> > Hi Joseph,
+> >
+> > Can you attach the 3.8.0-32-generic config (the one matching the successful
+> > boot at https://launchpadlibrarian.net/156685076/BootDmesg.txt) to the bug?
+> 
+> I attached the config file to the bug:
+> https://launchpadlibrarian.net/162754666/config.common.ubuntu
+> 
+> I also attached a tar file with the complete config directory for that
+> kernel version.
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/+attachment/3951156/+files/raring-config.tar
 
-Applied.
+Thanks again.  I attached the following reverts to launchpad.  I screwed up
+when doing those EISA changes.  I'd like to squeeze these into my v3.14
+merge request (probably early next week), so please test and let me know
+if this fixes the problem.  I'm really sorry for the inconvenience.
 
-Rob
+Bjorn
 
->
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index b458760..49774c3 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -29,6 +29,7 @@ dallas        Maxim Integrated Products (formerly Dallas Semiconductor)
->  davicom        DAVICOM Semiconductor, Inc.
->  denx   Denx Software Engineering
->  dmo    Data Modul AG
-> +edt    Emerging Display Technologies
->  emmicro        EM Microelectronic
->  epson  Seiko Epson Corp.
->  est    ESTeem Wireless Modems
-> --
-> 1.7.2.5
->
+
+Revert "EISA: Log device resources in dmesg"
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+This reverts commit a2080d0c561c546d73cb8b296d4b7ca414e6860b.
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/eisa/eisa-bus.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+index 8842cde69177..1b86fe0c2e80 100644
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -288,7 +288,6 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
+ 			edev->res[i].flags = IORESOURCE_IO | IORESOURCE_BUSY;
+ 		}
+ 
+-		dev_printk(KERN_DEBUG, &edev->dev, "%pR\n", &edev->res[i]);
+ 		if (request_resource(root->res, &edev->res[i]))
+ 			goto failed;
+ 	}
+Revert "EISA: Initialize device before its resources"
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
+
+In the eisa_probe() force_probe path, if we were unable to request slot
+resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
+allocate resource for EISA slot %d" before reading the EISA signature in
+eisa_init_device().
+
+Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
+the EISA signature before requesting the slot resources, and this caused
+hangs during boot.
+
+Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+index 1b86fe0c2e80..612afeaec3cb 100644
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -277,11 +277,13 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
+ 		}
+ 		
+ 		if (slot) {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + (i * 0x400);
+ 			edev->res[i].end   = edev->res[i].start + 0xff;
+ 			edev->res[i].flags = IORESOURCE_IO;
+ 		} else {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + EISA_VENDOR_ID_OFFSET;
+ 			edev->res[i].end   = edev->res[i].start + 3;
+@@ -327,19 +329,20 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 		return -ENOMEM;
+ 	}
+ 		
+-	if (eisa_init_device(root, edev, 0)) {
++	if (eisa_request_resources(root, edev, 0)) {
++		dev_warn(root->dev,
++		         "EISA: Cannot allocate resource for mainboard\n");
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -ENODEV;
++			return -EBUSY;
+ 		goto force_probe;
+ 	}
+ 
+-	if (eisa_request_resources(root, edev, 0)) {
+-		dev_warn(root->dev,
+-		         "EISA: Cannot allocate resource for mainboard\n");
++	if (eisa_init_device(root, edev, 0)) {
++		eisa_release_resources(edev);
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -EBUSY;
++			return -ENODEV;
+ 		goto force_probe;
+ 	}
+ 
+@@ -362,11 +365,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 			continue;
+ 		}
+ 
+-		if (eisa_init_device(root, edev, i)) {
+-			kfree(edev);
+-			continue;
+-		}
+-
+ 		if (eisa_request_resources(root, edev, i)) {
+ 			dev_warn(root->dev,
+ 			         "Cannot allocate resource for EISA slot %d\n",
+@@ -375,6 +373,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 			continue;
+ 		}
+ 
++		if (eisa_init_device(root, edev, i)) {
++			eisa_release_resources(edev);
++			kfree(edev);
++			continue;
++		}
++
+ 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
+ 			enabled_str = " (forced enabled)";
+ 		else if (edev->state == EISA_CONFIG_FORCED)
