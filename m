@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaAQPfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:35:05 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:54327 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbaAQPes (ORCPT
+	id S1753033AbaAQPgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:36:38 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:55988 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348AbaAQPgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:34:48 -0500
+	Fri, 17 Jan 2014 10:36:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140117140921.GB8801@infradead.org>
+References: <CABPqkBSQ4vdT7-Cev86Bxt6T1uhiy-T28L2Eq5BzSPAC=mA8yw@mail.gmail.com>
+	<20140117140921.GB8801@infradead.org>
+Date: Fri, 17 Jan 2014 16:36:34 +0100
+Message-ID: <CABPqkBSZqCrUYfja7-MRJ93GysS5Kza-=P7UCp4gWOhxngSmVA@mail.gmail.com>
+Subject: Re: [BUG] perf stat: corrupts memory when using PMU cpumask
 From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
-        dsahern@gmail.com, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] perf stat: fix memory corruption of xyarray when cpumask is used
-Date: Fri, 17 Jan 2014 16:34:06 +0100
-Message-Id: <1389972846-6566-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389972846-6566-1-git-send-email-eranian@google.com>
-References: <1389972846-6566-1-git-send-email-eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a memory corruption problem with the xyarray when
-the evsel fds get closed at the end of the run_perf_stat() call.
+Arnaldo,
 
-It could be triggered with:
- # perf stat -a -e power/energy-cores/ ls
+I just sent the patches I wrote to fix the bugs I ran into since yesterday.
 
-When cpumask are used by events (.e.g, RAPL or uncores) then
-the evsel fds are allocated based on the actual number of CPUs
-monitored. That number can be smaller than the total number of
-CPUs on the system. The problem arises at the end by perf stat
-closes the fds twice. When fds are closed, their entry in the
-xyarray are set to -1. The first close() on the evsel is made
-from __run_perf_stat() and it uses the actual number of CPUS
-for the event which is how the xyarray was allocated for. The
-second is from perf_evlist_close() but that one is on the
-total number of CPUs in the system, so it assume the xyarray
-was allocated to cover it. However it was not, and some writes
-corrupt memory.
 
-The fix is in perf_evlist_close() is to first try with the
-evsel->cpus if present, if not use the evlist->cpus. That
-fixes the problem.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/evlist.c |    7 +++++--
- tools/perf/util/evsel.c  |    2 --
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 40bd2c0..59ef280 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1003,9 +1003,12 @@ void perf_evlist__close(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel;
- 	int ncpus = cpu_map__nr(evlist->cpus);
- 	int nthreads = thread_map__nr(evlist->threads);
-+	int n;
- 
--	evlist__for_each_reverse(evlist, evsel)
--		perf_evsel__close(evsel, ncpus, nthreads);
-+	evlist__for_each_reverse(evlist, evsel) {
-+		n = evsel->cpus ? evsel->cpus->nr : ncpus;
-+		perf_evsel__close(evsel, n, nthreads);
-+	}
- }
- 
- int perf_evlist__open(struct perf_evlist *evlist)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 22e18a2..0a878db 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -667,7 +667,6 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- {
- 	int cpu, thread;
- 	evsel->fd = xyarray__new(ncpus, nthreads, sizeof(int));
--
- 	if (evsel->fd) {
- 		for (cpu = 0; cpu < ncpus; cpu++) {
- 			for (thread = 0; thread < nthreads; thread++) {
-@@ -1081,7 +1080,6 @@ void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads)
- 
- 	perf_evsel__close_fd(evsel, ncpus, nthreads);
- 	perf_evsel__free_fd(evsel);
--	evsel->fd = NULL;
- }
- 
- static struct {
--- 
-1.7.9.5
-
+On Fri, Jan 17, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Fri, Jan 17, 2014 at 10:00:20AM +0100, Stephane Eranian escreveu:
+>> The issue boils down to the fact that evsels have their file descriptors closed
+>> twice nowadays. Once in __run_per_stat() via perf_evsel__close_fd() and
+>> twice in perf_evlist__close().
+>
+>> Now, calling close() twice is okay. However the fd is then set to -1.
+>> That's still okay with close(). The problem is elsewhere.
+>
+>> It comes from the ncpus argument passed to perf_evsel__close(). It is
+>> DIFFERENT between the evsel and the evlist when cpumask are used.
+>
+>> Take my case, 8 CPUs machine but a 1 CPU cpumask. The evsel allocates
+>> the xyarray for 1 CPU 1 thread. The fd are first close with 1 CPU, 1 thread.
+>> But then evlist_close() comes in and STILL thinks the events were using
+>> 8 CPUs, 1 thread and thus a xyarray of that size. And this causes writes
+>> to entries that are beyond the xyarray when the fds are set to -1, thereby
+>> causing memory corruption which I was lucky to catch via glibc.
+>
+>> First, why are we closing the descriptors twice?
+>
+> The idea here was to reduce the boilerplate that tools need to do when
+> they are done dealing with evlists, so evlist__delete would do what the
+> kernel does to resources allocated to a thread when it exits without
+> explicitely deallocating them: release them all.
+>
+> So it seems, from your analysis, that bugs were left that need to be
+> hammered out so that this works as intended. Can you share your patch?
+>
+>> Second, I have a fix that seems to work for me. It uses the evsel->cpus
+>> if evsel->cpus exists, otherwise it defaults to evtlist->cpus.  Looks like
+>> a reasonable thing to do to me, but is it? I would rather avoid the double
+>> close altogether.
+>>
+>>
+>> Opinion?
