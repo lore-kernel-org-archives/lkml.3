@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaAQVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:17:09 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:59125 "EHLO
+	id S1753465AbaAQVSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:18:15 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:59143 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaAQVRH (ORCPT
+	with ESMTP id S1751812AbaAQVSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:17:07 -0500
+	Fri, 17 Jan 2014 16:18:12 -0500
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, chegu_vinod@hp.com, peterz@infradead.org,
         mgorman@suse.de, mingo@redhat.com
-Subject: [PATCH 3/7] numa,sched: build per numa_group active node mask from faults_from statistics
-Date: Fri, 17 Jan 2014 16:12:05 -0500
-Message-Id: <1389993129-28180-4-git-send-email-riel@redhat.com>
+Subject: [PATCH 4/7] numa,sched: tracepoints for NUMA balancing active nodemask changes
+Date: Fri, 17 Jan 2014 16:12:06 -0500
+Message-Id: <1389993129-28180-5-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389993129-28180-1-git-send-email-riel@redhat.com>
 References: <1389993129-28180-1-git-send-email-riel@redhat.com>
@@ -23,8 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-The faults_from statistics are used to maintain an active_nodes nodemask
-per numa_group. This allows us to be smarter about when to do numa migrations.
+Being able to see how the active nodemask changes over time, and why,
+can be quite useful.
 
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Mel Gorman <mgorman@suse.de>
@@ -32,85 +32,75 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Chegu Vinod <chegu_vinod@hp.com>
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- kernel/sched/fair.c | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ include/trace/events/sched.h | 34 ++++++++++++++++++++++++++++++++++
+ kernel/sched/fair.c          |  8 ++++++--
+ 2 files changed, 40 insertions(+), 2 deletions(-)
 
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 67e1bbf..91726b6 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -530,6 +530,40 @@ TRACE_EVENT(sched_swap_numa,
+ 			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
+ 			__entry->dst_cpu, __entry->dst_nid)
+ );
++
++TRACE_EVENT(update_numa_active_nodes_mask,
++
++	TP_PROTO(int pid, int gid, int nid, int set, long faults, long max_faults),
++
++	TP_ARGS(pid, gid, nid, set, faults, max_faults),
++
++	TP_STRUCT__entry(
++		__field(	pid_t,		pid)
++		__field(	pid_t,		gid)
++		__field(	int,		nid)
++		__field(	int,		set)
++		__field(	long,		faults)
++		__field(	long,		max_faults);
++	),
++
++	TP_fast_assign(
++		__entry->pid = pid;
++		__entry->gid = gid;
++		__entry->nid = nid;
++		__entry->set = set;
++		__entry->faults = faults;
++		__entry->max_faults = max_faults;
++	),
++
++	TP_printk("pid=%d gid=%d nid=%d set=%d faults=%ld max_faults=%ld",
++		__entry->pid,
++		__entry->gid,
++		__entry->nid,
++		__entry->set,
++		__entry->faults,
++		__entry->max_faults)
++
++);
+ #endif /* _TRACE_SCHED_H */
+ 
+ /* This part must be outside protection */
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1945ddc..aa680e2 100644
+index aa680e2..3551009 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -885,6 +885,7 @@ struct numa_group {
- 	struct list_head task_list;
- 
- 	struct rcu_head rcu;
-+	nodemask_t active_nodes;
- 	unsigned long total_faults;
- 	unsigned long *faults_from;
- 	unsigned long faults[0];
-@@ -1275,6 +1276,38 @@ static void numa_migrate_preferred(struct task_struct *p)
+@@ -1300,10 +1300,14 @@ static void update_numa_active_node_mask(struct task_struct *p)
+ 		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
+ 			 numa_group->faults_from[task_faults_idx(nid, 1)];
+ 		if (!node_isset(nid, numa_group->active_nodes)) {
+-			if (faults > max_faults * 4 / 10)
++			if (faults > max_faults * 4 / 10) {
++				trace_update_numa_active_nodes_mask(current->pid, numa_group->gid, nid, true, faults, max_faults);
+ 				node_set(nid, numa_group->active_nodes);
+-		} else if (faults < max_faults * 2 / 10)
++			}
++		} else if (faults < max_faults * 2 / 10) {
++			trace_update_numa_active_nodes_mask(current->pid, numa_group->gid, nid, false, faults, max_faults);
+ 			node_clear(nid, numa_group->active_nodes);
++		}
+ 	}
  }
- 
- /*
-+ * Iterate over the nodes from which NUMA hinting faults were triggered, in
-+ * other words where the CPUs that incurred NUMA hinting faults are. The
-+ * bitmask is used to limit NUMA page migrations, and spread out memory
-+ * between the actively used nodes. To prevent flip-flopping, and excessive
-+ * page migrations, nodes are added when they cause over 40% of the maximum
-+ * number of faults, but only removed when they drop below 20%.
-+ */
-+static void update_numa_active_node_mask(struct task_struct *p)
-+{
-+	unsigned long faults, max_faults = 0;
-+	struct numa_group *numa_group = p->numa_group;
-+	int nid;
-+
-+	for_each_online_node(nid) {
-+		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
-+			 numa_group->faults_from[task_faults_idx(nid, 1)];
-+		if (faults > max_faults)
-+			max_faults = faults;
-+	}
-+
-+	for_each_online_node(nid) {
-+		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
-+			 numa_group->faults_from[task_faults_idx(nid, 1)];
-+		if (!node_isset(nid, numa_group->active_nodes)) {
-+			if (faults > max_faults * 4 / 10)
-+				node_set(nid, numa_group->active_nodes);
-+		} else if (faults < max_faults * 2 / 10)
-+			node_clear(nid, numa_group->active_nodes);
-+	}
-+}
-+
-+/*
-  * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
-  * increments. The more local the fault statistics are, the higher the scan
-  * period will be for the next scan window. If local/remote ratio is below
-@@ -1416,6 +1449,7 @@ static void task_numa_placement(struct task_struct *p)
- 	update_task_scan_period(p, fault_types[0], fault_types[1]);
- 
- 	if (p->numa_group) {
-+		update_numa_active_node_mask(p);
- 		/*
- 		 * If the preferred task and group nids are different,
- 		 * iterate over the nodes again to find the best place.
-@@ -1478,6 +1512,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		/* Second half of the array tracks where faults come from */
- 		grp->faults_from = grp->faults + 2 * nr_node_ids;
- 
-+		node_set(task_node(current), grp->active_nodes);
-+
- 		for (i = 0; i < 4*nr_node_ids; i++)
- 			grp->faults[i] = p->numa_faults[i];
- 
-@@ -1547,6 +1583,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 	my_grp->nr_tasks--;
- 	grp->nr_tasks++;
- 
-+	update_numa_active_node_mask(p);
-+
- 	spin_unlock(&my_grp->lock);
- 	spin_unlock(&grp->lock);
  
 -- 
 1.8.4.2
