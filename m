@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaAQXCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 18:02:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34699 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaAQXCb (ORCPT
+	id S1753784AbaAQXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 18:03:56 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9630 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753414AbaAQXDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 18:02:31 -0500
-Date: Fri, 17 Jan 2014 15:02:24 -0800
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: xen-devel@lists.xen.org
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
-Subject: MAINTAINERS tree branches [xen tip as an example]
-Message-ID: <20140117230219.GA28413@garbanzo.do-not-panic.com>
+	Fri, 17 Jan 2014 18:03:47 -0500
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        James Ralston <james.d.ralston@intel.com>,
+        Bill Brown <bill.e.brown@intel.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH v3 1/2] i2c: qup: Add device tree bindings information
+Date: Fri, 17 Jan 2014 15:03:38 -0800
+Message-ID: <1389999819-10648-2-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
+provide input and output FIFO's for it. I2C controller can operate
+as master with supported bus speeds of 100Kbps and 400Kbps.
 
-As per linux-next Next/Trees [0], and a recent January MAINTAINERS patch [1]
-=66rom David one of the xen development kernel git trees to track is
-xen/git.git [2], this tree however gives has undefined references when doin=
-g a
-fresh clone [shown below], but as expected does work well when only cloning
-the linux-next branch [also below]. While I'm sure this is fine for
-folks who can do the guess work do we really want to live with trees like
-these on MAINTAINERS ? The MAINTAINERS file doesn't let us specify branches
-required, so perhaps it should -- if we want to live with these ? Curious, =
-how
-many other git are there with a similar situation ?
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+[bjorn: reformulated part of binding description and cleaned up example]
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+---
+ .../devicetree/bindings/i2c/qcom,i2c-qup.txt       | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
 
-The xen project web site actually lists [3] Konrad's xen git tree [4] for
-development as the primary development tree, that probably should be
-updated now, and likely with instructions to clone only the linux-next
-branch ?
+diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+new file mode 100644
+index 0000000..a99711b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+@@ -0,0 +1,41 @@
++Qualcomm Universal Peripheral (QUP) I2C controller
++
++Required properties:
++ - compatible: Should be "qcom,i2c-qup".
++ - reg: Should contain QUP register address and length.
++ - interrupts: Should contain I2C interrupt.
++
++ - clocks: Should contain the core clock and the AHB clock.
++ - clock-names: Should be "core" for the core clock and "iface" for the
++                AHB clock.
++
++ - #address-cells: Should be <1> Address cells for i2c device address
++ - #size-cells: Should be <0> as i2c addresses have no size component
++
++Optional properties:
++ - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
++                    default is 100kHz if omitted.
++
++Child nodes should conform to i2c bus binding.
++
++Example:
++
++ i2c2: i2c@f9924000 {
++ 	compatible = "qcom,i2c-qup";
++ 	reg = <0xf9924000 0x1000>;
++ 	interrupts = <0 96 0>;
++
++ 	clocks = <&gcc_blsp1_qup2_i2c_apps_clk>, <&gcc_blsp1_ahb_clk>;
++ 	clock-names = "core", "iface";
++
++ 	clock-frequency = <355000>;
++
++ 	#address-cells = <1>;
++ 	#size-cells = <0>;
++
++ 	dummy@60 {
++ 		compatible = "dummy";
++ 		reg = <0x60>;
++ 	};
++ };
++
+-- 
+1.8.2.2
 
-[0] https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/N=
-ext/Trees#n176
-[1] http://lists.xen.org/archives/html/xen-devel/2014-01/msg01504.html
-[2] git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git
-[3] http://wiki.xenproject.org/wiki/Xen_Repositories#Primary_Xen_Repository
-[4] git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
-
-mcgrof@bubbles ~ $ git clone
-git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git --reference linux=
-/.git
-Cloning into 'tip'...
-remote: Counting objects: 2806, done.
-remote: Compressing objects: 100% (334/334), done.
-remote: Total 1797 (delta 1511), reused 1646 (delta 1462)
-Receiving objects: 100% (1797/1797), 711.01 KiB | 640.00 KiB/s, done.
-Resolving deltas: 100% (1511/1511), completed with 306 local objects.
-Checking connectivity... done.
-warning: remote HEAD refers to nonexistent ref, unable to checkout.
-
-mcgrof@work ~ $ git clone
-git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git -b linux-next --r=
-eference linux/.git
-Cloning into 'tip'...
-remote: Counting objects: 2806, done.
-remote: Compressing objects: 100% (377/377), done.
-remote: Total 1797 (delta 1545), reused 1607 (delta 1419)
-Receiving objects: 100% (1797/1797), 485.23 KiB | 0 bytes/s, done.
-Resolving deltas: 100% (1545/1545), completed with 327 local objects.
-Checking connectivity... done.
-Checking out files: 100% (44979/44979), done.
-
-  Luis
-
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJS2bZ7AAoJEHoaE3+fqtqo2PUP/3XmVtQoDTfWm4dvKq5Sb0UO
-t7sJR6CXny8MOFHXPpBiuucqjuXv6EPcOKu++04M4dC3bb9NMoaF07X1K5nBTtYF
-ho/BxDzJIcRVwB0FzSUSLfbPHCNurTqo+vXZrSIJGuJcIwmenChPCq8eHs1LpKU6
-5fZO8t4W480nkuLY7C7w1Y2YEDBXFC+DYa/x/U8KcKqdmzJOexR0Wo68B9a9PdLJ
-HcUljCcj9mrLLQBNY4sEG0trwOBJtb/ph+FgfL7aJ3kgRsKcAT0jB5/MEnld/t/6
-Y5uxl/06T7i04hri3YARFAEZZZy0LCats8N2X91TrkIhJ00HWxj3qcrfWixabdxk
-77LupBfVLxkQ0hoS3yxOgvj08jBJYxftBPiBYlm+tGG/GYcRcLMLc8tZ/ExUyYax
-7i3bg53q84oq+bombYRVCqV/PtYr585V/xi1cF4Bgs+BU14+jbaeoxxNWYNdADl+
-GrR2u6r03i+m/m2Lx4+pGzsm6J2G3FQTU92Tbhd6m4RSLbDJRYTNDIB24iIADgQR
-Hj/LyMiTTMIpuP4oyALv2OKIfIMLlRSLpUQFRvZWCimAp7rOO6O6Q9QxJP8HoS36
-RvEua1584Mg460U3p+PrrEt4aJd17GD6Lr1MZxw148xUlNB2Dt1LW6Bsjbm8dQ/9
-n0OafA1t6B50U2r9ktah
-=13gW
------END PGP SIGNATURE-----
-
---yrj/dFKFPuw6o+aM--
