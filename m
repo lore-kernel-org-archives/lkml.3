@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaAQJAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 04:00:14 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:55384 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaAQJAK (ORCPT
+	id S1752182AbaAQJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 04:00:29 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:41832 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaAQJAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 04:00:10 -0500
+	Fri, 17 Jan 2014 04:00:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
-References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
-	<20140116115634.GE30257@mudshark.cambridge.arm.com>
-	<CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
-	<20140116125727.GI30257@mudshark.cambridge.arm.com>
-	<CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
-Date: Fri, 17 Jan 2014 10:00:09 +0100
-Message-ID: <CAFrcx1=QWPFeuNDc0JatiykGnRuvPyOgwwCxnW7pSAiNa9RsxA@mail.gmail.com>
-Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Fri, 17 Jan 2014 10:00:20 +0100
+Message-ID: <CABPqkBSQ4vdT7-Cev86Bxt6T1uhiy-T28L2Eq5BzSPAC=mA8yw@mail.gmail.com>
+Subject: [BUG] perf stat: corrupts memory when using PMU cpumask
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Hi,
 
-Some more thoughts below
+I have been debugging a NULL pointer issue with perf stat unit/scale code
+and in the process I ran into what appeared like a double-free issue reported
+by glibc. It took me a while to realize that it was because of memory corruption
+caused by a recent change in how evsel are freed.
 
-On 16 January 2014 14:47, Jean Pihet <jean.pihet@linaro.org> wrote:
-> Will,
->
-> On 16 January 2014 13:57, Will Deacon <will.deacon@arm.com> wrote:
->> On Thu, Jan 16, 2014 at 12:26:53PM +0000, Jean Pihet wrote:
->>> On 16 January 2014 12:56, Will Deacon <will.deacon@arm.com> wrote:
->>> > In your previous series, compat backtracing is actually split out into a
->>> > separate function (compat_user_backtrace), so it would be more consistent to
->>> > have a compat_user_stack_pointer macro, rather than add this check here.
-> The compat_user_backtrace function is used to unwind using the frame
-> pointer, it is not used to unwind using the dwarf info (which uses the
-> user stack pointer).
->
->>>
->>> Do you mean this change instead?
->>
->> I don't think so...
->>
->>> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
->>> index 569b2187..9b88d2e 100644
->>> --- a/kernel/events/internal.h
->>> +++ b/kernel/events/internal.h
->>> @@ -185,7 +185,8 @@ static inline bool arch_perf_have_user_stack_dump(void)
->>>         return true;
->>>  }
->>>
->>> -#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
->>> +#define perf_user_stack_pointer(regs) \
->>> +       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
->>
->> This doesn't belong in core code; compat_user_mode and the fields of regs
->> are arm64-specific.
-> Right.
->
->> So I suppose you need to rework your original patch to
->> call compat_user_stack_pointer (which we already define in compat.h for
->> arm64) if compat_user_mode(regs)).
-> The perf core code calls perf_user_stack_pointer(regs) to retrieve the
-> stack pointer, with perf_user_stack_pointer(regs) defined as
-> user_stack_pointer(regs).
-> The problem is that perf is not aware of the compat mode, so every
-> arch has to implement user_stack_pointer(regs) correctly.
->
-> For this reason I think the first patch proposal is the right one
-> unless the perf core code is redesigned to handle different ABIs. Do
-> you see a better implementation?
->
->>
->> The problem there is the inconsistency with respect to the regs argument:
->>
->>   user_stack_pointer(regs)      // Returns user stack pointer for regs
->>   current_user_stack_pointer()  // Returns current user stack pointer
->>   compat_user_stack_pointer()   // Doesn't take a regs argument!
->>
->> On top of that, x86 treats those last two functions differently when current
->> is a compat task.
->>
->> So the simplest thing would be to make compat_user_stack_pointer expand to
->> user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
->> original patch fixing user_stack_pointer.
+My test case is simple. I used RAPL but I think any event with a suggested
+cpumask in /sys/devices/XXX/cpumask will do:
 
-I see 2 issues in your proposal:
+# perf stat -a -e power/energy-cores/ ls
 
-1) user_stack_pointer(regs) calls compat_user_stack_pointer if
-compat_user_mode(regs)) and compat_user_stack_pointer expands to
-user_stack_pointer. I see a circular dependency in the macros.
+The issue boils down to the fact that evsels have their file descriptors closed
+twice nowadays. Once in __run_per_stat() via perf_evsel__close_fd() and
+twice in perf_evlist__close().
 
-2) current_pt_regs() returns the current task regs although perf
-passes a regs struct that had been recorded previously.
+Now, calling close() twice is okay. However the fd is then set to -1.
+That's still okay with close(). The problem is elsewhere.
 
-Am I missing something?
+It comes from the ncpus argument passed to perf_evsel__close(). It is
+DIFFERENT between the evsel and the evlist when cpumask are used.
 
-Thx,
-Jean
+Take my case, 8 CPUs machine but a 1 CPU cpumask. The evsel allocates
+the xyarray for 1 CPU 1 thread. The fd are first close with 1 CPU, 1 thread.
+But then evlist_close() comes in and STILL thinks the events were using
+8 CPUs, 1 thread and thus a xyarray of that size. And this causes writes
+to entries that are beyond the xyarray when the fds are set to -1, thereby
+causing memory corruption which I was lucky to catch via glibc.
 
->>
->> Will
->
-> Thx!
-> Jean
+First, why are we closing the descriptors twice?
+
+Second, I have a fix that seems to work for me. It uses the evsel->cpus
+if evsel->cpus exists, otherwise it defaults to evtlist->cpus.  Looks like
+a reasonable thing to do to me, but is it? I would rather avoid the double
+close altogether.
+
+
+Opinion?
