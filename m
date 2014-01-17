@@ -1,141 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaAQOrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:47:35 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52503 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaAQOrc (ORCPT
+	id S1752476AbaAQOtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:49:13 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:45234 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaAQOtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:47:32 -0500
-Date: Fri, 17 Jan 2014 15:47:29 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org,
-        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
-        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
-Message-ID: <20140117144729.GB5785@linutronix.de>
-References: <20131229171154.GA23586@opentech.at>
+	Fri, 17 Jan 2014 09:49:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131229171154.GA23586@opentech.at>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389933996-19306-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1389933996-19306-1-git-send-email-Li.Xiubo@freescale.com>
+Date: Fri, 17 Jan 2014 08:49:07 -0600
+Message-ID: <CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com>
+Subject: Re: [PATCH] of: fix of_update_property()
+From: Rob Herring <robherring2@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is what I am going to apply. It also dropped the get_cpu_light()
-call which was added in a patch to remove the get_cpu_var() and is now
-no longer required since we have the get_locked_var() thingy now.
+On Thu, Jan 16, 2014 at 10:46 PM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+> The of_update_property() is intent to update a property in a node
 
-From: Nicholas Mc Guire <der.herr@hofr.at>
-Date: Sun, 29 Dec 2013 18:11:54 +0100
-Subject: [PATCH] net: ip_send_unicast_reply: add missing local serialization
+s/intent/indended/
 
-in response to the oops in ip_output.c:ip_send_unicast_reply under high
-network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen
-<Sami.Pietikainen@wapice.com>, this patch adds local serialization in
-ip_send_unicast_reply.
+> and if the property does not exist, will add it to the node.
+>
+> The second search of the property is possibly won't be found, that
+> maybe removed by other thread just before the second search begain,
+> if so just retry it.
 
-from ip_output.c:
-/*
- *      Generic function to send a packet as reply to another packet.
- *      Used to send some TCP resets/acks so far.
- *
- *      Use a fake percpu inet socket to avoid false sharing and contention.
- */
-static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-...
+How did you find this problem? Actual use or some artificial stress test?
 
-which was added in commit be9f4a44 in linux-stable. The git log, wich
-introduced the PER_CPU unicast_sock, states:
-<snip>
-commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Jul 19 07:34:03 2012 +0000
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  drivers/of/base.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index f807d0e..d0c53bc 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1572,6 +1572,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>         if (!newprop->name)
+>                 return -EINVAL;
+>
+> +retry:
+>         oldprop = of_find_property(np, newprop->name, NULL);
+>         if (!oldprop)
+>                 return of_add_property(np, newprop);
 
-    ipv4: tcp: remove per net tcp_sock
+Isn't there also a race that if you do 2 updates for a non-existent
+property and both threads try to add the property, the first one will
+succeed and the 2nd will fail. The 2nd one needs to retry as well.
 
-    tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
-    per network namespace.
+Also, couldn't the node itself be removed while trying to do the update?
 
-    This leads to bad behavior on multiqueue NICS, because many cpus
-    contend for the socket lock and once socket lock is acquired, extra
-    false sharing on various socket fields slow down the operations.
+There seem to be multiple problems with this code, but doing multiple
+simultaneous, conflicting updates seems like an unlikely case.
 
-    To better resist to attacks, we use a percpu socket. Each cpu can
-    run without contention, using appropriate memory (local node)
-<snip>
+Rob
 
-The per-cpu here thus is assuming exclusivity serializing per cpu - so
-the use of get_cpu_ligh introduced in
-net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the
-preempt_disable in favor of a migrate_disable is probably wrong as this
-only handles the referencial consistency but not the serialization. To
-evade a preempt_disable here a local lock would be needed.
-
-Therapie:
- * add local lock:
- * and re-introduce local serialization:
-
-Tested on x86 with high network load using the testcase from Sami Pietikainen
-  while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
-
-Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- net/ipv4/ip_output.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index e9fa68c..8bb3b4a 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -79,6 +79,7 @@
- #include <linux/mroute.h>
- #include <linux/netlink.h>
- #include <linux/tcp.h>
-+#include <linux/locallock.h>
- 
- int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
- EXPORT_SYMBOL(sysctl_ip_default_ttl);
-@@ -1468,6 +1469,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
- 	.uc_ttl		= -1,
- };
- 
-+/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
-+static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
-+
- void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 			   __be32 saddr, const struct ip_reply_arg *arg,
- 			   unsigned int len)
-@@ -1505,8 +1509,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	if (IS_ERR(rt))
- 		return;
- 
--	get_cpu_light();
--	inet = &__get_cpu_var(unicast_sock);
-+	inet = &get_locked_var(unicast_lock, unicast_sock);
- 
- 	inet->tos = arg->tos;
- 	sk = &inet->sk;
-@@ -1530,7 +1533,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		ip_push_pending_frames(sk, &fl4);
- 	}
- 
--	put_cpu_light();
-+	put_locked_var(unicast_lock, unicast_sock);
- 
- 	ip_rt_put(rt);
- }
--- 
-1.8.5.2
-
+> @@ -1593,7 +1594,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>         raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>
+>         if (!found)
+> -               return -ENODEV;
+> +               goto retry;
+>
+>  #ifdef CONFIG_PROC_DEVICETREE
+>         /* try to add to proc as well if it was initialized */
+> --
+> 1.8.4
+>
+>
