@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaAQNZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:25:17 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34755 "EHLO
+	id S1752637AbaAQNZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:25:08 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34732 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaAQNZB (ORCPT
+	with ESMTP id S1752435AbaAQNY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:25:01 -0500
+	Fri, 17 Jan 2014 08:24:59 -0500
 From: Chen-Yu Tsai <wens@csie.org>
 To: netdev@vger.kernel.org
 Cc: Chen-Yu Tsai <wens@csie.org>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
         Srinivas Kandagatla <srinivas.kandagatla@st.com>,
         linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH net-next v3 7/8] net: stmmac: Use driver data and callbacks tied with compatible strings
-Date: Fri, 17 Jan 2014 21:24:46 +0800
-Message-Id: <1389965087-21971-8-git-send-email-wens@csie.org>
+Subject: [PATCH net-next v3 2/8] net: stmmac: Add support for optional reset control
+Date: Fri, 17 Jan 2014 21:24:41 +0800
+Message-Id: <1389965087-21971-3-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1389965087-21971-1-git-send-email-wens@csie.org>
 References: <1389965087-21971-1-git-send-email-wens@csie.org>
@@ -23,119 +23,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The stmmac driver core allows passing feature flags and callbacks via
-platform data. Add a similar stmmac_of_data to pass flags and callbacks
-tied to compatible strings. This allows us to extend stmmac with glue
-layers for different SoCs.
+The DWMAC has a reset assert line, which is used on some SoCs. Add an
+optional reset control to stmmac driver core.
+
+To support reset control deferred probing, this patch changes the driver
+probe function to return the actual error, instead of just -EINVAL.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- .../net/ethernet/stmicro/stmmac/stmmac_platform.c  | 44 +++++++++++++++++-----
- include/linux/stmmac.h                             | 18 +++++++++
- 2 files changed, 52 insertions(+), 10 deletions(-)
+ Documentation/devicetree/bindings/net/stmmac.txt      |  3 +++
+ drivers/net/ethernet/stmicro/stmmac/Kconfig           |  1 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h          |  2 ++
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 19 ++++++++++++++++++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c      |  4 ++--
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |  4 ++--
+ 6 files changed, 28 insertions(+), 5 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+index eba0e5e..d132513 100644
+--- a/Documentation/devicetree/bindings/net/stmmac.txt
++++ b/Documentation/devicetree/bindings/net/stmmac.txt
+@@ -30,6 +30,9 @@ Required properties:
+ 
+ Optional properties:
+ - mac-address: 6 bytes, mac address
++- resets: Should contain a phandle to the STMMAC reset signal, if any
++- reset-names: Should contain the reset signal name "stmmaceth", if a
++	reset phandle is given
+ 
+ Examples:
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+index 6e52c0f..b59d1ef 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
++++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+@@ -5,6 +5,7 @@ config STMMAC_ETH
+ 	select PHYLIB
+ 	select CRC32
+ 	select PTP_1588_CLOCK
++	select RESET_CONTROLLER
+ 	---help---
+ 	  This is the driver for the Ethernet IPs are built around a
+ 	  Synopsys IP Core and only tested on the STMicroelectronics
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index 73709e9..c1c141f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -32,6 +32,7 @@
+ #include <linux/pci.h>
+ #include "common.h"
+ #include <linux/ptp_clock_kernel.h>
++#include <linux/reset.h>
+ 
+ struct stmmac_priv {
+ 	/* Frequently used values are kept adjacent for cache effect */
+@@ -91,6 +92,7 @@ struct stmmac_priv {
+ 	int wolopts;
+ 	int wol_irq;
+ 	struct clk *stmmac_clk;
++	struct reset_control *stmmac_rst;
+ 	int clk_csr;
+ 	struct timer_list eee_ctrl_timer;
+ 	int lpi_irq;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 0d2c4cb..0c5c120 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -51,6 +51,7 @@
+ #include <linux/net_tstamp.h>
+ #include "stmmac_ptp.h"
+ #include "stmmac.h"
++#include <linux/reset.h>
+ 
+ #define STMMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
+ #define JUMBO_LEN	9000
+@@ -2728,10 +2729,24 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 	if (IS_ERR(priv->stmmac_clk)) {
+ 		dev_warn(priv->device, "%s: warning: cannot get CSR clock\n",
+ 			 __func__);
++		ret = PTR_ERR(priv->stmmac_clk);
+ 		goto error_clk_get;
+ 	}
+ 	clk_prepare_enable(priv->stmmac_clk);
+ 
++	priv->stmmac_rst = devm_reset_control_get(priv->device,
++						  STMMAC_RESOURCE_NAME);
++	if (IS_ERR(priv->stmmac_rst)) {
++		if (PTR_ERR(priv->stmmac_rst) == -EPROBE_DEFER) {
++			ret = -EPROBE_DEFER;
++			goto error_hw_init;
++		}
++		dev_info(priv->device, "no reset control found\n");
++		priv->stmmac_rst = NULL;
++	}
++	if (priv->stmmac_rst)
++		reset_control_deassert(priv->stmmac_rst);
++
+ 	/* Init MAC and get the capabilities */
+ 	ret = stmmac_hw_init(priv);
+ 	if (ret)
+@@ -2808,7 +2823,7 @@ error_hw_init:
+ error_clk_get:
+ 	free_netdev(ndev);
+ 
+-	return NULL;
++	return ERR_PTR(ret);
+ }
+ 
+ /**
+@@ -2832,6 +2847,8 @@ int stmmac_dvr_remove(struct net_device *ndev)
+ 		stmmac_mdio_unregister(ndev);
+ 	netif_carrier_off(ndev);
+ 	unregister_netdev(ndev);
++	if (priv->stmmac_rst)
++		reset_control_assert(priv->stmmac_rst);
+ 	clk_disable_unprepare(priv->stmmac_clk);
+ 	free_netdev(ndev);
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
+index 37ba2e0..2916089 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
+@@ -100,9 +100,9 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
+ 	stmmac_default_data();
+ 
+ 	priv = stmmac_dvr_probe(&(pdev->dev), &plat_dat, addr);
+-	if (!priv) {
++	if (IS_ERR(priv)) {
+ 		pr_err("%s: main driver probe failed", __func__);
+-		ret = -ENODEV;
++		ret = PTR_ERR(priv);
+ 		goto err_out;
+ 	}
+ 	priv->dev->irq = pdev->irq;
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index 82110f1..bf119db 100644
+index 6d0bf22..cc6b89a7 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -26,8 +26,20 @@
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_net.h>
-+#include <linux/of_device.h>
- #include "stmmac.h"
+@@ -152,9 +152,9 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
+ 	}
  
-+static const struct of_device_id stmmac_dt_ids[] = {
-+	/* SoC specific glue layers should come before generic bindings */
-+	{ .compatible = "st,spear600-gmac"},
-+	{ .compatible = "snps,dwmac-3.610"},
-+	{ .compatible = "snps,dwmac-3.70a"},
-+	{ .compatible = "snps,dwmac-3.710"},
-+	{ .compatible = "snps,dwmac"},
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
-+
- #ifdef CONFIG_OF
- static int stmmac_probe_config_dt(struct platform_device *pdev,
- 				  struct plat_stmmacenet_data *plat,
-@@ -35,10 +47,32 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
- {
- 	struct device_node *np = pdev->dev.of_node;
- 	struct stmmac_dma_cfg *dma_cfg;
-+	const struct of_device_id *device;
+ 	priv = stmmac_dvr_probe(&(pdev->dev), plat_dat, addr);
+-	if (!priv) {
++	if (IS_ERR(priv)) {
+ 		pr_err("%s: main driver probe failed", __func__);
+-		return -ENODEV;
++		return PTR_ERR(priv);
+ 	}
  
- 	if (!np)
- 		return -ENODEV;
- 
-+	device = of_match_device(stmmac_dt_ids, &pdev->dev);
-+	if (!device)
-+		return -ENODEV;
-+
-+	if (device->data) {
-+		const struct stmmac_of_data *data = device->data;
-+		plat->has_gmac = data->has_gmac;
-+		plat->enh_desc = data->enh_desc;
-+		plat->tx_coe = data->tx_coe;
-+		plat->rx_coe = data->rx_coe;
-+		plat->bugged_jumbo = data->bugged_jumbo;
-+		plat->pmt = data->pmt;
-+		plat->riwt_off = data->riwt_off;
-+		plat->fix_mac_speed = data->fix_mac_speed;
-+		plat->bus_setup = data->bus_setup;
-+		plat->setup = data->setup;
-+		plat->free = data->free;
-+		plat->init = data->init;
-+		plat->exit = data->exit;
-+	}
-+
- 	*mac = of_get_mac_address(np);
- 	plat->interface = of_get_phy_mode(np);
- 
-@@ -259,16 +293,6 @@ static int stmmac_pltfr_resume(struct device *dev)
- static SIMPLE_DEV_PM_OPS(stmmac_pltfr_pm_ops,
- 			stmmac_pltfr_suspend, stmmac_pltfr_resume);
- 
--static const struct of_device_id stmmac_dt_ids[] = {
--	{ .compatible = "st,spear600-gmac"},
--	{ .compatible = "snps,dwmac-3.610"},
--	{ .compatible = "snps,dwmac-3.70a"},
--	{ .compatible = "snps,dwmac-3.710"},
--	{ .compatible = "snps,dwmac"},
--	{ /* sentinel */ }
--};
--MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
--
- struct platform_driver stmmac_pltfr_driver = {
- 	.probe = stmmac_pltfr_probe,
- 	.remove = stmmac_pltfr_remove,
-diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
-index 0a5a7ac..1367974 100644
---- a/include/linux/stmmac.h
-+++ b/include/linux/stmmac.h
-@@ -121,4 +121,22 @@ struct plat_stmmacenet_data {
- 	void *custom_data;
- 	void *bsp_priv;
- };
-+
-+/* of_data for SoC glue layer device tree bindings */
-+
-+struct stmmac_of_data {
-+	int has_gmac;
-+	int enh_desc;
-+	int tx_coe;
-+	int rx_coe;
-+	int bugged_jumbo;
-+	int pmt;
-+	int riwt_off;
-+	void (*fix_mac_speed)(void *priv, unsigned int speed);
-+	void (*bus_setup)(void __iomem *ioaddr);
-+	void *(*setup)(struct platform_device *pdev);
-+	void (*free)(struct platform_device *pdev, void *priv);
-+	int (*init)(struct platform_device *pdev, void *priv);
-+	void (*exit)(struct platform_device *pdev, void *priv);
-+};
- #endif
+ 	/* Get MAC address if available (DT) */
 -- 
 1.8.5.2
 
