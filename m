@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaAQA05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 19:26:57 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:50801 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaAQA0y (ORCPT
+	id S1751909AbaAQA2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 19:28:22 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:60547 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaAQA2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 19:26:54 -0500
-Date: Thu, 16 Jan 2014 16:26:49 -0800
+	Thu, 16 Jan 2014 19:28:18 -0500
+Date: Thu, 16 Jan 2014 16:28:13 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
 Cc: linux-input@vger.kernel.org, Simon Budig <simon.budig@kernelconcepts.de>,
@@ -23,140 +23,167 @@ Cc: linux-input@vger.kernel.org, Simon Budig <simon.budig@kernelconcepts.de>,
         Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
         Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/3] Input: edt-ft5x06: Add DT support
-Message-ID: <20140117002649.GA837@core.coreip.homeip.net>
+Subject: Re: [PATCHv2 1/3] Input: edt_ft5x06: use devm_* functions where
+ appropriate
+Message-ID: <20140117002813.GB837@core.coreip.homeip.net>
 References: <1389859338-11685-1-git-send-email-LW@KARO-electronics.de>
- <1389859338-11685-4-git-send-email-LW@KARO-electronics.de>
+ <1389859338-11685-2-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1389859338-11685-4-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <1389859338-11685-2-git-send-email-LW@KARO-electronics.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lothar,
-
-On Thu, Jan 16, 2014 at 09:02:18AM +0100, Lothar Waﬂmann wrote:
+On Thu, Jan 16, 2014 at 09:02:16AM +0100, Lothar Waﬂmann wrote:
+> Simplify the error path and remove() function by using devm_*
+> functions for requesting gpios and irq and allocating the input
+> device.
 > 
 > Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+
+Applied, thank you.
+
 > ---
->  .../bindings/input/touchscreen/edt-ft5x06.txt      |   29 +++++
->  drivers/input/touchscreen/edt-ft5x06.c             |  121 +++++++++++++++++---
->  2 files changed, 132 insertions(+), 18 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+>  drivers/input/touchscreen/edt-ft5x06.c |   62 ++++++++++---------------------
+>  1 files changed, 20 insertions(+), 42 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
-> new file mode 100644
-> index 0000000..8d94cdc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
-> @@ -0,0 +1,29 @@
-> +* EDT FT5x06 Multiple Touch Controller
-> +
-> +Required properties:
-> +- compatible: must be "edt,ft5x06"
-> +- reg: i2c slave address
-> +- interrupt-parent: the phandle for the interrupt controller
-> +- interrupts: touch controller interrupt
-> +
-> +Optional properties:
-> +- reset-gpios: the gpio pin to be used for resetting the controller
-> +- wake-gpios:  the gpio pin to be used for waking up the controller
-> +
-> +  The following properties provide default values for the
-> +  corresponding parameters (see Documentation/input/edt-ft5x06.txt)
-> +- edt,threshold: allows setting the "click"-threshold in the range from 20 to 80.
-> +- edt,gain: sensitivity (0..31) (lower value -> higher sensitivity)
-> +- edt,offset: edge compensation (0..31)
-> +- edt,report-rate: report rate (3..14)
-
-I wonder if we really need to have it in device tree? Can users needing
-top tweak the settings do it via udev rules?
-
-> +
-> +Example:
-> +
-> +	edt_ft5x06@38 {
-> +		compatible = "edt,ft5x06";
-> +		reg = <0x38>;
-> +		interrupt-parent = <&gpio2>;
-> +		interrupts = <5 0>;
-> +		reset-gpios = <&gpio2 6 1>;
-> +		wake-gpios = <&gpio4 9 0>;
-> +	};
 > diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
-> index acb6b9f..0467591 100644
+> index af0d68b..acb6b9f 100644
 > --- a/drivers/input/touchscreen/edt-ft5x06.c
 > +++ b/drivers/input/touchscreen/edt-ft5x06.c
-> @@ -33,6 +33,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/slab.h>
->  #include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
->  #include <linux/input/mt.h>
->  #include <linux/input/edt-ft5x06.h>
+> @@ -623,8 +623,9 @@ static int edt_ft5x06_ts_reset(struct i2c_client *client,
 >  
-> @@ -65,6 +66,10 @@ struct edt_ft5x06_ts_data {
->  	u16 num_x;
->  	u16 num_y;
->  
-> +	int reset_pin;
-> +	int irq_pin;
-> +	int wake_pin;
-> +
->  #if defined(CONFIG_DEBUG_FS)
->  	struct dentry *debug_dir;
->  	u8 *raw_buffer;
-> @@ -617,25 +622,38 @@ edt_ft5x06_ts_teardown_debugfs(struct edt_ft5x06_ts_data *tsdata)
->  
->  
->  static int edt_ft5x06_ts_reset(struct i2c_client *client,
-> -					 int reset_pin)
-> +			struct edt_ft5x06_ts_data *tsdata)
->  {
->  	int error;
->  
-> -	if (gpio_is_valid(reset_pin)) {
-> +	if (gpio_is_valid(tsdata->wake_pin)) {
-> +		error = devm_gpio_request_one(&client->dev, tsdata->wake_pin,
-> +					GPIOF_OUT_INIT_LOW, "edt-ft5x06 wake");
-> +		if (error) {
-> +			dev_err(&client->dev,
-> +				"Failed to request GPIO %d as wake pin, error %d\n",
-> +				tsdata->wake_pin, error);
-> +			return error;
-> +		}
-> +
-> +		mdelay(5);
-> +		gpio_set_value(tsdata->wake_pin, 1);
-> +	}
-> +	if (gpio_is_valid(tsdata->reset_pin)) {
+>  	if (gpio_is_valid(reset_pin)) {
 >  		/* this pulls reset down, enabling the low active reset */
-> -		error = devm_gpio_request_one(&client->dev, reset_pin,
-> +		error = devm_gpio_request_one(&client->dev, tsdata->reset_pin,
->  					GPIOF_OUT_INIT_LOW,
->  					"edt-ft5x06 reset");
+> -		error = gpio_request_one(reset_pin, GPIOF_OUT_INIT_LOW,
+> -					 "edt-ft5x06 reset");
+> +		error = devm_gpio_request_one(&client->dev, reset_pin,
+> +					GPIOF_OUT_INIT_LOW,
+> +					"edt-ft5x06 reset");
 >  		if (error) {
 >  			dev_err(&client->dev,
 >  				"Failed to request GPIO %d as reset pin, error %d\n",
-> -				reset_pin, error);
-> +				tsdata->reset_pin, error);
->  			return error;
->  		}
+> @@ -723,7 +724,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+>  		return error;
 >  
-> -		mdelay(50);
-> -		gpio_set_value(reset_pin, 1);
-> -		mdelay(100);
-> +		mdelay(5);
-> +		gpio_set_value(tsdata->reset_pin, 1);
-> +		mdelay(300);
-
-Hmm, this change seems unrelated to DT support.
-
-Thanks.
+>  	if (gpio_is_valid(pdata->irq_pin)) {
+> -		error = gpio_request_one(pdata->irq_pin,
+> +		error = devm_gpio_request_one(&client->dev, pdata->irq_pin,
+>  					 GPIOF_IN, "edt-ft5x06 irq");
+>  		if (error) {
+>  			dev_err(&client->dev,
+> @@ -734,11 +735,10 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+>  	}
+>  
+>  	tsdata = kzalloc(sizeof(*tsdata), GFP_KERNEL);
+> -	input = input_allocate_device();
+> -	if (!tsdata || !input) {
+> -		dev_err(&client->dev, "failed to allocate driver data.\n");
+> -		error = -ENOMEM;
+> -		goto err_free_mem;
+> +	input = devm_input_allocate_device(&client->dev);
+> +	if (!input) {
+> +		dev_err(&client->dev, "failed to allocate input device.\n");
+> +		return -ENOMEM;
+>  	}
+>  
+>  	mutex_init(&tsdata->mutex);
+> @@ -749,7 +749,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+>  	error = edt_ft5x06_ts_identify(client, tsdata->name, fw_version);
+>  	if (error) {
+>  		dev_err(&client->dev, "touchscreen probe failed\n");
+> -		goto err_free_mem;
+> +		return error;
+>  	}
+>  
+>  	edt_ft5x06_ts_get_defaults(tsdata, pdata);
+> @@ -776,27 +776,30 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+>  	error = input_mt_init_slots(input, MAX_SUPPORT_POINTS, 0);
+>  	if (error) {
+>  		dev_err(&client->dev, "Unable to init MT slots.\n");
+> -		goto err_free_mem;
+> +		return error;
+>  	}
+>  
+>  	input_set_drvdata(input, tsdata);
+>  	i2c_set_clientdata(client, tsdata);
+>  
+> -	error = request_threaded_irq(client->irq, NULL, edt_ft5x06_ts_isr,
+> -				     IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> -				     client->name, tsdata);
+> +	error = devm_request_threaded_irq(&client->dev, client->irq, NULL,
+> +					edt_ft5x06_ts_isr,
+> +					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> +					client->name, tsdata);
+>  	if (error) {
+>  		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
+> -		goto err_free_mem;
+> +		return error;
+>  	}
+>  
+>  	error = sysfs_create_group(&client->dev.kobj, &edt_ft5x06_attr_group);
+>  	if (error)
+> -		goto err_free_irq;
+> +		return error;
+>  
+>  	error = input_register_device(input);
+> -	if (error)
+> -		goto err_remove_attrs;
+> +	if (error) {
+> +		sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
+> +		return error;
+> +	}
+>  
+>  	edt_ft5x06_ts_prepare_debugfs(tsdata, dev_driver_string(&client->dev));
+>  	device_init_wakeup(&client->dev, 1);
+> @@ -806,40 +809,15 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+>  		pdata->irq_pin, pdata->reset_pin);
+>  
+>  	return 0;
+> -
+> -err_remove_attrs:
+> -	sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
+> -err_free_irq:
+> -	free_irq(client->irq, tsdata);
+> -err_free_mem:
+> -	input_free_device(input);
+> -	kfree(tsdata);
+> -
+> -	if (gpio_is_valid(pdata->irq_pin))
+> -		gpio_free(pdata->irq_pin);
+> -
+> -	return error;
+>  }
+>  
+>  static int edt_ft5x06_ts_remove(struct i2c_client *client)
+>  {
+> -	const struct edt_ft5x06_platform_data *pdata =
+> -						dev_get_platdata(&client->dev);
+>  	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
+>  
+>  	edt_ft5x06_ts_teardown_debugfs(tsdata);
+>  	sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
+>  
+> -	free_irq(client->irq, tsdata);
+> -	input_unregister_device(tsdata->input);
+> -
+> -	if (gpio_is_valid(pdata->irq_pin))
+> -		gpio_free(pdata->irq_pin);
+> -	if (gpio_is_valid(pdata->reset_pin))
+> -		gpio_free(pdata->reset_pin);
+> -
+> -	kfree(tsdata);
+> -
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.2.5
+> 
 
 -- 
 Dmitry
