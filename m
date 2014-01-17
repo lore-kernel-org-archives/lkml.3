@@ -1,270 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749AbaAQW6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:58:09 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:33892 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbaAQW6G (ORCPT
+	id S1753821AbaAQW7F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:59:05 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5294 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbaAQW7C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:58:06 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: netdev@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org, kishon@ti.com,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Date: Fri, 17 Jan 2014 17:57:39 -0500
-Message-Id: <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <7510122.cayuQ6qt8r@wuerfel>
-References: <7510122.cayuQ6qt8r@wuerfel>
-X-cavan-blacklisted-at: zen.spamhaus.org
-X-SA-Exim-Connect-IP: 172.56.22.58
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-Spam-ASN: 
-Subject: [PATCH V3] net/dt: Add support for overriding phy configuration from device tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:55:31 +0000)
-X-SA-Exim-Scanned: Yes (on cavan.codon.org.uk)
+	Fri, 17 Jan 2014 17:59:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 17 Jan 2014 14:58:35 -0800
+From: Philip Rakity <prakity@nvidia.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Jan 2014 23:58:59 +0100
+Subject: Re: [PATCH] mmc: sdhci: fix possible scheduling while atomic
+Thread-Topic: [PATCH] mmc: sdhci: fix possible scheduling while atomic
+Thread-Index: Ac8T17RxFYwwiyEwQ8SOKU6Ec2WTTQ==
+Message-ID: <0D8B1718-0A9D-467A-AFC5-108A868DE3BB@nvidia.com>
+References: <1389988630-9481-1-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1389988630-9481-1-git-send-email-abrestic@chromium.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some hardware may be broken in interesting and board-specific ways, such
-that various bits of functionality don't work. This patch provides a
-mechanism for overriding mii registers during init based on the contents of
-the device tree data, allowing board-specific fixups without having to
-pollute generic code.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
+On Jan 17, 2014, at 7:57 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
 
-V3: Break the main function out into some helper functions and store the
-values in some structs.
+> sdhci_execute_tuning() takes host->lock without disabling interrupts.
+> Use spin_lock_irq{save,restore} instead so that we avoid taking an
+> interrupt and scheduling while holding host->lock.
+> 
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+> drivers/mmc/host/sdhci.c | 13 +++++++------
+> 1 file changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index ec3eb30..84c80e7 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1857,12 +1857,13 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+> 	unsigned long timeout;
+> 	int err = 0;
+> 	bool requires_tuning_nonuhs = false;
+> +	unsigned long flags;
+> 
+> 	host = mmc_priv(mmc);
+> 
+> 	sdhci_runtime_pm_get(host);
+> 	disable_irq(host->irq);
+> -	spin_lock(&host->lock);
+> +	spin_lock_irqsave(&host->lock, flags);
 
- Documentation/devicetree/bindings/net/phy.txt | 21 +++++++
- drivers/net/phy/phy_device.c                  | 29 ++++++++-
- drivers/of/of_net.c                           | 87 +++++++++++++++++++++++++++
- include/linux/of_net.h                        | 12 ++++
- 4 files changed, 148 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index 7cd18fb..fc50f02 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -23,6 +23,21 @@ Optional Properties:
-   assume clause 22. The compatible list may also contain other
-   elements.
- 
-+The following properties may be added to either the phy node or the parent
-+ethernet device. If not present, the hardware defaults will be used.
-+
-+- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disable
-+- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disable
-+- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to disable
-+- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to disable
-+- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
-+- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to disable
-+- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to disable
-+- phy-mii-manual-master: 1 to enable manual master/slave configuration, 0
-+  to disable manual master/slave configuration
-+- phy-mii-as-master: 1 to configure phy to act as master, 0 to configure phy
-+  to act as slave. Ignored if manual master/slave configuration is not enabled.
-+
- Example:
- 
- ethernet-phy@0 {
-@@ -32,4 +47,10 @@ ethernet-phy@0 {
- 	interrupts = <35 1>;
- 	reg = <0>;
- 	device_type = "ethernet-phy";
-+	// Disable advertising of full duplex 1000MBit
-+	phy-mii-advertise-1000full = <0>;
-+	// Force manual phy master/slave configuration
-+	phy-mii-manual-master = <1>;
-+	// Forcibly configure phy as slave
-+	phy-mii-as-master = <0>;
- };
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index d6447b3..91793bc 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -33,6 +33,7 @@
- #include <linux/mii.h>
- #include <linux/ethtool.h>
- #include <linux/phy.h>
-+#include <linux/of_net.h>
- 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -497,6 +498,28 @@ void phy_disconnect(struct phy_device *phydev)
- }
- EXPORT_SYMBOL(phy_disconnect);
- 
-+int phy_override_from_of(struct phy_device *phydev)
-+{
-+	int reg, regval;
-+	u16 val, mask;
-+
-+	/* Check for phy register overrides from OF */
-+	for (reg = 0; reg < 16; reg++) {
-+		if (!of_get_mii_register(phydev, reg, &val, &mask)) {
-+			if (!mask)
-+				continue;
-+			regval = phy_read(phydev, reg);
-+			if (regval < 0)
-+				continue;
-+			regval &= ~mask;
-+			regval |= val;
-+			phy_write(phydev, reg, regval);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- int phy_init_hw(struct phy_device *phydev)
- {
- 	int ret;
-@@ -508,7 +531,11 @@ int phy_init_hw(struct phy_device *phydev)
- 	if (ret < 0)
- 		return ret;
- 
--	return phydev->drv->config_init(phydev);
-+	ret = phydev->drv->config_init(phydev);
-+	if (ret < 0)
-+		return ret;
-+
-+	return phy_override_from_of(phydev);
- }
- 
- /**
-diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-index 8f9be2e..75751b7 100644
---- a/drivers/of/of_net.c
-+++ b/drivers/of/of_net.c
-@@ -93,3 +93,90 @@ const void *of_get_mac_address(struct device_node *np)
- 	return NULL;
- }
- EXPORT_SYMBOL(of_get_mac_address);
-+
-+struct mii_override {
-+	char *prop;
-+	u32 supported;
-+	u16 value;
-+};
-+
-+static struct mii_override mii_advertise_override[] = {
-+	{ "phy-mii-advertise-10half", SUPPORTED_10baseT_Half,
-+	  ADVERTISE_10HALF },
-+	{ "phy-mii-advertise-10full", SUPPORTED_10baseT_Full,
-+	  ADVERTISE_10FULL },
-+	{ "phy-mii-advertise-100half", SUPPORTED_100baseT_Half,
-+	  ADVERTISE_100HALF },
-+	{ "phy-mii-advertise-100full", SUPPORTED_100baseT_Full,
-+	  ADVERTISE_100FULL },
-+	{ "phy-mii-advertise-100base4", 0, ADVERTISE_100BASE4 },
-+	{ NULL },
-+};
-+
-+static struct mii_override mii_gigabit_override[] = {
-+	{ "phy-mii-advertise-1000half", SUPPORTED_1000baseT_Half,
-+	  ADVERTISE_1000HALF },
-+	{ "phy-mii-advertise-1000full", SUPPORTED_1000baseT_Full,
-+	  ADVERTISE_1000FULL },
-+	{ "phy-mii-as-master", 0, CTL1000_AS_MASTER },
-+	{ "phy-mii-manual-master", 0, CTL1000_ENABLE_MASTER },
-+	{ NULL },
-+};
-+
-+static void mii_handle_override(struct mii_override *override_list,
-+				struct phy_device *phydev, u16 *val, u16 *mask)
-+{
-+	struct device *dev = &phydev->dev;
-+	struct device_node *np = dev->of_node;
-+	struct mii_override *override;
-+	u32 tmp;
-+
-+	if (!np && dev->parent->of_node)
-+		np = dev->parent->of_node;
-+
-+	if (!np)
-+		return;
-+
-+	for (override = &override_list[0]; override->prop != NULL; override++) {
-+		if (!of_property_read_u32(np, override->prop, &tmp)) {
-+			if (tmp) {
-+				*val |= override->value;
-+				phydev->advertising |= override->supported;
-+			} else {
-+				phydev->advertising &= ~(override->supported);
-+			}
-+
-+			*mask |= override->value;
-+		}
-+	}
-+
-+	return;
-+}
-+
-+/**
-+ * Provide phy register overrides from the device tree. Some hardware may
-+ * be broken in interesting and board-specific ways, so we want a mechanism
-+ * for the board data to provide overrides for default values. This should be
-+ * called during phy init.
-+ */
-+int of_get_mii_register(struct phy_device *phydev, int reg, u16 *val,
-+			u16 *mask)
-+{
-+	*val = 0;
-+	*mask = 0;
-+
-+	switch (reg) {
-+	case MII_ADVERTISE:
-+		mii_handle_override(mii_advertise_override, phydev, val, mask);
-+		break;
-+
-+	case MII_CTRL1000:
-+		mii_handle_override(mii_gigabit_override, phydev, val, mask);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(of_get_mii_register);
-diff --git a/include/linux/of_net.h b/include/linux/of_net.h
-index 34597c8..2e478bc 100644
---- a/include/linux/of_net.h
-+++ b/include/linux/of_net.h
-@@ -7,10 +7,14 @@
- #ifndef __LINUX_OF_NET_H
- #define __LINUX_OF_NET_H
- 
-+#include <linux/phy.h>
-+
- #ifdef CONFIG_OF_NET
- #include <linux/of.h>
- extern int of_get_phy_mode(struct device_node *np);
- extern const void *of_get_mac_address(struct device_node *np);
-+extern int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-+			       u16 *mask);
- #else
- static inline int of_get_phy_mode(struct device_node *np)
- {
-@@ -21,6 +25,14 @@ static inline const void *of_get_mac_address(struct device_node *np)
- {
- 	return NULL;
- }
-+static inline int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-+				      u16 *mask)
-+{
-+	*val = 0;
-+	*mask = 0;
-+
-+	return -EINVAL;
-+}
- #endif
- 
- #endif /* __LINUX_OF_NET_H */
--- 
-1.8.4.2
+The disable_irq() call stops the controller from doing interrupts.  
+Please explain what problem you are seeing
+
+> 
+> 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+> 
+> @@ -1882,14 +1883,14 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+> 	    requires_tuning_nonuhs)
+> 		ctrl |= SDHCI_CTRL_EXEC_TUNING;
+> 	else {
+> -		spin_unlock(&host->lock);
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> 		enable_irq(host->irq);
+> 		sdhci_runtime_pm_put(host);
+> 		return 0;
+> 	}
+> 
+> 	if (host->ops->platform_execute_tuning) {
+> -		spin_unlock(&host->lock);
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> 		enable_irq(host->irq);
+> 		err = host->ops->platform_execute_tuning(host, opcode);
+> 		sdhci_runtime_pm_put(host);
+> @@ -1963,7 +1964,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+> 		host->cmd = NULL;
+> 		host->mrq = NULL;
+> 
+> -		spin_unlock(&host->lock);
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> 		enable_irq(host->irq);
+> 
+> 		/* Wait for Buffer Read Ready interrupt */
+> @@ -1971,7 +1972,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+> 					(host->tuning_done == 1),
+> 					msecs_to_jiffies(50));
+> 		disable_irq(host->irq);
+> -		spin_lock(&host->lock);
+> +		spin_lock_irqsave(&host->lock, flags);
+> 
+> 		if (!host->tuning_done) {
+> 			pr_info(DRIVER_NAME ": Timeout waiting for "
+> @@ -2046,7 +2047,7 @@ out:
+> 		err = 0;
+> 
+> 	sdhci_clear_set_irqs(host, SDHCI_INT_DATA_AVAIL, ier);
+> -	spin_unlock(&host->lock);
+> +	spin_unlock_irqrestore(&host->lock, flags);
+> 	enable_irq(host->irq);
+> 	sdhci_runtime_pm_put(host);
+> 
+> -- 
+> 1.8.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
