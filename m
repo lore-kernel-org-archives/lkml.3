@@ -1,198 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaAQBHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:07:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55543 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751609AbaAQBHQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:07:16 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] speedstep: clean up interrupt disabling (was: linux-next: build failure after merge of the tip tree)
-Date: Fri, 17 Jan 2014 02:21:18 +0100
-Message-ID: <5695714.71aNYAnsh1@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <alpine.LRH.2.02.1401161238270.16143@file01.intranet.prod.int.rdu2.redhat.com>
-References: <20140114142627.537a702607e703c6eff63640@canb.auug.org.au> <20140116121415.GP31570@twins.programming.kicks-ass.net> <alpine.LRH.2.02.1401161238270.16143@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751878AbaAQBKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:10:06 -0500
+Received: from ozlabs.org ([203.10.76.45]:34545 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379AbaAQBKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 20:10:03 -0500
+Date: Fri, 17 Jan 2014 12:09:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuval Mintz <yuvalmin@broadcom.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20140117120955.82375d6dce566d44716ea714@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Jan_2014_12_09_55_+1100_n_7KA1gMMn1B3UDx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 16, 2014 02:33:02 PM Mikulas Patocka wrote:
-> 
-> On Thu, 16 Jan 2014, Peter Zijlstra wrote:
-> 
-> > > >  		retry++;
-> > > >  		__asm__ __volatile__(
-> > > > @@ -217,6 +220,7 @@ static void speedstep_set_state(unsigned int state)
-> > > >  
-> > > >  	/* enable IRQs */
-> > > >  	local_irq_restore(flags);
-> > > > +	preempt_enable();
-> > > >  
-> > > >  	if (new_state == state)
-> > > >  		pr_debug("change to %u MHz succeeded after %u tries "
-> > > 
-> > > You need also preempt_disable/enable in speedstep_get_freqs.
-> > 
-> > Argh I see, this is really horrid.
-> > 
-> > 
-> > Anyway, its Rafael's call, its his subsystem he gets to fix it when it
-> > explodes.
-> > 
-> > /me shudders
-> 
-> speedstep_get_freqs disables the interrupts to measure the transition 
-> latency. It is called from speedstep-ich.c (that requires the latency) and 
-> from speedstep-smi.c (that passes NULL as a pointer to latency, because it 
-> doesn't need it).
-> 
-> So, you could disable interrupts in speedstep_get_freqs only when the 
-> transition_latency pointer is non-NULL.
-> 
-> I think speedstep_set_state doesn't need to disable interrupts at all - 
-> all that it does is one "out" instruction, you don't need to synchronize 
-> that "out" instruction with anything, so there is no need to disable 
-> interrupts. Or - does some specification say that interrupts must be 
-> disabled there?
-> 
-> I am sending this patch to clean up the mess to be applied on the top of 
-> my previous patch.
+--Signature=_Fri__17_Jan_2014_12_09_55_+1100_n_7KA1gMMn1B3UDx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, I really don't appreciate sending me stuff like this two days before a
-merge window.  So I've dropped the speedstep_smi patch and please send me
-something I can queue up for 3.15 without making Peter shudder.
+Hi all,
 
-Thanks!
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
+d9aee591b0f0 ("bnx2x: Don't release PCI bars on shutdown") from the net
+tree and commit 33d8e6a5f555 ("bnx2x: Add AER support (missing bits)")
+from the net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> From: Mikulas Patocka <mpatocka@redhat.com>
-> Subject: speedstep: clean up interrupt disabling
-> 
-> This patch cleans up interrupt disabling in speedstep-smi and
-> speedstep-lib.
-> 
-> speedstep_get_freqs in speedstep-lib may be called from speedstep-smi or
-> speedstep-ich. When it is called from speedstep-ich, it needs to calculate
-> transition latency. When it is called from speedstep-smi, transition
-> latency doesn't have to be calculated.
-> 
-> The function speedstep_set_state in speedstep-smi needs to enable
-> interrupts. Previously it enabled interrupts even if it was called with
-> disabled interrupts, but it is dirty.
-> 
-> This patch changes speedstep_get_freqs so that it disables interrupts only
-> when it is called from speedstep-ich and when it is measuring the
-> transition latency. This avoids much of the code dirtiness.
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> ---
->  drivers/cpufreq/speedstep-lib.c |   13 ++++++-------
->  drivers/cpufreq/speedstep-smi.c |   11 ++++-------
->  2 files changed, 10 insertions(+), 14 deletions(-)
-> 
-> Index: linux-3.4.75/drivers/cpufreq/speedstep-lib.c
-> ===================================================================
-> --- linux-3.4.75.orig/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:16.000000000 +0100
-> +++ linux-3.4.75/drivers/cpufreq/speedstep-lib.c	2014-01-16 18:51:22.000000000 +0100
-> @@ -400,9 +400,6 @@ unsigned int speedstep_get_freqs(enum sp
->  
->  	pr_debug("previous speed is %u\n", prev_speed);
->  
-> -	preempt_disable();
-> -	local_irq_save(flags);
-> -
->  	/* switch to low state */
->  	set_state(SPEEDSTEP_LOW);
->  	*low_speed = speedstep_get_frequency(processor);
-> @@ -414,15 +411,19 @@ unsigned int speedstep_get_freqs(enum sp
->  	pr_debug("low speed is %u\n", *low_speed);
->  
->  	/* start latency measurement */
-> -	if (transition_latency)
-> +	if (transition_latency) {
-> +		local_irq_save(flags);
->  		do_gettimeofday(&tv1);
-> +	}
->  
->  	/* switch to high state */
->  	set_state(SPEEDSTEP_HIGH);
->  
->  	/* end latency measurement */
-> -	if (transition_latency)
-> +	if (transition_latency) {
->  		do_gettimeofday(&tv2);
-> +		local_irq_restore(flags);
-> +	}
->  
->  	*high_speed = speedstep_get_frequency(processor);
->  	if (!*high_speed) {
-> @@ -464,8 +465,6 @@ unsigned int speedstep_get_freqs(enum sp
->  	}
->  
->  out:
-> -	local_irq_restore(flags);
-> -	preempt_enable();
->  
->  	return ret;
->  }
-> Index: linux-3.4.75/drivers/cpufreq/speedstep-smi.c
-> ===================================================================
-> --- linux-3.4.75.orig/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:16.000000000 +0100
-> +++ linux-3.4.75/drivers/cpufreq/speedstep-smi.c	2014-01-16 18:51:22.000000000 +0100
-> @@ -180,16 +180,16 @@ static int speedstep_get_state(void)
->  static void speedstep_set_state(unsigned int state)
->  {
->  	unsigned int result = 0, command, new_state, dummy;
-> -	unsigned long flags;
->  	unsigned int function = SET_SPEEDSTEP_STATE;
->  	unsigned int retry = 0;
->  
->  	if (state > 0x1)
->  		return;
->  
-> -	/* Disable IRQs */
-> +	WARN_ON_ONCE(irqs_disabled());
-> +
-> +	/* Disable preemption so that other processes don't run */
->  	preempt_disable();
-> -	local_irq_save(flags);
->  
->  	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
->  
-> @@ -209,9 +209,7 @@ static void speedstep_set_state(unsigned
->  			 */
->  			pr_debug("retry %u, previous result %u, waiting...\n",
->  					retry, result);
-> -			local_irq_enable();
->  			mdelay(retry * 50);
-> -			local_irq_disable();
->  		}
->  		retry++;
->  		__asm__ __volatile__(
-> @@ -226,8 +224,7 @@ static void speedstep_set_state(unsigned
->  			);
->  	} while ((new_state != state) && (retry <= SMI_TRIES));
->  
-> -	/* enable IRQs */
-> -	local_irq_restore(flags);
-> +	/* enable preemption */
->  	preempt_enable();
->  
->  	if (new_state == state)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 0067b975873f,cf17b660b4ee..000000000000
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@@ -12942,26 -13082,27 +13082,28 @@@ static void __bnx2x_remove(struct pci=
+_d
+  		pci_set_power_state(pdev, PCI_D3hot);
+  	}
+ =20
++ 	bnx2x_disable_pcie_error_reporting(bp);
++=20
+ -	if (bp->regview)
+ -		iounmap(bp->regview);
+ +	if (remove_netdev) {
+ +		if (bp->regview)
+ +			iounmap(bp->regview);
+ =20
+ -	/* for vf doorbells are part of the regview and were unmapped along with
+ -	 * it. FW is only loaded by PF.
+ -	 */
+ -	if (IS_PF(bp)) {
+ -		if (bp->doorbells)
+ -			iounmap(bp->doorbells);
+ +		/* For vfs, doorbells are part of the regview and were unmapped
+ +		 * along with it. FW is only loaded by PF.
+ +		 */
+ +		if (IS_PF(bp)) {
+ +			if (bp->doorbells)
+ +				iounmap(bp->doorbells);
+ =20
+ -		bnx2x_release_firmware(bp);
+ -	}
+ -	bnx2x_free_mem_bp(bp);
+ +			bnx2x_release_firmware(bp);
+ +		}
+ +		bnx2x_free_mem_bp(bp);
+ =20
+ -	if (remove_netdev)
+  		free_netdev(dev);
+ =20
+ -	if (atomic_read(&pdev->enable_cnt) =3D=3D 1)
+ -		pci_release_regions(pdev);
+ +		if (atomic_read(&pdev->enable_cnt) =3D=3D 1)
+ +			pci_release_regions(pdev);
+ +	}
+ =20
+  	pci_disable_device(pdev);
+  }
+
+--Signature=_Fri__17_Jan_2014_12_09_55_+1100_n_7KA1gMMn1B3UDx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS2ILnAAoJEMDTa8Ir7ZwVV7gQAJE5el0/xvRocH4z9l4qK7Tr
+4GWCoUoc7X1f1D4eFBE5ClBqayMPlNXO5HCkepM48T7gC7/6aNV947wtkxDiNdo5
+Zg07s4moJ3my+sUI1+M2EPlVQpY6OZGLIFI/sgDv8LECCbLnxsC/gCtCe5za1iWa
+7dKYpIBo0u6+jmRsiYHWpLWZmBn/Bu9v8h52ZUkJQsTLtI+KrTJmTDXkf7+OJB3P
+MEUYbemiUh9jiSMm93QuadwrwsRNovN3MgF/BXudUCzMTDH+bLtuF0NM/XuBLxId
+Ju+aWSme6XlaBTm8WyuImY0XNWcFFjz/rag74BSZz/+dUHmeHDFsY+D6T9ahdzz9
+ike3WpQ0ssDNiiKa+MKXiD2BfURcwCDYHtD7iyjrrZeJCstzKcwMMqwAqUJbmxh3
+DARpocV+enAyoPZHbkBRi19z9836/4OQrS+6dp8D4RdJ1yH2m12MK3rVHffQdzAU
+V2Muqxl4Cd2fY7OCV1y6wAUE/vifwCQDL8o6pSN3Dxnl5x+gd3/ibpewdcdNRpV6
+1wJEalAxEMjac9orrUhdXTGRKZ1diZjYNIhJLE9RrfUe97DpwomGXhWCQ4+tP0Jx
+rvOQcYhtDPsD40c9Xe4VcnoR25zNws2PvdOg3HWm2ZCH9LyFry4VAiPD3+X9vS0G
+pmkwxdBQMu4MbFcdLiBT
+=JK6p
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__17_Jan_2014_12_09_55_+1100_n_7KA1gMMn1B3UDx--
