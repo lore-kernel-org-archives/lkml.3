@@ -1,159 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaAQPAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:00:00 -0500
-Received: from hofr.at ([212.69.189.236]:41127 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450AbaAQO75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:59:57 -0500
-Date: Fri, 17 Jan 2014 15:59:55 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users@vger.kernel.org,
-        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
-        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
-Message-ID: <20140117145955.GA5637@opentech.at>
-References: <20131229171154.GA23586@opentech.at> <20140117144729.GB5785@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140117144729.GB5785@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752769AbaAQPAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:00:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36314 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242AbaAQO5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:57:42 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "David A. Long" <dave.long@linaro.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 16/19] perf symbols: Export elf_section_by_name and reuse
+Date: Fri, 17 Jan 2014 11:57:22 -0300
+Message-Id: <1389970645-12075-17-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1389970645-12075-1-git-send-email-acme@infradead.org>
+References: <1389970645-12075-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-> This is what I am going to apply. It also dropped the get_cpu_light()
-> call which was added in a patch to remove the get_cpu_var() and is now
-> no longer required since we have the get_locked_var() thingy now.
->
+Remove duplicated elf_section_by_name() functions from unwind.c and
+probe-event.c and use one exported elf_section_by_name() instance
+defined in symbol-elf.c.
 
-I do not think you can drop that - what is preventing migration now ?
+Note that this also moves get_text_start_address() to merge
+HAVE_DWARF_SUPPORT defined area.
 
-#define get_locked_var(lvar, var)                                       \
-        (*({                                                            \
-                local_lock(lvar);                                       \
-                &__get_cpu_var(var);                                    \
-        }))
+Reported-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "David A. Long" <dave.long@linaro.org>
+Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20140116093949.24403.38093.stgit@kbuild-fedora.novalocal
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-event.c | 76 ++++++++++++++++---------------------------
+ tools/perf/util/symbol-elf.c  |  5 ++-
+ tools/perf/util/symbol.h      |  5 +++
+ tools/perf/util/unwind.c      | 20 ++----------
+ 4 files changed, 37 insertions(+), 69 deletions(-)
 
-No migrate_disable here - so how is this protected against migration ?
-Note that I did send out mail on this because I believe get_locked_var
-should actually be doing a a migrate_disable/enable but got no feedback on that
-yet.
-
-So for now I think you need to retain the get_cpu_light/put_cpu_light
-   
-thx!
-hofrat
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index c68711c50f47..a8a9b6cd93a8 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -173,54 +173,6 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
  
-> From: Nicholas Mc Guire <der.herr@hofr.at>
-> Date: Sun, 29 Dec 2013 18:11:54 +0100
-> Subject: [PATCH] net: ip_send_unicast_reply: add missing local serialization
-> 
-> in response to the oops in ip_output.c:ip_send_unicast_reply under high
-> network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen
-> <Sami.Pietikainen@wapice.com>, this patch adds local serialization in
-> ip_send_unicast_reply.
-> 
-> from ip_output.c:
-> /*
->  *      Generic function to send a packet as reply to another packet.
->  *      Used to send some TCP resets/acks so far.
->  *
->  *      Use a fake percpu inet socket to avoid false sharing and contention.
->  */
-> static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-> ...
-> 
-> which was added in commit be9f4a44 in linux-stable. The git log, wich
-> introduced the PER_CPU unicast_sock, states:
-> <snip>
-> commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-> Author: Eric Dumazet <edumazet@google.com>
-> Date:   Thu Jul 19 07:34:03 2012 +0000
-> 
->     ipv4: tcp: remove per net tcp_sock
-> 
->     tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
->     per network namespace.
-> 
->     This leads to bad behavior on multiqueue NICS, because many cpus
->     contend for the socket lock and once socket lock is acquired, extra
->     false sharing on various socket fields slow down the operations.
-> 
->     To better resist to attacks, we use a percpu socket. Each cpu can
->     run without contention, using appropriate memory (local node)
-> <snip>
-> 
-> The per-cpu here thus is assuming exclusivity serializing per cpu - so
-> the use of get_cpu_ligh introduced in
-> net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the
-> preempt_disable in favor of a migrate_disable is probably wrong as this
-> only handles the referencial consistency but not the serialization. To
-> evade a preempt_disable here a local lock would be needed.
-> 
-> Therapie:
->  * add local lock:
->  * and re-introduce local serialization:
-> 
-> Tested on x86 with high network load using the testcase from Sami Pietikainen
->   while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
-> 
-> Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
-> Cc: stable-rt@vger.kernel.org
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  net/ipv4/ip_output.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-> index e9fa68c..8bb3b4a 100644
-> --- a/net/ipv4/ip_output.c
-> +++ b/net/ipv4/ip_output.c
-> @@ -79,6 +79,7 @@
->  #include <linux/mroute.h>
->  #include <linux/netlink.h>
->  #include <linux/tcp.h>
-> +#include <linux/locallock.h>
->  
->  int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
->  EXPORT_SYMBOL(sysctl_ip_default_ttl);
-> @@ -1468,6 +1469,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
->  	.uc_ttl		= -1,
->  };
->  
-> +/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
-> +static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
-> +
->  void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
->  			   __be32 saddr, const struct ip_reply_arg *arg,
->  			   unsigned int len)
-> @@ -1505,8 +1509,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
->  	if (IS_ERR(rt))
->  		return;
->  
-> -	get_cpu_light();
-> -	inet = &__get_cpu_var(unicast_sock);
-> +	inet = &get_locked_var(unicast_lock, unicast_sock);
->  
->  	inet->tos = arg->tos;
->  	sk = &inet->sk;
-> @@ -1530,7 +1533,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
->  		ip_push_pending_frames(sk, &fl4);
->  	}
->  
-> -	put_cpu_light();
-> +	put_locked_var(unicast_lock, unicast_sock);
->  
->  	ip_rt_put(rt);
->  }
-> -- 
-> 1.8.5.2
-> 
+-#ifdef HAVE_DWARF_SUPPORT
+-/* Copied from unwind.c */
+-static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+-				    GElf_Shdr *shp, const char *name)
+-{
+-	Elf_Scn *sec = NULL;
+-
+-	while ((sec = elf_nextscn(elf, sec)) != NULL) {
+-		char *str;
+-
+-		gelf_getshdr(sec, shp);
+-		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+-		if (!strcmp(name, str))
+-			break;
+-	}
+-
+-	return sec;
+-}
+-
+-static int get_text_start_address(const char *exec, unsigned long *address)
+-{
+-	Elf *elf;
+-	GElf_Ehdr ehdr;
+-	GElf_Shdr shdr;
+-	int fd, ret = -ENOENT;
+-
+-	fd = open(exec, O_RDONLY);
+-	if (fd < 0)
+-		return -errno;
+-
+-	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+-	if (elf == NULL)
+-		return -EINVAL;
+-
+-	if (gelf_getehdr(elf, &ehdr) == NULL)
+-		goto out;
+-
+-	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
+-		goto out;
+-
+-	*address = shdr.sh_addr - shdr.sh_offset;
+-	ret = 0;
+-out:
+-	elf_end(elf);
+-	return ret;
+-}
+-#endif
+-
+ static int init_user_exec(void)
+ {
+ 	int ret = 0;
+@@ -341,6 +293,34 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 	return 0;
+ }
+ 
++static int get_text_start_address(const char *exec, unsigned long *address)
++{
++	Elf *elf;
++	GElf_Ehdr ehdr;
++	GElf_Shdr shdr;
++	int fd, ret = -ENOENT;
++
++	fd = open(exec, O_RDONLY);
++	if (fd < 0)
++		return -errno;
++
++	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
++	if (elf == NULL)
++		return -EINVAL;
++
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		goto out;
++
++	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text", NULL))
++		goto out;
++
++	*address = shdr.sh_addr - shdr.sh_offset;
++	ret = 0;
++out:
++	elf_end(elf);
++	return ret;
++}
++
+ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+ 					  int ntevs, const char *exec)
+ {
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 4b0a127a4d3b..759456728703 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -136,9 +136,8 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
+-static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+-				    GElf_Shdr *shp, const char *name,
+-				    size_t *idx)
++Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
++			     GElf_Shdr *shp, const char *name, size_t *idx)
+ {
+ 	Elf_Scn *sec = NULL;
+ 	size_t cnt = 1;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index cbd680361806..fffe2888a1c7 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -52,6 +52,11 @@ static inline char *bfd_demangle(void __maybe_unused *v,
+ # define PERF_ELF_C_READ_MMAP ELF_C_READ
+ #endif
+ 
++#ifdef HAVE_LIBELF_SUPPORT
++extern Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
++				GElf_Shdr *shp, const char *name, size_t *idx);
++#endif
++
+ #ifndef DMGL_PARAMS
+ #define DMGL_PARAMS      (1 << 0)       /* Include function args */
+ #define DMGL_ANSI        (1 << 1)       /* Include const, volatile, etc */
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 416f22bf3693..742f23bf35ff 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -28,6 +28,7 @@
+ #include "session.h"
+ #include "perf_regs.h"
+ #include "unwind.h"
++#include "symbol.h"
+ #include "util.h"
+ 
+ extern int
+@@ -158,23 +159,6 @@ static int __dw_read_encoded_value(u8 **p, u8 *end, u64 *val,
+ 	__v;                                                    \
+ 	})
+ 
+-static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+-				    GElf_Shdr *shp, const char *name)
+-{
+-	Elf_Scn *sec = NULL;
+-
+-	while ((sec = elf_nextscn(elf, sec)) != NULL) {
+-		char *str;
+-
+-		gelf_getshdr(sec, shp);
+-		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+-		if (!strcmp(name, str))
+-			break;
+-	}
+-
+-	return sec;
+-}
+-
+ static u64 elf_section_offset(int fd, const char *name)
+ {
+ 	Elf *elf;
+@@ -190,7 +174,7 @@ static u64 elf_section_offset(int fd, const char *name)
+ 		if (gelf_getehdr(elf, &ehdr) == NULL)
+ 			break;
+ 
+-		if (!elf_section_by_name(elf, &ehdr, &shdr, name))
++		if (!elf_section_by_name(elf, &ehdr, &shdr, name, NULL))
+ 			break;
+ 
+ 		offset = shdr.sh_offset;
+-- 
+1.8.1.4
+
