@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaAQKx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:53:29 -0500
-Received: from mail.wolfsonmicro.com ([87.246.98.25]:45481 "EHLO
-	clearswiftegdr.wolfsonmicro.main" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752239AbaAQKxX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:53:23 -0500
-X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 05:53:23 EST
-From: Dimitris Papastamos <Dimitris.Papastamos@Wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>, Daniel Matuschek <daniel@matuschek.net>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Jan 2014 10:35:10 +0000
-Subject: RE: [PATCH] ASoC: wm8804: Allow control of master clock divider in
- PLL generation
-Thread-Topic: [PATCH] ASoC: wm8804: Allow control of master clock divider in 
-    PLL generation
-Thread-Index: Ac8THslAguO3RzrmTT+xIrl4XZa6sQAUQLxu
-Message-ID: <634C081ADD030F4A829AD09D85144F253611607A04@EXCMB2.wolfsonmicro.main>
-References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>,
-    <20140117005437.GQ17314@sirena.org.uk>
-In-Reply-To: <20140117005437.GQ17314@sirena.org.uk>
-Accept-Language: en-US, en-GB
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751727AbaAQK42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:56:28 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:65221 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaAQK4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 05:56:25 -0500
 MIME-Version: 1.0
+In-Reply-To: <20140117102020.GA8751@localhost>
+References: <20140117102020.GA8751@localhost>
+Date: Fri, 17 Jan 2014 18:56:24 +0800
+Message-ID: <CACVXFVNRvPRXF9VL-b+0iGE9XETwmTZ-JEmdxRGdovRamLnaGQ@mail.gmail.com>
+Subject: Re: [percpu_counter] 74e72f894: -47.6% aim7 jobs-per-min
+From: Ming Lei <tom.leiming@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Charles (or someone else from Wolfson), you commented on previous
-> versions of this - are you still OK with it?
+Hi Fengguang,
 
-Looks good to me.
+On Fri, Jan 17, 2014 at 6:20 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Ming Lei,
+>
+> We noticed that commit 74e72f894 ("lib/percpu_counter.c: fix
+> __percpu_counter_add()") introduces -47.6% regression in aim7 brk_test
+> on a 2S SNB server. Comparing to its parent commit:
 
-Privacy & Confidentiality Notice
--------------------------------------------------
-This message and any attachments contain privileged and confidential information that is intended solely for the person(s) to whom it is addressed. If you are not an intended recipient you must not: read; copy; distribute; discuss; take any action in or make any reliance upon the contents of this message; nor open or read any attachment. If you have received this message in error, please notify us as soon as possible on the following telephone number and destroy this message including any attachments. Thank you.
--------------------------------------------------
-Wolfson Microelectronics plc
-Tel: +44 (0)131 272 7000
-Fax: +44 (0)131 272 7001
-Web: www.wolfsonmicro.com
+The commit has a bug, could you apply Hugh's patch[1] to test if
+the regression can be fixed?
 
-Registered in Scotland
+If the performance regression is still there, it may be caused by bad
+performance of this_cpu_add(), then I suggest you to test the patch[2]
+too without enabling lockdep.
 
-Company number SC089839
 
-Registered office: 
+[1], http://marc.info/?t=138991497900001&r=1&w=2
+[2], http://marc.info/?l=linux-kernel&m=138909074202090&w=2
 
-Westfield House, 26 Westfield Road, Edinburgh, EH11 2QB, UK
+Thanks,
+-- 
+Ming Lei
