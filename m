@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaAQBhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:37:40 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:55908 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaAQBhi (ORCPT
+	id S1752037AbaAQBiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:38:11 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43916 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaAQBiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:37:38 -0500
-Date: Thu, 16 Jan 2014 17:37:37 -0800 (PST)
-Message-Id: <20140116.173737.429918297549548812.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com
-Subject: Re: [PATCH net-next] virtio-net: drop rq->max and rq->num
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1389854724-48411-1-git-send-email-jasowang@redhat.com>
-References: <1389854724-48411-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jan 2014 20:38:08 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] clocksource: timer-sun5i: Switch to sched_clock_register()
+Date: Thu, 16 Jan 2014 17:38:06 -0800
+Message-Id: <1389922686-6249-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Thu, 16 Jan 2014 14:45:24 +0800
+The 32 bit sched_clock interface supports 64 bits since 3.13-rc1.
+Upgrade to the 64 bit function to allow us to remove the 32 bit
+registration interface.
 
-> It looks like there's no need for those two fields:
-> 
-> - Unless there's a failure for the first refill try, rq->max should be always
->   equal to the vring size.
-> - rq->num is only used to determine the condition that we need to do the refill,
->   we could check vq->num_free instead.
-> - rq->num was required to be increased or decreased explicitly after each
->   get/put which results a bad API.
-> 
-> So this patch removes them both to make the code simpler.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Applied, thanks.
+Cc'in Ingo because this is simple enough to probably just apply to timers/core
+
+ drivers/clocksource/timer-sun5i.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
+index bddc52233d2a..deebcd6469fc 100644
+--- a/drivers/clocksource/timer-sun5i.c
++++ b/drivers/clocksource/timer-sun5i.c
+@@ -136,7 +136,7 @@ static struct irqaction sun5i_timer_irq = {
+ 	.dev_id = &sun5i_clockevent,
+ };
+ 
+-static u32 sun5i_timer_sched_read(void)
++static u64 sun5i_timer_sched_read(void)
+ {
+ 	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
+ }
+@@ -166,7 +166,7 @@ static void __init sun5i_timer_init(struct device_node *node)
+ 	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
+ 	       timer_base + TIMER_CTL_REG(1));
+ 
+-	setup_sched_clock(sun5i_timer_sched_read, 32, rate);
++	sched_clock_register(sun5i_timer_sched_read, 32, rate);
+ 	clocksource_mmio_init(timer_base + TIMER_CNTVAL_LO_REG(1), node->name,
+ 			      rate, 340, 32, clocksource_mmio_readl_down);
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
