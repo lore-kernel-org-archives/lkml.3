@@ -1,90 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaAQNzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:55:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52408 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaAQNzU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:55:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
-   d="scan'208";a="440399740"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: Why is (2 < 2) true? Is it a gcc bug?
-Thread-Topic: Why is (2 < 2) true? Is it a gcc bug?
-Thread-Index: Ac8TiNMTmnptR9ryRvWTI5/er276UQAAgwFg
-Date: Fri, 17 Jan 2014 13:55:00 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6A352E@IRSMSX105.ger.corp.intel.com>
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-In-Reply-To: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752575AbaAQN4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:56:21 -0500
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:18734
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751971AbaAQN4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 08:56:18 -0500
+X-Greylist: delayed 889 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 08:56:18 EST
+Message-ID: <52D93301.2080609@licor.com>
+Date: Fri, 17 Jan 2014 07:41:21 -0600
+From: Darryl <ddegraff@licor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: debugging head.S
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.82.105.200]
+X-Forefront-PRVS: 0094E3478A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(679001)(779001)(689001)(199002)(189002)(74366001)(23756003)(83506001)(36756003)(54316002)(80022001)(63696002)(64126003)(65956001)(74876001)(87936001)(76796001)(65806001)(85306002)(66066001)(81342001)(74706001)(76786001)(47776003)(50466002)(80976001)(92566001)(93136001)(80316001)(47446002)(83322001)(47736001)(74502001)(33656001)(92726001)(90146001)(56816005)(47976001)(74662001)(81542001)(49866001)(93516002)(50986001)(31966008)(76176001)(51856001)(54356001)(53806001)(69226001)(46102001)(81686001)(59766001)(4396001)(77982001)(79102001)(81816001)(59896001)(76482001)(83072002)(85852003)(56776001)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR08MB011;H:BL2PRD0810HT001.namprd08.prod.outlook.com;CLIP:208.82.105.200;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: licor.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 17, 2014 2:37 PM Dorau, Lukasz <lukasz.dorau@intel.com> wrote:
-> 
-> Hi
-> 
-> My story is very simply...
-> I applied the following patch:
-> 
-> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> --- a/drivers/scsi/isci/init.c
-> +++ b/drivers/scsi/isci/init.c
-> @@ -698,8 +698,11 @@ static int isci_pci_probe(struct pci_dev *pdev, const struct
-> pci_device_id *id)
->  	if (err)
->  		goto err_host_alloc;
-> 
-> -	for_each_isci_host(i, isci_host, pdev)
-> +	for_each_isci_host(i, isci_host, pdev) {
-> +		pr_err("(%d < %d) == %d\n",\
-> +		       i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
->  		scsi_scan_host(to_shost(isci_host));
-> +	}
-> 
->  	return 0;
-> 
-> --
-> 1.8.3.1
-> 
-> Then I issued the command 'modprobe isci' on platform with two SCU controllers
-> (Patsburg D or T chipset)
-> and received the following, very strange, output:
-> 
-> (0 < 2) == 1
-> (1 < 2) == 1
-> (2 < 2) == 1
-> 
-> Can anyone explain why (2 < 2) is true? Is it a gcc bug?
-> 
-> (The kernel was compiled using gcc version 4.8.2.)
-> 
+I am trying to build 3.12.6 for an OMAP3-based board (debug console on 
+UART 3)
 
-Some additional information:
+Enabling DEBUG in
 
-The loop 'for' in macro ' for_each_isci_host ' defined as (drivers/scsi/isci/host.h:313):
+     arch/arm/boot/compressed/head.S
 
-#define for_each_isci_host(id, ihost, pdev) \
-        for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
-             id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
-             ihost = to_pci_info(pdev)->hosts[++id])
+and with
 
-should be executed only for i = 0 and 1, because:
-ARRAY_SIZE(to_pci_info(pdev)->hosts) = SCI_MAX_CONTROLLERS = 2
+     CONFIG_DEBUG_LL_INCLUDE="debug/omap2plus.S"
 
-but it was executed also for i=2 regardless the above loop's end condition. 
+compiling (well, actually, assembling) gives the following (slightly 
+reformatted):
 
-Lukasz
+     arch/arm/boot/compressed/head.S: Assembler messages:
+     arch/arm/boot/compressed/head.S:1237: Error: ARM register expected 
+-- `sub ,r3,r1'
+     arch/arm/boot/compressed/head.S:1237: Error: ARM register expected 
+-- `ldr r3,[,#0]'
+     arch/arm/boot/compressed/head.S:1237: Error: ARM register expected 
+-- `ldr r1,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#0]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#0]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `ldr ,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: shift expression 
+expected -- `add r3,r3,'
+     arch/arm/include/debug/omap2plus.S:138: Error: shift expression 
+expected -- `add r1,r1,'
+     arch/arm/boot/compressed/head.S:1255: Error: ARM register expected 
+-- `sub ,r3,r1'
+     arch/arm/boot/compressed/head.S:1255: Error: ARM register expected 
+-- `ldr r3,[,#0]'
+     arch/arm/boot/compressed/head.S:1255: Error: ARM register expected 
+-- `ldr r1,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#0]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#0]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#4]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `str r3,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: ARM register 
+expected -- `ldr ,[,#8]'
+     arch/arm/include/debug/omap2plus.S:138: Error: shift expression 
+expected -- `add r3,r3,'
+     arch/arm/include/debug/omap2plus.S:138: Error: shift expression 
+expected -- `add r1,r1,'
 
+It looks like the 'addruart' macro in in omap2plus.S is shorted a 
+parameter from the macro 'loadsp' macro in head.S, called in 'puts' and 
+'putc'.
+
+Am I misusing this in some way?  Any suggestions?
+
+Darryl
