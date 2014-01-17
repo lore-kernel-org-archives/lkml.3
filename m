@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaAQVY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:24:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42820 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaAQVYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:24:25 -0500
-Date: Fri, 17 Jan 2014 13:24:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [ipc] 5769cf63: LTP semget02 TFAILs
-Message-Id: <20140117132423.300e13a26a069e56f79815fd@linux-foundation.org>
-In-Reply-To: <20140117102428.GC8751@localhost>
-References: <20140117102428.GC8751@localhost>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753335AbaAQV1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:27:25 -0500
+Received: from fieldses.org ([174.143.236.118]:56951 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784AbaAQV1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 16:27:22 -0500
+Date: Fri, 17 Jan 2014 16:26:55 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140117212655.GE26636@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140117121723.GA18375@infradead.org>
+ <20140117153917.GA26636@fieldses.org>
+ <20140117210343.GD26636@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117210343.GD26636@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014 18:24:28 +0800 Fengguang Wu <fengguang.wu@intel.com> wrote:
+On Fri, Jan 17, 2014 at 04:03:43PM -0500, J. Bruce Fields wrote:
+> 	- d_splice_alias handles inode == NULL in the same way,
 
-> Hi Davidlohr,
-> 
-> We noticed LTP test failures
-> 
->         ltp.msgget02.1.TFAIL
->         ltp.semget02.2.TFAIL
->         ltp.semget02.3.TFAIL
-> 
-> and the first bad commit is
-> 
-> commit 5769cf6355d87f63906b3e51887eff7017c39217
-> Author:     Davidlohr Bueso <davidlohr@hp.com>
-> AuthorDate: Wed Jan 15 16:56:01 2014 +1100
-> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
-> CommitDate: Wed Jan 15 16:56:01 2014 +1100
-> 
->     ipc: share ids rwsem when possible in ipcget_public
->     
+Actually, not exactly; simplifying a bit, in the NULL case they do:
 
-Thanks (a lot). I'll disable that patch for now.
+	d_splice_alias:
+
+		__d_instantiate(dentry, NULL);
+		security_d_instantiate(dentry, NULL);
+		if (d_unhashed(dentry))
+			d_rehash(dentry);
+
+	d_materialise_unique:
+
+		BUG_ON(!d_unhashed(dentry));
+
+		 __d_instantiate(dentry, NULL);
+		 d_rehash(dentry);
+		 security_d_instantiate(dentry, NULL);
+
+and a comment on d_splice_alias says
+
+	Cluster filesystems may call this function with a negative,
+	hashed dentry.  In that case, we know that the inode will be a
+	regular file, and also this will only occur during atomic_open.
+
+I don't understand those callers.  But I guess it would be easy enough
+to handle in d_materialise_unique.
+
+--b.
