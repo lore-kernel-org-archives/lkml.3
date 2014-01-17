@@ -1,178 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaAQWTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:19:12 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:62191 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaAQWTK (ORCPT
+	id S1752138AbaAQW1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:27:48 -0500
+Received: from mail.sensor-technik.de ([80.150.181.156]:47305 "EHLO
+	mail.sensor-technik.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaAQW1p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:19:10 -0500
-Date: Fri, 17 Jan 2014 15:19:06 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.11][v3.12][v3.13][Regression] EISA: Initialize device before
- its resources
-Message-ID: <20140117221906.GA6219@google.com>
-References: <52D81C92.9050800@canonical.com>
- <CAErSpo64e52Vv8bJ54cPcpnZ=OHMaxt2-D6dA4HCrrLnKo1n7g@mail.gmail.com>
- <52D82169.2000107@canonical.com>
- <20140117170204.GA13939@google.com>
- <52D983DF.3070202@canonical.com>
+	Fri, 17 Jan 2014 17:27:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,676,1384297200"; 
+   d="scan'208";a="527429"
+From: Waibel Georg <Georg.Waibel@sensor-technik.de>
+To: Gerhard Sittig <gsi@denx.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: AW: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
+ configured as gpio output
+Thread-Topic: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
+ configured as gpio output
+Thread-Index: Ac8Tjf3aVV6M/uKQT66xiOgnnC2hVQACO1mAAA5hlrw=
+Date: Fri, 17 Jan 2014 22:27:10 +0000
+Message-ID: <E1C9442006A9AE48A7A4B85E0D01C4D474F13C@stwexdb.stww2k.local>
+References: <E1C9442006A9AE48A7A4B85E0D01C4D474F059@stwexdb.stww2k.local>,<20140117161513.GC20094@book.gsilab.sittig.org>
+In-Reply-To: <20140117161513.GC20094@book.gsilab.sittig.org>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.25.2.8]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D983DF.3070202@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TBoneOriginalFrom: Waibel Georg <Georg.Waibel@sensor-technik.de>
+X-TBoneOriginalTo: Gerhard Sittig <gsi@denx.de>
+X-TBoneOriginalCC: Linus Walleij <linus.walleij@linaro.org>, Alexandre Courbot
+	<gnurou@gmail.com>, "linux-gpio@vger.kernel.org"
+	<linux-gpio@vger.kernel.org>, "linux-kernel@vger.kernel.org"
+	<linux-kernel@vger.kernel.org>
+X-TBoneDomainSigned: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 02:26:23PM -0500, Joseph Salisbury wrote:
-> On 01/17/2014 12:02 PM, Bjorn Helgaas wrote:
-> > On Thu, Jan 16, 2014 at 01:14:01PM -0500, Joseph Salisbury wrote:
-> >> On 01/16/2014 01:12 PM, Bjorn Helgaas wrote:
-> >>> On Thu, Jan 16, 2014 at 10:53 AM, Joseph Salisbury
-> >>> <joseph.salisbury@canonical.com> wrote:
-> >>>> Hi Bjorn,
-> >>>>
-> >>>> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
-> >>>> was found the following commit introduced this bug:
-> >>> Sorry about that, and thanks for the report.  Did you mean to include
-> >>> URL for the bug?
-> >> Yes, sorry about that:
-> >> http://pad.lv/1251816
-> > Hi Joseph,
+> On Fri, Jan 17, 2014 at 14:11 +0000, Waibel Georg wrote:
 > >
-> > Can you attach the 3.8.0-32-generic config (the one matching the successful
-> > boot at https://launchpadlibrarian.net/156685076/BootDmesg.txt) to the bug?
+> > From cb384950a1153e856ec03109a5156e660a89bf6d Mon Sep 17 00:00:00 2001
+> > From: Georg Waibel <georg.waibel@sensor-technik.de>
+> > Date: Fri, 17 Jan 2014 14:51:38 +0100
+> > Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if configured
+> >  as gpio output
+> >
+> > Register PSR was used to read the pin status in the mxc_gpio driver. This
+> > register reflects the pin status if a pin is configured as gpio input.
+> > If a pin is configured as an gpio output register PSR is not updated and
+> > returns 0 instead of the actual pin status. Thus attempting to read back the
+> > status of an gpio output pin via PSR returns a wrong value.
+> >
+> > Reading register DR instead of PSR fixes this issue:
+> > - If pin is gpio output: DR returns the value written to DR by software
+> > - If pin is gpio input: DR returns the value of register PSR und thus the
+> >   pin status
 > 
-> I attached the config file to the bug:
-> https://launchpadlibrarian.net/162754666/config.common.ubuntu
+> Got curious because of your specific wording.  In the output
+> case, does the DR value reflect what you drive to the pin, or
+> what the pin's status is?  Because this need not be identical in
+> the open collector case (or other "weak" scenarios like bus
+> keeper, and what else HW development came up with).
 > 
-> I also attached a tar file with the complete config directory for that
-> kernel version.
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/+attachment/3951156/+files/raring-config.tar
-
-Thanks again.  I attached the following reverts to launchpad.  I screwed up
-when doing those EISA changes.  I'd like to squeeze these into my v3.14
-merge request (probably early next week), so please test and let me know
-if this fixes the problem.  I'm really sorry for the inconvenience.
-
-Bjorn
+> If DR always reflects the pin's status, then the patch would be
+> OK but the commit message would need an update.  If DR does not
+> appropriately reflect the pin's status, then the patch would be
+> an improvement (would fix the totem-pole case), but still would
+> be wrong or incomplete in the open-collector case.
 
 
-Revert "EISA: Log device resources in dmesg"
+Hi Gerhard,
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+actually I did not take the open-collector case into account. 
+I checked the iMX6q reference manual and came to this conclusion:
 
-This reverts commit a2080d0c561c546d73cb8b296d4b7ca414e6860b.
+In the output case, reading register DR returns the value I have written 
+to DR, not the actual pad state. Thus may patch only works for the 
+push-pull (totem-pole) output case, not for open-drain.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/eisa/eisa-bus.c |    1 -
- 1 file changed, 1 deletion(-)
+However, there is a solution to read back the pin status regardless of 
+its input or output configuration. Its the SION (Software Input On Bit)
+in the IOMUXC MUX control register. If SION is set, the pad status can be 
+read back through register PSR. Thats exactly what I intended to do. 
+Bit SION can be set in the device tree (IOMUXC: CONFIG filed in the 
+fsl,pins binding, bit 30).
+I will verify this on my iMX6 hardware next week.
 
-diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
-index 8842cde69177..1b86fe0c2e80 100644
---- a/drivers/eisa/eisa-bus.c
-+++ b/drivers/eisa/eisa-bus.c
-@@ -288,7 +288,6 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
- 			edev->res[i].flags = IORESOURCE_IO | IORESOURCE_BUSY;
- 		}
- 
--		dev_printk(KERN_DEBUG, &edev->dev, "%pR\n", &edev->res[i]);
- 		if (request_resource(root->res, &edev->res[i]))
- 			goto failed;
- 	}
-Revert "EISA: Initialize device before its resources"
+Seems there is no need for my patch at all.
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+Thanks for your hint.
+Regards
+Georg
 
-This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
-
-In the eisa_probe() force_probe path, if we were unable to request slot
-resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
-allocate resource for EISA slot %d" before reading the EISA signature in
-eisa_init_device().
-
-Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
-the EISA signature before requesting the slot resources, and this caused
-hangs during boot.
-
-Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
-index 1b86fe0c2e80..612afeaec3cb 100644
---- a/drivers/eisa/eisa-bus.c
-+++ b/drivers/eisa/eisa-bus.c
-@@ -277,11 +277,13 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
- 		}
- 		
- 		if (slot) {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + (i * 0x400);
- 			edev->res[i].end   = edev->res[i].start + 0xff;
- 			edev->res[i].flags = IORESOURCE_IO;
- 		} else {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + EISA_VENDOR_ID_OFFSET;
- 			edev->res[i].end   = edev->res[i].start + 3;
-@@ -327,19 +329,20 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 		return -ENOMEM;
- 	}
- 		
--	if (eisa_init_device(root, edev, 0)) {
-+	if (eisa_request_resources(root, edev, 0)) {
-+		dev_warn(root->dev,
-+		         "EISA: Cannot allocate resource for mainboard\n");
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -ENODEV;
-+			return -EBUSY;
- 		goto force_probe;
- 	}
- 
--	if (eisa_request_resources(root, edev, 0)) {
--		dev_warn(root->dev,
--		         "EISA: Cannot allocate resource for mainboard\n");
-+	if (eisa_init_device(root, edev, 0)) {
-+		eisa_release_resources(edev);
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -EBUSY;
-+			return -ENODEV;
- 		goto force_probe;
- 	}
- 
-@@ -362,11 +365,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 			continue;
- 		}
- 
--		if (eisa_init_device(root, edev, i)) {
--			kfree(edev);
--			continue;
--		}
--
- 		if (eisa_request_resources(root, edev, i)) {
- 			dev_warn(root->dev,
- 			         "Cannot allocate resource for EISA slot %d\n",
-@@ -375,6 +373,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 			continue;
- 		}
- 
-+		if (eisa_init_device(root, edev, i)) {
-+			eisa_release_resources(edev);
-+			kfree(edev);
-+			continue;
-+		}
-+
- 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
- 			enabled_str = " (forced enabled)";
- 		else if (edev->state == EISA_CONFIG_FORCED)
