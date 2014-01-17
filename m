@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaAQVEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:04:12 -0500
-Received: from fieldses.org ([174.143.236.118]:42638 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaAQVEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:04:10 -0500
-Date: Fri, 17 Jan 2014 16:03:43 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-Message-ID: <20140117210343.GD26636@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
- <20140117121723.GA18375@infradead.org>
- <20140117153917.GA26636@fieldses.org>
+	id S1753055AbaAQVFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:05:17 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:65254 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaAQVFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 16:05:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140117153917.GA26636@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D980ED.6000603@wwwdotorg.org>
+References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>
+	<52D578A7.8020000@infradead.org>
+	<CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
+	<52D980ED.6000603@wwwdotorg.org>
+Date: Sat, 18 Jan 2014 00:59:29 +0400
+Message-ID: <CALT56yMiBks-mN1-tZujhX1jhZ8V3PCPcmOVcaFgC2UrxsZ6KA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 10:39:17AM -0500, J. Bruce Fields wrote:
-> On Fri, Jan 17, 2014 at 04:17:23AM -0800, Christoph Hellwig wrote:
-> > Also the inode == NULL case really should be split out from
-> > d_materialise_unique into a separate helper.  It shares almost no
-> > code, is entirely undocumented to the point that I don't really
-> > understand what the purpose is, and the only caller that can get
-> > there (fuse) already branches around that case in the caller anyway.
-> 
-> I think I see what you mean, I can fix that.
+Hello,
 
-Actually:
+On Fri, Jan 17, 2014 at 11:13 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 01/14/2014 03:54 PM, Dmitry Eremin-Solenikov wrote:
+>> Hello,
+>>
+>>
+>> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>>
+>>> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> This tree fails (more than usual) the powerpc allyesconfig build.
+>>>>
+>>>> Changes since 20140113:
+>>>>
+>>>
+>>>
+>>> on i386:
+>>>
+>>> net/built-in.o: In function `header_create':
+>>> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
+>>> net/built-in.o: In function `bt_6lowpan_recv':
+>>> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+>>
+>> Ah, nice Makefile hack there.
+>> David, Marcel, could you please consider the attached patch.
+>
+> I think you forgot to "git add net/bluetooth/Makefile" into that patch;
+> don't you need the following too (I certainly do, to build next-20140117)
+>
+>> diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
+>> index cc6827e2ce68..80cb215826e8 100644
+>> --- a/net/bluetooth/Makefile
+>> +++ b/net/bluetooth/Makefile
+>> @@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
+>>       hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
+>>       a2mp.o amp.o 6lowpan.o
+>>
+>> -ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
+>> -  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
+>> -endif
+>> -
+>>  subdir-ccflags-y += -D__CHECK_ENDIAN__
+>
+> Should I send this as a separate followup patch?
 
-	- two callers (fuse and nfs) take advantage of the NULL case.
+Yes, please. I forgot to add it to the patch.
 
-	- d_splice_alias handles inode == NULL in the same way, and
-	  almost every caller takes advantage of that.
-
-So at least we wouldn't want to actually make the caller handle this
-case.
-
-But maybe there's still some opportunity for cleanup or documentation.
-
---b.
+-- 
+With best wishes
+Dmitry
