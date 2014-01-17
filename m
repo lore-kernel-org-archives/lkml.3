@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaAQWBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 17:01:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15837 "EHLO mga02.intel.com"
+	id S1753427AbaAQWCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 17:02:17 -0500
+Received: from mout.gmx.net ([212.227.17.20]:62950 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177AbaAQWBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 17:01:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,676,1384329600"; 
-   d="scan'208";a="468499334"
-Date: Fri, 17 Jan 2014 15:01:10 -0700 (MST)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: Alexander Gordeev <agordeev@redhat.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 5/9] nvme: Fix invalid call to
- irq_set_affinity_hint()
-In-Reply-To: <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
-Message-ID: <alpine.LRH.2.03.1401171419370.25844@AMR>
-References: <cover.1389904166.git.agordeev@redhat.com> <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com> <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1753130AbaAQWCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 17:02:14 -0500
+Message-ID: <52D9A85E.8070306@rempel-privat.de>
+Date: Fri, 17 Jan 2014 23:02:06 +0100
+From: Oleksij Rempel <linux@rempel-privat.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Pavel Machek <pavel@ucw.cz>, Julia Lawall <Julia.Lawall@lip6.fr>
+CC: ath9k-devel@venema.h4ckr.net, kernel-janitors@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        users@rt2x00.serialmonkey.com
+Subject: Re: [PATCH 0/11] use ether_addr_equal_64bits
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr> <20140117212410.GA13930@amd.pavel.ucw.cz>
+In-Reply-To: <20140117212410.GA13930@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="wPeiUu57NahR2I82nneDslo4JQxIfmkgx"
+X-Provags-ID: V03:K0:E6NxAJ4GRQ+Ek0P0NbFYfWPGKIpPiqGm1IloHYWbIW8LTDHaj93
+ Ku81ZXdJTXF440QK8BvroJJTqHjU39K1gGOYvKIy9aV/0aZ+MV0ptq3dO6rSVVnpEes0cxi
+ Zkf/VRFndlhdb0/5KSiS8gQUjB5PBft4vS5fs5o5nweUfVlJBeO/6mMkrFR+WRJAzsJpdg9
+ XKM/1Eb1maAiHQx58lIuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014, Bjorn Helgaas wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--wPeiUu57NahR2I82nneDslo4JQxIfmkgx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, Jan 17, 2014 at 9:02 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->> In case MSI-X and MSI initialization failed the function
->> irq_set_affinity_hint() is called with uninitialized value
->> in dev->entry[0].vector. This update fixes the issue.
->
-> dev->entry[0].vector is initialized in nvme_dev_map(), and it's used
-> for free_irq() above the area of your patch, so I don't think this is
-> actually a bug, though it might be somewhat confusing.
+Am 17.01.2014 22:24, schrieb Pavel Machek:
+> On Mon 2013-12-30 19:14:56, Julia Lawall wrote:
+>> Ether_addr_equal_64bits is more efficient than ether_addr_equal, and c=
+an be
+>> used when each argument is an array within a structure that contains a=
+t
+>> least two bytes of data beyond the array.
+>=20
+> I mean, yes, it is probably faster, and yes, most structures probably
+> contain two more bytes, but... is the uglyness worth the speedup? I'd
+> say this should not be done except in very time-critical places...
+> 									Pavel
 
-It is confusing, but there's a reason. :)
+This code run on every received beacon, almost on every wifi driver (If
+i understand what you mean.)
 
-We send a single command using legacy irq to discover how many msix
-vectors we want. The legacy entry needs to be set some time before calling
-request_irq in nvme_configure_admin_queue, but also within nvme_dev_start
-(for power-management). I don't think there's a place to set it that
-won't look odd when looking at nvme_setup_io_queues. I settled on
-'nvme_dev_map' was because 'nvme_dev_unmap' invalidates the entries,
-so this seemed to provide some amount of symmetry.
+--=20
+Regards,
+Oleksij
 
->> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->> ---
->>  drivers/block/nvme-core.c |   12 ++++++------
->>  1 files changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
->> index 26d03fa..e292450 100644
->> --- a/drivers/block/nvme-core.c
->> +++ b/drivers/block/nvme-core.c
->> @@ -1790,15 +1790,15 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
->>                         vecs = 32;
->>                 for (;;) {
->>                         result = pci_enable_msi_block(pdev, vecs);
->> -                       if (result == 0) {
->> -                               for (i = 0; i < vecs; i++)
->> -                                       dev->entry[i].vector = i + pdev->irq;
->> -                               break;
->> +                       if (result > 0) {
->> +                               vecs = result;
->> +                               continue;
->>                         } else if (result < 0) {
->>                                 vecs = 1;
->> -                               break;
->>                         }
->> -                       vecs = result;
->> +                       for (i = 0; i < vecs; i++)
->> +                               dev->entry[i].vector = i + pdev->irq;
->> +                       break;
->>                 }
->>         }
+
+--wPeiUu57NahR2I82nneDslo4JQxIfmkgx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlLZqF4ACgkQHwImuRkmbWkVzQD/RakXROCReQFxlfH2WUvcgm/s
+h27RY898nl6Txplcd1QA/iBcXdKSu5CM6doc8bhMe1aOLsa1rkxYGv+fLl1IwOwr
+=oOX1
+-----END PGP SIGNATURE-----
+
+--wPeiUu57NahR2I82nneDslo4JQxIfmkgx--
