@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990AbaAQSFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:05:45 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:40382
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752066AbaAQSFo (ORCPT
+	id S1753059AbaAQSJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:09:01 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38735 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752225AbaAQSI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:05:44 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h1155h)
-X-WSS-ID: 0MZK4V5-07-JN2-02
-X-M-MSG: 
-Message-ID: <52D970F1.3090401@amd.com>
-Date: Fri, 17 Jan 2014 12:05:37 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 17 Jan 2014 13:08:59 -0500
+Date: Fri, 17 Jan 2014 18:08:26 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/7] ARM: perf_event: Support percpu irqs for the CPU
+ PMU
+Message-ID: <20140117180825.GV16003@mudshark.cambridge.arm.com>
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+ <1389808535-23852-2-git-send-email-sboyd@codeaurora.org>
+ <20140115205427.GB26193@codeaurora.org>
+ <20140117150411.GI16003@mudshark.cambridge.arm.com>
+ <52D96E5C.4040506@codeaurora.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum
- 793
-References: <20140114115547.GA29887@pd.tnic> <52D55468.6000000@zytor.com> <20140114153534.GE29865@pd.tnic> <20140114162722.GF29865@pd.tnic> <52D59ACC.3090100@amd.com> <20140114203848.GP29865@pd.tnic> <52D81DB5.7000608@amd.com> <20140117002123.GA9165@khazad-dum.debian.net> <20140117101842.GB8715@pd.tnic> <52D958FC.9020700@zytor.com> <20140117170213.GG8715@pd.tnic> <52D96B9D.703@zytor.com>
-In-Reply-To: <52D96B9D.703@zytor.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D96E5C.4040506@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/17/2014 11:42 AM, H. Peter Anvin wrote:
->
-> Hence the question: did an unfixed BIOS ever make it into a shipping
-> production system?  Because if it did, we do have a coverage hole.
->
-> 	-hpa
->
+On Fri, Jan 17, 2014 at 05:54:36PM +0000, Stephen Boyd wrote:
+> On 01/17/14 07:04, Will Deacon wrote:
+> > Hi Stephen,
+> >
+> > On Wed, Jan 15, 2014 at 08:54:27PM +0000, Stephen Boyd wrote:
+> >> On 01/15, Stephen Boyd wrote:
+> >>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> >>> index 789d846a9184..e76750980b38 100644
+> >>> --- a/arch/arm/kernel/perf_event.c
+> >>> +++ b/arch/arm/kernel/perf_event.c
+> >>> @@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
+> >>>  
+> >>>  static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+> >>>  {
+> >>> -	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+> >>> -	struct platform_device *plat_device = armpmu->plat_device;
+> >>> -	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
+> >>> +	struct arm_pmu *armpmu;
+> >>> +	struct platform_device *plat_device;
+> >>> +	struct arm_pmu_platdata *plat;
+> >>> +
+> >>> +	if (irq_is_percpu(irq))
+> >>> +		dev = *(struct arm_pmu_cpu **)dev;
+> >> Oh. I just realized that struct arm_pmu_cpu doesn't even exist. This
+> >> still compiles though because we're dealing with a void pointer.
+> >>
+> >> Perhaps its better to just do
+> >>
+> >> 	dev = *(void **)dev;
+> >>
+> >> here. Can you fix that up when applying? Otherwise I'll do it on
+> >> the next send if there are more comments.
+> > Shouldn't that actually be some per_cpu accessor like this_cpu_ptr?
+> >
+> 
+> Nope. The genirq layer unwraps the per_cpu pointer and passes it to the
+> handler.
 
-Right, and the answer to your question is: there is a *chance* it did.. 
- From internal discussions, I could
-gather that the fix went into BIOS code earlier for desktop/mobile 
-versions than it did for server versions;
+Ah yeah, I forget the dispatcher is what genirq sees as the handler. In
+which case your idea looks right.
 
-So there is a chance production systems (desktop ones) might never see 
-the issue, but server ones will, as
-BIOSes spun only from now onwards will have the workaround..
+Sorry for the noise.
 
--Aravind.
-
+Will
