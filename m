@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaAQJzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 04:55:20 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:39379 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751702AbaAQJzO convert rfc822-to-8bit (ORCPT
+	id S1752218AbaAQJ74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 04:59:56 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:51197 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaAQJ7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 04:55:14 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Daniel Borkmann <dborkman@redhat.com>,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH net-next v2 2/3] net: add trim helper and convert users
-Thread-Topic: [PATCH net-next v2 2/3] net: add trim helper and convert users
-Thread-Index: AQHPExsCt6Yq4rhPdkGWOeoK2O8P2ZqIrT/A
-Date: Fri, 17 Jan 2014 09:52:58 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45EAC0@AcuExch.aculab.com>
-References: <1389918519-23779-1-git-send-email-hannes@stressinduktion.org>
- <1389918519-23779-3-git-send-email-hannes@stressinduktion.org>
-In-Reply-To: <1389918519-23779-3-git-send-email-hannes@stressinduktion.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jan 2014 04:59:52 -0500
 MIME-Version: 1.0
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D45EA9D@AcuExch.aculab.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+ <1389941251-32692-2-git-send-email-wens@csie.org> <063D6719AE5E284EB5DD2968C1650D6D45EA9D@AcuExch.aculab.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Fri, 17 Jan 2014 17:59:30 +0800
+X-Google-Sender-Auth: ZoWzkuuvXbxurNSfhb6xF_swe3o
+Message-ID: <CAGb2v67L__kusyfSxSc1Rmb6mtJ_VQQF+rCfr1AiUxCemaXMqA@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/6] net: rfkill: gpio: fix gpio name buffer size off
+ by 1
+To: David Laight <David.Laight@aculab.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Frederic Sowa
-...
-> +/**
-> + * trim - perform a reciprocal multiplication in order to "clamp" a
-> + *        value into range [0, ep_ro), where the upper interval
-> + *        endpoint is right-open. This is useful, e.g. for accessing
-> + *        a index of an array containing ep_ro elements, for example.
-> + *        Think of it as sort of modulus, only that the result isn't
-> + *        that of modulo. ;)
-> + *        More: http://homepage.cs.uiowa.edu/~jones/bcd/divide.html
+On Fri, Jan 17, 2014 at 5:46 PM, David Laight <David.Laight@aculab.com> wrote:
+> From: Chen-Yu Tsai
+>> snprintf should be passed the complete size of the buffer, including
+>> the space for '\0'. The previous code resulted in the *_reset and
+>> *_shutdown strings being truncated.
+> ...
+>> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> ...
+>> -     snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
+>> -     snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
+>> +     snprintf(rfkill->reset_name, len + 7 , "%s_reset", rfkill->name);
+>> +     snprintf(rfkill->shutdown_name, len + 10, "%s_shutdown", rfkill->name);
+>
+> I can't find the context for the above, but they look very dubious.
+> I'd expect: snprintf(foo, sizeof foo, ...).
+> If you are trying to truncate rfkill->name you need to use %.*s.
 
-It isn't appropriate to put urls into code comments (or commit messages).
-They are very likely to get out of date.
+The driver allocates these buffers on the fly, a few lines above:
 
-	David
+        len = strlen(rfkill->name);
+        rfkill->reset_name = devm_kzalloc(&pdev->dev, len + 7, GFP_KERNEL);
+        rfkill->shutdown_name = devm_kzalloc(&pdev->dev, len + 10, GFP_KERNEL);
+
+I am not trying to truncate rfkill->name. Rather, the buffer length passed
+to snprintf was wrong, so the resulting name was truncated by one character.
 
 
-
+Thanks,
+ChenYu
