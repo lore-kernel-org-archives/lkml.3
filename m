@@ -1,158 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaAQOkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:40:39 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:48317 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaAQOkh (ORCPT
+	id S1752294AbaAQOlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:41:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62357 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaAQOlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:40:37 -0500
-Date: Fri, 17 Jan 2014 15:41:26 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: [PATCH 11/11] ext4: add cross rename support
-Message-ID: <20140117144126.GG24171@tucsk.piliscsaba.szeredi.hu>
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
- <1389219015-10980-12-git-send-email-miklos@szeredi.hu>
- <20140113122517.GA10366@quack.suse.cz>
- <20140115182347.GB5715@fieldses.org>
- <CAJfpegv0TgJpd-pXxBj2n0efRUW9_GW_tYtHtfN6drOYA=25QQ@mail.gmail.com>
- <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
- <52D90B93.5010209@gmail.com>
+	Fri, 17 Jan 2014 09:41:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH v6] mmc: sdhci-moxart: Add MOXA ART SDHCI driver
+Date: Fri, 17 Jan 2014 15:40:55 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: chris@printf.net, linux-mmc@vger.kernel.org, cjb@laptop.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, mark.rutland@arm.com
+References: <1386763426-10158-1-git-send-email-jonas.jensen@gmail.com> <1389951825-14884-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1389951825-14884-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D90B93.5010209@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401171540.55948.arnd@arndb.de>
+X-Provags-ID: V02:K0:VLUF5CTpQMNnRdqMbikvAug5+10rU5FXkXessnw+7K+
+ YXi7Km6i1J2tylosAQTfMlDVOWst+Huqa+QoGXfbw79gDsZmnV
+ GwFXpThS9Sg953HLaZ77aR3i83eEj21mqC7cCQss+1CMklSRcN
+ WrD1VpR08rpKWKMAqBq1FUww4WZuMgbpzIaFPnkVHdbSfFhnPL
+ C3KFmeit22h0PcsKX9HRZhw3MseVRO1F9B55utnca7QdazYhgY
+ 2sOVaHFCF1xMj3WYvrJXVzwrYmr6CS6G0qYO9awOa/MsFAUA9t
+ JjBXnIG19xlhxerEvAsBeYXNNW0IEUsp7RV1O4cb3SgfPaMdLP
+ 3r8IIJAp89c587aEbea4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On Friday 17 January 2014, Jonas Jensen wrote:
+> Add SDHCI driver for MOXA ART SoCs.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Thanks for the review.  I updated the code and man page based on your and
-Bruce's comments.
+I think this should be renamed to something other than SDHCI, since that
+implies a specific register layout and would use the sdhci.c driver.
 
-The code changes are pushed to the git tree and the updated man page is below.
+Maybe moxart-mmc?
 
-Thanks,
-Miklos
-----
+> diff --git a/Documentation/devicetree/bindings/mmc/moxa,moxart-sdhci.txt b/Documentation/devicetree/bindings/mmc/moxa,moxart-sdhci.txt
+> new file mode 100644
+> index 0000000..020b13e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/moxa,moxart-sdhci.txt
+> @@ -0,0 +1,28 @@
+> +MOXA ART SD Host Controller Interface
+> +
+> +Required properties:
+> +
+> +- compatible :	Must be "moxa,moxart-sdhci"
+> +- reg :		Should contain registers location and length
+> +- interrupts :	Should contain the interrupt number
+> +- clocks :	Should contain phandle for the clock feeding the SDHCI controller
+> +
+> +Optional properties:
+> +
+> +These are optional but required to enable DMA transfer mode:
+> +
+> +- dmas :	Should contain two DMA channels, line request number must be 5 for
+> +		both channels
+> +- dma-names :	Must be "tx", "rx"
 
+I think you should add a reference to bindings/mmc/mmc.txt here.
 
-RENAMEAT(2)                Linux Programmer's Manual               RENAMEAT(2)
+> +#define MSD_CMD_REG		0
+> +#define MSD_ARG_REG		4
+> +#define MSD_RESP0_REG		8
+> +#define MSD_RESP1_REG		0x0c
+> +#define MSD_RESP2_REG		0x10
+> +#define MSD_RESP3_REG		0x14
+> +#define MSD_RESP_CMD_REG	0x18
+> +#define MSD_DATA_CTRL_REG	0x1c
+> +#define MSD_DATA_TIMER_REG	0x20
+> +#define MSD_DATA_LEN_REG	0x24
+> +#define MSD_STATUS_REG		0x28
+> +#define MSD_CLEAR_REG		0x2c
+> +#define MSD_INT_MASK_REG	0x30
+> +#define MSD_POWER_CTRL_REG	0x34
+> +#define MSD_CLOCK_CTRL_REG	0x38
+> +#define MSD_BUS_WIDTH_REG	0x3c
+> +#define MSD_DATA_WIN_REG	0x40
+> +#define MSD_FEATURE_REG		0x44
+> +#define MSD_REVISION_REG	0x48
+> +
+> +#define MMC_RSP_SHORT		1
+> +#define MMC_RSP_LONG		2
+> +#define MMC_RSP_MASK		3
+> +#define MMC_ERR_NONE		0
+> +#define MMC_ERR_TIMEOUT		1
+> +#define MMC_MODE_MMC		0
+> +#define MMC_MODE_SD		1
+> +#define MMC_ERR_BADCRC		2
+> +#define MMC_VDD_360		23
+> +
+> +#define MSD_RETRY_COUNT		10
+> +
+> +#define REG_COMMAND		0
+> +#define REG_ARGUMENT		4
+> +#define REG_RESPONSE0		8
+> +#define REG_RESPONSE1		12
+> +#define REG_RESPONSE2		16
+> +#define REG_RESPONSE3		20
+> +#define REG_RESPONSE_COMMAND	24
+> +#define REG_DATA_CONTROL	28
+> +#define REG_DATA_TIMER		32
+> +#define REG_DATA_LENGTH		36
+> +#define REG_STATUS		40
+> +#define REG_CLEAR		44
+> +#define REG_INTERRUPT_MASK	48
+> +#define REG_POWER_CONTROL	52
+> +#define REG_CLOCK_CONTROL	56
+> +#define REG_BUS_WIDTH		60
+> +#define REG_DATA_WINDOW		64
+> +#define REG_FEATURE		68
+> +#define REG_REVISION		72
 
+The lists seem duplicated here, there is an MSD_foo_REG for each REG_foo.
 
+> +	/*
+> +	 * hardware does not support MMC_CAP_SD_HIGHSPEED
+> +	 * CMD6 will timeout and make things not work
+> +	 */
+> +	mmc->caps = MMC_CAP_4_BIT_DATA;
 
-NAME
-       renameat, renameat2 - rename a file relative to directory file descrip-
-       tors
+Better get the bus-width from DT by calling the mmc_of_parse
+function. Some boards might connect only one data bit, or in
+fact 8 if it's an eMMC.
 
-SYNOPSIS
-       #include <fcntl.h> /* Definition of AT_* constants */
-       #include <stdio.h>
-
-       int renameat(int olddirfd, const char *oldpath,
-                    int newdirfd, const char *newpath);
-
-       int renameat2(int olddirfd, const char *oldpath,
-                     int newdirfd, const char *newpath, unsigned int flags);
-
-   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
-
-       renameat():
-           Since glibc 2.10:
-               _XOPEN_SOURCE >= 700 || _POSIX_C_SOURCE >= 200809L
-           Before glibc 2.10:
-               _ATFILE_SOURCE
-
-DESCRIPTION
-       The renameat() and renameat2() system calls operate in exactly the same
-       way  as  rename(2), except for the differences described in this manual
-       page.
-
-       If the pathname given in oldpath is relative, then  it  is  interpreted
-       relative  to  the directory referred to by the file descriptor olddirfd
-       (rather than relative to the current working directory of  the  calling
-       process, as is done by rename(2) for a relative pathname).
-
-       If oldpath is relative and olddirfd is the special value AT_FDCWD, then
-       oldpath is interpreted relative to the current working directory of the
-       calling process (like rename(2)).
-
-       If oldpath is absolute, then olddirfd is ignored.
-
-       The interpretation of newpath is as for oldpath, except that a relative
-       pathname is interpreted relative to the directory referred  to  by  the
-       file descriptor newdirfd.
-
-       renameat2()  has an additional flags argument.  renameat2() call with a
-       zero flags argument is equivalent to renameat().
-
-       The flags argument is a bitfield consisting of zero or more of the fol-
-       lowing constants defined in <linux/fs.h>:
-
-       RENAME_NOREPLACE
-              Don't  overwrite  the  target of the rename.  Fail if the target
-              would be overwritten.
-
-       RENAME_EXCHANGE
-              Atomically exchange the source and destination.  Both must exist
-              but  may  be of a different type (e.g. one a non-empty directory
-              and the other a symbolic link).  Specifying this  flag  together
-              with RENAME_NOREPLACE is invalid.
-
-RETURN VALUE
-       On  success,  renameat()  and  renameat2()  return  0.  On error, -1 is
-       returned and errno is set to indicate the error.
-
-ERRORS
-       The same errors that occur for rename(2) can also occur for  renameat()
-       and  renameat2().   The  following  additional  errors  can  occur  for
-       renameat() and renameat2():
-
-       EBADF  olddirfd or newdirfd is not a valid file descriptor.
-
-       ENOTDIR
-              oldpath is relative and olddirfd is a file descriptor  referring
-              to  a  file  other  than a directory; or similar for newpath and
-              newdirfd
-
-       The following additional errors are defined for renameat2():
-
-       EINVAL The filesystem does not support a flag in flags
-
-       EINVAL Invalid combination of flags
-
-       EEXIST flags contain RENAME_NOREPLACE and  the  target  of  the  rename
-              exists
-
-       ENOENT flags  contain  RENAME_EXCHANGE and either of the two files does
-              not exist
-
-VERSIONS
-       renameat() was added to Linux in kernel  2.6.16;  library  support  was
-       added to glibc in version 2.4.
-
-CONFORMING TO
-       renameat() is specified in POSIX.1-2008.
-
-NOTES
-       See openat(2) for an explanation of the need for renameat().
-
-SEE ALSO
-       openat(2), rename(2), path_resolution(7)
-
-
-
-Linux                             2012-05-04                       RENAMEAT(2)
+	Arnd
