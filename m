@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaAQBrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:47:00 -0500
-Received: from mail.kernelconcepts.de ([212.60.202.196]:36666 "EHLO
+	id S1751935AbaAQBuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:50:21 -0500
+Received: from mail.kernelconcepts.de ([212.60.202.196]:36669 "EHLO
 	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaAQBq4 (ORCPT
+	with ESMTP id S1750898AbaAQBuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:46:56 -0500
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jan 2014 20:46:56 EST
-Message-ID: <52D88B6E.6010709@kernelconcepts.de>
-Date: Fri, 17 Jan 2014 02:46:22 +0100
+	Thu, 16 Jan 2014 20:50:18 -0500
+Message-ID: <52D889E8.6070603@kernelconcepts.de>
+Date: Fri, 17 Jan 2014 02:39:52 +0100
 From: Simon Budig <simon.budig@kernelconcepts.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>,
-        linux-input@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
         Thierry Reding <thierry.reding@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
         Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
         Silvio F <silvio.fricke@gmail.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/3] Input: edt-ft5x06: Add DT support
-References: <1389859338-11685-1-git-send-email-LW@KARO-electronics.de> <1389859338-11685-4-git-send-email-LW@KARO-electronics.de> <20140117002649.GA837@core.coreip.homeip.net>
-In-Reply-To: <20140117002649.GA837@core.coreip.homeip.net>
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Input: edt-ft5x06: Add DT support
+References: <1389608224-9975-1-git-send-email-LW@KARO-electronics.de> <1389608224-9975-2-git-send-email-LW@KARO-electronics.de> <20140113134441.GD1273@e106331-lin.cambridge.arm.com> <20140116084943.17da0226@ipc1.ka-ro>
+In-Reply-To: <20140116084943.17da0226@ipc1.ka-ro>
 X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="BALh93kiskoxb6g728lvuBjJemlgJjl5R"
+ boundary="bcW2Isj5vRf1KifWxSwhmSWCGJVPdxpEs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BALh93kiskoxb6g728lvuBjJemlgJjl5R
-Content-Type: text/plain; charset=ISO-8859-1
+--bcW2Isj5vRf1KifWxSwhmSWCGJVPdxpEs
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dmitry
+On 16/01/14 08:49, Lothar Wa=C3=9Fmann wrote:
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.=
+txt
+>>> @@ -0,0 +1,31 @@
+>>> +* EDT FT5x06 Multiple Touch Controller
+>>> +
+> [...]
+>>> +- threshold: allows setting the "click"-threshold in the range from =
+20 to 80.
+>>> +- gain: sensitivity (0..31) (lower value -> higher sensitivity)
+>>> +- offset: edge compensation (0..31)
+>>> +- report_rate: report rate (3..14)
+>>
+>> s/_/-/ on property names please. Also, it may make sense to prefix the=
+se
+>> as they're rather generic sounding names.
+>>
+>> Could you elaborate on these a litle please? What units are each of
+>> these in? Why does it make sense to have them in the dt?
+>>
+> I just converted them from being passed via platform_data. I have no
+> idea what they actually control and what units they use. I could not
+> even find a manual where they are documented.
+> Maybe Simon Budig can help out here as the original driver author.
 
-On 17/01/14 01:26, Dmitry Torokhov wrote:
->> +  The following properties provide default values for the
->> +  corresponding parameters (see Documentation/input/edt-ft5x06.txt)
->> +- edt,threshold: allows setting the "click"-threshold in the range fr=
-om 20 to 80.
->> +- edt,gain: sensitivity (0..31) (lower value -> higher sensitivity)
->> +- edt,offset: edge compensation (0..31)
->> +- edt,report-rate: report rate (3..14)
->=20
-> I wonder if we really need to have it in device tree? Can users needing=
+The units are not specified in the datasheets available to me. I suspect
+that these are some sort of counter values related to the cap sensing.
 
-> top tweak the settings do it via udev rules?
+The defaults differ for the different size glasses, so I really suspect
+these are basically just numbers.
 
-IMO it makes sense to have these in the device tree. These values need
-to be adjusted if you have glass or acrylics in front of the touch
-glass. The defaults are tailored to the touchscreen without any
-(additional) material in front of it.
-
-So manufacturers need to provide different defaults depending on the way
-a specific device is built. So these properties can be viewed in the
-same way you specify display resolution or display type in the device tre=
-e.
+The only somewhat reasonable unit is available for the report-rate: it
+is specified as about <value> * 10 touch reports per second.
 
 Bye,
-         Simon
-
+        Simon
 
 --=20
        Simon Budig                        kernel concepts GmbH
@@ -79,7 +90,7 @@ Bye,
 
 
 
---BALh93kiskoxb6g728lvuBjJemlgJjl5R
+--bcW2Isj5vRf1KifWxSwhmSWCGJVPdxpEs
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -88,9 +99,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1
 Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-iEYEARECAAYFAlLYi24ACgkQO2O/RXesiHAlCgCglXbccRZKZoEn4WzdUpJ35ZtU
-DjkAn2w6BsHgr66lFkpu7k6/QyWW3err
-=iVxg
+iEYEARECAAYFAlLYiegACgkQO2O/RXesiHAaAACcDPpmHZMki2/Pl6ZTFezHku1I
+X28An1QWb+yfOogf0Dz9Bs6vzuiCH+/O
+=/cPA
 -----END PGP SIGNATURE-----
 
---BALh93kiskoxb6g728lvuBjJemlgJjl5R--
+--bcW2Isj5vRf1KifWxSwhmSWCGJVPdxpEs--
