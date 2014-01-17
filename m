@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaAQP0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:26:12 -0500
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:54997 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752620AbaAQPSl (ORCPT
+	id S1753322AbaAQP0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:26:54 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60346 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaAQP0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:18:41 -0500
-Message-Id: <20140117151835.608798260@linux.com>
-Date: Fri, 17 Jan 2014 09:18:24 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 12/41] metag: Replace __get_cpu_var uses for address calculation
-References: <20140117151812.770437629@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_metag
+	Fri, 17 Jan 2014 10:26:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140117150725.GK16003@mudshark.cambridge.arm.com>
+References: <1389950591-4212-1-git-send-email-ard.biesheuvel@linaro.org>
+	<1389950591-4212-2-git-send-email-ard.biesheuvel@linaro.org>
+	<20140117150725.GK16003@mudshark.cambridge.arm.com>
+Date: Fri, 17 Jan 2014 16:26:50 +0100
+Message-ID: <CAKv+Gu-dZZ4yzkDoHoHVRgW1KQ7H3PLy-OV731Es8BNmpkYqLQ@mail.gmail.com>
+Subject: Re: [PATCH v2 resend 1/5] ARM: add support for AT_HWCAP2 ELF auxv entry
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace __get_cpu_var uses for address calculation with this_cpu_ptr().
+On 17 January 2014 16:07, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Ard,
+>
+> On Fri, Jan 17, 2014 at 09:23:07AM +0000, Ard Biesheuvel wrote:
+>> This enables AT_HWCAP2 for ARM. The generic support for this
+>> new ELF auxv entry was added in commit 2171364d1a9 (powerpc:
+>> Add HWCAP2 aux entry)
+>
+> Does this require a corresponding change in libc so that the entry is
+> actually used by the dynamic linker?
+>
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+The auxv entry itself is already wired up [this includes getauxval()]
 
-Index: linux/arch/metag/kernel/perf/perf_event.c
-===================================================================
---- linux.orig/arch/metag/kernel/perf/perf_event.c	2013-12-02 16:07:50.134624099 -0600
-+++ linux/arch/metag/kernel/perf/perf_event.c	2013-12-02 16:07:50.134624099 -0600
-@@ -258,7 +258,7 @@ int metag_pmu_event_set_period(struct pe
- 
- static void metag_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -306,7 +306,7 @@ static void metag_pmu_stop(struct perf_e
- 
- static int metag_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = 0, ret = 0;
- 
-@@ -348,7 +348,7 @@ out:
- 
- static void metag_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -607,7 +607,7 @@ static int _hw_perf_event_init(struct pe
- 
- static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int config = event->config;
- 	unsigned int tmp = config & 0xf0;
- 	unsigned long flags;
-@@ -680,7 +680,7 @@ unlock:
- 
- static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int tmp = 0;
- 	unsigned long flags;
- 
-@@ -728,7 +728,7 @@ out:
- 
- static void metag_pmu_write_counter(int idx, u32 val)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	u32 tmp = 0;
- 	unsigned long flags;
- 
-@@ -761,7 +761,7 @@ static int metag_pmu_event_map(int idx)
- static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
- {
- 	int idx = (int)dev;
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	struct perf_event *event = cpuhw->events[idx];
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct pt_regs *regs = get_irq_regs();
+https://sourceware.org/git/?p=glibc.git;a=commit;h=1ae8bfe07c1a
 
+The only thing that is lacking is a way to hook up ifunc relocation,
+as the current prototype passes a single 32-bit quantity.
+So either we change the prototype to (hwcap, hwcap2) or we need to
+rely on getauxval() in ifunc selectors if they need to inspect hwcap2
+
+-- 
+Ard.
