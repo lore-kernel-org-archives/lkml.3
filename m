@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaAQPN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:13:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53333 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaAQPNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:13:24 -0500
-Message-ID: <52D94891.80109@linutronix.de>
-Date: Fri, 17 Jan 2014 16:13:21 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1752260AbaAQPPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:15:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52629 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937AbaAQPO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 10:14:58 -0500
+Message-ID: <52D948A5.1070706@redhat.com>
+Date: Fri, 17 Jan 2014 16:13:41 +0100
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: linux-rt-users@vger.kernel.org,
-        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
-        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
-References: <20131229171154.GA23586@opentech.at> <20140117144729.GB5785@linutronix.de> <20140117145955.GA5637@opentech.at>
-In-Reply-To: <20140117145955.GA5637@opentech.at>
-X-Enigmail-Version: 1.6
+To: Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, hare@suse.de,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+References: <20140116195112.GA9658@beardog.cce.hp.com>
+In-Reply-To: <20140116195112.GA9658@beardog.cce.hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 03:59 PM, Nicholas Mc Guire wrote:
-> On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
-> 
->> This is what I am going to apply. It also dropped the get_cpu_light()
->> call which was added in a patch to remove the get_cpu_var() and is now
->> no longer required since we have the get_locked_var() thingy now.
->>
-> 
-> I do not think you can drop that - what is preventing migration now ?
+On 01/16/2014 08:51 PM, Mike Miller wrote:
+> From: Mike Miller <mike.miller@hp.com>
+>
+> This patch has every ID we have in our svn repository. Some controllers were
+> cancelled, others added, now the cancelled ones are back. Apparently the
+> debate rages on about which controllers are cancelled, which are not,
+> whatever. Please accept this patch. It is dependent upon the patches I sent
+> yesterday. 
+> This patch made/tested against kernel-3.13.0-rc8
+>
+> Signed-off-by: Mike Miller <mike.miller@hp.com>
+> ---
+>  drivers/scsi/hpsa.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 348b207..3affec5 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -100,6 +100,7 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
+> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
+> @@ -108,15 +109,19 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
+> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x192A},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BF},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C0},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C2},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
+> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
+> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C6},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
+> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CA},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CB},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CC},
+> @@ -149,22 +154,29 @@ static struct board_type products[] = {
+>  	{0x3354103C, "Smart Array P420i", &SA5_access},
+>  	{0x3355103C, "Smart Array P220i", &SA5_access},
+>  	{0x3356103C, "Smart Array P721m", &SA5_access},
+> +	{0x1920103C, "Smart Array P430i", &SA5_access},
+>  	{0x1921103C, "Smart Array P830i", &SA5_access},
+>  	{0x1922103C, "Smart Array P430", &SA5_access},
+>  	{0x1923103C, "Smart Array P431", &SA5_access},
+>  	{0x1924103C, "Smart Array P830", &SA5_access},
+> +	{0x1925103C, "Smart Array P831", &SA5_access},
+>  	{0x1926103C, "Smart Array P731m", &SA5_access},
+>  	{0x1928103C, "Smart Array P230i", &SA5_access},
+>  	{0x1929103C, "Smart Array P530", &SA5_access},
+> +	{0x192A103C, "Smart Array P531", &SA5_access},
+>  	{0x21BD103C, "Smart Array", &SA5_access},
+>  	{0x21BE103C, "Smart Array", &SA5_access},
+>  	{0x21BF103C, "Smart Array", &SA5_access},
+>  	{0x21C0103C, "Smart Array", &SA5_access},
+> +	{0x21C1103C, "Smart Array", &SA5_access},
 
-Nothing but I do not see the need for it.
+I think that both tables should be in sync - but there is no 0x21c1 in hpsa_pci_device_id
+(and the 0x1925), could you clarify that?
 
-> 
-> #define get_locked_var(lvar, var)                                       \
->         (*({                                                            \
->                 local_lock(lvar);                                       \
->                 &__get_cpu_var(var);                                    \
->         }))
-> 
-> No migrate_disable here - so how is this protected against migration ?
+Thanks, Tomas 
 
-It does not. If you get here on CPU0, you the variable from CPU0. If
-you get migrated to CPU1 you still use the variable from CPU0. If
-another task is active on CPU0 then it will be blocked until the other
-now running on CPU1 completes and releases the lock.
+>  	{0x21C2103C, "Smart Array", &SA5_access},
+>  	{0x21C3103C, "Smart Array", &SA5_access},
+> +	{0x21C4103C, "Smart Array", &SA5_access},
+>  	{0x21C5103C, "Smart Array", &SA5_access},
+> +	{0x21C6103C, "Smart Array", &SA5_access},
+>  	{0x21C7103C, "Smart Array", &SA5_access},
+>  	{0x21C8103C, "Smart Array", &SA5_access},
+> +	{0x21C9103C, "Smart Array", &SA5_access},
+>  	{0x21CA103C, "Smart Array", &SA5_access},
+>  	{0x21CB103C, "Smart Array", &SA5_access},
+>  	{0x21CC103C, "Smart Array", &SA5_access},
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> Note that I did send out mail on this because I believe get_locked_var
-> should actually be doing a a migrate_disable/enable but got no feedback on that
-> yet.
-
-I don't see a reason why you should not leave the CPU on which you got
-access to the variable as long as you do not do any further assumption
-regarding the CPU number. I don't see that this happens here.
-
-> So for now I think you need to retain the get_cpu_light/put_cpu_light
-
-Are you still sure?
-
->    
-> thx!
-> hofrat
-
-Sebastian
