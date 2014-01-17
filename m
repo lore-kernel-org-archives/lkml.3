@@ -1,57 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaAQR1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:27:24 -0500
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:50001
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951AbaAQR1W convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:27:22 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bh1432I4015I14ffIzz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h906i1155h)
-Date: Fri, 17 Jan 2014 09:27:15 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
-References: <20140117143035.fa787a8203afaa83c64009bb@canb.auug.org.au>
+	id S1752864AbaAQR1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:27:53 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:33702 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752398AbaAQR1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 12:27:51 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v3] of: add functions to count number of elements in a property
+Date: Fri, 17 Jan 2014 18:27:17 +0100
+Message-ID: <5702891.uim5yy9QFM@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140117165333.GH19578@e106331-lin.cambridge.arm.com>
+References: <27256277.YJ687suYy5@phil> <1434798.oSb68sYmYT@phil> <20140117165333.GH19578@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20140117143035.fa787a8203afaa83c64009bb@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <9ebf3c00-ac91-41bd-8fd0-24dc09e61a05@DB9EHSMHS001.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+The need to know the number of array elements in a property is
+a common pattern. To prevent duplication of open-coded implementations
+add a helper static function that also centralises strict sanity
+checking and DTB format details, as well as a set of wrapper functions
+for u8, u16, u32 and u64.
 
-On Fri, Jan 17, 2014 at 02:30:35PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the tip tree got a conflict in
-> drivers/clocksource/cadence_ttc_timer.c between commit c1dcc927dae0
-> ("clocksource: cadence_ttc: Fix mutex taken inside interrupt context")
-> from Linus' tree and commit dfded00902d7 ("clocksource:
-> cadence_ttc_timer: Switch to sched_clock_register()") from the tip tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as necessary
-> (no action is required).
+Suggested-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+---
+changes since v2:
+address more comments from Mark Rutland
+- switch to of_property_count_elems_of_size
+- use full_name instead of name in error message
+changes since v1:
+address comments from Rob Herring and Mark Rutland:
+- provide a helper and a set of wrappers for u8-u64
+- get rid of extra len variable, prop->length is enough
+- include node name in error message
 
-The fix is correct.
+Posted for completenes sake. If nobody complains,
+I'll simply make it part of my Rockchip-SMP series.
 
-	Thanks,
-	Sören
+ drivers/of/base.c  |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of.h |   32 +++++++++++++++++
+ 2 files changed, 131 insertions(+)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0e..1cd6dc9 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -862,6 +862,105 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+ EXPORT_SYMBOL(of_find_node_by_phandle);
+ 
+ /**
++ * of_property_count_elems_of_size - Count the number of elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @elem_size:	size of the individual element
++ */
++static int of_property_count_elems_of_size(const struct device_node *np,
++				const char *propname, int elem_size)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++
++pr_err("size of %s in node %s is not a multiple of %d\n", propname, np->full_name, elem_size);
++	if (prop->length % elem_size != 0) {
++		pr_err("size of %s in node %s is not a multiple of %d\n",
++		       propname, np->full_name, elem_size);
++		return -EINVAL;
++	}
++
++	return prop->length / elem_size;
++}
++
++/**
++ * of_property_count_u8_elems - Count the number of u8 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u8 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u8 and -ENODATA if the
++ * property does not have a value.
++ */
++int of_property_count_u8_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u8));
++}
++EXPORT_SYMBOL_GPL(of_property_count_u8_elems);
++
++/**
++ * of_property_count_u16_elems - Count the number of u16 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u16 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u16 and -ENODATA if the
++ * property does not have a value.
++ */
++int of_property_count_u16_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u16));
++}
++EXPORT_SYMBOL_GPL(of_property_count_u16_elems);
++
++/**
++ * of_property_count_u32_elems - Count the number of u32 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u32 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u32 and -ENODATA if the
++ * property does not have a value.
++ */
++int of_property_count_u32_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u32));
++}
++EXPORT_SYMBOL_GPL(of_property_count_u32_elems);
++
++/**
++ * of_property_count_u64_elems - Count the number of u64 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u64 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u64 and -ENODATA if the
++ * property does not have a value.
++ */
++int of_property_count_u64_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u64));
++}
++EXPORT_SYMBOL_GPL(of_property_count_u64_elems);
++
++/**
+  * of_find_property_value_of_size
+  *
+  * @np:		device node from which the property value is to be read.
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 276c546..06fe898 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -250,6 +250,14 @@ extern struct device_node *of_find_node_with_property(
+ extern struct property *of_find_property(const struct device_node *np,
+ 					 const char *name,
+ 					 int *lenp);
++extern int of_property_count_u8_elems(const struct device_node *np,
++				       const char *propname);
++extern int of_property_count_u16_elems(const struct device_node *np,
++				       const char *propname);
++extern int of_property_count_u32_elems(const struct device_node *np,
++				       const char *propname);
++extern int of_property_count_u64_elems(const struct device_node *np,
++				       const char *propname);
+ extern int of_property_read_u32_index(const struct device_node *np,
+ 				       const char *propname,
+ 				       u32 index, u32 *out_value);
+@@ -426,6 +434,30 @@ static inline struct device_node *of_find_compatible_node(
+ 	return NULL;
+ }
+ 
++static inline int of_property_count_u8_elems(const struct device_node *np,
++			const char *propname)
++{
++	return -ENOSYS;
++}
++
++static inline int of_property_count_u16_elems(const struct device_node *np,
++			const char *propname)
++{
++	return -ENOSYS;
++}
++
++static inline int of_property_count_u32_elems(const struct device_node *np,
++			const char *propname)
++{
++	return -ENOSYS;
++}
++
++static inline int of_property_count_u64_elems(const struct device_node *np,
++			const char *propname)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_property_read_u32_index(const struct device_node *np,
+ 			const char *propname, u32 index, u32 *out_value)
+ {
+-- 
+1.7.10.4
 
 
