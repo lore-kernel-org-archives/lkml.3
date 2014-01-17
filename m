@@ -1,152 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaAQKHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:07:48 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:43593 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374AbaAQKHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:07:39 -0500
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-kernel@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v7 5/7] NFSD: Pass share reservations flags to VFS
-Date: Fri, 17 Jan 2014 14:07:10 +0400
-Message-Id: <1389953232-9428-6-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+	id S1752493AbaAQKIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:08:05 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:39710 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752471AbaAQKH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 05:07:57 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
+        Christoph Lameter <cl@linux.com>
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        "Jesse Gross" <jesse@nicira.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        Matt Mackall <mpm@selenic.com>, "Pekka Enberg" <penberg@kernel.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "Veaceslav Falico" <vfalico@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Subject: RE: [PATCH net-next 2/2] reciprocal_divide: correction/update of
+ the algorithm
+Thread-Topic: [PATCH net-next 2/2] reciprocal_divide: correction/update of
+ the algorithm
+Thread-Index: AQHPEt98Z7WBrBo+/0up6rnEAEb4SpqIsDOQ
+Date: Fri, 17 Jan 2014 10:05:37 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45EB06@AcuExch.aculab.com>
+References: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
+ <1389828228-30312-3-git-send-email-dborkman@redhat.com>
+ <alpine.DEB.2.10.1401161036110.29778@nuc>
+ <20140116172406.GA17529@order.stressinduktion.org>
+In-Reply-To: <20140116172406.GA17529@order.stressinduktion.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0HA8FX9023755
 
-that maps them into O_DENY* flags and make them visible for
-applications on mounts with sharelock option.
+From: Hannes Frederic Sowa
+> On Thu, Jan 16, 2014 at 10:37:37AM -0600, Christoph Lameter wrote:
+> > On Thu, 16 Jan 2014, Daniel Borkmann wrote:
+> >
+> > > - * or else the performance is slower than a normal divide.
+> > > - */
+> > > -extern u32 reciprocal_value(u32 B);
+> > > +struct reciprocal_value {
+> > > +	u32 m;
+> > > +	u8 sh1, sh2;
+> > > +};
+> > >
+> > > +#define RECIPROCAL_VALUE_RESULT_TO_ZERO ((struct reciprocal_value){.sh1 = 32})
+> > >
+> > > -static inline u32 reciprocal_divide(u32 A, u32 R)
+> > > +struct reciprocal_value reciprocal_value(u32 d);
+> >
+> > A function that returns a struct? That works? Which gcc versions support
+> > it?
+> 
+> Sure, that works and I actually like it. This is supported by the c standard,
+> but please don't ask me since which one. ;)
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
----
- fs/locks.c          |    1 +
- fs/nfsd/nfs4state.c |   46 +++++++++++++++++++++++++++++++++++++++++++++-
- fs/nfsd/nfsproc.c   |    1 +
- 3 files changed, 47 insertions(+), 1 deletion(-)
+I think it has always been supported.
+Originally by adding an extra hidden argument that points to an on-stack
+structure.
+More recent ABI tend to allow 'small' structures be returned in registers.
+(Typically ones that would fit in the register(s) used for an integral result).
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 6e78c0a..805afd4 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1005,6 +1005,7 @@ sharelock_lock_file(struct file *filp)
- 	locks_free_lock(lock);
- 	return error;
- }
-+EXPORT_SYMBOL(sharelock_lock_file);
- 
- static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
- {
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 105d6fa..e613bff 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -571,6 +571,19 @@ test_deny(u32 access, struct nfs4_ol_stateid *stp)
- 	return test_bit(access, &stp->st_deny_bmap);
- }
- 
-+static int nfs4_deny_to_odeny(u32 access)
-+{
-+	switch (access & NFS4_SHARE_DENY_BOTH) {
-+	case NFS4_SHARE_DENY_READ:
-+		return O_DENYREAD;
-+	case NFS4_SHARE_DENY_WRITE:
-+		return O_DENYWRITE;
-+	case NFS4_SHARE_DENY_BOTH:
-+		return O_DENYREAD | O_DENYWRITE;
-+	}
-+	return 0;
-+}
-+
- static int nfs4_access_to_omode(u32 access)
- {
- 	switch (access & NFS4_SHARE_ACCESS_BOTH) {
-@@ -2960,6 +2973,21 @@ nfsd4_truncate(struct svc_rqst *rqstp, struct svc_fh *fh,
- }
- 
- static __be32
-+nfs4_vfs_set_deny(struct nfs4_file *fp, unsigned long share_access,
-+		  unsigned long deny_access)
-+{
-+	int oflag, rc;
-+	__be32 status = nfs_ok;
-+
-+	oflag = nfs4_access_to_omode(share_access);
-+	fp->fi_fds[oflag]->f_flags |= nfs4_deny_to_odeny(deny_access);
-+	rc = sharelock_lock_file(fp->fi_fds[oflag]);
-+	if (rc)
-+		status = nfserrno(rc);
-+	return status;
-+}
-+
-+static __be32
- nfs4_upgrade_open(struct svc_rqst *rqstp, struct nfs4_file *fp, struct svc_fh *cur_fh, struct nfs4_ol_stateid *stp, struct nfsd4_open *open)
- {
- 	u32 op_share_access = open->op_share_access;
-@@ -2980,6 +3008,14 @@ nfs4_upgrade_open(struct svc_rqst *rqstp, struct nfs4_file *fp, struct svc_fh *c
- 		}
- 		return status;
- 	}
-+	status = nfs4_vfs_set_deny(fp, op_share_access, open->op_share_deny);
-+	if (status) {
-+		if (new_access) {
-+			int oflag = nfs4_access_to_omode(op_share_access);
-+			nfs4_file_put_access(fp, oflag);
-+		}
-+		return status;
-+	}
- 	/* remember the open */
- 	set_access(op_share_access, stp);
- 	set_deny(open->op_share_deny, stp);
-@@ -3234,7 +3270,7 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
- 
- 	/*
- 	 * OPEN the file, or upgrade an existing OPEN.
--	 * If truncate fails, the OPEN fails.
-+	 * If truncate or set_deny fails, the OPEN fails.
- 	 */
- 	if (stp) {
- 		/* Stateid was found, this is an OPEN upgrade */
-@@ -3248,6 +3284,10 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
- 		status = nfsd4_truncate(rqstp, current_fh, open);
- 		if (status)
- 			goto out;
-+		status = nfs4_vfs_set_deny(fp, open->op_share_access,
-+					   open->op_share_deny);
-+		if (status)
-+			goto out;
- 		stp = open->op_stp;
- 		open->op_stp = NULL;
- 		init_open_stateid(stp, fp, open);
-@@ -3955,6 +3995,10 @@ nfsd4_open_downgrade(struct svc_rqst *rqstp,
- 	}
- 	nfs4_stateid_downgrade(stp, od->od_share_access);
- 
-+	status = nfs4_vfs_set_deny(stp->st_file, od->od_share_access,
-+				   od->od_share_deny);
-+	if (status)
-+		goto out;
- 	reset_union_bmap_deny(od->od_share_deny, stp);
- 
- 	update_stateid(&stp->st_stid.sc_stateid);
-diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
-index 54c6b3d..ff95544 100644
---- a/fs/nfsd/nfsproc.c
-+++ b/fs/nfsd/nfsproc.c
-@@ -743,6 +743,7 @@ nfserrno (int errno)
- 		{ nfserr_notsupp, -EOPNOTSUPP },
- 		{ nfserr_toosmall, -ETOOSMALL },
- 		{ nfserr_serverfault, -ESERVERFAULT },
-+		{ nfserr_share_denied, -ESHAREDENIED },
- 	};
- 	int	i;
- 
--- 
-1.7.10.4
+This doesn't mean that it is a good idea!
 
+OTOH if the function is 'static inline' (and inlined) it probably doesn't matter.
+
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
