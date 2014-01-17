@@ -1,86 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaAQMWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:22:35 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55973 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaAQMWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:22:31 -0500
-Date: Fri, 17 Jan 2014 12:22:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Matuschek <daniel@matuschek.net>
-Cc: alsa-devel@alsa-project.org, Dimitris.Papastamos@wolfsonmicro.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140117122204.GR17314@sirena.org.uk>
-References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+	id S1752370AbaAQMY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:24:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46570 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276AbaAQMY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 07:24:57 -0500
+Date: Fri, 17 Jan 2014 13:24:31 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH 00/16] perf tools: Add libdw DWARF unwind support
+Message-ID: <20140117122431.GC1130@krava.brq.redhat.com>
+References: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xSu31lw3TgkWXnjh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
-X-Cookie: We have DIFFERENT amounts of HAIR --
+In-Reply-To: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
- PLL generation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ping ;-)
 
---xSu31lw3TgkWXnjh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+thanks,
+jirka
 
-On Tue, Jan 14, 2014 at 08:34:10PM +0100, Daniel Matuschek wrote:
-
-> WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-> most sample rates. At 192kHz only 128xfs is supported. The
-> existing driver selects 128xfs automatically for some lower
-
-This patch doesn't apply against current code.  Please check and resend,
-=66rom MAINTAINERS:
-
-SOUND - SOC LAYER / DYNAMIC AUDIO POWER MANAGEMENT (ASoC)
-M:      Liam Girdwood <lgirdwood@gmail.com>
-M:      Mark Brown <broonie@kernel.org>
-T:      git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
-L:      alsa-devel@alsa-project.org (moderated for non-subscribers)
-W:      http://alsa-project.org/main/index.php/ASoC
-S:      Supported
-F:      Documentation/sound/alsa/soc/
-F:      sound/soc/
-F:      include/sound/soc*
-
-specifically the for-next branch (or ideally topic/wm8804 for wm8804
-when it exists).
-
---xSu31lw3TgkWXnjh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS2SBpAAoJELSic+t+oim9G2kQAIZ11cX/PTvle0LQg6YOPsx9
-ola/4o1I4JEWwvRYcIQ8I4o0XjDXgNM3z7Jy/9+h1r+jqm0tyhsQ24IaDLGI95ZN
-EFOTOfVIEaG0nNvLFokMFbJTugl9qWa1vYcxijtQJi7k59Lc/X2aM6XRE57IeGNN
-k1RZNxpmR95CIGP+GtzVYjWyWS4UcD12MWg4c5wF1qvsvGd1B2F4glPOHstCxrD1
-bUn+pZf79ACZCvtaV8Pes89qe0IM8fWK7pU+4ih43JN+FZXGPmZ9eyzB2OimF13q
-FGVppMvJdOmUwIhFKNvGhdGAnRkK4C7XJ559jwH2KX1nFzwOboA/OplLzRBCa7/4
-pHCK1Ag2MAGfNmTokI5O9V8ZDajoLkEkUH5fSGhbJsIMO9xvvsKelUb1xSE56FHu
-kQdLaJx6WZFaFbYT6clXkF8jOqU3+otmi7QSt44kp+d047NsDmPbSAq9REx0k8os
-0cObIR16WoWwbKy1Gc6OCLewmABsDQczropNDrAShtWk4MxIZlOycn6GMemtBF7L
-q6avqsK6fByC0CnZi1HYHEKSEL9ZD1iSBpDDsjMhYnqYrhKHq/Llm2Ofdjz7/OLE
-yOpbdJVjeeRtSeUswyapWkYg2IV383Q2DJ8Bbx1S6w07/7lt1eTBMcrxXyN/kyUY
-SV2K693fKrVpg2RVNsvj
-=L/wp
------END PGP SIGNATURE-----
-
---xSu31lw3TgkWXnjh--
+On Tue, Jan 07, 2014 at 01:47:17PM +0100, Jiri Olsa wrote:
+> hi,
+> adding libdw DWARF unwind support, which is part of just released
+> elfutils package 0.158.
+> 
+> We can now compile perf to have either libunwind DWARF unwind,
+> (which is still default) or the new one libdw unwind.
+> 
+> Examples:
+>   - compile in libdw unwinder if present:
+>     $ make NO_LIBUNWIND=1
+> 
+>   - compile in libdw (with libdw installation directory) unwinder if present:
+>     $ make LIBDW_DIR=/opt/elfutils/ NO_LIBUNWIND=1
+> 
+>   - disable post dwarf unwind completely:
+>     $ make NO_LIBUNWIND=1 NO_LIBDW_DWARF_UNWIND=1
+> 
+> Performance wise the libdw unwinder seems to be faster.
+> Following results are from 2GB perf.data file with 249156
+> samples:
+> 
+>   The libdw unwind perf:
+>   $ time perf report -i ~/perf.data > perf.data.ldw
+> 
+>   real    0m35.746s
+>   user    0m24.211s
+>   sys     0m11.214s
+> 
+>   The libunwind unwind perf:
+>   $ time perf report -i ~/perf.data > perf.data.unw
+> 
+>   real    1m41.149s
+>   user    1m9.694s
+>   sys     0m30.595s
+> 
+> In example above I've got 2206 differences (perf.data.ldw and
+> perf.data.unw files) in the callchains output out of the 249156
+> samples which is below 1%. Together with some other tips for speed
+> increase it's on my TODO list for future.
+> 
+> Git tree:
+>   https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/
+>   perf/core_libdw_unwind
+> 
+> Kudos to Jan Kratochvil for helping me with the new interface.
+> 
+> Jean,
+> I haven't tested on arm.. so not sure I broke anything there.
+> Any chance you could test for me, and maybe make the automated
+> test I added work there? ;-)
+> 
+> thanks,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
+> Cc: Jean Pihet <jean.pihet@linaro.org>
+> ---
+> Jiri Olsa (16):
+>       perf tools: Automate setup of FEATURE_CHECK_(C|LD)FLAGS-all variables
+>       perf tools: Fix machine initialization
+>       perf tools: Make perf_event__synthesize_mmap_events global
+>       perf tests x86: Introduce perf_regs_load function
+>       perf tests x86: Add dwarf unwind test
+>       perf tools: Fix dwarf unwind max_stack processing
+>       perf tools: Do not report zero address in unwind
+>       perf tools: Add mask into struct regs_dump
+>       perf tools: Separate libunwind code to special object
+>       perf tools: Rename unwind__arch_reg_id into libunwind__arch_reg_id
+>       perf tools: Introduce HAVE_DWARF_UNWIND_SUPPORT macro
+>       perf tools: Separate perf_reg_value function in perf_regs object
+>       perf tools: Add feature check for libdw dwarf unwind
+>       perf tools: Add libdw DWARF post unwind support
+>       perf tools: Setup default dwarf post unwinder
+>       perf tests: Add NO_LIBDW_DWARF_UNWIND make test
+> 
+>  tools/perf/Makefile.perf                                   |  19 ++++++-
+>  tools/perf/arch/arm/Makefile                               |   2 +-
+>  tools/perf/arch/arm/util/{unwind.c => unwind-libunwind.c}  |   2 +-
+>  tools/perf/arch/x86/Makefile                               |   9 +++-
+>  tools/perf/arch/x86/include/perf_regs.h                    |   6 +++
+>  tools/perf/arch/x86/tests/dwarf-unwind.c                   |  59 ++++++++++++++++++++
+>  tools/perf/arch/x86/tests/regs_load.S                      |  92 ++++++++++++++++++++++++++++++++
+>  tools/perf/arch/x86/util/unwind-libdw.c                    |  51 ++++++++++++++++++
+>  tools/perf/arch/x86/util/{unwind.c => unwind-libunwind.c}  |   4 +-
+>  tools/perf/builtin-inject.c                                |   1 -
+>  tools/perf/builtin-record.c                                |  10 ++--
+>  tools/perf/config/Makefile                                 |  94 +++++++++++++++++++++++---------
+>  tools/perf/config/feature-checks/Makefile                  |   6 ++-
+>  tools/perf/config/feature-checks/test-all.c                |   5 ++
+>  tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c |  13 +++++
+>  tools/perf/tests/builtin-test.c                            |   8 +++
+>  tools/perf/tests/dwarf-unwind.c                            | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/make                                      |  63 +++++++++++-----------
+>  tools/perf/tests/sample-parsing.c                          |  17 +++---
+>  tools/perf/tests/tests.h                                   |   9 ++++
+>  tools/perf/util/event.c                                    |  12 ++---
+>  tools/perf/util/event.h                                    |  12 ++++-
+>  tools/perf/util/evsel.c                                    |  13 ++---
+>  tools/perf/util/machine.c                                  |   4 +-
+>  tools/perf/util/perf_regs.c                                |  19 +++++++
+>  tools/perf/util/perf_regs.h                                |  13 +++++
+>  tools/perf/util/session.c                                  |   5 +-
+>  tools/perf/util/unwind-libdw.c                             | 210 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/unwind-libdw.h                             |  21 ++++++++
+>  tools/perf/util/{unwind.c => unwind-libunwind.c}           |  50 ++++++-----------
+>  tools/perf/util/unwind.h                                   |  11 ++--
+>  31 files changed, 849 insertions(+), 135 deletions(-)
+>  rename tools/perf/arch/arm/util/{unwind.c => unwind-libunwind.c} (95%)
+>  create mode 100644 tools/perf/arch/x86/tests/dwarf-unwind.c
+>  create mode 100644 tools/perf/arch/x86/tests/regs_load.S
+>  create mode 100644 tools/perf/arch/x86/util/unwind-libdw.c
+>  rename tools/perf/arch/x86/util/{unwind.c => unwind-libunwind.c} (95%)
+>  create mode 100644 tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
+>  create mode 100644 tools/perf/tests/dwarf-unwind.c
+>  create mode 100644 tools/perf/util/perf_regs.c
+>  create mode 100644 tools/perf/util/unwind-libdw.c
+>  create mode 100644 tools/perf/util/unwind-libdw.h
+>  rename tools/perf/util/{unwind.c => unwind-libunwind.c} (92%)
