@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaAQBPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 20:15:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310AbaAQBPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 20:15:43 -0500
-Message-ID: <52D8841F.9030709@redhat.com>
-Date: Thu, 16 Jan 2014 20:15:11 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1752007AbaAQBR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:17:29 -0500
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:40714 "HELO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751797AbaAQBR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 20:17:27 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Len Brown <lenb@kernel.org>, kosaki.motohiro@gmail.com,
-        dyoung@redhat.com, rientjes@google.com, linux-acpi@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
- hotplug [v5]
-References: <1389822660.1792.349.camel@misato.fc.hp.com> <1389886551-32647-1-git-send-email-prarit@redhat.com> <2048690.9OePJDLjDY@vostro.rjw.lan>
-In-Reply-To: <2048690.9OePJDLjDY@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201401151057.43044.arnd@arndb.de>
+References: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
+	<1389742458-7693-4-git-send-email-tinamdar@apm.com>
+	<201401151057.43044.arnd@arndb.de>
+Date: Thu, 16 Jan 2014 17:17:26 -0800
+Message-ID: <CACoXjcmQ5esXH+8OSuFN0r_qLRt1fqfu+oZ56OnfOt4J2pWLvw@mail.gmail.com>
+Subject: Re: [RFC PATCH V2 3/4] dt-bindings: pci: xgene pcie device tree bindings
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 15, 2014 at 1:57 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 15 January 2014, Tanmay Inamdar wrote:
+>> This patch adds the bindings for X-Gene PCIe driver. The driver resides
+>> under 'drivers/pci/host/pci-xgene.c' file.
+>>
+>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>> ---
+>>  .../devicetree/bindings/pci/xgene-pcie.txt         |   45 ++++++++++++++++++++
+>>  1 file changed, 45 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pcie.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/pci/xgene-pcie.txt b/Documentation/devicetree/bindings/pci/xgene-pcie.txt
+>> new file mode 100644
+>> index 0000000..19b9c28
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pci/xgene-pcie.txt
+>> @@ -0,0 +1,45 @@
+>> +* AppliedMicro X-Gene PCIe interface
+>> +
+>> +Required properties:
+>> +- status: Either "ok" or "disabled".
+>
+> "status" isn't normally a required property. The default interpretation is
+> that a node without a status property is active.
 
+ok. I will move 'status' under optional properties.
 
-On 01/16/2014 08:26 PM, Rafael J. Wysocki wrote:
-> On Thursday, January 16, 2014 10:35:51 AM Prarit Bhargava wrote:
->> When booting a kdump kernel on a system that has specific memory hotplug
->> regions the boot will fail with warnings like:
-> 
-> The timestamps are still present, sigh.
-> 
-> OK, please see
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=00159a2013269bc0a617de885e4b921349192bd0
-> 
-> and tell me if it looks good to you.
-> 
+>
+>> +- device_type: set to "pci"
+>> +- compatible: should contain "xgene,pcie" to identify the core.
+>> +- reg: base addresses and lengths of the pcie controller configuration
+>> +     space register.
+>
+> Doesn't match the code or example: You only list one area here, but
+> you actually need to register sets.
 
-Looks good to me.
+ok. I will update
 
-P.
+>
+> Looks good otherwise now.
+>
+>         Arnd
