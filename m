@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaAQUCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:02:04 -0500
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:18366 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752942AbaAQUCA (ORCPT
+	id S1753464AbaAQUEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:04:23 -0500
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:45026 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaAQUEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 15:02:00 -0500
-Message-ID: <52D98C2F.60001@itdev.co.uk>
-Date: Fri, 17 Jan 2014 20:01:51 +0000
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Yufeng Shen <miletus@google.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, adlr@chromium.org
-Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>	<20130718194739.GA559@polaris.bitmath.org>	<520CFA0D.4090905@itdev.co.uk>	<20130815160734.GB12196@core.coreip.homeip.net>	<522F2590.1080103@itdev.co.uk>	<CAPDwgkOo7FYLujk16kJM=BqmXRKvZ2S_LOYURW0cXT5t=cmi6w@mail.gmail.com>	<52D66699.8020309@itdev.co.uk> <CAPDwgkOsP4K7r0-Mo-U52X9knRbGgbuD4dGptmj3x-LMTN75BA@mail.gmail.com>
-In-Reply-To: <CAPDwgkOsP4K7r0-Mo-U52X9knRbGgbuD4dGptmj3x-LMTN75BA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jan 2014 15:04:21 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Chris Ball <chris@printf.net>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] mmc: sdhci: fix possible scheduling while atomic
+Date: Fri, 17 Jan 2014 11:57:10 -0800
+Message-Id: <1389988630-9481-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yufeng Shen wrote:
-> On Wed, Jan 15, 2014 at 5:44 AM, Nick Dyer <nick.dyer@itdev.co.uk
-> <mailto:nick.dyer@itdev.co.uk>> wrote:
->     > We (Chromium authors) are planning on bringing our local tree of atmel
->     > driver to be as close as possible to
->     > upstream and trying to figure out what's the best tree to rebase against.
-> 
->     I was considering picking up the patches that Dimitry has already reviewed
->     and rebasing them against the current mainline to try and get things moving
->     again - would that be useful?
-> 
-> That would certainly be useful. Please let me know the branch/tag name once
-> you finish that.
+sdhci_execute_tuning() takes host->lock without disabling interrupts.
+Use spin_lock_irq{save,restore} instead so that we avoid taking an
+interrupt and scheduling while holding host->lock.
 
-I've rebased Dimitry's atmel-mxt-ts branch against his dtor/next tree. You
-can find it at
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/mmc/host/sdhci.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-https://github.com/ndyer/linux/tree/for-next-20140117-dtor-rebase
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index ec3eb30..84c80e7 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1857,12 +1857,13 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+ 	unsigned long timeout;
+ 	int err = 0;
+ 	bool requires_tuning_nonuhs = false;
++	unsigned long flags;
+ 
+ 	host = mmc_priv(mmc);
+ 
+ 	sdhci_runtime_pm_get(host);
+ 	disable_irq(host->irq);
+-	spin_lock(&host->lock);
++	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+ 
+@@ -1882,14 +1883,14 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+ 	    requires_tuning_nonuhs)
+ 		ctrl |= SDHCI_CTRL_EXEC_TUNING;
+ 	else {
+-		spin_unlock(&host->lock);
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		enable_irq(host->irq);
+ 		sdhci_runtime_pm_put(host);
+ 		return 0;
+ 	}
+ 
+ 	if (host->ops->platform_execute_tuning) {
+-		spin_unlock(&host->lock);
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		enable_irq(host->irq);
+ 		err = host->ops->platform_execute_tuning(host, opcode);
+ 		sdhci_runtime_pm_put(host);
+@@ -1963,7 +1964,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+ 		host->cmd = NULL;
+ 		host->mrq = NULL;
+ 
+-		spin_unlock(&host->lock);
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		enable_irq(host->irq);
+ 
+ 		/* Wait for Buffer Read Ready interrupt */
+@@ -1971,7 +1972,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
+ 					(host->tuning_done == 1),
+ 					msecs_to_jiffies(50));
+ 		disable_irq(host->irq);
+-		spin_lock(&host->lock);
++		spin_lock_irqsave(&host->lock, flags);
+ 
+ 		if (!host->tuning_done) {
+ 			pr_info(DRIVER_NAME ": Timeout waiting for "
+@@ -2046,7 +2047,7 @@ out:
+ 		err = 0;
+ 
+ 	sdhci_clear_set_irqs(host, SDHCI_INT_DATA_AVAIL, ier);
+-	spin_unlock(&host->lock);
++	spin_unlock_irqrestore(&host->lock, flags);
+ 	enable_irq(host->irq);
+ 	sdhci_runtime_pm_put(host);
+ 
+-- 
+1.8.5.2
 
-I needed to update the INIT_COMPLETION api. So far I have verified it
-builds, will do some testing on it next week.
-
-I will also need to port my previous patchset on top of this branch.
