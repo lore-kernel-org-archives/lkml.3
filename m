@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaAQP0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:26:32 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58741 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaAQP0Q (ORCPT
+	id S1753270AbaAQP0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:26:12 -0500
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:54997 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752620AbaAQPSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:26:16 -0500
-Message-ID: <52D94B95.2060704@linaro.org>
-Date: Fri, 17 Jan 2014 16:26:13 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
-Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
-References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140117152310.GK11314@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 17 Jan 2014 10:18:41 -0500
+Message-Id: <20140117151835.608798260@linux.com>
+Date: Fri, 17 Jan 2014 09:18:24 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 12/41] metag: Replace __get_cpu_var uses for address calculation
+References: <20140117151812.770437629@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_metag
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 04:23 PM, Peter Zijlstra wrote:
-> On Fri, Jan 17, 2014 at 04:06:45PM +0100, Daniel Lezcano wrote:
->>> I suppose we could write something like:
->>>
->>> struct task_struct *pick_next_task(struct rq *rq, struct task_struct *prev)
->>> {
->>> 	const struct sched_class *class;
->>> 	struct task_struct *p;
->>>
->>> again:
->>> 	if (likely(rq->nr_running)) {
->>>
->>> 		if (likely(rq->nr_running == rq->cfs.h_nr_running))
->>> 			return fair_sched_class.pick_next_task(rq, prev);
->>>
->>> 		for_each_class(class) {
->>> 			p = class->pick_next_task(rq, prev);
->>> 			if (p)
->>> 				return p;
->>> 		}
->>> 	}
->>>
->>> 	if (idle_balance(rq))
->>> 		goto again;
->>>
->>> 	rq->idle_stamp = rq_clock(rq);
->>>
->>> 	return idle_sched_class.pick_next_task(rq, prev);
->>> }
->>>
->>> Which keeps idle_balance() before put_prev_task(), and by using
->>> idle_sched_clas.pick_next_task() doesn't rape the idle class interface
->>> like you did :-)
->>
->> But put_prev_task is called before pick_next_task, so idle_balance() is
->> called after now, no  ?
->
-> No, put_prev_task() is called by the pick_next_task() that returns a
-> task. So in the idle case above, the idle_sched_class.pick_next_task()
-> will do the required put_prev_task().
+Replace __get_cpu_var uses for address calculation with this_cpu_ptr().
 
-Ah, ok. Let me try it.
+Acked-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Index: linux/arch/metag/kernel/perf/perf_event.c
+===================================================================
+--- linux.orig/arch/metag/kernel/perf/perf_event.c	2013-12-02 16:07:50.134624099 -0600
++++ linux/arch/metag/kernel/perf/perf_event.c	2013-12-02 16:07:50.134624099 -0600
+@@ -258,7 +258,7 @@ int metag_pmu_event_set_period(struct pe
+ 
+ static void metag_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -306,7 +306,7 @@ static void metag_pmu_stop(struct perf_e
+ 
+ static int metag_pmu_add(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = 0, ret = 0;
+ 
+@@ -348,7 +348,7 @@ out:
+ 
+ static void metag_pmu_del(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -607,7 +607,7 @@ static int _hw_perf_event_init(struct pe
+ 
+ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int config = event->config;
+ 	unsigned int tmp = config & 0xf0;
+ 	unsigned long flags;
+@@ -680,7 +680,7 @@ unlock:
+ 
+ static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int tmp = 0;
+ 	unsigned long flags;
+ 
+@@ -728,7 +728,7 @@ out:
+ 
+ static void metag_pmu_write_counter(int idx, u32 val)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	u32 tmp = 0;
+ 	unsigned long flags;
+ 
+@@ -761,7 +761,7 @@ static int metag_pmu_event_map(int idx)
+ static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
+ {
+ 	int idx = (int)dev;
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_event *event = cpuhw->events[idx];
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct pt_regs *regs = get_irq_regs();
 
