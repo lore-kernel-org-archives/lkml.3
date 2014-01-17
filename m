@@ -1,75 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaAQDkp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 22:40:45 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36135 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaAQDkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 22:40:41 -0500
-Message-ID: <1389929988.7406.18.camel@pasglop>
-Subject: [Q] Why does kexec use device_shutdown rather than ubind them
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org
-Date: Fri, 17 Jan 2014 14:39:48 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751942AbaAQDmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 22:42:00 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61086 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaAQDl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 22:41:58 -0500
+Message-ID: <52D8A672.8070808@linaro.org>
+Date: Fri, 17 Jan 2014 11:41:38 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Yijing Wang <wangyijing@huawei.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: linux-acpi@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH v2] ACPI: Fix acpi_evaluate_object() return value check
+References: <1389922191-28664-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1389922191-28664-1-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks !
+On 2014-1-17 9:29, Yijing Wang wrote:
+> Fix acpi_evaluate_object() return value check,
+> shoud acpi_status not int.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+> 
+> v1->v2: Add CC to the related subsystem MAINTAINERS.
+> 
+> ---
+>  drivers/gpu/drm/i915/intel_acpi.c              |   13 +++++++------
+>  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    6 +++---
+>  drivers/gpu/drm/nouveau/nouveau_acpi.c         |   13 +++++++------
+>  drivers/pci/pci-label.c                        |    6 +++---
+>  4 files changed, 20 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
+> index dfff090..7ea00e5 100644
+> --- a/drivers/gpu/drm/i915/intel_acpi.c
+> +++ b/drivers/gpu/drm/i915/intel_acpi.c
+> @@ -35,7 +35,7 @@ static int intel_dsm(acpi_handle handle, int func)
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+>  	u32 result;
+> -	int ret = 0;
 
-Sorry for the semi-random CC list, not sure who owns kexec nowadays. So
-we are working on a new crop of power servers for which the bootloader
-is going to be using kexec.
+The 'ret' is removed, but
 
-As expected, we've been chasing a number of reliability issues mostly
-due to drivers not behaving properly, such as leaving devices DMA'ing or
-in a state that upsets the new kernel etc...
+> +	acpi_status status;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -50,8 +50,8 @@ static int intel_dsm(acpi_handle handle, int func)
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (ret) {
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+>  		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+>  		return ret;
 
-So far our approach has been to fix the drivers one by one, adding the
-shutdown() method when it's missing, etc...
+you still use it here, so you should -EINVAL or something else here.
 
-But that lead me to wonder ... why shutdown() in the first place ? The
-semantic of shutdown() is that we are going to power the machine off. In
-some cases, that method will actively participate in the shutdown,
-powering things off, spinning disk down, etc....
+>  	}
+> @@ -141,7 +141,8 @@ static void intel_dsm_platform_mux_info(void)
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *pkg;
+> -	int i, ret;
+> +	acpi_status status;
+> +	int i;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -156,9 +157,9 @@ static void intel_dsm_platform_mux_info(void)
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
+> +	acpi_status = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
+>  				   &output);
+> -	if (ret) {
+> +	if (ACPI_FAILURE(status)) {
+>  		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+>  		goto out;
+>  	}
+> diff --git a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> index 1291204..3920943 100644
+> --- a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+> @@ -114,14 +114,14 @@ mxm_shadow_dsm(struct nouveau_mxm *mxm, u8 version)
+>  	struct acpi_buffer retn = { ACPI_ALLOCATE_BUFFER, NULL };
+>  	union acpi_object *obj;
+>  	acpi_handle handle;
+> -	int ret;
+> +	acpi_status status;
+>  
+>  	handle = ACPI_HANDLE(&device->pdev->dev);
+>  	if (!handle)
+>  		return false;
+>  
+> -	ret = acpi_evaluate_object(handle, "_DSM", &list, &retn);
+> -	if (ret) {
+> +	status = acpi_evaluate_object(handle, "_DSM", &list, &retn);
+> +	if (ACPI_FAILURE(status)) {
+>  		nv_debug(mxm, "DSM MXMS failed: %d\n", ret);
+>  		return false;
+>  	}
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> index ba0183f..6f810f2 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> @@ -82,7 +82,8 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+> -	int i, err;
+> +	acpi_status status;
+> +	int i;
+>  	char args_buff[4];
+>  
+>  	input.count = 4;
+> @@ -101,8 +102,8 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+>  		args_buff[i] = (arg >> i * 8) & 0xFF;
+>  	params[3].buffer.pointer = args_buff;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (err) {
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+>  		return err;
 
-It doesn't have the semantic of "put the device into a clean state for a
-new driver to pick up". It's also rarely implemented.
+here too.
 
-On the other hand, the remove() routine is almost everywhere, and is
-already well understood as needing to leave the device in a clean state,
-as it's often used for rmmod (often by the driver developer
-him/herself), more likely to be tested in a condition that doesn't
-involve having the machine off immediately afterward but on the contrare
-in a condition where a new driver can come and try to pick the device
-up.
+>  	}
+> @@ -134,7 +135,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>  	struct acpi_object_list input;
+>  	union acpi_object params[4];
+>  	union acpi_object *obj;
+> -	int err;
+> +	acpi_status status;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -148,8 +149,8 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+>  	params[3].type = ACPI_TYPE_INTEGER;
+>  	params[3].integer.value = arg;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (err) {
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> +	if (ACPI_FAILURE(status)) {
+>  		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+>  		return err;
 
-Additionally, remove() is also what KVM does when assigning devices to
-guest, ie, the original driver is unbound from the host, and VFIO is
-bound in its place.
+and here.
 
-So we have common purpose with kexec (somewhat) and possibly common (and
-better) testing coverage with remove() than with shutdown().
+>  	}
+> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+> index d51f45a..3c21f1b 100644
+> --- a/drivers/pci/pci-label.c
+> +++ b/drivers/pci/pci-label.c
+> @@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
+>  	union acpi_object *obj;
+>  	int len = 0;
+>  
+> -	int err;
+> +	acpi_status status;
+>  
+>  	input.count = 4;
+>  	input.pointer = params;
+> @@ -228,8 +228,8 @@ dsm_get_label(acpi_handle handle, int func,
+>  	params[3].package.count = 0;
+>  	params[3].package.elements = NULL;
+>  
+> -	err = acpi_evaluate_object(handle, "_DSM", &input, output);
+> -	if (err)
+> +	status = acpi_evaluate_object(handle, "_DSM", &input, output);
+> +	if (ACPI_FAILURE(status))
+>  		return -1;
 
-I plan to experiment a bit in our bootloader see if that makes a
-difference, maybe doing a first pass of unbind for anything that can be
-unbound, and shutdown for the rest.
+can we return specific error such as -EINVAL instead of hard code?
 
-(I'll probably also sneak it a PCIe hot reset at the end but that's more
-platform specific).
-
-Any opinion ?
-
-Cheers,
-Ben.
- 
-
+Thanks
+Hanjun
