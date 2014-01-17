@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaAQMl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:41:57 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:55308 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283AbaAQMly (ORCPT
+	id S1752617AbaAQMnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:43:04 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35586 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297AbaAQMnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:41:54 -0500
+	Fri, 17 Jan 2014 07:43:01 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -20,11 +20,10 @@ Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         patches@linaro.org, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: [PATCH 08/20] ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64
-Date: Fri, 17 Jan 2014 20:25:02 +0800
-Message-Id: <1389961514-13562-9-git-send-email-hanjun.guo@linaro.org>
+        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH 09/20] ARM64 / ACPI: Implement core functions for parsing MADT table
+Date: Fri, 17 Jan 2014 20:25:03 +0800
+Message-Id: <1389961514-13562-10-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
 References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
@@ -32,27 +31,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI reduced hardware mode is disabled by default, but ARM64 can
-only run properly in ACPI hardware reduced mode at now, so select
-ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64.
+Implement core functions for parsing MADT table to get the information
+about GIC cpu interface and GIC distributor to prepare for SMP and GIC
+initialization.
 
-Signed-off-by: Al Stone <al.stone@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/arm64/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm64/include/asm/acpi.h |    3 +
+ drivers/acpi/plat/arm-core.c  |  139 ++++++++++++++++++++++++++++++++++++++++-
+ drivers/acpi/tables.c         |   21 +++++++
+ 3 files changed, 162 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 2b1fb1d..741692c 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1,5 +1,6 @@
- config ARM64
- 	def_bool y
-+	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
+diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+index e108d9c..c335c6d 100644
+--- a/arch/arm64/include/asm/acpi.h
++++ b/arch/arm64/include/asm/acpi.h
+@@ -83,6 +83,9 @@ void arch_fix_phys_package_id(int num, u32 slot);
+ extern int (*acpi_suspend_lowlevel)(void);
+ #define acpi_wakeup_address (0)
+ 
++#define MAX_GIC_CPU_INTERFACE 256
++#define MAX_GIC_DISTRIBUTOR   1		/* should be the same as MAX_GIC_NR */
++
+ #else	/* !CONFIG_ACPI */
+ #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
+ #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
+diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
+index 1835b21..8ba3e6f 100644
+--- a/drivers/acpi/plat/arm-core.c
++++ b/drivers/acpi/plat/arm-core.c
+@@ -46,6 +46,16 @@ EXPORT_SYMBOL(acpi_disabled);
+ int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+ EXPORT_SYMBOL(acpi_pci_disabled);
+ 
++/*
++ * Local interrupt controller address,
++ * GIC cpu interface base address on ARM/ARM64
++ */
++static u64 acpi_lapic_addr __initdata;
++
++#define BAD_MADT_ENTRY(entry, end) (					\
++	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
++	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
++
+ #define PREFIX			"ACPI: "
+ 
+ /* FIXME: this function should be moved to topology.c when it is ready */
+@@ -92,6 +102,115 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+ 	return;
+ }
+ 
++static int __init acpi_parse_madt(struct acpi_table_header *table)
++{
++	struct acpi_table_madt *madt = NULL;
++
++	madt = (struct acpi_table_madt *)table;
++	if (!madt) {
++		pr_warn(PREFIX "Unable to map MADT\n");
++		return -ENODEV;
++	}
++
++	if (madt->address) {
++		acpi_lapic_addr = (u64) madt->address;
++
++		pr_info(PREFIX "Local APIC address 0x%08x\n", madt->address);
++	}
++
++	return 0;
++}
++
++/*
++ * GIC structures on ARM are somthing like Local APIC structures on x86,
++ * which means GIC cpu interfaces for GICv2/v3. Every GIC structure in
++ * MADT table represents a cpu in the system.
++ *
++ * GIC distributor structures are somthing like IOAPIC on x86. GIC can
++ * be initialized with information in this structure.
++ *
++ * Please refer to chapter5.2.12.14/15 of ACPI 5.0
++ */
++
++static int __init
++acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
++{
++	struct acpi_madt_generic_interrupt *processor = NULL;
++
++	processor = (struct acpi_madt_generic_interrupt *)header;
++
++	if (BAD_MADT_ENTRY(processor, end))
++		return -EINVAL;
++
++	acpi_table_print_madt_entry(header);
++
++	return 0;
++}
++
++static int __init
++acpi_parse_gic_distributor(struct acpi_subtable_header *header,
++				const unsigned long end)
++{
++	struct acpi_madt_generic_distributor *distributor = NULL;
++
++	distributor = (struct acpi_madt_generic_distributor *)header;
++
++	if (BAD_MADT_ENTRY(distributor, end))
++		return -EINVAL;
++
++	acpi_table_print_madt_entry(header);
++
++	return 0;
++}
++
++/*
++ * Parse GIC cpu interface related entries in MADT
++ * returns 0 on success, < 0 on error
++ */
++static int __init acpi_parse_madt_gic_entries(void)
++{
++	int count;
++
++	/*
++	 * do a partial walk of MADT to determine how many CPUs
++	 * we have including disabled CPUs
++	 */
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
++				acpi_parse_gic, MAX_GIC_CPU_INTERFACE);
++
++	if (!count) {
++		pr_err(PREFIX "No GIC entries present\n");
++		return -ENODEV;
++	} else if (count < 0) {
++		pr_err(PREFIX "Error parsing GIC entry\n");
++		return count;
++	}
++
++	return 0;
++}
++
++/*
++ * Parse GIC distributor related entries in MADT
++ * returns 0 on success, < 0 on error
++ */
++static int __init acpi_parse_madt_gic_distributor_entries(void)
++{
++	int count;
++
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR,
++			acpi_parse_gic_distributor, MAX_GIC_DISTRIBUTOR);
++
++	if (!count) {
++		pr_err(PREFIX "No GIC distributor entries present\n");
++		return -ENODEV;
++	} else if (count < 0) {
++		pr_err(PREFIX "Error parsing GIC distributor entry\n");
++		return count;
++	}
++
++	return 0;
++}
++
+ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ {
+ 	*irq = gsi_to_irq(gsi);
+@@ -141,11 +260,29 @@ static int __init acpi_parse_fadt(struct acpi_table_header *table)
+ 
+ static void __init early_acpi_process_madt(void)
+ {
+-	return;
++	acpi_table_parse(ACPI_SIG_MADT, acpi_parse_madt);
+ }
+ 
+ static void __init acpi_process_madt(void)
+ {
++	int error;
++
++	if (!acpi_table_parse(ACPI_SIG_MADT, acpi_parse_madt)) {
++
++		/*
++		 * Parse MADT GIC cpu interface entries
++		 */
++		error = acpi_parse_madt_gic_entries();
++		if (!error) {
++			/*
++			 * Parse MADT GIC distributor entries
++			 */
++			acpi_parse_madt_gic_distributor_entries();
++		}
++	}
++
++	pr_info("Using ACPI for processor (GIC) configuration information\n");
++
+ 	return;
+ }
+ 
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..b3e4615 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -191,6 +191,27 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
+ 		}
+ 		break;
+ 
++	case ACPI_MADT_TYPE_GENERIC_INTERRUPT:
++		{
++			struct acpi_madt_generic_interrupt *p =
++				(struct acpi_madt_generic_interrupt *)header;
++			printk(KERN_INFO PREFIX
++			       "GIC (acpi_id[0x%04x] gic_id[0x%04x] %s)\n",
++			       p->uid, p->gic_id,
++			       (p->flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
++		}
++		break;
++
++	case ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR:
++		{
++			struct acpi_madt_generic_distributor *p =
++				(struct acpi_madt_generic_distributor *)header;
++			printk(KERN_INFO PREFIX
++			       "GIC Distributor (id[0x%04x] address[0x%08llx] gsi_base[%d])\n",
++			       p->gic_id, p->base_address, p->global_irq_base);
++		}
++		break;
++
+ 	default:
+ 		printk(KERN_WARNING PREFIX
+ 		       "Found unsupported MADT entry (type = 0x%x)\n",
 -- 
 1.7.9.5
 
