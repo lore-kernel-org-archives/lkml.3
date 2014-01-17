@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaAQMnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:43:04 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35586 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297AbaAQMnB (ORCPT
+	id S1752633AbaAQMoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:44:10 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:51446 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaAQMoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:43:01 -0500
+	Fri, 17 Jan 2014 07:44:08 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -21,9 +21,9 @@ Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         patches@linaro.org, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
         Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 09/20] ARM64 / ACPI: Implement core functions for parsing MADT table
-Date: Fri, 17 Jan 2014 20:25:03 +0800
-Message-Id: <1389961514-13562-10-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH 10/20] ARM64 / ACPI: Enumerate possible/present CPU set and map logical cpu id to APIC id
+Date: Fri, 17 Jan 2014 20:25:04 +0800
+Message-Id: <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
 References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
@@ -31,231 +31,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement core functions for parsing MADT table to get the information
-about GIC cpu interface and GIC distributor to prepare for SMP and GIC
-initialization.
+When boot the kernel with MADT, the cpu possible and present sets should
+be enumerated for later smp initialization.
+
+The logic cpu id maps to APIC id (GIC id) is also implemented, it is
+needed for acpi processor drivers.
 
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/arm64/include/asm/acpi.h |    3 +
- drivers/acpi/plat/arm-core.c  |  139 ++++++++++++++++++++++++++++++++++++++++-
- drivers/acpi/tables.c         |   21 +++++++
- 3 files changed, 162 insertions(+), 1 deletion(-)
+ arch/arm64/include/asm/acpi.h |    7 ++--
+ drivers/acpi/plat/arm-core.c  |   83 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index e108d9c..c335c6d 100644
+index c335c6d..7edd39e 100644
 --- a/arch/arm64/include/asm/acpi.h
 +++ b/arch/arm64/include/asm/acpi.h
-@@ -83,6 +83,9 @@ void arch_fix_phys_package_id(int num, u32 slot);
+@@ -76,9 +76,6 @@ static inline void acpi_disable_pci(void)
+ /* FIXME: this function should be moved to topology.h when it's ready */
+ void arch_fix_phys_package_id(int num, u32 slot);
+ 
+-/* temperally define -1 to make acpi core compilerable */
+-#define cpu_physical_id(cpu) -1
+-
+ /* Low-level suspend routine. */
  extern int (*acpi_suspend_lowlevel)(void);
  #define acpi_wakeup_address (0)
+@@ -86,6 +83,10 @@ extern int (*acpi_suspend_lowlevel)(void);
+ #define MAX_GIC_CPU_INTERFACE 256
+ #define MAX_GIC_DISTRIBUTOR   1		/* should be the same as MAX_GIC_NR */
  
-+#define MAX_GIC_CPU_INTERFACE 256
-+#define MAX_GIC_DISTRIBUTOR   1		/* should be the same as MAX_GIC_NR */
++/* map logic cpu id to physical GIC id */
++extern int arm_cpu_to_apicid[NR_CPUS];
++#define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
 +
  #else	/* !CONFIG_ACPI */
  #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
  #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
 diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-index 1835b21..8ba3e6f 100644
+index 8ba3e6f..1d9b789 100644
 --- a/drivers/acpi/plat/arm-core.c
 +++ b/drivers/acpi/plat/arm-core.c
-@@ -46,6 +46,16 @@ EXPORT_SYMBOL(acpi_disabled);
- int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
- EXPORT_SYMBOL(acpi_pci_disabled);
+@@ -31,6 +31,7 @@
+ #include <linux/smp.h>
  
-+/*
-+ * Local interrupt controller address,
-+ * GIC cpu interface base address on ARM/ARM64
+ #include <asm/pgtable.h>
++#include <asm/cputype.h>
+ 
+ /*
+  * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
+@@ -52,6 +53,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
+  */
+ static u64 acpi_lapic_addr __initdata;
+ 
++/* available_cpus here means enabled cpu in MADT */
++static int available_cpus;
++
++/* Map logic cpu id to physical GIC id (physical CPU id). */
++int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
++static int boot_cpu_apic_id = -1;
++
+ #define BAD_MADT_ENTRY(entry, end) (					\
+ 	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
+ 	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
+@@ -132,6 +140,55 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
+  * Please refer to chapter5.2.12.14/15 of ACPI 5.0
+  */
+ 
++/**
++ * acpi_register_gic_cpu_interface - register a gic cpu interface and
++ * generates a logic cpu number
++ * @id: gic cpu interface id to register
++ * @enabled: this cpu is enabled or not
++ *
++ * Returns the logic cpu number which maps to the gic cpu interface
 + */
-+static u64 acpi_lapic_addr __initdata;
-+
-+#define BAD_MADT_ENTRY(entry, end) (					\
-+	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
-+	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
-+
- #define PREFIX			"ACPI: "
- 
- /* FIXME: this function should be moved to topology.c when it is ready */
-@@ -92,6 +102,115 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
- 	return;
- }
- 
-+static int __init acpi_parse_madt(struct acpi_table_header *table)
++static int acpi_register_gic_cpu_interface(int id, u8 enabled)
 +{
-+	struct acpi_table_madt *madt = NULL;
++	int cpu;
 +
-+	madt = (struct acpi_table_madt *)table;
-+	if (!madt) {
-+		pr_warn(PREFIX "Unable to map MADT\n");
-+		return -ENODEV;
++	if (id >= MAX_GIC_CPU_INTERFACE) {
++		pr_info(PREFIX "skipped apicid that is too big\n");
++		return -EINVAL;
 +	}
 +
-+	if (madt->address) {
-+		acpi_lapic_addr = (u64) madt->address;
-+
-+		pr_info(PREFIX "Local APIC address 0x%08x\n", madt->address);
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * GIC structures on ARM are somthing like Local APIC structures on x86,
-+ * which means GIC cpu interfaces for GICv2/v3. Every GIC structure in
-+ * MADT table represents a cpu in the system.
-+ *
-+ * GIC distributor structures are somthing like IOAPIC on x86. GIC can
-+ * be initialized with information in this structure.
-+ *
-+ * Please refer to chapter5.2.12.14/15 of ACPI 5.0
-+ */
-+
-+static int __init
-+acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
-+{
-+	struct acpi_madt_generic_interrupt *processor = NULL;
-+
-+	processor = (struct acpi_madt_generic_interrupt *)header;
-+
-+	if (BAD_MADT_ENTRY(processor, end))
++	total_cpus++;
++	if (!enabled)
 +		return -EINVAL;
 +
-+	acpi_table_print_madt_entry(header);
-+
-+	return 0;
-+}
-+
-+static int __init
-+acpi_parse_gic_distributor(struct acpi_subtable_header *header,
-+				const unsigned long end)
-+{
-+	struct acpi_madt_generic_distributor *distributor = NULL;
-+
-+	distributor = (struct acpi_madt_generic_distributor *)header;
-+
-+	if (BAD_MADT_ENTRY(distributor, end))
++	if (available_cpus >=  NR_CPUS) {
++		pr_warn(PREFIX "NR_CPUS limit of %d reached,"
++		" Processor %d/0x%x ignored.\n", NR_CPUS, total_cpus, id);
 +		return -EINVAL;
-+
-+	acpi_table_print_madt_entry(header);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Parse GIC cpu interface related entries in MADT
-+ * returns 0 on success, < 0 on error
-+ */
-+static int __init acpi_parse_madt_gic_entries(void)
-+{
-+	int count;
-+
-+	/*
-+	 * do a partial walk of MADT to determine how many CPUs
-+	 * we have including disabled CPUs
-+	 */
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
-+				acpi_parse_gic, MAX_GIC_CPU_INTERFACE);
-+
-+	if (!count) {
-+		pr_err(PREFIX "No GIC entries present\n");
-+		return -ENODEV;
-+	} else if (count < 0) {
-+		pr_err(PREFIX "Error parsing GIC entry\n");
-+		return count;
 +	}
 +
-+	return 0;
-+}
++	available_cpus++;
 +
-+/*
-+ * Parse GIC distributor related entries in MADT
-+ * returns 0 on success, < 0 on error
-+ */
-+static int __init acpi_parse_madt_gic_distributor_entries(void)
-+{
-+	int count;
-+
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR,
-+			acpi_parse_gic_distributor, MAX_GIC_DISTRIBUTOR);
-+
-+	if (!count) {
-+		pr_err(PREFIX "No GIC distributor entries present\n");
-+		return -ENODEV;
-+	} else if (count < 0) {
-+		pr_err(PREFIX "Error parsing GIC distributor entry\n");
-+		return count;
-+	}
-+
-+	return 0;
-+}
-+
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
- {
- 	*irq = gsi_to_irq(gsi);
-@@ -141,11 +260,29 @@ static int __init acpi_parse_fadt(struct acpi_table_header *table)
- 
- static void __init early_acpi_process_madt(void)
- {
--	return;
-+	acpi_table_parse(ACPI_SIG_MADT, acpi_parse_madt);
- }
- 
- static void __init acpi_process_madt(void)
- {
-+	int error;
-+
-+	if (!acpi_table_parse(ACPI_SIG_MADT, acpi_parse_madt)) {
-+
++	/* allocate a logic cpu id for the new comer */
++	if (boot_cpu_apic_id == id) {
 +		/*
-+		 * Parse MADT GIC cpu interface entries
++		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
++		 * for BSP, no need to allocte again.
 +		 */
-+		error = acpi_parse_madt_gic_entries();
-+		if (!error) {
-+			/*
-+			 * Parse MADT GIC distributor entries
-+			 */
-+			acpi_parse_madt_gic_distributor_entries();
-+		}
++		cpu = 0;
++	} else {
++		cpu = cpumask_next_zero(-1, cpu_present_mask);
 +	}
 +
-+	pr_info("Using ACPI for processor (GIC) configuration information\n");
++	/* map the logic cpu id to APIC id */
++	arm_cpu_to_apicid[cpu] = id;
 +
- 	return;
++	set_cpu_present(cpu, true);
++	set_cpu_possible(cpu, true);
++
++	return cpu;
++}
++
+ static int __init
+ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+ {
+@@ -144,6 +201,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+ 
+ 	acpi_table_print_madt_entry(header);
+ 
++	/*
++	 * We need to register disabled CPU as well to permit
++	 * counting disabled CPUs. This allows us to size
++	 * cpus_possible_map more accurately, to permit
++	 * to not preallocating memory for all NR_CPUS
++	 * when we use CPU hotplug.
++	 */
++	acpi_register_gic_cpu_interface(processor->gic_id,
++			processor->flags & ACPI_MADT_ENABLED);
++
+ 	return 0;
  }
  
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index d67a1fe..b3e4615 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -191,6 +191,27 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
- 		}
- 		break;
+@@ -186,6 +253,19 @@ static int __init acpi_parse_madt_gic_entries(void)
+ 		return count;
+ 	}
  
-+	case ACPI_MADT_TYPE_GENERIC_INTERRUPT:
-+		{
-+			struct acpi_madt_generic_interrupt *p =
-+				(struct acpi_madt_generic_interrupt *)header;
-+			printk(KERN_INFO PREFIX
-+			       "GIC (acpi_id[0x%04x] gic_id[0x%04x] %s)\n",
-+			       p->uid, p->gic_id,
-+			       (p->flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
-+		}
-+		break;
++#ifdef CONFIG_SMP
++	if (available_cpus == 0) {
++		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
++		arm_cpu_to_apicid[available_cpus] =
++			read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
++		available_cpus = 1;	/* We've got at least one of these */
++	}
++#endif
 +
-+	case ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR:
-+		{
-+			struct acpi_madt_generic_distributor *p =
-+				(struct acpi_madt_generic_distributor *)header;
-+			printk(KERN_INFO PREFIX
-+			       "GIC Distributor (id[0x%04x] address[0x%08llx] gsi_base[%d])\n",
-+			       p->gic_id, p->base_address, p->global_irq_base);
-+		}
-+		break;
++	/* Make boot-up look pretty */
++	pr_info("%d CPUs available, %d CPUs total\n", available_cpus,
++		total_cpus);
 +
- 	default:
- 		printk(KERN_WARNING PREFIX
- 		       "Found unsupported MADT entry (type = 0x%x)\n",
+ 	return 0;
+ }
+ 
+@@ -321,6 +401,9 @@ int __init early_acpi_boot_init(void)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
++	/* Get the boot CPU's GIC cpu interface id before MADT parsing */
++	boot_cpu_apic_id = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
++
+ 	/*
+ 	 * Process the Multiple APIC Description Table (MADT), if present
+ 	 */
 -- 
 1.7.9.5
 
