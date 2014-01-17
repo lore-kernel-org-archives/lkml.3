@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaAQPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:37:16 -0500
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:45624
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752144AbaAQPhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:37:13 -0500
-Message-Id: <20140117151837.601798336@linux.com>
-Date: Fri, 17 Jan 2014 09:18:43 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 31/41] s390: rename __this_cpu_ptr to raw_cpu_ptr
-References: <20140117151812.770437629@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_s390
+	id S1752458AbaAQPjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:39:51 -0500
+Received: from fieldses.org ([174.143.236.118]:41282 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354AbaAQPjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 10:39:47 -0500
+Date: Fri, 17 Jan 2014 10:39:17 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140117153917.GA26636@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140117121723.GA18375@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117121723.GA18375@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
+On Fri, Jan 17, 2014 at 04:17:23AM -0800, Christoph Hellwig wrote:
+> On Wed, Jan 15, 2014 at 10:17:49AM -0500, J. Bruce Fields wrote:
+> > From: "J. Bruce Fields" <bfields@redhat.com>
+> > 
+> > d_splice_alias can create duplicate directory aliases (in the !new
+> > case), or (in the new case) d_move without holding appropriate locks.
+> > 
+> > d_materialise_unique deals with both of these problems.  (The latter
+> > seems to be dealt by trylocks (see __d_unalias), which look like they
+> > could cause spurious lookup failures--but that's at least better than
+> > corrupting the dcache.)
+> 
+> I'm a bit worried about those spurious failures, maybe we should
+> retry in that case?
 
-Use raw_cpu_ptr instead.
+Maybe so.  I'm not sure how.  d_materialise_unique is called from lookup
+and we'd need to at least drop the parent i_mutex to give a concurrent
+rename a chance to progress.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+I think NFS or cluster filesystem clients could hit this case with:
 
-Index: linux/arch/s390/include/asm/percpu.h
-===================================================================
---- linux.orig/arch/s390/include/asm/percpu.h	2013-12-18 13:37:42.757203647 -0600
-+++ linux/arch/s390/include/asm/percpu.h	2013-12-18 13:37:42.747203967 -0600
-@@ -31,7 +31,7 @@
- 	pcp_op_T__ old__, new__, prev__;				\
- 	pcp_op_T__ *ptr__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	prev__ = *ptr__;						\
- 	do {								\
- 		old__ = prev__;						\
-@@ -70,7 +70,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp)); 				\
- 	if (__builtin_constant_p(val__) &&				\
- 	    ((szcast)val__ > -129) && ((szcast)val__ < 128)) {		\
- 		asm volatile(						\
-@@ -97,7 +97,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp));	 				\
- 	asm volatile(							\
- 		op "    %[old__],%[val__],%[ptr__]\n"			\
- 		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
-@@ -116,7 +116,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp));	 				\
- 	asm volatile(							\
- 		op "    %[old__],%[val__],%[ptr__]\n"			\
- 		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
-@@ -138,7 +138,7 @@
- 	pcp_op_T__ ret__;						\
- 	pcp_op_T__ *ptr__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	ret__ = cmpxchg(ptr__, oval, nval);				\
- 	preempt_enable();						\
- 	ret__;								\
-@@ -154,7 +154,7 @@
- 	typeof(pcp) *ptr__;						\
- 	typeof(pcp) ret__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	ret__ = xchg(ptr__, nval);					\
- 	preempt_enable();						\
- 	ret__;								\
-@@ -173,8 +173,8 @@
- 	typeof(pcp2) *p2__;						\
- 	int ret__;							\
- 	preempt_disable();						\
--	p1__ = __this_cpu_ptr(&(pcp1));					\
--	p2__ = __this_cpu_ptr(&(pcp2));					\
-+	p1__ = raw_cpu_ptr(&(pcp1));					\
-+	p2__ = raw_cpu_ptr(&(pcp2));					\
- 	ret__ = __cmpxchg_double(p1__, p2__, o1__, o2__, n1__, n2__);	\
- 	preempt_enable();						\
- 	ret__;								\
+	host A		host B
+	---------	-------------------------
+	process 1	process 1	process 2
+	---------	---------	---------
 
+			mkdir foo/X
+	mv foo/X bar/
+			stat bar/X	mv baz qux
+
+
+When (B,1) looks up X in bar it finds that X still has an alias in foo,
+tries to rename that alias to bar/X, but can't because the current
+baz->qux rename is holding the rename mutex.  So __d_unalias and the
+lookup return -EBUSY.
+
+None of those operations are particularly fast, so I'm a bit surprised
+we haven't already heard complaints.  I must be missing some reason this
+doesn't happen.  I guess I should set up a test.
+
+> Also looking over the changes I wonder if the explicit cecking for
+> aliases for every non-directory might have a major performance impact,
+> all the dcache growling already was a major issues in NFS workloads
+> years ago and I dumb it's become any better.
+
+This only happens on the first (uncached) lookup.  So we've already
+acquired a bunch of locks and probably done a round trip to a disk or a
+server--is walking a (typically short) list really something to worry
+about?
+
+> Also looking at this area I'd like to suggest that if you end up
+> merging the two I'd continue using the d_splice_alias name and
+> calling conventions.
+
+OK, I guess I don't care which one we keep.
+
+> Also the inode == NULL case really should be split out from
+> d_materialise_unique into a separate helper.  It shares almost no
+> code, is entirely undocumented to the point that I don't really
+> understand what the purpose is, and the only caller that can get
+> there (fuse) already branches around that case in the caller anyway.
+
+I think I see what you mean, I can fix that.
+
+--b.
