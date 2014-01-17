@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaAQQGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:06:41 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:50655 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaAQQGi (ORCPT
+	id S1752482AbaAQQHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:07:47 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:44821 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaAQQHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:06:38 -0500
-Message-ID: <52D9550B.9020108@linaro.org>
-Date: Fri, 17 Jan 2014 17:06:35 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 17 Jan 2014 11:07:46 -0500
+Date: Fri, 17 Jan 2014 17:07:42 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, acme@ghostprotocols.net
+Subject: Re: [PATCH 2/3] perf tools: Spare double comparison of callchain
+ first entry
+Message-ID: <20140117160740.GA11734@localhost.localdomain>
+References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
+ <1389713836-13375-3-git-send-email-fweisbec@gmail.com>
+ <87y52h930t.fsf@sejong.aot.lge.com>
+ <20140115165927.GA21574@localhost.localdomain>
+ <87d2js9132.fsf@sejong.aot.lge.com>
+ <20140116173454.GA5328@localhost.localdomain>
+ <20140116194734.GA2373@infradead.org>
+ <87ob3b6nz1.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
-Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
-References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net> <52D94B95.2060704@linaro.org> <20140117153323.GM11314@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140117153323.GM11314@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ob3b6nz1.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 04:33 PM, Peter Zijlstra wrote:
-> On Fri, Jan 17, 2014 at 04:26:13PM +0100, Daniel Lezcano wrote:
->>
->> Ah, ok. Let me try it.
->>
->
-> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
->
-> has a queue that applies to tip/master.
->
-> The patches as on lkml need a little help in applying.
->
-> They've not been near a compiler yet though :/
+On Fri, Jan 17, 2014 at 04:56:18PM +0900, Namhyung Kim wrote:
+> Hi Arnaldo and Frederic,
+> 
+> On Thu, 16 Jan 2014 17:47:34 -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Jan 16, 2014 at 06:34:58PM +0100, Frederic Weisbecker escreveu:
+> >> On Thu, Jan 16, 2014 at 10:17:53AM +0900, Namhyung Kim wrote: 
+> >> > I think if the sort key doesn't contain "symbol", unmatch case would be
+> >> > increased as more various callchains would go into a same entry.
+> >> 
+> >> You mean -g fractal,0.5,callee,address ?
+> >> 
+> >> Hmm, actually I haven't seen much difference there.
+> >
+> > I guess he will, but will wait for Namhyung's final ack here, ok?
+> 
+> I meant sorting of hist entry like "-s cpu".   So as your number said
+> it's not an issue IMHO.  Arnaldo, I'm good with this change please merge
+> it. :)
 
-Thanks a lot for the series. That makes my life easier :)
-
-I did a small compilation fix with the pick_next_task function for the 
-deadline scheduler and currently hackbench is running. I will give you 
-the results in a moment.
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Thanks a lot guys! :)
