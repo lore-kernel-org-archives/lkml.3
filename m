@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaAQIOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 03:14:00 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34606 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaAQIN4 (ORCPT
+	id S1752362AbaAQIOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 03:14:11 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42161 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbaAQIOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 03:13:56 -0500
+	Fri, 17 Jan 2014 03:14:08 -0500
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
         catalin.marinas@arm.com, will.deacon@arm.com
@@ -14,9 +14,9 @@ Cc: arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         linux-audit@redhat.com, patches@linaro.org,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v2 1/6] audit: Enable arm64 support
-Date: Fri, 17 Jan 2014 17:13:14 +0900
-Message-Id: <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v2 3/6] arm64: Add audit support
+Date: Fri, 17 Jan 2014 17:13:16 +0900
+Message-Id: <1389946399-4525-4-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1383733546-2846-1-git-send-email-takahiro.akashi@linaro.org>
@@ -25,41 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds AUDIT_ARCH_* identifiers for arm64(AArch64), and
-makes CONFIG_AUDITSYSCALL selectable.
+On AArch64, audit can be enabled with CONFIG_AUDIT_GENERIC.
+Most of audit features are implemented in generic way. This patch
+adds a small piece of architecture dependent code.
+syscall_get_arch(), which is used in seccomp, should just return
+AUDIT_ARCH_*.
 
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- include/uapi/linux/audit.h |    2 ++
- init/Kconfig               |    2 +-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ arch/arm64/include/asm/syscall.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 44b05a0..e39635b 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -327,6 +327,8 @@ enum {
- /* distinguish syscall tables */
- #define __AUDIT_ARCH_64BIT 0x80000000
- #define __AUDIT_ARCH_LE	   0x40000000
-+#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-+#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
- #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
- #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
- #define AUDIT_ARCH_ARMEB	(EM_ARM)
-diff --git a/init/Kconfig b/init/Kconfig
-index 79383d3..3aae602 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -284,7 +284,7 @@ config AUDIT
+diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+index 70ba9d4..3361fec 100644
+--- a/arch/arm64/include/asm/syscall.h
++++ b/arch/arm64/include/asm/syscall.h
+@@ -16,7 +16,9 @@
+ #ifndef __ASM_SYSCALL_H
+ #define __ASM_SYSCALL_H
  
- config AUDITSYSCALL
- 	bool "Enable system-call auditing support"
--	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-+	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
- 	default y if SECURITY_SELINUX
- 	help
- 	  Enable low-overhead system-call auditing infrastructure that
++#include <linux/audit.h>
+ #include <linux/err.h>
++#include <linux/sched.h>
+ 
+ 
+ static inline int syscall_get_nr(struct task_struct *task,
+@@ -104,4 +106,14 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 	memcpy(&regs->regs[i], args, n * sizeof(args[0]));
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *task,
++				   struct pt_regs *regs)
++{
++#ifdef __AARCH64EB__
++	return AUDIT_ARCH_AARCH64EB;
++#else
++	return AUDIT_ARCH_AARCH64;
++#endif
++}
++
+ #endif	/* __ASM_SYSCALL_H */
 -- 
 1.7.9.5
 
