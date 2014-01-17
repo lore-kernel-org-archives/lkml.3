@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaAQXD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 18:03:56 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9630 "EHLO
+	id S1753695AbaAQXDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 18:03:51 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9615 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753414AbaAQXDr (ORCPT
+	by vger.kernel.org with ESMTP id S1753115AbaAQXDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 18:03:47 -0500
+	Fri, 17 Jan 2014 18:03:46 -0500
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -27,79 +27,48 @@ To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>,
         <linux-arm-msm@vger.kernel.org>
-Subject: [PATCH v3 1/2] i2c: qup: Add device tree bindings information
-Date: Fri, 17 Jan 2014 15:03:38 -0800
-Message-ID: <1389999819-10648-2-git-send-email-bjorn.andersson@sonymobile.com>
+Subject: [PATCH v3 0/2] Qualcomm Universal Peripheral (QUP) I2C controller
+Date: Fri, 17 Jan 2014 15:03:37 -0800
+Message-ID: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
 X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Continuing on Ivans i2c-qup series.
 
-The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
-provide input and output FIFO's for it. I2C controller can operate
-as master with supported bus speeds of 100Kbps and 400Kbps.
+Changes from v2:
+ - Removed unused variables and includes
+ - Corrected read logic in irq handler
+ - Made the polling loop in qup_i2c_poll_state() less arbitrary
+ - Only building suspend/resume if CONFIG_PM_SLEEP
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-[bjorn: reformulated part of binding description and cleaned up example]
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
- .../devicetree/bindings/i2c/qcom,i2c-qup.txt       | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+Changes from v1:
+ - Cleaned up device tree binding example.
+ - Refrased device tree bindings.
+ - Following changes in the i2c framework.
+ - Use the core clock to calculate divider for the bus clock, instead of
+   explicitly setting it.
+ - Remove explicit pinctrl settting.
+ - Split/renamed qup_i2c_enable(bool) into enable/disable functions.
+ - Return value was overwritten on error in write_one/read_one.
+ - Initialize the i2c core every time, so that we actually can execute
+   more than 1 transmission per xfer.
+
+Ivan T. Ivanov (2):
+  i2c: qup: Add device tree bindings information
+  i2c: New bus driver for the QUP I2C controller
+
+ .../devicetree/bindings/i2c/qcom,i2c-qup.txt       |  41 +
+ drivers/i2c/busses/Kconfig                         |  10 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-qup.c                       | 894 +++++++++++++++++++++
+ 4 files changed, 946 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+ create mode 100644 drivers/i2c/busses/i2c-qup.c
 
-diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
-new file mode 100644
-index 0000000..a99711b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
-@@ -0,0 +1,41 @@
-+Qualcomm Universal Peripheral (QUP) I2C controller
-+
-+Required properties:
-+ - compatible: Should be "qcom,i2c-qup".
-+ - reg: Should contain QUP register address and length.
-+ - interrupts: Should contain I2C interrupt.
-+
-+ - clocks: Should contain the core clock and the AHB clock.
-+ - clock-names: Should be "core" for the core clock and "iface" for the
-+                AHB clock.
-+
-+ - #address-cells: Should be <1> Address cells for i2c device address
-+ - #size-cells: Should be <0> as i2c addresses have no size component
-+
-+Optional properties:
-+ - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
-+                    default is 100kHz if omitted.
-+
-+Child nodes should conform to i2c bus binding.
-+
-+Example:
-+
-+ i2c2: i2c@f9924000 {
-+ 	compatible = "qcom,i2c-qup";
-+ 	reg = <0xf9924000 0x1000>;
-+ 	interrupts = <0 96 0>;
-+
-+ 	clocks = <&gcc_blsp1_qup2_i2c_apps_clk>, <&gcc_blsp1_ahb_clk>;
-+ 	clock-names = "core", "iface";
-+
-+ 	clock-frequency = <355000>;
-+
-+ 	#address-cells = <1>;
-+ 	#size-cells = <0>;
-+
-+ 	dummy@60 {
-+ 		compatible = "dummy";
-+ 		reg = <0x60>;
-+ 	};
-+ };
-+
 -- 
 1.8.2.2
 
