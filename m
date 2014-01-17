@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaAQOiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:38:05 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59159 "HELO
+	id S1752528AbaAQOiE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:38:04 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52790 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751980AbaAQOh7 (ORCPT
+	with SMTP id S1751548AbaAQOh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Jan 2014 09:37:59 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -12,9 +12,9 @@ To: Linux PM list <linux-pm@vger.kernel.org>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC/RFT][PATCH 4/5] ACPI / LPSS: Support for device latency tolerance PM QoS
-Date: Fri, 17 Jan 2014 15:46:40 +0100
-Message-ID: <12327024.lrSi2qfq01@vostro.rjw.lan>
+Subject: [RFC/RFT][PATCH 5/5] PM / QoS: Add type to dev_pm_qos_add_ancestor_request() arguments
+Date: Fri, 17 Jan 2014 15:49:03 +0100
+Message-ID: <13391502.k2E2vCKgDd@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
 In-Reply-To: <5434847.aCyiWHNRe7@vostro.rjw.lan>
 References: <5434847.aCyiWHNRe7@vostro.rjw.lan>
@@ -27,125 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Add a new routine, acpi_lpss_set_ltr(), for setting latency tolerance
-values for LPSS devices having LTR (Latency Tolerance Reporting)
-registers.  Modify acpi_lpss_platform_notify() to set the LPSS
-devices' power.set_latency_tolerance callback pointers to
-acpi_lpss_set_ltr() during device addition.
+Rework dev_pm_qos_add_ancestor_request() so that device PM QoS type
+is passed to it as the third argument and make it support the
+DEV_PM_QOS_LATENCY_TOLERANCE device PM QoS type (in addition to
+DEV_PM_QOS_RESUME_LATENCY).
 
-That will cause the device latency tolerance PM QoS to work for
-the devices in question as documented.
+That will allow the drivers of devices without latency tolerance
+hardware support to use their ancestors having it as proxies for
+their latency tolerance requirements.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/acpi_lpss.c |   66 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 62 insertions(+), 4 deletions(-)
+ Documentation/power/pm_qos_interface.txt |    6 ++++--
+ drivers/base/power/qos.c                 |   22 +++++++++++++++++-----
+ drivers/input/touchscreen/st1232.c       |    3 ++-
+ include/linux/pm_qos.h                   |    7 +++++--
+ 4 files changed, 28 insertions(+), 10 deletions(-)
 
-Index: linux-pm/drivers/acpi/acpi_lpss.c
+Index: linux-pm/include/linux/pm_qos.h
 ===================================================================
---- linux-pm.orig/drivers/acpi/acpi_lpss.c
-+++ linux-pm/drivers/acpi/acpi_lpss.c
-@@ -33,6 +33,12 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_GENERAL_UART_RTS_OVRD	BIT(3)
- #define LPSS_SW_LTR			0x10
- #define LPSS_AUTO_LTR			0x14
-+#define LPSS_LTR_SNOOP_REQ		BIT(15)
-+#define LPSS_LTR_SNOOP_MASK		0x0000FFFF
-+#define LPSS_LTR_SNOOP_LAT_1US		0x800
-+#define LPSS_LTR_SNOOP_LAT_32US		0xC00
-+#define LPSS_LTR_SNOOP_LAT_SHIFT	5
-+#define LPSS_LTR_MAX_VAL		0x3FF
- #define LPSS_TX_INT			0x20
- #define LPSS_TX_INT_MASK		BIT(1)
- 
-@@ -316,6 +322,17 @@ static int acpi_lpss_create_device(struc
- 	return ret;
+--- linux-pm.orig/include/linux/pm_qos.h
++++ linux-pm/include/linux/pm_qos.h
+@@ -148,7 +148,8 @@ int dev_pm_qos_remove_global_notifier(st
+ void dev_pm_qos_constraints_init(struct device *dev);
+ void dev_pm_qos_constraints_destroy(struct device *dev);
+ int dev_pm_qos_add_ancestor_request(struct device *dev,
+-				    struct dev_pm_qos_request *req, s32 value);
++				    struct dev_pm_qos_request *req,
++				    enum dev_pm_qos_req_type type, s32 value);
+ #else
+ static inline enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev,
+ 							  s32 mask)
+@@ -191,7 +192,9 @@ static inline void dev_pm_qos_constraint
+ 	dev->power.power_state = PMSG_INVALID;
  }
+ static inline int dev_pm_qos_add_ancestor_request(struct device *dev,
+-				    struct dev_pm_qos_request *req, s32 value)
++						  struct dev_pm_qos_request *req,
++						  enum dev_pm_qos_req_type type,
++						  s32 value)
+ 			{ return 0; }
+ #endif
  
-+static u32 __lpss_reg_read(struct lpss_private_data *pdata, unsigned int reg)
-+{
-+	return readl(pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+}
-+
-+static void __lpss_reg_write(u32 val, struct lpss_private_data *pdata,
-+			     unsigned int reg)
-+{
-+	writel(val, pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+}
-+
- static int lpss_reg_read(struct device *dev, unsigned int reg, u32 *val)
+Index: linux-pm/drivers/base/power/qos.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/qos.c
++++ linux-pm/drivers/base/power/qos.c
+@@ -558,20 +558,32 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_remove_glob
+  * dev_pm_qos_add_ancestor_request - Add PM QoS request for device's ancestor.
+  * @dev: Device whose ancestor to add the request for.
+  * @req: Pointer to the preallocated handle.
++ * @type: Type of the request.
+  * @value: Constraint latency value.
+  */
+ int dev_pm_qos_add_ancestor_request(struct device *dev,
+-				    struct dev_pm_qos_request *req, s32 value)
++				    struct dev_pm_qos_request *req,
++				    enum dev_pm_qos_req_type type, s32 value)
  {
- 	struct acpi_device *adev;
-@@ -337,7 +354,7 @@ static int lpss_reg_read(struct device *
- 		ret = -ENODEV;
- 		goto out;
- 	}
--	*val = readl(pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+	*val = __lpss_reg_read(pdata, reg);
+ 	struct device *ancestor = dev->parent;
+ 	int ret = -ENODEV;
  
-  out:
- 	spin_unlock_irqrestore(&dev->power.lock, flags);
-@@ -390,6 +407,46 @@ static struct attribute_group lpss_attr_
- 	.name = "lpss_ltr",
- };
+-	while (ancestor && !ancestor->power.ignore_children)
+-		ancestor = ancestor->parent;
++	switch (type) {
++	case DEV_PM_QOS_RESUME_LATENCY:
++		while (ancestor && !ancestor->power.ignore_children)
++			ancestor = ancestor->parent;
  
-+static void acpi_lpss_set_ltr(struct device *dev, s32 val)
-+{
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
-+	struct lpss_private_data *pdata;
-+	u32 ltr_mode, ltr_val;
++		break;
++	case DEV_PM_QOS_LATENCY_TOLERANCE:
++		while (ancestor && !ancestor->power.set_latency_tolerance)
++			ancestor = ancestor->parent;
 +
-+	if (WARN_ON(!adev))
-+		return;
-+
-+	pdata = acpi_driver_data(adev);
-+	if (WARN_ON(!pdata || !pdata->mmio_base))
-+		return;
-+
-+	ltr_mode = __lpss_reg_read(pdata, LPSS_GENERAL);
-+	if (val < 0) {
-+		if (ltr_mode & LPSS_GENERAL_LTR_MODE_SW) {
-+			ltr_mode &= ~LPSS_GENERAL_LTR_MODE_SW;
-+			__lpss_reg_write(ltr_mode, pdata, LPSS_GENERAL);
-+		}
-+		return;
++		break;
++	default:
++		ancestor = NULL;
 +	}
-+	ltr_val = __lpss_reg_read(pdata, LPSS_SW_LTR) & ~LPSS_LTR_SNOOP_MASK;
-+	if (val > LPSS_LTR_MAX_VAL) {
-+		ltr_val |= LPSS_LTR_SNOOP_LAT_32US | LPSS_LTR_SNOOP_REQ;
-+		val >>= LPSS_LTR_SNOOP_LAT_SHIFT;
-+		if (val > LPSS_LTR_MAX_VAL)
-+			val = LPSS_LTR_MAX_VAL;
-+	} else {
-+		ltr_val |= LPSS_LTR_SNOOP_LAT_1US;
-+		if (val > 0)
-+			ltr_val |= LPSS_LTR_SNOOP_REQ;
-+	}
-+	ltr_val |= val;
-+	__lpss_reg_write(ltr_val, pdata, LPSS_SW_LTR);
-+	if (!(ltr_mode & LPSS_GENERAL_LTR_MODE_SW)) {
-+		ltr_mode |= LPSS_GENERAL_LTR_MODE_SW;
-+		__lpss_reg_write(ltr_mode, pdata, LPSS_GENERAL);
-+	}
-+}
-+
- static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 				     unsigned long action, void *data)
- {
-@@ -415,11 +472,12 @@ static int acpi_lpss_platform_notify(str
- 		return 0;
+ 	if (ancestor)
+-		ret = dev_pm_qos_add_request(ancestor, req,
+-					     DEV_PM_QOS_RESUME_LATENCY, value);
++		ret = dev_pm_qos_add_request(ancestor, req, type, value);
+ 
+ 	if (ret < 0)
+ 		req->dev = NULL;
+Index: linux-pm/Documentation/power/pm_qos_interface.txt
+===================================================================
+--- linux-pm.orig/Documentation/power/pm_qos_interface.txt
++++ linux-pm/Documentation/power/pm_qos_interface.txt
+@@ -134,9 +134,11 @@ The meaning of the return values is as f
+ 	PM_QOS_FLAGS_UNDEFINED: The device's PM QoS structure has not been
+ 			initialized or the list of requests is empty.
+ 
+-int dev_pm_qos_add_ancestor_request(dev, handle, value)
++int dev_pm_qos_add_ancestor_request(dev, handle, type, value)
+ Add a PM QoS request for the first direct ancestor of the given device whose
+-power.ignore_children flag is unset.
++power.ignore_children flag is unset (for DEV_PM_QOS_RESUME_LATENCY requests)
++or whose power.set_latency_tolerance callback pointer is not NULL (for
++DEV_PM_QOS_LATENCY_TOLERANCE requests).
+ 
+ int dev_pm_qos_expose_latency_limit(device, value)
+ Add a request to the device's PM QoS list of resume latency constraints and
+Index: linux-pm/drivers/input/touchscreen/st1232.c
+===================================================================
+--- linux-pm.orig/drivers/input/touchscreen/st1232.c
++++ linux-pm/drivers/input/touchscreen/st1232.c
+@@ -134,7 +134,8 @@ static irqreturn_t st1232_ts_irq_handler
+ 	} else if (!ts->low_latency_req.dev) {
+ 		/* First contact, request 100 us latency. */
+ 		dev_pm_qos_add_ancestor_request(&ts->client->dev,
+-						&ts->low_latency_req, 100);
++						&ts->low_latency_req,
++						DEV_PM_QOS_RESUME_LATENCY, 100);
  	}
  
--	if (action == BUS_NOTIFY_ADD_DEVICE)
-+	if (action == BUS_NOTIFY_ADD_DEVICE) {
- 		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
--	else if (action == BUS_NOTIFY_DEL_DEVICE)
-+		pdev->dev.power.set_latency_tolerance = acpi_lpss_set_ltr;
-+	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
- 		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
--
-+	}
- 	return ret;
- }
- 
+ 	/* SYN_REPORT */
 
