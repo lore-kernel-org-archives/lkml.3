@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaAQMlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:41:13 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:43524 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaAQMlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:41:11 -0500
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTsoft Software Development Center
-To: "=?utf-8?q?=E2=80=9Ctiejun=2Echen=E2=80=9D?=" 
-	<tiejun.chen@windriver.com>
-Subject: Re: powerpc/hugetlb: BUG: using smp_processor_id() in preemptible
-Date: Fri, 17 Jan 2014 16:41:02 +0400
-User-Agent: KMail/1.9.9
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Alexey Lugovskoy <lugovskoy@dev.rtsoft.ru>
-References: <201401171323.52657@blacky.localdomain> <52D8F960.6030107@windriver.com>
-In-Reply-To: <52D8F960.6030107@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201401171641.04553@blacky.localdomain>
+	id S1752559AbaAQMl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:41:57 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:55308 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283AbaAQMly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 07:41:54 -0500
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
+        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: [PATCH 08/20] ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64
+Date: Fri, 17 Jan 2014 20:25:02 +0800
+Message-Id: <1389961514-13562-9-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could you try this?
->
-> powerpc/hugetlb: replace __get_cpu_var with get_cpu_var
->
-> Replace __get_cpu_var safely with get_cpu_var to avoid
-> the following call trace:
+ACPI reduced hardware mode is disabled by default, but ARM64 can
+only run properly in ACPI hardware reduced mode at now, so select
+ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on ARM64.
 
-Confirmed, no more acktraces.
+Signed-off-by: Al Stone <al.stone@linaro.org>
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ arch/arm64/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Nikita
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 2b1fb1d..741692c 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -1,5 +1,6 @@
+ config ARM64
+ 	def_bool y
++	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+-- 
+1.7.9.5
+
