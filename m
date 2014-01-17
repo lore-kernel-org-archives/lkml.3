@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaAQROw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:14:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54945 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973AbaAQROs (ORCPT
+	id S1752876AbaAQRPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:15:05 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31269 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752415AbaAQRO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:14:48 -0500
-Date: Fri, 17 Jan 2014 18:14:41 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-rt-users@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-Message-ID: <20140117171441.GG5785@linutronix.de>
-References: <20131221193900.GA8427@linutronix.de>
- <1387681647.5412.25.camel@marge.simpson.net>
- <1387702631.5412.101.camel@marge.simpson.net>
- <1387773533.5369.16.camel@marge.simpson.net>
- <20131224193636.GD19211@linux.vnet.ibm.com>
- <1387940854.5373.8.camel@marge.simpson.net>
- <20131225075544.GE19211@linux.vnet.ibm.com>
- <1387993057.5346.17.camel@marge.simpson.net>
+	Fri, 17 Jan 2014 12:14:59 -0500
+Date: Fri, 17 Jan 2014 12:14:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Ren, Qiaowei" <qiaowei.ren@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+Message-ID: <20140117121457.0847cde3@gandalf.local.home>
+In-Reply-To: <52D95F77.4030908@zytor.com>
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
+	<1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
+	<20140112092019.GA3664@pd.tnic>
+	<52D35ABB.8070904@intel.com>
+	<20140113103808.GC5388@pd.tnic>
+	<9E0BE1322F2F2246BD820DA9FC397ADE014E575D@SHSMSX102.ccr.corp.intel.com>
+	<20140117164736.GE8715@pd.tnic>
+	<52D95F77.4030908@zytor.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1387993057.5346.17.camel@marge.simpson.net>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith | 2013-12-25 18:37:37 [+0100]:
+On Fri, 17 Jan 2014 08:51:03 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
->On Tue, 2013-12-24 at 23:55 -0800, Paul E. McKenney wrote: 
->> On Wed, Dec 25, 2013 at 04:07:34AM +0100, Mike Galbraith wrote:
->
->Having sufficiently recovered from turkey overdose to be able to slither
->upstairs (bump bump bump) to check on the box, commenting..
->
-># timers-do-not-raise-softirq-unconditionally.patch
-># rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
->
->..those two out does seem to have stabilized the thing.
+> On 01/17/2014 08:47 AM, Borislav Petkov wrote:
+> > 
+> > Right, so Steve and I played a couple of scenarios in IRC with this. So
+> > #BR is comparable with #PF, AFAICT, and as expected we don't take any
+> > locks when handling page faults in kernel space as we might deadlock.
+> > 
+> > Now, what happens if a thread is sleeping on some lock down that
+> > GFP_KERNEL allocation path and another thread gets a #BR and goes that
+> > same mmap_pgoff path and tries to grab that same lock?
+> 
+> It goes to sleep.  Same as if we take a page fault and have to page
+> something in.
 
-timers-do-not-raise-softirq-unconditionally.patch is on its way out.
+Yep, which is what I was explaining to Boris on IRC.
 
-rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch confues me.
-Didn't you report once that your box deadlocks without this patch? Now
-your 64way box on the other hand does not work with it?
+> 
+> > Also, what happens if you take a #BR in NMI context, say the NMI
+> > handler?
+> 
+> You should never, ever do that.  We should never take a #BR in the
+> kernel, full stop -- if we do it is panic time.
 
->Merry Christmasss,
->
->-Mike
+Right. It should actually do what a page fault does too. If we page
+fault in NMI, it reports it and crashes.
 
-Sebastian
+> 
+> > All I'm trying to say is, it might not be such a good idea to sleep in a
+> > fault handler...
+> 
+> A fault handler from user space is really nothing other than a different
+> kind of system call.  It is nothing magic about it.
+
+Exactly. I was saying that #BR should be just like #PF, as it can
+detect bugs in the kernel too. The first thing the handler should do is
+check to see if the fault occurred in userspace or kernel space. If it
+is userspace, then there's no restrictions. If it is kernel space then
+we should do the bare minimum to report the bug and then kill whatever
+task happened to do it.
+
+-- Steve
