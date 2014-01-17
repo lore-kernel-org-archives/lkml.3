@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaAQOEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:04:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63467 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbaAQOEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:04:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Subject: Re: [PATCH 06/20] ARM64 / ACPI: Introduce some PCI functions when PCI is enabled
-Date: Fri, 17 Jan 2014 15:04:23 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, Charles.Garcia-Tobin@arm.com
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-7-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1389961514-13562-7-git-send-email-hanjun.guo@linaro.org>
+	id S1752634AbaAQOGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:06:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118AbaAQOGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:06:10 -0500
+Date: Fri, 17 Jan 2014 12:05:59 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [BUG] perf stat: corrupts memory when using PMU cpumask
+Message-ID: <20140117140559.GA8801@infradead.org>
+References: <CABPqkBSQ4vdT7-Cev86Bxt6T1uhiy-T28L2Eq5BzSPAC=mA8yw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401171504.24525.arnd@arndb.de>
-X-Provags-ID: V02:K0:AAeiFWljrCy9pBUAHoJOr6h/8WGApQNweeTSkLCrPvu
- V2LhwAmXXNyM7Ldm2wq3ftWeVMRaPNnUy4Dr0ATIQUa6HofBHm
- aXEfMulf8Hx0QowVUlyyNL6w5isMcX5Iuw7kv25RnAIUf3CxKb
- CR1rCe0nIDG45aHkAAN85Hro5+KPfMak/uf3e0TQPA2WIfgPPq
- 6vyF4s4I6YnIdKsOYls9ESE/6uYfCJupDN8WWrYPMP6dd2Fatf
- uZaJd9PFWiwmN50PCvMYgqAz15pRnzaCums6vPh+ZRXhLblqoK
- bKCjElvA7MKP00JcIXolP4Bn2zAPZIYsBQ11acj6MGzT+SVZNb
- iOpDCKMmhY4ni9lqrSgc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSQ4vdT7-Cev86Bxt6T1uhiy-T28L2Eq5BzSPAC=mA8yw@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 January 2014, Hanjun Guo wrote:
-> +++ b/arch/arm64/pci/Makefile
-> @@ -0,0 +1 @@
-> +obj-y                 += pci.o
-> diff --git a/arch/arm64/pci/pci.c b/arch/arm64/pci/pci.c
-> new file mode 100644
-> index 0000000..4e46790
-> --- /dev/null
-> +++ b/arch/arm64/pci/pci.c
-> @@ -0,0 +1,33 @@
-> +#include <linux/acpi.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/pci.h>
-> +
-> +/**
-> + * raw_pci_read - Platform-specific PCI config space access.
-> + *
-> + * Default empty implementation.  Replace with an architecture-specific setup
-> + * routine, if necessary.
-> + */
-> +int __weak raw_pci_read(unsigned int domain, unsigned int bus,
-> +			unsigned int devfn, int reg, int len, u32 *val)
-> +{
-> +	return -EINVAL;
-> +}
-> +
-> +int __weak raw_pci_write(unsigned int domain, unsigned int bus,
-> +			unsigned int devfn, int reg, int len, u32 val)
-> +{
-> +	return -EINVAL;
-> +}
+Em Fri, Jan 17, 2014 at 10:00:20AM +0100, Stephane Eranian escreveu:
+> Hi,
+> 
+> I have been debugging a NULL pointer issue with perf stat unit/scale code
+> and in the process I ran into what appeared like a double-free issue reported
+> by glibc. It took me a while to realize that it was because of memory corruption
+> caused by a recent change in how evsel are freed.
+> 
+> My test case is simple. I used RAPL but I think any event with a suggested
+> cpumask in /sys/devices/XXX/cpumask will do:
+> 
+> # perf stat -a -e power/energy-cores/ ls
+> 
+> The issue boils down to the fact that evsels have their file descriptors closed
+> twice nowadays. Once in __run_per_stat() via perf_evsel__close_fd() and
+> twice in perf_evlist__close().
+> 
+> Now, calling close() twice is okay. However the fd is then set to -1.
+> That's still okay with close(). The problem is elsewhere.
+> 
+> It comes from the ncpus argument passed to perf_evsel__close(). It is
+> DIFFERENT between the evsel and the evlist when cpumask are used.
 
-I'd rather not see __weak functions here. Just provide them unconditionally
-so that we can add a proper implementation when needed. You could also
-define these as 'static inline' in a header file to keep them from consuming
-space in the object code.
+Oops, at some point I knew that set of globals and mixup of evlists in
+builtin-stat would bite :-\
 
-> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-> index 3c8521d..1835b21 100644
-> --- a/drivers/acpi/plat/arm-core.c
-> +++ b/drivers/acpi/plat/arm-core.c
-> @@ -100,6 +100,25 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
->  }
->  EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
->  
-> +int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
-> +{
-> +	return -1;
-> +}
-> +
-> +int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
-> +{
-> +	/* TBD */
-> +	return -EINVAL;
-> +}
-> +EXPORT_SYMBOL(acpi_register_ioapic);
-> +
-> +int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
-> +{
-> +	/* TBD */
-> +	return -EINVAL;
-> +}
-> +EXPORT_SYMBOL(acpi_unregister_ioapic);
-> +
+I guess it was introduced in:
 
-My feeling is that these are better handled in the ACPI code by not
-calling them on architectures that have no ISA or no IOAPIC support.
+  commit 7ae92e744e3fb389afb1e24920ecda331d360c61
+  Author: Yan, Zheng <zheng.z.yan@intel.com>
+  Date:   Mon Sep 10 15:53:50 2012 +0800
 
-We have configuration symbols for both, so you don't have to make
-it depend on CONFIG_ARM64 or CONFIG_X86.
+      perf stat: Check PMU cpumask file
 
-	Arnd
+I need to untangle that direct usage of the target, and global evlist to
+properly fix this, but in the meantime I'll take a look at your patch,
+thanks for doing this work.
+
+ 
+> Take my case, 8 CPUs machine but a 1 CPU cpumask. The evsel allocates
+> the xyarray for 1 CPU 1 thread. The fd are first close with 1 CPU, 1 thread.
+> But then evlist_close() comes in and STILL thinks the events were using
+> 8 CPUs, 1 thread and thus a xyarray of that size. And this causes writes
+> to entries that are beyond the xyarray when the fds are set to -1, thereby
+> causing memory corruption which I was lucky to catch via glibc.
+> 
+> First, why are we closing the descriptors twice?
+> 
+> Second, I have a fix that seems to work for me. It uses the evsel->cpus
+> if evsel->cpus exists, otherwise it defaults to evtlist->cpus.  Looks like
+> a reasonable thing to do to me, but is it? I would rather avoid the double
+> close altogether.
+> 
+> 
+> Opinion?
