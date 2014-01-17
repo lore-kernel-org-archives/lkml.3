@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbaAQR6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:58:40 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53633 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaAQR6g (ORCPT
+	id S1753096AbaAQR7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:59:49 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56084 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaAQR7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:58:36 -0500
+	Fri, 17 Jan 2014 12:59:47 -0500
+Date: Fri, 17 Jan 2014 17:59:27 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Florian Meier <florian.meier@koalo.de>
+Cc: Daniel Matuschek <daniel@matuschek.net>, alsa-devel@alsa-project.org,
+        Dimitris.Papastamos@wolfsonmicro.com, lgirdwood@gmail.com,
+        perex@perex.cz, tiwai@suse.de, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140117175927.GZ17314@sirena.org.uk>
+References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+ <52D95DA2.7000509@koalo.de>
 MIME-Version: 1.0
-In-Reply-To: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-Date: Fri, 17 Jan 2014 09:58:34 -0800
-Message-ID: <CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
-Subject: Re: Why is (2 < 2) true? Is it a gcc bug?
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mu4zWe6QekgCAJVd"
+Content-Disposition: inline
+In-Reply-To: <52D95DA2.7000509@koalo.de>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
+ PLL generation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 5:37 AM, Dorau, Lukasz <lukasz.dorau@intel.com> wrote:
-> Hi
->
-> My story is very simply...
-> I applied the following patch:
->
-> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> --- a/drivers/scsi/isci/init.c
-> +++ b/drivers/scsi/isci/init.c
-> @@ -698,8 +698,11 @@ static int isci_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->         if (err)
->                 goto err_host_alloc;
->
-> -       for_each_isci_host(i, isci_host, pdev)
-> +       for_each_isci_host(i, isci_host, pdev) {
-> +               pr_err("(%d < %d) == %d\n",\
-> +                      i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
->                 scsi_scan_host(to_shost(isci_host));
-> +       }
->
->         return 0;
->
-> --
-> 1.8.3.1
->
-> Then I issued the command 'modprobe isci' on platform with two SCU controllers (Patsburg D or T chipset)
-> and received the following, very strange, output:
->
-> (0 < 2) == 1
-> (1 < 2) == 1
-> (2 < 2) == 1
->
-> Can anyone explain why (2 < 2) is true? Is it a gcc bug?
 
-gcc sees that i < array_size is the same as i < 2 as part of loop condition, so
-it optimizes (i < sci_max_controllers) into constant 1.
-and emits printk like:
-  printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
+--mu4zWe6QekgCAJVd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> (The kernel was compiled using gcc version 4.8.2.)
+On Fri, Jan 17, 2014 at 05:43:14PM +0100, Florian Meier wrote:
+> I have tested your patch.
+> There is a (non blocking) error message regarding .idle_bias_off, but I
+> assume that should not have something to do with your patch. Can we just
+> set idle_bias_off to false here?
 
-it actually looks to be gcc 4.8 bug.
-Can you try gcc 4.7 ?
+What is the error message?  I remember that the first version of this
+had an undocumented change to idle_bias_off in it, I expect that needed
+to split out into a separate patch rather than dropped.
 
-gcc 4.7 compiles your loop into the following:
-<bb 74>:
-  # i_382 = PHI <0(73), i_73(74)>
-  # isci_host_148 = PHI <isci_host_63(73), isci_host_74(74)>
-  printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
-  D.43295_70 = MEM[(struct isci_host *)isci_host_148 + 18632B];
-  # DEBUG D#6 => isci_host_148
-  # DEBUG ihost s=> ihost
-  scsi_scan_host (D.43295_70);
-  # DEBUG pdev => pdev_17(D)
-  # DEBUG pdev => pdev_17(D)
-  D.43629_353 = dev_get_drvdata (D.42809_20);
-  i_73 = i_382 + 1;
-  # DEBUG i => i_73
-  isci_host_74 = MEM[(struct isci_pci_info *)D.43629_353].hosts[i_73];
-  # DEBUG isci_host => isci_host_74
-  # DEBUG isci_host => isci_host_74
-  # DEBUG i => i_73
-  i.9_79 = (unsigned int) i_73;
-  D.42849_65 = i.9_79 <= 1;
-  D.42850_66 = isci_host_74 != 0B;
-  D.42851_67 = D.42850_66 & D.42849_65;
-  if (D.42851_67 != 0)
-    goto <bb 74>;
-  else
-    goto <bb 77>;
+--mu4zWe6QekgCAJVd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-which looks correct to me.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-while gcc 4.8.2 into:
-  <bb 92>:
-  # i_73 = PHI <i_82(93), 0(91)>
-  # isci_host_274 = PHI <isci_host_83(93), isci_host_71(91)>
-  # DEBUG isci_host => isci_host_274
-  # DEBUG i => i_73
-  printk ("\13(%d < %d) == %d\n", i_73, 2, 1);
-  _79 = MEM[(struct isci_host *)isci_host_274 + 18632B];
-  # DEBUG D#6 => isci_host_274
-  # DEBUG ihost => D#6
-  scsi_scan_host (_79);
-  # DEBUG pdev => pdev_26(D)
-  # DEBUG pdev => pdev_26(D)
-  _97 = dev_get_drvdata (_29);
-  i_82 = i_73 + 1;
-  # DEBUG i => i_82
-  isci_host_83 = MEM[(struct isci_pci_info *)_97].hosts[i_82];
-  # DEBUG isci_host => isci_host_83
-  # DEBUG isci_host => isci_host_83
-  # DEBUG i => i_82
-  if (isci_host_83 != 0B)
-    goto <bb 93>;
-  else
-    goto <bb 90>;
+iQIcBAEBAgAGBQJS2W98AAoJELSic+t+oim9aUwP/i5K5QxgkwK28oKq5zTiX717
+P4gh/Fxv9p+2GYdbfD0u7W1mfqvWbcM7rVaIU78sFcSVsc9bERSr1CLdvSUpiE6u
+eCe66zU7vKTKXY1IIqYw5yd1wI9CnQC4aoFiudDNCmlnD9GjBmupkO36GoSeBjlI
+ayV+5RdsSmP5vdJS5w80JHRXKJq4k6vTz68J+CV1+yyMnTbfY7rAgbsxjlp5jc4t
+bwp3smxUGzfs1niF6kdAc4TzB9cMgrgZmRgbaXIoefY8lem63GjYmWjYw0rV2vE5
+GzT0Cq8+h+jVjRcZcWFikygeR3Od1RtU+E3k59HkGD1oKVT3u9SpLwP25ovozeHN
+Ocpn6zzwpWLBwHU7juq4w8JLbpbZfAzFUdGPoRDUAgnzlCa5RB5pn/Nq148CX5e3
+l7sCvKWKXKBWdqyG1t4GaT8cdG/o6LmmOcbdtvZa8NKJNBCn5zhW2Cua5JiT4HtG
+TJ4pzp4ToGgpIUCc/2Pc84T4UvFBORV2qwpSc14MzusyUJkDWzoKHi631uZ5kuwW
+jRqeK+J1o6vG98YUjOTi2QOUma8oxWK2k1FYdB/RaXRnxe3XiMU1NKTcW0neJ3ee
+Cr6oyBeZRItewtxfsgUoNDeIiLrzX77irF0z4jdN9ny/K7tFkYUr7mWJMq+RB/2k
+iK96ox91nOX/LYJwhX+E
+=Fxz5
+-----END PGP SIGNATURE-----
 
-  <bb 93>:
-  goto <bb 92>;
-
-in case of gcc4.8 the i<=1 comparison got optimized out and only
-isci_host !=0 is left,
-which looks incorrect.
+--mu4zWe6QekgCAJVd--
