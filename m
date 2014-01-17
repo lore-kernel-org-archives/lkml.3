@@ -1,213 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaAQPov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:44:51 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:60430 "EHLO gloria.sntech.de"
+	id S1752326AbaAQPq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:46:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaAQPos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:44:48 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v2] of: add functions to count number of elements in a property
-Date: Fri, 17 Jan 2014 16:44:14 +0100
-Message-ID: <1434798.oSb68sYmYT@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140117144456.GG19578@e106331-lin.cambridge.arm.com>
-References: <27256277.YJ687suYy5@phil> <3781679.27UF2dWtKL@phil> <20140117144456.GG19578@e106331-lin.cambridge.arm.com>
+	id S1752152AbaAQPqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 10:46:25 -0500
+Message-ID: <52D95005.8070501@redhat.com>
+Date: Fri, 17 Jan 2014 16:45:09 +0100
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Hannes Reinecke <hare@suse.de>,
+        "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+References: <20140116195112.GA9658@beardog.cce.hp.com> <52D948A5.1070706@redhat.com> <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net> <52D94CBB.5020701@suse.de>
+In-Reply-To: <52D94CBB.5020701@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The need to know the number of array elements in a property is
-a common pattern. To prevent duplication of open-coded implementations
-add a helper static function that also centralises strict sanity
-checking and DTB format details, as well as a set of wrapper functions
-for u8, u16, u32 and u64.
+On 01/17/2014 04:31 PM, Hannes Reinecke wrote:
+> On 01/17/2014 04:17 PM, Miller, Mike (OS Dev) wrote:
+>>
+>>> -----Original Message-----
+>>> From: Tomas Henzl [mailto:thenzl@redhat.com]
+>>> Sent: Friday, January 17, 2014 9:14 AM
+>>> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
+>>> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
+>>> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+>>>
+>>> On 01/16/2014 08:51 PM, Mike Miller wrote:
+>>>> From: Mike Miller <mike.miller@hp.com>
+>>>>
+>>>> This patch has every ID we have in our svn repository. Some
+>>>> controllers were cancelled, others added, now the cancelled ones are
+>>>> back. Apparently the debate rages on about which controllers are
+>>>> cancelled, which are not, whatever. Please accept this patch. It is
+>>>> dependent upon the patches I sent yesterday.
+>>>> This patch made/tested against kernel-3.13.0-rc8
+>>>>
+>>>> Signed-off-by: Mike Miller <mike.miller@hp.com>
+>>>> ---
+>>>>  drivers/scsi/hpsa.c |   12 ++++++++++++
+>>>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
+>>>> 348b207..3affec5 100644
+>>>> --- a/drivers/scsi/hpsa.c
+>>>> +++ b/drivers/scsi/hpsa.c
+>>>> @@ -100,6 +100,7 @@ static const struct pci_device_id
+>>> hpsa_pci_device_id[] = {
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>>> 0x3354},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>>> 0x3355},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+>>> 0x3356},
+>>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1920},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1921},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1922},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1923},
+>>>> @@ -108,15 +109,19 @@ static const struct pci_device_id
+>>> hpsa_pci_device_id[] = {
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1926},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1928},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x1929},
+>>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+>>> 0x192A},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21BD},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21BE},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21BF},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C0},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C2},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C3},
+>>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C4},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C5},
+>>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C6},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C7},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C8},
+>>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21C9},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21CA},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21CB},
+>>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+>>> 0x21CC},
+>>>> @@ -149,22 +154,29 @@ static struct board_type products[] = {
+>>>>  	{0x3354103C, "Smart Array P420i", &SA5_access},
+>>>>  	{0x3355103C, "Smart Array P220i", &SA5_access},
+>>>>  	{0x3356103C, "Smart Array P721m", &SA5_access},
+>>>> +	{0x1920103C, "Smart Array P430i", &SA5_access},
+>>>>  	{0x1921103C, "Smart Array P830i", &SA5_access},
+>>>>  	{0x1922103C, "Smart Array P430", &SA5_access},
+>>>>  	{0x1923103C, "Smart Array P431", &SA5_access},
+>>>>  	{0x1924103C, "Smart Array P830", &SA5_access},
+>>>> +	{0x1925103C, "Smart Array P831", &SA5_access},
+>>>>  	{0x1926103C, "Smart Array P731m", &SA5_access},
+>>>>  	{0x1928103C, "Smart Array P230i", &SA5_access},
+>>>>  	{0x1929103C, "Smart Array P530", &SA5_access},
+>>>> +	{0x192A103C, "Smart Array P531", &SA5_access},
+>>>>  	{0x21BD103C, "Smart Array", &SA5_access},
+>>>>  	{0x21BE103C, "Smart Array", &SA5_access},
+>>>>  	{0x21BF103C, "Smart Array", &SA5_access},
+>>>>  	{0x21C0103C, "Smart Array", &SA5_access},
+>>>> +	{0x21C1103C, "Smart Array", &SA5_access},
+>>> I think that both tables should be in sync - but there is no 0x21c1 in
+>>> hpsa_pci_device_id (and the 0x1925), could you clarify that?
+>>>
+>>> Thanks, Tomas
+>> Crap. It seems like these menial tasks get the better of me. I'll correct and resubmit.
+>>
+> Hmm. Seeing that hpsa is now well capable of supporting even older
+> SmartArray controllers, is there really a point in updating the
+> PCI-ID list every time?
 
-Suggested-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
-changes since v1:
-address comments from Rob Herring and Mark Rutland:
-- provide a helper and a set of wrappers for u8-u64
-- get rid of extra len variable, prop->length is enough
-- include node name in error message
+It depends on whether HP actually wishes to support even the oldest cciss
+devices this way, I'm not sure if all the devices were individually tested with hpsa driver.
 
- drivers/of/base.c  |   98 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h |   32 +++++++++++++++++
- 2 files changed, 130 insertions(+)
+Cheers, Tomas
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index f807d0e..b6e6d4a 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -862,6 +862,104 @@ struct device_node *of_find_node_by_phandle(phandle handle)
- EXPORT_SYMBOL(of_find_node_by_phandle);
- 
- /**
-+ * of_count_property_elems_of_size - Count the number of elements in a property
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @elem_size:	size of the individual element
-+ */
-+static int of_count_property_elems_of_size(const struct device_node *np,
-+				const char *propname, int elem_size)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+
-+	if (prop->length % elem_size != 0) {
-+		pr_err("size of %s in node %s is not a multiple of %d\n",
-+		       propname, np->name, elem_size);
-+		return -EINVAL;
-+	}
-+
-+	return prop->length / elem_size;
-+}
-+
-+/**
-+ * of_property_count_u8_elems - Count the number of u8 elements in a property
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device node and count the number of u8 elements
-+ * in it. Returns number of elements on sucess, -EINVAL if the property does
-+ * not exist or its length does not match a multiple of u8 and -ENODATA if the
-+ * property does not have a value.
-+ */
-+int of_property_count_u8_elems(const struct device_node *np,
-+				const char *propname)
-+{
-+	return of_count_property_elems_of_size(np, propname, sizeof(u8));
-+}
-+EXPORT_SYMBOL_GPL(of_property_count_u8_elems);
-+
-+/**
-+ * of_property_count_u16_elems - Count the number of u16 elements in a property
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device node and count the number of u16 elements
-+ * in it. Returns number of elements on sucess, -EINVAL if the property does
-+ * not exist or its length does not match a multiple of u16 and -ENODATA if the
-+ * property does not have a value.
-+ */
-+int of_property_count_u16_elems(const struct device_node *np,
-+				const char *propname)
-+{
-+	return of_count_property_elems_of_size(np, propname, sizeof(u16));
-+}
-+EXPORT_SYMBOL_GPL(of_property_count_u16_elems);
-+
-+/**
-+ * of_property_count_u32_elems - Count the number of u32 elements in a property
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device node and count the number of u32 elements
-+ * in it. Returns number of elements on sucess, -EINVAL if the property does
-+ * not exist or its length does not match a multiple of u32 and -ENODATA if the
-+ * property does not have a value.
-+ */
-+int of_property_count_u32_elems(const struct device_node *np,
-+				const char *propname)
-+{
-+	return of_count_property_elems_of_size(np, propname, sizeof(u32));
-+}
-+EXPORT_SYMBOL_GPL(of_property_count_u32_elems);
-+
-+/**
-+ * of_property_count_u64_elems - Count the number of u64 elements in a property
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device node and count the number of u64 elements
-+ * in it. Returns number of elements on sucess, -EINVAL if the property does
-+ * not exist or its length does not match a multiple of u64 and -ENODATA if the
-+ * property does not have a value.
-+ */
-+int of_property_count_u64_elems(const struct device_node *np,
-+				const char *propname)
-+{
-+	return of_count_property_elems_of_size(np, propname, sizeof(u64));
-+}
-+EXPORT_SYMBOL_GPL(of_property_count_u64_elems);
-+
-+/**
-  * of_find_property_value_of_size
-  *
-  * @np:		device node from which the property value is to be read.
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 276c546..06fe898 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -250,6 +250,14 @@ extern struct device_node *of_find_node_with_property(
- extern struct property *of_find_property(const struct device_node *np,
- 					 const char *name,
- 					 int *lenp);
-+extern int of_property_count_u8_elems(const struct device_node *np,
-+				       const char *propname);
-+extern int of_property_count_u16_elems(const struct device_node *np,
-+				       const char *propname);
-+extern int of_property_count_u32_elems(const struct device_node *np,
-+				       const char *propname);
-+extern int of_property_count_u64_elems(const struct device_node *np,
-+				       const char *propname);
- extern int of_property_read_u32_index(const struct device_node *np,
- 				       const char *propname,
- 				       u32 index, u32 *out_value);
-@@ -426,6 +434,30 @@ static inline struct device_node *of_find_compatible_node(
- 	return NULL;
- }
- 
-+static inline int of_property_count_u8_elems(const struct device_node *np,
-+			const char *propname)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int of_property_count_u16_elems(const struct device_node *np,
-+			const char *propname)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int of_property_count_u32_elems(const struct device_node *np,
-+			const char *propname)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int of_property_count_u64_elems(const struct device_node *np,
-+			const char *propname)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int of_property_read_u32_index(const struct device_node *np,
- 			const char *propname, u32 index, u32 *out_value)
- {
--- 
-1.7.10.4
-
+> Wouldn't you be better off by just using the catch-all phrase
+> and remove all the individual IDs?
+>
+> That way you would just have to update _one_ list ...
+>
+> Cheers,
+>
+> Hannes
 
