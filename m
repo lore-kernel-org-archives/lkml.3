@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaAQRCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:02:10 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:58437 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaAQRCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:02:08 -0500
-Date: Fri, 17 Jan 2014 10:02:04 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.11][v3.12][v3.13][Regression] EISA: Initialize device before
- its resources
-Message-ID: <20140117170204.GA13939@google.com>
-References: <52D81C92.9050800@canonical.com>
- <CAErSpo64e52Vv8bJ54cPcpnZ=OHMaxt2-D6dA4HCrrLnKo1n7g@mail.gmail.com>
- <52D82169.2000107@canonical.com>
+	id S1752855AbaAQRC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:02:26 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52832 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601AbaAQRCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 12:02:22 -0500
+Date: Fri, 17 Jan 2014 18:02:13 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Kim Naru <kim.naru@amd.com>, Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
+Message-ID: <20140117170213.GG8715@pd.tnic>
+References: <20140114115547.GA29887@pd.tnic>
+ <52D55468.6000000@zytor.com>
+ <20140114153534.GE29865@pd.tnic>
+ <20140114162722.GF29865@pd.tnic>
+ <52D59ACC.3090100@amd.com>
+ <20140114203848.GP29865@pd.tnic>
+ <52D81DB5.7000608@amd.com>
+ <20140117002123.GA9165@khazad-dum.debian.net>
+ <20140117101842.GB8715@pd.tnic>
+ <52D958FC.9020700@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52D82169.2000107@canonical.com>
+In-Reply-To: <52D958FC.9020700@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 01:14:01PM -0500, Joseph Salisbury wrote:
-> On 01/16/2014 01:12 PM, Bjorn Helgaas wrote:
-> > On Thu, Jan 16, 2014 at 10:53 AM, Joseph Salisbury
-> > <joseph.salisbury@canonical.com> wrote:
-> >> Hi Bjorn,
-> >>
-> >> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
-> >> was found the following commit introduced this bug:
-> > Sorry about that, and thanks for the report.  Did you mean to include
-> > URL for the bug?
-> Yes, sorry about that:
-> http://pad.lv/1251816
+On Fri, Jan 17, 2014 at 08:23:24AM -0800, H. Peter Anvin wrote:
+> Actually I by and large disagree with that. There is a limit, of
+> course, but when it comes to flipping an MSR in init code, the bar is
+> pretty darn low. We have quirks for all kind of hardware, and this is
+> just another example.
 
-Hi Joseph,
+No, you don't. :-)
 
-Can you attach the 3.8.0-32-generic config (the one matching the successful
-boot at https://launchpadlibrarian.net/156685076/BootDmesg.txt) to the bug?
+You would much prefer to have the workaround done in the BIOS and only
+if there's a coverage hole, only then to do it in the kernel.
 
-The only way I can match up the output:
+I'm not saying we shouldn't do it in the kernel per se - I'm saying we
+should do it only when really necessary. And it doesn't hurt to talk
+about it first before inviting in all fixes for all errata for all
+families of all vendors. No, you don't want that, believe me. :-)
 
-  EISA: Probing bus 0 at eisa.0
-  Cannot allocate resource for EISA slot 1
-  Cannot allocate resource for EISA slot 2
-  Cannot allocate resource for EISA slot 4
-  Cannot allocate resource for EISA slot 5
-  EISA: Detected 0 cards.
+> The effort of a kernel update is much lower, especially since the
+> kernel is generally automatically updated.
 
-with the code is if we have root->force_probe set, and the only way I see for
-that to happen is if we're in the virtual_eisa_root_init() path and
-CONFIG_EISA_VLB_PRIMING=y:
+Does that even matter? I think what matters is whether we reboot or not,
+i.e. HA crap. If we have to reboot, we might just as well flash the BIOS
+- it takes almost as long.
 
-  #if defined(CONFIG_ALPHA_JENSEN) || defined(CONFIG_EISA_VLB_PRIMING)
-  #define EISA_FORCE_PROBE_DEFAULT 1
-  #else
-  #define EISA_FORCE_PROBE_DEFAULT 0
-  #endif
+> It would be awesome if that was done for firmware, but in the absence
+> of central distribution, arbitrary EOL sunsets, and a standard
+> OS-driven firmware installer,
 
-  static int force_probe = EISA_FORCE_PROBE_DEFAULT;
+Oh, the brave new world of UEFI wants to address that - it is supposed
+to flash the firmware from the OS. OEM vendors have their home grown
+solutions already, as I'm sure you know.
 
-  virtual_eisa_root_init
-    eisa_bus_root.force_probe = force_probe
-    eisa_root_register(&eisa_bus_root)
-      eisa_probe(root)
-	printk("EISA: Probing bus %d at %s")
-	if (eisa_request_resources)         
-	  printk("EISA: Cannot allocate resource for mainboard")    # we don't see this
-	if (eisa_init_device)               
-	  eisa_release_resources
-	  kfree
-	  if (!root->force_probe)           
-	    return -ENODEV
-	    goto force_probe
-	printk("EISA: Mainboard %s detected")       # we don't see this
+> it just isn't going to happen widely Yes, that is a problem.
 
-	force_probe:
-	for (i = 1; ...; i++)
-	  if (eisa_request_resources(i))
-	    printk("Cannot allocate resource for EISA slot %d", i)
-	printk("EISA: Detected %d cards")
+That definitely is a problem.
 
-Bjorn
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
