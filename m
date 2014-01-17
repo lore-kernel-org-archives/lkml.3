@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaAQKrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:47:31 -0500
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:2106 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaAQKr3 (ORCPT
+	id S1752039AbaAQKtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:49:46 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:43625 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaAQKto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:47:29 -0500
-Message-ID: <52D90A2F.2030903@xs4all.nl>
-Date: Fri, 17 Jan 2014 11:47:11 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 17 Jan 2014 05:49:44 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on
- race
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-8-git-send-email-arnd@arndb.de>
-In-Reply-To: <1388664474-1710039-8-git-send-email-arnd@arndb.de>
+In-Reply-To: <1389948399-26344-1-git-send-email-m.szyprowski@samsung.com>
+References: <1389948399-26344-1-git-send-email-m.szyprowski@samsung.com>
+Date: Fri, 17 Jan 2014 10:49:43 +0000
+X-Google-Sender-Auth: fvAurSrxej6GCI83uvFBXnHI_GY
+Message-ID: <CAAq6er2UNBibzKE==fQLROgFZDfdqZhJudcK=JtEYj_iA3sfnQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: dma-mapping: fix GFP_ATOMIC macro usage
+From: Andy Whitcroft <apw@canonical.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd!
-
-On 01/02/2014 01:07 PM, Arnd Bergmann wrote:
-> interruptible_sleep_on is racy and going away. This replaces
-> one use in the radio-cadet driver with an open-coded
-> wait loop that lets us check the condition under the mutex
-> but sleep without it.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> Cc: linux-media@vger.kernel.org
+On Fri, Jan 17, 2014 at 8:46 AM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
+> flags and LACK of __GFP_WAIT flag. To check if caller wanted to perform an
+> atomic allocation, the code must test __GFP_WAIT flag presence. This patch
+> fixes the issue introduced in v3.5-rc1
+>
+> CC: stable@vger.kernel.org
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 > ---
->  drivers/media/radio/radio-cadet.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
-> index 545c04c..67b5bbf 100644
-> --- a/drivers/media/radio/radio-cadet.c
-> +++ b/drivers/media/radio/radio-cadet.c
-> @@ -39,6 +39,7 @@
->  #include <linux/pnp.h>
->  #include <linux/sched.h>
->  #include <linux/io.h>		/* outb, outb_p			*/
-> +#include <linux/wait.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-ioctl.h>
->  #include <media/v4l2-ctrls.h>
-> @@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
->  	struct cadet *dev = video_drvdata(file);
->  	unsigned char readbuf[RDS_BUFFER];
->  	int i = 0;
-> +	DEFINE_WAIT(wait);
->  
->  	mutex_lock(&dev->lock);
->  	if (dev->rdsstat == 0)
->  		cadet_start_rds(dev);
-> -	if (dev->rdsin == dev->rdsout) {
-> +	while (1) {
-> +		prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
-> +		if (dev->rdsin != dev->rdsout)
-> +			break;
-> +
->  		if (file->f_flags & O_NONBLOCK) {
->  			i = -EWOULDBLOCK;
->  			goto unlock;
->  		}
->  		mutex_unlock(&dev->lock);
-> -		interruptible_sleep_on(&dev->read_queue);
-> +		schedule();
->  		mutex_lock(&dev->lock);
->  	}
-> +
+>  arch/x86/kernel/pci-dma.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+> index 872079a..32a81c9 100644
+> --- a/arch/x86/kernel/pci-dma.c
+> +++ b/arch/x86/kernel/pci-dma.c
+> @@ -100,7 +100,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+>         flag |= __GFP_ZERO;
+>  again:
+>         page = NULL;
+> -       if (!(flag & GFP_ATOMIC))
+> +       if (flag & __GFP_WAIT)
 
-This seems overly complicated. Isn't it enough to replace interruptible_sleep_on
-by 'wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);'?
+>From that description should this not actually be:
 
-Or am I missing something subtle?
+    if (!(flag & (GFP_ATOMIC|__GFP_WAIT) == GFP_ATOMIC))
 
-Regards,
+Else we will start using this pool for more than __GFP_HIGH allocations?
 
-	Hans
+That said, it is possible this is right and the intent was to allow
+__GFP_HIGH allocations (in general) to use this contigious pool, but I
+will let someone more intimate with the code comment to that.  I would
+have hoped the code would have been as below in that case:
 
->  	while (i < count && dev->rdsin != dev->rdsout)
->  		readbuf[i++] = dev->rdsbuf[dev->rdsout++];
->  
->  	if (i && copy_to_user(data, readbuf, i))
->  		i = -EFAULT;
->  unlock:
-> +	finish_wait(&dev->read_queue, &wait);
->  	mutex_unlock(&dev->lock);
->  	return i;
->  }
-> 
+    if (!(flag & __GFP_HIGH))
 
+Either way once this is resolved a nice comment should be added to
+make it really clear:
+
+-apw
