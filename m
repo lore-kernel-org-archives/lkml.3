@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaAQVFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:05:17 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:65254 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaAQVFP (ORCPT
+	id S1752505AbaAQVHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:07:43 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:59129 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaAQVHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:05:15 -0500
+	Fri, 17 Jan 2014 16:07:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D980ED.6000603@wwwdotorg.org>
-References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>
-	<52D578A7.8020000@infradead.org>
-	<CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-	<52D980ED.6000603@wwwdotorg.org>
-Date: Sat, 18 Jan 2014 00:59:29 +0400
-Message-ID: <CALT56yMiBks-mN1-tZujhX1jhZ8V3PCPcmOVcaFgC2UrxsZ6KA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
+In-Reply-To: <52D98DAD.9090501@hp.com>
+References: <20140110200603.GJ7572@laptop.programming.kicks-ass.net>
+ <tip-c026b3591e4f2a4993df773183704bb31634e0bd@git.kernel.org>
+ <52D971FE.9030008@hp.com> <CALCETrWF4AwFrBrA1WdrEUj5=oPfiPPUF7PJCooagTi6Y07Pwg@mail.gmail.com>
+ <52D98DAD.9090501@hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 17 Jan 2014 13:07:20 -0800
+Message-ID: <CALCETrXtCZG76xBx0WnNFkNWgSm2dB8FfB1iHP04yK3YwcH=kg@mail.gmail.com>
+Subject: Re: [tip:perf/core] x86, mm, perf: Allow recursive faults from interrupts
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Scott J Norton <scott.norton@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        tip-bot for Peter Zijlstra <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Jan 17, 2014 at 11:13 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 01/14/2014 03:54 PM, Dmitry Eremin-Solenikov wrote:
->> Hello,
+On Fri, Jan 17, 2014 at 12:08 PM, Waiman Long <waiman.long@hp.com> wrote:
+> On 01/17/2014 02:17 PM, Andy Lutomirski wrote:
 >>
->>
->> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On Fri, Jan 17, 2014 at 10:10 AM, Waiman Long<waiman.long@hp.com>  wrote:
 >>>
->>> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
->>>> Hi all,
+>>> On 01/16/2014 08:39 AM, tip-bot for Peter Zijlstra wrote:
 >>>>
->>>> This tree fails (more than usual) the powerpc allyesconfig build.
+>>>> Commit-ID:  c026b3591e4f2a4993df773183704bb31634e0bd
+>>>> Gitweb:
+>>>> http://git.kernel.org/tip/c026b3591e4f2a4993df773183704bb31634e0bd
+>>>> Author:     Peter Zijlstra<peterz@infradead.org>
+>>>> AuthorDate: Fri, 10 Jan 2014 21:06:03 +0100
+>>>> Committer:  Ingo Molnar<mingo@kernel.org>
+>>>> CommitDate: Thu, 16 Jan 2014 09:19:48 +0100
 >>>>
->>>> Changes since 20140113:
+>>>> x86, mm, perf: Allow recursive faults from interrupts
 >>>>
->>>
->>>
->>> on i386:
->>>
->>> net/built-in.o: In function `header_create':
->>> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
->>> net/built-in.o: In function `bt_6lowpan_recv':
->>> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+>>>> Waiman managed to trigger a PMI while in a emulate_vsyscall() fault,
+>>>> the PMI in turn managed to trigger a fault while obtaining a stack
+>>>> trace. This triggered the sig_on_uaccess_error recursive fault logic
+>>>> and killed the process dead.
+>>>>
+>>>> Fix this by explicitly excluding interrupts from the recursive fault
+>>>> logic.
+>>>>
+>>>> Reported-and-Tested-by: Waiman Long<waiman.long@hp.com>
+>>>> Fixes: e00b12e64be9 ("perf/x86: Further optimize copy_from_user_nmi()")
+>>>> Cc: Aswin Chandramouleeswaran<aswin@hp.com>
+>>>> Cc: Scott J Norton<scott.norton@hp.com>
+>>>> Cc: Linus Torvalds<torvalds@linux-foundation.org>
+>>>> Cc: Andy Lutomirski<luto@amacapital.net>
+>>>> Cc: Arnaldo Carvalho de Melo<acme@ghostprotocols.net>
+>>>> Cc: Andrew Morton<akpm@linux-foundation.org>
+>>>> Signed-off-by: Peter Zijlstra<peterz@infradead.org>
+>>>> Link:
+>>>>
+>>>> http://lkml.kernel.org/r/20140110200603.GJ7572@laptop.programming.kicks-ass.net
+>>>> Signed-off-by: Ingo Molnar<mingo@kernel.org>
+>>>> ---
+>>>>    arch/x86/mm/fault.c | 18 ++++++++++++++++++
+>>>>    1 file changed, 18 insertions(+)
+>>>>
+>>>>
+>>> Will that be picked up by Linus as it is a 3.13 regression?
 >>
->> Ah, nice Makefile hack there.
->> David, Marcel, could you please consider the attached patch.
->
-> I think you forgot to "git add net/bluetooth/Makefile" into that patch;
-> don't you need the following too (I certainly do, to build next-20140117)
->
->> diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
->> index cc6827e2ce68..80cb215826e8 100644
->> --- a/net/bluetooth/Makefile
->> +++ b/net/bluetooth/Makefile
->> @@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
->>       hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
->>       a2mp.o amp.o 6lowpan.o
+>> Does anyone actually know why this regressed recently?  The buggy code
+>> has been there for quite a while.
 >>
->> -ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
->> -  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
->> -endif
->> -
->>  subdir-ccflags-y += -D__CHECK_ENDIAN__
+>> --Andy
 >
-> Should I send this as a separate followup patch?
+>
+> Yes, the bug was there for a while, but a recent change by Peter (see the
+> "Fixes:" line above) made it much easier to hit it.
 
-Yes, please. I forgot to add it to the patch.
+Thanks!
 
--- 
-With best wishes
-Dmitry
+So I feel slightly better now -- this particular bug didn't actually
+exist when I wrote the offending code :)  But that also means that
+this should really be fixed in 3.13.
+
+--Andy
