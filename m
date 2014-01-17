@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaAQQBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:01:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22396 "EHLO mx1.redhat.com"
+	id S1752776AbaAQQC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:02:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6522 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaAQQBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:01:14 -0500
+	id S1752541AbaAQQBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 11:01:09 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, wil6210@qca.qualcomm.com,
+Cc: Alexander Gordeev <agordeev@redhat.com>, Brian King <brking@us.ibm.com>,
+        linux-scsi@vger.kernel.org, kvm@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH v2 9/9] wil6210: Use pci_enable_msi_range()
-Date: Fri, 17 Jan 2014 17:02:23 +0100
-Message-Id: <aedc9b7eb82232204a7d65b4c7d3302ba6ba3892.1389904167.git.agordeev@redhat.com>
+Subject: [PATCH v2 4/9] ipr: Use pci_enable_msi_range() and pci_enable_msix_range()
+Date: Fri, 17 Jan 2014 17:02:18 +0100
+Message-Id: <eb0b62be65c050533f2565fcf3f1d673770dfd67.1389904166.git.agordeev@redhat.com>
 In-Reply-To: <cover.1389904166.git.agordeev@redhat.com>
 References: <cover.1389904166.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,65 +27,88 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
 ---
- drivers/net/wireless/ath/wil6210/pcie_bus.c |   36 ++++++++++++++------------
- 1 files changed, 19 insertions(+), 17 deletions(-)
+ drivers/scsi/ipr.c |   47 ++++++++++++++++++-----------------------------
+ 1 files changed, 18 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/wil6210/pcie_bus.c b/drivers/net/wireless/ath/wil6210/pcie_bus.c
-index eeceab3..4e1bf54 100644
---- a/drivers/net/wireless/ath/wil6210/pcie_bus.c
-+++ b/drivers/net/wireless/ath/wil6210/pcie_bus.c
-@@ -41,30 +41,32 @@ static int wil_if_pcie_enable(struct wil6210_priv *wil)
- 	switch (use_msi) {
- 	case 3:
- 	case 1:
-+		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
-+		break;
- 	case 0:
-+		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
- 		break;
- 	default:
--		wil_err(wil, "Invalid use_msi=%d, default to 1\n",
--			use_msi);
-+		wil_err(wil, "Invalid use_msi=%d, default to 1\n", use_msi);
- 		use_msi = 1;
- 	}
--	wil->n_msi = use_msi;
--	if (wil->n_msi) {
--		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
--		rc = pci_enable_msi_block(pdev, wil->n_msi);
--		if (rc && (wil->n_msi == 3)) {
--			wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
--			wil->n_msi = 1;
--			rc = pci_enable_msi_block(pdev, wil->n_msi);
--		}
--		if (rc) {
--			wil_err(wil, "pci_enable_msi failed, use INTx\n");
--			wil->n_msi = 0;
--		}
--	} else {
--		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
-+
-+	switch (use_msi) {
-+	case 3:
-+		if (pci_enable_msi_range(pdev, 3, 3) > 0)
-+			break;
-+		wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
-+		use_msi = 1;
-+		/* fallthrough */
-+	case 1:
-+		if (!pci_enable_msi(pdev))
-+			break;
-+		wil_err(wil, "pci_enable_msi failed, use INTx\n");
-+		use_msi = 0;
- 	}
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index fb57e21..3841298 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -9245,47 +9245,36 @@ ipr_get_chip_info(const struct pci_device_id *dev_id)
+ static int ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	struct msix_entry entries[IPR_MAX_MSIX_VECTORS];
+-	int i, err, vectors;
++	int i, vectors;
  
-+	wil->n_msi = use_msi;
-+
- 	rc = wil6210_init_irq(wil, pdev->irq);
- 	if (rc)
- 		goto stop_master;
+ 	for (i = 0; i < ARRAY_SIZE(entries); ++i)
+ 		entries[i].entry = i;
+ 
+-	vectors = ipr_number_of_msix;
++	vectors = pci_enable_msix_range(ioa_cfg->pdev, entries,
++					1, ipr_number_of_msix);
++	if (vectors < 0)
++		return vectors;
+ 
+-	while ((err = pci_enable_msix(ioa_cfg->pdev, entries, vectors)) > 0)
+-			vectors = err;
++	for (i = 0; i < vectors; i++)
++		ioa_cfg->vectors_info[i].vec = entries[i].vector;
++	ioa_cfg->nvectors = vectors;
+ 
+-	if (err < 0)
+-		return err;
+-
+-	if (!err) {
+-		for (i = 0; i < vectors; i++)
+-			ioa_cfg->vectors_info[i].vec = entries[i].vector;
+-		ioa_cfg->nvectors = vectors;
+-	}
+-
+-	return err;
++	return 0;
+ }
+ 
+ static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ {
+-	int i, err, vectors;
++	int i, vectors;
+ 
+-	vectors = ipr_number_of_msix;
++	vectors = pci_enable_msi_range(ioa_cfg->pdev, 1, ipr_number_of_msix);
++	if (vectors < 0)
++		return vectors;
+ 
+-	while ((err = pci_enable_msi_block(ioa_cfg->pdev, vectors)) > 0)
+-			vectors = err;
++	for (i = 0; i < vectors; i++)
++		ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
++	ioa_cfg->nvectors = vectors;
+ 
+-	if (err < 0)
+-		return err;
+-
+-	if (!err) {
+-		for (i = 0; i < vectors; i++)
+-			ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
+-		ioa_cfg->nvectors = vectors;
+-	}
+-
+-	return err;
++	return 0;
+ }
+ 
+ static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
+@@ -9350,7 +9339,7 @@ static irqreturn_t ipr_test_intr(int irq, void *devp)
+  * ipr_test_msi - Test for Message Signaled Interrupt (MSI) support.
+  * @pdev:		PCI device struct
+  *
+- * Description: The return value from pci_enable_msi() can not always be
++ * Description: The return value from pci_enable_msi_range() can not always be
+  * trusted.  This routine sets up and initiates a test interrupt to determine
+  * if the interrupt is received via the ipr_test_intr() service routine.
+  * If the tests fails, the driver will fall back to LSI.
 -- 
 1.7.7.6
 
