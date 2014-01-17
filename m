@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaAQUuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 15:50:24 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33419 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaAQUuW (ORCPT
+	id S1752239AbaAQVBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:01:00 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:36461 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaAQVAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 15:50:22 -0500
-Date: Fri, 17 Jan 2014 15:49:33 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Aristeu Rozanski <aris@redhat.com>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3/6] cgroup: clean up cgroup_subsys names and
- initialization
-Message-ID: <20140117204933.GF19452@hmsreliant.think-freely.org>
-References: <1389982317-22225-1-git-send-email-tj@kernel.org>
- <1389982317-22225-4-git-send-email-tj@kernel.org>
+	Fri, 17 Jan 2014 16:00:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389982317-22225-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <cover.1389904166.git.agordeev@redhat.com>
+References: <cover.1389904166.git.agordeev@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 17 Jan 2014 14:00:32 -0700
+Message-ID: <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian King <brking@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kalle Valo <kvalo@qca.qualcomm.com>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        wil6210@qca.qualcomm.com, ath10k@lists.infradead.org,
+        linux-nvme@lists.infradead.org,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 01:11:54PM -0500, Tejun Heo wrote:
-> cgroup_subsys is a bit messier than it needs to be.
-> 
-> * The name of a subsys can be different from its internal identifier
->   defined in cgroup_subsys.h.  Most subsystems use the matching name
->   but three - cpu, memory and perf_event - use different ones.
-> 
-> * cgroup_subsys_id enums are postfixed with _subsys_id and each
->   cgroup_subsys is postfixed with _subsys.  cgroup.h is widely
->   included throughout various subsystems, it doesn't and shouldn't
->   have claim on such generic names which don't have any qualifier
->   indicating that they belong to cgroup.
-> 
-> * cgroup_subsys->subsys_id should always equal the matching
->   cgroup_subsys_id enum; however, we require each controller to
->   initialize it and then BUG if they don't match, which is a bit
->   silly.
-> 
-> This patch cleans up cgroup_subsys names and initialization by doing
-> the followings.
-> 
-> * cgroup_subsys_id enums are now postfixed with _cgrp_id, and each
->   cgroup_subsys with _cgrp_subsys.
-> 
-> * With the above, renaming subsys identifiers to match the userland
->   visible names doesn't cause any naming conflicts.  All non-matching
->   identifiers are renamed to match the official names.
-> 
->   cpu_cgroup -> cpu
->   mem_cgroup -> memory
->   perf -> perf_event
-> 
-> * controllers no longer need to initialize ->subsys_id and ->name.
->   They're generated in cgroup core and set automatically during boot.
-> 
-> * Redundant cgroup_subsys declarations removed.
-> 
-> * While updating BUG_ON()s in cgroup_init_early(), convert them to
->   WARN()s.  BUGging that early during boot is stupid - the kernel
->   can't print anything, even through serial console and the trap
->   handler doesn't even link stack frame properly for back-tracing.
-> 
-> This patch doesn't introduce any behavior changes.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Aristeu Rozanski <aris@redhat.com>
-> Cc: Serge E. Hallyn <serue@us.ibm.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Thomas Graf <tgraf@suug.ch>
-> Cc: "David S. Miller" <davem@davemloft.net>
-For the netprio and net_cls bits
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+On Fri, Jan 17, 2014 at 9:02 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> This series is against "next" branch in Bjorn's repo:
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
+>
+> Changes from v1 to v2:
+>   - added a regression fix "ahci: Fix broken fallback to single
+>     MSI mode" as patch 1/9;
+>   - the series is reordered to move the regression fix in front;
+>   - at Bjorn's request pci_enable_msi() is un-deprecated;
+>   - as result, pci_enable_msi_range(pdev, 1, 1) styled calls
+>     rolled back to pci_enable_msi(pdev);
+>   - nvme bug fix moved out as a separate patch 5/9 "nvme: Fix
+>     invalid call to irq_set_affinity_hint()"
+>   - patches changelog elaborated a bit;
+>
+> Bjorn,
+>
+> As the release is supposedly this weekend, do you prefer
+> the patches to go to your tree or to individual trees after
+> the release?
+
+I'd be happy to merge them, except for the fact that they probably
+wouldn't have any time in -next before I ask Linus to pull them.  So
+how about if we wait until after the release, ask the area maintainers
+to take them, and if they don't take them, I'll put them in my tree
+for v3.15?
+
+Bjorn
