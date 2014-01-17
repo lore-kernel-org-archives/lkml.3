@@ -1,175 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526AbaAQVUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:20:25 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:59163 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaAQVUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:20:23 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, chegu_vinod@hp.com, peterz@infradead.org,
-        mgorman@suse.de, mingo@redhat.com
-Subject: [PATCH 6/7] numa,sched: normalize faults_from stats and weigh by CPU use
-Date: Fri, 17 Jan 2014 16:12:08 -0500
-Message-Id: <1389993129-28180-7-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389993129-28180-1-git-send-email-riel@redhat.com>
-References: <1389993129-28180-1-git-send-email-riel@redhat.com>
+	id S1753557AbaAQVUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:20:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752150AbaAQVUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 16:20:45 -0500
+Message-ID: <1389991213.8705.93.camel@bling.home>
+Subject: Re: [RFC][PATCH] Remove bus dependency for iommu_domain_alloc.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: "joro@8bytes.org" <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Jan 2014 13:40:13 -0700
+In-Reply-To: <546cedebe8cb4a6d818d9a6c3ef941bf@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <1389987042-27352-1-git-send-email-Varun.Sethi@freescale.com>
+	 <1389989354.8705.89.camel@bling.home>
+	 <546cedebe8cb4a6d818d9a6c3ef941bf@BL2PR03MB468.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Fri, 2014-01-17 at 20:21 +0000, Varun Sethi wrote:
+> 
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Saturday, January 18, 2014 1:39 AM
+> > To: Sethi Varun-B16395
+> > Cc: joro@8bytes.org; iommu@lists.linux-foundation.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [RFC][PATCH] Remove bus dependency for iommu_domain_alloc.
+> > 
+> > On Sat, 2014-01-18 at 01:00 +0530, Varun Sethi wrote:
+> > > This patch attempts to remove iommu_domain_alloc function's dependency
+> > on the bus type.
+> > > This dependency is quiet restrictive in case of vfio, where it's
+> > > possible to bind multiple iommu groups (from different bus types) to
+> > the same iommu domain.
+> > >
+> > > This patch is based on the assumption, that there is a single iommu
+> > > for all bus types on the system.
+> > >
+> > > We maintain a list of bus types (for which iommu ops are registered).
+> > > In the iommu_domain_alloc function we ensure that all bus types
+> > correspond to the same set of iommu operations.
+> > 
+> > Seems like this just kicks the problem down the road a little ways as I
+> > expect the assumption isn't going to last long.  I think there's another
+> > way to do this and we can do it entirely from within vfio_iommu_type1.
+> > We have a problem on x86 that the IOMMU driver can be backed by multiple
+> > IOMMU hardware devices.  These separate devices are architecturally
+> > allowed to have different properties.  The property causing us trouble is
+> > cache coherency.  Some hardware devices allow us to use IOMMU_CACHE as a
+> > mapping attribute, others do not.  Therefore we cannot use a single IOMMU
+> > domain to optimally handle all devices in a heterogeneous environment.
+> > 
+> > I think the solution to this is to have vfio_iommu_type1 transparently
+> > support multiple IOMMU domains.  In the implementation of that, it seems
+> > to make sense to move the iommu_domain_alloc() to the point where we
+> > attach a group to the domain.  That means we can scan the devices in the
+> [Sethi Varun-B16395] Multiple iommu groups can also share the same domain (as a part
+> Of the same VFIO container). I am not sure how can we handle the case of iommu groups from
+> Different bus types in vfio.
 
-The tracepoint has made it abundantly clear that the naive
-implementation of the faults_from code has issues.
+Correct and believe I handle this.  The difference is that rather than
+attaching a new group to and old domain and hoping for the best, we now
+allocate a domain for each group, attach the group to the new domain,
+then compare the capabilities of the new domain to the old domain.  If
+we determine they are compatible, we throw away the new domain and use
+the old one.  If they are not compatible, for instance if they are for
+different bus_types or if the cache coherence support is different, they
+remain separate and we duplicate mappings to both domains.  Hopefully
+this is more clear in the code I just sent.  Thanks,
 
-Specifically, the garbage collector in some workloads will
-access orders of magnitudes more memory than the threads
-that do all the active work. This resulted in the node with
-the garbage collector being marked the only active node in
-the group.
+Alex 
 
-This issue is avoided if we weigh the statistics by CPU use
-of each task in the numa group, instead of by how many faults
-each thread has occurred.
+> > domain to determine the bus.  I suppose there is still an assumption that
+> > all the devices in a group are on the same bus, but since the group is
+> > determined by the IOMMU and we already assume only a single IOMMU per
+> > bus, I think we're ok.  I spent some time working on a patch to do this,
+> > but it isn't quite finished.  I'll try to bandage the rough edges and
+> > send it out as an RFC so you can see what I'm talking about.  Thanks,
+> > 
+> > Alex
+> > 
+> > > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> > > ---
+> > >  arch/arm/mm/dma-mapping.c             |    2 +-
+> > >  drivers/gpu/drm/msm/msm_gpu.c         |    2 +-
+> > >  drivers/iommu/amd_iommu_v2.c          |    2 +-
+> > >  drivers/iommu/iommu.c                 |   32
+> > +++++++++++++++++++++++++++++---
+> > >  drivers/media/platform/omap3isp/isp.c |    2 +-
+> > >  drivers/remoteproc/remoteproc_core.c  |    2 +-
+> > >  drivers/vfio/vfio_iommu_type1.c       |    2 +-
+> > >  include/linux/device.h                |    2 ++
+> > >  include/linux/iommu.h                 |    4 ++--
+> > >  virt/kvm/iommu.c                      |    2 +-
+> > >  10 files changed, 40 insertions(+), 12 deletions(-)
+> 
 
-To achieve this, we normalize the number of faults to the
-fraction of faults that occurred on each node, and then
-multiply that fraction by the fraction of CPU time the
-task has used since the last time task_numa_placement was
-invoked.
 
-This way the nodes in the active node mask will be the ones
-where the tasks from the numa group are most actively running,
-and the influence of eg. the garbage collector and other
-do-little threads is properly minimized.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/sched.h |  2 ++
- kernel/sched/core.c   |  2 ++
- kernel/sched/fair.c   | 48 ++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 50 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0af6c1a..52de567 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1471,6 +1471,8 @@ struct task_struct {
- 	int numa_preferred_nid;
- 	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
-+	u64 last_task_numa_placement;
-+	u64 last_sum_exec_runtime;
- 	struct callback_head numa_work;
- 
- 	struct list_head numa_entry;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7f45fd5..9a0908a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1758,6 +1758,8 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- 	p->numa_work.next = &p->numa_work;
- 	p->numa_faults = NULL;
- 	p->numa_faults_buffer = NULL;
-+	p->last_task_numa_placement = 0;
-+	p->last_sum_exec_runtime = 0;
- 
- 	INIT_LIST_HEAD(&p->numa_entry);
- 	p->numa_group = NULL;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e0a53a..0d395a0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1422,11 +1422,41 @@ static void update_task_scan_period(struct task_struct *p,
- 	memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
- }
- 
-+/*
-+ * Get the fraction of time the task has been running since the last
-+ * NUMA placement cycle. The scheduler keeps similar statistics, but
-+ * decays those on a 32ms period, which is orders of magnitude off
-+ * from the dozens-of-seconds NUMA balancing period. Use the scheduler
-+ * stats only if the task is so new there are no NUMA statistics yet.
-+ */
-+static u64 numa_get_avg_runtime(struct task_struct *p, u64 *period)
-+{
-+	u64 runtime, delta, now;
-+	/* Use the start of this time slice to avoid calculations. */
-+	now = p->se.exec_start;
-+	runtime = p->se.sum_exec_runtime;
-+
-+	if (p->last_task_numa_placement) {
-+		delta = runtime - p->last_sum_exec_runtime;
-+		*period = now - p->last_task_numa_placement;
-+	} else {
-+		delta = p->se.avg.runnable_avg_sum;
-+		*period = p->se.avg.runnable_avg_period;
-+	}
-+
-+	p->last_sum_exec_runtime = runtime;
-+	p->last_task_numa_placement = now;
-+
-+	return delta;
-+}
-+
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq, nid, max_nid = -1, max_group_nid = -1;
- 	unsigned long max_faults = 0, max_group_faults = 0;
- 	unsigned long fault_types[2] = { 0, 0 };
-+	unsigned long total_faults;
-+	u64 runtime, period;
- 	spinlock_t *group_lock = NULL;
- 
- 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-@@ -1435,6 +1465,10 @@ static void task_numa_placement(struct task_struct *p)
- 	p->numa_scan_seq = seq;
- 	p->numa_scan_period_max = task_scan_max(p);
- 
-+	total_faults = p->numa_faults_locality[0] +
-+		       p->numa_faults_locality[1] + 1;
-+	runtime = numa_get_avg_runtime(p, &period);
-+
- 	/* If the task is part of a group prevent parallel updates to group stats */
- 	if (p->numa_group) {
- 		group_lock = &p->numa_group->lock;
-@@ -1447,7 +1481,7 @@ static void task_numa_placement(struct task_struct *p)
- 		int priv, i;
- 
- 		for (priv = 0; priv < 2; priv++) {
--			long diff, f_diff;
-+			long diff, f_diff, f_weight;
- 
- 			i = task_faults_idx(nid, priv);
- 			diff = -p->numa_faults[i];
-@@ -1459,8 +1493,18 @@ static void task_numa_placement(struct task_struct *p)
- 			fault_types[priv] += p->numa_faults_buffer[i];
- 			p->numa_faults_buffer[i] = 0;
- 
-+			/*
-+			 * Normalize the faults_from, so all tasks in a group
-+			 * count according to CPU use, instead of by the raw
-+			 * number of faults. Tasks with little runtime have
-+			 * little over-all impact on throughput, and thus their
-+			 * faults are less important.
-+			 */
-+			f_weight = (1024 * runtime *
-+				   p->numa_faults_from_buffer[i]) /
-+				   (total_faults * period + 1);
- 			p->numa_faults_from[i] >>= 1;
--			p->numa_faults_from[i] += p->numa_faults_from_buffer[i];
-+			p->numa_faults_from[i] += f_weight;
- 			p->numa_faults_from_buffer[i] = 0;
- 
- 			faults += p->numa_faults[i];
--- 
-1.8.4.2
 
