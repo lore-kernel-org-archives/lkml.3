@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaAQQIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:08:30 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56051 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaAQQI1 (ORCPT
+	id S1752577AbaAQQKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:10:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54478 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaAQQKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:08:27 -0500
-Date: Fri, 17 Jan 2014 16:08:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140117160821.GV17314@sirena.org.uk>
-References: <1389900750-27625-1-git-send-email-nm@ti.com>
+	Fri, 17 Jan 2014 11:10:19 -0500
+Date: Fri, 17 Jan 2014 17:10:16 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.6-rt9
+Message-ID: <20140117161016.GE5785@linutronix.de>
+References: <20131223225017.GA8623@linutronix.de>
+ <20131227200024.GA19505@opentech.at>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tYlHSoJ8Aop8eNG2"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1389900750-27625-1-git-send-email-nm@ti.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
+In-Reply-To: <20131227200024.GA19505@opentech.at>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ti-abb: Add support for interleaved LDO
- registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Nicholas Mc Guire | 2013-12-27 21:00:24 [+0100]:
 
---tYlHSoJ8Aop8eNG2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> - A patch from Thomas Gleixner not to raise the timer softirq
+>>   unconditionally (only if a timer is pending)
+>> 
+>
+>This one seems to deadlock early in the boot sequence on x86
+>(i3/i7/Phenom-4x here and Carsten Emde also had boot failures)
+>
+>after droping this patch with:
+>patch -p1 -R < ../paches/timers-do-not-raise-softirq-unconditionally.patch
+>3.12.6-rt9 boots up fine. cyclictest seems to be back to what it was before
+>(only ran for a few minutes idle and 1h with load on an i3).
+>
+>The main problem with this patch though are proceduaral isues 
+>the commit note - which is a mail exchange - actually does not explain what 
+>the rational for the changes is (...well I don't understand the logic of
+>run_local_timers - if someone can explain - pleas do) and notably:
+>
+>from timers-do-not-raise-softirq-unconditionally.patch
+><snip>
+>well, that very same problem is in mainline if you add "threadirqs" to
+>the command line. But we can be smart about this. The untested patch
+>                                                    ^^^^^^^^^^^^^^^^^^
+>below should address that issue. If that works on mainline we can
+>adapt it for RT (needs a trylock(&base->lock) there).
+><snip>
+>
+> does make me wonder why this went into -rt9 ?
 
-On Thu, Jan 16, 2014 at 01:32:30PM -0600, Nishanth Menon wrote:
-> Certain platforms such as DRA7 have quirky memory maps such as:
-> PRM_ABBLDO_DSPEVE_CTRL	0x4ae07e20
-> PRM_ABBLDO_IVA_CTRL	0x4ae07e24
-> other-registers
-> PRM_ABBLDO_DSPEVE_SETUP	0x4ae07e30
-> PRM_ABBLDO_IVA_SETUP	0x4ae07e34
->=20
-> These need the address allocation to be either shared OR unique
-> allocation per register instance.
+It was on the mailing list for a few weeks. My understanding was that
+Mike Galbraith tested it on mainline and then I added the RT specific
+pieces and added it it to the tree.
 
-Is there a system controller involved here by any chance?
+> It also build fails with CONFIG_PREEMPT_RT_FULL not set.
 
---tYlHSoJ8Aop8eNG2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I will add a non-RT based config to my compile tests.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> as with this patch, systems that booted just fine with 3.12.5-rt7 don't
+> even boot (atleast my 3 x86 test boxes here did not) this raises some
+> questions regarding the process of getting patches into -rtX - are
+> we going to fast here ?
+>
+> I would prefere if such patches would go out with a request for testing
+> or atleast a "might blow up your system" note in them...
 
-iQIcBAEBAgAGBQJS2VVyAAoJELSic+t+oim9XwoQAIjGJfqR+6qVUUGLZJFGfFmh
-ucGBlJvtAcU/1j+tYln5lGGvUAaurt/LF6/Yltjq0j1pyZ7PdiOoTdL6J7x/s4ZN
-oZFuD6FGp5mxRmTXOOhLCT8YCK4BvBlNzPf7OvcPsHnTgHwOQl0XdiHCprWT7fNx
-DJhRdOp3blcoVhA7yCb+VtGQTY+0f2dMT/I2LISe7GWh6cFxlQX0CJKSlHDJLqYY
-sqRp23v03+R7jq5c5a3WHQJZER8TQzHG4yuE1aY8huZPzYsxQM5Dq95i2qbbXuuC
-Yfwhbfbh9DKU4NY159Eoy+pOIwpgCOwSciPlAroiK8KxkuzZDDqPCeRV39BVr0aR
-cLrqv2C83lsb7u2wixGlrfmRPGv8+Ldm2zvas9zucFrBf/b86C4h6cV3dwmZ4xjV
-lpKWSYzAg+84v2SMpCkeys54xH7dGWNP3qWARbiG/x1uGJDzgaxdoRu/C3O5jyiZ
-WgxSfhe8pOK9OtcnMZTkkWrYyhS2iN6CqAvw8keApROB8g7cSwMC2NwEHpmcSqaT
-oB6onsG+CqGyYbTk1kVB8OgBHZy5j300qeGcBRo9jTwqnWltDj7YX91qK5VwPyuo
-H4uKWsLzzu+ZchhaQC4euuoPG7114EQ28cCA5wfjkdrAssuEnbhs/zNbqNdj3+f5
-hSv/toVbOeiBoe3v0i/x
-=kV/j
------END PGP SIGNATURE-----
+I didn't expect that much trouble. In general I try to avoid adding
+explosives unless marked as such.
 
---tYlHSoJ8Aop8eNG2--
+>thx!
+>hofrat
+
+Sebastian
