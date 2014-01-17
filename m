@@ -1,147 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaAQDp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 22:45:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:44781 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaAQDpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 22:45:25 -0500
-Date: Fri, 17 Jan 2014 14:45:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
-In-Reply-To: <52D8625C.1000902@zytor.com>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
-	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-	<20140116222536.GX30183@twins.programming.kicks-ass.net>
-	<20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-	<52D8625C.1000902@zytor.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Jan_2014_14_45_18_+1100_mdrD0f9aYYlxi6dA"
+	id S1751825AbaAQDq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 22:46:26 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53410 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaAQDqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 22:46:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1389360637.5854.53.camel@pizza.hi.pengutronix.de>
+References: <1389337217-29032-1-git-send-email-wens@csie.org>
+ <1389337217-29032-2-git-send-email-wens@csie.org> <1389360637.5854.53.camel@pizza.hi.pengutronix.de>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Fri, 17 Jan 2014 11:46:02 +0800
+X-Google-Sender-Auth: W2fFZR6uqf20z-RoTlhqJt8RI4s
+Message-ID: <CAGb2v647_Am_spers6X0+16JShNa-Xo9Fozc1eZnYzbeU-wgoQ@mail.gmail.com>
+Subject: Re: [PATCH v2 01/16] reset: add non CONFIG_RESET_CONTROLLER routines
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Barry Song <Baohua.Song@csr.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jan_2014_14_45_18_+1100_mdrD0f9aYYlxi6dA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
-
-On Thu, 16 Jan 2014 14:51:08 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Fri, Jan 10, 2014 at 9:30 PM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Hi,
 >
-> On 01/16/2014 02:34 PM, Stephen Rothwell wrote:
-> >=20
-> > On Thu, 16 Jan 2014 23:25:36 +0100 Peter Zijlstra
-> > <peterz@infradead.org> wrote:
-> >>=20
-> >> On Fri, Jan 17, 2014 at 07:46:28AM +1100, Stephen Rothwell
-> >> wrote:
-> >>>=20
-> >>> On Thu, 16 Jan 2014 13:19:55 +0100 Peter Zijlstra
-> >>> <peterz@infradead.org> wrote:
-> >>>>=20
-> >>>> I think the below ought to work
-> >>>=20
-> >>> To be clear, all you did was replace the body of mwait_idle()
-> >>> with
-> >>>=20
-> >>> mwait_idle_with_hints(0, 0);
-> >>=20
-> >> Pretty much, and add the asm/mwait.h include, otherwise you'll
-> >> end up with a compile fail.
-> >>=20
-> >>> (and the comment above it)?  I need to apply in incremental
-> >>> patch in the merge commit.
-> >>=20
-> >> I don't think I touched the comment at all.
-> >=20
->=20
-> In retrospect this bit probably should have gone through the idle
-> tree.  That was my bad, I need to coordinate with Len better.
+> [Added Ivan, Stephen and Barry to Cc:]
+>
+> Am Freitag, den 10.01.2014, 15:00 +0800 schrieb Chen-Yu Tsai:
+>> Some drivers are shared between platforms that may or may not
+>> have RESET_CONTROLLER selected for them.
+>
+> I expected that drivers compiled for platforms without reset controllers
+> but use the reset API should select or depend on RESET_CONTROLLER.
+> Stubbing out device_reset and reset_control_get will turn a compile time
+> error into a runtime error for everyone forgetting to do this when
+> writing a new driver that needs the reset.
 
-So this is what I added as a merge fix patch.  Someone just needs to make
-sure Linus gets this when the latter of the tow trees gets merged.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 17 Jan 2014 14:42:06 +1100
-Subject: [PATCH] x86 idle: mwait_idle merge update
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/kernel/process.c | 14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index db471a87fdd8..4da840f01561 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <asm/fpu-internal.h>
- #include <asm/debugreg.h>
- #include <asm/nmi.h>
-+#include <asm/mwait.h>
-=20
- /*
-  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
-@@ -427,18 +428,7 @@ static int prefer_mwait_c1_over_halt(const struct cpui=
-nfo_x86 *c)
-=20
- static void mwait_idle(void)
- {
--	if (!need_resched()) {
--		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
--			clflush((void *)&current_thread_info()->flags);
--
--		__monitor((void *)&current_thread_info()->flags, 0, 0);
--		smp_mb();
--		if (!need_resched())
--			__sti_mwait(0, 0);
--		else
--			local_irq_enable();
--	} else
--		local_irq_enable();
-+	mwait_idle_with_hints(0, 0);
- }
-=20
- void select_idle_routine(const struct cpuinfo_x86 *c)
---=20
-1.8.5.2
+Since this was the intended behavior, I'll drop this patch and select
+RESET_CONTROLLER for the stmmac driver for now.
 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks
+ChenYu
 
---Signature=_Fri__17_Jan_2014_14_45_18_+1100_mdrD0f9aYYlxi6dA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS2KdSAAoJEMDTa8Ir7ZwVWa8P/i7U9spYNw9dHvQKG5S+qJSB
-2Wx7gaAOypdvQ+gVrURKAep9N9m46/AGSx+UuJ2X9wlmN6SaV7Q5DmfoiufLX8Xq
-pkc6EjmzP9rsimjwOas4VIkXdzp/DzsOhVKVF6e6FZ1G0n0nb5bFN7pk36drHXMH
-ejqBijL/jdS9e0yIr4qD8CmymclSON1AkPrOpW4sM37tCbQHHWxuJk5BzxUonpGF
-nUghGPqDFRVuzzwpq8q4Klb1nP3Na9nx4sUDt5HOnYmpnqxxNlyI2hUf1TAlTxRg
-SrcEapnMKwGgiJMM8+G7jkiodL4ynxRb0D1D7tVptkmoFmSeHzUdwatt8Z1p7oBz
-DXb+FXDMo/pIlztFR6lUs1w/SqkqbEqTYMNyOWmUn1PJE5idrNTOakZNk2L2l8qU
-Ht1URah51Vkvzjz2c5ExUvix+nYM+lZ2fWNgy/bWL0KGYbVKVJzlOkzMUbhWEEOJ
-5jCepJIEH3Fx0HFacLd8ecken6KDitUm6X+EILO3cAMppwlv/TzbQQgBP52jmwVk
-Q4q0EQRi+cRWkjflxGP2qGrGLnmlVT0MuSLdsPzdLcnVaOGKWbUwXcb2RZ1DezKN
-/widAt1Li8gchqJzqTIJNWe2oqRRZyxGWrjg9Ddq+xjhE+IksKHi0UiMfVK0acow
-FYq27ByFCx6A10h3W366
-=LFbW
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Jan_2014_14_45_18_+1100_mdrD0f9aYYlxi6dA--
+>
+>>  Add dummy functions
+>> when RESET_CONTROLLER is not selected, thereby eliminating the
+>> need for drivers to enclose reset_control_*() calls within
+>> #ifdef CONFIG_RESET_CONTROLLER, #endif
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>
+> This was already proposed by Ivan and Barry earlier, and so far we
+> didn't get to a proper conclusion:
+>
+> https://lkml.org/lkml/2013/10/10/179
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/174758.html
+>
+> If included, the stubs should at least return an error to indicate a
+> reset couldn't be performed, but then I lose the compile time error for
+> drivers which should select RESET_CONTROLLER but don't.
+>
+> Also this alone won't help you if you build multi-arch kernels where one
+> platform enables RESET_CONTROLLER and the other expects it to be
+> disabled.
+>
+> regards
+> Philipp
+>
+>> ---
+>>  include/linux/reset.h | 39 +++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 39 insertions(+)
+>>
+>> diff --git a/include/linux/reset.h b/include/linux/reset.h
+>> index 6082247..38aa616 100644
+>> --- a/include/linux/reset.h
+>> +++ b/include/linux/reset.h
+>> @@ -4,6 +4,8 @@
+>>  struct device;
+>>  struct reset_control;
+>>
+>> +#ifdef CONFIG_RESET_CONTROLLER
+>> +
+>>  int reset_control_reset(struct reset_control *rstc);
+>>  int reset_control_assert(struct reset_control *rstc);
+>>  int reset_control_deassert(struct reset_control *rstc);
+>> @@ -14,4 +16,41 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
+>>
+>>  int device_reset(struct device *dev);
+>>
+>> +#else /* !CONFIG_RESET_CONTROLLER */
+>> +
+>> +static inline int reset_control_reset(struct reset_control *rstc)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static inline int reset_control_assert(struct reset_control *rstc)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static inline int reset_control_deassert(struct reset_control *rstc)
+>> +{
+>> +     return 0;
+>> +}
+>
+> Those should probably have a WARN_ON(1) like the GPIO API stubs.
+>
+>> +
+>> +static inline struct reset_control *reset_control_get(struct device *dev,
+>> +             const char *id)
+>> +{
+>> +     return NULL;
+>> +}
+> [...]
+>> +static inline struct reset_control *devm_reset_control_get(struct device *dev,
+>> +             const char *id)
+>> +{
+>> +     return NULL;
+>> +}
+>
+> These should return ERR_PTR(-ENOSYS).
+>
+>> +
+>> +static inline int device_reset(struct device *dev)
+>> +{
+>> +     return 0;
+>> +}
+>
+> And this should return -ENOSYS.
+>
+> Drivers that also need to run on platforms with CONFIG_RESET_CONTROLLER
+> disabled (and that don't need the reset) should ignore -ENOSYS and
+> -ENOENT return values from device_reset/(devm_)reset_control_get.
+>
+> I wonder if it might be a good idea to add a RESET_CONTROLLER_OPTIONAL
+> that drivers need to select to enable the API stubs? That way we could
+> keep the compile time error for new drivers that need resets but forget
+> to select RESET_CONTROLLER.
+> Or add a
+> #warning If this driver can work without reset, please select CONFIG_RESET_CONTROLLER_OPTIONAL
+>
+> Another possibility would be to add device_reset_optional and
+> (devm_)reset_control_get_optional variants and only provide stubs for
+> those, but not for device_reset/(devm_)reset_control_get. Then drivers
+> that need to work on platforms without the reset controller API enabled
+> could explicitly use the _optional variants, and all other drivers would
+> still be checked at compile time.
+>
+> regards
+> Philipp
+>
