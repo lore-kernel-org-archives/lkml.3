@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaAQKxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:53:18 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59306 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaAQKxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:53:14 -0500
-Message-ID: <52D90B93.5010209@gmail.com>
-Date: Fri, 17 Jan 2014 23:53:07 +1300
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752290AbaAQKx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:53:29 -0500
+Received: from mail.wolfsonmicro.com ([87.246.98.25]:45481 "EHLO
+	clearswiftegdr.wolfsonmicro.main" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752239AbaAQKxX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 05:53:23 -0500
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 05:53:23 EST
+From: Dimitris Papastamos <Dimitris.Papastamos@Wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>, Daniel Matuschek <daniel@matuschek.net>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Jan 2014 10:35:10 +0000
+Subject: RE: [PATCH] ASoC: wm8804: Allow control of master clock divider in
+ PLL generation
+Thread-Topic: [PATCH] ASoC: wm8804: Allow control of master clock divider in 
+    PLL generation
+Thread-Index: Ac8THslAguO3RzrmTT+xIrl4XZa6sQAUQLxu
+Message-ID: <634C081ADD030F4A829AD09D85144F253611607A04@EXCMB2.wolfsonmicro.main>
+References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>,
+    <20140117005437.GQ17314@sirena.org.uk>
+In-Reply-To: <20140117005437.GQ17314@sirena.org.uk>
+Accept-Language: en-US, en-GB
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: mtk.manpages@gmail.com, "J. Bruce Fields" <bfields@fieldses.org>,
-        Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: [PATCH 11/11] ext4: add cross rename support
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu> <1389219015-10980-12-git-send-email-miklos@szeredi.hu> <20140113122517.GA10366@quack.suse.cz> <20140115182347.GB5715@fieldses.org> <CAJfpegv0TgJpd-pXxBj2n0efRUW9_GW_tYtHtfN6drOYA=25QQ@mail.gmail.com> <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+> Charles (or someone else from Wolfson), you commented on previous
+> versions of this - are you still OK with it?
 
-A few comments below, including one piece in the code that really must be fixed.
+Looks good to me.
 
-On 01/16/2014 11:54 PM, Miklos Szeredi wrote:
->> On Wed, Jan 15, 2014 at 7:23 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
->>> Do you have a man page update somewhere for the two new flags?
-> 
-> Here's the updated man page (and attached the patch)
-> 
-> Michael, could you please review the interface?
-> 
-> I forgot to CC you when posing the patch series.  I can resend it if you want,
-> or you can fetch the latest version of the cross-rename series from:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+Privacy & Confidentiality Notice
+-------------------------------------------------
+This message and any attachments contain privileged and confidential information that is intended solely for the person(s) to whom it is addressed. If you are not an intended recipient you must not: read; copy; distribute; discuss; take any action in or make any reliance upon the contents of this message; nor open or read any attachment. If you have received this message in error, please notify us as soon as possible on the following telephone number and destroy this message including any attachments. Thank you.
+-------------------------------------------------
+Wolfson Microelectronics plc
+Tel: +44 (0)131 272 7000
+Fax: +44 (0)131 272 7001
+Web: www.wolfsonmicro.com
 
-[...]
+Registered in Scotland
 
->        renameat2()  has an additional flags argument.  renameat2() call with a
->        zero flags argument is equivalent to renameat().
-> 
->        The flags argument is a bitfield consisting of zero or more of the fol-
->        lowing constants defined in <linux/fs.h>:
-> 
->        RENAME_NOREPLACE
->               Don't  overwrite  the  target of the rename.  Return an error if
->               the target would be overwritten.
-> 
->        RENAME_EXCHANGE
->               Atomically exchange the source and destination.  Both must exist
->               but  may  be of a different type (e.g. one a non-empty directory
->               and the other a symbolic link).
+Company number SC089839
 
-Somewhere here it would be good to explain the consequences if
+Registered office: 
 
-   (flags & (RENAME_NOREPLACE | RENAME_EXCHANGE)) == 
-                   (RENAME_NOREPLACE | RENAME_EXCHANGE)
-
-Okay -- it's EINVAL, but here the man page text should say something like
-"these two flags can't be specified together", right?
-
-> RETURN VALUE
->        On success, renameat() and renameat2()  return  0.   On  error,  -1  is
->        returned and errno is set to indicate the error.
-> 
-> ERRORS
->        The  same errors that occur for rename(2) can also occur for renameat()
->        and  renameat2().   The  following  additional  errors  can  occur  for
->        renameat() and renameat2():
-> 
->        EBADF  olddirfd or newdirfd is not a valid file descriptor.
-> 
->        ENOTDIR
->               oldpath  is relative and olddirfd is a file descriptor referring
->               to a file other than a directory; or  similar  for  newpath  and
->               newdirfd
-> 
->        The following additional errors are defined for renameat2():
-> 
->        EOPNOTSUPP
->               The filesystem does not support a flag in flags
-
-This is not the usual error for an invalid bit flag. Please make it EINVAL.
-(See the man pages for the *at() calls that have a 'flags" argument.)
-
->        EINVAL Invalid combination of flags
-
-(This is okay.)
-
-Looks otherwise okay to me (and I agree with Bruce's comments).
-
-Cheers,
-
-Michael
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Westfield House, 26 Westfield Road, Edinburgh, EH11 2QB, UK
