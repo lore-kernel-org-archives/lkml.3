@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600AbaAQAzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 19:55:05 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55838 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaAQAy7 (ORCPT
+	id S1751494AbaAQBEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 20:04:39 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52421 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750898AbaAQBEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 19:54:59 -0500
-Date: Fri, 17 Jan 2014 00:54:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Matuschek <daniel@matuschek.net>
-Cc: alsa-devel@alsa-project.org, Dimitris.Papastamos@wolfsonmicro.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140117005437.GQ17314@sirena.org.uk>
-References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
+	Thu, 16 Jan 2014 20:04:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] cpuidle: don't use modular platform register in non-modular ARM drivers
+Date: Fri, 17 Jan 2014 02:18:38 +0100
+Message-ID: <3872763.be1TKi9G4j@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1389910767-4040-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1389910767-4040-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SlnaBQtdWG0gYnqZ"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
- PLL generation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, January 16, 2014 05:19:27 PM Paul Gortmaker wrote:
+> These two drivers are configured with Kconfig options that are
+> both declared as bool.  Hence it is not possible for the code
+> to be built as modular.  However the code is currently using the
+> module_platform_driver() macro for driver registration.
+> 
+> While this currently works, we really don't want to be including
+> the module.h header in non-modular code, which we'll be forced
+> to do, pending some upcoming code relocation from init.h into
+> module.h.  So we fix it now by using the non-modular equivalent.
+> 
+> With some macro detangulation, and a little help from cpp, we can
+> see that module_platform_driver(calxeda_cpuidle_plat_driver) gets
+> roughly translated into:
+> 
+>   static int __init calxeda_cpuidle_plat_driver_init(void)
+>   {
+>         return platform_driver_register(&calxeda_cpuidle_plat_driver);
+>   }
+>   module_init(calxeda_cpuidle_plat_driver_init);
+> 
+>   static void __exit calxeda_cpuidle_plat_driver_exit(void)
+>   {
+>         platform_driver_unregister(&calxeda_cpuidle_plat_driver);
+>   }
+>   module_exit(calxeda_cpuidle_plat_driver_exit);
+> 
+> [and similarly for the other file, cpuidle-zynq.c]
+> 
+> And since we've already established that the code is non-modular,
+> we can completely drop any code relating to module_exit.  For non
+> modular code, module_init beomes __initcall.  But direct use of
+> __initcall is discouraged, vs. one of the priority categorized
+> subgroups.  As __initcall gets mapped onto device_initcall, our
+> use of device_initcall directly in this change means that the
+> runtime impact is zero -- they will remain at level 6 in the
+> initcall ordering.
+> 
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Michal Simek <michal.simek@xilinx.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
---SlnaBQtdWG0gYnqZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'd appreciate some ACKs from the ARM people.
 
-On Tue, Jan 14, 2014 at 08:34:10PM +0100, Daniel Matuschek wrote:
-> WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-> most sample rates. At 192kHz only 128xfs is supported. The
-> existing driver selects 128xfs automatically for some lower
+Thanks!
 
-Charles (or someone else from Wolfson), you commented on previous
-versions of this - are you still OK with it?
+> diff --git a/drivers/cpuidle/cpuidle-calxeda.c b/drivers/cpuidle/cpuidle-calxeda.c
+> index 6e51114057d0..631e2cd9bce6 100644
+> --- a/drivers/cpuidle/cpuidle-calxeda.c
+> +++ b/drivers/cpuidle/cpuidle-calxeda.c
+> @@ -78,4 +78,8 @@ static struct platform_driver calxeda_cpuidle_plat_driver = {
+>          .probe = calxeda_cpuidle_probe,
+>  };
+>  
+> -module_platform_driver(calxeda_cpuidle_plat_driver);
+> +static int __init calxeda_cpuidle_plat_driver_init(void)
+> +{
+> +	return platform_driver_register(&calxeda_cpuidle_plat_driver);
+> +}
+> +device_initcall(calxeda_cpuidle_plat_driver_init);
+> diff --git a/drivers/cpuidle/cpuidle-zynq.c b/drivers/cpuidle/cpuidle-zynq.c
+> index aded75928028..a1aae519a573 100644
+> --- a/drivers/cpuidle/cpuidle-zynq.c
+> +++ b/drivers/cpuidle/cpuidle-zynq.c
+> @@ -85,4 +85,8 @@ static struct platform_driver zynq_cpuidle_driver = {
+>  	.probe = zynq_cpuidle_probe,
+>  };
+>  
+> -module_platform_driver(zynq_cpuidle_driver);
+> +static int __init zynq_cpuidle_driver_init(void)
+> +{
+> +	return platform_driver_register(&zynq_cpuidle_driver);
+> +}
+> +device_initcall(zynq_cpuidle_driver_init);
+> 
 
---SlnaBQtdWG0gYnqZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS2H9KAAoJELSic+t+oim9W0wQAIWi+Mk+3vMrY7U7262sZkkZ
-25sCTTTfuvDXcEqt3DmnTfhNWALWBEUsNKmuiX/rK1TcSemRxuSeG+ydJSvJYE4U
-+wwaNlOs1dmcgQF+4xlyG6H3G7l2Zap8loP9Td2IGrZkSv++WF4B+W3j/caMzhJ2
-pjMiMrSN32Tzaezmbd0sjXM7R2bJhLy2xJG+zzm+D9X/Mnw+mkkEtLbHVOuKgL2D
-sjIN95DoTWlHU0zNEALn2X2SPAWuV+iOqG86Y6I/0iD6vMvvaE0iYB8kG28xn85f
-WSxk8me0fyAFtA5Rxy8SHiBLV1vYvywP65I6HwNPp0GL0KLShis9KWQHoYbpDm/h
-ZArZ1rcANeiFFP3ykCPH8Uk28StN4Lq4CvKX2L+PrzuTX/NYthe07AVy+4R1IHIi
-Evge0tNOEdD1vf91iQzCsskDzMGsIim6XbiIuEp5nw/O/cAOegeOitPHGNjsUGMS
-wvXkqDJgTfKE/gpLGVrxiGosQGj/jE1vCGomd85KgEj093isGcmG0VHASBU/q1G+
-4y1pMIIXI7bHRz/47uMQuJyRmdPSuSGLZufTiLhlSW/6Fq+AQNoGTrhCF14XF/mi
-Myq6e3wxyaOUDP9dG3n1eBo70/l3oWdzwkPriiII0FoD9ZfmaMxbFSgxbJrYgHvF
-k2gWqtMToYDoLzqb71yu
-=OayP
------END PGP SIGNATURE-----
-
---SlnaBQtdWG0gYnqZ--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
