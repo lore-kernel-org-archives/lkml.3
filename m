@@ -1,82 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaAQVif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 16:38:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaAQVid (ORCPT
+	id S1752371AbaAQVns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 16:43:48 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:35848 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaAQVnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 16:38:33 -0500
-Date: Fri, 17 Jan 2014 13:38:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-Cc: hannes@cmpxchg.org, liuj97@gmail.com, santosh.shilimkar@ti.com,
-        grygorii.strashko@ti.com, iamjoonsoo.kim@lge.com,
-        robin.m.holt@gmail.com, yinghai@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] mm/nobootmem: Fix unused variable
-Message-Id: <20140117133831.2a9306a03f9c6174ff096e48@linux-foundation.org>
-In-Reply-To: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
-References: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jan 2014 16:43:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140117210201.GA390@x4>
+References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
+	<CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
+	<CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
+	<20140117210201.GA390@x4>
+Date: Fri, 17 Jan 2014 13:43:45 -0800
+Message-ID: <CAADnVQL7zB2y0w4F-hYZ=RBe1bQg3X5pp-h=74HYZ1OSJ1K0xw@mail.gmail.com>
+Subject: Re: Why is (2 < 2) true? Is it a gcc bug?
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "Dorau, Lukasz" <lukasz.dorau@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        sebastian.riemer@profitbricks.com, richard.weinberger@gmail.com,
+        Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014 14:33:06 +0100 Philipp Hachtmann <phacht@linux.vnet.ibm.com> wrote:
-
-> This fixes an unused variable warning in nobootmem.c
-> 
-> ...
+On Fri, Jan 17, 2014 at 1:02 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2014.01.17 at 11:58 -0800, Alexei Starovoitov wrote:
+>> On Fri, Jan 17, 2014 at 9:58 AM, Alexei Starovoitov
+>> <alexei.starovoitov@gmail.com> wrote:
+>> > On Fri, Jan 17, 2014 at 5:37 AM, Dorau, Lukasz <lukasz.dorau@intel.com> wrote:
+>> >> Hi
+>> >>
+>> >> My story is very simply...
+>> >> I applied the following patch:
+>> >>
+>> >> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
+>> >> --- a/drivers/scsi/isci/init.c
+>> >> +++ b/drivers/scsi/isci/init.c
+>> >> @@ -698,8 +698,11 @@ static int isci_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>> >>         if (err)
+>> >>                 goto err_host_alloc;
+>> >>
+>> >> -       for_each_isci_host(i, isci_host, pdev)
+>> >> +       for_each_isci_host(i, isci_host, pdev) {
+>> >> +               pr_err("(%d < %d) == %d\n",\
+>> >> +                      i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
+>> >>                 scsi_scan_host(to_shost(isci_host));
+>> >> +       }
+>> >>
+>> >>         return 0;
+>> >>
+>> >> --
+>> >> 1.8.3.1
+>> >>
+>> >> Then I issued the command 'modprobe isci' on platform with two SCU controllers (Patsburg D or T chipset)
+>> >> and received the following, very strange, output:
+>> >>
+>> >> (0 < 2) == 1
+>> >> (1 < 2) == 1
+>> >> (2 < 2) == 1
+>> >>
+>> >> Can anyone explain why (2 < 2) is true? Is it a gcc bug?
+>> >
+>> > gcc sees that i < array_size is the same as i < 2 as part of loop condition, so
+>> > it optimizes (i < sci_max_controllers) into constant 1.
+>> > and emits printk like:
+>> >   printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
+>> >
+>> >> (The kernel was compiled using gcc version 4.8.2.)
+>> >
+>> > it actually looks to be gcc 4.8 bug.
+>> > Can you try gcc 4.7 ?
+>> >
+>>
+>> It is interesting GCC 4.8 bug,
+>> since it seems to expose issues in two compiler passes.
+>>
+>> here is test case:
+>>
+>> struct isci_host;
+>> struct isci_orom;
+>>
+>> struct isci_pci_info {
+>>   struct isci_host *hosts[2];
+>>   struct isci_orom *orom;
+>> } v = {{(struct isci_host *)1,(struct isci_host *)1}, 0};
+>>
+>> int printf(const char *fmt, ...);
+>>
+>> int isci_pci_probe()
+>> {
+>>   int i;
+>>   struct isci_host *isci_host;
+>>
+>>   for (i = 0, isci_host = v.hosts[i];
+>>        i < 2 && isci_host;
+>>        isci_host = v.hosts[++i]) {
+>>     printf("(%d < %d) == %d\n", i, 2, (i < 2));
+>>   }
+>>
+>>   return 0;
+>> }
+>>
+>> int main()
+>> {
+>>   isci_pci_probe();
+>> }
+>>
+>> $ gcc bug.c
+>> $./a.out
+>> 0 < 2) == 1
+>> (1 < 2) == 1
+>> $ gcc bug.c -O2
+>> $ ./a.out
+>> (0 < 2) == 1
+>> (1 < 2) == 1
+>> Segmentation fault (core dumped)
 >
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -116,9 +116,13 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
->  static unsigned long __init free_low_memory_core_early(void)
->  {
->  	unsigned long count = 0;
-> -	phys_addr_t start, end, size;
-> +	phys_addr_t start, end;
->  	u64 i;
->  
-> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-> +	phys_addr_t size;
-> +#endif
-> +
->  	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
->  		count += __free_memory_core(start, end);
+> Your testcase is invalid:
+>
+> markus@x4 tmp % clang -fsanitize=undefined -Wall -Wextra -O2 bug.c
+> markus@x4 tmp % ./a.out
+> (0 < 2) == 1
+> (1 < 2) == 1
+> bug.c:16:20: runtime error: index 2 out of bounds for type 'struct isci_host *[2]'
+>
+> As Jakub Jelinek said on IRC, changing the loop to e.g.:
+>
+>   for (i = 0;
+>        i < 2 && (isci_host = v.hosts[i]);
+>        i++) {
+>
+> fixes the issue.
 
-Yes, that is a bit of an eyesore.  We often approach the problem this
-way, which is nicer:
+testcase was reduced from drivers/scsi/isci/host.h written back in
+2011 (commit b329aff107)
+#define for_each_isci_host(id, ihost, pdev) \
+        for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+             id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+             ihost = to_pci_info(pdev)->hosts[++id])
 
-static unsigned long __init free_low_memory_core_early(void)
-{
-	unsigned long count = 0;
-	phys_addr_t start, end;
-	u64 i;
+yes, it does access 3rd element of 2 element array and will read junk.
 
-	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
-		count += __free_memory_core(start, end);
-
-#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-	{
-		phys_addr_t size;
-
-		/* Free memblock.reserved array if it was allocated */
-		size = get_allocated_memblock_reserved_regions_info(&start);
-		if (size)
-			count += __free_memory_core(start, start + size);
-
-		/* Free memblock.memory array if it was allocated */
-		size = get_allocated_memblock_memory_regions_info(&start);
-		if (size)
-			count += __free_memory_core(start, start + size);
-	}
-#endif
-
-	return count;
-}
-
+C standard says the behavior is undefined and comes handy in compiler defense,
+but in this case compiler has obviously all the information to make
+right decision
+instead of misoptimizing the code.
+So yes, the loop is erroneous, non-portable, etc, but gcc can be smarter.
