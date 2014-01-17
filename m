@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbaAQTEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:04:12 -0500
-Received: from mail-pb0-f65.google.com ([209.85.160.65]:56378 "EHLO
-	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaAQTEK (ORCPT
+	id S1753277AbaAQTE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:04:28 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:34779 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaAQTET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:04:10 -0500
-Message-ID: <52d97ea9.64f7440a.74b5.77d8@mx.google.com>
-From: brenda45512@googlemail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: JUDY18088@gmail.com
-Subject: RE: LOCAL MAP OPTIMIZATION FOR : mail-archive.com (Less Than
- $99/Month)
-Date: Sat, 18 Jan 2014 00:34:16 +0530
+	Fri, 17 Jan 2014 14:04:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140117180304.GB17314@sirena.org.uk>
+References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
+	<20140114125242.GE15567@sirena.org.uk>
+	<CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
+	<20140114134528.GG15567@sirena.org.uk>
+	<CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
+	<20140114145002.GR15567@sirena.org.uk>
+	<CAMuHMdVhmtA0ogEqu-jj8Kvii5CwV8qfHn+GzgQ9uFKzH7Ua6w@mail.gmail.com>
+	<20140117180304.GB17314@sirena.org.uk>
+Date: Fri, 17 Jan 2014 20:04:19 +0100
+X-Google-Sender-Auth: NPPheYGyIPoe6ID5Ugf8NGX_Sgg
+Message-ID: <CAMuHMdXBvAYEU3z9cV5Es9bt7p2bGYUYbjQ-ki9N3hj_grTdRw@mail.gmail.com>
+Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Morning Sir / Mam
+On Fri, Jan 17, 2014 at 7:03 PM, Mark Brown <broonie@kernel.org> wrote:
+>>   2. Make the documentation match the code.
+>>       It seems this is what you prefer?
+>
+> Yes.
 
-Is your business ranking in local maps shown on PAGE 1 of google ? With new
-google policies they have specifically asked local business owners to
-optimize their website for local maps rather than JUST organics. Do you know
-the reason why you are not ranked well on google MAPs or why there is drop
-in your website rankings? Prime reason for bad rankings for a busniess is
-lack of local presence and local citations ie getting your business listed
-on directories like YELP, MANTA & Many more. These websites not just give
-your business a push but also help you Maintain a good Online Reputation.
+Thanks, will do.
 
-Why you need to optimize your website for local MAP Listings ?
+-- 
+Gr{oetje,eeting}s,
 
-- MAP listings get 10 times more clicks than organic listings
-- Increased conversions because of real reviews posted on your Google Plus
-Page
-- Every year there is 30% increase in searches for local keywords
-- Increases legitimacy of a Business
+                        Geert
 
-We will help you get your website ranked well on google for the related
-keywords in your niche. We specialize in LOCAL SEARCH ENGINE OPTIMIZATION
-increasing visibility for small businesses by ranking them for
-geographically-related keywords. Say for eg-: you want to search a plumber
-in your city, You will be typing in keywords like Plumbers + City Or
-Plumbers + IN + City. We make sure your website comes in google MAP listings
-shown on page 1 for each such keyword.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Now Google believes in - BE ORIGINAL, HAVE ORIGINAL AND GIVE ORIGINAL which
-means that google wants to end up that frustrating experience of users who
-are searching for Service Or Product and seeing the results that are not
-even close to what they are looking for. Google only wants to give their
-user original and relevant results. This makes it even more important that
-we showcase our business in the best possible way and make sure our website
-in valued high by google.
-
-We at TheLOCALIST will make google feel the importance of your business by
-following their guidelines thus ranking your website higher in serach
-results. We are presently offering LOCAL OPTIMIZATION to more than 400
-websites and they all rank page 1 for all possible keywords !!! Each month
-your website is submitted to more than 50 citations and social presence is
-controlled by posting videos and blogs all over the web.
-
-Email us back with your website & phone number so we can discuss this
-further with you. Our Packages start from as low as 99$/month.
-
-
-Thanks For Taking Time To Read Our Email
-
-Polly Martin
-Local SEO Manager ( THE Localist )
-Address : 24 ST Suite 32 Downtown Provo Utah
-
--------------------
-NOT INTERESTED ? REPLY WITH NOT INTERESTED IN THE SUBJECT LINE 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
