@@ -1,165 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaAQG2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 01:28:30 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:44868 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaAQG2Z (ORCPT
+	id S1751697AbaAQGgd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 01:36:33 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:48147 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaAQGga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 01:28:25 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        chegu_vinod@hp.com, mgorman@suse.de, Rik van Riel <riel@surriel.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH 1/6] numa,sched,mm: remove p->numa_migrate_deferred
-Date: Fri, 17 Jan 2014 01:17:31 -0500
-Message-Id: <1389939456-9541-2-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389939456-9541-1-git-send-email-riel@redhat.com>
-References: <1389939456-9541-1-git-send-email-riel@redhat.com>
+	Fri, 17 Jan 2014 01:36:30 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Date: Thu, 16 Jan 2014 22:36:21 -0800
+Message-ID: <877g9zcdy2.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1877PF5e4U+4aZDBJqi6mONfjONiS4x5ns=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3177]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [GIT PULL] namespace fixes
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@surriel.com>
 
-Excessive migration of pages can hurt the performance of workloads
-that span multiple NUMA nodes.  However, it turns out that the
-p->numa_migrate_deferred knob is a really big hammer, which does
-reduce migration rates, but does not actually help performance.
+Linus,
 
-Now that the second stage of the automatic numa balancing code
-has stabilized, it is time to replace the simplistic migration
-deferral code with something smarter.
+Please pull the for-linus branch from the git tree:
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Rik van Riel <riel@surriel.com>
----
- include/linux/sched.h |  1 -
- kernel/sched/fair.c   |  8 --------
- kernel/sysctl.c       |  7 -------
- mm/mempolicy.c        | 45 ---------------------------------------------
- 4 files changed, 61 deletions(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68a0e84..97efba4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1469,7 +1469,6 @@ struct task_struct {
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
- 	int numa_preferred_nid;
--	int numa_migrate_deferred;
- 	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 867b0a4..41e2176 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -819,14 +819,6 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
- /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
- unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
--/*
-- * After skipping a page migration on a shared page, skip N more numa page
-- * migrations unconditionally. This reduces the number of NUMA migrations
-- * in shared memory workloads, and has the effect of pulling tasks towards
-- * where their memory lives, over pulling the memory towards the task.
-- */
--unsigned int sysctl_numa_balancing_migrate_deferred = 16;
--
- static unsigned int task_nr_scan_windows(struct task_struct *p)
- {
- 	unsigned long rss = 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 096db74..4d19492 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -384,13 +384,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
--		.procname       = "numa_balancing_migrate_deferred",
--		.data           = &sysctl_numa_balancing_migrate_deferred,
--		.maxlen         = sizeof(unsigned int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
--	{
- 		.procname	= "numa_balancing",
- 		.data		= NULL, /* filled in by handler */
- 		.maxlen		= sizeof(unsigned int),
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 36cb46c..052abac 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2301,35 +2301,6 @@ static void sp_free(struct sp_node *n)
- 	kmem_cache_free(sn_cache, n);
- }
- 
--#ifdef CONFIG_NUMA_BALANCING
--static bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	/* Never defer a private fault */
--	if (cpupid_match_pid(p, last_cpupid))
--		return false;
--
--	if (p->numa_migrate_deferred) {
--		p->numa_migrate_deferred--;
--		return true;
--	}
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--	p->numa_migrate_deferred = sysctl_numa_balancing_migrate_deferred;
--}
--#else
--static inline bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /**
-  * mpol_misplaced - check whether current page node is valid in policy
-  *
-@@ -2432,24 +2403,8 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		 */
- 		last_cpupid = page_cpupid_xchg_last(page, this_cpupid);
- 		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid) {
--
--			/* See sysctl_numa_balancing_migrate_deferred comment */
--			if (!cpupid_match_pid(current, last_cpupid))
--				defer_numa_migrate(current);
--
- 			goto out;
- 		}
--
--		/*
--		 * The quadratic filter above reduces extraneous migration
--		 * of shared pages somewhat. This code reduces it even more,
--		 * reducing the overhead of page migrations of shared pages.
--		 * This makes workloads with shared pages rely more on
--		 * "move task near its memory", and less on "move memory
--		 * towards its task", which is exactly what we want.
--		 */
--		if (numa_migrate_deferred(current, last_cpupid))
--			goto out;
- 	}
- 
- 	if (curnid != polnid)
--- 
-1.8.4.2
+   HEAD: 41301ae78a99ead04ea42672a1ab72c6f44cc81d vfs: Fix a regression in mounting proc
+
+This is a set of 3 regression fixes. 
+
+This fixes /proc/mounts when using "ip netns add <netns>" to display the
+actual mount point.
+
+This fixes a regression in clone that broke lxc-attach.
+
+This fixes a regression in the permission checks for mounting /proc that
+made proc unmountable if binfmt_misc was in use. Oops.
+
+My apologies for sending this pull request so late.  Al Viro gave
+interesting review comments about the d_path fix that I wanted to
+address in detail before I sent this pull request.  Unfortunately a
+bad round of colds kept from addressing that in detail until today.
+The executive summary of the review was:
+
+Al: Is patching d_path really sufficient?
+    The prepend_path, d_path, d_absolute_path, and __d_path family of
+    functions is a really mess.
+
+Me: Yes, patching d_path is really sufficient.  Yes, the code is mess.
+    No it is not appropriate to rewrite all of d_path for a regression
+    that has existed for entirely too long already, when a two line
+    change will do.
+
+Eric W. Biederman (3):
+      vfs: In d_path don't call d_dname on a mount point
+      fork:  Allow CLONE_PARENT after setns(CLONE_NEWPID)
+      vfs: Fix a regression in mounting proc
+
+ fs/dcache.c    |    7 ++++++-
+ fs/namespace.c |    2 +-
+ kernel/fork.c  |    2 +-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
 
