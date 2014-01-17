@@ -1,183 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaAQQC7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:02:59 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:8068 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783AbaAQQCz convert rfc822-to-8bit (ORCPT
+	id S1752348AbaAQQGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:06:41 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:50655 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaAQQGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:02:55 -0500
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Hannes Reinecke <hare@suse.de>
-CC: Tomas Henzl <thenzl@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Subject: RE: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-Thread-Topic: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-Thread-Index: AQHPE5bhSo2Q8m9EmU6r3yzisfAyz5qJBvuQgAAEH4CAAACm0A==
-Date: Fri, 17 Jan 2014 16:01:42 +0000
-Message-ID: <48275AD710FCA34184C2B6186B4016B32D1A0BF3@G6W2491.americas.hpqcorp.net>
-References: <20140116195112.GA9658@beardog.cce.hp.com>
- <52D948A5.1070706@redhat.com>
- <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net>
- <52D94CBB.5020701@suse.de>
-In-Reply-To: <52D94CBB.5020701@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.193.49.14]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jan 2014 11:06:38 -0500
+Message-ID: <52D9550B.9020108@linaro.org>
+Date: Fri, 17 Jan 2014 17:06:35 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
+Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
+References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net> <52D94B95.2060704@linaro.org> <20140117153323.GM11314@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140117153323.GM11314@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/17/2014 04:33 PM, Peter Zijlstra wrote:
+> On Fri, Jan 17, 2014 at 04:26:13PM +0100, Daniel Lezcano wrote:
+>>
+>> Ah, ok. Let me try it.
+>>
+>
+> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+>
+> has a queue that applies to tip/master.
+>
+> The patches as on lkml need a little help in applying.
+>
+> They've not been near a compiler yet though :/
+
+Thanks a lot for the series. That makes my life easier :)
+
+I did a small compilation fix with the pick_next_task function for the 
+deadline scheduler and currently hackbench is running. I will give you 
+the results in a moment.
 
 
-> -----Original Message-----
-> From: Hannes Reinecke [mailto:hare@suse.de]
-> Sent: Friday, January 17, 2014 9:31 AM
-> To: Miller, Mike (OS Dev)
-> Cc: Tomas Henzl; Andrew Morton; James E. J. Bottomley; LKML; LKML-scsi;
-> Stephen M. Cameron
-> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-> 
-> On 01/17/2014 04:17 PM, Miller, Mike (OS Dev) wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Tomas Henzl [mailto:thenzl@redhat.com]
-> >> Sent: Friday, January 17, 2014 9:14 AM
-> >> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
-> >> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
-> >> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in
-> >> svn
-> >>
-> >> On 01/16/2014 08:51 PM, Mike Miller wrote:
-> >>> From: Mike Miller <mike.miller@hp.com>
-> >>>
-> >>> This patch has every ID we have in our svn repository. Some
-> >>> controllers were cancelled, others added, now the cancelled ones are
-> >>> back. Apparently the debate rages on about which controllers are
-> >>> cancelled, which are not, whatever. Please accept this patch. It is
-> >>> dependent upon the patches I sent yesterday.
-> >>> This patch made/tested against kernel-3.13.0-rc8
-> >>>
-> >>> Signed-off-by: Mike Miller <mike.miller@hp.com>
-> >>> ---
-> >>>  drivers/scsi/hpsa.c |   12 ++++++++++++
-> >>>  1 files changed, 12 insertions(+), 0 deletions(-)
-> >>>
-> >>> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
-> >>> 348b207..3affec5 100644
-> >>> --- a/drivers/scsi/hpsa.c
-> >>> +++ b/drivers/scsi/hpsa.c
-> >>> @@ -100,6 +100,7 @@ static const struct pci_device_id
-> >> hpsa_pci_device_id[] = {
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> >> 0x3354},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> >> 0x3355},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
-> >> 0x3356},
-> >>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1920},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1921},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1922},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1923},
-> >>> @@ -108,15 +109,19 @@ static const struct pci_device_id
-> >> hpsa_pci_device_id[] = {
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1926},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1928},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x1929},
-> >>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
-> >> 0x192A},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21BD},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21BE},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21BF},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C0},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C2},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C3},
-> >>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C4},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C5},
-> >>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C6},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C7},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C8},
-> >>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21C9},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21CA},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21CB},
-> >>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
-> >> 0x21CC},
-> >>> @@ -149,22 +154,29 @@ static struct board_type products[] = {
-> >>>  	{0x3354103C, "Smart Array P420i", &SA5_access},
-> >>>  	{0x3355103C, "Smart Array P220i", &SA5_access},
-> >>>  	{0x3356103C, "Smart Array P721m", &SA5_access},
-> >>> +	{0x1920103C, "Smart Array P430i", &SA5_access},
-> >>>  	{0x1921103C, "Smart Array P830i", &SA5_access},
-> >>>  	{0x1922103C, "Smart Array P430", &SA5_access},
-> >>>  	{0x1923103C, "Smart Array P431", &SA5_access},
-> >>>  	{0x1924103C, "Smart Array P830", &SA5_access},
-> >>> +	{0x1925103C, "Smart Array P831", &SA5_access},
-> >>>  	{0x1926103C, "Smart Array P731m", &SA5_access},
-> >>>  	{0x1928103C, "Smart Array P230i", &SA5_access},
-> >>>  	{0x1929103C, "Smart Array P530", &SA5_access},
-> >>> +	{0x192A103C, "Smart Array P531", &SA5_access},
-> >>>  	{0x21BD103C, "Smart Array", &SA5_access},
-> >>>  	{0x21BE103C, "Smart Array", &SA5_access},
-> >>>  	{0x21BF103C, "Smart Array", &SA5_access},
-> >>>  	{0x21C0103C, "Smart Array", &SA5_access},
-> >>> +	{0x21C1103C, "Smart Array", &SA5_access},
-> >>
-> >> I think that both tables should be in sync - but there is no 0x21c1
-> >> in hpsa_pci_device_id (and the 0x1925), could you clarify that?
-> >>
-> >> Thanks, Tomas
-> >
-> > Crap. It seems like these menial tasks get the better of me. I'll correct and
-> resubmit.
-> >
-> Hmm. Seeing that hpsa is now well capable of supporting even older
-> SmartArray controllers, is there really a point in updating the PCI-ID list every
-> time?
-> Wouldn't you be better off by just using the catch-all phrase and remove all
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
 
-Umm, if we did that but kept the PCI ID repository updated would lspci still show the marketing names of the individual controllers? What about /proc/scsi/scsi and anywhere else the names are listed?
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
--- mikem
-
-> the individual IDs?
-> 
-> That way you would just have to update _one_ list ...
-> 
-> Cheers,
-> 
-> Hannes
-> --
-> Dr. Hannes Reinecke		      zSeries & Storage
-> hare@suse.de			      +49 911 74053 688
-> SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-> GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
