@@ -1,235 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaAQPR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:17:57 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:32849 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaAQPRy convert rfc822-to-8bit (ORCPT
+	id S1752585AbaAQPSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:18:34 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:34954 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaAQPSc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:17:54 -0500
-Message-ID: <52D949A6.9060607@arm.com>
-Date: Fri, 17 Jan 2014 15:17:58 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Jonas Jensen <jonas.jensen@gmail.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>
-CC: Sudeep.Holla@arm.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Mark Rutland <Mark.Rutland@arm.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "adam.jaremko@gmail.com" <adam.jaremko@gmail.com>,
-        "sylvester.nawrocki@gmail.com" <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH v9] clk: add MOXA ART SoCs clock driver
-References: <1386602163-28479-1-git-send-email-jonas.jensen@gmail.com> <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
-X-OriginalArrivalTime: 17 Jan 2014 15:17:49.0429 (UTC) FILETIME=[487EC250:01CF1397]
-X-MC-Unique: 114011715175103601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 17 Jan 2014 10:18:32 -0500
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Tomas Henzl <thenzl@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, "hare@suse.de" <hare@suse.de>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: RE: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+Thread-Topic: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+Thread-Index: AQHPE5bhSo2Q8m9EmU6r3yzisfAyz5qJBvuQ
+Date: Fri, 17 Jan 2014 15:17:23 +0000
+Message-ID: <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net>
+References: <20140116195112.GA9658@beardog.cce.hp.com>
+ <52D948A5.1070706@redhat.com>
+In-Reply-To: <52D948A5.1070706@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.193.49.14]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/01/14 15:03, Jonas Jensen wrote:
-> This patch adds MOXA ART SoCs clock driver support.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
-> 
-> Notes:
->     Changes since v8:
->     
->     1. rebase drivers/clk/Makefile to next-20140117
->     
->     DT bindings document:
->     
->     2. use two separate sections describing PLL/APB
->     3. update example
->     
->     Applies to next-20140117
-> 
->  .../bindings/clock/moxa,moxart-clock.txt           |  48 +++++++++
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/clk-moxart.c                           | 112 +++++++++++++++++++++
->  3 files changed, 161 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
->  create mode 100644 drivers/clk/clk-moxart.c
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-> new file mode 100644
-> index 0000000..242e3fc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-> @@ -0,0 +1,48 @@
-> +Device Tree Clock bindings for arch-moxart
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +MOXA ART SoCs allow to determine PLL output and APB frequencies
-> +by reading registers holding multiplier and divisor information.
-> +
-> +
-> +PLL:
-> +
-> +Required properties:
-> +- compatible : Must be "moxa,moxart-pll-clock"
-> +- #clock-cells : Should be 0
-> +- reg : Should contain registers location and length
-> +- clocks : Should contain phandle to parent clock
-> +
-> +Optional properties:
-> +- clock-output-names : Should contain clock name
-> +
-> +
-> +APB:
-> +
-> +Required properties:
-> +- compatible : Must be "moxa,moxart-apb-clock"
-> +- #clock-cells : Should be 0
-> +- reg : Should contain registers location and length
-> +- clocks : Should contain phandle to parent clock
-> +
-> +Optional properties:
-> +- clock-output-names : Should contain clock name
-> +
-> +
-> +For example:
-> +
-> +	clk_pll: clk_pll@98100000 {
-> +		compatible = "moxa,moxart-pll-clock";
-> +		#clock-cells = <0>;
-> +		reg = <0x98100000 0x34>;
-> +	};
-> +
-> +	clk_apb: clk_apb@98100000 {
-> +		compatible = "moxa,moxart-apb-clock";
-> +		#clock-cells = <0>;
-> +		reg = <0x98100000 0x34>;
-> +		clocks = <&clk_pll>;
-> +	};
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 0c16e9c..ed5d58d 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
->  # SoCs specific
->  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
->  obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
-> +obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
->  obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
->  obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
->  obj-$(CONFIG_ARCH_HI3xxx)	+= hisilicon/
-> diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-> new file mode 100644
-> index 0000000..f0436a3
-> --- /dev/null
-> +++ b/drivers/clk/clk-moxart.c
-> @@ -0,0 +1,112 @@
-> +/*
-> + * MOXA ART SoCs clock driver.
-> + *
-> + * Copyright (C) 2013 Jonas Jensen
-> + *
-> + * Jonas Jensen <jonas.jensen@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/clkdev.h>
-> +
-> +void __init moxart_of_pll_clk_init(struct device_node *node)
-> +{
-> +	static void __iomem *base;
-> +	struct clk *clk, *ref_clk;
-> +	unsigned long rate;
-> +	unsigned int mul;
-> +	const char *name = node->name;
-> +
-> +	of_property_read_string(node, "clock-output-names", &name);
-> +
-> +	base = of_iomap(node, 0);
-> +	if (!base) {
-> +		pr_err("%s: of_iomap failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	mul = readl(base + 0x30) >> 3 & 0x3f;
-> +	iounmap(base);
-> +
-> +	ref_clk = of_clk_get(node, 0);
-> +	if (IS_ERR(ref_clk)) {
-> +		pr_err("%s: of_clk_get failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	rate = mul * clk_get_rate(ref_clk);
-> +
-> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
-> +	if (IS_ERR(clk)) {
-> +		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	clk_register_clkdev(clk, NULL, name);
-> +	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-> +}
-> +CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
-> +	       moxart_of_pll_clk_init);
-> +
-> +void __init moxart_of_apb_clk_init(struct device_node *node)
-> +{
-> +	static void __iomem *base;
-> +	struct clk *clk, *pll_clk;
-> +	unsigned long rate;
-> +	unsigned int div, val;
-> +	const char *name = node->name;
-> +
-> +	of_property_read_string(node, "clock-output-names", &name);
-> +
-> +	base = of_iomap(node, 0);
-> +	if (!base) {
-> +		pr_err("%s: of_iomap failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	val = readl(base + 0xc) >> 4 & 0x7;
-> +	iounmap(base);
-> +
-> +	switch (val) {
-> +	case 1:
-> +		div = 3;
-> +		break;
-> +	case 2:
-> +		div = 4;
-> +		break;
-> +	case 3:
-> +		div = 6;
-> +		break;
-> +	case 4:
-> +		div = 8;
-> +		break;
-> +	default:
-> +		div = 2;
-> +		break;
-> +	}
 
-How about something like this to avoid unnecessary switch:
-	int div_idx[] = { 2, 3, 4, 6, 8};
-	if (val > 4)
-		val = 0;
-	div = div_idx[val];
 
-Regards,
-Sudeep
+> -----Original Message-----
+> From: Tomas Henzl [mailto:thenzl@redhat.com]
+> Sent: Friday, January 17, 2014 9:14 AM
+> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
+> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
+> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
+> 
+> On 01/16/2014 08:51 PM, Mike Miller wrote:
+> > From: Mike Miller <mike.miller@hp.com>
+> >
+> > This patch has every ID we have in our svn repository. Some
+> > controllers were cancelled, others added, now the cancelled ones are
+> > back. Apparently the debate rages on about which controllers are
+> > cancelled, which are not, whatever. Please accept this patch. It is
+> > dependent upon the patches I sent yesterday.
+> > This patch made/tested against kernel-3.13.0-rc8
+> >
+> > Signed-off-by: Mike Miller <mike.miller@hp.com>
+> > ---
+> >  drivers/scsi/hpsa.c |   12 ++++++++++++
+> >  1 files changed, 12 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
+> > 348b207..3affec5 100644
+> > --- a/drivers/scsi/hpsa.c
+> > +++ b/drivers/scsi/hpsa.c
+> > @@ -100,6 +100,7 @@ static const struct pci_device_id
+> hpsa_pci_device_id[] = {
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+> 0x3354},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+> 0x3355},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+> 0x3356},
+> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1920},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1921},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1922},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1923},
+> > @@ -108,15 +109,19 @@ static const struct pci_device_id
+> hpsa_pci_device_id[] = {
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1926},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1928},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x1929},
+> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
+> 0x192A},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21BD},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21BE},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21BF},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C0},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C2},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C3},
+> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C4},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C5},
+> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C6},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C7},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C8},
+> > +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21C9},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21CA},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21CB},
+> >  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
+> 0x21CC},
+> > @@ -149,22 +154,29 @@ static struct board_type products[] = {
+> >  	{0x3354103C, "Smart Array P420i", &SA5_access},
+> >  	{0x3355103C, "Smart Array P220i", &SA5_access},
+> >  	{0x3356103C, "Smart Array P721m", &SA5_access},
+> > +	{0x1920103C, "Smart Array P430i", &SA5_access},
+> >  	{0x1921103C, "Smart Array P830i", &SA5_access},
+> >  	{0x1922103C, "Smart Array P430", &SA5_access},
+> >  	{0x1923103C, "Smart Array P431", &SA5_access},
+> >  	{0x1924103C, "Smart Array P830", &SA5_access},
+> > +	{0x1925103C, "Smart Array P831", &SA5_access},
+> >  	{0x1926103C, "Smart Array P731m", &SA5_access},
+> >  	{0x1928103C, "Smart Array P230i", &SA5_access},
+> >  	{0x1929103C, "Smart Array P530", &SA5_access},
+> > +	{0x192A103C, "Smart Array P531", &SA5_access},
+> >  	{0x21BD103C, "Smart Array", &SA5_access},
+> >  	{0x21BE103C, "Smart Array", &SA5_access},
+> >  	{0x21BF103C, "Smart Array", &SA5_access},
+> >  	{0x21C0103C, "Smart Array", &SA5_access},
+> > +	{0x21C1103C, "Smart Array", &SA5_access},
+> 
+> I think that both tables should be in sync - but there is no 0x21c1 in
+> hpsa_pci_device_id (and the 0x1925), could you clarify that?
+> 
+> Thanks, Tomas
+
+Crap. It seems like these menial tasks get the better of me. I'll correct and resubmit.
+
+-- mikem
+
+> 
+> >  	{0x21C2103C, "Smart Array", &SA5_access},
+> >  	{0x21C3103C, "Smart Array", &SA5_access},
+> > +	{0x21C4103C, "Smart Array", &SA5_access},
+> >  	{0x21C5103C, "Smart Array", &SA5_access},
+> > +	{0x21C6103C, "Smart Array", &SA5_access},
+> >  	{0x21C7103C, "Smart Array", &SA5_access},
+> >  	{0x21C8103C, "Smart Array", &SA5_access},
+> > +	{0x21C9103C, "Smart Array", &SA5_access},
+> >  	{0x21CA103C, "Smart Array", &SA5_access},
+> >  	{0x21CB103C, "Smart Array", &SA5_access},
+> >  	{0x21CC103C, "Smart Array", &SA5_access},
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
+> > in the body of a message to majordomo@vger.kernel.org More
+> majordomo
+> > info at  http://vger.kernel.org/majordomo-info.html
 
