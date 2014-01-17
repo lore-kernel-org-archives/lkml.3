@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaAQHvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 02:51:00 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:33529 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaAQHu5 (ORCPT
+	id S1751780AbaAQH4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 02:56:23 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50180 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaAQH4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 02:50:57 -0500
+	Fri, 17 Jan 2014 02:56:20 -0500
+X-AuditID: 9c93017e-b7b63ae000000e6a-b6-52d8e22214b3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, acme@ghostprotocols.net
+Subject: Re: [PATCH 2/3] perf tools: Spare double comparison of callchain first entry
+References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
+	<1389713836-13375-3-git-send-email-fweisbec@gmail.com>
+	<87y52h930t.fsf@sejong.aot.lge.com>
+	<20140115165927.GA21574@localhost.localdomain>
+	<87d2js9132.fsf@sejong.aot.lge.com>
+	<20140116173454.GA5328@localhost.localdomain>
+	<20140116194734.GA2373@infradead.org>
+Date: Fri, 17 Jan 2014 16:56:18 +0900
+In-Reply-To: <20140116194734.GA2373@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Thu, 16 Jan 2014 17:47:34 -0200")
+Message-ID: <87ob3b6nz1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8u42eNcDoSr42Bq-3JJEdFMXjru-PDpmXqjZEzkoQ=efQ@mail.gmail.com>
-References: <1389773306-7055-1-git-send-email-prabhakar.csengg@gmail.com>
- <20140116213206.GG8919@ld-irv-0074> <CA+V-a8u42eNcDoSr42Bq-3JJEdFMXjru-PDpmXqjZEzkoQ=efQ@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 17 Jan 2014 13:20:36 +0530
-Message-ID: <CA+V-a8sNSKX_W43G7A0zFKq1GX7k25XR2ZxVtxiQyAmLD5Rs4w@mail.gmail.com>
-Subject: Re: [PATCH] mtd: davinci_nand: Remove unnecessary labels from error path
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brain,
+Hi Arnaldo and Frederic,
 
-On Fri, Jan 17, 2014 at 10:46 AM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
-> Hi Brian,
+On Thu, 16 Jan 2014 17:47:34 -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jan 16, 2014 at 06:34:58PM +0100, Frederic Weisbecker escreveu:
+>> On Thu, Jan 16, 2014 at 10:17:53AM +0900, Namhyung Kim wrote: 
+>> > I think if the sort key doesn't contain "symbol", unmatch case would be
+>> > increased as more various callchains would go into a same entry.
+>> 
+>> You mean -g fractal,0.5,callee,address ?
+>> 
+>> Hmm, actually I haven't seen much difference there.
 >
-> On Fri, Jan 17, 2014 at 3:02 AM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> On Wed, Jan 15, 2014 at 01:38:26PM +0530, Prabhakar Lad wrote:
->>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>>
->>> This patch removes the unnecessary labels from
->>> the error path in probe function which did nothing
->>> than just returning error values, Thus simplifying code
->>> path and improved readability.
->>>
->>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>
->> This does not apply to my branch, since some OOM messages have been
->> dropped. Can you rebase on l2-mtd.git (or linux-next)?
->>
-> OK I'll rebase it against linux-next and post a v2.
->
-My Bad was too late, there is already a patch fixing the above issue
-in linux-next
-please ignore this patch.
+> I guess he will, but will wait for Namhyung's final ack here, ok?
+
+I meant sorting of hist entry like "-s cpu".   So as your number said
+it's not an issue IMHO.  Arnaldo, I'm good with this change please merge
+it. :)
 
 Thanks,
---Prabhakar Lad
+Namhyung
