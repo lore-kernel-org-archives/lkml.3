@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaAQQVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:21:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5810 "EHLO mx1.redhat.com"
+	id S1752563AbaAQQXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:23:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47271 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752231AbaAQQVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:21:01 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Kalle Valo <kvalo@qca.qualcomm.com>, linux-wireless@vger.kernel.org,
-        ath10k@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 8/9] ath10k: Use pci_enable_msi_range()
-Date: Fri, 17 Jan 2014 17:02:22 +0100
-Message-Id: <ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
-In-Reply-To: <cover.1389904166.git.agordeev@redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
+	id S1751540AbaAQQXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 11:23:21 -0500
+Date: Fri, 17 Jan 2014 11:22:52 -0500
+From: Kyle McMartin <kyle@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH] arm64: fix strnlen_user when count <= strlen
+Message-ID: <20140117162252.GR18705@redacted.bos.redhat.com>
+References: <20140116234817.GP18705@redacted.bos.redhat.com>
+ <20140117105107.GC16003@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117105107.GC16003@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+On Fri, Jan 17, 2014 at 10:51:07AM +0000, Will Deacon wrote:
+> Actually, I have removed strnlen_user for 3.14. Could you try your test case
+> with our for-next branch please?
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git for-next/core
+> 
 
-This update also fixes a stylistic (naming and messaging only)
-confusion of MSI-X vs multiple MSIs which are not the same.
+This will work fine, I believe (I can't easily test on HW since we're
+dependent on $vendor drivers that aren't upstream yet) but in my testing
+yesterday I parroted the x86 word-at-a-time.h and lib/strnlen_user.c and
+that seemed to work.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
----
- drivers/net/wireless/ath/ath10k/pci.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+> As for the issue you spotted, we probably need a fix for that to go into
+> stable kernels. Does the following (smaller patch) work for you?
+> 
 
-diff --git a/drivers/net/wireless/ath/ath10k/pci.c b/drivers/net/wireless/ath/ath10k/pci.c
-index 9e86a81..873f50c 100644
---- a/drivers/net/wireless/ath/ath10k/pci.c
-+++ b/drivers/net/wireless/ath/ath10k/pci.c
-@@ -2073,14 +2073,14 @@ static void ath10k_pci_tasklet(unsigned long data)
- 	}
- }
- 
--static int ath10k_pci_start_intr_msix(struct ath10k *ar, int num)
-+static int ath10k_pci_start_intr_multi_msi(struct ath10k *ar, int num)
- {
- 	struct ath10k_pci *ar_pci = ath10k_pci_priv(ar);
- 	int ret;
- 	int i;
- 
--	ret = pci_enable_msi_block(ar_pci->pdev, num);
--	if (ret)
-+	ret = pci_enable_msi_range(ar_pci->pdev, num, num);
-+	if (ret < 0)
- 		return ret;
- 
- 	ret = request_irq(ar_pci->pdev->irq + MSI_ASSIGN_FW,
-@@ -2111,11 +2111,11 @@ static int ath10k_pci_start_intr_msix(struct ath10k *ar, int num)
- 		}
- 	}
- 
--	ath10k_info("MSI-X interrupt handling (%d intrs)\n", num);
-+	ath10k_info("Multi MSI interrupt handling (%d intrs)\n", num);
- 	return 0;
- }
- 
--static int ath10k_pci_start_intr_msi(struct ath10k *ar)
-+static int ath10k_pci_start_intr_single_msi(struct ath10k *ar)
- {
- 	struct ath10k_pci *ar_pci = ath10k_pci_priv(ar);
- 	int ret;
-@@ -2132,7 +2132,7 @@ static int ath10k_pci_start_intr_msi(struct ath10k *ar)
- 		return ret;
- 	}
- 
--	ath10k_info("MSI interrupt handling\n");
-+	ath10k_info("Single MSI interrupt handling\n");
- 	return 0;
- }
- 
-@@ -2199,20 +2199,20 @@ static int ath10k_pci_start_intr(struct ath10k *ar)
- 		num = 1;
- 
- 	if (num > 1) {
--		ret = ath10k_pci_start_intr_msix(ar, num);
-+		ret = ath10k_pci_start_intr_multi_msi(ar, num);
- 		if (ret == 0)
- 			goto exit;
- 
--		ath10k_warn("MSI-X didn't succeed (%d), trying MSI\n", ret);
-+		ath10k_warn("Multi MSI failed (%d), trying single MSI\n", ret);
- 		num = 1;
- 	}
- 
- 	if (num == 1) {
--		ret = ath10k_pci_start_intr_msi(ar);
-+		ret = ath10k_pci_start_intr_single_msi(ar);
- 		if (ret == 0)
- 			goto exit;
- 
--		ath10k_warn("MSI didn't succeed (%d), trying legacy INTR\n",
-+		ath10k_warn("Single MSI failed (%d), trying legacy INTR\n",
- 			    ret);
- 		num = 0;
- 	}
--- 
-1.7.7.6
+This gets the count == 0 case wrong still, I believe.
 
+=== count = 0 ===
+strnlen_user = 0
+__strnlen_user = 1
+
+(Where strnlen_user is the lib/strnlen_user.c implementation.)
+
+Testing if (n <= 0) return 0; before __strnlen_user fixes it though.
+
+Given this is called in, I think, only two places in the kernel, maybe
+we should just backport the switch to generic for stable? I can't
+imagine it conflicting with anything.
+
+regards, Kyle
+
+> Will
+> 
+> --->8
+> 
+> diff --git a/arch/arm64/lib/strnlen_user.S b/arch/arm64/lib/strnlen_user.S
+> index 7f7b176a5646..73f3335a2a45 100644
+> --- a/arch/arm64/lib/strnlen_user.S
+> +++ b/arch/arm64/lib/strnlen_user.S
+> @@ -37,6 +37,7 @@ ENTRY(__strnlen_user)
+>  USER(9f, ldrb	w3, [x0], #1	)
+>  	cbnz	w3, 1b
+>  2:	sub	x0, x0, x2
+> +	cinc	x0, x0, mi
+>  	ret
+>  ENDPROC(__strnlen_user)
+>  
