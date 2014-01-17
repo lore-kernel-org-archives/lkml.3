@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaAQGgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 01:36:33 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:48147 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaAQGga (ORCPT
+	id S1752115AbaAQGrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 01:47:49 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:33720 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaAQGrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 01:36:30 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Date: Thu, 16 Jan 2014 22:36:21 -0800
-Message-ID: <877g9zcdy2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1877PF5e4U+4aZDBJqi6mONfjONiS4x5ns=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3177]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] namespace fixes
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 17 Jan 2014 01:47:37 -0500
+From: Chen-Yu Tsai <wens@csie.org>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-wireless@vger.kernel.org
+Subject: [PATCH RFC 5/6] net: rfkill: gpio: add clock-frequency device tree property
+Date: Fri, 17 Jan 2014 14:47:30 +0800
+Message-Id: <1389941251-32692-6-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389941251-32692-1-git-send-email-wens@csie.org>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some devices, such as Broadcom Bluetooth devices, require a specific
+clock rate for the clock tied to the rfkill device. Add clock-frequency
+property so we can specify this from the device tree.
 
-Linus,
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt | 2 ++
+ net/rfkill/rfkill-gpio.c                                 | 4 ++++
+ 2 files changed, 6 insertions(+)
 
-Please pull the for-linus branch from the git tree:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
-
-   HEAD: 41301ae78a99ead04ea42672a1ab72c6f44cc81d vfs: Fix a regression in mounting proc
-
-This is a set of 3 regression fixes. 
-
-This fixes /proc/mounts when using "ip netns add <netns>" to display the
-actual mount point.
-
-This fixes a regression in clone that broke lxc-attach.
-
-This fixes a regression in the permission checks for mounting /proc that
-made proc unmountable if binfmt_misc was in use. Oops.
-
-My apologies for sending this pull request so late.  Al Viro gave
-interesting review comments about the d_path fix that I wanted to
-address in detail before I sent this pull request.  Unfortunately a
-bad round of colds kept from addressing that in detail until today.
-The executive summary of the review was:
-
-Al: Is patching d_path really sufficient?
-    The prepend_path, d_path, d_absolute_path, and __d_path family of
-    functions is a really mess.
-
-Me: Yes, patching d_path is really sufficient.  Yes, the code is mess.
-    No it is not appropriate to rewrite all of d_path for a regression
-    that has existed for entirely too long already, when a two line
-    change will do.
-
-Eric W. Biederman (3):
-      vfs: In d_path don't call d_dname on a mount point
-      fork:  Allow CLONE_PARENT after setns(CLONE_NEWPID)
-      vfs: Fix a regression in mounting proc
-
- fs/dcache.c    |    7 ++++++-
- fs/namespace.c |    2 +-
- kernel/fork.c  |    2 +-
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
+index 8a07ea4..8b8db0a 100644
+--- a/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
++++ b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
+@@ -13,6 +13,7 @@ NAME_reset-gpios, or both, must be defined.
+ 
+ Optional properties:
+ - clocks		: phandle to clock to enable/disable
++- clock-frequency	: clock rate to set for the given clock
+ 
+ Example:
+ 
+@@ -23,4 +24,5 @@ Example:
+ 		bluetooth_shutdown-gpios = <0>, <&pio 7 18 0>;
+ 		bluetooth_reset-gpios = <&pio 7 24 0>;
+ 		clocks = <&clk_out_a>;
++		clock-frequency = <32678>;
+ 	};
+diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+index 48381a8..3092681 100644
+--- a/net/rfkill/rfkill-gpio.c
++++ b/net/rfkill/rfkill-gpio.c
+@@ -40,6 +40,7 @@ struct rfkill_gpio_data {
+ 	char			*reset_name;
+ 	char			*shutdown_name;
+ 	struct clk		*clk;
++	int			clk_frequency;
+ 
+ 	bool			clk_enabled;
+ };
+@@ -92,6 +93,7 @@ static int rfkill_gpio_dt_probe(struct device *dev,
+ 	rfkill->name = np->name;
+ 	of_property_read_string(np, "rfkill-name", &rfkill->name);
+ 	of_property_read_u32(np, "rfkill-type", &rfkill->type);
++	of_property_read_u32(np, "clock-frequency", &rfkill->clk_frequency);
+ 
+ 	return 0;
+ }
+@@ -138,6 +140,8 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 	snprintf(rfkill->shutdown_name, len + 10, "%s_shutdown", rfkill->name);
+ 
+ 	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
++	if (!IS_ERR(rfkill->clk) && rfkill->clk_frequency > 0)
++		clk_set_rate(rfkill->clk, rfkill->clk_frequency);
+ 
+ 	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+ 	if (!IS_ERR(gpio)) {
+-- 
+1.8.5.2
 
