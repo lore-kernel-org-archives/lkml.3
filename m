@@ -1,157 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaAQPq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 10:46:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152AbaAQPqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 10:46:25 -0500
-Message-ID: <52D95005.8070501@redhat.com>
-Date: Fri, 17 Jan 2014 16:45:09 +0100
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>,
-        "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
-References: <20140116195112.GA9658@beardog.cce.hp.com> <52D948A5.1070706@redhat.com> <48275AD710FCA34184C2B6186B4016B32D1A0B01@G6W2491.americas.hpqcorp.net> <52D94CBB.5020701@suse.de>
-In-Reply-To: <52D94CBB.5020701@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752434AbaAQPtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 10:49:06 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:38856 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaAQPtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 10:49:04 -0500
+From: Bruce Liu <damuzi000@gmail.com>
+To: peppe.cavallaro@st.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bruce Liu <damuzi000@gmail.com>
+Subject: [PATCH] [PATCH net-next v2] net: stmmac: fix NULL pointer dereference in stmmac_get_tx_hwtstamp
+Date: Fri, 17 Jan 2014 23:47:59 +0800
+Message-Id: <1389973679-2755-1-git-send-email-damuzi000@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 04:31 PM, Hannes Reinecke wrote:
-> On 01/17/2014 04:17 PM, Miller, Mike (OS Dev) wrote:
->>
->>> -----Original Message-----
->>> From: Tomas Henzl [mailto:thenzl@redhat.com]
->>> Sent: Friday, January 17, 2014 9:14 AM
->>> To: Miller, Mike (OS Dev); Andrew Morton; James E. J. Bottomley
->>> Cc: LKML; LKML-scsi; hare@suse.de; Stephen M. Cameron
->>> Subject: Re: [PATCH 1/1] scsi: hpsa, add all PCI ID's that HP has in svn
->>>
->>> On 01/16/2014 08:51 PM, Mike Miller wrote:
->>>> From: Mike Miller <mike.miller@hp.com>
->>>>
->>>> This patch has every ID we have in our svn repository. Some
->>>> controllers were cancelled, others added, now the cancelled ones are
->>>> back. Apparently the debate rages on about which controllers are
->>>> cancelled, which are not, whatever. Please accept this patch. It is
->>>> dependent upon the patches I sent yesterday.
->>>> This patch made/tested against kernel-3.13.0-rc8
->>>>
->>>> Signed-off-by: Mike Miller <mike.miller@hp.com>
->>>> ---
->>>>  drivers/scsi/hpsa.c |   12 ++++++++++++
->>>>  1 files changed, 12 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c index
->>>> 348b207..3affec5 100644
->>>> --- a/drivers/scsi/hpsa.c
->>>> +++ b/drivers/scsi/hpsa.c
->>>> @@ -100,6 +100,7 @@ static const struct pci_device_id
->>> hpsa_pci_device_id[] = {
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
->>> 0x3354},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
->>> 0x3355},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
->>> 0x3356},
->>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1920},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1921},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1922},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1923},
->>>> @@ -108,15 +109,19 @@ static const struct pci_device_id
->>> hpsa_pci_device_id[] = {
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1926},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1928},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x1929},
->>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C,
->>> 0x192A},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21BD},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21BE},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21BF},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C0},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C2},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C3},
->>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C4},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C5},
->>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C6},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C7},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C8},
->>>> +	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21C9},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21CA},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21CB},
->>>>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C,
->>> 0x21CC},
->>>> @@ -149,22 +154,29 @@ static struct board_type products[] = {
->>>>  	{0x3354103C, "Smart Array P420i", &SA5_access},
->>>>  	{0x3355103C, "Smart Array P220i", &SA5_access},
->>>>  	{0x3356103C, "Smart Array P721m", &SA5_access},
->>>> +	{0x1920103C, "Smart Array P430i", &SA5_access},
->>>>  	{0x1921103C, "Smart Array P830i", &SA5_access},
->>>>  	{0x1922103C, "Smart Array P430", &SA5_access},
->>>>  	{0x1923103C, "Smart Array P431", &SA5_access},
->>>>  	{0x1924103C, "Smart Array P830", &SA5_access},
->>>> +	{0x1925103C, "Smart Array P831", &SA5_access},
->>>>  	{0x1926103C, "Smart Array P731m", &SA5_access},
->>>>  	{0x1928103C, "Smart Array P230i", &SA5_access},
->>>>  	{0x1929103C, "Smart Array P530", &SA5_access},
->>>> +	{0x192A103C, "Smart Array P531", &SA5_access},
->>>>  	{0x21BD103C, "Smart Array", &SA5_access},
->>>>  	{0x21BE103C, "Smart Array", &SA5_access},
->>>>  	{0x21BF103C, "Smart Array", &SA5_access},
->>>>  	{0x21C0103C, "Smart Array", &SA5_access},
->>>> +	{0x21C1103C, "Smart Array", &SA5_access},
->>> I think that both tables should be in sync - but there is no 0x21c1 in
->>> hpsa_pci_device_id (and the 0x1925), could you clarify that?
->>>
->>> Thanks, Tomas
->> Crap. It seems like these menial tasks get the better of me. I'll correct and resubmit.
->>
-> Hmm. Seeing that hpsa is now well capable of supporting even older
-> SmartArray controllers, is there really a point in updating the
-> PCI-ID list every time?
+When timestamping is enabled, stmmac_tx_clean will call
+stmmac_get_tx_hwtstamp to get tx TS.
+But the skb can be NULL because the last of its tx_skbuff is NULL
+if this packet frame is filled in more than one descriptors.
 
-It depends on whether HP actually wishes to support even the oldest cciss
-devices this way, I'm not sure if all the devices were individually tested with hpsa driver.
+To fix the issue, change the code:
+- Store TX skb to the tx_skbuff[] of frame's last segment.
+- Check skb is not NULL in stmmac_get_tx_hwtstamp.
 
-Cheers, Tomas
+Signed-off-by: Bruce Liu <damuzi000@gmail.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/chain_mode.c  |    3 +-
+ drivers/net/ethernet/stmicro/stmmac/ring_mode.c   |    2 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   35 +++++++++++----------
+ 3 files changed, 21 insertions(+), 19 deletions(-)
 
-> Wouldn't you be better off by just using the catch-all phrase
-> and remove all the individual IDs?
->
-> That way you would just have to update _one_ list ...
->
-> Cheers,
->
-> Hannes
+diff --git a/drivers/net/ethernet/stmicro/stmmac/chain_mode.c b/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
+index d234ab5..72d282b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
++++ b/drivers/net/ethernet/stmicro/stmmac/chain_mode.c
+@@ -51,6 +51,7 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
+ 	priv->hw->desc->prepare_tx_desc(desc, 1, bmax, csum, STMMAC_CHAIN_MODE);
+ 
+ 	while (len != 0) {
++		priv->tx_skbuff[entry] = NULL;
+ 		entry = (++priv->cur_tx) % txsize;
+ 		desc = priv->dma_tx + entry;
+ 
+@@ -62,7 +63,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
+ 			priv->hw->desc->prepare_tx_desc(desc, 0, bmax, csum,
+ 							STMMAC_CHAIN_MODE);
+ 			priv->hw->desc->set_tx_owner(desc);
+-			priv->tx_skbuff[entry] = NULL;
+ 			len -= bmax;
+ 			i++;
+ 		} else {
+@@ -73,7 +73,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
+ 			priv->hw->desc->prepare_tx_desc(desc, 0, len, csum,
+ 							STMMAC_CHAIN_MODE);
+ 			priv->hw->desc->set_tx_owner(desc);
+-			priv->tx_skbuff[entry] = NULL;
+ 			len = 0;
+ 		}
+ 	}
+diff --git a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
+index 1ef9d8a..a96c7c2 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
++++ b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
+@@ -58,6 +58,7 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
+ 		priv->hw->desc->prepare_tx_desc(desc, 1, bmax, csum,
+ 						STMMAC_RING_MODE);
+ 		wmb();
++		priv->tx_skbuff[entry] = NULL;
+ 		entry = (++priv->cur_tx) % txsize;
+ 
+ 		if (priv->extend_desc)
+@@ -73,7 +74,6 @@ static unsigned int stmmac_jumbo_frm(void *p, struct sk_buff *skb, int csum)
+ 						STMMAC_RING_MODE);
+ 		wmb();
+ 		priv->hw->desc->set_tx_owner(desc);
+-		priv->tx_skbuff[entry] = NULL;
+ 	} else {
+ 		desc->des2 = dma_map_single(priv->device, skb->data,
+ 					    nopaged_len, DMA_TO_DEVICE);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 797b56a..5cf52ad 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -332,7 +332,7 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
+ 		return;
+ 
+ 	/* exit if skb doesn't support hw tstamp */
+-	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
++	if (likely(!skb || !(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+ 		return;
+ 
+ 	if (priv->adv_ts)
+@@ -1161,21 +1161,24 @@ static void dma_free_tx_skbufs(struct stmmac_priv *priv)
+ 	int i;
+ 
+ 	for (i = 0; i < priv->dma_tx_size; i++) {
+-		if (priv->tx_skbuff[i] != NULL) {
+-			struct dma_desc *p;
+-			if (priv->extend_desc)
+-				p = &((priv->dma_etx + i)->basic);
+-			else
+-				p = priv->dma_tx + i;
++		struct dma_desc *p;
+ 
+-			if (priv->tx_skbuff_dma[i])
+-				dma_unmap_single(priv->device,
+-						 priv->tx_skbuff_dma[i],
+-						 priv->hw->desc->get_tx_len(p),
+-						 DMA_TO_DEVICE);
++		if (priv->extend_desc)
++			p = &((priv->dma_etx + i)->basic);
++		else
++			p = priv->dma_tx + i;
++
++		if (priv->tx_skbuff_dma[i]) {
++			dma_unmap_single(priv->device,
++					 priv->tx_skbuff_dma[i],
++					 priv->hw->desc->get_tx_len(p),
++					 DMA_TO_DEVICE);
++			priv->tx_skbuff_dma[i] = 0;
++		}
++
++		if (priv->tx_skbuff[i] != NULL) {
+ 			dev_kfree_skb_any(priv->tx_skbuff[i]);
+ 			priv->tx_skbuff[i] = NULL;
+-			priv->tx_skbuff_dma[i] = 0;
+ 		}
+ 	}
+ }
+@@ -1844,8 +1847,6 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	first = desc;
+ 
+-	priv->tx_skbuff[entry] = skb;
+-
+ 	/* To program the descriptors according to the size of the frame */
+ 	if (priv->mode == STMMAC_RING_MODE) {
+ 		is_jumbo = priv->hw->ring->is_jumbo_frm(skb->len,
+@@ -1873,6 +1874,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 		int len = skb_frag_size(frag);
+ 
++		priv->tx_skbuff[entry] = NULL;
+ 		entry = (++priv->cur_tx) % txsize;
+ 		if (priv->extend_desc)
+ 			desc = (struct dma_desc *)(priv->dma_etx + entry);
+@@ -1882,7 +1884,6 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		desc->des2 = skb_frag_dma_map(priv->device, frag, 0, len,
+ 					      DMA_TO_DEVICE);
+ 		priv->tx_skbuff_dma[entry] = desc->des2;
+-		priv->tx_skbuff[entry] = NULL;
+ 		priv->hw->desc->prepare_tx_desc(desc, 0, len, csum_insertion,
+ 						priv->mode);
+ 		wmb();
+@@ -1890,6 +1891,8 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		wmb();
+ 	}
+ 
++	priv->tx_skbuff[entry] = skb;
++
+ 	/* Finalize the latest segment. */
+ 	priv->hw->desc->close_tx_desc(desc);
+ 
+-- 
+1.7.9.5
 
