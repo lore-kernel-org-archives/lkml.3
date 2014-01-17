@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaAQKYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:24:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14771 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331AbaAQKYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:24:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
-   d="scan'208";a="460430576"
-Date: Fri, 17 Jan 2014 18:24:28 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [ipc] 5769cf63: LTP semget02 TFAILs
-Message-ID: <20140117102428.GC8751@localhost>
+	id S1752388AbaAQK0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:26:51 -0500
+Received: from smtp-vbr15.xs4all.nl ([194.109.24.35]:2267 "EHLO
+	smtp-vbr15.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaAQK0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 05:26:50 -0500
+Message-ID: <52D90559.1020707@xs4all.nl>
+Date: Fri, 17 Jan 2014 11:26:33 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH, RFC 06/30] [media] usbvision: remove bogus sleep_on_timeout
+References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-7-git-send-email-arnd@arndb.de>
+In-Reply-To: <1388664474-1710039-7-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+On 01/02/2014 01:07 PM, Arnd Bergmann wrote:
+> There is no reason to use sleep_on_timeout here, and we want to get
+> rid of that interface. Use the simpler msleep_interruptible instead.
 
-We noticed LTP test failures
+Since this define is unused anyway, lets just remove it completely.
 
-        ltp.msgget02.1.TFAIL
-        ltp.semget02.2.TFAIL
-        ltp.semget02.3.TFAIL
+I'll post a patch for this.
 
-and the first bad commit is
+Regards,
 
-commit 5769cf6355d87f63906b3e51887eff7017c39217
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Wed Jan 15 16:56:01 2014 +1100
-Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
-CommitDate: Wed Jan 15 16:56:01 2014 +1100
+	Hans
 
-    ipc: share ids rwsem when possible in ipcget_public
-    
-    ...  and rewrite the function.  For scenarios where the key is found and
-    we end up just doing different routinary checks, we can downgrade the
-    ids->rwsem and share it among concurrent readers.  These checks include
-    the following, which are all safe to share the lock:
-    
-    ops->more_checks() >>  sem_more_checks(), shm_more_checks()
-    ipc_check_perms()  >>  ipcperms(),ops->associate() >> [lsm]_[ipctype]_associate()
-    
-    Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-    Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-    Cc: Rik van Riel <riel@redhat.com>
-    Cc: Manfred Spraul <manfred@colorfullife.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Hans Verkuil <hverkuil@xs4all.nl>
+> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> Cc: linux-media@vger.kernel.org
+> ---
+>  drivers/media/usb/usbvision/usbvision.h | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/usb/usbvision/usbvision.h b/drivers/media/usb/usbvision/usbvision.h
+> index 8a25876..eb6dc8a 100644
+> --- a/drivers/media/usb/usbvision/usbvision.h
+> +++ b/drivers/media/usb/usbvision/usbvision.h
+> @@ -205,10 +205,8 @@ enum {
+>  
+>  /* Debugging aid */
+>  #define USBVISION_SAY_AND_WAIT(what) { \
+> -	wait_queue_head_t wq; \
+> -	init_waitqueue_head(&wq); \
+>  	printk(KERN_INFO "Say: %s\n", what); \
+> -	interruptible_sleep_on_timeout(&wq, HZ * 3); \
+> +	msleep_interruptible(3000); \
+>  }
+>  
+>  /*
+> 
 
- ipc/util.c | 60 +++++++++++++++++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 27 deletions(-)
-
-Thanks,
-Fengguang
