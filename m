@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaAQMoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 07:44:10 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:51446 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaAQMoI (ORCPT
+	id S1752640AbaAQMpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 07:45:45 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:48690 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaAQMpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:44:08 -0500
+	Fri, 17 Jan 2014 07:45:43 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -21,9 +21,9 @@ Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         patches@linaro.org, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
         Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 10/20] ARM64 / ACPI: Enumerate possible/present CPU set and map logical cpu id to APIC id
-Date: Fri, 17 Jan 2014 20:25:04 +0800
-Message-Id: <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH 11/20] ARM64 / ACPI: Get the enable method for SMP initialization
+Date: Fri, 17 Jan 2014 20:25:05 +0800
+Message-Id: <1389961514-13562-12-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
 References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
@@ -31,172 +31,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When boot the kernel with MADT, the cpu possible and present sets should
-be enumerated for later smp initialization.
+ACPI has no flag to indicate different enable methods for SMP
+initialization, but it indicates that spin-table is supported
+at now because of the Parked Protocol shows that there is
+parked address in GIC structure.
 
-The logic cpu id maps to APIC id (GIC id) is also implemented, it is
-needed for acpi processor drivers.
+In order to boot the system with ACPI if DT is not available,
+we set the default enable method as spin-table since PSCI is
+not available in ACPI spec at now.
 
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/arm64/include/asm/acpi.h |    7 ++--
- drivers/acpi/plat/arm-core.c  |   83 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/acpi.h    |    8 ++++++++
+ arch/arm64/include/asm/cpu_ops.h |    1 +
+ arch/arm64/include/asm/smp.h     |    2 +-
+ arch/arm64/kernel/cpu_ops.c      |    2 +-
+ arch/arm64/kernel/smp.c          |   42 ++++++++++++++++++++++++++++++++++++--
+ drivers/acpi/plat/arm-core.c     |   26 +++++++++++++++++++++++
+ 6 files changed, 77 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index c335c6d..7edd39e 100644
+index 7edd39e..097394c 100644
 --- a/arch/arm64/include/asm/acpi.h
 +++ b/arch/arm64/include/asm/acpi.h
-@@ -76,9 +76,6 @@ static inline void acpi_disable_pci(void)
- /* FIXME: this function should be moved to topology.h when it's ready */
- void arch_fix_phys_package_id(int num, u32 slot);
+@@ -87,11 +87,19 @@ extern int (*acpi_suspend_lowlevel)(void);
+ extern int arm_cpu_to_apicid[NR_CPUS];
+ #define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
  
--/* temperally define -1 to make acpi core compilerable */
--#define cpu_physical_id(cpu) -1
--
- /* Low-level suspend routine. */
- extern int (*acpi_suspend_lowlevel)(void);
- #define acpi_wakeup_address (0)
-@@ -86,6 +83,10 @@ extern int (*acpi_suspend_lowlevel)(void);
- #define MAX_GIC_CPU_INTERFACE 256
- #define MAX_GIC_DISTRIBUTOR   1		/* should be the same as MAX_GIC_NR */
- 
-+/* map logic cpu id to physical GIC id */
-+extern int arm_cpu_to_apicid[NR_CPUS];
-+#define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
++extern const char *acpi_get_enable_method(int cpu);
 +
  #else	/* !CONFIG_ACPI */
  #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
  #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
-diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-index 8ba3e6f..1d9b789 100644
---- a/drivers/acpi/plat/arm-core.c
-+++ b/drivers/acpi/plat/arm-core.c
-@@ -31,6 +31,7 @@
- #include <linux/smp.h>
- 
- #include <asm/pgtable.h>
-+#include <asm/cputype.h>
- 
- /*
-  * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
-@@ -52,6 +53,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
-  */
- static u64 acpi_lapic_addr __initdata;
- 
-+/* available_cpus here means enabled cpu in MADT */
-+static int available_cpus;
+ #define acpi_pci_disabled 1	/* ACPI PCI sometimes enabled on ARM */
+ #define acpi_strict 1		/* no ACPI spec workarounds on ARM */
 +
-+/* Map logic cpu id to physical GIC id (physical CPU id). */
-+int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
-+static int boot_cpu_apic_id = -1;
-+
- #define BAD_MADT_ENTRY(entry, end) (					\
- 	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
- 	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
-@@ -132,6 +140,55 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
-  * Please refer to chapter5.2.12.14/15 of ACPI 5.0
-  */
- 
-+/**
-+ * acpi_register_gic_cpu_interface - register a gic cpu interface and
-+ * generates a logic cpu number
-+ * @id: gic cpu interface id to register
-+ * @enabled: this cpu is enabled or not
-+ *
-+ * Returns the logic cpu number which maps to the gic cpu interface
-+ */
-+static int acpi_register_gic_cpu_interface(int id, u8 enabled)
++static inline const char *acpi_get_enable_method(int cpu)
 +{
-+	int cpu;
-+
-+	if (id >= MAX_GIC_CPU_INTERFACE) {
-+		pr_info(PREFIX "skipped apicid that is too big\n");
-+		return -EINVAL;
-+	}
-+
-+	total_cpus++;
-+	if (!enabled)
-+		return -EINVAL;
-+
-+	if (available_cpus >=  NR_CPUS) {
-+		pr_warn(PREFIX "NR_CPUS limit of %d reached,"
-+		" Processor %d/0x%x ignored.\n", NR_CPUS, total_cpus, id);
-+		return -EINVAL;
-+	}
-+
-+	available_cpus++;
-+
-+	/* allocate a logic cpu id for the new comer */
-+	if (boot_cpu_apic_id == id) {
-+		/*
-+		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
-+		 * for BSP, no need to allocte again.
-+		 */
-+		cpu = 0;
-+	} else {
-+		cpu = cpumask_next_zero(-1, cpu_present_mask);
-+	}
-+
-+	/* map the logic cpu id to APIC id */
-+	arm_cpu_to_apicid[cpu] = id;
-+
-+	set_cpu_present(cpu, true);
-+	set_cpu_possible(cpu, true);
-+
-+	return cpu;
++	return NULL;
 +}
 +
- static int __init
- acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+ #endif
+ 
+ #endif /*_ASM_ARM64_ACPI_H*/
+diff --git a/arch/arm64/include/asm/cpu_ops.h b/arch/arm64/include/asm/cpu_ops.h
+index c4cdb5e..08c8f07 100644
+--- a/arch/arm64/include/asm/cpu_ops.h
++++ b/arch/arm64/include/asm/cpu_ops.h
+@@ -53,6 +53,7 @@ struct cpu_operations {
+ };
+ 
+ extern const struct cpu_operations *cpu_ops[NR_CPUS];
++extern const struct cpu_operations * __init cpu_get_ops(const char *name);
+ extern int __init cpu_read_ops(struct device_node *dn, int cpu);
+ extern void __init cpu_read_bootcpu_ops(void);
+ 
+diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+index a498f2c..a5cea56 100644
+--- a/arch/arm64/include/asm/smp.h
++++ b/arch/arm64/include/asm/smp.h
+@@ -39,7 +39,7 @@ extern void show_ipi_list(struct seq_file *p, int prec);
+ extern void handle_IPI(int ipinr, struct pt_regs *regs);
+ 
+ /*
+- * Setup the set of possible CPUs (via set_cpu_possible)
++ * Platform specific SMP operations
+  */
+ extern void smp_init_cpus(void);
+ 
+diff --git a/arch/arm64/kernel/cpu_ops.c b/arch/arm64/kernel/cpu_ops.c
+index d62d12f..531f2cc 100644
+--- a/arch/arm64/kernel/cpu_ops.c
++++ b/arch/arm64/kernel/cpu_ops.c
+@@ -35,7 +35,7 @@ static const struct cpu_operations *supported_cpu_ops[] __initconst = {
+ 	NULL,
+ };
+ 
+-static const struct cpu_operations * __init cpu_get_ops(const char *name)
++const struct cpu_operations * __init cpu_get_ops(const char *name)
  {
-@@ -144,6 +201,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+ 	const struct cpu_operations **ops = supported_cpu_ops;
  
- 	acpi_table_print_madt_entry(header);
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index a0c2ca6..7719d46 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -48,6 +48,7 @@
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+ #include <asm/ptrace.h>
++#include <asm/acpi.h>
  
-+	/*
-+	 * We need to register disabled CPU as well to permit
-+	 * counting disabled CPUs. This allows us to size
-+	 * cpus_possible_map more accurately, to permit
-+	 * to not preallocating memory for all NR_CPUS
-+	 * when we use CPU hotplug.
-+	 */
-+	acpi_register_gic_cpu_interface(processor->gic_id,
-+			processor->flags & ACPI_MADT_ENABLED);
-+
- 	return 0;
- }
- 
-@@ -186,6 +253,19 @@ static int __init acpi_parse_madt_gic_entries(void)
- 		return count;
+ /*
+  * as from 2.5, kernels no longer have an init_tasks structure
+@@ -280,7 +281,7 @@ static void (*smp_cross_call)(const struct cpumask *, unsigned int);
+  * cpu logical map array containing MPIDR values related to logical
+  * cpus. Assumes that cpu_logical_map(0) has already been initialized.
+  */
+-void __init smp_init_cpus(void)
++static int __init of_smp_init_cpus(void)
+ {
+ 	struct device_node *dn = NULL;
+ 	unsigned int i, cpu = 1;
+@@ -364,6 +365,10 @@ next:
+ 		cpu++;
  	}
  
-+#ifdef CONFIG_SMP
-+	if (available_cpus == 0) {
-+		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
-+		arm_cpu_to_apicid[available_cpus] =
-+			read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
-+		available_cpus = 1;	/* We've got at least one of these */
++	/* No device tree or no CPU node in DT */
++	if (cpu == 1 && !bootcpu_valid)
++		return -ENODEV;
++
+ 	/* sanity check */
+ 	if (cpu > NR_CPUS)
+ 		pr_warning("no. of cores (%d) greater than configured maximum of %d - clipping\n",
+@@ -371,7 +376,7 @@ next:
+ 
+ 	if (!bootcpu_valid) {
+ 		pr_err("DT missing boot CPU MPIDR, not enabling secondaries\n");
+-		return;
++		return -EINVAL;
+ 	}
+ 
+ 	/*
+@@ -381,6 +386,39 @@ next:
+ 	for (i = 0; i < NR_CPUS; i++)
+ 		if (cpu_logical_map(i) != INVALID_HWID)
+ 			set_cpu_possible(i, true);
++
++	return 0;
++}
++
++/*
++ * In ACPI mode, the cpu possible map was enumerated before SMP
++ * initialization when MADT table was parsed, so we can get the
++ * possible map here to initialize CPUs.
++ */
++static void __init acpi_smp_init_cpus(void)
++{
++	int cpu;
++	const char *enable_method;
++
++	for_each_possible_cpu(cpu) {
++		enable_method = acpi_get_enable_method(cpu);
++		if (!enable_method)
++			continue;
++
++		cpu_ops[cpu] = cpu_get_ops(enable_method);
++		if (!cpu_ops[cpu])
++			continue;
++
++		cpu_ops[cpu]->cpu_init(NULL, cpu);
 +	}
-+#endif
++}
 +
-+	/* Make boot-up look pretty */
-+	pr_info("%d CPUs available, %d CPUs total\n", available_cpus,
-+		total_cpus);
++void __init smp_init_cpus(void)
++{
++	if (!of_smp_init_cpus())
++		return;
 +
- 	return 0;
++	acpi_smp_init_cpus();
  }
  
-@@ -321,6 +401,9 @@ int __init early_acpi_boot_init(void)
- 	if (acpi_disabled)
- 		return -ENODEV;
+ void __init smp_prepare_cpus(unsigned int max_cpus)
+diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
+index 1d9b789..2704633 100644
+--- a/drivers/acpi/plat/arm-core.c
++++ b/drivers/acpi/plat/arm-core.c
+@@ -367,6 +367,32 @@ static void __init acpi_process_madt(void)
+ }
  
-+	/* Get the boot CPU's GIC cpu interface id before MADT parsing */
-+	boot_cpu_apic_id = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+ /*
++ * To see PCSI is enabled or not.
++ *
++ * PSCI is not available for ACPI 5.0, return FALSE for now.
++ *
++ * FIXME: should we introduce early_param("psci", func) for test purpose?
++ */
++static bool acpi_psci_smp_available(int cpu)
++{
++	return FALSE;
++}
 +
- 	/*
- 	 * Process the Multiple APIC Description Table (MADT), if present
- 	 */
++static const char *enable_method[] = {
++	"psci",
++	"spin-table",
++	NULL
++};
++
++const char *acpi_get_enable_method(int cpu)
++{
++	if (acpi_psci_smp_available(cpu))
++		return enable_method[0];
++	else
++		return enable_method[1];
++}
++
++/*
+  * acpi_boot_table_init() and acpi_boot_init()
+  *  called from setup_arch(), always.
+  *	1. checksums all tables
 -- 
 1.7.9.5
 
