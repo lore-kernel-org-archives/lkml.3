@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaAQO4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:56:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38117 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaAQO4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:56:31 -0500
-Date: Fri, 17 Jan 2014 14:56:27 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sched: Calculate effective load even if local weight is 0
-Message-ID: <20140117145627.GY4963@suse.de>
-References: <20140106113912.GC6178@suse.de>
- <CAM4v1pNQsoJxgC9Kwe+ca=hSbDYr3huNrchzqWEvs26AfypmSw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAM4v1pNQsoJxgC9Kwe+ca=hSbDYr3huNrchzqWEvs26AfypmSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752426AbaAQO5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:57:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36267 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaAQO5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 09:57:36 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/19] tools lib traceevent: Unregister handler when function plugin is unloaded
+Date: Fri, 17 Jan 2014 11:57:09 -0300
+Message-Id: <1389970645-12075-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1389970645-12075-1-git-send-email-acme@infradead.org>
+References: <1389970645-12075-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 01:22:40PM +0530, Preeti Murthy wrote:
-> Hi,
-> 
-> On Mon, Jan 6, 2014 at 5:09 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > (Rik, you authored this patch so it should be sent from you and needs a
-> > signed-off assuming people are ok with the changelog.)
-> >
-> > Thomas Hellstrom bisected a regression where erratic 3D performance is
-> > experienced on virtual machines as measured by glxgears. It identified
-> > commit 58d081b5 (sched/numa: Avoid overloading CPUs on a preferred NUMA
-> > node) as the problem which had modified the behaviour of effective_load.
-> >
-> > Effective load calculates the difference to the system-wide load if a
-> > scheduling entity was moved to another CPU. The task group is not heavier
-> > as a result of the move but overall system load can increase/decrease as a
-> > result of the change. Commit 58d081b5 (sched/numa: Avoid overloading CPUs
-> > on a preferred NUMA node) changed effective_load to make it suitable for
-> > calculating if a particular NUMA node was compute overloaded. To reduce
-> > the cost of the function, it assumed that a current sched entity weight
-> > of 0 was uninteresting but that is not the case.
-> >
-> > wake_affine uses a weight of 0 for sync wakeups on the grounds that it
-> > is assuming the waking task will sleep and not contribute to load in the
-> > near future. In this case, we still want to calculate the effective load
-> > of the sched entity hierarchy. As effective_load is no longer used by
-> 
-> Would it be worth mentioning that besides sync wakeups, wake_affine() uses a
-> weight of 0 for the sched entity, for effective load calculation on
-> the prev_cpu as well?
-> This is so as to find the effect of  moving this task away from the
-> prev_cpu. Here
-> too we are interested in calculating the effective load of the root
-> task group of this
-> sched entity on the prev_cpu and the below restored check will be relevant.
-> 
-> Without the below check the difference in the loads of the wake affine
-> CPU and the
-> prev_cpu can get messed up.
-> 
+From: Namhyung Kim <namhyung@kernel.org>
 
-I was too slow getting to this mail unfortunately. The patch is already
-merged upstream with the changelog as-is.
+The function handler should be unregistered when the plugin is unloaded
+otherwise it'll try to access invalid memory.
 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1389839478-5887-4-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/plugin_function.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
+index 39461485f9a7..80ba4ff1fe84 100644
+--- a/tools/lib/traceevent/plugin_function.c
++++ b/tools/lib/traceevent/plugin_function.c
+@@ -148,6 +148,9 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+ {
+ 	int i, x;
+ 
++	pevent_unregister_event_handler(pevent, -1, "ftrace", "function",
++					function_handler, NULL);
++
+ 	for (i = 0; i <= cpus; i++) {
+ 		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
+ 			free(fstack[i].stack[x]);
 -- 
-Mel Gorman
-SUSE Labs
+1.8.1.4
+
