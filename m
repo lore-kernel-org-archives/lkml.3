@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaAQTWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:22:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60137 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363AbaAQTWt (ORCPT
+	id S1753402AbaAQTYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:24:50 -0500
+Received: from fallback3.mail.ru ([94.100.176.58]:38290 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaAQTYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:22:49 -0500
-Date: Fri, 17 Jan 2014 11:22:27 -0800
-From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
-Message-ID: <tip-fb09b78151361f5001ad462e4b242b10845830e2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
-References: <1389518403-7715-4-git-send-email-qiaowei.ren@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx:
-  Add MPX related opcodes to the x86 opcode map
-Git-Commit-ID: fb09b78151361f5001ad462e4b242b10845830e2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 17 Jan 2014 11:22:33 -0800 (PST)
+	Fri, 17 Jan 2014 14:24:47 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?TWFyYyBDYXJpbm8=?= <marc.ceeeee@gmail.com>
+Cc: =?UTF-8?B?Q2hyaXN0aWFuIERhdWR0?= <bcm@fixthebug.org>,
+        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
+        devicetree@vger.kernel.org,
+        =?UTF-8?B?RmxvcmlhbiBGYWluZWxsaQ==?= <f.fainelli@gmail.com>,
+        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWF0dCBQb3J0ZXI=?= <matt.porter@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2NCAzLzhdIEFSTTogYnJjbXN0YjogYWRkIGRlYnVnIFVB?=
+ =?UTF-8?B?UlQgZm9yIGVhcmx5cHJpbnRrIHN1cHBvcnQ=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Fri, 17 Jan 2014 23:24:16 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1389986656.910825095@f427.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1389986367-4010-4-git-send-email-marc.ceeeee@gmail.com>
+References: <1389986367-4010-1-git-send-email-marc.ceeeee@gmail.com>
+ <1389986367-4010-4-git-send-email-marc.ceeeee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0HJOwN0027153
 
-Commit-ID:  fb09b78151361f5001ad462e4b242b10845830e2
-Gitweb:     http://git.kernel.org/tip/fb09b78151361f5001ad462e4b242b10845830e2
-Author:     Qiaowei Ren <qiaowei.ren@intel.com>
-AuthorDate: Sun, 12 Jan 2014 17:20:02 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 17 Jan 2014 11:04:09 -0800
+–ü—è—Ç–Ω–∏—Ü–∞, 17 —è–Ω–≤–∞—Ä—è 2014, 11:19 -08:00 –æ—Ç Marc Carino <marc.ceeeee@gmail.com>:
+> Add the UART definitions needed to support earlyprintk on brcmstb machines.
+> 
+> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+>  arch/arm/Kconfig.debug |   16 +++++++++++++++-
+>  1 files changed, 15 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index 5765abf..266c699 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -94,6 +94,17 @@ choice
+>  		depends on ARCH_BCM2835
+>  		select DEBUG_UART_PL01X
+>  
+> +	config DEBUG_BRCMSTB_UART
+> +		bool "Use BRCMSTB UART for low-level debug"
+> +		depends on ARCH_BRCMSTB
+> +		select DEBUG_UART_8250
+> +		help
+> +		  Say Y here if you want the debug print routines to direct
+> +		  their output to the first serial port on these devices.
+> +
+> +		  If you have a Broadcom STB chip and would like early print
+> +		  messages to appear over the UART, select this option.
+> +
+>  	config DEBUG_CLPS711X_UART1
+>  		bool "Kernel low-level debugging messages via UART1"
+>  		depends on ARCH_CLPS711X
+> @@ -988,6 +999,7 @@ config DEBUG_UART_PHYS
+>  	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
+>  	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
+>  	default 0x20201000 if DEBUG_BCM2835
+> +	default 0xf0406b00 if DEBUG_BRCMSTB_UART
 
-x86, mpx: Add MPX related opcodes to the x86 opcode map
+This should be sorted by address.
 
-This patch adds all the MPX instructions to x86 opcode map, so the x86
-instruction decoder can decode MPX instructions.
-
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Link: http://lkml.kernel.org/r/1389518403-7715-4-git-send-email-qiaowei.ren@intel.com
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/lib/x86-opcode-map.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 533a85e..1a2be7c 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -346,8 +346,8 @@ AVXcode: 1
- 17: vmovhps Mq,Vq (v1) | vmovhpd Mq,Vq (66),(v1)
- 18: Grp16 (1A)
- 19:
--1a:
--1b:
-+1a: BNDCL Ev,Gv | BNDCU Ev,Gv | BNDMOV Gv,Ev | BNDLDX Gv,Ev,Gv
-+1b: BNDCN Ev,Gv | BNDMOV Ev,Gv | BNDMK Gv,Ev | BNDSTX Ev,GV,Gv
- 1c:
- 1d:
- 1e:
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
