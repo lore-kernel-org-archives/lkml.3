@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaAQTNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:13:55 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35466 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823AbaAQTNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:13:53 -0500
-Message-ID: <52D980ED.6000603@wwwdotorg.org>
-Date: Fri, 17 Jan 2014 12:13:49 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753164AbaAQTRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 14:17:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600AbaAQTRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 14:17:46 -0500
+Date: Fri, 17 Jan 2014 14:17:14 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+Message-ID: <20140117191714.GH24394@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+ <alpine.LRH.2.00.1311222136030.9932@twin.jikos.cz>
 MIME-Version: 1.0
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
-References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>	<52D578A7.8020000@infradead.org> <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-In-Reply-To: <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1311222136030.9932@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 03:54 PM, Dmitry Eremin-Solenikov wrote:
-> Hello,
-> 
-> 
-> On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>
->> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> This tree fails (more than usual) the powerpc allyesconfig build.
->>>
->>> Changes since 20140113:
->>>
->>
->>
->> on i386:
->>
->> net/built-in.o: In function `header_create':
->> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
->> net/built-in.o: In function `bt_6lowpan_recv':
->> (.text+0x166b3c): undefined reference to `lowpan_process_data'
-> 
-> Ah, nice Makefile hack there.
-> David, Marcel, could you please consider the attached patch.
+On Fri, Nov 22, 2013 at 09:42:52PM +0100, Jiri Kosina wrote:
 
-I think you forgot to "git add net/bluetooth/Makefile" into that patch;
-don't you need the following too (I certainly do, to build next-20140117)
+[..]
+> > @@ -843,7 +1075,11 @@ static int kimage_load_normal_segment(struct kimage *image,
+> >  				PAGE_SIZE - (maddr & ~PAGE_MASK));
+> >  		uchunk = min(ubytes, mchunk);
+> >  
+> > -		result = copy_from_user(ptr, buf, uchunk);
+> > +		/* For file based kexec, source pages are in kernel memory */
+> > +		if (image->file_mode)
+> > +			memcpy(ptr, buf, uchunk);
+> 
+> Very minor nit I came across when going through the patchset -- can't we 
+> use some different buffer for the file-based kexec that's not marked 
+> __user here? This really causes some eye-pain when looking at the code.
 
-> diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
-> index cc6827e2ce68..80cb215826e8 100644
-> --- a/net/bluetooth/Makefile
-> +++ b/net/bluetooth/Makefile
-> @@ -12,8 +12,4 @@ bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o mgmt.o \
->  	hci_sock.o hci_sysfs.o l2cap_core.o l2cap_sock.o smp.o sco.o lib.o \
->  	a2mp.o amp.o 6lowpan.o
->  
-> -ifeq ($(CONFIG_IEEE802154_6LOWPAN),)
-> -  bluetooth-y +=  ../ieee802154/6lowpan_iphc.o
-> -endif
-> -
->  subdir-ccflags-y += -D__CHECK_ENDIAN__
+Hi Jiri,
 
-Should I send this as a separate followup patch?
+Sorry, responding to your comment after a very long time.
+
+Now I have made buf field a union as it can either be a user pointer or
+a kernel pointer depending on which kexec syscall has been used. Now
+caller needs to either use segment->buf or segment->kbuf based on the
+context of code.
+
+	kexec_segment {
+		union {
+			void __user *buf;
+			void *kbuf;
+		};
+	}
+
+Thanks
+Vivek
