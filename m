@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383AbaAQNIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:08:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:45316 "EHLO ozlabs.org"
+	id S1752286AbaAQNM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:12:56 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:56058 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaAQNIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:08:46 -0500
-Date: Sat, 18 Jan 2014 00:08:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [ipc] 5769cf63: LTP semget02 TFAILs
-Message-Id: <20140118000830.6df3531aaaf85fc284313b13@canb.auug.org.au>
-In-Reply-To: <20140117102428.GC8751@localhost>
-References: <20140117102428.GC8751@localhost>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__18_Jan_2014_00_08_30_+1100_km/OCfkBUkh7D9WG"
+	id S1751004AbaAQNMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 08:12:55 -0500
+Message-ID: <52D92C4D.9030702@mev.co.uk>
+Date: Fri, 17 Jan 2014 13:12:45 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8] Staging: comedi: convert while loop to timeout in
+ ni_mio_common.c
+References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com> <1389896849-3186-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1389896849-3186-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__18_Jan_2014_00_08_30_+1100_km/OCfkBUkh7D9WG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-[ Just adding Andrew to the cc list ]
-
-On Fri, 17 Jan 2014 18:24:28 +0800 Fengguang Wu <fengguang.wu@intel.com> wr=
-ote:
+On 2014-01-16 18:27, Chase Southwood wrote:
+> This patch for ni_mio_common.c changes out a while loop for a timeout,
+> which is preferred.
 >
-> Hi Davidlohr,
->=20
-> We noticed LTP test failures
->=20
->         ltp.msgget02.1.TFAIL
->         ltp.semget02.2.TFAIL
->         ltp.semget02.3.TFAIL
->=20
-> and the first bad commit is
->=20
-> commit 5769cf6355d87f63906b3e51887eff7017c39217
-> Author:     Davidlohr Bueso <davidlohr@hp.com>
-> AuthorDate: Wed Jan 15 16:56:01 2014 +1100
-> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
-> CommitDate: Wed Jan 15 16:56:01 2014 +1100
->=20
->     ipc: share ids rwsem when possible in ipcget_public
->    =20
->     ...  and rewrite the function.  For scenarios where the key is found =
-and
->     we end up just doing different routinary checks, we can downgrade the
->     ids->rwsem and share it among concurrent readers.  These checks inclu=
-de
->     the following, which are all safe to share the lock:
->    =20
->     ops->more_checks() >>  sem_more_checks(), shm_more_checks()
->     ipc_check_perms()  >>  ipcperms(),ops->associate() >> [lsm]_[ipctype]=
-_associate()
->    =20
->     Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
->     Cc: Aswin Chandramouleeswaran <aswin@hp.com>
->     Cc: Rik van Riel <riel@redhat.com>
->     Cc: Manfred Spraul <manfred@colorfullife.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->=20
->  ipc/util.c | 60 +++++++++++++++++++++++++++++++++-----------------------=
-----
->  1 file changed, 33 insertions(+), 27 deletions(-)
->=20
-> Thanks,
-> Fengguang
->=20
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+>
+> Okay, back to v2, basically.  I fixed the checkpatch warning from v2,
+> and added the error checking that was from v3, but otherwise it is the
+> same.  Of note, I have used a udelay of 1 here (Greg had suggested to
+> use 10, but Ian prefers 1 so I have gone with that, and I assume that
+> cpu_relax is no longer an option.).
+>
+> 2: Changed from simple clean-up to swapping a timeout in for a while loop.
+>
+> 3: Removed extra counter variable, and added error checking.
+>
+> 4: No longer using counter variable, using jiffies instead.
+>
+> 5: udelay for 10u, instead of 1u.
+>
+> 6: Scrap udelay entirely, in favor of cpu_relax. Include asm/processor.h
+> in order to use cpu_relax.
+>
+> 7: Fix typo (msec vs msecs).
+>
+> 8: Revert back to v2, with some small changes (see above).
+>
+>   drivers/staging/comedi/drivers/ni_mio_common.c | 12 +++++++++++-
+>   1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+> index 457b884..10c27cb 100644
+> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
+> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+> @@ -687,12 +687,22 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
+>   {
+>   	const struct ni_board_struct *board = comedi_board(dev);
+>   	struct ni_private *devpriv = dev->private;
+> +	static const int timeout = 10000;
+> +	int i;
+>
+>   	if (board->reg_type == ni_reg_6143) {
+>   		/*  Flush the 6143 data FIFO */
+>   		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
+>   		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
+> -		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
+> +		/*  Wait for complete */
+> +		for (i = 0; i < timeout; i++) {
+> +			if (!(ni_readl(AIFIFO_Status_6143) & 0x10))
+> +				break;
+> +			udelay(1);
+> +		}
+> +		if (i == timeout) {
+> +			comedi_error(dev, "FIFO flush timeout.");
+> +		}
+>   	} else {
+>   		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
+>   		if (board->reg_type == ni_reg_625x) {
+>
 
+Personally, I'm happy with it.  The upper bound on the iterations is 
+quite high for something that could be called on an interrupt, but it's 
+better than an infinite loop, and it only reach the upper bound if the 
+hardware is broken or there's some other bug.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
---Signature=_Sat__18_Jan_2014_00_08_30_+1100_km/OCfkBUkh7D9WG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS2StbAAoJEMDTa8Ir7ZwVvEEP/08zs7p7gCaPe7SH0Mdlrrff
-RHNy/EETVO4cx+rwgZdXJPefMw7HNDBMRHBnZhIitACaBJnTeiWSqD/vA5AvmpFZ
-/GywKU7Hj88cCFZwYXC+RMqup8yYlNblRbAPot+B12i71jPmbfSeGWTTUtaq3R5R
-tcaqTNv5cpiP9re2W0qTejJ1tXlSFfXVP/oP3jjz9iY2ljCl2bN5g0AC9ZiowtyJ
-CdRszer1blCyHPlaGAfrc3yPoDVEXe2lrc5YA0Jk9J/bMlHfA9uv4To0KA0nfqtb
-l9PlQPoz3Gx71rHk1D87k+V+GEJ1JHH4VLRQ8W85Q4CtEGj9gll9z1AIk4FMmoP6
-yJUUozKHGV5/bW+Ob5UOve6XPp+KMasE21+8/MH/cXee/KyPmbQiMx1qnEh6VEYp
-hgcEq/vs5rSSESLv59HcvB50tG7aehe6sbsfa2ktzcqfP3HmuR5Za+EsKyUivUq2
-AiAtcZA0JM7Wn7LMweH+zs0Ge2QCjklFP298hSc3qcdy/HS+zyu/x7fsWFUngYy+
-pIGAxBHn8ecs+q0FldEa2JHcrWEC1yQ1gXcgTyN16ldvvNAGkQuUm7Rof+x2yglB
-K5w4YlVie7/o2F38hNCOJ7GcfCrpHcH418TMZE1raPBgabCobMCp09Q8zq9ILB5Q
-blTaUa/EOgQsycDbHVsL
-=BS2Y
------END PGP SIGNATURE-----
-
---Signature=_Sat__18_Jan_2014_00_08_30_+1100_km/OCfkBUkh7D9WG--
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
