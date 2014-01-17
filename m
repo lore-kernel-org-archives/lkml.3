@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaAQRXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:23:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54981 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaAQRXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:23:22 -0500
-Date: Fri, 17 Jan 2014 18:23:19 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-rt-users@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-Message-ID: <20140117172319.GH5785@linutronix.de>
-References: <20131221193900.GA8427@linutronix.de>
- <1387681647.5412.25.camel@marge.simpson.net>
- <1387702631.5412.101.camel@marge.simpson.net>
- <1387773533.5369.16.camel@marge.simpson.net>
- <20131224193636.GD19211@linux.vnet.ibm.com>
- <1387940854.5373.8.camel@marge.simpson.net>
- <1388052212.5420.4.camel@marge.simpson.net>
+	id S1752684AbaAQR1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:27:24 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:50001
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751951AbaAQR1W convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 12:27:22 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dIc89bh1432I4015I14ffIzz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h906i1155h)
+Date: Fri, 17 Jan 2014 09:27:15 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
+References: <20140117143035.fa787a8203afaa83c64009bb@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1388052212.5420.4.camel@marge.simpson.net>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <20140117143035.fa787a8203afaa83c64009bb@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <9ebf3c00-ac91-41bd-8fd0-24dc09e61a05@DB9EHSMHS001.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith | 2013-12-26 11:03:32 [+0100]:
+Hi Stephen,
 
->On Wed, 2013-12-25 at 04:07 +0100, Mike Galbraith wrote:
->> On Tue, 2013-12-24 at 11:36 -0800, Paul E. McKenney wrote: 
->
->> > So which code do you think deserves the big lump of coal?  ;-)
->> 
->> Sebastian's NO_HZ_FULL locking fixes.
->
->Whack-a-mole hasn't yet dug up any new moles.
->
->---
-> kernel/timer.c |    4 ++++
-> 1 file changed, 4 insertions(+)
->
->Index: linux-2.6/kernel/timer.c
->===================================================================
->--- linux-2.6.orig/kernel/timer.c
->+++ linux-2.6/kernel/timer.c
->@@ -764,7 +764,9 @@ __mod_timer(struct timer_list *timer, un
-> 	timer_stats_timer_set_start_info(timer);
-> 	BUG_ON(!timer->function);
+On Fri, Jan 17, 2014 at 02:30:35PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
->+	local_irq_disable_rt();
-> 	base = lock_timer_base(timer, &flags);
->+	local_irq_enable_rt();
+> Today's linux-next merge of the tip tree got a conflict in
+> drivers/clocksource/cadence_ttc_timer.c between commit c1dcc927dae0
+> ("clocksource: cadence_ttc: Fix mutex taken inside interrupt context")
+> from Linus' tree and commit dfded00902d7 ("clocksource:
+> cadence_ttc_timer: Switch to sched_clock_register()") from the tip tree.
 > 
-> 	ret = detach_if_pending(timer, base, false);
-> 	if (!ret && pending_only)
->@@ -1198,7 +1200,9 @@ static inline void __run_timers(struct t
-> {
-> 	struct timer_list *timer;
-> 
->+	local_irq_disable_rt();
-> 	spin_lock_irq(&base->lock);
->+	local_irq_enable_rt();
-> 	while (time_after_eq(jiffies, base->timer_jiffies)) {
-> 		struct list_head work_list;
-> 		struct list_head *head = &work_list;
->---
-> kernel/time/tick-sched.c |    2 ++
-> 1 file changed, 2 insertions(+)
+> I fixed it up (I think - see below) and can carry the fix as necessary
+> (no action is required).
 
-So I had rtmutex-take-the-waiter-lock-with-irqs-off.patch in my queue
-which took the waiter lock with irqs off. This should be the same thing
-you try do here.
+The fix is correct.
 
->Index: linux-2.6/kernel/time/tick-sched.c
->===================================================================
->--- linux-2.6.orig/kernel/time/tick-sched.c
->+++ linux-2.6/kernel/time/tick-sched.c
->@@ -216,7 +216,9 @@ void __tick_nohz_full_check(void)
-> 
-> static void nohz_full_kick_work_func(struct irq_work *work)
-> {
->+	local_irq_disable_rt();
-> 	__tick_nohz_full_check();
->+	local_irq_enable_rt();
-> }
+	Thanks,
+	Sören
 
-and this should be fixed differently. Since we come from a thread and
-check "is current running" but by current we mean a user task and not a
-kernel thread.
 
-> 
-> static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
->
-
-Sebastian
