@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaAQKFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 05:05:25 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:50729 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaAQKFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 05:05:22 -0500
-Message-ID: <52D90060.5020104@linaro.org>
-Date: Fri, 17 Jan 2014 11:05:20 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752207AbaAQKGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 05:06:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246AbaAQKGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 05:06:41 -0500
+Message-ID: <52D900A4.9020509@redhat.com>
+Date: Fri, 17 Jan 2014 11:06:28 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH] clocksource: timer-sun5i: Switch to sched_clock_register()
-References: <1389922686-6249-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1389922686-6249-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: David Laight <David.Laight@ACULAB.COM>
+CC: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next v2 2/3] net: add trim helper and convert users
+References: <1389918519-23779-1-git-send-email-hannes@stressinduktion.org> <1389918519-23779-3-git-send-email-hannes@stressinduktion.org> <063D6719AE5E284EB5DD2968C1650D6D45EAC0@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D45EAC0@AcuExch.aculab.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 02:38 AM, Stephen Boyd wrote:
-> The 32 bit sched_clock interface supports 64 bits since 3.13-rc1.
-> Upgrade to the 64 bit function to allow us to remove the 32 bit
-> registration interface.
+On 01/17/2014 10:52 AM, David Laight wrote:
+> From: Hannes Frederic Sowa
+> ...
+>> +/**
+>> + * trim - perform a reciprocal multiplication in order to "clamp" a
+>> + *        value into range [0, ep_ro), where the upper interval
+>> + *        endpoint is right-open. This is useful, e.g. for accessing
+>> + *        a index of an array containing ep_ro elements, for example.
+>> + *        Think of it as sort of modulus, only that the result isn't
+>> + *        that of modulo. ;)
+>> + *        More: http://homepage.cs.uiowa.edu/~jones/bcd/divide.html
 >
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> Cc'in Ingo because this is simple enough to probably just apply to timers/core
+> It isn't appropriate to put urls into code comments (or commit messages).
+> They are very likely to get out of date.
 
-Hi Stephen,
+Then please grep the git log for some references/urls, you'll find plenty.
+This link is just a pointer for people interested to read some more
+background; there's no need to overly elaborate in the kernel doc right
+here.
 
-I applied your patch in my tree for 3.15.
+Thanks !
 
-Thanks
-   -- Daniel
-
->   drivers/clocksource/timer-sun5i.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
-> index bddc52233d2a..deebcd6469fc 100644
-> --- a/drivers/clocksource/timer-sun5i.c
-> +++ b/drivers/clocksource/timer-sun5i.c
-> @@ -136,7 +136,7 @@ static struct irqaction sun5i_timer_irq = {
->   	.dev_id = &sun5i_clockevent,
->   };
->
-> -static u32 sun5i_timer_sched_read(void)
-> +static u64 sun5i_timer_sched_read(void)
->   {
->   	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
->   }
-> @@ -166,7 +166,7 @@ static void __init sun5i_timer_init(struct device_node *node)
->   	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
->   	       timer_base + TIMER_CTL_REG(1));
->
-> -	setup_sched_clock(sun5i_timer_sched_read, 32, rate);
-> +	sched_clock_register(sun5i_timer_sched_read, 32, rate);
->   	clocksource_mmio_init(timer_base + TIMER_CNTVAL_LO_REG(1), node->name,
->   			      rate, 340, 32, clocksource_mmio_readl_down);
+> 	David
 >
 >
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+>
