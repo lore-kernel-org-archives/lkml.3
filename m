@@ -1,154 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaAQEVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 23:21:03 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:64436 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaAQEU5 (ORCPT
+	id S1751885AbaAQEWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 23:22:19 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:33066 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaAQEWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 23:20:57 -0500
-Message-ID: <1389932442.5449.4.camel@marge.simpson.net>
-Subject: Re: [PATCH REGRESSION FIX] x86 idle: restore mwait_idle()
-From: Mike Galbraith <bitbucket@online.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Ian Malone <ibmalone@gmail.com>, Josh Boyer <jwboyer@redhat.com>,
-        stable@vger.kernel.org
-Date: Fri, 17 Jan 2014 05:20:42 +0100
-In-Reply-To: <52D8567A.8090308@mit.edu>
-References: <1ae2a8af42281d6b9888ac8c76bab7bd2f431d44.1389763084.git.len.brown@intel.com>
-	 <345254a551eb5a6a866e048d7ab570fd2193aca4.1389763084.git.len.brown@intel.com>
-	 <52D8567A.8090308@mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:ybYe+2VOSrR5dpemEhGPx05aTaltoCQahcqJIeU+ozE
- b8xKEVpPWTLO3EdXK6it245udOMQT/lS6jaJZQT02WnjOnKfq+
- Lkj00OJFUihFipwafgu7jZyi1ChtGjs8I+zGuJHE9l5OaYixG7
- 5r36ttCI2/DhfjtTHrQkZnS+9wmfQxksZE9NuN/VNfWfujGSy6
- 0DYA0U9rW1PUeNuv2ouiV5SMZ0S8EHyYCk4DwRRxBQvzEUlVI2
- kG4+YLE3h4AgazuC7nWrhFOuT1O6pZWKQzKsH4goCu7JztTkHl
- OXSY0FlzehLBj8C2hBVCQmZ4HKwxHHccTXmYAk8Z+hrb/7IxxJ
- TJH8BO6ojjfRFo2/5AfkM37haePc9PkVObzuLtXs6H4l6MjTZL
- JH8c6QmEu08kA==
+	Thu, 16 Jan 2014 23:22:16 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: <linux-acpi@vger.kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
+        <intel-gfx@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Airlie <airlied@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH v3] ACPI: Fix acpi_evaluate_object() return value check
+Date: Fri, 17 Jan 2014 12:21:53 +0800
+Message-ID: <1389932513-27684-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 14:00 -0800, Andy Lutomirski wrote:
-> On 01/14/2014 09:37 PM, Len Brown wrote:
-> > From: Len Brown <len.brown@intel.com>
-> > 
-> > In Linux-3.9 we removed the mwait_idle() loop:
-> > 'x86 idle: remove mwait_idle() and "idle=mwait" cmdline param'
-> > (69fb3676df3329a7142803bb3502fa59dc0db2e3)
-> > 
-> > The reasoning was that modern machines should be sufficiently
-> > happy during the boot process using the default_idle() HALT loop,
-> > until cpuidle loads and either acpi_idle or intel_idle
-> > invoke the newer MWAIT-with-hints idle loop.
-> > 
-> > But two machines reported problems:
-> > 1. Certain Core2-era machines support MWAIT-C1 and HALT only.
-> >    MWAIT-C1 is preferred for optimal power and performance.
-> >    But if they support just C1, cpuidle never loads and
-> >    so they use the boot-time default idle loop forever.
-> > 
-> > 2. Some laptops will boot-hang if HALT is used,
-> >    but will boot successfully if MWAIT is used.
-> >    This appears to be a hidden assumption in BIOS SMI,
-> >    that is presumably valid on the proprietary OS
-> >    where the BIOS was validated.
-> > 
-> >    https://bugzilla.kernel.org/show_bug.cgi?id=60770
-> > 
-> > So here we effectively revert the patch above, restoring
-> > the mwait_idle() loop.  However, we don't bother restoring
-> > the idle=mwait cmdline parameter, since it appears to add
-> > no value.
-> > 
-> > Maintainer notes:
-> > For 3.9, simply revert 69fb3676df
-> > for 3.10, patch -F3 applies, fuzz needed due to __cpuinit use in context
-> > For 3.11, 3.12, 3.13, this patch applies cleanly
-> > 
-> > Cc: Mike Galbraith <bitbucket@online.de>
-> > Cc: Ian Malone <ibmalone@gmail.com>
-> > Cc: Josh Boyer <jwboyer@redhat.com>
-> > Cc: <stable@vger.kernel.org> # 3.9, 3.10, 3.11, 3.12, 3.13
-> > Signed-off-by: Len Brown <len.brown@intel.com>
-> > ---
-> >  arch/x86/kernel/process.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 46 insertions(+)
-> > 
-> > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > index 3fb8d95..db471a8 100644
-> > --- a/arch/x86/kernel/process.c
-> > +++ b/arch/x86/kernel/process.c
-> > @@ -398,6 +398,49 @@ static void amd_e400_idle(void)
-> >  		default_idle();
-> >  }
-> >  
-> > +/*
-> > + * Intel Core2 and older machines prefer MWAIT over HALT for C1.
-> > + * We can't rely on cpuidle installing MWAIT, because it will not load
-> > + * on systems that support only C1 -- so the boot default must be MWAIT.
-> > + *  
-> > + * Some AMD machines are the opposite, they depend on using HALT.
-> > + *
-> > + * So for default C1, which is used during boot until cpuidle loads,
-> > + * use MWAIT-C1 on Intel HW that has it, else use HALT.
-> > + */
-> > +static int prefer_mwait_c1_over_halt(const struct cpuinfo_x86 *c)
-> > +{
-> > +	if (c->x86_vendor != X86_VENDOR_INTEL)
-> > +		return 0;
-> > +
-> > +	if (!cpu_has(c, X86_FEATURE_MWAIT))
-> > +		return 0;
-> > +
-> > +	return 1;
-> > +}
-> > +
-> > +/*
-> > + * MONITOR/MWAIT with no hints, used for default default C1 state.
-> > + * This invokes MWAIT with interrutps enabled and no flags,
-> > + * which is backwards compatible with the original MWAIT implementation.
-> > + */
-> > +
-> > +static void mwait_idle(void)
-> > +{
-> > +	if (!need_resched()) {
-> > +		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-> > +			clflush((void *)&current_thread_info()->flags);
-> > +
-> > +		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> > +		smp_mb();
-> > +		if (!need_resched())
-> > +			__sti_mwait(0, 0);
-> > +		else
-> > +			local_irq_enable();
-> > +	} else
-> > +		local_irq_enable();
-> > +}
-> 
-> Admittedly, there may be relatively few users left, but SMP users on
-> C1-only Core 2 machines can, in principle, benefit from the monitor
-                                                    ^hugely
-> functionality of mwait to avoid rescheduling IPIs.  This stuff changed
-> recently so it now works with the cpuidle drivers (it used to be
-> terminally broken).  Should something be twiddling TS_POLLING
-> differently so that HLT gets the IPIs but mwait doesn't?
+Fix acpi_evaluate_object() return value check,
+shoud acpi_status not int.
 
-Urk, definitely.  The IPI is the primary cause of the size large cross
-core scheduling performance regression for my aging, but lovely Q6600.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+v2->v3: Fix compile error pointed out by Hanjun.
+v1->v2: Add CC to related subsystem MAINTAINERS
+---
+ drivers/gpu/drm/i915/intel_acpi.c              |   24 ++++++++++++++----------
+ drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    9 +++++----
+ drivers/gpu/drm/nouveau/nouveau_acpi.c         |   23 +++++++++++++----------
+ drivers/pci/pci-label.c                        |    9 ++++++---
+ 4 files changed, 38 insertions(+), 27 deletions(-)
 
-taskset 0xc pipe-test 1
+diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
+index dfff090..87e8f74 100644
+--- a/drivers/gpu/drm/i915/intel_acpi.c
++++ b/drivers/gpu/drm/i915/intel_acpi.c
+@@ -35,7 +35,8 @@ static int intel_dsm(acpi_handle handle, int func)
+ 	union acpi_object params[4];
+ 	union acpi_object *obj;
+ 	u32 result;
+-	int ret = 0;
++	acpi_status status;
++	int ret;
+ 
+ 	input.count = 4;
+ 	input.pointer = params;
+@@ -50,10 +51,11 @@ static int intel_dsm(acpi_handle handle, int func)
+ 	params[3].package.count = 0;
+ 	params[3].package.elements = NULL;
+ 
+-	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
+-	if (ret) {
+-		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+-		return ret;
++	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
++	if (ACPI_FAILURE(status)) {
++		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %s\n",
++				acpi_format_exception(status));
++		return -EINVAL;
+ 	}
+ 
+ 	obj = (union acpi_object *)output.pointer;
+@@ -141,7 +143,8 @@ static void intel_dsm_platform_mux_info(void)
+ 	struct acpi_object_list input;
+ 	union acpi_object params[4];
+ 	union acpi_object *pkg;
+-	int i, ret;
++	acpi_status status;
++	int i;
+ 
+ 	input.count = 4;
+ 	input.pointer = params;
+@@ -156,10 +159,11 @@ static void intel_dsm_platform_mux_info(void)
+ 	params[3].package.count = 0;
+ 	params[3].package.elements = NULL;
+ 
+-	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
+-				   &output);
+-	if (ret) {
+-		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
++	acpi_status = acpi_evaluate_object(intel_dsm_priv.dhandle,
++			"_DSM", &input, &output);
++	if (ACPI_FAILURE(status)) {
++		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %s\n",
++				acpi_format_exception(status));
+ 		goto out;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+index 1291204..c5e7a2b 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
+@@ -114,15 +114,16 @@ mxm_shadow_dsm(struct nouveau_mxm *mxm, u8 version)
+ 	struct acpi_buffer retn = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *obj;
+ 	acpi_handle handle;
+-	int ret;
++	acpi_status status;
+ 
+ 	handle = ACPI_HANDLE(&device->pdev->dev);
+ 	if (!handle)
+ 		return false;
+ 
+-	ret = acpi_evaluate_object(handle, "_DSM", &list, &retn);
+-	if (ret) {
+-		nv_debug(mxm, "DSM MXMS failed: %d\n", ret);
++	status = acpi_evaluate_object(handle, "_DSM", &list, &retn);
++	if (ACPI_FAILURE(status)) {
++		nv_debug(mxm, "DSM MXMS failed: %s\n",
++				acpi_format_exception(status));
+ 		return false;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index ba0183f..de3068b 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -82,7 +82,8 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+ 	struct acpi_object_list input;
+ 	union acpi_object params[4];
+ 	union acpi_object *obj;
+-	int i, err;
++	acpi_status status;
++	int i;
+ 	char args_buff[4];
+ 
+ 	input.count = 4;
+@@ -101,10 +102,11 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+ 		args_buff[i] = (arg >> i * 8) & 0xFF;
+ 	params[3].buffer.pointer = args_buff;
+ 
+-	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+-	if (err) {
+-		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+-		return err;
++	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
++	if (ACPI_FAILURE(status)) {
++		pr_info("failed to evaluate _DSM: %s\n",
++				acpi_format_exception(status));
++		return -EINVAL;
+ 	}
+ 
+ 	obj = (union acpi_object *)output.pointer;
+@@ -134,7 +136,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+ 	struct acpi_object_list input;
+ 	union acpi_object params[4];
+ 	union acpi_object *obj;
+-	int err;
++	acpi_status status;
+ 
+ 	input.count = 4;
+ 	input.pointer = params;
+@@ -148,10 +150,11 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
+ 	params[3].type = ACPI_TYPE_INTEGER;
+ 	params[3].integer.value = arg;
+ 
+-	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
+-	if (err) {
+-		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
+-		return err;
++	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
++	if (ACPI_FAILURE(status)) {
++		pr_info("failed to evaluate _DSM: %s\n",
++				acpi_format_exception(status));
++		return -EINVAL;
+ 	}
+ 
+ 	obj = (union acpi_object *)output.pointer;
+diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+index d51f45a..7ba4de6 100644
+--- a/drivers/pci/pci-label.c
++++ b/drivers/pci/pci-label.c
+@@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
+ 	union acpi_object *obj;
+ 	int len = 0;
+ 
+-	int err;
++	acpi_status status;
+ 
+ 	input.count = 4;
+ 	input.pointer = params;
+@@ -228,9 +228,12 @@ dsm_get_label(acpi_handle handle, int func,
+ 	params[3].package.count = 0;
+ 	params[3].package.elements = NULL;
+ 
+-	err = acpi_evaluate_object(handle, "_DSM", &input, output);
+-	if (err)
++	status = acpi_evaluate_object(handle, "_DSM", &input, output);
++	if (ACPI_FAILURE(status)) {
++		pr_info("failed to evaluate _DSM: %s\n",
++				acpi_format_exception(status));
+ 		return -1;
++	}
+ 
+ 	obj = (union acpi_object *)output->pointer;
+ 
+-- 
+1.7.1
 
-3.8.13     3.397977 usecs/loop -- avg 3.400336 588.2 KHz
-master+    4.798547 usecs/loop -- avg 4.791692 417.4 KHz
-
--Mike
 
