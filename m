@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaAQOV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 09:21:58 -0500
-Received: from mail.sensor-technik.de ([80.150.181.156]:16880 "EHLO
-	mail.sensor-technik.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaAQOVq convert rfc822-to-8bit (ORCPT
+	id S1752114AbaAQOWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 09:22:32 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53001 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaAQOWa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 09:21:46 -0500
-X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 09:21:45 EST
-X-IronPort-AV: E=Sophos;i="4.95,674,1384297200"; 
-   d="scan'208,223";a="527015"
-From: Waibel Georg <Georg.Waibel@sensor-technik.de>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
- configured as gpio output
-Thread-Topic: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
- configured as gpio output
-Thread-Index: Ac8Tjf3aVV6M/uKQT66xiOgnnC2hVQ==
-Date: Fri, 17 Jan 2014 14:11:18 +0000
-Message-ID: <E1C9442006A9AE48A7A4B85E0D01C4D474F059@stwexdb.stww2k.local>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.25.230.8]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jan 2014 09:22:30 -0500
+Message-ID: <52D93CAA.1080604@arm.com>
+Date: Fri, 17 Jan 2014 14:22:34 +0000
+From: Sudeep Holla <Sudeep.Holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-TBoneOriginalFrom: Waibel Georg <Georg.Waibel@sensor-technik.de>
-X-TBoneOriginalTo: Linus Walleij <linus.walleij@linaro.org>, Alexandre Courbot
-	<gnurou@gmail.com>
-X-TBoneOriginalCC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-TBoneDomainSigned: false
+To: Hanjun Guo <hanjun.guo@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sudeep.Holla@arm.com,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
+Subject: Re: [PATCH 02/20] ARM64 : Add dummy asm/cpu.h
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-3-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1389961514-13562-3-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 17 Jan 2014 14:22:26.0549 (UTC) FILETIME=[8BE78250:01CF138F]
+X-MC-Unique: 114011714222803001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From cb384950a1153e856ec03109a5156e660a89bf6d Mon Sep 17 00:00:00 2001
-From: Georg Waibel <georg.waibel@sensor-technik.de>
-Date: Fri, 17 Jan 2014 14:51:38 +0100
-Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if configured
- as gpio output
+On 17/01/14 12:24, Hanjun Guo wrote:
+> ACPI requires a cpu.h, add a dummy one copied from arm. This will need
+> updated or replaced as ACPI based cpu hotplug or cpu topology for armv8
+> is worked out.
+> 
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/arm64/include/asm/cpu.h |   25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/cpu.h
+> 
+> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
+> new file mode 100644
+> index 0000000..8625eb1
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/cpu.h
+> @@ -0,0 +1,25 @@
+> +/*
+> + *  Copyright (C) 2004-2005 ARM Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef __ASM_ARM_CPU_H
+> +#define __ASM_ARM_CPU_H
+> +
+> +#include <linux/percpu.h>
+> +#include <linux/cpu.h>
+> +#include <linux/topology.h>
+> +
+> +struct cpuinfo_arm {
+> +	struct cpu	cpu;
+> +	u64		cpuid;
+> +#ifdef CONFIG_SMP
+> +	unsigned int	loops_per_jiffy;
 
-Register PSR was used to read the pin status in the mxc_gpio driver. This
-register reflects the pin status if a pin is configured as gpio input.
-If a pin is configured as an gpio output register PSR is not updated and
-returns 0 instead of the actual pin status. Thus attempting to read back the
-status of an gpio output pin via PSR returns a wrong value.
+IIUC we don't have loop-based delay support in ARM64.
+It's always timer based and in which case we don't need loops_per_jiffy
 
-Reading register DR instead of PSR fixes this issue:
-- If pin is gpio output: DR returns the value written to DR by software
-- If pin is gpio input: DR returns the value of register PSR und thus the
-  pin status
+Regards,
+Sudeep
 
-This behaviour is valid for all processors >= iMX31. Verified on iMX6q.
-See the iMX reference manuals gpio section for details.
 
-Signed-off-by: Georg Waibel <georg.waibel@sensor-technik.de>
----
- drivers/gpio/gpio-mxc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-index 3307f6d..3717e09 100644
---- a/drivers/gpio/gpio-mxc.c
-+++ b/drivers/gpio/gpio-mxc.c
-@@ -407,6 +407,7 @@ static int mxc_gpio_probe(struct platform_device *pdev)
- 	struct resource *iores;
- 	int irq_base;
- 	int err;
-+	int dat;
- 
- 	mxc_gpio_get_hw(pdev);
- 
-@@ -447,8 +448,9 @@ static int mxc_gpio_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	dat = (mxc_gpio_hwtype == IMX21_GPIO) ? GPIO_PSR : GPIO_DR;
- 	err = bgpio_init(&port->bgc, &pdev->dev, 4,
--			 port->base + GPIO_PSR,
-+			 port->base + dat,
- 			 port->base + GPIO_DR, NULL,
- 			 port->base + GPIO_GDIR, NULL, 0);
- 	if (err)
--- 
-1.7.9.5
