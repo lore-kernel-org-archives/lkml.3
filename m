@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaAQQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:15:26 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:36678 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaAQQPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:15:16 -0500
-X-Auth-Info: CdI9t6aW659ahluAZYKeMWDKP5PX6uTuZ0eapwq9vNM=
-Date: Fri, 17 Jan 2014 17:15:13 +0100
-From: Gerhard Sittig <gsi@denx.de>
-To: Waibel Georg <Georg.Waibel@sensor-technik.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] iMX gpio: Allow reading back of pin status if
- configured as gpio output
-Message-ID: <20140117161513.GC20094@book.gsilab.sittig.org>
-References: <E1C9442006A9AE48A7A4B85E0D01C4D474F059@stwexdb.stww2k.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1C9442006A9AE48A7A4B85E0D01C4D474F059@stwexdb.stww2k.local>
-Organization: DENX Software Engineering GmbH
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752347AbaAQQVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:21:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaAQQU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 11:20:59 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 5/9] nvme: Fix invalid call to irq_set_affinity_hint()
+Date: Fri, 17 Jan 2014 17:02:19 +0100
+Message-Id: <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com>
+In-Reply-To: <cover.1389904166.git.agordeev@redhat.com>
+References: <cover.1389904166.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 14:11 +0000, Waibel Georg wrote:
-> 
-> From cb384950a1153e856ec03109a5156e660a89bf6d Mon Sep 17 00:00:00 2001
-> From: Georg Waibel <georg.waibel@sensor-technik.de>
-> Date: Fri, 17 Jan 2014 14:51:38 +0100
-> Subject: [PATCH 1/1] iMX gpio: Allow reading back of pin status if configured
->  as gpio output
-> 
-> Register PSR was used to read the pin status in the mxc_gpio driver. This
-> register reflects the pin status if a pin is configured as gpio input.
-> If a pin is configured as an gpio output register PSR is not updated and
-> returns 0 instead of the actual pin status. Thus attempting to read back the
-> status of an gpio output pin via PSR returns a wrong value.
-> 
-> Reading register DR instead of PSR fixes this issue:
-> - If pin is gpio output: DR returns the value written to DR by software
-> - If pin is gpio input: DR returns the value of register PSR und thus the
->   pin status
+In case MSI-X and MSI initialization failed the function
+irq_set_affinity_hint() is called with uninitialized value
+in dev->entry[0].vector. This update fixes the issue.
 
-Got curious because of your specific wording.  In the output
-case, does the DR value reflect what you drive to the pin, or
-what the pin's status is?  Because this need not be identical in
-the open collector case (or other "weak" scenarios like bus
-keeper, and what else HW development came up with).
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/block/nvme-core.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-If DR always reflects the pin's status, then the patch would be
-OK but the commit message would need an update.  If DR does not
-appropriately reflect the pin's status, then the patch would be
-an improvement (would fix the totem-pole case), but still would
-be wrong or incomplete in the open-collector case.
-
-
-virtually yours
-Gerhard Sittig
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 26d03fa..e292450 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1790,15 +1790,15 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
+ 			vecs = 32;
+ 		for (;;) {
+ 			result = pci_enable_msi_block(pdev, vecs);
+-			if (result == 0) {
+-				for (i = 0; i < vecs; i++)
+-					dev->entry[i].vector = i + pdev->irq;
+-				break;
++			if (result > 0) {
++				vecs = result;
++				continue;
+ 			} else if (result < 0) {
+ 				vecs = 1;
+-				break;
+ 			}
+-			vecs = result;
++			for (i = 0; i < vecs; i++)
++				dev->entry[i].vector = i + pdev->irq;
++			break;
+ 		}
+ 	}
+ 
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+1.7.7.6
+
