@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaAQS0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 13:26:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59343 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752638AbaAQS0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 13:26:09 -0500
-Message-ID: <52D975A9.7050201@zytor.com>
-Date: Fri, 17 Jan 2014 10:25:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Ren Qiaowei <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	id S1753263AbaAQS0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 13:26:22 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:55852 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897AbaAQS0T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 13:26:19 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in PLL generation
+From: Daniel Matuschek <daniel@matuschek.net>
+In-Reply-To: <20140117175927.GZ17314@sirena.org.uk>
+Date: Fri, 17 Jan 2014 19:26:37 +0100
+Cc: Florian Meier <florian.meier@koalo.de>, alsa-devel@alsa-project.org,
+        Dimitris.Papastamos@wolfsonmicro.com,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
- bound tables
-References: <20140112092019.GA3664@pd.tnic> <52D35ABB.8070904@intel.com> <20140113103808.GC5388@pd.tnic> <52D95AD4.6060603@zytor.com> <20140117164855.GF8715@pd.tnic> <52D95F93.3030000@zytor.com> <20140117165656.GA9024@pd.tnic> <52D96149.8070706@zytor.com> <20140117170410.GH8715@pd.tnic> <52D968C5.9080102@zytor.com> <20140117182321.GJ8715@pd.tnic>
-In-Reply-To: <20140117182321.GJ8715@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Message-Id: <4A0BBA2B-75BC-46BB-BD70-72EA9F60D291@matuschek.net>
+References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform> <52D95DA2.7000509@koalo.de> <20140117175927.GZ17314@sirena.org.uk>
+To: Mark Brown <broonie@kernel.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 10:23 AM, Borislav Petkov wrote:
-> On Fri, Jan 17, 2014 at 09:30:45AM -0800, H. Peter Anvin wrote:
->> Yes. It would take some serious effort to get BOUND or MPX
->> instructions into the kernel -- you'd have to put them in inline
->> assembly, and BOUND doesn't even exist in 64-bit mode.
+The idle_bias_off should not be part of this patch. I will check this again.
+
+Am 17.01.2014 um 18:59 schrieb Mark Brown <broonie@kernel.org>:
+
+> On Fri, Jan 17, 2014 at 05:43:14PM +0100, Florian Meier wrote:
+>> I have tested your patch.
+>> There is a (non blocking) error message regarding .idle_bias_off, but I
+>> assume that should not have something to do with your patch. Can we just
+>> set idle_bias_off to false here?
 > 
-> Which reminds me - we will have to explicitly turn off any compiler
-> switches that utilize MPX insns so that they don't get issued when
-> building the kernel. Provided there will be compiler support, that is.
-> 
-
-There will be, whether or not it will be on by default is another matter.
-
-Either way, the kernel would have to explicitly enable the use MPX
-instructions in kernel space or they are simply treated as NOPs.
-
-	-hpa
+> What is the error message?  I remember that the first version of this
+> had an undocumented change to idle_bias_off in it, I expect that needed
+> to split out into a separate patch rather than dropped.
 
