@@ -1,184 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaAQT6b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 14:58:31 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:39953 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819AbaAQT63 (ORCPT
+	id S1753420AbaAQUAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 15:00:00 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:4049 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaAQT75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 14:58:29 -0500
+	Fri, 17 Jan 2014 14:59:57 -0500
+X-IronPort-AV: E=Sophos;i="4.95,675,1384329600"; 
+   d="scan'208";a="9893234"
+Message-ID: <52D98B99.5050604@broadcom.com>
+Date: Fri, 17 Jan 2014 11:59:21 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
-References: <D9FFE20C522965449E182ACE73889AEB1A6A340F@IRSMSX105.ger.corp.intel.com>
-	<CAADnVQLUP=7oxciVw97d76xtqs6_YjC6E2boPRO9y4m_sqjRCA@mail.gmail.com>
-Date: Fri, 17 Jan 2014 11:58:28 -0800
-Message-ID: <CAADnVQL=s8zc_ACSuPs8P3y-RB9Td8OZysM=0fj4sjzUPRzfGw@mail.gmail.com>
-Subject: Re: Why is (2 < 2) true? Is it a gcc bug?
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        sebastian.riemer@profitbricks.com, richard.weinberger@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>
+CC: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>	<1387592016-13740-1-git-send-email-syin@broadcom.com>	<1387592016-13740-4-git-send-email-syin@broadcom.com> <CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>
+In-Reply-To: <CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 9:58 AM, Alexei Starovoitov
-<alexei.starovoitov@gmail.com> wrote:
-> On Fri, Jan 17, 2014 at 5:37 AM, Dorau, Lukasz <lukasz.dorau@intel.com> wrote:
->> Hi
->>
->> My story is very simply...
->> I applied the following patch:
->>
->> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
->> --- a/drivers/scsi/isci/init.c
->> +++ b/drivers/scsi/isci/init.c
->> @@ -698,8 +698,11 @@ static int isci_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->>         if (err)
->>                 goto err_host_alloc;
->>
->> -       for_each_isci_host(i, isci_host, pdev)
->> +       for_each_isci_host(i, isci_host, pdev) {
->> +               pr_err("(%d < %d) == %d\n",\
->> +                      i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
->>                 scsi_scan_host(to_shost(isci_host));
->> +       }
->>
->>         return 0;
->>
->> --
->> 1.8.3.1
->>
->> Then I issued the command 'modprobe isci' on platform with two SCU controllers (Patsburg D or T chipset)
->> and received the following, very strange, output:
->>
->> (0 < 2) == 1
->> (1 < 2) == 1
->> (2 < 2) == 1
->>
->> Can anyone explain why (2 < 2) is true? Is it a gcc bug?
+On 14-01-16 05:19 AM, Linus Walleij wrote:
+> On Sat, Dec 21, 2013 at 3:13 AM, Sherman Yin <syin@broadcom.com> wrote:
 >
-> gcc sees that i < array_size is the same as i < 2 as part of loop condition, so
-> it optimizes (i < sci_max_controllers) into constant 1.
-> and emits printk like:
->   printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
+> '> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
+>>
+>> Signed-off-by: Sherman Yin <syin@broadcom.com>
+>> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>> ---
+>> v4: - PINCTRL selected in Kconfig, PINCTRL_CAPRI selected in bcm_defconfig
+>>      - make use of regmap
+>>      - change CAPRI_PIN_UPDATE from macro to inline function.
+>>      - Handle pull-up strength arg in Ohm instead of enum
 >
->> (The kernel was compiled using gcc version 4.8.2.)
+> Patch applied. It is really good now! It's late before the merge
+> window, but you've done a tremendous work on this driver and
+> I don't want to delay its deployment further.
+
+Great, thanks for the support and reviews!
+
+> But note:
 >
-> it actually looks to be gcc 4.8 bug.
-> Can you try gcc 4.7 ?
+>>   arch/arm/configs/bcm_defconfig  |    1 +
+>>   arch/arm/mach-bcm/Kconfig       |    1 +
 >
-> gcc 4.7 compiles your loop into the following:
-> <bb 74>:
->   # i_382 = PHI <0(73), i_73(74)>
->   # isci_host_148 = PHI <isci_host_63(73), isci_host_74(74)>
->   printk ("\13(%d < %d) == %d\n", i_382, 2, 1);
->   D.43295_70 = MEM[(struct isci_host *)isci_host_148 + 18632B];
->   # DEBUG D#6 => isci_host_148
->   # DEBUG ihost s=> ihost
->   scsi_scan_host (D.43295_70);
->   # DEBUG pdev => pdev_17(D)
->   # DEBUG pdev => pdev_17(D)
->   D.43629_353 = dev_get_drvdata (D.42809_20);
->   i_73 = i_382 + 1;
->   # DEBUG i => i_73
->   isci_host_74 = MEM[(struct isci_pci_info *)D.43629_353].hosts[i_73];
->   # DEBUG isci_host => isci_host_74
->   # DEBUG isci_host => isci_host_74
->   # DEBUG i => i_73
->   i.9_79 = (unsigned int) i_73;
->   D.42849_65 = i.9_79 <= 1;
->   D.42850_66 = isci_host_74 != 0B;
->   D.42851_67 = D.42850_66 & D.42849_65;
->   if (D.42851_67 != 0)
->     goto <bb 74>;
->   else
->     goto <bb 77>;
+> I've optimistically applied these two hunks of the patch as well,
+> but if there is any conflict with the ARM SoC tree I will just rebase
+> the patch and pull these *out*.
 >
-> which looks correct to me.
->
-> while gcc 4.8.2 into:
->   <bb 92>:
->   # i_73 = PHI <i_82(93), 0(91)>
->   # isci_host_274 = PHI <isci_host_83(93), isci_host_71(91)>
->   # DEBUG isci_host => isci_host_274
->   # DEBUG i => i_73
->   printk ("\13(%d < %d) == %d\n", i_73, 2, 1);
->   _79 = MEM[(struct isci_host *)isci_host_274 + 18632B];
->   # DEBUG D#6 => isci_host_274
->   # DEBUG ihost => D#6
->   scsi_scan_host (_79);
->   # DEBUG pdev => pdev_26(D)
->   # DEBUG pdev => pdev_26(D)
->   _97 = dev_get_drvdata (_29);
->   i_82 = i_73 + 1;
->   # DEBUG i => i_82
->   isci_host_83 = MEM[(struct isci_pci_info *)_97].hosts[i_82];
->   # DEBUG isci_host => isci_host_83
->   # DEBUG isci_host => isci_host_83
->   # DEBUG i => i_82
->   if (isci_host_83 != 0B)
->     goto <bb 93>;
->   else
->     goto <bb 90>;
->
->   <bb 93>:
->   goto <bb 92>;
->
-> in case of gcc4.8 the i<=1 comparison got optimized out and only
-> isci_host !=0 is left,
-> which looks incorrect.
+> ARM SoC maintainers: be warned if something collides.
 
-It is interesting GCC 4.8 bug,
-since it seems to expose issues in two compiler passes.
+Ok, will keep an eye on this and fix accordingly.  Should be simple fixes.
 
-here is test case:
+Regards,
+Sherman
 
-struct isci_host;
-struct isci_orom;
-
-struct isci_pci_info {
-  struct isci_host *hosts[2];
-  struct isci_orom *orom;
-} v = {{(struct isci_host *)1,(struct isci_host *)1}, 0};
-
-int printf(const char *fmt, ...);
-
-int isci_pci_probe()
-{
-  int i;
-  struct isci_host *isci_host;
-
-  for (i = 0, isci_host = v.hosts[i];
-       i < 2 && isci_host;
-       isci_host = v.hosts[++i]) {
-    printf("(%d < %d) == %d\n", i, 2, (i < 2));
-  }
-
-  return 0;
-}
-
-int main()
-{
-  isci_pci_probe();
-}
-
-$ gcc bug.c
-$./a.out
-0 < 2) == 1
-(1 < 2) == 1
-$ gcc bug.c -O2
-$ ./a.out
-(0 < 2) == 1
-(1 < 2) == 1
-Segmentation fault (core dumped)
-
-workaround:
-
-disable Value Range Propagation pass:
--fdisable-tree-vrp1 -fdisable-tree-vrp2
-
-and complete unroll pass:
--fdisable-tree-cunrolli
