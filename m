@@ -1,42 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaAQQbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 11:31:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57024 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaAQQbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 11:31:40 -0500
-Message-ID: <52D95AD4.6060603@zytor.com>
-Date: Fri, 17 Jan 2014 08:31:16 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752664AbaAQQca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 11:32:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39406 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752521AbaAQQc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 11:32:26 -0500
+Date: Fri, 17 Jan 2014 11:32:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users@vger.kernel.org,
+        Sami Pietikainen <Sami.Pietikainen@wapice.com>,
+        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RT] add missing local serialization in ip_output.c
+Message-ID: <20140117113218.7392363d@gandalf.local.home>
+In-Reply-To: <20140117153323.GA23566@opentech.at>
+References: <20131229171154.GA23586@opentech.at>
+	<20140117144729.GB5785@linutronix.de>
+	<20140117145955.GA5637@opentech.at>
+	<52D94891.80109@linutronix.de>
+	<20140117153323.GA23566@opentech.at>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ren Qiaowei <qiaowei.ren@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
- bound tables
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com> <20140112092019.GA3664@pd.tnic> <52D35ABB.8070904@intel.com> <20140113103808.GC5388@pd.tnic>
-In-Reply-To: <20140113103808.GC5388@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 02:38 AM, Borislav Petkov wrote:
-> On Mon, Jan 13, 2014 at 11:17:15AM +0800, Ren Qiaowei wrote:
->> Yes, I run this with lockdep enabled.
+On Fri, 17 Jan 2014 16:33:23 +0100
+Nicholas Mc Guire <der.herr@hofr.at> wrote:
+
+> On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
 > 
-> Ok, but you still are doing memory allocation in the exception handler,
-> AFAICT:
+> > On 01/17/2014 03:59 PM, Nicholas Mc Guire wrote:
+> > > On Fri, 17 Jan 2014, Sebastian Andrzej Siewior wrote:
+> > > 
+> > >> This is what I am going to apply. It also dropped the get_cpu_light()
+> > >> call which was added in a patch to remove the get_cpu_var() and is now
+> > >> no longer required since we have the get_locked_var() thingy now.
+> > >>
+> > > 
+> > > I do not think you can drop that - what is preventing migration now ?
+> > 
+> > Nothing but I do not see the need for it.
+> > 
+> > > 
+> > > #define get_locked_var(lvar, var)                                       \
+> > >         (*({                                                            \
+> > >                 local_lock(lvar);                                       \
+> > >                 &__get_cpu_var(var);                                    \
+> > >         }))
+> > > 
+> q> > No migrate_disable here - so how is this protected against migration ?
+
+I was just about to reply to this, that local_lock() grabs a spinlock
+which does do a migrate disable. But you also noticed that the
+get_local_var() does a migrate disable too. We now have double the
+protection, so we are safe as Sebastion has done it.
+
+-- Steve
+
+> > 
+> > It does not. If you get here on CPU0, you the variable from CPU0. If
+> > you get migrated to CPU1 you still use the variable from CPU0. If
+> > another task is active on CPU0 then it will be blocked until the other
+> > now running on CPU1 completes and releases the lock.
+> > 
+> > > Note that I did send out mail on this because I believe get_locked_var
+> > > should actually be doing a a migrate_disable/enable but got no feedback on that
+> > > yet.
+> > 
+> > I don't see a reason why you should not leave the CPU on which you got
+> > access to the variable as long as you do not do any further assumption
+> > regarding the CPU number. I don't see that this happens here.
+> > 
+> > > So for now I think you need to retain the get_cpu_light/put_cpu_light
+> > 
+> > Are you still sure?
+> >
+> yes and no - it is needed I believe but it is actually already provided.
+> what I overlooked is that (actually my path-diagram was wrong - so
+> thanks for the catch):
 > 
-
-Sure... what is the problem with that?  We do that in several other
-exception handlers, e.g. #NM, and of course page faults.  As long as the
-exception originates from user space there shouldn't be any issue.
-
-	-hpa
-
+> #define get_locked_var(lvar, var)                                       \
+>         (*({                                                            \
+>                 local_lock(lvar);                                       \
+>                 &__get_cpu_var(var);                                    \
+>         }))
+>       ->#define local_lock(lvar)                                        \
+>         	do { __local_lock(&get_local_var(lvar)); } while (0)
+> 
+>                 -> # define get_local_var(var) (*({                        \
+>         	       migrate_disable();                              \
+>         	       &__get_cpu_var(var); }))
+>                        -> #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+> 
+> so its fine to drop the get_cpu_light/put_cpu_light as migration is
+> in fact already disabled at this point. the access to the local spinlock
+> object here is via this_cpu_ptr so if we would allow migration I think
+> you would end up unlocking the wrong lock.
+> 
+> thx!
+> hofrat
 
