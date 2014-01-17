@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaAQRPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 12:15:05 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31269 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752415AbaAQRO7 (ORCPT
+	id S1752682AbaAQRTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 12:19:17 -0500
+Received: from v-27-120-86-107.ub-freebit.net ([27.120.86.107]:57316 "EHLO
+	ns.cpanel.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752255AbaAQRTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 12:14:59 -0500
-Date: Fri, 17 Jan 2014 12:14:57 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Ren, Qiaowei" <qiaowei.ren@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
- bound tables
-Message-ID: <20140117121457.0847cde3@gandalf.local.home>
-In-Reply-To: <52D95F77.4030908@zytor.com>
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
-	<1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
-	<20140112092019.GA3664@pd.tnic>
-	<52D35ABB.8070904@intel.com>
-	<20140113103808.GC5388@pd.tnic>
-	<9E0BE1322F2F2246BD820DA9FC397ADE014E575D@SHSMSX102.ccr.corp.intel.com>
-	<20140117164736.GE8715@pd.tnic>
-	<52D95F77.4030908@zytor.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 17 Jan 2014 12:19:14 -0500
+X-Greylist: delayed 2690 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 12:19:13 EST
+Message-ID: <4b850caf6c06dc321456166b06dae5a9.squirrel@27.120.86.107>
+Date: Sat, 18 Jan 2014 01:33:07 +0900
+Subject: From  Dr.David Ashton
+From: "Dr.David Ashton" <drdavidashton_ubsgroup@outlook.com>
+Reply-To: dr_davidashton@outlook.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - ns.cpanel.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - outlook.com
+X-Get-Message-Sender-Via: ns.cpanel.net: authenticated_id: info@cengan.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014 08:51:03 -0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+Alkaen Dr.David Ashton
+Brondesbury , North West
+Lontoo Englanti
 
-> On 01/17/2014 08:47 AM, Borislav Petkov wrote:
-> > 
-> > Right, so Steve and I played a couple of scenarios in IRC with this. So
-> > #BR is comparable with #PF, AFAICT, and as expected we don't take any
-> > locks when handling page faults in kernel space as we might deadlock.
-> > 
-> > Now, what happens if a thread is sleeping on some lock down that
-> > GFP_KERNEL allocation path and another thread gets a #BR and goes that
-> > same mmap_pgoff path and tries to grab that same lock?
-> 
-> It goes to sleep.  Same as if we take a page fault and have to page
-> something in.
+Rakas ystävä .
 
-Yep, which is what I was explaining to Boris on IRC.
 
-> 
-> > Also, what happens if you take a #BR in NMI context, say the NMI
-> > handler?
-> 
-> You should never, ever do that.  We should never take a #BR in the
-> kernel, full stop -- if we do it is panic time.
+Olen Dr.David Ashton Brondesbury , North West London , täällä Englannissa
+. Työskentelen UBS Investment Bank London Branch . Olen kirjallisesti
+sinua työhuoneestani että tulee olemaanvaltava hyötyä meille molemmille .
+Minun osasto, on jäsenenäkonsernin johto-ryhmä ja Chief Risk Officer (
+Greater London Regional Office ) , sain tietää, hylätyssä summa £ 15
+miljoonaa Great British punta ( viisitoista miljoonaa Ison- Britannian
+punta ) tilille , joka kuuluu yksi meidän ulkomaisten asiakkaiden Late Mr.
+Steve Allen , joka valitettavasti menetti henkensäauto-onnettomuudessa
+myös hänen vaimonsa ja ainoa tytär .
 
-Right. It should actually do what a page fault does too. If we page
-fault in NMI, it reports it and crashes.
+Valinta sinuun yhteyttä on herättänyt alkaenmaantieteellinen luonne missä
+asut , erityisesti siitä syystä,herkkyyden tämän kaupan . Pankki
+virkamiehet ovat odottaneet mitään sukulaiset tulevat -up for väite ,
+mutta kukaan ei ole tehnyt niin. Itse olen hävinnyt
+sijoittamallasukulaisten 4 vuotta nyt , pyydän teiltä lupaa esitellä
+teille kuinlähiomaiset / Will edunsaajaakuolleen tämän rahaston ,
+jottaetenee tämän tilin arvo on £ 15 miljoonaa puntaa on siirretään
+tilillesi kuinlähiomaiset Late Mr. Steve Allen .
 
-> 
-> > All I'm trying to say is, it might not be such a good idea to sleep in a
-> > fault handler...
-> 
-> A fault handler from user space is really nothing other than a different
-> kind of system call.  It is nothing magic about it.
+Tämä maksetaan tai jakaa näitä prosenttimääriä , 60 % minulle ja 40 %
+sinulle . Olen saanut kaikki tarvittavat oikeudelliset asiakirjat , joita
+voidaan käyttää varmuuskopiointiin tämä väite teemme . Kaikki mitä
+tarvitsee tehdä, on täyttää teidän nimetasiakirjat ja laillistaa
+setuomioistuin tässä todistaa teitälaillinen edunsaajarahasto .
 
-Exactly. I was saying that #BR should be just like #PF, as it can
-detect bugs in the kernel too. The first thing the handler should do is
-check to see if the fault occurred in userspace or kernel space. If it
-is userspace, then there's no restrictions. If it is kernel space then
-we should do the bare minimum to report the bug and then kill whatever
-task happened to do it.
+All I vaatia nyt on rehellinen yhteistyö , luottamuksellisuus ja Trust ,
+jotta voimme näkee tämän tapahtuman kautta . Takaan , että tämä
+toteutetaan allelaillinen järjestely , että sinua suojataan rikottu lakia.
+Haluan teidän ymmärtävän, että olen työskennellyt tämän pankin 17 vuotta ,
+ja olen voinut turvata kaikki oikeudelliset asiakirjat , jotta voit
+perivät tämän rahaston
 
--- Steve
+Antakaa minulle seuraavat : koska meillä on muutama päivä aikaa ajaa se
+läpi tämä on erittäin kiireellinen PLEASE .
+
+
+1 . Koko nimi
+2 . Your suora matkapuhelinnumero
+3 . Olet Yhteystiedot Osoite
+4 . Syntymäaika
+
+Mentyään läpisuunnitelmallista haku , päätin ottaa sinuun yhteyttä
+toivoen, että löydät tämän paljon mielenkiintoista . Ole hyvä ja teidän
+vahvistuksen tähän viestiin ja osoittaa kiinnostuksesi aion toimittaa
+sinulle lisätietoja . Pyrittävä haluaisin tietää päätöksen niin pian kuin
+mahdollista .
+
+
+Ystävällisin terveisin,
+Dr.David Ashton
+Matkapuhelinnumero +447937425508
+
