@@ -1,135 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaAQNA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 08:00:26 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:61142 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaAQNAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 08:00:20 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Charles.Garcia-Tobin@arm.com, Hanjun Guo <hanjun.guo@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: [PATCH 19/20] clocksource / ACPI: Introduce clocksource_acpi_init() using CLOCKSOURCE_ACPI_DECLARE
-Date: Fri, 17 Jan 2014 20:25:13 +0800
-Message-Id: <1389961514-13562-20-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+	id S1752317AbaAQNA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 08:00:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16242 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbaAQNA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 08:00:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,670,1384329600"; 
+   d="scan'208";a="460486971"
+Date: Fri, 17 Jan 2014 21:00:52 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Subject: Re: [slub shrink] 0f6934bf16: +191.9% vmstat.system.cs
+Message-ID: <20140117130051.GA2072@localhost>
+References: <20140116030744.GA19349@localhost>
+ <52D82F13.9070309@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D82F13.9070309@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_table_parse() will find table with table id and run handler
-on it. So we use CLOCKSOURCE_ACPI_DECLARE to decalare timer tables
-and glue its handler, then initialize them in clocksource_acpi_init().
+Hi Dave,
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/clocksource/Makefile         |    1 +
- drivers/clocksource/arm_arch_timer.c |    1 +
- drivers/clocksource/clksrc-acpi.c    |   36 ++++++++++++++++++++++++++++++++++
- include/linux/clocksource.h          |    3 +++
- 4 files changed, 41 insertions(+)
- create mode 100644 drivers/clocksource/clksrc-acpi.c
+I retested the will-it-scale/read2 case with perf profile enabled, and
+here are the new comparison results. It shows that there are increased
+overheads in shmem_getpage_gfp(). If you'd like to collect more data,
+feel free to tell me.
 
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 33621ef..2304c99 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
-+obj-$(CONFIG_ACPI)	+= clksrc-acpi.o
- obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
- obj-$(CONFIG_X86_CYCLONE_TIMER)	+= cyclone.o
- obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 1fa5f67..6489037 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -738,6 +738,7 @@ void __init arch_timer_acpi_init(struct acpi_table_header *table)
- 	arch_timers_present |= ARCH_CP15_TIMER;
- 	arch_timer_init();
- }
-+CLOCKSOURCE_ACPI_DECLARE(armv8_arch_timer, "GTDT", arch_timer_acpi_init);
- #endif
- 
- static void __init arch_timer_mem_init(struct device_node *np)
-diff --git a/drivers/clocksource/clksrc-acpi.c b/drivers/clocksource/clksrc-acpi.c
-new file mode 100644
-index 0000000..41efc83
---- /dev/null
-+++ b/drivers/clocksource/clksrc-acpi.c
-@@ -0,0 +1,36 @@
-+/*
-+ * Copyright (c) 2014, Hanjun Guo <hanjun.guo@linaro.org>
-+ * Copyright (c) 2014, Amit Daniel Kachhap <amit.daniel@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/acpi.h>
-+#include <linux/clocksource.h>
-+
-+extern struct acpi_device_id __clksrc_acpi_table[];
-+
-+static const struct acpi_device_id __clksrc_acpi_table_sentinel
-+	__used __section(__clksrc_acpi_table_end);
-+
-+void __init clocksource_acpi_init(void)
-+{
-+	const struct acpi_device_id *id;
-+	acpi_tbl_table_handler init_func;
-+
-+	for (id = __clksrc_acpi_table; id->id[0]; id++) {
-+		init_func = (acpi_tbl_table_handler)id->driver_data;
-+		acpi_table_parse(id->id, init_func);
-+	}
-+}
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 1d500cf..9bee8b3 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -361,12 +361,15 @@ static inline void clocksource_of_init(void) {}
- #endif
- 
- #ifdef CONFIG_ACPI
-+extern void clocksource_acpi_init(void);
-+
- #define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)			\
- 	static const struct acpi_device_id __clksrc_acpi_table_##name	\
- 		__used __section(__clksrc_acpi_table)			\
- 		 = { .id = compat,				\
- 		     .driver_data = (kernel_ulong_t)fn }
- #else
-+static inline void clocksource_acpi_init(void) { return; }
- #define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
- #endif
- 
--- 
-1.7.9.5
+9a0bb2966efbf30  0f6934bf1695682e7ced973f6  
+---------------  -------------------------  
+     26460 ~95%    +136.3%      62514 ~ 1%   numa-vmstat.node2.numa_other
+     62927 ~ 0%     -85.9%       8885 ~ 2%   numa-vmstat.node1.numa_other
+   8363465 ~ 4%     +81.9%   15210930 ~ 2%   interrupts.RES
+      3.96 ~ 6%     +42.8%       5.66 ~ 4%   perf-profile.cpu-cycles.find_lock_page.shmem_getpage_gfp.shmem_file_aio_read.do_sync_read.vfs_read
+    209881 ~11%     +35.2%     283704 ~ 9%   numa-vmstat.node1.numa_local
+   1795727 ~ 7%     +52.1%    2730750 ~17%   interrupts.LOC
+         7 ~ 0%     -33.3%          4 ~10%   vmstat.procs.b
+     18461 ~12%     -21.1%      14569 ~ 2%   numa-meminfo.node1.SUnreclaim
+      4614 ~12%     -21.1%       3641 ~ 2%   numa-vmstat.node1.nr_slab_unreclaimable
+       491 ~ 2%     -25.9%        363 ~ 6%   proc-vmstat.nr_tlb_remote_flush
+     14595 ~ 8%     -17.1%      12093 ~16%   numa-meminfo.node2.AnonPages
+      3648 ~ 8%     -17.1%       3025 ~16%   numa-vmstat.node2.nr_anon_pages
+       277 ~12%     -14.4%        237 ~ 8%   numa-vmstat.node2.nr_page_table_pages
+    202594 ~ 8%     -20.5%     161033 ~12%   softirqs.SCHED
+      1104 ~11%     -14.0%        950 ~ 8%   numa-meminfo.node2.PageTables
+      5201 ~ 7%     +21.0%       6292 ~ 3%   numa-vmstat.node0.nr_slab_unreclaimable
+     20807 ~ 7%     +21.0%      25171 ~ 3%   numa-meminfo.node0.SUnreclaim
+       975 ~ 8%     +16.7%       1138 ~ 5%   numa-meminfo.node1.PageTables
+       245 ~ 7%     +16.5%        285 ~ 5%   numa-vmstat.node1.nr_page_table_pages
+    109964 ~ 4%     -16.7%      91589 ~ 1%   numa-numastat.node0.local_node
+     20433 ~ 4%     -16.3%      17104 ~ 2%   proc-vmstat.pgalloc_dma32
+    112051 ~ 4%     -16.4%      93676 ~ 1%   numa-numastat.node0.numa_hit
+    273320 ~ 8%     -14.4%     234064 ~ 3%   numa-vmstat.node2.numa_local
+     31480 ~ 4%     +13.9%      35852 ~ 5%   numa-meminfo.node0.Slab
+    917358 ~ 2%     +12.5%    1031687 ~ 2%   softirqs.TIMER
+       513 ~ 0%     +37.7%        706 ~33%   numa-meminfo.node2.Mlocked
+   8404395 ~13%    +256.9%   29992039 ~ 9%   time.voluntary_context_switches
+    157154 ~17%    +201.7%     474102 ~ 8%   vmstat.system.cs
+     36948 ~ 3%     +67.7%      61963 ~ 2%   vmstat.system.in
+      2274 ~ 0%     +13.7%       2584 ~ 1%   time.system_time
+       769 ~ 0%     +13.5%        873 ~ 1%   time.percent_of_cpu_this_job_got
+      4359 ~ 2%     +13.6%       4951 ~ 3%   time.involuntary_context_switches
+       104 ~ 3%     +10.2%        115 ~ 2%   time.user_time
 
+Thanks,
+Fengguang
