@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaAQDX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jan 2014 22:23:59 -0500
-Received: from ozlabs.org ([203.10.76.45]:51027 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaAQDX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jan 2014 22:23:58 -0500
-Date: Fri, 17 Jan 2014 14:23:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IkxvdGhhciBXYcOfbWFubiI=?= <LW@KARO-electronics.de>,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: linux-next: manual merge of the dt-rh tree with the arm-soc tree
-Message-Id: <20140117142350.dc957c59116a9d0885e4724a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Jan_2014_14_23_50_+1100_d2.JI/NI5YSQCAmG"
+	id S1751538AbaAQDYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jan 2014 22:24:13 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54136 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaAQDYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jan 2014 22:24:03 -0500
+Date: Fri, 17 Jan 2014 11:23:47 +0800
+From: Kevin Hao <haokexin@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: Kernel stack overflows due to  "powerpc: Remove ksp_limit on
+ ppc64" with v3.13-rc8 on ppc32 (P2020)
+Message-ID: <20140117032347.GB29880@pek-khao-d1.corp.ad.wrs.com>
+References: <20140116180532.GA1616@roeck-us.net>
+ <20140117022005.GA29880@pek-khao-d1.corp.ad.wrs.com>
+ <1389927490.7406.10.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yEPQxsgoJgBvi8ip"
+Content-Disposition: inline
+In-Reply-To: <1389927490.7406.10.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jan_2014_14_23_50_+1100_d2.JI/NI5YSQCAmG
-Content-Type: text/plain; charset=US-ASCII
+
+--yEPQxsgoJgBvi8ip
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Rob,
+On Fri, Jan 17, 2014 at 01:58:10PM +1100, Benjamin Herrenschmidt wrote:
+> On Fri, 2014-01-17 at 10:20 +0800, Kevin Hao wrote:
+> > On Thu, Jan 16, 2014 at 10:05:32AM -0800, Guenter Roeck wrote:
+> > > Hi all,
+> > >=20
+> > > I am getting kernel stack overflows with v3.13-rc8 on a system with P=
+2020 CPU.
+> > > The kernel is patched for the target, but I don't think that is relat=
+ed.
+> > > Stack overflows are in different areas, but always in calls from __do=
+_softirq.
+> > >=20
+> > > Crashes happen reliably either during boot or if I put any kind of lo=
+ad
+> > > onto the system.
+> >=20
+> > How about the following fix:
+>=20
+> Wow. I've been staring at that code for 15mn this morning and didn't
+> spot it ! Nice catch :-)
+>=20
+> Any chance you can send a version of that patch that adds the C
+> prototype of the function in a comment right before the assembly ?
 
-Today's linux-next merge of the dt-rh tree got a conflict in
-Documentation/devicetree/bindings/vendor-prefixes.txt between commits
-70e123373c05 ("rtc: Add support for Intersil ISL12057 I2C RTC chip") from
-the arm-soc tree and 53d6b36020c7 ("of: Add vendor prefix for LG
-Corporation") from Linus' tree and commit 7e73700ce785 ("of: add vendor
-prefix for Ka-Ro electronics GmbH") from the dt-rh tree.
+Will do. The patch is coming soon.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks,
+Kevin
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Documentation/devicetree/bindings/vendor-prefixes.txt
-index d92c88f551f9,d98fa9a6279c..000000000000
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@@ -42,8 -38,7 +42,9 @@@ ibm	International Business Machines (IB
-  idt	Integrated Device Technologies, Inc.
-  img	Imagination Technologies Ltd.
-  intercontrol	Inter Control Group
- +isl	Intersil
-+ karo	Ka-Ro electronics GmbH
- +lg	LG Corporation
-  linux	Linux-specific binding
-  lsi	LSI Corp. (LSI Logic)
-  marvell	Marvell Technology Group Ltd.
-
---Signature=_Fri__17_Jan_2014_14_23_50_+1100_d2.JI/NI5YSQCAmG
+--yEPQxsgoJgBvi8ip
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJS2KJLAAoJEMDTa8Ir7ZwVFn8P/1VmTS+F8LdwQlpeIZQAAdz9
-IDjXERHYGXFXmxpFN/a0r0+Py4I5WO5Aw4euX4cWUt8Iq/a3HI2FpocxYPLHjlVM
-bUhbz9sLwU6wT3KqLvu/Q2dMj6Y79dneKaRhm1RMws2OEDIuZ1leg8W5jYAdlWMw
-54kSatCbiqFccEzWbeJ3bhZel55RC0rXmBYXc46Nlaa4OrnUQT3UHsQ2VpsRk1NU
-y4dUFfP3aUzCdDBArNmwByPh23UC406tFh9d2s1s6GCM4LKqbHejYC3oDJKnPSIR
-GisfbiymScsVRatFdoikMjpqc39djv5JJaiDWJa3Nb2QteV2cdtvFNBaxHu8wBGe
-C8XN54jBLhkP1+S0PCa8FskQg2yV34s4nXwDfAGHzP/v0R/BwCK79TjCeTT3S8T9
-5ZfmKXRvUhN2fK68XbhQf+5fkFuHBPoVND29JNCMTdRc2imG+fyWzP34z7rqZ7dE
-UHx9tDFmnKcW3EaRM7AzI6Uwhd/urSNVqG3pkxBM5Es9Rqe5maY6CU3y71TsxHbT
-WQnttms8lkub7XtHxLW4vV27WV5Wwqe7fmbXGHgSHTvbUpYaA1KpNjtfBiWHgrW7
-itFc2ug5GkZLOGqOGhmaau/+TccKiqR2EKMQT/8EkBKIGHcRF9RlFlSUa069yZJM
-tqcIwlLZOtPfISDs2tmE
-=Wu2l
+iQEcBAEBAgAGBQJS2KJDAAoJEJNY7TDerrFxF3YIAKYibLWpNYAB+RQlqX1wkvjr
+3/f/CDELFFZnuwmvbA75HiskEgHkKTr59gv8kNM6dVY63ORCKrFpa7j03rW2hpwX
+Q4niqWrQZSZTjeZKndzhZ0mxQka52bL3Eo3xubOH4qFf0udMnGH5L2vIP4cjzcX6
+pgDuNc2XdPL03l8g7cPp72F3mwg3+Se6/SAByJRYzUQdtHYbjfvMuL93zpbg4gt3
+9aBYuAVVgVrr5e4MIEUWFtt2gAZDUqudAUY5GBLrTBk8MV/W4zTJluQ5FgM/L/cZ
+a9wZiNM9PFT/i8QEWYi01iPfEx/0fT0dIxL6i1KaNMZJ6pFvhWPL7QOaHnSsitk=
+=VvUL
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__17_Jan_2014_14_23_50_+1100_d2.JI/NI5YSQCAmG--
+--yEPQxsgoJgBvi8ip--
