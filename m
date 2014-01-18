@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaARWQX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 17:16:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34703 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaARWQU (ORCPT
+	id S1751783AbaARWRh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 17:17:37 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64938 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751436AbaARWRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 17:16:20 -0500
-Message-ID: <52DAFD32.7030309@infradead.org>
-Date: Sat, 18 Jan 2014 14:16:18 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sat, 18 Jan 2014 17:17:36 -0500
+Date: Sat, 18 Jan 2014 17:17:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.27-rt25
+Message-ID: <20140118171734.5af029b8@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Help Needed
-References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-In-Reply-To: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2014 09:34 AM, Madhusudhan Rao Sripalle wrote:
-> Hi,
-> 
-> I am an expert of HP-UX (kernel and drivers), while being novice at
-> linux. I am currently looking ways for quick ramp up so that I could
-> contribute to linux community.
-> 
-> Kindly provide pointers starting from where I could get the kernel
-> sources. Appreciate help in advance.
 
-google for "linux kernel source" -- the top 2 URLs give you the kernel
-source trees ... unless you want the source for some particular distro
-like Red Hat, SuSE, Ubuntu, ArchLinux, etc., then you would need to go
-to the web sites of those distros to find the sources.
+Dear RT Folks,
 
-Also check http://kernelnewbies.org/ for some newbie info.
+I'm pleased to announce the 3.10.27-rt25 stable release.
 
--- 
-~Randy
+
+This release is just an update to the new stable 3.10.27 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.10-rt
+  Head SHA1: 57d2f2e8024d2a07272a24dcc4f8e3230f08e73b
+
+
+Or to build 3.10.27-rt25 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.27.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.27-rt25.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
