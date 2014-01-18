@@ -1,67 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaARXYj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 18:24:39 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:44903 "EHLO mail.ispras.ru"
+	id S1751744AbaARXko (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 18:40:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16733 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790AbaARXYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 18:24:37 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] USB: input: gtco.c: fix usb_dev leak
-Date: Sun, 19 Jan 2014 03:24:26 +0400
-Message-Id: <1390087466-9898-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751693AbaARXkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 18:40:42 -0500
+From: Daniel Borkmann <dborkman@redhat.com>
+To: davem@davemloft.net
+Cc: hannes@stressinduktion.org, netdev@vger.kernel.org,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next v3 1/3] random32: add prandom_u32_max and convert open coded users
+Date: Sun, 19 Jan 2014 00:40:29 +0100
+Message-Id: <1390088431-28657-2-git-send-email-dborkman@redhat.com>
+In-Reply-To: <1390088431-28657-1-git-send-email-dborkman@redhat.com>
+References: <1390088431-28657-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is usb_get_dev() in gtco_probe(), but there is no usb_put_dev()
-anywhere in the driver.
+Many functions have open coded a function that returns a random
+number in range [0,N-1]. Under the assumption that we have a PRNG
+such as taus113 with being well distributed in [0, ~0U] space,
+we can implement such a function as uword t = (n*m')>>32, where
+m' is a random number obtained from PRNG, n the right open interval
+border and t our resulting random number, with n,m',t in u32 universe.
 
-The patch adds usb_get_dev() to failure handling code of gtco_probe()
-and to gtco_disconnect(().
+Lets go with Joe and simply call it prandom_u32_max(), although
+technically we have an right open interval endpoint, but that we
+have documented. Other users can further be migrated to the new
+prandom_u32_max() function later on; for now, we need to make sure
+to migrate reciprocal_divide() users for the reciprocal_divide()
+follow-up fixup since their function signatures are going to change.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Joint work with Hannes Frederic Sowa.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 ---
- drivers/input/tablet/gtco.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/team/team_mode_random.c |  8 +-------
+ include/linux/random.h              | 18 +++++++++++++++++-
+ net/packet/af_packet.c              |  2 +-
+ net/sched/sch_choke.c               |  9 +--------
+ 4 files changed, 20 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/input/tablet/gtco.c b/drivers/input/tablet/gtco.c
-index 29e01ab6859f..6ec8a3a04672 100644
---- a/drivers/input/tablet/gtco.c
-+++ b/drivers/input/tablet/gtco.c
-@@ -858,7 +858,7 @@ static int gtco_probe(struct usb_interface *usbinterface,
- 	if (!gtco->buffer) {
- 		dev_err(&usbinterface->dev, "No more memory for us buffers\n");
- 		error = -ENOMEM;
--		goto err_free_devs;
-+		goto err_put_usb;
- 	}
+diff --git a/drivers/net/team/team_mode_random.c b/drivers/net/team/team_mode_random.c
+index 7f032e2..cd2f692 100644
+--- a/drivers/net/team/team_mode_random.c
++++ b/drivers/net/team/team_mode_random.c
+@@ -13,20 +13,14 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/skbuff.h>
+-#include <linux/reciprocal_div.h>
+ #include <linux/if_team.h>
  
- 	/* Allocate URB for reports */
-@@ -990,6 +990,8 @@ static int gtco_probe(struct usb_interface *usbinterface,
-  err_free_buf:
- 	usb_free_coherent(gtco->usbdev, REPORT_MAX_SIZE,
- 			  gtco->buffer, gtco->buf_dma);
-+ err_put_usb:
-+	usb_put_dev(gtco->usbdev);
-  err_free_devs:
- 	input_free_device(input_dev);
- 	kfree(gtco);
-@@ -1013,6 +1015,7 @@ static void gtco_disconnect(struct usb_interface *interface)
- 		usb_free_urb(gtco->urbinfo);
- 		usb_free_coherent(gtco->usbdev, REPORT_MAX_SIZE,
- 				  gtco->buffer, gtco->buf_dma);
-+		usb_put_dev(gtco->usbdev);
- 		kfree(gtco);
- 	}
+-static u32 random_N(unsigned int N)
+-{
+-	return reciprocal_divide(prandom_u32(), N);
+-}
+-
+ static bool rnd_transmit(struct team *team, struct sk_buff *skb)
+ {
+ 	struct team_port *port;
+ 	int port_index;
  
+-	port_index = random_N(team->en_port_count);
++	port_index = prandom_u32_max(team->en_port_count);
+ 	port = team_get_port_by_index_rcu(team, port_index);
+ 	if (unlikely(!port))
+ 		goto drop;
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 4002b3d..3e89ac9 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -8,7 +8,6 @@
+ 
+ #include <uapi/linux/random.h>
+ 
+-
+ extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+@@ -38,6 +37,23 @@ struct rnd_state {
+ u32 prandom_u32_state(struct rnd_state *state);
+ void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+ 
++/**
++ * prandom_u32_max - returns a pseduo-random number in interval [0, ep_ro)
++ * @ep_ro: right open interval endpoint
++ *
++ * Returns a pseduo-random number that is in interval [0, ep_ro). Note
++ * that the result depends on PRNG being well distributed in [0, ~0U]
++ * u32 space. Here we use maximally equidistributed combined Tausworthe
++ * generator, that is, prandom_u32(). This is useful when requesting a
++ * random index of an array containing ep_ro elements, for example.
++ *
++ * Returns: pseduo-random number in interval [0, ep_ro)
++ */
++static inline u32 prandom_u32_max(u32 ep_ro)
++{
++	return (u32)(((u64) prandom_u32() * ep_ro) >> 32);
++}
++
+ /*
+  * Handle minimum values for seeds
+  */
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 12f2f72..266c311 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1289,7 +1289,7 @@ static unsigned int fanout_demux_rnd(struct packet_fanout *f,
+ 				     struct sk_buff *skb,
+ 				     unsigned int num)
+ {
+-	return reciprocal_divide(prandom_u32(), num);
++	return prandom_u32_max(num);
+ }
+ 
+ static unsigned int fanout_demux_rollover(struct packet_fanout *f,
+diff --git a/net/sched/sch_choke.c b/net/sched/sch_choke.c
+index ddd73cb..2aee028 100644
+--- a/net/sched/sch_choke.c
++++ b/net/sched/sch_choke.c
+@@ -14,7 +14,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/skbuff.h>
+-#include <linux/reciprocal_div.h>
+ #include <linux/vmalloc.h>
+ #include <net/pkt_sched.h>
+ #include <net/inet_ecn.h>
+@@ -77,12 +76,6 @@ struct choke_sched_data {
+ 	struct sk_buff **tab;
+ };
+ 
+-/* deliver a random number between 0 and N - 1 */
+-static u32 random_N(unsigned int N)
+-{
+-	return reciprocal_divide(prandom_u32(), N);
+-}
+-
+ /* number of elements in queue including holes */
+ static unsigned int choke_len(const struct choke_sched_data *q)
+ {
+@@ -233,7 +226,7 @@ static struct sk_buff *choke_peek_random(const struct choke_sched_data *q,
+ 	int retrys = 3;
+ 
+ 	do {
+-		*pidx = (q->head + random_N(choke_len(q))) & q->tab_mask;
++		*pidx = (q->head + prandom_u32_max(choke_len(q))) & q->tab_mask;
+ 		skb = q->tab[*pidx];
+ 		if (skb)
+ 			return skb;
 -- 
-1.8.3.2
+1.8.3.1
 
