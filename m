@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaARXYO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 18:24:14 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58904 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaARXYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 18:24:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140118223308.GH15466@pd.tnic>
-References: <1390078081-26030-1-git-send-email-gurligebis@gentoo.org>
-	<1390079163.25980.2.camel@x41>
-	<CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
-	<20140118221212.GB15543@pd.tnic>
-	<CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
-	<20140118223308.GH15466@pd.tnic>
-Date: Sun, 19 Jan 2014 00:24:10 +0100
-X-Google-Sender-Auth: UkiUPdcsIVFNiVykVKXuCb6jRz8
-Message-ID: <CACPM=kVDpAFSWb3v8zS0+JE2U5C6pSNvqvL+aQ-npLtU05JGrA@mail.gmail.com>
-Subject: Re: [PATCH] Adding hyperv.h to uapi headers
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751831AbaARXYj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 18:24:39 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:44903 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790AbaARXYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 18:24:37 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] USB: input: gtco.c: fix usb_dev leak
+Date: Sun, 19 Jan 2014 03:24:26 +0400
+Message-Id: <1390087466-9898-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/18 Borislav Petkov <bp@alien8.de>:
-> On Sat, Jan 18, 2014 at 11:24:53PM +0100, Bjarke Istrup Pedersen wrote:
->> I should take all the parts the is not guarded by __KERNEL__, and move
->> them to a uapi header, and then include it at the top of the normal
->> header. Correct understood? :)
->
-> Yes, that's basically the approach but be conservative - export only
-> stuff which *really* is needed by userspace. And hyperv people should
-> sanity-check what you're exporting because once it is out, it is cast in
-> stone and there's no changing.
+There is usb_get_dev() in gtco_probe(), but there is no usb_put_dev()
+anywhere in the driver.
 
-I have submitted a v2 patch - does it look better?
+The patch adds usb_get_dev() to failure handling code of gtco_probe()
+and to gtco_disconnect(().
 
-Thanks :)
+Found by Linux Driver Verification project (linuxtesting.org).
 
-/Bjarke
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/input/tablet/gtco.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/input/tablet/gtco.c b/drivers/input/tablet/gtco.c
+index 29e01ab6859f..6ec8a3a04672 100644
+--- a/drivers/input/tablet/gtco.c
++++ b/drivers/input/tablet/gtco.c
+@@ -858,7 +858,7 @@ static int gtco_probe(struct usb_interface *usbinterface,
+ 	if (!gtco->buffer) {
+ 		dev_err(&usbinterface->dev, "No more memory for us buffers\n");
+ 		error = -ENOMEM;
+-		goto err_free_devs;
++		goto err_put_usb;
+ 	}
+ 
+ 	/* Allocate URB for reports */
+@@ -990,6 +990,8 @@ static int gtco_probe(struct usb_interface *usbinterface,
+  err_free_buf:
+ 	usb_free_coherent(gtco->usbdev, REPORT_MAX_SIZE,
+ 			  gtco->buffer, gtco->buf_dma);
++ err_put_usb:
++	usb_put_dev(gtco->usbdev);
+  err_free_devs:
+ 	input_free_device(input_dev);
+ 	kfree(gtco);
+@@ -1013,6 +1015,7 @@ static void gtco_disconnect(struct usb_interface *interface)
+ 		usb_free_urb(gtco->urbinfo);
+ 		usb_free_coherent(gtco->usbdev, REPORT_MAX_SIZE,
+ 				  gtco->buffer, gtco->buf_dma);
++		usb_put_dev(gtco->usbdev);
+ 		kfree(gtco);
+ 	}
+ 
+-- 
+1.8.3.2
+
