@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaARDrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 22:47:23 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46120 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790AbaARDrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 22:47:20 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] clk: Export more clk-provider functions
-Date: Fri, 17 Jan 2014 19:47:17 -0800
-Message-Id: <1390016837-24837-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+	id S1753480AbaARDsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 22:48:32 -0500
+Received: from mga03.intel.com ([143.182.124.21]:44124 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608AbaARDsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 22:48:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,677,1384329600"; 
+   d="scan'208";a="460798863"
+Message-ID: <52D9F98A.2090003@linux.intel.com>
+Date: Sat, 18 Jan 2014 11:48:26 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yijing Wang <wangyijing@huawei.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch v1 2/3] ACPI, PCI: reuse ACPI hotplug framework to support
+ PCI host bridge hotplug
+References: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>	<1390013297-23462-2-git-send-email-jiang.liu@linux.intel.com> <CAE9FiQXS-vctiWtXBcw8g6dqPEJGSND+GXB1t64kEoCiygBhjQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQXS-vctiWtXBcw8g6dqPEJGSND+GXB1t64kEoCiygBhjQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow drivers to be compiled as modules by exporting more clock
-provider functions.
+Hi yinghai,
+	Sorry for the noise. I didn't noticed Rafael's work,
+so I generated this patchset when encountered this issue
+during testing PCI host bridge hotplug. It should achieve
+the same goal.
+Thanks!
+Gerry
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 0b27b543dacf..2e83cf643db0 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -547,16 +547,19 @@ struct clk_hw *__clk_get_hw(struct clk *clk)
- {
- 	return !clk ? NULL : clk->hw;
- }
-+EXPORT_SYMBOL_GPL(__clk_get_hw);
- 
- u8 __clk_get_num_parents(struct clk *clk)
- {
- 	return !clk ? 0 : clk->num_parents;
- }
-+EXPORT_SYMBOL_GPL(__clk_get_num_parents);
- 
- struct clk *__clk_get_parent(struct clk *clk)
- {
- 	return !clk ? NULL : clk->parent;
- }
-+EXPORT_SYMBOL_GPL(__clk_get_parent);
- 
- struct clk *clk_get_parent_by_index(struct clk *clk, u8 index)
- {
-@@ -570,6 +573,7 @@ struct clk *clk_get_parent_by_index(struct clk *clk, u8 index)
- 	else
- 		return clk->parents[index];
- }
-+EXPORT_SYMBOL_GPL(clk_get_parent_by_index);
- 
- unsigned int __clk_get_enable_count(struct clk *clk)
- {
-@@ -601,6 +605,7 @@ unsigned long __clk_get_rate(struct clk *clk)
- out:
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(__clk_get_rate);
- 
- unsigned long __clk_get_flags(struct clk *clk)
- {
-@@ -649,6 +654,7 @@ bool __clk_is_enabled(struct clk *clk)
- out:
- 	return !!ret;
- }
-+EXPORT_SYMBOL_GPL(__clk_is_enabled);
- 
- static struct clk *__clk_lookup_subtree(const char *name, struct clk *clk)
- {
-@@ -740,6 +746,7 @@ out:
- 
- 	return best;
- }
-+EXPORT_SYMBOL_GPL(__clk_mux_determine_rate);
- 
- /***        clk api        ***/
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+On 2014/1/18 11:23, Yinghai Lu wrote:
+> ACPI / hotplug: Make ACPI PCI root hotplug use common hotplug code
