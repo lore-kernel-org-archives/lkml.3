@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaAWAiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:38:17 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39925 "EHLO
+	id S1756185AbaAWAi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:38:26 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39981 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618AbaAWAiP convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753647AbaAWAiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:38:15 -0500
+	Wed, 22 Jan 2014 19:38:24 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
 References: <1390011895-28123-1-git-send-email-mukesh.rathor@oracle.com> <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
@@ -16,12 +16,12 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8BIT
 Subject: Re: [V0 PATCH] xen/pvh: set some cr flags upon vcpu start
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 17 Jan 2014 22:56:24 -0500
+Date: Fri, 17 Jan 2014 22:20:53 -0500
 To: Mukesh Rathor <mukesh.rathor@oracle.com>
 CC: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org
-Message-ID: <11d39cdc-d0a7-4658-9ed5-f9fa1ca50aa1@email.android.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Message-ID: <f0ca98c8-b89d-4849-b8bc-a78cd8d54db9@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,10 +29,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
 >pvh was designed to start with pv flags, but a commit in xen tree
 >51e2cac257ec8b4080d89f0855c498cbbd76a5e5 removed some of the flags as
+
+"Name of the patch in the Xen tree"
+
 >they are not necessary. As a result, these CR flags must be set in the
 >guest.
+
 >
 >Signed-off-by: Roger Pau Monne <roger.pau@citrix.com>
+
+You missed modifying the patch to reflect the authorship to be Roger's.
+
+Please use git commit --amend --author "somebody s name " 
+
+Also Roger should be credited with Reported-by. I can add that.
+
 >Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 >---
 >arch/x86/xen/enlighten.c |   43
@@ -57,7 +68,6 @@ Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
 >  */
 >-void __ref xen_setup_gdt(int cpu)
 >+static void xen_setup_gdt(int cpu)
-> {
 > 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
 > #ifdef CONFIG_X86_64
 >@@ -1463,13 +1459,48 @@ void __ref xen_setup_gdt(int cpu)
@@ -70,21 +80,31 @@ Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
 >+ * here asap.
 >+ */
 >+static void xen_pvh_set_cr_flags(int cpu)
+
 >+{
+
+Pls add:
+
+/* See 'secondary_startup_64' for how bare metal does it. */
+
 >+	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_WP | X86_CR0_AM);
-
-I think it would be good to mention that Xen unconditionally sets PE and ET for HVM guests and that additionally for PVH the PG is set.
-
-What about the NE? That looks to be missing from the list above? Should we set it?
-
 >+
 >+	if (!cpu)
 >+		return;
 >+	/*
 >+	 * Unlike PV, for pvh xen does not set: PSE PGE OSFXSR OSXMMEXCPT
 >+	 * For BSP, PSE PGE will be set in probe_page_size_mask(), for AP
->+	 * set them here. For all, OSFXSR OSXMMEXCPT will be set in fpu_init
+>+	 * set them here. For all, OSFXSR
+
+Might want to mention that for AP on bare metal they are set in 'secondary_start_64'
+
+... 
 >+	 */
+
+Is it OK to set this twice? 
+
+Meaning remove the 'if (!cpu)..' check so that this code path is run for BSP and AP?
+
 >+	if (cpu_has_pse)
 >+		set_in_cr4(X86_CR4_PSE);
 >+
@@ -96,6 +116,9 @@ What about the NE? That looks to be missing from the list above? Should we set i
 >+ * Note, that it is refok - because the only caller of this after init
 >+ * is PVH which is not going to use xen_load_gdt_boot or other
 >+ * __init functions.
+
+Hmm. You must be using and older tree. The new one has __ref comment.
+
 >+ */
 >+void __ref xen_pvh_secondary_vcpu_init(int cpu)
 >+{
@@ -109,7 +132,8 @@ What about the NE? That looks to be missing from the list above? Should we set i
 > 		return;
 > 
 >-	if (xen_feature(XENFEAT_hvm_callback_vector))
->+	if (xen_feature(XENFEAT_hvm_callback_vector)) {
+>+	if (xen_feature(XENFEAT_hvm_callback_vector)) 
+
 > 		xen_have_vector_callback = 1;
 >+		xen_pvh_set_cr_flags(0);
 >+	}
@@ -141,4 +165,4 @@ What about the NE? That looks to be missing from the list above? Should we set i
 >+void xen_pvh_secondary_vcpu_init(int cpu);
 > #endif /* XEN_OPS_H */
 
-
+Thanks!
