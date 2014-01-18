@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070AbaARBWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 20:22:53 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57861 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971AbaARBWw (ORCPT
+	id S1752897AbaARB3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 20:29:18 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:61029 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaARB3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 20:22:52 -0500
-Message-ID: <52D9D6F2.2030003@huawei.com>
-Date: Sat, 18 Jan 2014 09:20:50 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 17 Jan 2014 20:29:13 -0500
 MIME-Version: 1.0
-To: <robin.yb@huawei.com>, David Rientjes <rientjes@google.com>,
-        <viro@zeniv.linux.org.uk>
-CC: <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2] fs: don't write pages when receiving a pending SIGKILL
- in __get_user_pages()
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1389917384.5567.718.camel@haakon3.risingtidesystems.com>
+References: <1389917384.5567.718.camel@haakon3.risingtidesystems.com>
+Date: Fri, 17 Jan 2014 17:29:12 -0800
+X-Google-Sender-Auth: lXFUOGJnbyn40-J3ME567ljHX08
+Message-ID: <CA+55aFzQG9FxSX7C0GitLJfzAvxJN-Pzo1vKoHWfFOkhJWb=AQ@mail.gmail.com>
+Subject: Re: [GIT PULL] target fixes for v3.13
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the process IO direction, dio_refill_pages will call get_user_pages_fast 
-to map the page from user space. If ret is less than 0 and IO is write, the 
-function will create a zero page to fill data. This may work for some file 
-system, but in some device operate we prefer whole write or fail, not half 
-data half zero, e.g. fs metadata, like inode, identy.
-This happens often when kill a process which is doing direct IO. Consider 
-the following cases, the process A is doing IO process, may enter __get_user_pages 
-function, if other processes send process A SIG_KILL, A will enter the 
-following branches 
-		/*
-		 * If we have a pending SIGKILL, don't keep faulting
-		 * pages and potentially allocating memory.
-		 */
-		if (unlikely(fatal_signal_pending(current)))
-			return i ? i : -ERESTARTSYS;
-Return current pages. direct IO will write the pages, the subsequent pages 
-which can’t get will use zero page instead. 
+On Thu, Jan 16, 2014 at 4:09 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+>
+> This change allows the percpu_ida tag allocator to optionally use
+> interruptible sleep that iscsi-target expects, while still leaving the
+> functionality + interface for existing percpu_ida consumers unchanged.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Bin Yang <robin.yb@huawei.com>
----
- fs/direct-io.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I'm not pulling this. Passing in TASK_RUNNING to prepare_to_wait() is
+insane (because if it ever were to actually wait, that would be a
+bug), and afaik this would be the first time anybody ever does that.
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 0e04142..b74d565 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -174,6 +174,9 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
- 		&dio->pages[0]);		/* Put results here */
- 
- 	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
-+		/* If task is killed, do not write anymore */
-+		if (ret == -ERESTARTSYS)
-+			goto out;
- 		struct page *page = ZERO_PAGE(0);
- 		/*
- 		 * A memory fault, but the filesystem has some outstanding
--- 
-1.7.1
+Yes, yes, it may "work", but I'm not pulling that kind of hack just
+before a release.
 
+Quite frankly, it looks like you want to have a tristate argument ("no
+wait", "wait interruptibly", "wait uninterruptibly") to that
+percpu_ida_alloc() function. Fine. But dammit, using this kind of
+hackery, and then having two *different* calling conventions (one
+mis-using the gfp_t for legacy reasons, and one now using the task
+state flags in odd ways) is just not acceptable.
 
+Now, neither of those two is perfect, but I can see why you want to
+use the task state ones to say which kind of interruptible you want..
+But I really don't like suddenly having a
+prepare_to_wait(TASK_RUNNING) caller without any discussion, and I
+*really* don't like having two completely different models for this
+hack.
 
+So quite frankly, I'd much prefer:
+
+ - talk to the scheduler people, and make them aware of the fact that
+you are going to pass in TASK_RUNNING to prepare_to_wait(). It works
+with the code as-is, as long as you don't actually then wait.
+
+ - Don't do that wrapper function with a totally different calling
+convention logic. Instead, just change all the callers explicitly.
+>From a quick look, you really only have a couple of cases:
+
+  (a) target/iscsi, which wants the new ternary argument
+
+  (b) vhost/scsi.c, which uses GFP_ATOMIC and can be changed to TASK_RUNNABLE
+
+  (c) block/blk-mq-tag.c, which already hates the current insane
+thing, and uses __GFP_WAIT and (gfp & ~__GFP_WAIT) and other hacks,
+and is obviously *very* aware of the internal hackery in the current
+percpu_ida_alloc() argument. So I'm getting the feeling that that
+whole thing might actually be *happier* with the TASK_xyz flags.
+
+So I really think this needs cleanup, and that hacky "passing in
+TASK_RUNNING to prepare_to_wait()" needs to be made official. And yes,
+that implies that it's too late to try to push this through for 3.13,
+this goes into the next merge window and can be backported.
+
+Added the appropriate people to the Cc..
+
+              Linus
