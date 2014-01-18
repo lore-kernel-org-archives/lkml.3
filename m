@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaARLlU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 06:41:20 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38239 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaARLlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 06:41:17 -0500
-Message-ID: <52DA6868.9020401@kernel.org>
-Date: Sat, 18 Jan 2014 11:41:28 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, kishon@ti.com, anton@enomsg.org,
-        dwmw2@infradead.org, richardcochran@gmail.com, lidza.louina@gmail.com,
-        gregkh@linuxfoundation.org, davem@davemloft.net
-CC: sebastian.hesselbarth@gmail.com, florian@openwrt.org,
-        thomas.petazzoni@free-electrons.com, lars@metafoo.de, marex@denx.de,
-        acourbot@nvidia.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 3/7] staging,spear_adc: Add dependency on HAS_IOMEM
-References: <1389714345-20165-1-git-send-email-richard@nod.at> <1389714345-20165-3-git-send-email-richard@nod.at>
-In-Reply-To: <1389714345-20165-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753817AbaARLsg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 06:48:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49958 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbaARLsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 06:48:31 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Linux EFI <linux-efi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH 0/5] EFI memmap and other fixes, v3
+Date: Sat, 18 Jan 2014 12:48:13 +0100
+Message-Id: <1390045698-16882-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.2.192.g7794a68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/14 15:45, Richard Weinberger wrote:
-> On archs like S390 or um this driver cannot build nor work.
-> Make it depend on HAS_IOMEM to bypass build failures.
->
-> drivers/staging/iio/adc/spear_adc.c: In function ‘spear_adc_probe’:
-> drivers/staging/iio/adc/spear_adc.c:393:2: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-Applied to the fixes-togreg branch of iio.git
+From: Borislav Petkov <bp@suse.de>
 
-Thanks,
-> ---
->   drivers/staging/iio/adc/Kconfig | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/staging/iio/adc/Kconfig b/drivers/staging/iio/adc/Kconfig
-> index e3d6430..7d5d675 100644
-> --- a/drivers/staging/iio/adc/Kconfig
-> +++ b/drivers/staging/iio/adc/Kconfig
-> @@ -128,6 +128,7 @@ config MXS_LRADC
->   config SPEAR_ADC
->   	tristate "ST SPEAr ADC"
->   	depends on PLAT_SPEAR || COMPILE_TEST
-> +	depends on HAS_IOMEM
->   	help
->   	  Say yes here to build support for the integrated ADC inside the
->   	  ST SPEAr SoC. Provides direct access via sysfs.
->
+Hi all,
+
+this is the latest incarnation which should hopefully work just fine. It
+tpasses esting at least on all our boxes so we have *some* coverage.
+
+It took us a long time to debug the unmapping path and realize how
+exactly we're doing the PGD sharing between the kernel and the EFI page
+table. I've commented on this verbosely in 4/5 for future reference
+because this stuff is not trivial.
+
+We definitely should have this in mind when we do more changes on how we
+handle the EFI page table and what we do with it, maybe even decouple it
+completely from the kernel one. I dunno - it is all future stuff to pay
+attention to.
+
+Anyway, if anyone with an EFI box wants to give it a run, feel free to
+do so.
+
+As always, all comments and suggestions are appreciated.
+
+Thanks.
+
+Changelog:
+
+* v2:
+
+here's v2 rebased and rediffed against tip (which has the relevant
+efi branches).
+
+* v1:
+
+this is the result of Toshi and me debugging a #GP on one of his big HP
+boxes sporting UEFI. Each commit message should be self-explanatory so
+please look there.
+
+This has more or less an RFC nature thus I'm sending it now to collect
+feedback. It is going to wait in the EFI queue anyway after the kexec
+stuff gets sorted out first.
+
+Borislav Petkov (5):
+  x86, ptdump: Add the functionality to dump an arbitrary pagetable
+  efi: Dump the EFI page table
+  x86, pageattr: Export page unmapping interface
+  efi: Make efi virtual runtime map passing more robust
+  efi: Split efi_enter_virtual_mode
+
+ arch/x86/Kconfig                     |   9 ++
+ arch/x86/include/asm/efi.h           |   4 +-
+ arch/x86/include/asm/pgtable.h       |   3 +-
+ arch/x86/include/asm/pgtable_types.h |   2 +
+ arch/x86/mm/dump_pagetables.c        |  84 +++++++++-----
+ arch/x86/mm/pageattr.c               |  44 +++++---
+ arch/x86/platform/efi/efi.c          | 210 ++++++++++++++++++++++++++---------
+ arch/x86/platform/efi/efi_32.c       |   7 +-
+ arch/x86/platform/efi/efi_64.c       |  41 ++++++-
+ include/linux/efi.h                  |   1 +
+ 10 files changed, 304 insertions(+), 101 deletions(-)
+
+-- 
+1.8.5.2.192.g7794a68
+
