@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaARWSm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 17:18:42 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3296 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751790AbaARWSk (ORCPT
+	id S1751648AbaARWY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 17:24:57 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:60986 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaARWYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 17:18:40 -0500
-Date: Sat, 18 Jan 2014 17:18:38 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.2.54-rt77
-Message-ID: <20140118171838.5141c9c0@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Sat, 18 Jan 2014 17:24:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140118221212.GB15543@pd.tnic>
+References: <1390078081-26030-1-git-send-email-gurligebis@gentoo.org>
+	<1390079163.25980.2.camel@x41>
+	<CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
+	<20140118221212.GB15543@pd.tnic>
+Date: Sat, 18 Jan 2014 23:24:53 +0100
+X-Google-Sender-Auth: gIeDDV5Wc4L6bnQhsQkQ2UOuLGQ
+Message-ID: <CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
+Subject: Re: [PATCH] Adding hyperv.h to uapi headers
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014/1/18 Borislav Petkov <bp@alien8.de>:
+> On Sat, Jan 18, 2014 at 11:07:10PM +0100, Bjarke Istrup Pedersen wrote:
+>> I have been thinking about other solutions, but so far, I haven't been
+>> able to find one that solves it, so the tools build. (An option might
+>> be to strip it from the __KERNEL__ part, to make it smaller, but I
+>> don't know what difference that would make :-)
+>
+> The fix is to move the userspace stuff into the uapi header and include
+> that header in the kernel header.
+>
+> See include/linux/sched.h and many others for an example.
+>
+Okay, so let me see if I get this right.
 
-Dear RT Folks,
+I should take all the parts the is not guarded by __KERNEL__, and move
+them to a uapi header, and then include it at the top of the normal
+header.
+Correct understood? :)
 
-I'm pleased to announce the 3.2.54-rt77 stable release.
-
-
-This release is just an update to the new stable 3.2.54 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.2-rt
-  Head SHA1: f1fcf5146f16cce6268b096579affe33364a9135
-
-
-Or to build 3.2.54-rt77 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.54.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.54-rt77.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
+/Bjarke
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
