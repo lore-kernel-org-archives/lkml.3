@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaARIcb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 03:32:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46805 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737AbaARIc2 (ORCPT
+	id S1753613AbaARImF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 03:42:05 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34206 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaARImB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 03:32:28 -0500
-Date: Sat, 18 Jan 2014 00:34:48 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Branimir Maksimovic <branimir.maksimovic@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: vm commit in atop utility steadilly grows (latest mainline
- kernel from git)
-Message-Id: <20140118003448.5b2b0e6d.akpm@linux-foundation.org>
-In-Reply-To: <52D97F2D.1020500@gmail.com>
-References: <52D97F2D.1020500@gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 18 Jan 2014 03:42:01 -0500
+Message-ID: <52DA3E41.9050202@huawei.com>
+Date: Sat, 18 Jan 2014 16:41:37 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Zefan <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>
+Subject: Re: [PATCH] mm/kmemleak: add support for re-enable kmemleak at runtime
+References: <52D8FA72.8080100@huawei.com> <20140117120436.GC28895@arm.com>
+In-Reply-To: <20140117120436.GC28895@arm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.155]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014 20:06:21 +0100 Branimir Maksimovic <branimir.maksimovic@gmail.com> wrote:
+On 2014/1/17 20:04, Catalin Marinas wrote:
 
-> Yesterday, I have noticed that vmcom steadilly grows (it was 7TB before
-> I noticed). I compile kernel every day or two after git pull.
-> Rebooted and then watched atop, vmcom constantly grows.
-> Didn't notice any of running processes to allocate.
-> Booted in 3.12.8 kernel and everything is back to normal.
-> Since this is pretty noticable, I guess that this is caused by commit
-> between rc8 release and now, not sure.
-> Machine is i5 3570k, motherboard asus maximus gene v.
+> On Fri, Jan 17, 2014 at 09:40:02AM +0000, Jianguo Wu wrote:
+>> Now disabling kmemleak is an irreversible operation, but sometimes
+>> we may need to re-enable kmemleak at runtime. So add a knob to enable
+>> kmemleak at runtime:
+>> echo on > /sys/kernel/debug/kmemleak
+> 
+> It is irreversible for very good reason: once it missed the initial
+> memory allocations, there is no way for kmemleak to build the object
+> reference graph and you'll get lots of false positives, pretty much
+> making it unusable.
 > 
 
-I expect this was fixed by 
-
-commit d1969a84dd6a44d375aa82bba7d6c38713a429c3
-Author: Hugh Dickins <hughd@google.com>
-Date:   Thu Jan 16 15:26:48 2014 -0800
-
-    percpu_counter: unbreak __percpu_counter_add()
+Do you mean we didn't trace memory allocations during kmemleak disable period,
+and these memory may reference to new allocated objects after re-enable? 
 
