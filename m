@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaARXqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 18:46:25 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33125 "EHLO mail.skyhub.de"
+	id S1751885AbaARXtc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 18:49:32 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:42225 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533AbaARXqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 18:46:22 -0500
-Date: Sun, 19 Jan 2014 00:46:11 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] Adding hyperv.h to uapi headers
-Message-ID: <20140118234611.GJ15466@pd.tnic>
-References: <1390078081-26030-1-git-send-email-gurligebis@gentoo.org>
- <1390079163.25980.2.camel@x41>
- <CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
- <20140118221212.GB15543@pd.tnic>
- <CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
- <20140118223308.GH15466@pd.tnic>
- <CACPM=kVDpAFSWb3v8zS0+JE2U5C6pSNvqvL+aQ-npLtU05JGrA@mail.gmail.com>
+	id S1751736AbaARXt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 18:49:29 -0500
+Date: Sun, 19 Jan 2014 01:41:34 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC PATCHv2 1/2] Add mm flag to control THP
+Message-ID: <20140118234134.GA10970@node.dhcp.inet.fi>
+References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACPM=kVDpAFSWb3v8zS0+JE2U5C6pSNvqvL+aQ-npLtU05JGrA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 12:24:10AM +0100, Bjarke Istrup Pedersen wrote:
-> I have submitted a v2 patch - does it look better?
+On Thu, Jan 16, 2014 at 03:01:43PM -0600, Alex Thorlton wrote:
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 91672e2..475f59f 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -1,6 +1,8 @@
+>  #ifndef _LINUX_HUGE_MM_H
+>  #define _LINUX_HUGE_MM_H
+>  
+> +#include <linux/sched.h>
+> +
 
-If you mean this:
+Hm, now <linux/mm.h> depends on <linux/sched.h>. It doesn't look as a good
+idea.
 
- include/linux/hyperv.h      | 321 +----------------------------------------
- include/uapi/linux/Kbuild   |   1 +
- include/uapi/linux/hyperv.h | 344 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 347 insertions(+), 319 deletions(-)
- create mode 100644 include/uapi/linux/hyperv.h
+Why do we have MMF_* defines in <linux/sched.h>?
+Wouldn't it more appropriate to put them in <linux/mm_types.h>?
 
-you've got the rough idea of uapi headers :-).
+>  extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
+>  				      struct vm_area_struct *vma,
+>  				      unsigned long address, pmd_t *pmd,
+> @@ -74,7 +76,8 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+>  	   (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG) &&			\
+>  	   ((__vma)->vm_flags & VM_HUGEPAGE))) &&			\
+>  	 !((__vma)->vm_flags & VM_NOHUGEPAGE) &&			\
+> -	 !is_vma_temporary_stack(__vma))
+> +	 !is_vma_temporary_stack(__vma) &&				\
+> +	 !test_bit(MMF_THP_DISABLE, &(__vma)->vm_mm->flags))
+>  #define transparent_hugepage_defrag(__vma)				\
+>  	((transparent_hugepage_flags &					\
+>  	  (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)) ||			\
+> @@ -227,7 +230,6 @@ static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_str
+>  {
+>  	return 0;
+>  }
+> -
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>  
+>  #endif /* _LINUX_HUGE_MM_H */
 
-Whether that makes sense at all in the hyperv case, you'll have to wait
-for the hyperv guys to say something.
-
-What makes me wonder is why do you need to export this now?
-
-Because if those userspace hyperv tools would really need the
-definitions in that header, then they never did build before. Which
-would be really stupid. Btw, which userspace hyperv tools do you mean?
-Where are they?
-
-What am I missing?
+Why?
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ Kirill A. Shutemov
