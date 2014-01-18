@@ -1,188 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaARNEo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 08:04:44 -0500
-Received: from s3.neomailbox.net ([178.209.62.157]:26568 "EHLO
-	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaARNEn (ORCPT
+	id S1753737AbaARNQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 08:16:59 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51485 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751814AbaARNQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 08:04:43 -0500
-Message-ID: <52DA7B9E.4040202@meshcoding.com>
-Date: Sat, 18 Jan 2014 14:03:26 +0100
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 18 Jan 2014 08:16:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [Resend][GIT PULL] Last minute ACPI fix for v3.13
+Date: Sat, 18 Jan 2014 14:31 +0100
+Message-ID: <1561890.zx3ITxE09Q@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1607643.bXgUGr2Zse@vostro.rjw.lan>
+References: <1607643.bXgUGr2Zse@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, David Miller <davem@davemloft.net>
-CC: mareklindner@neomailbox.ch, sw@simonwunderlich.de,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-metag@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH linux-next] net: batman-adv: use "__packed __aligned(2)"
- for each structure instead of "__packed(2)" region
-References: <52DA65F4.5070501@gmail.com>
-In-Reply-To: <52DA65F4.5070501@gmail.com>
-X-Enigmail-Version: 1.6
-OpenPGP: id=43FD7307
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="AaCOvu4D3243PQ4HrkpQnqlPmNQSCN3hJ"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---AaCOvu4D3243PQ4HrkpQnqlPmNQSCN3hJ
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On 18/01/14 12:31, Chen Gang wrote:
-> Unfortunately, not all compilers assumes the structures within a pack
-> region also need be packed (e.g. metag), so need add a pack explicitly
-> to satisfy all compilers.
->=20
-> The related error (under metag with allmodconfig):
->=20
->     MODPOST 2952 modules
->   ERROR: "__compiletime_assert_431" [net/batman-adv/batman-adv.ko] unde=
-fined!
->   ERROR: "__compiletime_assert_432" [net/batman-adv/batman-adv.ko] unde=
-fined!
->   ERROR: "__compiletime_assert_429" [net/batman-adv/batman-adv.ko] unde=
-fined!
->   ERROR: "__compiletime_assert_428" [net/batman-adv/batman-adv.ko] unde=
-fined!
->   ERROR: "__compiletime_assert_423" [net/batman-adv/batman-adv.ko] unde=
-fined!
->=20
->=20
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+The original revert commit was missing the Fixes: and Reported-by: tags, so if
+you haven't pulled it yet, here it goes again with those tags added.
 
-David, what do you think about this change?
+Please pull from the git repository at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-3.13-fixup
+
+to receive a last-minute ACPI fix for 3.13 as commit 
+2b844ba79f4a114bd228ad6fee040ffd99a0963d
+
+  Revert "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"
+
+on top of commit 7e22e91102c6b9df7c4ae2168910e19d2bb14cd6
+
+  Linux 3.13-rc8
+
+This reverts a commit that causes the Alan Cox' ASUS T100TA to "crash and
+burn" during boot if the Baytrail pinctrl driver is compiled in.
+
+Thanks!
 
 
-Can "__packed __aligned(2)" generate a different structure padding than
-"#pragma pack(2)" ?
+---------------
 
-I am not really sure about the difference between the two. But if we
-have the possibility that the padding may change then this patch should
-go into net, otherwise we will have a protocol compatibility problem
-between 3.13 and 3.14.
+Rafael J. Wysocki (1):
+      Revert "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"
 
+---------------
 
-Cheers,
+ drivers/acpi/acpi_lpss.c           | 1 -
+ drivers/pinctrl/pinctrl-baytrail.c | 1 -
+ 2 files changed, 2 deletions(-)
 
-> ---
->  net/batman-adv/packet.h | 16 ++++++----------
->  1 file changed, 6 insertions(+), 10 deletions(-)
->=20
-> diff --git a/net/batman-adv/packet.h b/net/batman-adv/packet.h
-> index 0a381d1..9206b48 100644
-> --- a/net/batman-adv/packet.h
-> +++ b/net/batman-adv/packet.h
-> @@ -154,7 +154,6 @@ enum batadv_tvlv_type {
->  	BATADV_TVLV_ROAM	=3D 0x05,
->  };
-> =20
-> -#pragma pack(2)
->  /* the destination hardware field in the ARP frame is used to
->   * transport the claim type and the group id
->   */
-> @@ -162,8 +161,7 @@ struct batadv_bla_claim_dst {
->  	uint8_t magic[3];	/* FF:43:05 */
->  	uint8_t type;		/* bla_claimframe */
->  	__be16 group;		/* group id */
-> -};
-> -#pragma pack()
-> +} __packed __aligned(2);
-> =20
->  /**
->   * struct batadv_ogm_packet - ogm (routing protocol) packet
-> @@ -281,7 +279,6 @@ struct batadv_icmp_packet_rr {
->   * misalignment of the payload after the ethernet header. It may also =
-lead to
->   * leakage of information when the padding it not initialized before s=
-ending.
->   */
-> -#pragma pack(2)
-> =20
->  /**
->   * struct batadv_unicast_packet - unicast packet for network payload
-> @@ -300,7 +297,7 @@ struct batadv_unicast_packet {
->  	/* "4 bytes boundary + 2 bytes" long to make the payload after the
->  	 * following ethernet header again 4 bytes boundary aligned
->  	 */
-> -};
-> +}  __packed __aligned(2);
-> =20
->  /**
->   * struct batadv_unicast_4addr_packet - extended unicast packet
-> @@ -316,7 +313,7 @@ struct batadv_unicast_4addr_packet {
->  	/* "4 bytes boundary + 2 bytes" long to make the payload after the
->  	 * following ethernet header again 4 bytes boundary aligned
->  	 */
-> -};
-> +}  __packed __aligned(2);
-> =20
->  /**
->   * struct batadv_frag_packet - fragmented packet
-> @@ -347,7 +344,7 @@ struct batadv_frag_packet {
->  	uint8_t orig[ETH_ALEN];
->  	__be16  seqno;
->  	__be16  total_size;
-> -};
-> +}  __packed __aligned(2);
-> =20
->  /**
->   * struct batadv_bcast_packet - broadcast packet for network payload
-> @@ -368,7 +365,7 @@ struct batadv_bcast_packet {
->  	/* "4 bytes boundary + 2 bytes" long to make the payload after the
->  	 * following ethernet header again 4 bytes boundary aligned
->  	 */
-> -};
-> +}  __packed __aligned(2);
-> =20
->  /**
->   * struct batadv_coded_packet - network coded packet
-> @@ -404,9 +401,8 @@ struct batadv_coded_packet {
->  	uint8_t  second_orig_dest[ETH_ALEN];
->  	__be32   second_crc;
->  	__be16   coded_len;
-> -};
-> +}  __packed __aligned(2);
-> =20
-> -#pragma pack()
-> =20
->  /**
->   * struct batadv_unicast_tvlv - generic unicast packet with tvlv paylo=
-ad
->=20
-
-
---=20
-Antonio Quartulli
-
-
---AaCOvu4D3243PQ4HrkpQnqlPmNQSCN3hJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS2nuiAAoJEEKTMo6mOh1Vv4oP/Rskco/HiL6QlbP3mDcqaMol
-lqOrZH3O0r2Gc2FKVzrjqMX2dX08i8XkxtSSwVdtPeCQ6R7doGbOarFk+jTazhx6
-lxyUpX/sA2vvGrffx7jrRuEuZJKmMghvJ+QNFjbAlcL421Y49vtN5mNIDIpWrOSG
-UcbM4UzFbikE9SAnISinwhQSNe0YYWp+V/H+VOcEZ0R9fGtqJBFzjOHYRo20IcNx
-qwBOyMH/ANirFruxvNofuux4OzVlc2SXabFdm+0lQQplSQWRE7tmrBclvOnBJPd/
-g1JfH39UorL8ubcqFvayoQ1GPeNaMFBKMLECIC6tFlrEj5RGPUHArdpKWbvA9ZTn
-qEn5l2u08MPQnei9LLYaK9poCZH8HoGkjAe+Pa0W05baFK8Ndm5sr3slyeLf0xkH
-jfbG+gUtxxjRi7nr+uK9mkeWRHBlcyAaauvgf+FCtaPuUb90YlHueX0cEfJgKabt
-ZbmekjIjm1m03gT7lgXEOEFtHyXqDFoZ0xUbkVk5LtnsTxFEQc2zAObQtgJAbfVh
-d2bMrVC5fvuo74/qyxB5GdOPi6ofZULTqkjYB28JVE9joMGbPPJSP/Mcfe/hLI1Z
-beHQvd5tfWO0Lj8a0S91GCUNUOGMi7kjgFwSYkrbHJc7Y5VKbBP8gDlSeP9+aHA4
-pqRt750w0apFrpfpTB1o
-=jvi1
------END PGP SIGNATURE-----
-
---AaCOvu4D3243PQ4HrkpQnqlPmNQSCN3hJ--
