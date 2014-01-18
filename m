@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaARBVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 20:21:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37416 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaARBVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 20:21:34 -0500
-Message-ID: <52D9D6FC.7050100@zytor.com>
-Date: Fri, 17 Jan 2014 17:21:00 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753070AbaARBWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 20:22:53 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:57861 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971AbaARBWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 20:22:52 -0500
+Message-ID: <52D9D6F2.2030003@huawei.com>
+Date: Sat, 18 Jan 2014 09:20:50 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Borislav Petkov <bp@alien8.de>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum
- 793
-References: <20140114114133.GA31473@khazad-dum.debian.net> <20140114115547.GA29887@pd.tnic> <52D55468.6000000@zytor.com> <20140114153534.GE29865@pd.tnic> <20140114162722.GF29865@pd.tnic> <20140117222806.GB13930@amd.pavel.ucw.cz> <20140117225013.GE14649@pd.tnic> <52D9B408.4020007@zytor.com> <20140118002926.GA22185@amd.pavel.ucw.cz>
-In-Reply-To: <20140118002926.GA22185@amd.pavel.ucw.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: <robin.yb@huawei.com>, David Rientjes <rientjes@google.com>,
+        <viro@zeniv.linux.org.uk>
+CC: <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2] fs: don't write pages when receiving a pending SIGKILL
+ in __get_user_pages()
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2014 04:29 PM, Pavel Machek wrote:
-> 
-> Have you checked your dmesg recently? Normal people don't read
-> it... it is just too much of it.
-> 
->> Printing a warning is appropriate if we can't actually fix the problem
->> in the OS.  If we actually make the problem go away then we have just
->> done our job and we can be done with it.
-> 
-> I disagree. Older kernel versions still may have problem, etc.
-> 
-> We normally do print warnings for problems we work around. We want
-> vendors to fix their hardware, too...
-> 
-> ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT -
-> 0xBDB5FF40/0x00000000BDB64F40, using 32 (20131115/tbfadt-522)
-> [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-> 
+In the process IO direction, dio_refill_pages will call get_user_pages_fast 
+to map the page from user space. If ret is less than 0 and IO is write, the 
+function will create a zero page to fill data. This may work for some file 
+system, but in some device operate we prefer whole write or fail, not half 
+data half zero, e.g. fs metadata, like inode, identy.
+This happens often when kill a process which is doing direct IO. Consider 
+the following cases, the process A is doing IO process, may enter __get_user_pages 
+function, if other processes send process A SIG_KILL, A will enter the 
+following branches 
+		/*
+		 * If we have a pending SIGKILL, don't keep faulting
+		 * pages and potentially allocating memory.
+		 */
+		if (unlikely(fatal_signal_pending(current)))
+			return i ? i : -ERESTARTSYS;
+Return current pages. direct IO will write the pages, the subsequent pages 
+which can’t get will use zero page instead. 
 
-You say people don't read their dmesg...
-... because there is too much ...
-... so let's add more?
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Bin Yang <robin.yb@huawei.com>
+---
+ fs/direct-io.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-What am I missing here?
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 0e04142..b74d565 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -174,6 +174,9 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+ 		&dio->pages[0]);		/* Put results here */
+ 
+ 	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
++		/* If task is killed, do not write anymore */
++		if (ret == -ERESTARTSYS)
++			goto out;
+ 		struct page *page = ZERO_PAGE(0);
+ 		/*
+ 		 * A memory fault, but the filesystem has some outstanding
+-- 
+1.7.1
 
-	-hpa
 
 
