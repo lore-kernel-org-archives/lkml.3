@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaARMmL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 07:42:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57485 "EHLO
+	id S1753954AbaARMpX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 07:45:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57564 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaARMmJ (ORCPT
+	with ESMTP id S1753910AbaARMpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 07:42:09 -0500
-Date: Sat, 18 Jan 2014 13:41:36 +0100
+	Sat, 18 Jan 2014 07:45:21 -0500
+Date: Sat, 18 Jan 2014 13:44:51 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Turner <mattst88@gmail.com>, Waiman Long <waiman.long@hp.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-Message-ID: <20140118124136.GZ30183@twins.programming.kicks-ass.net>
-References: <CA+55aFyF2Vg785qO52fJLV7rsi6bMtGFhxsAvJ7354EBrcESCA@mail.gmail.com>
- <20140115023958.GA10038@linux.vnet.ibm.com>
- <20140115080753.GW31570@twins.programming.kicks-ass.net>
- <20140115205346.GF10038@linux.vnet.ibm.com>
- <20140115232134.GM31570@twins.programming.kicks-ass.net>
- <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com>
- <20140116103659.GO7572@laptop.programming.kicks-ass.net>
- <20140118100105.GV10038@linux.vnet.ibm.com>
- <20140118113406.GY30183@twins.programming.kicks-ass.net>
- <20140118122548.GX10038@linux.vnet.ibm.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140118124451.GA30183@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+ <20140116121955.GQ31570@twins.programming.kicks-ass.net>
+ <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+ <20140116222536.GX30183@twins.programming.kicks-ass.net>
+ <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
+ <52D8625C.1000902@zytor.com>
+ <20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
+ <1390038366.5676.10.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140118122548.GX10038@linux.vnet.ibm.com>
+In-Reply-To: <1390038366.5676.10.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 04:25:48AM -0800, Paul E. McKenney wrote:
-> On Sat, Jan 18, 2014 at 12:34:06PM +0100, Peter Zijlstra wrote:
-> > On Sat, Jan 18, 2014 at 02:01:05AM -0800, Paul E. McKenney wrote:
-> > > OK, I will bite...  Aside from fine-grained code timing, what code could
-> > > you write to tell the difference between a real one-byte store and an
-> > > RMW emulating that store?
-> > 
-> > Why isn't fine-grained code timing an issue? I'm sure Alpha people will
-> > love it when their machine magically keels over every so often.
-> > 
-> > Suppose we have two bytes in a word that get concurrent updates:
-> > 
-> > union {
-> > 	struct {
-> > 		u8 a;
-> > 		u8 b;
-> > 	};
-> > 	int word;
-> > } ponies = { .word = 0, };
-> > 
-> > then two threads concurrently do:
-> > 
-> > CPU0:		CPU1:
-> > 
-> > ponies.a = 5	ponies.b = 10
-> > 
-> > 
-> > At which point you'd expect: a == 5 && b == 10
-> > 
-> > However, with a rmw you could end up like:
-> > 
-> > 
-> > 			load r, ponies.word
-> > load r, ponies.word
-> > and  r, ~0xFF
-> > or   r, 5
-> > store ponies.word, r
-> > 			and r, ~0xFF00
-> > 			or r, 10 << 8
-> > 			store ponies.word, r
-> > 
-> > which gives: a == 0 && b == 10
-> > 
-> > The same can be had on a single CPU if you make the second RMW an
-> > interrupt.
-> > 
-> > 
-> > In fact, we recently had such a RMW issue on PPC64 although from a
-> > slightly different angle, but we managed to hit it quite consistently.
-> > See commit ba1f14fbe7096.
-> > 
-> > The thing is, if we allow the above RMW 'atomic' store, we have to be
-> > _very_ careful that there cannot be such overlapping stores, otherwise
-> > things will go BOOM!
-> > 
-> > However, if we already have to make sure there's no overlapping stores,
-> > we might as well write a wide store and not allow the narrow stores to
-> > begin with, to force people to think about the issue.
+On Sat, Jan 18, 2014 at 10:46:06AM +0100, Mike Galbraith wrote:
 > 
-> Ah, I was assuming atomic rmw, which for Alpha would be implemented using
-> the LL and SC instructions.  Yes, lots of overhead, but if the CPU
-> designers chose not to provide a load/store byte...
+> I hope it doesn't look quite like that, next-20140117 is -ENOBOOT on
+> Q6600 box.  See below for an alternative.
 
-I don't see how ll/sc will help any. Suppose we do the a store as
-smp_store_release() using ll/sc but the b store is unaware and doesn't
-do an ll/sc.
+Urgh, I see, we call the idle arch_cpu_idle() callback with irqs
+disabled.
 
-Then we're still up shit creek without no paddle.
+Could something like this work?
 
-Whatever you're going to do, you need to be intimately aware of what the
-other bits in your word are doing.
+	local_irq_enable();
+	mwait_idle_with_hints(0,0);
+
+The interrupt enable window is slightly larger, but I'm not immediately
+seeing a problem with that.
