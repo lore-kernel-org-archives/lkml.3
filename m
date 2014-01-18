@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaARHTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 02:19:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460AbaARHTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 02:19:08 -0500
-Date: Sat, 18 Jan 2014 08:15:38 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian King <brking@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kalle Valo <kvalo@qca.qualcomm.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        wil6210@qca.qualcomm.com, ath10k@lists.infradead.org,
-        linux-nvme@lists.infradead.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
-Message-ID: <20140118071538.GA32535@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
+	id S1753586AbaARHZz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 02:25:55 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:53466 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669AbaARHZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 02:25:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 18 Jan 2014 12:55:51 +0530
+Message-ID: <CAJ8eaTzT4Os5RjtTu5gWpA=t-8Gg9rwmthEHVUOf+3+XhRpu6Q@mail.gmail.com>
+Subject: BUG: spinlock lockup
+From: naveen yadav <yad.naveen@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, will.deacon@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 02:00:32PM -0700, Bjorn Helgaas wrote:
-> > As the release is supposedly this weekend, do you prefer
-> > the patches to go to your tree or to individual trees after
-> > the release?
-> 
-> I'd be happy to merge them, except for the fact that they probably
-> wouldn't have any time in -next before I ask Linus to pull them.  So
-> how about if we wait until after the release, ask the area maintainers
-> to take them, and if they don't take them, I'll put them in my tree
-> for v3.15?
+Dear All,
 
-Patch 11 depends on patches 1-10, so I am not sure how to better handle it.
-Whatever works for you ;)
+We are using 3.8.x  kernel on ARM, We are facing soft lockup issue.
+Following are the logs.
 
-I am only concerned with a regression fix "ahci: Fix broken fallback to
-single MSI mode" which would be nice to have in 3.14. But it seems pretty
-much too late.
+BUG: spinlock lockup suspected on CPU#0, process1/525
+lock: 0xd8ac9a64, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
 
-> Bjorn
 
-Thanks!
+1 . Looks like lock is available as owner is -1, why arch_spin_trylock
+is getting failed ?
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+2. There is a patch : ARM: spinlock: retry trylock operation if strex
+fails on free lock
+http://permalink.gmane.org/gmane.linux.ports.arm.kernel/240913
+In this patch, A loop has been added around strexeq %2, %0, [%3]".
+{Comment "retry the trylock operation if the lock appears
+to be free but the strex reported failure"}
+
+but arch_spin_trylock is called by __spin_lock_debug and its already
+getting called in loops. So what purpose is resolves?
+
+static void __spin_lock_debug(raw_spinlock_t *lock)
+{
+        u64 i;
+        u64 loops = loops_per_jiffy * HZ;
+
+        for (i = 0; i < loops; i++) {
+                if (arch_spin_trylock(&lock->raw_lock))
+                        return;
+                __delay(1);
+        }
+        /* lockup suspected: */
+        spin_dump(lock, "lockup suspected");
+}
+
+3. Is this patch useful to us, How can we reproduce this scenario ?
+Scenario : Lock is available but arch_spin_trylock  is returning as failure
+
+Thanks
