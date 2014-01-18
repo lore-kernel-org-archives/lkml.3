@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaARWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 17:12:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55162 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436AbaARWMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 17:12:24 -0500
-Date: Sat, 18 Jan 2014 23:12:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] Adding hyperv.h to uapi headers
-Message-ID: <20140118221212.GB15543@pd.tnic>
-References: <1390078081-26030-1-git-send-email-gurligebis@gentoo.org>
- <1390079163.25980.2.camel@x41>
- <CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
+	id S1751727AbaARWQX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 17:16:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34703 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaARWQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 17:16:20 -0500
+Message-ID: <52DAFD32.7030309@infradead.org>
+Date: Sat, 18 Jan 2014 14:16:18 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Help Needed
+References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
+In-Reply-To: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 11:07:10PM +0100, Bjarke Istrup Pedersen wrote:
-> I have been thinking about other solutions, but so far, I haven't been
-> able to find one that solves it, so the tools build. (An option might
-> be to strip it from the __KERNEL__ part, to make it smaller, but I
-> don't know what difference that would make :-)
+On 01/18/2014 09:34 AM, Madhusudhan Rao Sripalle wrote:
+> Hi,
+> 
+> I am an expert of HP-UX (kernel and drivers), while being novice at
+> linux. I am currently looking ways for quick ramp up so that I could
+> contribute to linux community.
+> 
+> Kindly provide pointers starting from where I could get the kernel
+> sources. Appreciate help in advance.
 
-The fix is to move the userspace stuff into the uapi header and include
-that header in the kernel header.
+google for "linux kernel source" -- the top 2 URLs give you the kernel
+source trees ... unless you want the source for some particular distro
+like Red Hat, SuSE, Ubuntu, ArchLinux, etc., then you would need to go
+to the web sites of those distros to find the sources.
 
-See include/linux/sched.h and many others for an example.
+Also check http://kernelnewbies.org/ for some newbie info.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+~Randy
