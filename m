@@ -1,133 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaARE2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 23:28:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31906 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752144AbaARE2G (ORCPT
+	id S1753426AbaARElw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 23:41:52 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:33505 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaARElt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 23:28:06 -0500
-Date: Fri, 17 Jan 2014 23:28:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [GIT PULL][PATCH] tracing: Fix buggered tee(2) on tracing_pipe
-Message-ID: <20140117232801.59b11e0f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 17 Jan 2014 23:41:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CACRpkdZOD4zeA8T5kbJ4c5NsnuzHCg1mw8rRMYNT9c4R-Qnc6A@mail.gmail.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+ <1389941251-32692-5-git-send-email-wens@csie.org> <201401171747.46332.arnd@arndb.de>
+ <CAGb2v67UKiyfJbKZ_Frk3OwZupMPoA2Ck3Hj2zsRFXBQPztavg@mail.gmail.com> <CACRpkdZOD4zeA8T5kbJ4c5NsnuzHCg1mw8rRMYNT9c4R-Qnc6A@mail.gmail.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Sat, 18 Jan 2014 12:41:28 +0800
+X-Google-Sender-Auth: 4xE3f517sTgKm-AoVLj3Wcgctxs
+Message-ID: <CAGb2v66XGj+WPGY7tpPT-2f91XpLVsGeBw=Ne+1k9F=PzZjZDg@mail.gmail.com>
+Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree <devicetree@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 18, 2014 at 7:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Jan 17, 2014 at 6:43 PM, Chen-Yu Tsai <wens@csie.org> wrote:
+>> On Sat, Jan 18, 2014 at 12:47 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+>>>> +- NAME_shutdown-gpios  : GPIO phandle to shutdown control
+>>>> +                         (phandle must be the second)
+>>>> +- NAME_reset-gpios     : GPIO phandle to reset control
+>>>> +
+>>>> +NAME must match the rfkill-name property. NAME_shutdown-gpios or
+>>>> +NAME_reset-gpios, or both, must be defined.
+>>>> +
+>>>
+>>> I don't understand this part. Why do you include the name in the
+>>> gpios property, rather than just hardcoding the property strings
+>>> to "shutdown-gpios" and "reset-gpios"?
+>>
+>> This quirk is a result of how gpiod_get_index implements device tree
+>> lookup.
+>
+> Why can't it just have a single property "gpios", where the first
+> element is the reset GPIO and the second is the shutdown GPIO?
+>
+> rfkill-gpio does this:
+>
+> gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+> gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
+>
+> The passed con ID name parameter is only there for the device
+> tree case it seems. (ACPI ignores it.) So what about you just
+> don't pass it at all and patch it to do like this instead:
+>
+> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 0);
+> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 1);
 
-Linus,
+I'd like that. It's much cleaner.
 
-Al Viro has concerns with the trace_pipe release method calling
-__free_page() instead of using the generic_pipe_buf_release() which
-does a page_cache_release(). Looking at the differences between
-__free_page() and page_cache_release() I do not think there's a real
-issue here. But to be on the safe side, and at least to be symmetric
-with generic_pipe_buf_get(), this patch is fine to add.
+> Heikki, are you OK with this change?
+>
+> I think this is actually necessary if the ACPI and DT unification
+> pipe dream shall limp forward, we cannot have arguments passed
+> that have a semantic effect on DT but not on ACPI... Drivers
+> that are supposed to use both ACPI and DT will always
+> have to pass NULL as con ID.
+>
+>> If con_id is given, it is prepended to "gpios" as the property string.
+>> con_id is also used as the label passed to gpiod_request, which is
+>> then shown in /sys/kernel/debug/gpio.
+>
+> If your problem  is really what turns up in debugfs, then we need
+> to figure out a way to label gpios outside of the *gpiod_get* calls.
 
-Please pull the latest trace-fixes-v3.13-rc8 tree, which can be found at:
+Let's add a gpiod_set_label call. Currently there's a desc_set_label
+in gpiolib, which is static inlined. We can either rename and promote
+it to non-static, or add a new wrapping function.
+
+> The string passed in *gpiod_get* is a "connection ID" not a proper
+> name for the GPIO.
+
+I see. Perhaps we should not pass this to gpiod_request as the label,
+or add a comment stating consumers can use the new gpiod_set_label call
+to change it.
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.13-rc8
-
-Tag SHA1: 5a8329936de8662773042fa76bc3c3d0c48fe5c3
-Head SHA1: c50b3d58415b1f46bdb044fbd4e807cda49f0aa2
-
-
-Al Viro (1):
-      tracing: Fix buggered tee(2) on tracing_pipe
-
-----
- kernel/trace/trace.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
----------------------------
-commit c50b3d58415b1f46bdb044fbd4e807cda49f0aa2
-Author: Al Viro <viro@ZenIV.linux.org.uk>
-Date:   Fri Jan 17 07:53:39 2014 -0500
-
-    tracing: Fix buggered tee(2) on tracing_pipe
-    
-    In kernel/trace/trace.c we have this:
-    static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
-                                         struct pipe_buffer *buf)
-    {
-            __free_page(buf->page);
-    }
-    static const struct pipe_buf_operations tracing_pipe_buf_ops = {
-            .can_merge              = 0,
-            .map                    = generic_pipe_buf_map,
-            .unmap                  = generic_pipe_buf_unmap,
-            .confirm                = generic_pipe_buf_confirm,
-            .release                = tracing_pipe_buf_release,
-            .steal                  = generic_pipe_buf_steal,
-            .get                    = generic_pipe_buf_get,
-    };
-    with
-    void generic_pipe_buf_get(struct pipe_inode_info *pipe, struct pipe_buffer *buf)
-    {
-            page_cache_get(buf->page);
-    }
-    
-    and I don't see anything that would've prevented tee(2) called on the pipe
-    that got stuff spliced into it from that sucker.  ->ops->get() will be
-    called, then buf gets copied into target pipe's ->bufs[] and eventually
-    readers get to both copies of the buffer.  With
-    	get_page(page)
-    	look at that page
-    	__free_page(page)
-    	look at that page
-    	__free_page(page)
-    which is not a good thing, to put it mildly.  AFAICS, that ought to use
-    the normal generic_pipe_buf_release() (aka page_cache_release(buf->page)),
-    shouldn't it?
-    
-    [
-     SDR - As trace_pipe just allocates the page with alloc_page(GFP_KERNEL),
-      and doesn't do anything special with it (no LRU logic). The __free_page()
-      should be fine, as it wont actually free a page with reference count.
-      Maybe there's a chance to leak memory? Anyway, This change is at a minimum
-      good for being symmetric with generic_pipe_buf_get, it is fine to add.
-    ]
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-    [ SDR - Removed no longer used tracing_pipe_buf_release ]
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9d20cd9..8f86143 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4212,12 +4212,6 @@ out:
- 	return sret;
- }
- 
--static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
--				     struct pipe_buffer *buf)
--{
--	__free_page(buf->page);
--}
--
- static void tracing_spd_release_pipe(struct splice_pipe_desc *spd,
- 				     unsigned int idx)
- {
-@@ -4229,7 +4223,7 @@ static const struct pipe_buf_operations tracing_pipe_buf_ops = {
- 	.map			= generic_pipe_buf_map,
- 	.unmap			= generic_pipe_buf_unmap,
- 	.confirm		= generic_pipe_buf_confirm,
--	.release		= tracing_pipe_buf_release,
-+	.release		= generic_pipe_buf_release,
- 	.steal			= generic_pipe_buf_steal,
- 	.get			= generic_pipe_buf_get,
- };
+Cheers,
+ChenYu
