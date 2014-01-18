@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaAROYd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 09:24:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37412 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaAROYb (ORCPT
+	id S1753873AbaAROZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 09:25:26 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34000 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaAROZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 09:24:31 -0500
-Date: Sat, 18 Jan 2014 17:24:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: devel@driverdev.osuosl.org, James Hogan <james.hogan@imgtec.com>,
-        andreas.dilger@intel.com, Greg KH <gregkh@linuxfoundation.org>,
-        bergwolf@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        oleg.drokin@intel.com, jacques-charles.lafoucriere@cea.fr,
-        jinshan.xiong@intel.com, linux-metag@vger.kernel.org
-Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add
- "__attribute__((packed))" for the related union
-Message-ID: <20140118142404.GT7444@mwanda>
-References: <52DA4E6A.1000308@gmail.com>
- <20140118100547.GS7444@mwanda>
- <52DA56C2.5010802@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DA56C2.5010802@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sat, 18 Jan 2014 09:25:24 -0500
+From: Alex Ling <kasimling@gmail.com>
+To: ben-linux@fluff.org, kgene.kim@samsung.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Alex Ling <kasimling@gmail.com>
+Subject: [PATCH 1/2] ARM: dts: Add dwmmc host for TINY4412
+Date: Sat, 18 Jan 2014 22:24:42 +0800
+Message-Id: <1390055084-27483-1-git-send-email-kasimling@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 06:26:10PM +0800, Chen Gang wrote:
-> On 01/18/2014 06:05 PM, Dan Carpenter wrote:
-> > On Sat, Jan 18, 2014 at 05:50:34PM +0800, Chen Gang wrote:
-> >> Unfortunately, not all compilers assumes the structures within a pack
-> >> region also need be packed (e.g. metag), so need add a pack explicitly
-> >> to satisfy all compilers.
-> >>
-> >> The related error (under metag with allmodconfig):
-> >>
-> >>     CC [M]  drivers/staging/lustre/lustre/lov/lov_pack.o
-> >>   drivers/staging/lustre/lustre/lov/lov_pack.c: In function 'lov_getstripe':
-> >>   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: duplicate case value
-> >>   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: previously used here
-> >>
-> >> And originally, all related code used "__attribute__((packed))", so
-> >> still use it instead of '__packed'.
-> > 
-> > Use __packed.  Then at least one line will be correct which is better
-> > than nothing.
-> > 
-> 
-> Hmm... but that will break the 'consistency' (which is not quite good
-> for readers).
-> 
-> For me, it will be better to provide another patch to change all
-> "__attribute__((packed))" to "__packed" within this file.
-> 
-> What about your ideas?
-> 
+Add dwmmc host node for to support eMMC on TINY4412 board.
 
-In the end, it's not something we care about enough to ask you to redo
-the patch.  But what I'm saying is that you should prefer kernel style
-over local style.  We'll fix the surrounding lines later.
+Signed-off-by: Alex Ling <kasimling@gmail.com>
+---
+ arch/arm/boot/dts/exynos4412-tiny4412.dts |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-regards,
-dan carpenter
+diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+index 0a98312..2c6bfe3 100644
+--- a/arch/arm/boot/dts/exynos4412-tiny4412.dts
++++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+@@ -63,6 +63,25 @@
+ 		status = "okay";
+ 	};
+ 
++	mmc@12550000 {
++		num-slots = <1>;
++		supports-highspeed;
++		broken-cd;
++		non-removable;
++		card-detect-delay = <200>;
++		samsung,dw-mshc-ciu-div = <3>;
++		samsung,dw-mshc-sdr-timing = <2 3>;
++		samsung,dw-mshc-ddr-timing = <1 2>;
++		pinctrl-0 = <&sd4_clk &sd4_cmd &sd4_bus4 &sd4_bus8>;
++		pinctrl-names = "default";
++		status = "okay";
++
++		slot@0 {
++			reg = <0>;
++			bus-width = <8>;
++		};
++	};
++
+ 	serial@13800000 {
+ 		status = "okay";
+ 	};
+-- 
+1.7.9.5
 
