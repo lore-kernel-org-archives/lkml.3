@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaARL0f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 06:26:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37114 "EHLO mail.skyhub.de"
+	id S1753847AbaARL0l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 06:26:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830AbaARL0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 06:26:31 -0500
-Date: Sat, 18 Jan 2014 12:26:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
-Message-ID: <20140118112620.GB15466@pd.tnic>
-References: <20140114153534.GE29865@pd.tnic>
- <20140114162722.GF29865@pd.tnic>
- <20140117222806.GB13930@amd.pavel.ucw.cz>
- <20140117225013.GE14649@pd.tnic>
- <52D9B408.4020007@zytor.com>
- <20140118002926.GA22185@amd.pavel.ucw.cz>
- <52D9D6FC.7050100@zytor.com>
- <20140118020155.GA24158@amd.pavel.ucw.cz>
- <20140118104231.GA15466@pd.tnic>
- <20140118110829.GA2071@amd.pavel.ucw.cz>
+	id S1752961AbaARL0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 06:26:35 -0500
+Message-ID: <52DA64B7.3030909@redhat.com>
+Date: Sat, 18 Jan 2014 12:25:43 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140118110829.GA2071@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Li Zefan <lizefan@huawei.com>
+CC: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/6] cgroup: make CONFIG_NET_CLS_CGROUP and CONFIG_NETPRIO_CGROUP
+ bool instead of tristate
+References: <1389982317-22225-1-git-send-email-tj@kernel.org> <1389982317-22225-2-git-send-email-tj@kernel.org> <52D9D421.6040608@huawei.com>
+In-Reply-To: <52D9D421.6040608@huawei.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 12:08:29PM +0100, Pavel Machek wrote:
-> ?? By the time userspace is booted, you have overwritten the MSR, and
-> information, if the BIOS is buggy, was lost.
+On 01/18/2014 02:08 AM, Li Zefan wrote:
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> 
+> On 2014/1/18 2:11, Tejun Heo wrote:
+>> net_cls and net_prio are the only cgroups which are allowed to be
+>> built as modules.  The savings from allowing the two controllers to be
+>> built as modules are tiny especially given that cgroup module support
+>> itself adds quite a bit of complexity.
+>>
+>> The following are the sizes of vmlinux with both built as module and
+>> both built as part of the kernel image with cgroup module support
+>> removed.
+>>
+>> 	text		data		bss		dec
+>> 	20292207	2411496		10784768	33488471
+>> 	20293421	2412568		10784768	33490757
+>>
+>> The total difference is 2286 bytes.  Given that none of other
+>> controllers has much chance of being made a module and that we're
+>> unlikely to add new modular controllers, the added complexity is
+>> simply not justifiable.
+>>
+>> As a first step to drop cgroup module support, this patch changes the
+>> two config options to bool from tristate and drops module related code
+>> from the two controllers.
+>>
+> 
+> I sugguested Daniel to do this for net_cls, and the change has been in
+> net-next.
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=fe1217c4f3f7d7cbf8efdd8dd5fdc7204a1d65a8
+> 
+> I was planning to remove module support after that change goes into
+> upstream. :)
 
-Bullshit - if you don't apply the workaround, the bit in the MSR remains
-unset.
+I am fine with that, thanks Li.
 
-Drop this senseless conversation and go play with something else. At
-least I am.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>> Cc: Thomas Graf <tgraf@suug.ch>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> ---
+>>   net/Kconfig               |  2 +-
+>>   net/core/netprio_cgroup.c | 32 ++------------------------------
+>>   net/sched/Kconfig         |  2 +-
+>>   net/sched/cls_cgroup.c    | 23 ++---------------------
+>>   4 files changed, 6 insertions(+), 53 deletions(-)
+>>
+> 
+> The modular version of task_netprioidx() in include/net/netprio_cgroup.h
+> can be removed.
+> 
