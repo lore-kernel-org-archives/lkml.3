@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaARDuC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 22:50:02 -0500
-Received: from [65.55.88.12] ([65.55.88.12]:21756 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752041AbaARDt7 (ORCPT
+	id S1753397AbaARDwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 22:52:34 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44864 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885AbaARDwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 22:49:59 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h1155h)
-Message-ID: <52D9F996.4060506@freescale.com>
-Date: Sat, 18 Jan 2014 09:18:38 +0530
-From: Prabhakar Kushwaha <prabhakar@freescale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 17 Jan 2014 22:52:31 -0500
+Message-ID: <52D9FA72.5020505@linaro.org>
+Date: Sat, 18 Jan 2014 11:52:18 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 1/2][v3] driver/memory:Move Freescale IFC driver to a
- common driver
-References: <1389850929-19873-1-git-send-email-prabhakar@freescale.com> <E7780BC2-F914-4D0C-8AB9-9FE7437A5C48@kernel.crashing.org>
-In-Reply-To: <E7780BC2-F914-4D0C-8AB9-9FE7437A5C48@kernel.crashing.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Sudeep Holla <Sudeep.Holla@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH 1/3] ACPI / idle: Move idle_boot_override out of the arch
+ directory
+References: <1389924207-7360-1-git-send-email-hanjun.guo@linaro.org> <1389924207-7360-2-git-send-email-hanjun.guo@linaro.org> <52D91CE2.3050704@arm.com> <52D9F8E8.8030602@linaro.org>
+In-Reply-To: <52D9F8E8.8030602@linaro.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 1/17/2014 10:38 PM, Kumar Gala wrote:
-> On Jan 15, 2014, at 11:42 PM, Prabhakar Kushwaha <prabhakar@freescale.com> wrote:
->
->> Freescale IFC controller has been used for mpc8xxx. It will be used
->> for ARM-based SoC as well. This patch moves the driver to driver/memory
->> and fix the header file includes.
+On 2014-1-18 11:45, Hanjun Guo wrote:
+> On 2014-1-17 20:06, Sudeep Holla wrote:
+>> On 17/01/14 02:03, Hanjun Guo wrote:
+>>> Move idle_boot_override out of the arch directory to be a single enum
+>>> including both platforms values, this will make it rather easier to
+>>> avoid ifdefs around which definitions are for which processor in
+>>> generally used ACPI code.
+>>>
+>>> IDLE_FORCE_MWAIT for IA64 is not used anywhere, so romove it.
+>>>
+>>> No functional change in this patch.
+>>>
+>>> Suggested-by: Alan <gnomes@lxorguk.ukuu.org.uk>
+>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>> ---
+[...]
+>>> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+>>> index 03e235ad..e324561 100644
+>>> --- a/include/linux/cpu.h
+>>> +++ b/include/linux/cpu.h
+>>> @@ -220,6 +220,14 @@ void cpu_idle(void);
+>>>  
+>>>  void cpu_idle_poll_ctrl(bool enable);
+>>>  
+>>> +enum idle_boot_override {
+>>> +	IDLE_NO_OVERRIDE = 0,
+>>> +	IDLE_HALT,
+>>> +	IDLE_NOMWAIT,
+>>> +	IDLE_POLL,
+>>> +	IDLE_POWERSAVE_OFF
+>>> +};
+>>> +
 >>
->> Also remove module_platform_driver() and  instead call
->> platform_driver_register() from subsys_initcall() to make sure this module
->> has been loaded before MTD partition parsing starts.
+>> I do understand the idea behind this change, but IMO HALT and MWAIT are x86
+>> specific and may not make sense for other architectures.
+> 
+> yes, this is the strange part, the value is arch-dependent.
+> 
 >>
->> Signed-off-by: Prabhakar Kushwaha <prabhakar@freescale.com>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->> ---
->> Changes for v2:
->> 	- Move fsl_ifc in driver/memory
->>
->> Changes for v3:
->> 	- move device tree bindings to memory
->>
->> .../{powerpc => memory-controllers}/fsl/ifc.txt    |    0
->> arch/powerpc/sysdev/Makefile                       |    1 -
->> drivers/memory/Makefile                            |    1 +
->> {arch/powerpc/sysdev => drivers/memory}/fsl_ifc.c  |    8 ++++++--
->> drivers/mtd/nand/fsl_ifc_nand.c                    |    2 +-
->> .../include/asm => include/linux}/fsl_ifc.h        |    0
->> 6 files changed, 8 insertions(+), 4 deletions(-)
->> rename Documentation/devicetree/bindings/{powerpc => memory-controllers}/fsl/ifc.txt (100%)
->> rename {arch/powerpc/sysdev => drivers/memory}/fsl_ifc.c (98%)
->> rename {arch/powerpc/include/asm => include/linux}/fsl_ifc.h (100%)
-> The Kconfig option for FSL_IFC should move into drivers/memory/Kconfig
+>> It will also require every architecture using ACPI to export
+>> boot_option_idle_override which may not be really required.
+> 
+> so, how about forget this patch and move boot_option_idle_override
+> related code into arch directory such as arch/x86/acpi/boot.c for
+> x86?
 
-Thanks Kumar for taking time and review this patch.
+The general idea is that we can move all the arch-dependent codes
+in ACPI driver to arch directory, then make codes in drivers/acpi/
+arch independent.
 
-You are correct. I was checking sysdev/Kconfig  but it is defined in 
-powerpc/Kconfig
-I missed it :)
-
-Regards,
-Prabhakar
-
-
-
+Thanks
+Hanjun
