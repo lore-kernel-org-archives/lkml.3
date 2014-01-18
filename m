@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaARML4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 07:11:56 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:39106 "EHLO
-	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaARMLw (ORCPT
+	id S1753896AbaARM0A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 07:26:00 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55286 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802AbaARMZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 07:11:52 -0500
-Date: Sat, 18 Jan 2014 20:11:45 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: [PATCH RFC 1/2] crypto: Simple crypto algorithm load balancer
-Message-ID: <20140118121145.GA19982@gondor.apana.org.au>
-References: <52d9ced0.jqhVV3OvRxex2A9/%tadeusz.struk@intel.com>
+	Sat, 18 Jan 2014 07:25:58 -0500
+Date: Sat, 18 Jan 2014 04:25:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Turner <mattst88@gmail.com>, Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140118122548.GX10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140114234443.GY10038@linux.vnet.ibm.com>
+ <CA+55aFyF2Vg785qO52fJLV7rsi6bMtGFhxsAvJ7354EBrcESCA@mail.gmail.com>
+ <20140115023958.GA10038@linux.vnet.ibm.com>
+ <20140115080753.GW31570@twins.programming.kicks-ass.net>
+ <20140115205346.GF10038@linux.vnet.ibm.com>
+ <20140115232134.GM31570@twins.programming.kicks-ass.net>
+ <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com>
+ <20140116103659.GO7572@laptop.programming.kicks-ass.net>
+ <20140118100105.GV10038@linux.vnet.ibm.com>
+ <20140118113406.GY30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52d9ced0.jqhVV3OvRxex2A9/%tadeusz.struk@intel.com>
+In-Reply-To: <20140118113406.GY30183@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011812-3532-0000-0000-000004D78123
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 12:46:08AM +0000, Tadeusz Struk wrote:
-> Hi,
-> In case of multiple crypto devices implementing the same algorithms
-> the arbitration, which one to use is based on the cra_priority.
-> Currently the algorithm with the highest priority is always be used.
-> In case of two algorithms with the same priority the one added last is used.
-> There is no load balancing and on a busy system there can be a situation when
-> there more crypto accelerators, but only one is used for all crypto jobs
-> and the others sit idle.
-> This patch implements a simple load balancing based on the priority
-> of an algorithm and its usage refctr. The distribution for 10 algorithms
-> and 3000000 tfm_alloc allocations is as follows:
+On Sat, Jan 18, 2014 at 12:34:06PM +0100, Peter Zijlstra wrote:
+> On Sat, Jan 18, 2014 at 02:01:05AM -0800, Paul E. McKenney wrote:
+> > OK, I will bite...  Aside from fine-grained code timing, what code could
+> > you write to tell the difference between a real one-byte store and an
+> > RMW emulating that store?
+> 
+> Why isn't fine-grained code timing an issue? I'm sure Alpha people will
+> love it when their machine magically keels over every so often.
+> 
+> Suppose we have two bytes in a word that get concurrent updates:
+> 
+> union {
+> 	struct {
+> 		u8 a;
+> 		u8 b;
+> 	};
+> 	int word;
+> } ponies = { .word = 0, };
+> 
+> then two threads concurrently do:
+> 
+> CPU0:		CPU1:
+> 
+> ponies.a = 5	ponies.b = 10
+> 
+> 
+> At which point you'd expect: a == 5 && b == 10
+> 
+> However, with a rmw you could end up like:
+> 
+> 
+> 			load r, ponies.word
+> load r, ponies.word
+> and  r, ~0xFF
+> or   r, 5
+> store ponies.word, r
+> 			and r, ~0xFF00
+> 			or r, 10 << 8
+> 			store ponies.word, r
+> 
+> which gives: a == 0 && b == 10
+> 
+> The same can be had on a single CPU if you make the second RMW an
+> interrupt.
+> 
+> 
+> In fact, we recently had such a RMW issue on PPC64 although from a
+> slightly different angle, but we managed to hit it quite consistently.
+> See commit ba1f14fbe7096.
+> 
+> The thing is, if we allow the above RMW 'atomic' store, we have to be
+> _very_ careful that there cannot be such overlapping stores, otherwise
+> things will go BOOM!
+> 
+> However, if we already have to make sure there's no overlapping stores,
+> we might as well write a wide store and not allow the narrow stores to
+> begin with, to force people to think about the issue.
 
-Have you looked at pcrypt and whether it can be extended to handle
-this or perhaps something similar to pcrypt can be created?
+Ah, I was assuming atomic rmw, which for Alpha would be implemented using
+the LL and SC instructions.  Yes, lots of overhead, but if the CPU
+designers chose not to provide a load/store byte...
 
-Hard-coding this into the API seems a bit heavy-handed.
+							Thanx, Paul
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
