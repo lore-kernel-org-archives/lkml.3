@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaARPV6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 10:21:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:49662 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017AbaARPVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 10:21:54 -0500
-Message-ID: <1390058494.5439.3.camel@marge.simpson.net>
-Subject: Re: linux-next: build failure after merge of the tip tree
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 18 Jan 2014 16:21:34 +0100
-In-Reply-To: <20140118124451.GA30183@twins.programming.kicks-ass.net>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	 <20140116121955.GQ31570@twins.programming.kicks-ass.net>
-	 <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-	 <20140116222536.GX30183@twins.programming.kicks-ass.net>
-	 <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-	 <52D8625C.1000902@zytor.com>
-	 <20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
-	 <1390038366.5676.10.camel@marge.simpson.net>
-	 <20140118124451.GA30183@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1753094AbaARP1I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 10:27:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752017AbaARP1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 10:27:07 -0500
+Message-ID: <52DA9D20.6010301@redhat.com>
+Date: Sat, 18 Jan 2014 16:26:24 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/6] cgroup: make CONFIG_NET_CLS_CGROUP and CONFIG_NETPRIO_CGROUP
+ bool instead of tristate
+References: <1389982317-22225-1-git-send-email-tj@kernel.org> <1389982317-22225-2-git-send-email-tj@kernel.org> <52D9D421.6040608@huawei.com> <20140118151006.GF3640@htj.dyndns.org>
+In-Reply-To: <20140118151006.GF3640@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:/QStqaEeDJAZFj0/hiM2zEGFCgzSvtKyCH9NCOQ1fQ7
- 1hshBCAe/w4inbPWqeD8ncGpJ7e81qjB8TrxoRDO3z7R0TAujq
- EWmH0B2c7CCMJHszpy1HW4NyXGR737CIM8irbmjzDZKS5lF48+
- AiQD8MrgSDrRwbaZmodP0sUvbcF0iU3dOq07RXjk+2nWREjSMM
- AVMUX5hqcmDtRXluipn2b0SIfz/LmYsfmFWsCgm5CE2tFBzMLi
- cWYJuTVmqMdQe8SSiWHJ+UrHsaLs1Sddzec365cXCd4lSiYWIH
- JA4a19WB3jo0h/wtophFdiQB/4vFIs9JtgZEi7oOIUctp2ySQf
- fjjSH1CtX6yD6Maa96YGZlp9qGm3JoUswvqHItYYUFqM9x+fXH
- oFAOVKmFtD1ig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-01-18 at 13:44 +0100, Peter Zijlstra wrote: 
-> On Sat, Jan 18, 2014 at 10:46:06AM +0100, Mike Galbraith wrote:
-> > 
-> > I hope it doesn't look quite like that, next-20140117 is -ENOBOOT on
-> > Q6600 box.  See below for an alternative.
-> 
-> Urgh, I see, we call the idle arch_cpu_idle() callback with irqs
-> disabled.
-> 
-> Could something like this work?
-> 
-> 	local_irq_enable();
-> 	mwait_idle_with_hints(0,0);
-> 
-> The interrupt enable window is slightly larger, but I'm not immediately
-> seeing a problem with that.
+On 01/18/2014 04:10 PM, Tejun Heo wrote:
+> Hey,
+>
+> On Sat, Jan 18, 2014 at 09:08:49AM +0800, Li Zefan wrote:
+>> Cc: Daniel Borkmann <dborkman@redhat.com>
+>>
+>> On 2014/1/18 2:11, Tejun Heo wrote:
+>>> net_cls and net_prio are the only cgroups which are allowed to be
+>>> built as modules.  The savings from allowing the two controllers to be
+>>> built as modules are tiny especially given that cgroup module support
+>>> itself adds quite a bit of complexity.
+>>>
+>>> The following are the sizes of vmlinux with both built as module and
+>>> both built as part of the kernel image with cgroup module support
+>>> removed.
+>>>
+>>> 	text		data		bss		dec
+>>> 	20292207	2411496		10784768	33488471
+>>> 	20293421	2412568		10784768	33490757
+>>>
+>>> The total difference is 2286 bytes.  Given that none of other
+>>> controllers has much chance of being made a module and that we're
+>>> unlikely to add new modular controllers, the added complexity is
+>>> simply not justifiable.
+>>>
+>>> As a first step to drop cgroup module support, this patch changes the
+>>> two config options to bool from tristate and drops module related code
+>>> from the two controllers.
+>>>
+>>
+>> I sugguested Daniel to do this for net_cls, and the change has been in
+>> net-next.
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=fe1217c4f3f7d7cbf8efdd8dd5fdc7204a1d65a8
+>>
+>> I was planning to remove module support after that change goes into
+>> upstream. :)
+>
+> Ooh, cool. :)
+>
+> Unless there's gonna be another rc, I think it's already a bit too
+> late for 3.14 anyway.  I'll drop the net_cls part and rebase the
+> changes on top of rc1 later on.
 
-Yup, works just fine.  Less is more.
+I think that's 1 patch of your series, right?
 
-Nice to see a _progression_ in the pipe too btw.
+I think this one could still go through net-next if you want, that would
+avoid a merge conflict.
 
--Mike
+Best,
 
+Daniel
