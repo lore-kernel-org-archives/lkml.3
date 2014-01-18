@@ -1,168 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaAWAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:38:26 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39981 "EHLO
+	id S1756203AbaAWAif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:38:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40029 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647AbaAWAiY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753192AbaAWAid convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:38:24 -0500
+	Wed, 22 Jan 2014 19:38:33 -0500
 User-Agent: K-9 Mail for Android
-In-Reply-To: <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
-References: <1390011895-28123-1-git-send-email-mukesh.rathor@oracle.com> <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <20140117230219.GA28413@garbanzo.do-not-panic.com>
+References: <20140117230219.GA28413@garbanzo.do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
  charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Subject: Re: [V0 PATCH] xen/pvh: set some cr flags upon vcpu start
+Subject: Re: MAINTAINERS tree branches [xen tip as an example]
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 17 Jan 2014 22:20:53 -0500
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <f0ca98c8-b89d-4849-b8bc-a78cd8d54db9@email.android.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Date: Fri, 17 Jan 2014 21:39:42 -0500
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, xen-devel@lists.xen.org
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Message-ID: <8c3298a9-256a-43c3-8565-6f7fee6e4059@email.android.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
->pvh was designed to start with pv flags, but a commit in xen tree
->51e2cac257ec8b4080d89f0855c498cbbd76a5e5 removed some of the flags as
+"Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+>As per linux-next Next/Trees [0], and a recent January MAINTAINERS
+>patch [1]
+>from David one of the xen development kernel git trees to track is
+>xen/git.git [2], this tree however gives has undefined references when
+>doing a
+>fresh clone [shown below], but as expected does work well when only
+>cloning
+>the linux-next branch [also below]. While I'm sure this is fine for
+>folks who can do the guess work do we really want to live with trees
+>like
+>these on MAINTAINERS ? The MAINTAINERS file doesn't let us specify
+>branches
+>required, so perhaps it should -- if we want to live with these ?
 
-"Name of the patch in the Xen tree"
+The master branch can be linked to the #linux-next or stable/for-linus.
 
->they are not necessary. As a result, these CR flags must be set in the
->guest.
-
+That would solve the problem I think.
+>Curious, how
+>many other git are there with a similar situation ?
 >
->Signed-off-by: Roger Pau Monne <roger.pau@citrix.com>
+>The xen project web site actually lists [3] Konrad's xen git tree [4]
+>for
+>development as the primary development tree, that probably should be
+>updated now, and likely with instructions to clone only the linux-next
+>branch ?
 
-You missed modifying the patch to reflect the authorship to be Roger's.
-
-Please use git commit --amend --author "somebody s name " 
-
-Also Roger should be credited with Reported-by. I can add that.
-
->Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
->---
->arch/x86/xen/enlighten.c |   43
->+++++++++++++++++++++++++++++++++++++------
-> arch/x86/xen/smp.c       |    2 +-
-> arch/x86/xen/xen-ops.h   |    2 +-
-> 3 files changed, 39 insertions(+), 8 deletions(-)
+Thank you for reporting. Will fix it next week if nobody else beats me to it.
 >
->diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
->index 628099a..4a2aaa6 100644
->--- a/arch/x86/xen/enlighten.c
->+++ b/arch/x86/xen/enlighten.c
->@@ -1410,12 +1410,8 @@ static void __init
->xen_boot_params_init_edd(void)
->  * Set up the GDT and segment registers for -fstack-protector.  Until
->  * we do this, we have to be careful not to call any stack-protected
->  * function, which is most of the kernel.
->- *
->- * Note, that it is refok - because the only caller of this after init
->- * is PVH which is not going to use xen_load_gdt_boot or other
->- * __init functions.
->  */
->-void __ref xen_setup_gdt(int cpu)
->+static void xen_setup_gdt(int cpu)
-> 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> #ifdef CONFIG_X86_64
->@@ -1463,13 +1459,48 @@ void __ref xen_setup_gdt(int cpu)
-> 	pv_cpu_ops.load_gdt = xen_load_gdt;
-> }
-> 
->+/*
->+ * A pv guest starts with default flags that are not set for pvh, set
->them
->+ * here asap.
->+ */
->+static void xen_pvh_set_cr_flags(int cpu)
+>[0]
+>https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Next/Trees#n176
+>[1] http://lists.xen.org/archives/html/xen-devel/2014-01/msg01504.html
+>[2] git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git
+>[3]
+>http://wiki.xenproject.org/wiki/Xen_Repositories#Primary_Xen_Repository
+>[4] git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
+>
+>mcgrof@bubbles ~ $ git clone
+>git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git --reference
+>linux/.git
+>Cloning into 'tip'...
+>remote: Counting objects: 2806, done.
+>remote: Compressing objects: 100% (334/334), done.
+>remote: Total 1797 (delta 1511), reused 1646 (delta 1462)
+>Receiving objects: 100% (1797/1797), 711.01 KiB | 640.00 KiB/s, done.
+>Resolving deltas: 100% (1511/1511), completed with 306 local objects.
+>Checking connectivity... done.
+>warning: remote HEAD refers to nonexistent ref, unable to checkout.
+>
+>mcgrof@work ~ $ git clone
+>git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git -b linux-next
+>--reference linux/.git
+>Cloning into 'tip'...
+>remote: Counting objects: 2806, done.
+>remote: Compressing objects: 100% (377/377), done.
+>remote: Total 1797 (delta 1545), reused 1607 (delta 1419)
+>Receiving objects: 100% (1797/1797), 485.23 KiB | 0 bytes/s, done.
+>Resolving deltas: 100% (1545/1545), completed with 327 local objects.
+>Checking connectivity... done.
+>Checking out files: 100% (44979/44979), done.
+>
+>  Luis
 
->+{
 
-Pls add:
-
-/* See 'secondary_startup_64' for how bare metal does it. */
-
->+	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_WP | X86_CR0_AM);
->+
->+	if (!cpu)
->+		return;
->+	/*
->+	 * Unlike PV, for pvh xen does not set: PSE PGE OSFXSR OSXMMEXCPT
->+	 * For BSP, PSE PGE will be set in probe_page_size_mask(), for AP
->+	 * set them here. For all, OSFXSR
-
-Might want to mention that for AP on bare metal they are set in 'secondary_start_64'
-
-... 
->+	 */
-
-Is it OK to set this twice? 
-
-Meaning remove the 'if (!cpu)..' check so that this code path is run for BSP and AP?
-
->+	if (cpu_has_pse)
->+		set_in_cr4(X86_CR4_PSE);
->+
->+	if (cpu_has_pge)
->+		set_in_cr4(X86_CR4_PGE);
->+}
->+
->+/*
->+ * Note, that it is refok - because the only caller of this after init
->+ * is PVH which is not going to use xen_load_gdt_boot or other
->+ * __init functions.
-
-Hmm. You must be using and older tree. The new one has __ref comment.
-
->+ */
->+void __ref xen_pvh_secondary_vcpu_init(int cpu)
->+{
->+	xen_setup_gdt(cpu);
->+	xen_pvh_set_cr_flags(cpu);
->+}
->+
-> static void __init xen_pvh_early_guest_init(void)
-> {
-> 	if (!xen_feature(XENFEAT_auto_translated_physmap))
-> 		return;
-> 
->-	if (xen_feature(XENFEAT_hvm_callback_vector))
->+	if (xen_feature(XENFEAT_hvm_callback_vector)) 
-
-> 		xen_have_vector_callback = 1;
->+		xen_pvh_set_cr_flags(0);
->+	}
-> 
-> #ifdef CONFIG_X86_32
-> 	BUG(); /* PVH: Implement proper support. */
->diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->index 5e46190..a18eadd 100644
->--- a/arch/x86/xen/smp.c
->+++ b/arch/x86/xen/smp.c
->@@ -105,7 +105,7 @@ static void cpu_bringup_and_idle(int cpu)
-> #ifdef CONFIG_X86_64
-> 	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> 	    xen_feature(XENFEAT_supervisor_mode_kernel))
->-		xen_setup_gdt(cpu);
->+		xen_pvh_secondary_vcpu_init(cpu);
-> #endif
-> 	cpu_bringup();
-> 	cpu_startup_entry(CPUHP_ONLINE);
->diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
->index 9059c24..1cb6f4c 100644
->--- a/arch/x86/xen/xen-ops.h
->+++ b/arch/x86/xen/xen-ops.h
->@@ -123,5 +123,5 @@ __visible void xen_adjust_exception_frame(void);
-> 
-> extern int xen_panic_handler_init(void);
-> 
->-void xen_setup_gdt(int cpu);
->+void xen_pvh_secondary_vcpu_init(int cpu);
-> #endif /* XEN_OPS_H */
-
-Thanks!
