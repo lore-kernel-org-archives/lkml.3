@@ -1,105 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaARLzu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 06:55:50 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38396 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaARLzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 06:55:47 -0500
-Message-ID: <52DA6BCC.7010402@kernel.org>
-Date: Sat, 18 Jan 2014 11:55:56 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753860AbaARMCs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 07:02:48 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:43130 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492AbaARMCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 07:02:44 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v4] of: add functions to count number of elements in a property
+Date: Sat, 18 Jan 2014 13:02:08 +0100
+Message-ID: <5115255.DrcMbtXc1P@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAL_JsqJ_St=OegpexzrTGXwmOYCz4YeWk_1S+R_q6NajmmPqSA@mail.gmail.com>
+References: <27256277.YJ687suYy5@phil> <1434798.oSb68sYmYT@phil> <CAL_JsqJ_St=OegpexzrTGXwmOYCz4YeWk_1S+R_q6NajmmPqSA@mail.gmail.com>
 MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        grant.likely@linaro.org
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: Re: [PATCH] iio: gyro: itg3200: Add DT support.
-References: <1389475047-4353-1-git-send-email-marek@goldelico.com>
-In-Reply-To: <1389475047-4353-1-git-send-email-marek@goldelico.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The need to know the number of array elements in a property is
+a common pattern. To prevent duplication of open-coded implementations
+add a helper static function that also centralises strict sanity
+checking and DTB format details, as well as a set of wrapper functions
+for u8, u16, u32 and u64.
+
+Suggested-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+changes since v3:
+address more comments from Rob Herring
+- export the base function and inline the type-specific wrappers
+changes since v2:
+address more comments from Mark Rutland
+- switch to of_property_count_elems_of_size
+- use full_name instead of name in error message
+changes since v1:
+address comments from Rob Herring and Mark Rutland:
+- provide a helper and a set of wrappers for u8-u64
+- get rid of extra len variable, prop->length is enough
+- include node name in error message
+
+Mark, does your Reviewed-by holds for this variant too?
+
+ drivers/of/base.c  |   32 ++++++++++++++++++++++
+ include/linux/of.h |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 108 insertions(+)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0e..21646c0 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -862,6 +862,38 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+ EXPORT_SYMBOL(of_find_node_by_phandle);
+ 
+ /**
++ * of_property_count_elems_of_size - Count the number of elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @elem_size:	size of the individual element
++ *
++ * Search for a property in a device node and count the number of elements of
++ * size elem_size in it. Returns number of elements on sucess, -EINVAL if the
++ * property does not exist or its length does not match a multiple of u16 and
++ * -ENODATA if the property does not have a value.
++ */
++int of_property_count_elems_of_size(const struct device_node *np,
++				const char *propname, int elem_size)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++
++	if (prop->length % elem_size != 0) {
++		pr_err("size of %s in node %s is not a multiple of %d\n",
++		       propname, np->full_name, elem_size);
++		return -EINVAL;
++	}
++
++	return prop->length / elem_size;
++}
++EXPORT_SYMBOL_GPL(of_property_count_elems_of_size);
++
++/**
+  * of_find_property_value_of_size
+  *
+  * @np:		device node from which the property value is to be read.
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 276c546..293920d 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -250,6 +250,8 @@ extern struct device_node *of_find_node_with_property(
+ extern struct property *of_find_property(const struct device_node *np,
+ 					 const char *name,
+ 					 int *lenp);
++extern int of_property_count_elems_of_size(const struct device_node *np,
++				const char *propname, int elem_size);
+ extern int of_property_read_u32_index(const struct device_node *np,
+ 				       const char *propname,
+ 				       u32 index, u32 *out_value);
+@@ -426,6 +428,12 @@ static inline struct device_node *of_find_compatible_node(
+ 	return NULL;
+ }
+ 
++static inline int of_property_count_elems_of_size(const struct device_node *np,
++			const char *propname, int elem_size)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_property_read_u32_index(const struct device_node *np,
+ 			const char *propname, u32 index, u32 *out_value)
+ {
+@@ -565,6 +573,74 @@ static inline int of_node_to_nid(struct device_node *device) { return 0; }
+ #endif
+ 
+ /**
++ * of_property_count_u8_elems - Count the number of u8 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u8 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u8 and -ENODATA if the
++ * property does not have a value.
++ */
++static inline int of_property_count_u8_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u8));
++}
++
++/**
++ * of_property_count_u16_elems - Count the number of u16 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u16 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u16 and -ENODATA if the
++ * property does not have a value.
++ */
++static inline int of_property_count_u16_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u16));
++}
++
++/**
++ * of_property_count_u32_elems - Count the number of u32 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u32 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u32 and -ENODATA if the
++ * property does not have a value.
++ */
++static inline int of_property_count_u32_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u32));
++}
++
++/**
++ * of_property_count_u64_elems - Count the number of u64 elements in a property
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device node and count the number of u64 elements
++ * in it. Returns number of elements on sucess, -EINVAL if the property does
++ * not exist or its length does not match a multiple of u64 and -ENODATA if the
++ * property does not have a value.
++ */
++static inline int of_property_count_u64_elems(const struct device_node *np,
++				const char *propname)
++{
++	return of_property_count_elems_of_size(np, propname, sizeof(u64));
++}
++
++/**
+  * of_property_read_bool - Findfrom a property
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+-- 
+1.7.10.4
 
 
-On 11/01/14 21:17, Marek Belisko wrote:
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-Unless it is very recent, I don't the the invensense vendor-prefix is in
-vendor-prefixes.txt. Please add that to the patch.
-
-Otherwise, there is nothing here that isn't covered by the trivial
-i2c bindings - thus perhaps it should be an entry in bindings/i2c/trivial-devices.txt?
-
-Personally I'm not that fond of the trivial file as a single location
-for the relevant info makes more sense to me.  Still thought I'd bring
-it up as a possibility.
-
-Jonathan
-> ---
->   .../devicetree/bindings/iio/gyro/itg3200.txt       | 22 ++++++++++++++++++++++
->   drivers/iio/gyro/itg3200_core.c                    |  9 +++++++++
->   2 files changed, 31 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/iio/gyro/itg3200.txt
->
-> diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-> new file mode 100644
-> index 0000000..b1b18dc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-> @@ -0,0 +1,22 @@
-> +* InvenSense ITG-3200 gyroscope
-> +
-> +http://www.invensense.com/mems/gyro/itg3200.html
-> +
-> +Required properties:
-> +
-> +  - compatible : should be "invensense,itg3200"
-> +  - reg : the I2C address of the sensor
-> +
-> +Optional properties:
-> +
-> +  - interrupt-parent : should be the phandle for the interrupt controller
-> +  - interrupts : interrupt mapping for GPIO IRQ
-> +
-> +Example:
-> +
-> +itg3200@68 {
-> +	compatible = "invensense,itg3200";
-> +	reg = <0x68>;
-> +	interrupt-parent = <&gpio2>;
-> +	interrupts = <29 IRQ_TYPE_EDGE_RISING>;
-> +};
-> diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
-> index 4d3f3b9..adbf20d 100644
-> --- a/drivers/iio/gyro/itg3200_core.c
-> +++ b/drivers/iio/gyro/itg3200_core.c
-> @@ -374,10 +374,19 @@ static const struct i2c_device_id itg3200_id[] = {
->   };
->   MODULE_DEVICE_TABLE(i2c, itg3200_id);
->
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id itg3200_of_match[] = {
-> +	{ .compatible = "invensense,itg3200", },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, itg3200_of_match);
-> +#endif
-> +
->   static struct i2c_driver itg3200_driver = {
->   	.driver = {
->   		.owner  = THIS_MODULE,
->   		.name	= "itg3200",
-> +		.of_match_table = of_match_ptr(itg3200_of_match),
->   	},
->   	.id_table	= itg3200_id,
->   	.probe		= itg3200_probe,
->
