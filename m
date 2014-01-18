@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaARBJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 20:09:16 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46771 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaARBJN (ORCPT
+	id S1752736AbaARBUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 20:20:52 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40590 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752041AbaARBUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 20:09:13 -0500
-Message-ID: <52D9D421.6040608@huawei.com>
-Date: Sat, 18 Jan 2014 09:08:49 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 17 Jan 2014 20:20:40 -0500
+Date: Sat, 18 Jan 2014 01:20:34 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Ott <alan@signal11.us>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: Deadlock in do_page_fault() on ARM (old kernel)
+Message-ID: <20140118012034.GM27282@n2100.arm.linux.org.uk>
+References: <52D73220.3030108@signal11.us> <20140117134646.GL27282@n2100.arm.linux.org.uk> <52D9D16C.9080501@signal11.us>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
-        "Thomas Graf" <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        "Daniel Borkmann" <dborkman@redhat.com>
-Subject: Re: [PATCH 1/6] cgroup: make CONFIG_NET_CLS_CGROUP and CONFIG_NETPRIO_CGROUP
- bool instead of tristate
-References: <1389982317-22225-1-git-send-email-tj@kernel.org> <1389982317-22225-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1389982317-22225-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D9D16C.9080501@signal11.us>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Daniel Borkmann <dborkman@redhat.com>
+On Fri, Jan 17, 2014 at 07:57:16PM -0500, Alan Ott wrote:
+> On 01/17/2014 08:46 AM, Russell King - ARM Linux wrote:
+>> My suspicion therefore is that some other thread must have died while
+>> holding the mmap_sem, so there's probably a kernel oops earlier...
+>> that's my best guess at the moment without seeing the full backtrace.
+>
+> There's no oops that I'm able to see.
+>
+> Each of the tasks which lockdep reports as "holding" mmap_sem are  
+> blocking for it. If some other task had taken it and then crashed, I  
+> assume lockdep would list the crashed task as also holding the resource  
+> in the printout.
 
-On 2014/1/18 2:11, Tejun Heo wrote:
-> net_cls and net_prio are the only cgroups which are allowed to be
-> built as modules.  The savings from allowing the two controllers to be
-> built as modules are tiny especially given that cgroup module support
-> itself adds quite a bit of complexity.
-> 
-> The following are the sizes of vmlinux with both built as module and
-> both built as part of the kernel image with cgroup module support
-> removed.
-> 
-> 	text		data		bss		dec
-> 	20292207	2411496		10784768	33488471
-> 	20293421	2412568		10784768	33490757
-> 
-> The total difference is 2286 bytes.  Given that none of other
-> controllers has much chance of being made a module and that we're
-> unlikely to add new modular controllers, the added complexity is
-> simply not justifiable.
-> 
-> As a first step to drop cgroup module support, this patch changes the
-> two config options to bool from tristate and drops module related code
-> from the two controllers.
-> 
+My point is this:
 
-I sugguested Daniel to do this for net_cls, and the change has been in
-net-next.
+- the five (or six) threads which are trying to take the mmap_sem in
+  read-mode in the fault handler are all blocked on it - they haven't
+  taken the lock, which will only happen because there's a pending writer.
+- of these in your original post, there are two which faulted from
+  __copy_to_user_std().  __copy_to_user_std() doesn't take the mmap_sem -
+  this is the non-uaccess-with-memcpy path.
+- the pending writers are the two threads in sys_mmap_pgoff(), both of
+  which are blocked waiting to gain the write lock.
+- there are no *other* threads holding the mmap_sem lock.
 
-https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=fe1217c4f3f7d7cbf8efdd8dd5fdc7204a1d65a8
+So... there's a question here how we got into this state - and frankly
+I don't know.  What I do see from your latest dump is that there's two
+unknown modules there - something called rcu2m and another called
+buttoms, and there are two threads inside ioctls there.  Both have
+faulted from the function at 0xc0d2a394 (which won't appear in the
+backtrace, but is most likely __copy_to_user_std.)
 
-I was planning to remove module support after that change goes into
-upstream. :)
+So, in the absence of you saying anything about there being any preceding
+oopses, my conclusion now is that one of those modules is taking the
+mmap_sem itself, and is the culpret inducing this deadlock.
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Thomas Graf <tgraf@suug.ch>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> ---
->  net/Kconfig               |  2 +-
->  net/core/netprio_cgroup.c | 32 ++------------------------------
->  net/sched/Kconfig         |  2 +-
->  net/sched/cls_cgroup.c    | 23 ++---------------------
->  4 files changed, 6 insertions(+), 53 deletions(-)
-> 
+Note that your dump ([2]) in your reply was just the hung task detector
+printing out the stacktrace for a few tasks, not the full all-threads
+stack dump which I was expecting.
 
-The modular version of task_netprioidx() in include/net/netprio_cgroup.h
-can be removed.
+So I'm pulling out these conclusions from the very little information
+you're supplying.
 
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
