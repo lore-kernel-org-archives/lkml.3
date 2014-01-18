@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaARBUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 20:20:52 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40590 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752041AbaARBUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 20:20:40 -0500
-Date: Sat, 18 Jan 2014 01:20:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alan Ott <alan@signal11.us>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: Deadlock in do_page_fault() on ARM (old kernel)
-Message-ID: <20140118012034.GM27282@n2100.arm.linux.org.uk>
-References: <52D73220.3030108@signal11.us> <20140117134646.GL27282@n2100.arm.linux.org.uk> <52D9D16C.9080501@signal11.us>
+	id S1752911AbaARBVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 20:21:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37416 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779AbaARBVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jan 2014 20:21:34 -0500
+Message-ID: <52D9D6FC.7050100@zytor.com>
+Date: Fri, 17 Jan 2014 17:21:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D9D16C.9080501@signal11.us>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Pavel Machek <pavel@ucw.cz>
+CC: Borislav Petkov <bp@alien8.de>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum
+ 793
+References: <20140114114133.GA31473@khazad-dum.debian.net> <20140114115547.GA29887@pd.tnic> <52D55468.6000000@zytor.com> <20140114153534.GE29865@pd.tnic> <20140114162722.GF29865@pd.tnic> <20140117222806.GB13930@amd.pavel.ucw.cz> <20140117225013.GE14649@pd.tnic> <52D9B408.4020007@zytor.com> <20140118002926.GA22185@amd.pavel.ucw.cz>
+In-Reply-To: <20140118002926.GA22185@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 07:57:16PM -0500, Alan Ott wrote:
-> On 01/17/2014 08:46 AM, Russell King - ARM Linux wrote:
->> My suspicion therefore is that some other thread must have died while
->> holding the mmap_sem, so there's probably a kernel oops earlier...
->> that's my best guess at the moment without seeing the full backtrace.
->
-> There's no oops that I'm able to see.
->
-> Each of the tasks which lockdep reports as "holding" mmap_sem are  
-> blocking for it. If some other task had taken it and then crashed, I  
-> assume lockdep would list the crashed task as also holding the resource  
-> in the printout.
+On 01/17/2014 04:29 PM, Pavel Machek wrote:
+> 
+> Have you checked your dmesg recently? Normal people don't read
+> it... it is just too much of it.
+> 
+>> Printing a warning is appropriate if we can't actually fix the problem
+>> in the OS.  If we actually make the problem go away then we have just
+>> done our job and we can be done with it.
+> 
+> I disagree. Older kernel versions still may have problem, etc.
+> 
+> We normally do print warnings for problems we work around. We want
+> vendors to fix their hardware, too...
+> 
+> ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT -
+> 0xBDB5FF40/0x00000000BDB64F40, using 32 (20131115/tbfadt-522)
+> [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+> 
 
-My point is this:
+You say people don't read their dmesg...
+... because there is too much ...
+... so let's add more?
 
-- the five (or six) threads which are trying to take the mmap_sem in
-  read-mode in the fault handler are all blocked on it - they haven't
-  taken the lock, which will only happen because there's a pending writer.
-- of these in your original post, there are two which faulted from
-  __copy_to_user_std().  __copy_to_user_std() doesn't take the mmap_sem -
-  this is the non-uaccess-with-memcpy path.
-- the pending writers are the two threads in sys_mmap_pgoff(), both of
-  which are blocked waiting to gain the write lock.
-- there are no *other* threads holding the mmap_sem lock.
+What am I missing here?
 
-So... there's a question here how we got into this state - and frankly
-I don't know.  What I do see from your latest dump is that there's two
-unknown modules there - something called rcu2m and another called
-buttoms, and there are two threads inside ioctls there.  Both have
-faulted from the function at 0xc0d2a394 (which won't appear in the
-backtrace, but is most likely __copy_to_user_std.)
+	-hpa
 
-So, in the absence of you saying anything about there being any preceding
-oopses, my conclusion now is that one of those modules is taking the
-mmap_sem itself, and is the culpret inducing this deadlock.
 
-Note that your dump ([2]) in your reply was just the hung task detector
-printing out the stacktrace for a few tasks, not the full all-threads
-stack dump which I was expecting.
-
-So I'm pulling out these conclusions from the very little information
-you're supplying.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
