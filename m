@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaAROfS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 09:35:18 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:38707 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaAROfO (ORCPT
+	id S1753149AbaAROfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 09:35:54 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:61817 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbaAROfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 09:35:14 -0500
-Subject: [PATCH 0/2] Revert EISA init changes
+	Sat, 18 Jan 2014 09:35:18 -0500
+Subject: [PATCH 1/2] Revert "EISA: Log device resources in dmesg"
 To: linux-kernel@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-pci@vger.kernel.org,
         Joseph Salisbury <joseph.salisbury@canonical.com>
-Date: Sat, 18 Jan 2014 07:35:09 -0700
-Message-ID: <20140118143308.32751.27410.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Sat, 18 Jan 2014 07:35:16 -0700
+Message-ID: <20140118143516.32751.54245.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140118143308.32751.27410.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140118143308.32751.27410.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,21 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to make EISA device enumeration messages a bit nicer, but I
-screwed up and caused some machines to hang during boot.
+This reverts commit a2080d0c561c546d73cb8b296d4b7ca414e6860b.
 
-This was reported at
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
-
-This reverts those changes.  I plan to include these in the PCI tree
-for v3.14.
-
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
+ drivers/eisa/eisa-bus.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Bjorn Helgaas (2):
-      Revert "EISA: Log device resources in dmesg"
-      Revert "EISA: Initialize device before its resources"
+diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+index 8842cde69177..1b86fe0c2e80 100644
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -288,7 +288,6 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
+ 			edev->res[i].flags = IORESOURCE_IO | IORESOURCE_BUSY;
+ 		}
+ 
+-		dev_printk(KERN_DEBUG, &edev->dev, "%pR\n", &edev->res[i]);
+ 		if (request_resource(root->res, &edev->res[i]))
+ 			goto failed;
+ 	}
 
-
- drivers/eisa/eisa-bus.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
