@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaARDwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 22:52:34 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:44864 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbaARDwb (ORCPT
+	id S1753271AbaAREFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 23:05:41 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:44036 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaAREFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 22:52:31 -0500
-Message-ID: <52D9FA72.5020505@linaro.org>
-Date: Sat, 18 Jan 2014 11:52:18 +0800
+	Fri, 17 Jan 2014 23:05:38 -0500
+Message-ID: <52D9FD84.9090808@linaro.org>
+Date: Sat, 18 Jan 2014 12:05:24 +0800
 From: Hanjun Guo <hanjun.guo@linaro.org>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sudeep Holla <Sudeep.Holla@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
+To: Will Deacon <will.deacon@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "grant.likely@linaro.org" <grant.likely@linaro.org>,
         Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Jon Masters <jonathan@jonmasters.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         "patches@linaro.org" <patches@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH 1/3] ACPI / idle: Move idle_boot_override out of the arch
- directory
-References: <1389924207-7360-1-git-send-email-hanjun.guo@linaro.org> <1389924207-7360-2-git-send-email-hanjun.guo@linaro.org> <52D91CE2.3050704@arm.com> <52D9F8E8.8030602@linaro.org>
-In-Reply-To: <52D9F8E8.8030602@linaro.org>
-Content-Type: text/plain; charset=windows-1252
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Al Stone <al.stone@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
+Subject: Re: [PATCH 04/20] ARM64 / ACPI: Introduce arm_core.c and its related
+ head file
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-5-git-send-email-hanjun.guo@linaro.org> <20140117141241.GH16003@mudshark.cambridge.arm.com>
+In-Reply-To: <20140117141241.GH16003@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-1-18 11:45, Hanjun Guo wrote:
-> On 2014-1-17 20:06, Sudeep Holla wrote:
->> On 17/01/14 02:03, Hanjun Guo wrote:
->>> Move idle_boot_override out of the arch directory to be a single enum
->>> including both platforms values, this will make it rather easier to
->>> avoid ifdefs around which definitions are for which processor in
->>> generally used ACPI code.
->>>
->>> IDLE_FORCE_MWAIT for IA64 is not used anywhere, so romove it.
->>>
->>> No functional change in this patch.
->>>
->>> Suggested-by: Alan <gnomes@lxorguk.ukuu.org.uk>
->>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>> ---
-[...]
->>> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
->>> index 03e235ad..e324561 100644
->>> --- a/include/linux/cpu.h
->>> +++ b/include/linux/cpu.h
->>> @@ -220,6 +220,14 @@ void cpu_idle(void);
->>>  
->>>  void cpu_idle_poll_ctrl(bool enable);
->>>  
->>> +enum idle_boot_override {
->>> +	IDLE_NO_OVERRIDE = 0,
->>> +	IDLE_HALT,
->>> +	IDLE_NOMWAIT,
->>> +	IDLE_POLL,
->>> +	IDLE_POWERSAVE_OFF
->>> +};
->>> +
+On 2014-1-17 22:12, Will Deacon wrote:
+> On Fri, Jan 17, 2014 at 12:24:58PM +0000, Hanjun Guo wrote:
+>> Introduce arm_core.c and its related head file, after this patch,
+>> we can get ACPI tables from firmware on ARM64 now.
 >>
->> I do understand the idea behind this change, but IMO HALT and MWAIT are x86
->> specific and may not make sense for other architectures.
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 > 
-> yes, this is the strange part, the value is arch-dependent.
+> [...]
 > 
->>
->> It will also require every architecture using ACPI to export
->> boot_option_idle_override which may not be really required.
+>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>> index bd9bbd0..2210353 100644
+>> --- a/arch/arm64/kernel/setup.c
+>> +++ b/arch/arm64/kernel/setup.c
+>> @@ -41,6 +41,7 @@
+>>  #include <linux/memblock.h>
+>>  #include <linux/of_fdt.h>
+>>  #include <linux/of_platform.h>
+>> +#include <linux/acpi.h>
+>>  
+>>  #include <asm/cputype.h>
+>>  #include <asm/elf.h>
+>> @@ -225,6 +226,11 @@ void __init setup_arch(char **cmdline_p)
+>>  
+>>  	arm64_memblock_init();
+>>  
+>> +	/* Parse the ACPI tables for possible boot-time configuration */
+>> +	acpi_boot_table_init();
+>> +	early_acpi_boot_init();
+>> +	acpi_boot_init();
 > 
-> so, how about forget this patch and move boot_option_idle_override
-> related code into arch directory such as arch/x86/acpi/boot.c for
-> x86?
+> Do we really need *three* back-to-back calls for ACPI to initialise?
 
-The general idea is that we can move all the arch-dependent codes
-in ACPI driver to arch directory, then make codes in drivers/acpi/
-arch independent.
+Sorry, my colleague Graeme had integrate them as one function but I
+forgot to merge them in this patch, my bad, will update it in next
+version.
 
 Thanks
 Hanjun
+
