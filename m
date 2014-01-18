@@ -1,120 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaARV6N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 16:58:13 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:52019 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaARV6I (ORCPT
+	id S1751647AbaARWGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 17:06:09 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:42722 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaARWGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 16:58:08 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        jic23@kernel.org, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        hns@goldelico.com, Marek Belisko <marek@goldelico.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH] iio: gyro: itg3200: Add DT support.
-Date: Sat, 18 Jan 2014 22:57:55 +0100
-Message-Id: <1390082275-8688-1-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389475047-4353-1-git-send-email-marek@goldelico.com>
-References: <1389475047-4353-1-git-send-email-marek@goldelico.com>
+	Sat, 18 Jan 2014 17:06:04 -0500
+Message-ID: <52DAFAC7.7080307@hp.com>
+Date: Sat, 18 Jan 2014 14:05:59 -0800
+From: Chegu Vinod <chegu_vinod@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: riel@redhat.com, linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
+        mingo@redhat.com
+Subject: Re: [PATCH v2 0/7] pseudo-interleaving for automatic NUMA balancing
+References: <1389993129-28180-1-git-send-email-riel@redhat.com>
+In-Reply-To: <1389993129-28180-1-git-send-email-riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
+On 1/17/2014 1:12 PM, riel@redhat.com wrote:
+> The current automatic NUMA balancing code base has issues with
+> workloads that do not fit on one NUMA load. Page migration is
+> slowed down, but memory distribution between the nodes where
+> the workload runs is essentially random, often resulting in a
+> suboptimal amount of memory bandwidth being available to the
+> workload.
+>
+> In order to maximize performance of workloads that do not fit in one NUMA
+> node, we want to satisfy the following criteria:
+> 1) keep private memory local to each thread
+> 2) avoid excessive NUMA migration of pages
+> 3) distribute shared memory across the active nodes, to
+>     maximize memory bandwidth available to the workload
+>
+> This patch series identifies the NUMA nodes on which the workload
+> is actively running, and balances (somewhat lazily) the memory
+> between those nodes, satisfying the criteria above.
+>
+> As usual, the series has had some performance testing, but it
+> could always benefit from more testing, on other systems.
+>
+> Changes since v1:
+>   - fix divide by zero found by Chegu Vinod
+>   - improve comment, as suggested by Peter Zijlstra
+>   - do stats calculations in task_numa_placement in local variables
+>
+>
+> Some performance numbers, with two 40-warehouse specjbb instances
+> on an 8 node system with 10 CPU cores per node, using a pre-cleanup
+> version of these patches, courtesy of Chegu Vinod:
+>
+> numactl manual pinning
+> spec1.txt:           throughput =     755900.20 SPECjbb2005 bops
+> spec2.txt:           throughput =     754914.40 SPECjbb2005 bops
+>
+> NO-pinning results (Automatic NUMA balancing, with patches)
+> spec1.txt:           throughput =     706439.84 SPECjbb2005 bops
+> spec2.txt:           throughput =     729347.75 SPECjbb2005 bops
+>
+> NO-pinning results (Automatic NUMA balancing, without patches)
+> spec1.txt:           throughput =     667988.47 SPECjbb2005 bops
+> spec2.txt:           throughput =     638220.45 SPECjbb2005 bops
+>
+> No Automatic NUMA and NO-pinning results
+> spec1.txt:           throughput =     544120.97 SPECjbb2005 bops
+> spec2.txt:           throughput =     453553.41 SPECjbb2005 bops
+>
+>
+> My own performance numbers are not as relevant, since I have been
+> running with a more hostile workload on purpose, and I have run
+> into a scheduler issue that caused the workload to run on only
+> two of the four NUMA nodes on my test system...
+>
+> .
+>
 
-V2:
-Added entries to i2c/trivial-devices and also add invensense to vendor-prefixes file.
 
- .../devicetree/bindings/i2c/trivial-devices.txt    |  1 +
- .../devicetree/bindings/iio/gyro/itg3200.txt       | 22 ++++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- drivers/iio/gyro/itg3200_core.c                    |  9 +++++++++
- 4 files changed, 33 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/gyro/itg3200.txt
+Acked-by:  Chegu Vinod <chegu_vinod@hp.com>
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index 1a1ac2e..86078de 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -40,6 +40,7 @@ fsl,sgtl5000		SGTL5000: Ultra Low-Power Audio Codec
- gmt,g751		G751: Digital Temperature Sensor and Thermal Watchdog with Two-Wire Interface
- infineon,slb9635tt	Infineon SLB9635 (Soft-) I2C TPM (old protocol, max 100khz)
- infineon,slb9645tt	Infineon SLB9645 I2C TPM (new protocol, max 400khz)
-+invensense,itg3200	InvenSense ITG-3200, Gyroscope
- isl,isl12057		Intersil ISL12057 I2C RTC Chip
- maxim,ds1050		5 Bit Programmable, Pulse-Width Modulator
- maxim,max1237		Low-Power, 4-/12-Channel, 2-Wire Serial, 12-Bit ADCs
-diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-new file mode 100644
-index 0000000..b1b18dc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-@@ -0,0 +1,22 @@
-+* InvenSense ITG-3200 gyroscope
-+
-+http://www.invensense.com/mems/gyro/itg3200.html
-+
-+Required properties:
-+
-+  - compatible : should be "invensense,itg3200"
-+  - reg : the I2C address of the sensor
-+
-+Optional properties:
-+
-+  - interrupt-parent : should be the phandle for the interrupt controller
-+  - interrupts : interrupt mapping for GPIO IRQ
-+
-+Example:
-+
-+itg3200@68 {
-+	compatible = "invensense,itg3200";
-+	reg = <0x68>;
-+	interrupt-parent = <&gpio2>;
-+	interrupts = <29 IRQ_TYPE_EDGE_RISING>;
-+};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index b2635c5..01bf752 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -44,6 +44,7 @@ ibm	International Business Machines (IBM)
- idt	Integrated Device Technologies, Inc.
- img	Imagination Technologies Ltd.
- intercontrol	Inter Control Group
-+invensense InvenSense
- isl	Intersil
- karo	Ka-Ro electronics GmbH
- lg	LG Corporation
-diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
-index 4d3f3b9..adbf20d 100644
---- a/drivers/iio/gyro/itg3200_core.c
-+++ b/drivers/iio/gyro/itg3200_core.c
-@@ -374,10 +374,19 @@ static const struct i2c_device_id itg3200_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, itg3200_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id itg3200_of_match[] = {
-+	{ .compatible = "invensense,itg3200", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, itg3200_of_match);
-+#endif
-+
- static struct i2c_driver itg3200_driver = {
- 	.driver = {
- 		.owner  = THIS_MODULE,
- 		.name	= "itg3200",
-+		.of_match_table = of_match_ptr(itg3200_of_match),
- 	},
- 	.id_table	= itg3200_id,
- 	.probe		= itg3200_probe,
--- 
-1.8.3.2
+----
 
+Here are some results using the v2 version of the patches
+on an 8 socket box using SPECjbb2005 as a workload :
+
+I) Eight 1-socket wide instances(10 warehouse threads each) :
+
+                                                              Without 
+patches    With patches
+--------------------    ----------------
+a) numactl pinning results
+spec1.txt:           throughput =                     270620.04 273675.10
+spec2.txt:           throughput =                     274115.33 272845.17
+spec3.txt:           throughput =                     277830.09 272057.33
+spec4.txt:           throughput =                     270898.52 270670.54
+spec5.txt:           throughput =                     270397.30 270906.82
+spec6.txt:           throughput =                     270451.93 268217.55
+spec7.txt:           throughput =                     269511.07 269354.46
+spec8.txt:           throughput =                     269386.06 270540.00
+
+b)Automatic NUMA balancing results
+spec1.txt:           throughput =                     244333.41 248072.72
+spec2.txt:           throughput =                     252166.99 251818.30
+spec3.txt:           throughput =                     251365.58 258266.24
+spec4.txt:           throughput =                     245247.91 256873.51
+spec5.txt:           throughput =                     245579.68 247743.18
+spec6.txt:           throughput =                     249767.38 256285.86
+spec7.txt:           throughput =                     244570.64 255343.99
+spec8.txt:           throughput =                     245703.60 254434.36
+
+c)NO Automatic NUMA balancing and NO-pinning results
+spec1.txt:           throughput =                     132959.73 136957.12
+spec2.txt:           throughput =                     127937.11 129326.23
+spec3.txt:           throughput =                     130697.10 125772.11
+spec4.txt:           throughput =                     134978.49 141607.58
+spec5.txt:           throughput =                     127574.34 126748.18
+spec6.txt:           throughput =                     138699.99 128597.95
+spec7.txt:           throughput =                     133247.25 137344.57
+spec8.txt:           throughput =                     124548.00 139040.98
+
+------
+
+II) Four 2-socket wide instances(20 warehouse threads each) :
+
+                                                              Without 
+patches    With patches
+--------------------    ----------------
+a) numactl pinning results
+spec1.txt:           throughput =                     479931.16 472467.58
+spec2.txt:           throughput =                     466652.15 466237.10
+spec3.txt:           throughput =                     473591.51 466891.98
+spec4.txt:           throughput =                     462346.62 466891.98
+
+b)Automatic NUMA balancing results
+spec1.txt:           throughput =                     383758.29 437489.99
+spec2.txt:           throughput =                     370926.06 435692.97
+spec3.txt:           throughput =                     368872.72 444615.08
+spec4.txt:           throughput =                     404422.82 435236.20
+
+c)NO Automatic NUMA balancing and NO-pinning results
+spec1.txt:           throughput =                     252752.12 231762.30
+spec2.txt:           throughput =                     255391.51 253250.95
+spec3.txt:           throughput =                     264764.00 263721.03
+spec4.txt:           throughput =                     254833.39 242892.72
+
+------
+
+III) Two 4-socket wide instances(40 warehouse threads each)
+
+                                                              Without 
+patches    With patches
+--------------------    ----------------
+a) numactl pinning results
+spec1.txt:           throughput =                     771340.84 769039.53
+spec2.txt:           throughput =                     762184.48 760745.65
+
+b)Automatic NUMA balancing results
+spec1.txt:           throughput =                     667182.98 720197.01
+spec2.txt:           throughput =                     692564.11 739872.51
+
+c)NO Automatic NUMA balancing and NO-pinning results
+spec1.txt:           throughput = 457079.28      467199.30
+spec2.txt:           throughput = 479790.47      456279.07
+
+-----
+
+IV) One 8-socket wide instance(80 warehouse threads)
+
+                                                              Without 
+patches    With patches
+--------------------    ----------------
+a) numactl pinning results
+spec1.txt:           throughput =                     982113.03 985836.96
+
+b)Automatic NUMA balancing results
+spec1.txt:           throughput =                     755615.94 843632.09
+
+c)NO Automatic NUMA balancing and NO-pinning results
+spec1.txt:           throughput =                     671583.26 661768.54
