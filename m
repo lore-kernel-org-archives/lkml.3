@@ -1,200 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaAWAhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:37:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39801 "EHLO
+	id S1756165AbaAWAiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:38:17 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39925 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaAWAhu convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753618AbaAWAiP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:37:50 -0500
+	Wed, 22 Jan 2014 19:38:15 -0500
 User-Agent: K-9 Mail for Android
-In-Reply-To: <1389922191-28664-1-git-send-email-wangyijing@huawei.com>
-References: <1389922191-28664-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
+References: <1390011895-28123-1-git-send-email-mukesh.rathor@oracle.com> <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
  charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH v2] ACPI: Fix acpi_evaluate_object() return value check
+Subject: Re: [V0 PATCH] xen/pvh: set some cr flags upon vcpu start
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 18 Jan 2014 11:36:09 -0500
-To: Yijing Wang <wangyijing@huawei.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, Hanjun Guo <guohanjun@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-pci@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Dave Airlie <airlied@redhat.com>
-Message-ID: <6b9ddc30-6148-428d-b581-fe49158c2cab@email.android.com>
+Date: Fri, 17 Jan 2014 22:56:24 -0500
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <11d39cdc-d0a7-4658-9ed5-f9fa1ca50aa1@email.android.com>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yijing Wang <wangyijing@huawei.com> wrote:
->Fix acpi_evaluate_object() return value check,
->shoud acpi_status not int.
+Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+>pvh was designed to start with pv flags, but a commit in xen tree
+>51e2cac257ec8b4080d89f0855c498cbbd76a5e5 removed some of the flags as
+>they are not necessary. As a result, these CR flags must be set in the
+>guest.
+>
+>Signed-off-by: Roger Pau Monne <roger.pau@citrix.com>
+>Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+>---
+>arch/x86/xen/enlighten.c |   43
+>+++++++++++++++++++++++++++++++++++++------
+> arch/x86/xen/smp.c       |    2 +-
+> arch/x86/xen/xen-ops.h   |    2 +-
+> 3 files changed, 39 insertions(+), 8 deletions(-)
+>
+>diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>index 628099a..4a2aaa6 100644
+>--- a/arch/x86/xen/enlighten.c
+>+++ b/arch/x86/xen/enlighten.c
+>@@ -1410,12 +1410,8 @@ static void __init
+>xen_boot_params_init_edd(void)
+>  * Set up the GDT and segment registers for -fstack-protector.  Until
+>  * we do this, we have to be careful not to call any stack-protected
+>  * function, which is most of the kernel.
+>- *
+>- * Note, that it is refok - because the only caller of this after init
+>- * is PVH which is not going to use xen_load_gdt_boot or other
+>- * __init functions.
+>  */
+>-void __ref xen_setup_gdt(int cpu)
+>+static void xen_setup_gdt(int cpu)
+> {
+> 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> #ifdef CONFIG_X86_64
+>@@ -1463,13 +1459,48 @@ void __ref xen_setup_gdt(int cpu)
+> 	pv_cpu_ops.load_gdt = xen_load_gdt;
+> }
+> 
+>+/*
+>+ * A pv guest starts with default flags that are not set for pvh, set
+>them
+>+ * here asap.
+>+ */
+>+static void xen_pvh_set_cr_flags(int cpu)
+>+{
+>+	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_WP | X86_CR0_AM);
 
-Should be?
-Your mailer also ate the word 'to' .
->
->Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->---
->
->v1->v2: Add CC to the related subsystem MAINTAINERS.
->
->---
-> drivers/gpu/drm/i915/intel_acpi.c              |   13 +++++++------
-> drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    6 +++---
-> drivers/gpu/drm/nouveau/nouveau_acpi.c         |   13 +++++++------
-> drivers/pci/pci-label.c                        |    6 +++---
-> 4 files changed, 20 insertions(+), 18 deletions(-)
->
->diff --git a/drivers/gpu/drm/i915/intel_acpi.c
->b/drivers/gpu/drm/i915/intel_acpi.c
->index dfff090..7ea00e5 100644
->--- a/drivers/gpu/drm/i915/intel_acpi.c
->+++ b/drivers/gpu/drm/i915/intel_acpi.c
->@@ -35,7 +35,7 @@ static int intel_dsm(acpi_handle handle, int func)
-> 	union acpi_object params[4];
-> 	union acpi_object *obj;
-> 	u32 result;
->-	int ret = 0;
->+	acpi_status status;
+I think it would be good to mention that Xen unconditionally sets PE and ET for HVM guests and that additionally for PVH the PG is set.
+
+What about the NE? That looks to be missing from the list above? Should we set it?
+
+>+
+>+	if (!cpu)
+>+		return;
+>+	/*
+>+	 * Unlike PV, for pvh xen does not set: PSE PGE OSFXSR OSXMMEXCPT
+>+	 * For BSP, PSE PGE will be set in probe_page_size_mask(), for AP
+>+	 * set them here. For all, OSFXSR OSXMMEXCPT will be set in fpu_init
+>+	 */
+>+	if (cpu_has_pse)
+>+		set_in_cr4(X86_CR4_PSE);
+>+
+>+	if (cpu_has_pge)
+>+		set_in_cr4(X86_CR4_PGE);
+>+}
+>+
+>+/*
+>+ * Note, that it is refok - because the only caller of this after init
+>+ * is PVH which is not going to use xen_load_gdt_boot or other
+>+ * __init functions.
+>+ */
+>+void __ref xen_pvh_secondary_vcpu_init(int cpu)
+>+{
+>+	xen_setup_gdt(cpu);
+>+	xen_pvh_set_cr_flags(cpu);
+>+}
+>+
+> static void __init xen_pvh_early_guest_init(void)
+> {
+> 	if (!xen_feature(XENFEAT_auto_translated_physmap))
+> 		return;
 > 
-> 	input.count = 4;
-> 	input.pointer = params;
->@@ -50,8 +50,8 @@ static int intel_dsm(acpi_handle handle, int func)
-> 	params[3].package.count = 0;
-> 	params[3].package.elements = NULL;
+>-	if (xen_feature(XENFEAT_hvm_callback_vector))
+>+	if (xen_feature(XENFEAT_hvm_callback_vector)) {
+> 		xen_have_vector_callback = 1;
+>+		xen_pvh_set_cr_flags(0);
+>+	}
 > 
->-	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
->-	if (ret) {
->+	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->+	if (ACPI_FAILURE(status)) {
-> 		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
-> 		return ret;
-> 	}
->@@ -141,7 +141,8 @@ static void intel_dsm_platform_mux_info(void)
-> 	struct acpi_object_list input;
-> 	union acpi_object params[4];
-> 	union acpi_object *pkg;
->-	int i, ret;
->+	acpi_status status;
->+	int i;
+> #ifdef CONFIG_X86_32
+> 	BUG(); /* PVH: Implement proper support. */
+>diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+>index 5e46190..a18eadd 100644
+>--- a/arch/x86/xen/smp.c
+>+++ b/arch/x86/xen/smp.c
+>@@ -105,7 +105,7 @@ static void cpu_bringup_and_idle(int cpu)
+> #ifdef CONFIG_X86_64
+> 	if (xen_feature(XENFEAT_auto_translated_physmap) &&
+> 	    xen_feature(XENFEAT_supervisor_mode_kernel))
+>-		xen_setup_gdt(cpu);
+>+		xen_pvh_secondary_vcpu_init(cpu);
+> #endif
+> 	cpu_bringup();
+> 	cpu_startup_entry(CPUHP_ONLINE);
+>diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+>index 9059c24..1cb6f4c 100644
+>--- a/arch/x86/xen/xen-ops.h
+>+++ b/arch/x86/xen/xen-ops.h
+>@@ -123,5 +123,5 @@ __visible void xen_adjust_exception_frame(void);
 > 
-> 	input.count = 4;
-> 	input.pointer = params;
->@@ -156,9 +157,9 @@ static void intel_dsm_platform_mux_info(void)
-> 	params[3].package.count = 0;
-> 	params[3].package.elements = NULL;
+> extern int xen_panic_handler_init(void);
 > 
->-	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
->+	acpi_status = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM",
->&input,
-> 				   &output);
->-	if (ret) {
->+	if (ACPI_FAILURE(status)) {
-> 		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
-> 		goto out;
-> 	}
->diff --git a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
->b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
->index 1291204..3920943 100644
->--- a/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
->+++ b/drivers/gpu/drm/nouveau/core/subdev/mxm/base.c
->@@ -114,14 +114,14 @@ mxm_shadow_dsm(struct nouveau_mxm *mxm, u8
->version)
-> 	struct acpi_buffer retn = { ACPI_ALLOCATE_BUFFER, NULL };
-> 	union acpi_object *obj;
-> 	acpi_handle handle;
->-	int ret;
->+	acpi_status status;
-> 
-> 	handle = ACPI_HANDLE(&device->pdev->dev);
-> 	if (!handle)
-> 		return false;
-> 
->-	ret = acpi_evaluate_object(handle, "_DSM", &list, &retn);
->-	if (ret) {
->+	status = acpi_evaluate_object(handle, "_DSM", &list, &retn);
->+	if (ACPI_FAILURE(status)) {
-> 		nv_debug(mxm, "DSM MXMS failed: %d\n", ret);
-> 		return false;
-> 	}
->diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c
->b/drivers/gpu/drm/nouveau/nouveau_acpi.c
->index ba0183f..6f810f2 100644
->--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
->+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
->@@ -82,7 +82,8 @@ static int nouveau_optimus_dsm(acpi_handle handle,
->int func, int arg, uint32_t *
-> 	struct acpi_object_list input;
-> 	union acpi_object params[4];
-> 	union acpi_object *obj;
->-	int i, err;
->+	acpi_status status;
->+	int i;
-> 	char args_buff[4];
-> 
-> 	input.count = 4;
->@@ -101,8 +102,8 @@ static int nouveau_optimus_dsm(acpi_handle handle,
->int func, int arg, uint32_t *
-> 		args_buff[i] = (arg >> i * 8) & 0xFF;
-> 	params[3].buffer.pointer = args_buff;
-> 
->-	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
->-	if (err) {
->+	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->+	if (ACPI_FAILURE(status)) {
-> 		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
-> 		return err;
-> 	}
->@@ -134,7 +135,7 @@ static int nouveau_dsm(acpi_handle handle, int
->func, int arg, uint32_t *result)
-> 	struct acpi_object_list input;
-> 	union acpi_object params[4];
-> 	union acpi_object *obj;
->-	int err;
->+	acpi_status status;
-> 
-> 	input.count = 4;
-> 	input.pointer = params;
->@@ -148,8 +149,8 @@ static int nouveau_dsm(acpi_handle handle, int
->func, int arg, uint32_t *result)
-> 	params[3].type = ACPI_TYPE_INTEGER;
-> 	params[3].integer.value = arg;
-> 
->-	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
->-	if (err) {
->+	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
->+	if (ACPI_FAILURE(status)) {
-> 		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
-> 		return err;
-> 	}
->diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
->index d51f45a..3c21f1b 100644
->--- a/drivers/pci/pci-label.c
->+++ b/drivers/pci/pci-label.c
->@@ -213,7 +213,7 @@ dsm_get_label(acpi_handle handle, int func,
-> 	union acpi_object *obj;
-> 	int len = 0;
-> 
->-	int err;
->+	acpi_status status;
-> 
-> 	input.count = 4;
-> 	input.pointer = params;
->@@ -228,8 +228,8 @@ dsm_get_label(acpi_handle handle, int func,
-> 	params[3].package.count = 0;
-> 	params[3].package.elements = NULL;
-> 
->-	err = acpi_evaluate_object(handle, "_DSM", &input, output);
->-	if (err)
->+	status = acpi_evaluate_object(handle, "_DSM", &input, output);
->+	if (ACPI_FAILURE(status))
-> 		return -1;
-> 
-> 	obj = (union acpi_object *)output->pointer;
+>-void xen_setup_gdt(int cpu);
+>+void xen_pvh_secondary_vcpu_init(int cpu);
+> #endif /* XEN_OPS_H */
 
 
