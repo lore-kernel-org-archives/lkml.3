@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaARKmp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 05:42:45 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55315 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814AbaARKml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 05:42:41 -0500
-Date: Sat, 18 Jan 2014 11:42:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
-Message-ID: <20140118104231.GA15466@pd.tnic>
-References: <20140114115547.GA29887@pd.tnic>
- <52D55468.6000000@zytor.com>
- <20140114153534.GE29865@pd.tnic>
- <20140114162722.GF29865@pd.tnic>
- <20140117222806.GB13930@amd.pavel.ucw.cz>
- <20140117225013.GE14649@pd.tnic>
- <52D9B408.4020007@zytor.com>
- <20140118002926.GA22185@amd.pavel.ucw.cz>
- <52D9D6FC.7050100@zytor.com>
- <20140118020155.GA24158@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140118020155.GA24158@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753812AbaARKpn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 05:45:43 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:43938 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaARKpl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 05:45:41 -0500
+Subject: Re: [PATCH] mm/kmemleak: add support for re-enable kmemleak at runtime
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Content-Type: text/plain; charset=us-ascii
+From: Catalin Marinas <catalin.marinas@arm.com>
+In-Reply-To: <52DA3E41.9050202@huawei.com>
+Date: Sat, 18 Jan 2014 10:45:38 +0000
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Zefan <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CE7DF1D3-12AE-4A97-BF05-84FF223C8520@arm.com>
+References: <52D8FA72.8080100@huawei.com> <20140117120436.GC28895@arm.com> <52DA3E41.9050202@huawei.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 03:01:55AM +0100, Pavel Machek wrote:
-> I'd say that proposed "your bios has a bug"
+On 18 Jan 2014, at 08:41, Jianguo Wu <wujianguo@huawei.com> wrote:
+> On 2014/1/17 20:04, Catalin Marinas wrote:
+>> On Fri, Jan 17, 2014 at 09:40:02AM +0000, Jianguo Wu wrote:
+>>> Now disabling kmemleak is an irreversible operation, but sometimes
+>>> we may need to re-enable kmemleak at runtime. So add a knob to enable
+>>> kmemleak at runtime:
+>>> echo on > /sys/kernel/debug/kmemleak
+>> 
+>> It is irreversible for very good reason: once it missed the initial
+>> memory allocations, there is no way for kmemleak to build the object
+>> reference graph and you'll get lots of false positives, pretty much
+>> making it unusable.
+> 
+> Do you mean we didn't trace memory allocations during kmemleak disable period,
+> and these memory may reference to new allocated objects after re-enable? 
 
-You can always unconditionally print "your bios has a bug". Just like
-that. Without even looking.
+Yes. Those newly allocated objects would be reported as leaks.
 
-So no, I don't think adding a warning for this one case makes sense.
-
-If you want to add a warning yourself, you can put it in rc.local using
-userspace goodies like msr-tools. With them you can toggle that bit ad
-absurdum - no need for the kernel except msr.ko.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Catalin
