@@ -1,219 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaARKvg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 05:51:36 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:36816 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaARKvc (ORCPT
+	id S1753336AbaARLId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 06:08:33 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56900 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbaARLIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 05:51:32 -0500
+	Sat, 18 Jan 2014 06:08:31 -0500
+Date: Sat, 18 Jan 2014 12:08:29 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum
+ 793
+Message-ID: <20140118110829.GA2071@amd.pavel.ucw.cz>
+References: <52D55468.6000000@zytor.com>
+ <20140114153534.GE29865@pd.tnic>
+ <20140114162722.GF29865@pd.tnic>
+ <20140117222806.GB13930@amd.pavel.ucw.cz>
+ <20140117225013.GE14649@pd.tnic>
+ <52D9B408.4020007@zytor.com>
+ <20140118002926.GA22185@amd.pavel.ucw.cz>
+ <52D9D6FC.7050100@zytor.com>
+ <20140118020155.GA24158@amd.pavel.ucw.cz>
+ <20140118104231.GA15466@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1389985971-541-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1389985971-541-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Sat, 18 Jan 2014 11:51:31 +0100
-Message-ID: <CANq1E4SHqy4Q3+iPZMoQjJnoNZTUw0YstLnsvto2E5GKv6XaSw@mail.gmail.com>
-Subject: Re: [PATCH v3] input/uinput: add UI_GET_SYSNAME ioctl to retrieve the
- sysfs path
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140118104231.GA15466@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat 2014-01-18 11:42:31, Borislav Petkov wrote:
+> On Sat, Jan 18, 2014 at 03:01:55AM +0100, Pavel Machek wrote:
+> > I'd say that proposed "your bios has a bug"
+> 
+> You can always unconditionally print "your bios has a bug". Just like
+> that. Without even looking.
 
-On Fri, Jan 17, 2014 at 8:12 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> Evemu [1] uses uinput to replay devices traces it has recorded. However,
-> the way evemu uses uinput is slightly different from how uinput is
-> supposed to be used.
-> Evemu relies on libevdev, which creates the device node through uinput.
-> It then injects events through the input device node directly (and it
-> completely skips the uinput node).
->
-> Currently, libevdev relies on an heuristic to guess which input node was
-> created. The problem is that is heuristic is subjected to races between
-> different uinput devices or even with physical devices. Having a way
-> to retrieve the sysfs path allows us to find the event node without
-> having to rely on this heuristic.
->
-> [1] http://www.freedesktop.org/wiki/Evemu/
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->
-> Ok, I am resurrecting this. The original patch was sent last July here:
-> https://patchwork.kernel.org/patch/2827524/
->
-> changes since v2:
-> - the ioctl returns only the device name, thus I renamed the ioctl to UI_GET_SYSNAME
-> - reordered uinput_str_to_user() arguments
-> - be sure to terminate the user string we send by \0
-> - abort if udev->state is not UIST_CREATED
-> - dropped the patch 1/2 (adding resolution to uinput) because I think David has
->   already it in one of his queues (ABS2 IIRC)
->
-> I also posted the corresponding libevdev here:
-> http://lists.freedesktop.org/archives/input-tools/2014-January/000757.html
->
-> Cheers,
-> Benjamin
->
->  drivers/input/misc/uinput.c | 46 ++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/uinput.h      |  2 ++
->  include/uapi/linux/uinput.h | 13 ++++++++++++-
->  3 files changed, 59 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-> index 7728359..0203219 100644
-> --- a/drivers/input/misc/uinput.c
-> +++ b/drivers/input/misc/uinput.c
-> @@ -20,6 +20,8 @@
->   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->   *
->   * Changes/Revisions:
-> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
-> + *             - add UI_GET_SYSNAME ioctl
->   *     0.3     09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
->   *             - updated ff support for the changes in kernel interface
->   *             - added MODULE_VERSION
-> @@ -670,6 +672,27 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
->         __ret;                                          \
->  })
->
-> +static int uinput_str_to_user(void __user *dest, const char *str,
-> +                             unsigned int maxlen)
-> +{
-> +       int len, ret;
-> +
-> +       if (!str)
-> +               return -ENOENT;
-> +
-> +       len = strlen(str) + 1;
-> +       if (len > maxlen)
-> +               len = maxlen;
-> +
-> +       ret = copy_to_user(dest, str, len);
-> +       if (ret)
-> +               return -EFAULT;
-> +
-> +       /* force terminating '\0' */
-> +       ret = copy_to_user(dest + len - 1, "\0", 1);
+Yeah, and we have linux-firmware testing toolkits, to discourage buggy
+bioses. In this case it is "your bios has rare and dangerous bug, see CVS-1234".
 
-You must make sure "maxlen != 0", otherwise you write beyond buffer
-boundaries here. I'd say return -EINVAL in case maxlen == 0.
+> If you want to add a warning yourself, you can put it in rc.local using
+> userspace goodies like msr-tools. With them you can toggle that bit ad
+> absurdum - no need for the kernel except msr.ko.
 
-btw., you can also use: put_user(0, (char*)dest + len - 1);
+?? By the time userspace is booted, you have overwritten the MSR, and
+information, if the BIOS is buggy, was lost.
 
-> +       return ret ? -EFAULT : len;
-> +}
-> +
->  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->                                  unsigned long arg, void __user *p)
->  {
-> @@ -679,6 +702,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->         struct uinput_ff_erase  ff_erase;
->         struct uinput_request   *req;
->         char                    *phys;
-> +       const char              *name;
-> +       unsigned int            size;
->
->         retval = mutex_lock_interruptible(&udev->mutex);
->         if (retval)
-> @@ -831,7 +856,26 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->                         break;
->
->                 default:
-> -                       retval = -EINVAL;
-> +                       retval = -EAGAIN;
-> +       }
-> +
-> +       if (retval == -EAGAIN) {
+So linux-firmware testing toolkit actually has no chance to report
+this one.
 
-Ehh, in case another ioctl returns -EAGAIN, we overwrite the error
-with -EINVAL below in the "default:" clause. Maybe we should first
-convert all the "break;" commands to "goto out;".
 
-Patch looks good to me.
-Thanks
-David
-
-> +               size = _IOC_SIZE(cmd);
-> +
-> +               /* Now check variable-length commands */
-> +               switch (cmd & ~IOCSIZE_MASK) {
-> +                       case UI_GET_SYSNAME(0):
-> +                               if (udev->state != UIST_CREATED) {
-> +                                       retval = -ENOENT;
-> +                                       goto out;
-> +                               }
-> +                               name = dev_name(&udev->dev->dev);
-> +                               retval = uinput_str_to_user(p, name, size);
-> +                               break;
-> +
-> +                       default:
-> +                               retval = -EINVAL;
-> +               }
->         }
->
->   out:
-> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
-> index 0a4487d..0994c0d 100644
-> --- a/include/linux/uinput.h
-> +++ b/include/linux/uinput.h
-> @@ -20,6 +20,8 @@
->   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->   *
->   * Changes/Revisions:
-> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
-> + *             - add UI_GET_SYSNAME ioctl
->   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->   *             - update ff support for the changes in kernel interface
->   *             - add UINPUT_VERSION
-> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
-> index fe46431..0389b48 100644
-> --- a/include/uapi/linux/uinput.h
-> +++ b/include/uapi/linux/uinput.h
-> @@ -20,6 +20,8 @@
->   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->   *
->   * Changes/Revisions:
-> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
-> + *             - add UI_GET_SYSNAME ioctl
->   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->   *             - update ff support for the changes in kernel interface
->   *             - add UINPUT_VERSION
-> @@ -35,7 +37,7 @@
->  #include <linux/types.h>
->  #include <linux/input.h>
->
-> -#define UINPUT_VERSION         3
-> +#define UINPUT_VERSION         4
->
->
->  struct uinput_ff_upload {
-> @@ -73,6 +75,15 @@ struct uinput_ff_erase {
->  #define UI_BEGIN_FF_ERASE      _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
->  #define UI_END_FF_ERASE                _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
->
-> +/**
-> + * UI_GET_SYSNAME - get the sysfs name of the created uinput device
-> + *
-> + * @return the sysfs name of the created virtual input device.
-> + * The complete sysfs path is then /sys/devices/virtual/input/--NAME--
-> + * Usually, it is in the form "inputN"
-> + */
-> +#define UI_GET_SYSNAME(len)    _IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
-> +
->  /*
->   * To write a force-feedback-capable driver, the upload_effect
->   * and erase_effect callbacks in input_dev must be implemented.
-> --
-> 1.8.3.1
->
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
