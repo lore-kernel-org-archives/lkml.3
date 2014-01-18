@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaAROjY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 09:39:24 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:45141 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbaAROjR (ORCPT
+	id S1753084AbaARO7r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 09:59:47 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:34465 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbaARO7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 09:39:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140118071538.GA32535@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com> <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
- <20140118071538.GA32535@dhcp-26-207.brq.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 18 Jan 2014 07:38:55 -0700
-Message-ID: <CAErSpo4nBdnn3YYaLj6QZ8iyY2pzV8Y7msd5UxJXm1T2AYnqfg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian King <brking@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
+	Sat, 18 Jan 2014 09:59:45 -0500
+Date: Sat, 18 Jan 2014 09:59:40 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian King <brking@us.ibm.com>, Matthew Wilcox <willy@linux.intel.com>,
         Alex Williamson <alex.williamson@redhat.com>,
         Kalle Valo <kvalo@qca.qualcomm.com>,
         Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
@@ -29,32 +23,50 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
+Message-ID: <20140118145940.GE3640@htj.dyndns.org>
+References: <cover.1389904166.git.agordeev@redhat.com>
+ <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
+ <20140118071538.GA32535@dhcp-26-207.brq.redhat.com>
+ <CAErSpo4nBdnn3YYaLj6QZ8iyY2pzV8Y7msd5UxJXm1T2AYnqfg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4nBdnn3YYaLj6QZ8iyY2pzV8Y7msd5UxJXm1T2AYnqfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 12:15 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Fri, Jan 17, 2014 at 02:00:32PM -0700, Bjorn Helgaas wrote:
->> > As the release is supposedly this weekend, do you prefer
->> > the patches to go to your tree or to individual trees after
->> > the release?
->>
->> I'd be happy to merge them, except for the fact that they probably
->> wouldn't have any time in -next before I ask Linus to pull them.  So
->> how about if we wait until after the release, ask the area maintainers
->> to take them, and if they don't take them, I'll put them in my tree
->> for v3.15?
->
-> Patch 11 depends on patches 1-10, so I am not sure how to better handle it.
-> Whatever works for you ;)
->
-> I am only concerned with a regression fix "ahci: Fix broken fallback to
-> single MSI mode" which would be nice to have in 3.14. But it seems pretty
-> much too late.
+On Sat, Jan 18, 2014 at 07:38:55AM -0700, Bjorn Helgaas wrote:
+> On Sat, Jan 18, 2014 at 12:15 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> > On Fri, Jan 17, 2014 at 02:00:32PM -0700, Bjorn Helgaas wrote:
+> >> > As the release is supposedly this weekend, do you prefer
+> >> > the patches to go to your tree or to individual trees after
+> >> > the release?
+> >>
+> >> I'd be happy to merge them, except for the fact that they probably
+> >> wouldn't have any time in -next before I ask Linus to pull them.  So
+> >> how about if we wait until after the release, ask the area maintainers
+> >> to take them, and if they don't take them, I'll put them in my tree
+> >> for v3.15?
+> >
+> > Patch 11 depends on patches 1-10, so I am not sure how to better handle it.
+> > Whatever works for you ;)
+> >
+> > I am only concerned with a regression fix "ahci: Fix broken fallback to
+> > single MSI mode" which would be nice to have in 3.14. But it seems pretty
+> > much too late.
+> 
+> Tejun, if you want to ack that one, I can put it in either the first
+> 3.14 pull request or a subsequent one.  Either way, since it's a
+> regression fix, we should be able to get it in 3.14.
 
-Tejun, if you want to ack that one, I can put it in either the first
-3.14 pull request or a subsequent one.  Either way, since it's a
-regression fix, we should be able to get it in 3.14.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Bjorn
+Please feel free to route it any way you see fit.
+
+Thanks!
+
+-- 
+tejun
