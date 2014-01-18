@@ -1,197 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaARE03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 23:26:29 -0500
-Received: from zougloub.eu ([198.27.83.45]:43667 "EHLO zougloub.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041AbaARE01 convert rfc822-to-8bit (ORCPT
+	id S1753447AbaARE2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 23:28:09 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31906 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752144AbaARE2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 23:26:27 -0500
-X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jan 2014 23:26:27 EST
-Date: Fri, 17 Jan 2014 23:18:20 -0500
-From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
-To: "Marius  Silaghi" <msilaghi@fit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Lan Tianyu" <tianyu.lan@intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        "Jiri Kosina" <trivial@kernel.org>, ydesgagne@tamaggo.com
-Subject: Re: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
- devices on USB3 bus
-Message-ID: <20140117231820.0b6c900e@Vantage>
-In-Reply-To: <02270BA454DB7548ABE8E2EBF31D46D96FC7F254@EX10-BE1.fit.edu>
-References: <02270BA454DB7548ABE8E2EBF31D46D96FC7B4C5@EX10-BE1.fit.edu>
-	<20140108003237.GF13062@kroah.com>
-	<02270BA454DB7548ABE8E2EBF31D46D96FC7F254@EX10-BE1.fit.edu>
+	Fri, 17 Jan 2014 23:28:06 -0500
+Date: Fri, 17 Jan 2014 23:28:01 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [GIT PULL][PATCH] tracing: Fix buggered tee(2) on tracing_pipe
+Message-ID: <20140117232801.59b11e0f@gandalf.local.home>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+
+Linus,
+
+Al Viro has concerns with the trace_pipe release method calling
+__free_page() instead of using the generic_pipe_buf_release() which
+does a page_cache_release(). Looking at the differences between
+__free_page() and page_cache_release() I do not think there's a real
+issue here. But to be on the safe side, and at least to be symmetric
+with generic_pipe_buf_get(), this patch is fine to add.
+
+Please pull the latest trace-fixes-v3.13-rc8 tree, which can be found at:
 
 
-I encountered the same problem with another device.
-If possible, it would be nice to pick Marius's patch for stable
-kernels (tested here on v3.12.6).
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.13-rc8
 
-There are chances that MacOSX is affected by a similar issue,
-so if anybody has friends there...
-
-
-Thanks,
-
--- 
-Jérôme
+Tag SHA1: 5a8329936de8662773042fa76bc3c3d0c48fe5c3
+Head SHA1: c50b3d58415b1f46bdb044fbd4e807cda49f0aa2
 
 
-On Wed, 8 Jan 2014 04:00:22 +0000
-"Marius  Silaghi" <msilaghi@fit.edu> wrote:
+Al Viro (1):
+      tracing: Fix buggered tee(2) on tracing_pipe
 
-> 
-> Great observation,
-> Sarah located a patch that is queued for the 3.14 kernel and that has
-> a similar effect. So future kernels could work with that one as well.
-> 
-> The patch I provided (being very small and safe) can still be
-> suggested for maintainers of older kernels in various long-term
-> maintained distributions (if you know who is doing that).
-> 
-> Here are some versions of the patch I made for current kernels:
-> 
-> The next one was tested on Ubuntu, applied to the source for
-> 3.5.0-17-generic (Ubuntu)
-> 
-> --- linux-3.5.0/drivers/usb/core/hub.c.orig	2014-01-07
-> 18:16:01.997031650 -0500 +++
-> linux-3.5.0/drivers/usb/core/hub.c	2014-01-07
-> 18:19:41.617022465 -0500 @@ -4043,7 +4043,11 @@ break;
->    		}
->  
-> -		retval = usb_get_device_descriptor(udev, 8);
-> +		if (!USE_NEW_SCHEME(retry_counter))
-> +		  retval = usb_get_device_descriptor(udev, 8);
-> +		else
-> +		  retval = usb_get_device_descriptor(udev,
-> +			    sizeof(struct usb_device_descriptor));
->  		if (retval < 8) {
->  			dev_err(&udev->dev,
->  					"device descriptor read/8,
-> error %d\n",
-> 
-> 
-> ________________________________________
-> For kernel 3.9.0-0.4
-> 
-> --- linux-3.5.0/drivers/usb/core/hub.c.orig	2014-01-07
-> 18:16:01.997031650 -0500 +++
-> linux-3.5.0/drivers/usb/core/hub.c	2014-01-07
-> 18:19:41.617022465 -0500 @@ -4043,7 +4043,11 @@ break;
->    		}
->  
-> -		retval = usb_get_device_descriptor(udev, 8);
-> +		if (!USE_NEW_SCHEME(retry_counter))
-> +		  retval = usb_get_device_descriptor(udev, 8);
-> +		else
-> +		  retval = usb_get_device_descriptor(udev,
-> +			    sizeof(struct usb_device_descriptor));
->  		if (retval < 8) {
->  			dev_err(&udev->dev,
->  					"device descriptor read/8,
-> error %d\n",
-> 
-> ________________________________________
-> 
-> For kernel 3.10.0-5.15
-> 
-> --- ubuntu-saucy/drivers/usb/core/hub.c.orig	2014-01-07
-> 16:52:41.300835262 -0500 +++
-> ubuntu-saucy/drivers/usb/core/hub.c	2014-01-07
-> 16:54:53.612829730 -0500 @@ -4126,8 +4126,11 @@ if
-> (USE_NEW_SCHEME(retry_counter) && !(hcd->driver->flags & HCD_USB3))
-> break; }
-> -
-> -		retval = usb_get_device_descriptor(udev, 8);
-> +		if (!USE_NEW_SCHEME(retry_counter))
-> +		  retval = usb_get_device_descriptor(udev, 8);
-> +		else
-> +		  retval = usb_get_device_descriptor(udev,
-> +			    sizeof(struct usb_device_descriptor));
->  		if (retval < 8) {
->  			if (retval != -ENODEV)
->  				dev_err(&udev->dev,
-> ________________________________________
-> 
-> For kernel 3.11
-> --- linux-3.11/drivers/usb/core/hub.c.orig	2014-01-07
-> 16:57:16.352823760 -0500 +++ linux-3.11/drivers/usb/core/hub.c
-> 2014-01-07 16:58:10.168821508 -0500 @@ -4161,7 +4161,11 @@
->  				break;
->    		}
->  
-> -		retval = usb_get_device_descriptor(udev, 8);
-> +		if (!USE_NEW_SCHEME(retry_counter))
-> +		  retval = usb_get_device_descriptor(udev, 8);
-> +		else
-> +		  retval = usb_get_device_descriptor(udev,
-> +			    sizeof(struct usb_device_descriptor));
->  		if (retval < 8) {
->  			if (retval != -ENODEV)
->  				dev_err(&udev->dev,
-> 
-> 
-> ________________________________________
-> From: linux-usb-owner@vger.kernel.org
-> [linux-usb-owner@vger.kernel.org] on behalf of Greg Kroah-Hartman
-> [gregkh@linuxfoundation.org] Sent: Tuesday, January 07, 2014 19:32
-> To: Marius  Silaghi Cc: Sarah Sharp; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Alan Stern; Lan Tianyu; Xenia
-> Ragiadakou; Jiri Kosina Subject: Re: [PATCH] usbcore: fix BABBLE
-> failed enumeration of legacy USB2 devices on USB3 bus
-> 
-> On Tue, Dec 24, 2013 at 04:19:18AM +0000, Marius  Silaghi wrote:
-> > From: Marius C Silaghi <msilaghi@fit.edu>
-> >
-> > This patch is generated against the last kernel version in the
-> > github kernel repository.
-> 
-> We work off of the git.kernel.org trees, not github :)
-> 
-> 
-> > Some older families of USB2 cameras (STC-XXXXXUSB) do not support
-> > querying only the first 8 bytes of their device descriptor and
-> > therefore fail at enumeration on USB3 HCDs, with babble error -75
-> > as they send more than the expected 8 bytes. The proposed patch
-> > extends the mechanism used for non USB3 HCDs in the first part of
-> > the same function, and  successively tries to query both the 8 byte
-> > prefix of the device descriptor, as well as the whole device
-> > descriptor (in case the old style query of the 8 byte prefix
-> > fails). In fact, for the cameras I try to fix, the preferred
-> > condition is the negation of the one in the proposed patch, "if
-> > (!USE_NEW_SCHEME(retry_counter))", to try first the version
-> > successful on this case, but I keep the current order of the "if"
-> > branches to ensure clean continuation of support for other
-> > supported devices.
-> >
-> > Signed-off-by: Marius C Silaghi <msilaghi@fit.edu>
-> 
-> I'll let Sarah take this patch, if it passes her testing.
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+----
+ kernel/trace/trace.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+---------------------------
+commit c50b3d58415b1f46bdb044fbd4e807cda49f0aa2
+Author: Al Viro <viro@ZenIV.linux.org.uk>
+Date:   Fri Jan 17 07:53:39 2014 -0500
 
+    tracing: Fix buggered tee(2) on tracing_pipe
+    
+    In kernel/trace/trace.c we have this:
+    static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
+                                         struct pipe_buffer *buf)
+    {
+            __free_page(buf->page);
+    }
+    static const struct pipe_buf_operations tracing_pipe_buf_ops = {
+            .can_merge              = 0,
+            .map                    = generic_pipe_buf_map,
+            .unmap                  = generic_pipe_buf_unmap,
+            .confirm                = generic_pipe_buf_confirm,
+            .release                = tracing_pipe_buf_release,
+            .steal                  = generic_pipe_buf_steal,
+            .get                    = generic_pipe_buf_get,
+    };
+    with
+    void generic_pipe_buf_get(struct pipe_inode_info *pipe, struct pipe_buffer *buf)
+    {
+            page_cache_get(buf->page);
+    }
+    
+    and I don't see anything that would've prevented tee(2) called on the pipe
+    that got stuff spliced into it from that sucker.  ->ops->get() will be
+    called, then buf gets copied into target pipe's ->bufs[] and eventually
+    readers get to both copies of the buffer.  With
+    	get_page(page)
+    	look at that page
+    	__free_page(page)
+    	look at that page
+    	__free_page(page)
+    which is not a good thing, to put it mildly.  AFAICS, that ought to use
+    the normal generic_pipe_buf_release() (aka page_cache_release(buf->page)),
+    shouldn't it?
+    
+    [
+     SDR - As trace_pipe just allocates the page with alloc_page(GFP_KERNEL),
+      and doesn't do anything special with it (no LRU logic). The __free_page()
+      should be fine, as it wont actually free a page with reference count.
+      Maybe there's a chance to leak memory? Anyway, This change is at a minimum
+      good for being symmetric with generic_pipe_buf_get, it is fine to add.
+    ]
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+    [ SDR - Removed no longer used tracing_pipe_buf_release ]
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9d20cd9..8f86143 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4212,12 +4212,6 @@ out:
+ 	return sret;
+ }
+ 
+-static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
+-				     struct pipe_buffer *buf)
+-{
+-	__free_page(buf->page);
+-}
+-
+ static void tracing_spd_release_pipe(struct splice_pipe_desc *spd,
+ 				     unsigned int idx)
+ {
+@@ -4229,7 +4223,7 @@ static const struct pipe_buf_operations tracing_pipe_buf_ops = {
+ 	.map			= generic_pipe_buf_map,
+ 	.unmap			= generic_pipe_buf_unmap,
+ 	.confirm		= generic_pipe_buf_confirm,
+-	.release		= tracing_pipe_buf_release,
++	.release		= generic_pipe_buf_release,
+ 	.steal			= generic_pipe_buf_steal,
+ 	.get			= generic_pipe_buf_get,
+ };
