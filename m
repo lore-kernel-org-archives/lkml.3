@@ -1,247 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaARDXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jan 2014 22:23:38 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:61827 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaARDXe (ORCPT
+	id S1753385AbaARDZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jan 2014 22:25:10 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41875 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaARDZG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jan 2014 22:23:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1390013297-23462-2-git-send-email-jiang.liu@linux.intel.com>
-References: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
-	<1390013297-23462-2-git-send-email-jiang.liu@linux.intel.com>
-Date: Fri, 17 Jan 2014 19:23:33 -0800
-X-Google-Sender-Auth: gZzpnyEXitSnq5DBphjwFH9l718
-Message-ID: <CAE9FiQXS-vctiWtXBcw8g6dqPEJGSND+GXB1t64kEoCiygBhjQ@mail.gmail.com>
-Subject: Re: [Patch v1 2/3] ACPI, PCI: reuse ACPI hotplug framework to support
- PCI host bridge hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 17 Jan 2014 22:25:06 -0500
+Date: Fri, 17 Jan 2014 19:25:05 -0800 (PST)
+Message-Id: <20140117.192505.1901672539416947640.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 6:48 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> Reuse ACPI hotplug framework to support PCI host bridge hotplug, this
-> makes PCI host bridge hotplug implementation simpler and more clear.
->
-> It also fixes a bug in support of PCI host bridge hot-addition.
-> Currently pci_root driver fails to install notification handler for
-> PCI host bridge absent at boot time because acpi_is_root_bridge()
-> returns false if no ACPI device created for handle. So PCI host
-> bridge hot-addition event will just be ignored by system.
->
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-is the same as
+1) The value choosen for the new SO_MAX_PACING_RATE socket option on
+   parisc was very poorly choosen, let's fix it while we still can.
+   From Eric Dumazet.
 
-commit 3338db0057ed9f554050bd06863731c515d79672
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Fri Nov 22 21:55:20 2013 +0100
+2) Our generic reciprocal divide was found to handle some edge cases
+   incorrectly, part of this is encoded into the BPF as deep as the
+   JIT engines themselves.  Just use a real divide throughout for now.
+   From Eric Dumazet.
 
-    ACPI / hotplug: Make ACPI PCI root hotplug use common hotplug code
+3) Because the initial lookup is lockless, the TCP metrics engine
+   can end up creating two entries for the same lookup key.  Fix this
+   by doing a second lookup under the lock before we actually create
+   the new entry.  From Christoph Paasch.
 
-in rafael tree pm/linux-next for 3.14?
+4) Fix scatter-gather list init in usbnet driver, from Bjørn Mork.
 
-> ---
->  drivers/acpi/internal.h |    1 -
->  drivers/acpi/pci_root.c |  117 +++++++----------------------------------------
->  drivers/acpi/scan.c     |    2 -
->  3 files changed, 17 insertions(+), 103 deletions(-)
->
-> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> index a29739c..03efa56 100644
-> --- a/drivers/acpi/internal.h
-> +++ b/drivers/acpi/internal.h
-> @@ -28,7 +28,6 @@ int init_acpi_device_notify(void);
->  int acpi_scan_init(void);
->  void acpi_pci_root_init(void);
->  void acpi_pci_link_init(void);
-> -void acpi_pci_root_hp_init(void);
->  void acpi_processor_init(void);
->  void acpi_platform_init(void);
->  int acpi_sysfs_init(void);
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 20360e4..6f6e6c1 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -50,6 +50,7 @@ ACPI_MODULE_NAME("pci_root");
->  static int acpi_pci_root_add(struct acpi_device *device,
->                              const struct acpi_device_id *not_used);
->  static void acpi_pci_root_remove(struct acpi_device *device);
-> +static int handle_hotplug_event_root(acpi_handle handle, u32 type, void *ctx);
->
->  #define ACPI_PCIE_REQ_SUPPORT (OSC_PCI_EXT_CONFIG_SUPPORT \
->                                 | OSC_PCI_ASPM_SUPPORT \
-> @@ -61,12 +62,14 @@ static const struct acpi_device_id root_device_ids[] = {
->         {"", 0},
->  };
->
-> +
->  static struct acpi_scan_handler pci_root_handler = {
->         .ids = root_device_ids,
-> +       .prepare = handle_hotplug_event_root,
->         .attach = acpi_pci_root_add,
->         .detach = acpi_pci_root_remove,
->         .hotplug = {
-> -               .ignore = true,
-> +               .enabled = true,
->         },
->  };
->
-> @@ -627,113 +630,27 @@ void __init acpi_pci_root_init(void)
->
->         if (!acpi_pci_disabled) {
->                 pci_acpi_crs_quirks();
-> -               acpi_scan_add_handler(&pci_root_handler);
-> -       }
-> -}
-> -/* Support root bridge hotplug */
-> -
-> -static void handle_root_bridge_insertion(acpi_handle handle)
-> -{
-> -       struct acpi_device *device;
-> -
-> -       if (!acpi_bus_get_device(handle, &device)) {
-> -               dev_printk(KERN_DEBUG, &device->dev,
-> -                          "acpi device already exists; ignoring notify\n");
-> -               return;
-> +               acpi_scan_add_handler_with_hotplug(&pci_root_handler,
-> +                                                  "pci_hostbridge");
->         }
-> -
-> -       if (acpi_bus_scan(handle))
-> -               acpi_handle_err(handle, "cannot add bridge to acpi list\n");
->  }
->
-> -static void hotplug_event_root(void *data, u32 type)
-> +static int handle_hotplug_event_root(acpi_handle handle, u32 type, void *ctx)
->  {
-> -       acpi_handle handle = data;
-> +       int ret = NOTIFY_OK;
->         struct acpi_pci_root *root;
->
-> -       acpi_scan_lock_acquire();
-> -
-> -       root = acpi_pci_find_root(handle);
-> -
-> -       switch (type) {
-> -       case ACPI_NOTIFY_BUS_CHECK:
-> -               /* bus enumerate */
-> -               acpi_handle_printk(KERN_DEBUG, handle,
-> -                                  "Bus check notify on %s\n", __func__);
-> -               if (root)
-> +       if (type == ACPI_NOTIFY_BUS_CHECK) {
-> +               acpi_scan_lock_acquire();
-> +               root = acpi_pci_find_root(handle);
-> +               if (root) {
-> +                       acpi_handle_printk(KERN_DEBUG, handle,
-> +                               "Bus check notify on %s\n", __func__);
->                         acpiphp_check_host_bridge(handle);
-> -               else
-> -                       handle_root_bridge_insertion(handle);
-> -
-> -               break;
-> -
-> -       case ACPI_NOTIFY_DEVICE_CHECK:
-> -               /* device check */
-> -               acpi_handle_printk(KERN_DEBUG, handle,
-> -                                  "Device check notify on %s\n", __func__);
-> -               if (!root)
-> -                       handle_root_bridge_insertion(handle);
-> -               break;
-> -
-> -       case ACPI_NOTIFY_EJECT_REQUEST:
-> -               /* request device eject */
-> -               acpi_handle_printk(KERN_DEBUG, handle,
-> -                                  "Device eject notify on %s\n", __func__);
-> -               if (!root)
-> -                       break;
-> -
-> -               get_device(&root->device->dev);
-> -
-> +                       ret = NOTIFY_STOP;
-> +               }
->                 acpi_scan_lock_release();
-> -
-> -               acpi_bus_device_eject(root->device, ACPI_NOTIFY_EJECT_REQUEST);
-> -               return;
-> -       default:
-> -               acpi_handle_warn(handle,
-> -                                "notify_handler: unknown event type 0x%x\n",
-> -                                type);
-> -               break;
->         }
->
-> -       acpi_scan_lock_release();
-> -}
-> -
-> -static void handle_hotplug_event_root(acpi_handle handle, u32 type,
-> -                                       void *context)
-> -{
-> -       acpi_hotplug_execute(hotplug_event_root, handle, type);
-> -}
-> -
-> -static acpi_status __init
-> -find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> -{
-> -       acpi_status status;
-> -       int *count = (int *)context;
-> -
-> -       if (!acpi_is_root_bridge(handle))
-> -               return AE_OK;
-> -
-> -       (*count)++;
-> -
-> -       status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> -                                       handle_hotplug_event_root, NULL);
-> -       if (ACPI_FAILURE(status))
-> -               acpi_handle_printk(KERN_DEBUG, handle,
-> -                       "notify handler is not installed, exit status: %u\n",
-> -                        (unsigned int)status);
-> -       else
-> -               acpi_handle_printk(KERN_DEBUG, handle,
-> -                                  "notify handler is installed\n");
-> -
-> -       return AE_OK;
-> -}
-> -
-> -void __init acpi_pci_root_hp_init(void)
-> -{
-> -       int num = 0;
-> -
-> -       acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> -               ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
-> -
-> -       printk(KERN_DEBUG "Found %d acpi root devices\n", num);
-> +       return ret;
->  }
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 6b0f419..d83e0ff 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -2057,8 +2057,6 @@ int __init acpi_scan_init(void)
->
->         acpi_update_all_gpes();
->
-> -       acpi_pci_root_hp_init();
-> -
->   out:
->         mutex_unlock(&acpi_scan_lock);
->         return result;
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+5) Fix unintended 32-bit truncation in cxgb4 driver's bit shifting.
+   From Dan Carpenter.
+
+6) Netlink socket dumping uses the wrong socket state for timewait
+   sockets.  Fix from Neal Cardwell.
+
+7) Fix netlink memory leak in ieee802154_add_iface(), from Christian
+   Engelmayer.
+
+8) Multicast forwarding in ipv4 can overflow the per-rule reference
+   counts, causing all multicast traffic to cease.  Fix from
+   Hannes Frederic Sowa.
+
+9) via-rhine needs to stop all TX queues when it resets the device,
+   from Richard Weinberger.
+
+10) Fix RDS per-cpu accesses broken by the this_cpu_* conversions.
+    From Gerald Schaefer.
+
+Please pull, thanks a lot!
+
+The following changes since commit 228fdc083b017eaf90e578fa86fb1ecfd5ffae87:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-01-11 06:37:11 +0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 3af57f78c38131b7a66e2b01e06fdacae01992a3:
+
+  s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions (2014-01-17 18:54:49 -0800)
+
+----------------------------------------------------------------
+Bjørn Mork (1):
+      net: usbnet: fix SG initialisation
+
+Christian Engelmayer (1):
+      ieee802154: Fix memory leak in ieee802154_add_iface()
+
+Christoph Paasch (1):
+      tcp: metrics: Avoid duplicate entries with the same destination-IP
+
+Dan Carpenter (1):
+      cxgb4: silence shift wrapping static checker warning
+
+David S. Miller (1):
+      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
+
+Eric Dumazet (2):
+      bpf: do not use reciprocal divide
+      parisc: fix SO_MAX_PACING_RATE typo
+
+Gerald Schaefer (1):
+      net: rds: fix per-cpu helper usage
+
+Hannes Frederic Sowa (2):
+      net: avoid reference counter overflows on fib_rules in multicast forwarding
+      ipv6: simplify detection of first operational link-local address on interface
+
+Heiko Carstens (1):
+      s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
+
+Ivan Vecera (1):
+      be2net: add dma_mapping_error() check for dma_map_page()
+
+Jitendra Kalsaria (1):
+      qlge: Fix vlan netdev features.
+
+Marek Lindner (1):
+      batman-adv: fix batman-adv header overhead calculation
+
+Michael S. Tsirkin (1):
+      MAINTAINERS: add virtio-dev ML for virtio
+
+Mika Westerberg (1):
+      e1000e: Fix compilation warning when !CONFIG_PM_SLEEP
+
+Neal Cardwell (1):
+      inet_diag: fix inet_diag_dump_icsk() to use correct state for timewait sockets
+
+Peter Korsgaard (1):
+      dm9601: add USB IDs for new dm96xx variants
+
+Richard Weinberger (1):
+      net,via-rhine: Fix tx_timeout handling
+
+Yuval Mintz (1):
+      bnx2x: Don't release PCI bars on shutdown
+
+ MAINTAINERS                                      |  3 +++
+ arch/arm/net/bpf_jit_32.c                        |  6 +++---
+ arch/parisc/include/uapi/asm/socket.h            |  2 +-
+ arch/powerpc/net/bpf_jit_comp.c                  |  7 ++++---
+ arch/s390/net/bpf_jit_comp.c                     | 29 +++++++++++++++++-----------
+ arch/sparc/net/bpf_jit_comp.c                    | 17 ++++++++++++++---
+ arch/x86/net/bpf_jit_comp.c                      | 14 ++++++++++----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 29 ++++++++++++++--------------
+ drivers/net/ethernet/chelsio/cxgb4/l2t.c         |  2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c      | 11 +++++++++--
+ drivers/net/ethernet/intel/e1000e/netdev.c       |  8 ++------
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c     |  2 ++
+ drivers/net/ethernet/via/via-rhine.c             |  1 +
+ drivers/net/usb/dm9601.c                         | 12 ++++++++++++
+ drivers/net/usb/usbnet.c                         |  2 +-
+ include/net/if_inet6.h                           |  1 -
+ net/batman-adv/main.c                            |  2 +-
+ net/core/filter.c                                | 30 ++---------------------------
+ net/ieee802154/nl-phy.c                          |  6 ++++--
+ net/ipv4/inet_diag.c                             |  5 ++++-
+ net/ipv4/ipmr.c                                  |  7 +++++--
+ net/ipv4/tcp_metrics.c                           | 51 +++++++++++++++++++++++++++++++-------------------
+ net/ipv6/addrconf.c                              | 38 +++++++++++++++++--------------------
+ net/ipv6/ip6mr.c                                 |  7 +++++--
+ net/rds/ib_recv.c                                |  7 +++----
+ 25 files changed, 169 insertions(+), 130 deletions(-)
