@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaARHZz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 02:25:55 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:53466 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669AbaARHZw (ORCPT
+	id S1753455AbaARIVP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 03:21:15 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:43460 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaARIVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 02:25:52 -0500
+	Sat, 18 Jan 2014 03:21:12 -0500
+Message-ID: <52DA3974.2080800@gmail.com>
+Date: Sat, 18 Jan 2014 09:21:08 +0100
+From: Branimir Maksimovic <branimir.maksimovic@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Sat, 18 Jan 2014 12:55:51 +0530
-Message-ID: <CAJ8eaTzT4Os5RjtTu5gWpA=t-8Gg9rwmthEHVUOf+3+XhRpu6Q@mail.gmail.com>
-Subject: BUG: spinlock lockup
-From: naveen yadav <yad.naveen@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, will.deacon@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Re: vm commit in atop utility steadilly grows (latest mainline kernel
+ from git)
+References: <52D97F2D.1020500@gmail.com>
+In-Reply-To: <52D97F2D.1020500@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+Hm, I don't know what happened, perhaps I miscompiled but after
+todays git updates and recompile problem is no more.
 
-We are using 3.8.x  kernel on ARM, We are facing soft lockup issue.
-Following are the logs.
+On 01/17/2014 08:06 PM, Branimir Maksimovic wrote:
+> Yesterday, I have noticed that vmcom steadilly grows (it was 7TB before
+> I noticed). I compile kernel every day or two after git pull.
+> Rebooted and then watched atop, vmcom constantly grows.
+> Didn't notice any of running processes to allocate.
+> Booted in 3.12.8 kernel and everything is back to normal.
+> Since this is pretty noticable, I guess that this is caused by commit
+> between rc8 release and now, not sure.
+> Machine is i5 3570k, motherboard asus maximus gene v.
+>
+>
 
-BUG: spinlock lockup suspected on CPU#0, process1/525
-lock: 0xd8ac9a64, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-
-
-1 . Looks like lock is available as owner is -1, why arch_spin_trylock
-is getting failed ?
-
-2. There is a patch : ARM: spinlock: retry trylock operation if strex
-fails on free lock
-http://permalink.gmane.org/gmane.linux.ports.arm.kernel/240913
-In this patch, A loop has been added around strexeq %2, %0, [%3]".
-{Comment "retry the trylock operation if the lock appears
-to be free but the strex reported failure"}
-
-but arch_spin_trylock is called by __spin_lock_debug and its already
-getting called in loops. So what purpose is resolves?
-
-static void __spin_lock_debug(raw_spinlock_t *lock)
-{
-        u64 i;
-        u64 loops = loops_per_jiffy * HZ;
-
-        for (i = 0; i < loops; i++) {
-                if (arch_spin_trylock(&lock->raw_lock))
-                        return;
-                __delay(1);
-        }
-        /* lockup suspected: */
-        spin_dump(lock, "lockup suspected");
-}
-
-3. Is this patch useful to us, How can we reproduce this scenario ?
-Scenario : Lock is available but arch_spin_trylock  is returning as failure
-
-Thanks
