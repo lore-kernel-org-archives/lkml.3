@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaARWdX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 17:33:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39188 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436AbaARWdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 17:33:21 -0500
-Date: Sat, 18 Jan 2014 23:33:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] Adding hyperv.h to uapi headers
-Message-ID: <20140118223308.GH15466@pd.tnic>
-References: <1390078081-26030-1-git-send-email-gurligebis@gentoo.org>
- <1390079163.25980.2.camel@x41>
- <CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
- <20140118221212.GB15543@pd.tnic>
- <CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
+	id S1751651AbaARWql (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 17:46:41 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:43071 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaARWqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 17:46:24 -0500
+Message-ID: <52DB0439.2060905@dragonslave.de>
+Date: Sat, 18 Jan 2014 23:46:17 +0100
+From: Daniel Exner <dex@dragonslave.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: 3.12.8 poor network performance x86_64
+References: <52DAD66F.7080306@dragonslave.de> <20140118195026.GA15543@pd.tnic>
+In-Reply-To: <20140118195026.GA15543@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 11:24:53PM +0100, Bjarke Istrup Pedersen wrote:
-> I should take all the parts the is not guarded by __KERNEL__, and move
-> them to a uapi header, and then include it at the top of the normal
-> header. Correct understood? :)
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-Yes, that's basically the approach but be conservative - export only
-stuff which *really* is needed by userspace. And hyperv people should
-sanity-check what you're exporting because once it is out, it is cast in
-stone and there's no changing.
+Hi again,
 
--- 
-Regards/Gruss,
-    Boris.
+Am 18.01.2014 20:50, schrieb Borislav Petkov:
+> + netdev.
+Thx
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Am 18.01.2014 20:49, schrieb Holger Hoffstätte:> [This mail was also
+posted to gmane.linux.kernel.]
+> 
+> On Sat, 18 Jan 2014 20:30:55 +0100, Daniel Exner wrote:
+> 
+>> I recently upgraded the Kernel from version 3.10 to latest
+>> stable 3.12.8, did the usual "make oldconfig" (resulting config
+>> attached).
+>> 
+>> But now I noticed some _really_ low network performance.
+> 
+> Try: sysctl net.ipv4.tcp_limit_output_bytes=262144
+
+Tried that. Even 10 times the value. Same effect.
+
+Is there something like that on a lower level of the network stack I
+might try to change?
+
+Could that be something in the cgroups layer?
+
+Should I send a dmesg or anything else?
+
+Greetings
+Daniel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCgAGBQJS2wQtAAoJEPI6v6bI/QkfKakP/jsv7VG5bUuSbvXjLQklb8mY
+kGZvXRktpGMxHbUJe8NCLStbWcGLRoD+ilXh38e0U+icgU/f6uAa6a93cSaF+zi8
+imjkyutQqAlevV3Ab3SAaSho6SsWgfTkWZ7kkFooIXU6UwIlqq41923OTpR2bXL4
+qvYiYEOOO9Uzg/o0PXeV2VYcgxfnvTqRrpou3yQZK5YhLAZIHd8i9r1yqc+Un4dG
+7+Ju/45YpqynX2CJVMx5kP62f9uQbdA9sEKoEkYInVtja0UGUwFXzHgy8RZLHDiM
+Qhy/yZTzkjR4vai4N+dx2UizGBwgBtng5IzUiXX2HGd8TOMJRBcoPaa0ZBA4CsA+
+RjypqL9dOGpw1bxZ/87h9qpvjmZd3mPhb768VKXgzgdEVlp56u5rT1OQEBUju8aS
+Qprgtf6k1EkjJPWo3DVJrGr/Wk+k8cLASW5qm3wGS7V0k1H0EN+pw7UGvNY99kcf
+IllTKa6bTkKe15x1BaZjvAwFHR1Fdcdn3A+2WQwy+hha1CsjogHnbhzUjmxHDq+c
+8i92oZ1nw2788/ULPKc5hK2o8C4Zsp0JVGHd4Cy4Dy6tvCLSQveDneM/2U3JvCL2
+ViOdxh6LGGWFvDpe1w9x+e3QzvXYTFNEXawn/5OIEzbM1XP+VF8zIyHsLG4nNI88
++ICSvsTt86Zg8Zhm96YH
+=gsnO
+-----END PGP SIGNATURE-----
