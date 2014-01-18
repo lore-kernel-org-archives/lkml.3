@@ -1,247 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaARP33 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 10:29:29 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:44677 "EHLO gloria.sntech.de"
+	id S1753767AbaARPa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 10:30:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56021 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbaARP31 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 10:29:27 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH v4] of: add functions to count number of elements in a property
-Date: Sat, 18 Jan 2014 16:28:51 +0100
-Message-ID: <1812408.EavpSnUyy3@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAL_JsqJord1OOjwcKk1jqF5o+XO3uw+Lc4ATtQacgwZWAoQq1g@mail.gmail.com>
-References: <27256277.YJ687suYy5@phil> <5115255.DrcMbtXc1P@phil> <CAL_JsqJord1OOjwcKk1jqF5o+XO3uw+Lc4ATtQacgwZWAoQq1g@mail.gmail.com>
+	id S1752630AbaARPa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jan 2014 10:30:26 -0500
+Message-ID: <52DA9DDB.407@redhat.com>
+Date: Sat, 18 Jan 2014 16:29:31 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/6] cgroup: make CONFIG_NET_CLS_CGROUP and CONFIG_NETPRIO_CGROUP
+ bool instead of tristate
+References: <1389982317-22225-1-git-send-email-tj@kernel.org> <1389982317-22225-2-git-send-email-tj@kernel.org> <52D9D421.6040608@huawei.com> <20140118151006.GF3640@htj.dyndns.org> <52DA9D20.6010301@redhat.com> <20140118152813.GG3640@htj.dyndns.org>
+In-Reply-To: <20140118152813.GG3640@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 18. Januar 2014, 09:07:30 schrieb Rob Herring:
-> On Sat, Jan 18, 2014 at 6:02 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > The need to know the number of array elements in a property is
-> > a common pattern. To prevent duplication of open-coded implementations
-> > add a helper static function that also centralises strict sanity
-> > checking and DTB format details, as well as a set of wrapper functions
-> > for u8, u16, u32 and u64.
-> > 
-> > Suggested-by: Mark Rutland <mark.rutland@arm.com>
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > ---
-> 
-> Looks good. Do you plan to convert some users to use this?
+On 01/18/2014 04:28 PM, Tejun Heo wrote:
+> On Sat, Jan 18, 2014 at 04:26:24PM +0100, Daniel Borkmann wrote:
+>>> Unless there's gonna be another rc, I think it's already a bit too
+>>> late for 3.14 anyway.  I'll drop the net_cls part and rebase the
+>>> changes on top of rc1 later on.
+>>
+>> I think that's 1 patch of your series, right?
+>
+> They overlap.
+>
+>> I think this one could still go through net-next if you want, that would
+>> avoid a merge conflict.
+>
+> If there's gonna be another rc, I'll prolly just cherry-pick the
+> commit from net-next and then rebase the rest on top of it.  If there
+> isn't gonna be another rc, I'm just gonna base everything on v3.14-rc1
+> which would include the patch from net-next.
 
-My plan at the moment was to "just" use it for my mmio-sram-reserve stuff - 
-just wanted to make sure that this change is sane, before having to sent the 
-whole thing for each iteration.
+Ok, sounds good.
 
-I haven't yet looked where the other users, that Mark mentioned, are at :-)
-
-
-Heiko
-
-
-> > changes since v3:
-> > address more comments from Rob Herring
-> > - export the base function and inline the type-specific wrappers
-> > changes since v2:
-> > address more comments from Mark Rutland
-> > - switch to of_property_count_elems_of_size
-> > - use full_name instead of name in error message
-> > changes since v1:
-> > address comments from Rob Herring and Mark Rutland:
-> > - provide a helper and a set of wrappers for u8-u64
-> > - get rid of extra len variable, prop->length is enough
-> > - include node name in error message
-> > 
-> > Mark, does your Reviewed-by holds for this variant too?
-> > 
-> >  drivers/of/base.c  |   32 ++++++++++++++++++++++
-> >  include/linux/of.h |   76
-> >  ++++++++++++++++++++++++++++++++++++++++++++++++++++ 2 files changed,
-> >  108 insertions(+)
-> > 
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index f807d0e..21646c0 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -862,6 +862,38 @@ struct device_node *of_find_node_by_phandle(phandle
-> > handle)> 
-> >  EXPORT_SYMBOL(of_find_node_by_phandle);
-> >  
-> >  /**
-> > 
-> > + * of_property_count_elems_of_size - Count the number of elements in a
-> > property + *
-> > + * @np:                device node from which the property value is to be
-> > read. + * @propname:  name of the property to be searched.
-> > + * @elem_size: size of the individual element
-> > + *
-> > + * Search for a property in a device node and count the number of
-> > elements of + * size elem_size in it. Returns number of elements on
-> > sucess, -EINVAL if the + * property does not exist or its length does not
-> > match a multiple of u16 and + * -ENODATA if the property does not have a
-> > value.
-> > + */
-> > +int of_property_count_elems_of_size(const struct device_node *np,
-> > +                               const char *propname, int elem_size)
-> > +{
-> > +       struct property *prop = of_find_property(np, propname, NULL);
-> > +
-> > +       if (!prop)
-> > +               return -EINVAL;
-> > +       if (!prop->value)
-> > +               return -ENODATA;
-> > +
-> > +       if (prop->length % elem_size != 0) {
-> > +               pr_err("size of %s in node %s is not a multiple of %d\n",
-> > +                      propname, np->full_name, elem_size);
-> > +               return -EINVAL;
-> > +       }
-> > +
-> > +       return prop->length / elem_size;
-> > +}
-> > +EXPORT_SYMBOL_GPL(of_property_count_elems_of_size);
-> > +
-> > +/**
-> > 
-> >   * of_find_property_value_of_size
-> >   *
-> >   * @np:                device node from which the property value is to be
-> >   read.> 
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index 276c546..293920d 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -250,6 +250,8 @@ extern struct device_node *of_find_node_with_property(
-> > 
-> >  extern struct property *of_find_property(const struct device_node *np,
-> >  
-> >                                          const char *name,
-> >                                          int *lenp);
-> > 
-> > +extern int of_property_count_elems_of_size(const struct device_node *np,
-> > +                               const char *propname, int elem_size);
-> > 
-> >  extern int of_property_read_u32_index(const struct device_node *np,
-> >  
-> >                                        const char *propname,
-> >                                        u32 index, u32 *out_value);
-> > 
-> > @@ -426,6 +428,12 @@ static inline struct device_node
-> > *of_find_compatible_node(> 
-> >         return NULL;
-> >  
-> >  }
-> > 
-> > +static inline int of_property_count_elems_of_size(const struct
-> > device_node *np, +                       const char *propname, int
-> > elem_size)
-> > +{
-> > +       return -ENOSYS;
-> > +}
-> > +
-> > 
-> >  static inline int of_property_read_u32_index(const struct device_node
-> >  *np,
-> >  
-> >                         const char *propname, u32 index, u32 *out_value)
-> >  
-> >  {
-> > 
-> > @@ -565,6 +573,74 @@ static inline int of_node_to_nid(struct device_node
-> > *device) { return 0; }> 
-> >  #endif
-> >  
-> >  /**
-> > 
-> > + * of_property_count_u8_elems - Count the number of u8 elements in a
-> > property + *
-> > + * @np:                device node from which the property value is to be
-> > read. + * @propname:  name of the property to be searched.
-> > + *
-> > + * Search for a property in a device node and count the number of u8
-> > elements + * in it. Returns number of elements on sucess, -EINVAL if the
-> > property does + * not exist or its length does not match a multiple of u8
-> > and -ENODATA if the + * property does not have a value.
-> > + */
-> > +static inline int of_property_count_u8_elems(const struct device_node
-> > *np,
-> > +                               const char *propname)
-> > +{
-> > +       return of_property_count_elems_of_size(np, propname, sizeof(u8));
-> > +}
-> > +
-> > +/**
-> > + * of_property_count_u16_elems - Count the number of u16 elements in a
-> > property + *
-> > + * @np:                device node from which the property value is to be
-> > read. + * @propname:  name of the property to be searched.
-> > + *
-> > + * Search for a property in a device node and count the number of u16
-> > elements + * in it. Returns number of elements on sucess, -EINVAL if the
-> > property does + * not exist or its length does not match a multiple of
-> > u16 and -ENODATA if the + * property does not have a value.
-> > + */
-> > +static inline int of_property_count_u16_elems(const struct device_node
-> > *np, +                               const char *propname)
-> > +{
-> > +       return of_property_count_elems_of_size(np, propname, sizeof(u16));
-> > +}
-> > +
-> > +/**
-> > + * of_property_count_u32_elems - Count the number of u32 elements in a
-> > property + *
-> > + * @np:                device node from which the property value is to be
-> > read. + * @propname:  name of the property to be searched.
-> > + *
-> > + * Search for a property in a device node and count the number of u32
-> > elements + * in it. Returns number of elements on sucess, -EINVAL if the
-> > property does + * not exist or its length does not match a multiple of
-> > u32 and -ENODATA if the + * property does not have a value.
-> > + */
-> > +static inline int of_property_count_u32_elems(const struct device_node
-> > *np, +                               const char *propname)
-> > +{
-> > +       return of_property_count_elems_of_size(np, propname, sizeof(u32));
-> > +}
-> > +
-> > +/**
-> > + * of_property_count_u64_elems - Count the number of u64 elements in a
-> > property + *
-> > + * @np:                device node from which the property value is to be
-> > read. + * @propname:  name of the property to be searched.
-> > + *
-> > + * Search for a property in a device node and count the number of u64
-> > elements + * in it. Returns number of elements on sucess, -EINVAL if the
-> > property does + * not exist or its length does not match a multiple of
-> > u64 and -ENODATA if the + * property does not have a value.
-> > + */
-> > +static inline int of_property_count_u64_elems(const struct device_node
-> > *np, +                               const char *propname)
-> > +{
-> > +       return of_property_count_elems_of_size(np, propname, sizeof(u64));
-> > +}
-> > +
-> > +/**
-> > 
-> >   * of_property_read_bool - Findfrom a property
-> >   * @np:                device node from which the property value is to be
-> >   read. * @propname:  name of the property to be searched.
-> > 
-> > --
-> > 1.7.10.4
-
+Thanks Tejun.
