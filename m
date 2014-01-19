@@ -1,230 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaASMha (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 07:37:30 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:35672 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075AbaASMh2 (ORCPT
+	id S1752160AbaASMum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 07:50:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46587 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751614AbaASMuj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 07:37:28 -0500
-Message-ID: <52DBC704.1070700@dev.mellanox.co.il>
-Date: Sun, 19 Jan 2014 14:37:24 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 19 Jan 2014 07:50:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,684,1384329600"; 
+   d="scan'208";a="461244050"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+Thread-Topic: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+Thread-Index: AQHPDzsFvFwJDOMjVUqdOlZ/jiA8spqASnOAgAGzAYD///USAIAHFB8w//+cbgCAAAD3gIAABq6AgANZyXA=
+Date: Sun, 19 Jan 2014 12:50:14 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014E7A9F@SHSMSX102.ccr.corp.intel.com>
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
+	<1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
+	<20140112092019.GA3664@pd.tnic>	<52D35ABB.8070904@intel.com>
+	<20140113103808.GC5388@pd.tnic>
+	<9E0BE1322F2F2246BD820DA9FC397ADE014E575D@SHSMSX102.ccr.corp.intel.com>
+	<20140117164736.GE8715@pd.tnic>	<52D95F77.4030908@zytor.com>
+ <20140117121457.0847cde3@gandalf.local.home>
+In-Reply-To: <20140117121457.0847cde3@gandalf.local.home>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH-v2 13/17] target/file: Add DIF protection support to fd_execute_rw
-References: <1390099480-29013-1-git-send-email-nab@daterainc.com> <1390099480-29013-14-git-send-email-nab@daterainc.com>
-In-Reply-To: <1390099480-29013-14-git-send-email-nab@daterainc.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> This patch adds support for DIF protection into fd_execute_rw() code
-> for WRITE/READ I/O using sbc_dif_verify_[write,read]() logic.
->
-> It adds fd_do_prot_rw() for handling interface with FILEIO PI, and
-> uses a locally allocated fd_prot->prot_buf + fd_prot->prot_sg for
-> interacting with SBC DIF verify emulation code.
->
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Hannes Reinecke <hare@suse.de>
-> Cc: Sagi Grimberg <sagig@mellanox.com>
-> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->   drivers/target/target_core_file.c |  119 ++++++++++++++++++++++++++++++++++++-
->   drivers/target/target_core_file.h |    5 ++
->   2 files changed, 123 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-> index 119d519..aaba7c5 100644
-> --- a/drivers/target/target_core_file.c
-> +++ b/drivers/target/target_core_file.c
-> @@ -257,6 +257,72 @@ static void fd_free_device(struct se_device *dev)
->   	kfree(fd_dev);
->   }
->   
-> +static int fd_do_prot_rw(struct se_cmd *cmd, struct fd_prot *fd_prot,
-> +			 int is_write)
-> +{
-> +	struct se_device *se_dev = cmd->se_dev;
-> +	struct fd_dev *dev = FD_DEV(se_dev);
-> +	struct file *prot_fd = dev->fd_prot_file;
-> +	struct scatterlist *sg;
-> +	loff_t pos = (cmd->t_task_lba * se_dev->prot_length);
-> +	unsigned char *buf;
-> +	u32 prot_size, len, size;
-> +	int rc, ret = 1, i;
-> +
-> +	prot_size = (cmd->data_length / se_dev->dev_attrib.block_size) *
-> +		     se_dev->prot_length;
-> +
-> +	if (!is_write) {
-> +		fd_prot->prot_buf = vzalloc(prot_size);
-> +		if (!fd_prot->prot_buf) {
-> +			pr_err("Unable to allocate fd_prot->prot_buf\n");
-> +			return -ENOMEM;
-> +		}
-> +		buf = fd_prot->prot_buf;
-> +
-> +		fd_prot->prot_sg_nents = cmd->t_prot_nents;
-> +		fd_prot->prot_sg = kzalloc(sizeof(struct scatterlist) *
-> +					   fd_prot->prot_sg_nents, GFP_KERNEL);
-> +		if (!fd_prot->prot_sg) {
-> +			pr_err("Unable to allocate fd_prot->prot_sg\n");
-> +			vfree(fd_prot->prot_buf);
-> +			return -ENOMEM;
-> +		}
-> +		size = prot_size;
-> +
-> +		for_each_sg(fd_prot->prot_sg, sg, fd_prot->prot_sg_nents, i) {
-> +
-> +			len = min_t(u32, PAGE_SIZE, size);
-> +			sg_set_buf(sg, buf, len);
-> +			size -= len;
-> +			buf += len;
-> +		}
-> +	}
-> +
-> +	if (is_write) {
-> +		rc = kernel_write(prot_fd, fd_prot->prot_buf, prot_size, pos);
-> +		if (rc < 0 || prot_size != rc) {
-> +			pr_err("kernel_write() for fd_do_prot_rw failed:"
-> +			       " %d\n", rc);
-> +			ret = -EINVAL;
-> +		}
-> +	} else {
-> +		rc = kernel_read(prot_fd, pos, fd_prot->prot_buf, prot_size);
-> +		if (rc < 0) {
-> +			pr_err("kernel_read() for fd_do_prot_rw failed:"
-> +			       " %d\n", rc);
-> +			ret = -EINVAL;
-> +		}
-> +	}
-> +
-> +	if (is_write || ret < 0) {
-> +		kfree(fd_prot->prot_sg);
-> +		vfree(fd_prot->prot_buf);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->   static int fd_do_rw(struct se_cmd *cmd, struct scatterlist *sgl,
->   		u32 sgl_nents, int is_write)
->   {
-> @@ -551,6 +617,8 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
->   	      enum dma_data_direction data_direction)
->   {
->   	struct se_device *dev = cmd->se_dev;
-> +	struct fd_prot fd_prot;
-> +	sense_reason_t rc;
->   	int ret = 0;
->   
->   	/*
-> @@ -558,8 +626,48 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
->   	 * physical memory addresses to struct iovec virtual memory.
->   	 */
->   	if (data_direction == DMA_FROM_DEVICE) {
+> -----Original Message-----
+> From: Steven Rostedt [mailto:rostedt@goodmis.org]
+> Sent: Saturday, January 18, 2014 1:15 AM
+> To: H. Peter Anvin
+> Cc: Borislav Petkov; Ren, Qiaowei; Thomas Gleixner; Ingo Molnar;
+> x86@kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+> bound tables
+> 
+> On Fri, 17 Jan 2014 08:51:03 -0800
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> 
+> > On 01/17/2014 08:47 AM, Borislav Petkov wrote:
+> > >
+> > > Right, so Steve and I played a couple of scenarios in IRC with this.
+> > > So #BR is comparable with #PF, AFAICT, and as expected we don't take
+> > > any locks when handling page faults in kernel space as we might deadlock.
+> > >
+> > > Now, what happens if a thread is sleeping on some lock down that
+> > > GFP_KERNEL allocation path and another thread gets a #BR and goes
+> > > that same mmap_pgoff path and tries to grab that same lock?
+> >
+> > It goes to sleep.  Same as if we take a page fault and have to page
+> > something in.
+> 
+> Yep, which is what I was explaining to Boris on IRC.
+> 
+> >
+> > > Also, what happens if you take a #BR in NMI context, say the NMI
+> > > handler?
+> >
+> > You should never, ever do that.  We should never take a #BR in the
+> > kernel, full stop -- if we do it is panic time.
+> 
+> Right. It should actually do what a page fault does too. If we page fault in NMI,
+> it reports it and crashes.
+> 
+> >
+> > > All I'm trying to say is, it might not be such a good idea to sleep
+> > > in a fault handler...
+> >
+> > A fault handler from user space is really nothing other than a
+> > different kind of system call.  It is nothing magic about it.
+> 
+> Exactly. I was saying that #BR should be just like #PF, as it can detect bugs in
+> the kernel too. The first thing the handler should do is check to see if the fault
+> occurred in userspace or kernel space. If it is userspace, then there's no
+> restrictions. If it is kernel space then we should do the bare minimum to report
+> the bug and then kill whatever task happened to do it.
+> 
+Yes. I guess I know what you mean and this detection is necessary.
 
-Maybe its better to export this one to a separate function? 
-fd_execute_prot_rw()? just a nit...
+The following check should be added into at the beginning of this handler.
 
-> +		memset(&fd_prot, 0, sizeof(struct fd_prot));
-> +
-> +		if (cmd->prot_type) {
-> +			ret = fd_do_prot_rw(cmd, &fd_prot, false);
-> +			if (ret < 0)
-> +				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-> +		}
-> +
->   		ret = fd_do_rw(cmd, sgl, sgl_nents, 0);
-> +
-> +		if (ret > 0 && cmd->prot_type) {
-> +			u32 sectors = cmd->data_length / dev->dev_attrib.block_size;
-> +
-> +			rc = sbc_dif_verify_read(cmd, cmd->t_task_lba, sectors,
-> +						 0, fd_prot.prot_sg, 0);
-> +			if (rc) {
-> +				kfree(fd_prot.prot_sg);
-> +				vfree(fd_prot.prot_buf);
-> +				return rc;
-> +			}
-> +			kfree(fd_prot.prot_sg);
-> +			vfree(fd_prot.prot_buf);
-> +		}
->   	} else {
-> +		memset(&fd_prot, 0, sizeof(struct fd_prot));
-> +
-> +		if (cmd->prot_type) {
-> +			u32 sectors = cmd->data_length / dev->dev_attrib.block_size;
-> +
-> +			ret = fd_do_prot_rw(cmd, &fd_prot, false);
-> +			if (ret < 0)
-> +				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-> +
-> +			rc = sbc_dif_verify_write(cmd, cmd->t_task_lba, sectors,
-> +						  0, fd_prot.prot_sg, 0);
-> +			if (rc) {
-> +				kfree(fd_prot.prot_sg);
-> +				vfree(fd_prot.prot_buf);
-> +				return rc;
-> +			}
-> +		}
-> +
->   		ret = fd_do_rw(cmd, sgl, sgl_nents, 1);
->   		/*
->   		 * Perform implicit vfs_fsync_range() for fd_do_writev() ops
-> @@ -576,10 +684,19 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
->   
->   			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
->   		}
-> +
-> +		if (ret > 0 && cmd->prot_type) {
-> +			ret = fd_do_prot_rw(cmd, &fd_prot, true);
-> +			if (ret < 0)
-> +				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-> +		}
->   	}
->   
-> -	if (ret < 0)
-> +	if (ret < 0) {
-> +		kfree(fd_prot.prot_sg);
-> +		vfree(fd_prot.prot_buf);
->   		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-> +	}
->   
->   	if (ret)
->   		target_complete_cmd(cmd, SAM_STAT_GOOD);
-> diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-> index 583691e..97e5e7d 100644
-> --- a/drivers/target/target_core_file.h
-> +++ b/drivers/target/target_core_file.h
-> @@ -18,6 +18,11 @@
->   #define FDBD_HAS_BUFFERED_IO_WCE 0x04
->   #define FDBD_FORMAT_UNIT_SIZE	2048
->   
-> +struct fd_prot {
-> +	unsigned char	*prot_buf;
-> +	struct scatterlist *prot_sg;
-> +	u32 prot_sg_nents;
-> +};
->   
->   struct fd_dev {
->   	struct se_device dev;
+        if (!user_mode(regs)) {
+                if (!fixup_exception(regs)) {
+                        tsk->thread.error_code = error_code;
+                        tsk->thread.trap_nr = trapnr;
+                        die(str, regs, error_code);
+                }
+        }
+
+Thanks,
+Qiaowei
 
