@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaASJRA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 04:17:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1360 "EHLO mx1.redhat.com"
+	id S1752034AbaASJZX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 04:25:23 -0500
+Received: from sam.nabble.com ([216.139.236.26]:35825 "EHLO sam.nabble.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189AbaASJQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 04:16:57 -0500
-Date: Sun, 19 Jan 2014 11:21:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] net: core: orphan frags before queuing to slow qdisc
-Message-ID: <20140119092140.GA2984@redhat.com>
-References: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
+	id S1751189AbaASJZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jan 2014 04:25:21 -0500
+Date: Sun, 19 Jan 2014 01:25:20 -0800 (PST)
+From: cire831 <cire831@gmail.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1390123520907-789512.post@n7.nabble.com>
+In-Reply-To: <20131109233513.636a299f@voldemort.scrye.com>
+References: <20131028150250.755b4cc8@voldemort.scrye.com> <CA+5PVA5hB9CcoxqWPvF1uJymKMtfyGJv9Tkkh8bxOdAmM-jKkQ@mail.gmail.com> <CAFv23QmGeGMCVAJCQHv8oDk_ZrXHKsemP1MHnn+uaQQ5DKoFOA@mail.gmail.com> <5270C549.30201@gmail.com> <alpine.LNX.2.00.1311051051590.2779@pobox.suse.cz> <CAFv23Qkbkh2UGv1fFRApg1nCP5ysvBLnLeSW19JLeAfDmbJEsA@mail.gmail.com> <20131106102838.347b005c@voldemort.scrye.com> <20131109233513.636a299f@voldemort.scrye.com>
+Subject: Re: ELAN Touchscreen regression in recent 3.12 rc's? (USB)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 05:42:14PM +0800, Jason Wang wrote:
-> Many qdiscs can queue a packet for a long time, this will lead an issue
-> with zerocopy skb. It means the frags will not be orphaned in an expected
-> short time, this breaks the assumption that virtio-net will transmit the
-> packet in time.
-> 
-> So if guest packets were queued through such kind of qdisc and hit the
-> limitation of the max pending packets for virtio/vhost. All packets that
-> go to another destination from guest will also be blocked.
-> 
-> A case for reproducing the issue:
-> 
-> - Boot two VMs and connect them to the same bridge kvmbr.
-> - Setup tbf with a very low rate/burst on eth0 which is a port of kvmbr.
-> - Let VM1 send lots of packets thorugh eth0
-> - After a while, VM1 is unable to send any packets out since the number of
->   pending packets (queued to tbf) were exceeds the limitation of vhost/virito
-> 
-> Solve this issue by orphaning the frags before queuing it to a slow qdisc (the
-> one without TCQ_F_CAN_BYPASS).
+Hi,
 
-This seems too aggressive to me.
-The issue is that packet can stay queued indefinitely long.
-So I think we should only do this for tbf.
+I'm experiencing the same problem using Ubuntu 13.10, kernel
+3.11.0-15-generic #23-Ubuntu SMP x86_64
 
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  net/core/dev.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 0ce469e..1209774 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -2700,6 +2700,12 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
->  	contended = qdisc_is_running(q);
->  	if (unlikely(contended))
->  		spin_lock(&q->busylock);
-> +	if (!(q->flags & TCQ_F_CAN_BYPASS) &&
-> +	    unlikely(skb_orphan_frags(skb, GFP_ATOMIC))) {
-> +		kfree_skb(skb);
-> +		rc = NET_XMIT_DROP;
-> +		goto out;
-> +	}
->  
->  	spin_lock(root_lock);
->  	if (unlikely(test_bit(__QDISC_STATE_DEACTIVATED, &q->state))) {
-> @@ -2739,6 +2745,7 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
->  		}
->  	}
->  	spin_unlock(root_lock);
-> +out:
->  	if (unlikely(contended))
->  		spin_unlock(&q->busylock);
->  	return rc;
-> -- 
-> 1.8.3.2
+
+Did you ever figure out what was causing the problem?  Did it go away in the
+release 3.12?
+
+I'm actually interesting in what the underlying cause was and how you found
+it.
+
+thanks,
+
+eric
+
+
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/ELAN-Touchscreen-regression-in-recent-3-12-rc-s-USB-tp743984p789512.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
