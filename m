@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaASJb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 04:31:59 -0500
-Received: from s3.neomailbox.net ([178.209.62.157]:9146 "EHLO
-	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaASJby (ORCPT
+	id S1752028AbaASJkX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 04:40:23 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64564 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaASJkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 04:31:54 -0500
-Message-ID: <52DB9B39.9090502@meshcoding.com>
-Date: Sun, 19 Jan 2014 10:30:33 +0100
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sun, 19 Jan 2014 04:40:19 -0500
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>, David Miller <davem@davemloft.net>,
-        mareklindner@neomailbox.ch, sw@simonwunderlich.de,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-metag@vger.kernel.org
-Subject: Re: [PATCH linux-next] net: batman-adv: use "__packed __aligned(2)"
- for each structure instead of "__packed(2)" region
-References: <52DA65F4.5070501@gmail.com> <52DA7B9E.4040202@meshcoding.com> <4915262.qEFumRrH4p@radagast>
-In-Reply-To: <4915262.qEFumRrH4p@radagast>
-X-Enigmail-Version: 1.6
-OpenPGP: id=43FD7307
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="dwlJkL9EKIhSkSimllsEG6nT9F2A7dCAa"
+Date: Sun, 19 Jan 2014 10:40:18 +0100
+X-Google-Sender-Auth: wCxC1nBVezTRg0yJEevcGkNCYYs
+Message-ID: <CAMuHMdWx9QVn1j2QauMQfza_e_+4DHRg9WpZkocCr7+jtjwtMQ@mail.gmail.com>
+Subject: Re: don't use module_init in non-modular ... (was: Re: [PATCH] m68k:
+ don't use module_init in non-modular mvme16x/rtc.c code)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---dwlJkL9EKIhSkSimllsEG6nT9F2A7dCAa
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Paul,
 
-On 19/01/14 02:10, James Hogan wrote:
->=20
-> It appears that the following gcc patch adds support for #pragma pack:
-> http://gcc.gnu.org/ml/gcc-patches/2006-10/msg01115.html
->=20
-> I gave it a quick spin on metag gcc (which is unfortunately stuck on an=
- old=20
-> version) and it seems to fix my simple test case so that #pragma pack(2=
-)=20
-> becomes equivalent to __packed __aligned(2) (for sizeof and __alignof__=
-).
->=20
+On Thu, Jan 16, 2014 at 11:15 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> The rtc.o is built for obj-y, i.e. always built in.  It will
+> never be modular, so using module_init as an alias for __initcall
+> can be somewhat misleading.
+>
+> Fix this up now, so that we can relocate module_init from
+> init.h into module.h in the future.  If we don't do this, we'd
+> have to add module.h to obviously non-modular code, and that
+> would be a worse thing.
 
-Then I personally think that it is better to fix metag gcc instead of
-changing the kernel.
+The word "module" has different meanings: it can be a "loadable kernel module",
+or just a "code module". include/linux/init.h seems to agree with this:
+    /**
+     * module_init() - driver initialization entry point
+     * @x: function to be run at kernel boot time or module insertion
+     *
+     * module_init() will either be called during do_initcalls() (if
+     * builtin) or at module insertion time (if a module).  There can only
+     * be one per module.
+     */
+    #define module_init(x)  __initcall(x);
 
-Actually there are many different spots where "#pragma pack" is used.
-batman-adv is just the only one having compile time checks for structure
-sizes.
+I can understand you want to restrict "module_init()" to real loadable
+modules, but "device_initcall()" sounds like a real bad name or this.
 
->=20
-> However, the __packed and __aligned are linux specific macros to abstra=
-ct=20
-> compiler details, whereas #pragma pack appears to be a compiler-specifi=
-c WIN32=20
-> style equivalent to GCC's __attribute__((packed)) and=20
-> __attribute__((aligned(2))) (these are what __packed and __aligned use =
-in=20
-> compiler-gcc.h).
->=20
-> Therefore I believe using the Linux abstractions is still more correct =
-here.
+Furthermore, many places that contain always compiled-in code and
+currently only use module_init() should probably start using module_exit()
+as well, to do the proper cleanups to make kexec work.
 
-If you really think so, I'd suggest to grep in the kernel and catch all
-the other occurrences of "#pragma pack" and change them all (assuming
-that using __attribute__((aligned(2))) is the way to go).
+So I'm not really convinced this is the way we want to go...
 
-Cheers,
+> Note that direct use of __initcall is discouraged, vs. one
+> of the priority categorized subgroups.  As __initcall gets
+> mapped onto device_initcall, our use of device_initcall
+> directly in this change means that the runtime impact is
+> zero -- it will remain at level 6 in initcall ordering.
+>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: linux-m68k@lists.linux-m68k.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>
+> diff --git a/arch/m68k/mvme16x/rtc.c b/arch/m68k/mvme16x/rtc.c
+> index 6ef7a81a3b12..1755e2f7137d 100644
+> --- a/arch/m68k/mvme16x/rtc.c
+> +++ b/arch/m68k/mvme16x/rtc.c
+> @@ -161,4 +161,4 @@ static int __init rtc_MK48T08_init(void)
+>         printk(KERN_INFO "MK48T08 Real Time Clock Driver v%s\n", RTC_VERSION);
+>         return misc_register(&rtc_dev);
+>  }
+> -module_init(rtc_MK48T08_init);
+> +device_initcall(rtc_MK48T08_init);
 
+Gr{oetje,eeting}s,
 
---=20
-Antonio Quartulli
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
---dwlJkL9EKIhSkSimllsEG6nT9F2A7dCAa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS25s8AAoJEEKTMo6mOh1VXCAP/A8qzEMtBis4jfr4qSBamy8P
-tGGhZYRnn8WnH+YPndVTmfXtao7A+lTk1LF1cmMNbk/Tsp6e4sAoIolB2xF4/kHh
-SDAwA4BOZfy0SyVnaDEHoJgfN9pBsGaxaogqcYRwvRpGGXbcI/QgU3nGB01MSDjm
-lfcUo+kPP0JLtAbGfqUYnxhWjhFauq12Csaf7eZ2yT3g8RmxliCCSD+YA4gMWfAl
-htSnBfd5mEb8FlGc8hfmON/zk9oiLkZ3doaISwbrEj1Bp5E6dr/ExkVrQmanV9Ln
-WbidBglTq0heM8Ym7HVkXdhSMNP2FWZyU/IC+wmwXAmL9YdYgLIaySfu7Wk/B/us
-tBqTBbEezUomOunLL0j2AQktlDB42AqSI390o70GgT9qgMenrMPXK4EG1LnUsby5
-RitJPvGgu2yKqIp9CYZ1RJYBig1Aom+aJNQo3wdACeqEIFpp3rUYay+eKjBCFCj5
-SzbJM7wYpmrRC1VnwL7WCyJRFqSVqAhuRF74euM9mrO76C5jBrTniwB7FQaf0+Ja
-QpMRSBr3rvXDnX9Wt5YECDOFdmR+QGATVbZG0T4ot06gB69ebHwbQKo+09K4CDpo
-vo1WU/pmd2E7zNTDlrJ1zgTTiBWg9AQ3pWZHbcHf7NOuJn1yThgLMD+wSVBu4mdQ
-ESx1DyVwg93m8HP0a6GL
-=JR3W
------END PGP SIGNATURE-----
-
---dwlJkL9EKIhSkSimllsEG6nT9F2A7dCAa--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
