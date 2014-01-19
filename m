@@ -1,131 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbaASKiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 05:38:13 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51130 "EHLO
+	id S1752240AbaASKlv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 05:41:51 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:37206 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaASKhe (ORCPT
+	with ESMTP id S1752050AbaASKlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 05:37:34 -0500
+	Sun, 19 Jan 2014 05:41:49 -0500
+Message-ID: <1390128230.5567.754.camel@haakon3.risingtidesystems.com>
+Subject: Re: [GIT PULL] target fixes for v3.13
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 1/5] percpu_ida: Make percpu_ida_alloc accept task state bitmask
-Date: Sun, 19 Jan 2014 10:16:52 +0000
-Message-Id: <1390126616-29560-2-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1390126616-29560-1-git-send-email-nab@linux-iscsi.org>
-References: <1390126616-29560-1-git-send-email-nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>
+Date: Sun, 19 Jan 2014 02:43:50 -0800
+In-Reply-To: <CA+55aFzQG9FxSX7C0GitLJfzAvxJN-Pzo1vKoHWfFOkhJWb=AQ@mail.gmail.com>
+References: <1389917384.5567.718.camel@haakon3.risingtidesystems.com>
+	 <CA+55aFzQG9FxSX7C0GitLJfzAvxJN-Pzo1vKoHWfFOkhJWb=AQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kent Overstreet <kmo@daterainc.com>
+On Fri, 2014-01-17 at 17:29 -0800, Linus Torvalds wrote:
+> On Thu, Jan 16, 2014 at 4:09 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> >
+> > This change allows the percpu_ida tag allocator to optionally use
+> > interruptible sleep that iscsi-target expects, while still leaving the
+> > functionality + interface for existing percpu_ida consumers unchanged.
+> 
+> I'm not pulling this. Passing in TASK_RUNNING to prepare_to_wait() is
+> insane (because if it ever were to actually wait, that would be a
+> bug), and afaik this would be the first time anybody ever does that.
+> 
+> Yes, yes, it may "work", but I'm not pulling that kind of hack just
+> before a release.
+> 
+> Quite frankly, it looks like you want to have a tristate argument ("no
+> wait", "wait interruptibly", "wait uninterruptibly") to that
+> percpu_ida_alloc() function. Fine. But dammit, using this kind of
+> hackery, and then having two *different* calling conventions (one
+> mis-using the gfp_t for legacy reasons, and one now using the task
+> state flags in odd ways) is just not acceptable.
+> 
+> Now, neither of those two is perfect, but I can see why you want to
+> use the task state ones to say which kind of interruptible you want..
+> But I really don't like suddenly having a
+> prepare_to_wait(TASK_RUNNING) caller without any discussion, and I
+> *really* don't like having two completely different models for this
+> hack.
+> 
+> So quite frankly, I'd much prefer:
+> 
+>  - talk to the scheduler people, and make them aware of the fact that
+> you are going to pass in TASK_RUNNING to prepare_to_wait(). It works
+> with the code as-is, as long as you don't actually then wait.
+> 
+>  - Don't do that wrapper function with a totally different calling
+> convention logic. Instead, just change all the callers explicitly.
+> From a quick look, you really only have a couple of cases:
+> 
+>   (a) target/iscsi, which wants the new ternary argument
+> 
+>   (b) vhost/scsi.c, which uses GFP_ATOMIC and can be changed to TASK_RUNNABLE
+> 
+>   (c) block/blk-mq-tag.c, which already hates the current insane
+> thing, and uses __GFP_WAIT and (gfp & ~__GFP_WAIT) and other hacks,
+> and is obviously *very* aware of the internal hackery in the current
+> percpu_ida_alloc() argument. So I'm getting the feeling that that
+> whole thing might actually be *happier* with the TASK_xyz flags.
+> 
 
-This patch changes percpu_ida_alloc() to accept task state bitmask
-for prepare_to_wait() to support interruptible sleep for callers
-that require it.
+Sure.
 
-Previously, this code was assuming uninterruptible sleep for all cases
-thus preventing signals from being delivered to a scheduled process
-context in the tag stealing slow path.
+> 
+> So I really think this needs cleanup, and that hacky "passing in
+> TASK_RUNNING to prepare_to_wait()" needs to be made official. And yes,
+> that implies that it's too late to try to push this through for 3.13,
+> this goes into the next merge window and can be backported.
+> 
+> Added the appropriate people to the Cc..
+> 
 
-It now accepts TASK_INTERRUPTIBLE or TASK_UNINTERRUPTIBLE when the
-caller is able to sleep waiting for a new tag, or TASK_RUNNING when
-the caller cannot sleep, and is forced to return a negative tag.
+Just sent out a series as requested for review with CC's for Ingo +
+Peter.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: <stable@vger.kernel.org> #3.12+
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- include/linux/percpu_ida.h |    3 ++-
- lib/percpu_ida.c           |   17 +++++++++++------
- 2 files changed, 13 insertions(+), 7 deletions(-)
+Jens, please review the blk-mq changes.
 
-diff --git a/include/linux/percpu_ida.h b/include/linux/percpu_ida.h
-index 1900bd0..f5cfdd6 100644
---- a/include/linux/percpu_ida.h
-+++ b/include/linux/percpu_ida.h
-@@ -4,6 +4,7 @@
- #include <linux/types.h>
- #include <linux/bitops.h>
- #include <linux/init.h>
-+#include <linux/sched.h>
- #include <linux/spinlock_types.h>
- #include <linux/wait.h>
- #include <linux/cpumask.h>
-@@ -61,7 +62,7 @@ struct percpu_ida {
- /* Max size of percpu freelist, */
- #define IDA_DEFAULT_PCPU_SIZE	((IDA_DEFAULT_PCPU_BATCH_MOVE * 3) / 2)
- 
--int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
-+int percpu_ida_alloc(struct percpu_ida *pool, int state);
- void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
- 
- void percpu_ida_destroy(struct percpu_ida *pool);
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 9d054bf..4579749 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -132,22 +132,22 @@ static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
- /**
-  * percpu_ida_alloc - allocate a tag
-  * @pool: pool to allocate from
-- * @gfp: gfp flags
-+ * @state: task state for prepare_to_wait
-  *
-  * Returns a tag - an integer in the range [0..nr_tags) (passed to
-  * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
-  *
-  * Safe to be called from interrupt context (assuming it isn't passed
-- * __GFP_WAIT, of course).
-+ * TASK_INTERRUPTIBLE | TASK_UNINTERRUPTIBLE, of course).
-  *
-  * @gfp indicates whether or not to wait until a free id is available (it's not
-  * used for internal memory allocations); thus if passed __GFP_WAIT we may sleep
-  * however long it takes until another thread frees an id (same semantics as a
-  * mempool).
-  *
-- * Will not fail if passed __GFP_WAIT.
-+ * Will not fail if passed TASK_INTERRUPTIBLE | TASK_UNINTERRUPTIBLE.
-  */
--int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
-+int percpu_ida_alloc(struct percpu_ida *pool, int state)
- {
- 	DEFINE_WAIT(wait);
- 	struct percpu_ida_cpu *tags;
-@@ -174,7 +174,7 @@ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
- 		 *
- 		 * global lock held and irqs disabled, don't need percpu lock
- 		 */
--		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
-+		prepare_to_wait(&pool->wait, &wait, state);
- 
- 		if (!tags->nr_free)
- 			alloc_global_tags(pool, tags);
-@@ -191,9 +191,14 @@ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
- 		spin_unlock(&pool->lock);
- 		local_irq_restore(flags);
- 
--		if (tag >= 0 || !(gfp & __GFP_WAIT))
-+		if (tag >= 0 || state == TASK_RUNNING)
- 			break;
- 
-+		if (signal_pending_state(state, current)) {
-+			tag = -ERESTARTSYS;
-+			break;
-+		}
-+
- 		schedule();
- 
- 		local_irq_save(flags);
--- 
-1.7.10.4
+Thanks!
+
+--nab
 
