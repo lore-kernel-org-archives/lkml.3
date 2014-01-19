@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaASP1T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 10:27:19 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:53663 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaASP1S (ORCPT
+	id S1752503AbaASP3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 10:29:12 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:64333 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420AbaASP3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 10:27:18 -0500
+	Sun, 19 Jan 2014 10:29:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140119144725.GE27187@pd.tnic>
+References: <1390079163.25980.2.camel@x41>
+	<CACPM=kVdNm+ZiZsfr1PTVzOBJi+ybOQVs5X=BycEeZxJLVEq_g@mail.gmail.com>
+	<20140118221212.GB15543@pd.tnic>
+	<CACPM=kUtm0i5qRWGs9yKBMDZ0fFEQ5-US6wdfa+bjh6ZB2ZhOQ@mail.gmail.com>
+	<20140118223308.GH15466@pd.tnic>
+	<CACPM=kVDpAFSWb3v8zS0+JE2U5C6pSNvqvL+aQ-npLtU05JGrA@mail.gmail.com>
+	<20140118234611.GJ15466@pd.tnic>
+	<CACPM=kXvNHA42yP9oBJX1OoH_c+v9mDX4UaYx9huKsk8FJZHwA@mail.gmail.com>
+	<20140119122058.GB27187@pd.tnic>
+	<CACPM=kUf+yR1HsPMJy+rf=p5uLWEw0RJSxgye0dPGe+-DeBURA@mail.gmail.com>
+	<20140119144725.GE27187@pd.tnic>
+Date: Sun, 19 Jan 2014 16:29:07 +0100
+X-Google-Sender-Auth: e1b0ODwrrwzvCFjZLYduVYW8tBA
+Message-ID: <CACPM=kV=CvVmbnheL5NKRrJFzwuKJ4_qqizcnxWfr1pwzngRaw@mail.gmail.com>
+Subject: Re: [PATCH] Adding hyperv.h to uapi headers
 From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Subject: [PATCH] Adding makefile for tools/hv
-Date: Sun, 19 Jan 2014 15:27:05 +0000
-Message-Id: <1390145225-11030-1-git-send-email-gurligebis@gentoo.org>
-X-Mailer: git-send-email 1.8.5.3
+To: Borislav Petkov <bp@alien8.de>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there is no makefile for the Hyper-V tools.
-This patch adds the missing makefile, and adds it to the main tools makefile.
+2014/1/19 Borislav Petkov <bp@alien8.de>:
+> On Sun, Jan 19, 2014 at 03:37:24PM +0100, Bjarke Istrup Pedersen wrote:
+>> > Oh, and some build infra so that they can be buildable from within the
+>> > kernel tree.
+>>
+>> Indeed, but first lets get it building :-)
+>
+> Oh, I didn't mean you with that, rather the other readers on this
+> thread. Unless you really want to do it - which is then cool. :-)
 
-Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
----
- tools/Makefile    | 11 ++++++-----
- tools/hv/Makefile | 13 +++++++++++++
- 2 files changed, 19 insertions(+), 5 deletions(-)
- create mode 100644 tools/hv/Makefile
+I have sent a patch adding the makefile for the hyperv tools :-)
+It does not include any of there changes, so it does not replace the v2 patch.
 
-diff --git a/tools/Makefile b/tools/Makefile
-index a9b0200..35b46bc 100644
---- a/tools/Makefile
-+++ b/tools/Makefile
-@@ -6,6 +6,7 @@ help:
- 	@echo '  cgroup     - cgroup tools'
- 	@echo '  cpupower   - a tool for all things x86 CPU power'
- 	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
-+	@echo '  hv         - tools used when in Hyper-V clients'
- 	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
- 	@echo '  perf       - Linux performance measurement and analysis tool'
- 	@echo '  selftests  - various kernel selftests'
-@@ -36,7 +37,7 @@ help:
- cpupower: FORCE
- 	$(call descend,power/$@)
- 
--cgroup firewire guest usb virtio vm net: FORCE
-+cgroup firewire hv guest usb virtio vm net: FORCE
- 	$(call descend,$@)
- 
- liblk: FORCE
-@@ -57,7 +58,7 @@ tmon: FORCE
- cpupower_install:
- 	$(call descend,power/$(@:_install=),install)
- 
--cgroup_install firewire_install lguest_install perf_install usb_install virtio_install vm_install net_install:
-+cgroup_install firewire_install hv_install lguest_install perf_install usb_install virtio_install vm_install net_install:
- 	$(call descend,$(@:_install=),install)
- 
- selftests_install:
-@@ -69,7 +70,7 @@ turbostat_install x86_energy_perf_policy_install:
- tmon_install:
- 	$(call descend,thermal/$(@:_install=),install)
- 
--install: cgroup_install cpupower_install firewire_install lguest_install \
-+install: cgroup_install cpupower_install hv_install firewire_install lguest_install \
- 		perf_install selftests_install turbostat_install usb_install \
- 		virtio_install vm_install net_install x86_energy_perf_policy_install \
- 	tmon
-@@ -77,7 +78,7 @@ install: cgroup_install cpupower_install firewire_install lguest_install \
- cpupower_clean:
- 	$(call descend,power/cpupower,clean)
- 
--cgroup_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean net_clean:
-+cgroup_clean hv_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean net_clean:
- 	$(call descend,$(@:_clean=),clean)
- 
- liblk_clean:
-@@ -95,7 +96,7 @@ turbostat_clean x86_energy_perf_policy_clean:
- tmon_clean:
- 	$(call descend,thermal/tmon,clean)
- 
--clean: cgroup_clean cpupower_clean firewire_clean lguest_clean perf_clean \
-+clean: cgroup_clean cpupower_clean hv_clean firewire_clean lguest_clean perf_clean \
- 		selftests_clean turbostat_clean usb_clean virtio_clean \
- 		vm_clean net_clean x86_energy_perf_policy_clean tmon_clean
- 
-diff --git a/tools/hv/Makefile b/tools/hv/Makefile
-new file mode 100644
-index 0000000..bd22f78
---- /dev/null
-+++ b/tools/hv/Makefile
-@@ -0,0 +1,13 @@
-+# Makefile for Hyper-V tools
-+
-+CC = $(CROSS_COMPILE)gcc
-+PTHREAD_LIBS = -lpthread
-+WARNINGS = -Wall -Wextra
-+CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
-+
-+all: hv_kvp_daemon hv_vss_daemon
-+%: %.c
-+	$(CC) $(CFLAGS) -o $@ $^
-+
-+clean:
-+	$(RM) hv_kvp_daemon hv_vss_daemon
--- 
-1.8.5.3
+/Bjarke
 
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
