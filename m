@@ -1,33 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaASLf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 06:35:59 -0500
-Received: from science.horizon.com ([71.41.210.146]:14424 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752075AbaASLf5 (ORCPT
+	id S1752138AbaASLnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 06:43:50 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:62621 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079AbaASLnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 06:35:57 -0500
-Date: 19 Jan 2014 06:35:55 -0500
-Message-ID: <20140119113555.30961.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: nate@thatsmathematics.com
-Subject: Re: math_state_restore and kernel_fpu_end disable interrupts?
-Cc: adilger@dilger.ca, jack@suse.cz, linux@horizon.com,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
+	Sun, 19 Jan 2014 06:43:45 -0500
+Message-ID: <52DBBA69.4040800@dev.mellanox.co.il>
+Date: Sun, 19 Jan 2014 13:43:37 +0200
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH-v2 03/17] target/sbc: Add DIF setup in sbc_check_prot
+ + sbc_parse_cdb
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com> <1390099480-29013-4-git-send-email-nab@daterainc.com>
+In-Reply-To: <1390099480-29013-4-git-send-email-nab@daterainc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THANK YOU!
+On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>
+> This patch adds sbc_check_prot() for performing various DIF
+> related CDB sanity checks, along with setting cmd->prot_type
+> once sanity checks have passed.
+>
+> Also, add calls in sbc_parse_cdb() for READ_[10,12,16] +
+> WRITE_[10,12,16] to perform DIF sanity checking.
+>
+> v2 changes:
+>    - Make sbc_check_prot defined as static (Fengguang + Wei)
+>    - Remove unprotected READ/WRITE warning (mkp)
+>    - Populate cmd->prot_type + friends (Sagi)
+>    - Drop SCF_PROT usage
+>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Sagi Grimberg <sagig@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>   drivers/target/target_core_sbc.c |   62 ++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 62 insertions(+)
+>
+> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+> index 6863dbe..91a92f3 100644
+> --- a/drivers/target/target_core_sbc.c
+> +++ b/drivers/target/target_core_sbc.c
+> @@ -563,6 +563,44 @@ sbc_compare_and_write(struct se_cmd *cmd)
+>   	return TCM_NO_SENSE;
+>   }
+>   
+> +static bool
+> +sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb,
+> +	       u32 sectors)
+> +{
+> +	if (!cmd->t_prot_sg || !cmd->t_prot_nents)
+> +		return true;
+> +
+> +	switch (dev->dev_attrib.pi_prot_type) {
+> +	case TARGET_DIF_TYPE3_PROT:
+> +		if (!(cdb[1] & 0xe0))
+> +			return true;
+> +
+> +		cmd->reftag_seed = 0xffffffff;
+> +		break;
+> +	case TARGET_DIF_TYPE2_PROT:
+> +		if (cdb[1] & 0xe0)
+> +			return false;
+> +
+> +		cmd->reftag_seed = cmd->t_task_lba;
+> +		break;
+> +	case TARGET_DIF_TYPE1_PROT:
+> +		if (!(cdb[1] & 0xe0))
+> +			return true;
+> +
+> +		cmd->reftag_seed = cmd->t_task_lba;
+> +		break;
+> +	case TARGET_DIF_TYPE0_PROT:
+> +	default:
+> +		return true;
+> +	}
+> +
+> +	cmd->prot_type = dev->dev_attrib.pi_prot_type;
+> +	cmd->prot_length = dev->prot_length * sectors;
+> +	cmd->prot_handover = PROT_SEPERATED;
 
-I've been having a problem with ext4 metadata checksums, which use SSE
-for large blocks, and traced it to kernel_fpu_end() disabling interrupts,
-but had paused to debug this (I assumed well-tested) piece of kernel
-code before pushing it harder.
+I know that we are not planning to support interleaved mode at the 
+moment, But I think
+that the protection handover type is the backstore preference and should 
+be taken from se_dev.
+But it is not that important for now...
 
-(Search October-December LKML archives for "3.11.4: kernel BUG at
-fs/buffer.c:1268".")
-
-No, I'm pretty sure it's a real bug.  At least, it's biting me on the
-ass.
-
+Sagi.
