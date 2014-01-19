@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaASDHa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 22:07:30 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44604 "EHLO
+	id S1752352AbaASDHX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 22:07:23 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44579 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaASDFd (ORCPT
+	with ESMTP id S1751980AbaASDF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 22:05:33 -0500
+	Sat, 18 Jan 2014 22:05:28 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Roland Dreier <roland@kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 15/17] target/rd: Add support for protection SGL setup + release
-Date: Sun, 19 Jan 2014 02:44:38 +0000
-Message-Id: <1390099480-29013-16-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 11/17] target/iblock: Add blk_integrity + BIP passthrough support
+Date: Sun, 19 Jan 2014 02:44:34 +0000
+Message-Id: <1390099480-29013-12-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1390099480-29013-1-git-send-email-nab@daterainc.com>
 References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
@@ -28,16 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds rd_build_prot_space() + rd_release_prot_space() logic
-to setup + release protection information scatterlists.
+This patch adds blk_integrity passthrough support for block_device
+backends using IBLOCK.
 
-It also adds rd_init_prot() + rd_free_prot() se_subsystem_api
-callbacks used by target core code for setup + release of
-protection information.
+This includes iblock_alloc_bip() + setup of bio_integrity_payload
+information that attaches to the leading struct bio once bio_list
+is populated during fast-path iblock_execute_rw() I/O dispatch.
 
-v2 changes:
-  - Drop unused sg_table from rd_release_prot_space (Wei)
-  - Drop rd_release_prot_space call from rd_free_device
+It also updates setup in iblock_configure_device() to detect modes
+of protection + se dev->dev_attrib.pi_prot_type accordingly, along
+with creating required bio_set integrity mempools.
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -46,126 +46,168 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_rd.c |   74 +++++++++++++++++++++++++++++++++++++++
- drivers/target/target_core_rd.h |    4 +++
- 2 files changed, 78 insertions(+)
+ drivers/target/Kconfig              |    1 +
+ drivers/target/target_core_iblock.c |   91 ++++++++++++++++++++++++++++++++++-
+ 2 files changed, 90 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index e9fa879..660961d 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -223,6 +223,61 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
+index 50aad2e..dc2d84a 100644
+--- a/drivers/target/Kconfig
++++ b/drivers/target/Kconfig
+@@ -14,6 +14,7 @@ if TARGET_CORE
+ 
+ config TCM_IBLOCK
+ 	tristate "TCM/IBLOCK Subsystem Plugin for Linux/BLOCK"
++	select BLK_DEV_INTEGRITY
+ 	help
+ 	Say Y here to enable the TCM/IBLOCK subsystem plugin for non-buffered
+ 	access to Linux/Block devices using BIO
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index 15d9121..293d9b0 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -91,6 +91,7 @@ static int iblock_configure_device(struct se_device *dev)
+ 	struct iblock_dev *ib_dev = IBLOCK_DEV(dev);
+ 	struct request_queue *q;
+ 	struct block_device *bd = NULL;
++	struct blk_integrity *bi;
+ 	fmode_t mode;
+ 	int ret = -ENOMEM;
+ 
+@@ -155,8 +156,40 @@ static int iblock_configure_device(struct se_device *dev)
+ 	if (blk_queue_nonrot(q))
+ 		dev->dev_attrib.is_nonrot = 1;
+ 
++	bi = bdev_get_integrity(bd);
++	if (bi) {
++		struct bio_set *bs = ib_dev->ibd_bio_set;
++
++		if (!strcmp(bi->name, "T10-DIF-TYPE3-IP") ||
++		    !strcmp(bi->name, "T10-DIF-TYPE1-IP")) {
++			pr_err("IBLOCK export of blk_integrity: %s not"
++			       " supported\n", bi->name);
++			ret = -ENOSYS;
++			goto out_blkdev_put;
++		}
++
++		if (!strcmp(bi->name, "T10-DIF-TYPE3-CRC")) {
++			dev->dev_attrib.pi_prot_type = TARGET_DIF_TYPE3_PROT;
++		} else if (!strcmp(bi->name, "T10-DIF-TYPE1-CRC")) {
++			dev->dev_attrib.pi_prot_type = TARGET_DIF_TYPE1_PROT;
++		}
++
++		if (dev->dev_attrib.pi_prot_type) {
++			if (bioset_integrity_create(bs, IBLOCK_BIO_POOL_SIZE) < 0) {
++				pr_err("Unable to allocate bioset for PI\n");
++				ret = -ENOMEM;
++				goto out_blkdev_put;
++			}
++			pr_debug("IBLOCK setup BIP bs->bio_integrity_pool: %p\n",
++				 bs->bio_integrity_pool);
++		}
++		dev->dev_attrib.hw_pi_prot_type = dev->dev_attrib.pi_prot_type;
++	}
++
  	return 0;
+ 
++out_blkdev_put:
++	blkdev_put(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
+ out_free_bioset:
+ 	bioset_free(ib_dev->ibd_bio_set);
+ 	ib_dev->ibd_bio_set = NULL;
+@@ -170,8 +203,10 @@ static void iblock_free_device(struct se_device *dev)
+ 
+ 	if (ib_dev->ibd_bd != NULL)
+ 		blkdev_put(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
+-	if (ib_dev->ibd_bio_set != NULL)
++	if (ib_dev->ibd_bio_set != NULL) {
++		bioset_integrity_free(ib_dev->ibd_bio_set);
+ 		bioset_free(ib_dev->ibd_bio_set);
++	}
+ 	kfree(ib_dev);
  }
  
-+static void rd_release_prot_space(struct rd_dev *rd_dev)
+@@ -586,13 +621,58 @@ static ssize_t iblock_show_configfs_dev_params(struct se_device *dev, char *b)
+ 	return bl;
+ }
+ 
++static int
++iblock_alloc_bip(struct se_cmd *cmd, struct bio *bio)
 +{
-+	u32 page_count;
++	struct se_device *dev = cmd->se_dev;
++	struct blk_integrity *bi;
++	struct bio_integrity_payload *bip;
++	struct iblock_dev *ib_dev = IBLOCK_DEV(dev);
++	struct scatterlist *sg;
++	int i, rc;
 +
-+	if (!rd_dev->sg_prot_array || !rd_dev->sg_prot_count)
-+		return;
++	bi = bdev_get_integrity(ib_dev->ibd_bd);
++	if (!bi) {
++		pr_err("Unable to locate bio_integrity\n");
++		return -ENODEV;
++	}
 +
-+	page_count = rd_release_sgl_table(rd_dev, rd_dev->sg_prot_array,
-+					  rd_dev->sg_prot_count);
-+
-+	pr_debug("CORE_RD[%u] - Released protection space for Ramdisk"
-+		 " Device ID: %u, pages %u in %u tables total bytes %lu\n",
-+		 rd_dev->rd_host->rd_host_id, rd_dev->rd_dev_id, page_count,
-+		 rd_dev->sg_table_count, (unsigned long)page_count * PAGE_SIZE);
-+
-+	rd_dev->sg_prot_array = NULL;
-+	rd_dev->sg_prot_count = 0;
-+}
-+
-+static int rd_build_prot_space(struct rd_dev *rd_dev, int prot_length)
-+{
-+	struct rd_dev_sg_table *sg_table;
-+	u32 total_sg_needed, sg_tables;
-+	u32 max_sg_per_table = (RD_MAX_ALLOCATION_SIZE /
-+				sizeof(struct scatterlist));
-+	int rc;
-+
-+	if (rd_dev->rd_flags & RDF_NULLIO)
-+		return 0;
-+
-+	total_sg_needed = rd_dev->rd_page_count / prot_length;
-+
-+	sg_tables = (total_sg_needed / max_sg_per_table) + 1;
-+
-+	sg_table = kzalloc(sg_tables * sizeof(struct rd_dev_sg_table), GFP_KERNEL);
-+	if (!sg_table) {
-+		pr_err("Unable to allocate memory for Ramdisk protection"
-+		       " scatterlist tables\n");
++	bip = bio_integrity_alloc(bio, GFP_NOIO, cmd->t_prot_nents);
++	if (!bip) {
++		pr_err("Unable to allocate bio_integrity_payload\n");
 +		return -ENOMEM;
 +	}
 +
-+	rd_dev->sg_prot_array = sg_table;
-+	rd_dev->sg_prot_count = sg_tables;
++	bip->bip_size = (cmd->data_length / dev->dev_attrib.block_size) *
++			 dev->prot_length;
++	bip->bip_sector = bio->bi_sector;
 +
-+	rc = rd_allocate_sgl_table(rd_dev, sg_table, total_sg_needed, 0xff);
-+	if (rc)
-+		return rc;
++	pr_debug("IBLOCK BIP Size: %u Sector: %llu\n", bip->bip_size,
++		 (unsigned long long)bip->bip_sector);
 +
-+	pr_debug("CORE_RD[%u] - Built Ramdisk Device ID: %u prot space of"
-+		 " %u pages in %u tables\n", rd_dev->rd_host->rd_host_id,
-+		 rd_dev->rd_dev_id, total_sg_needed, rd_dev->sg_prot_count);
++	for_each_sg(cmd->t_prot_sg, sg, cmd->t_prot_nents, i) {
++
++		rc = bio_integrity_add_page(bio, sg_page(sg), sg->length,
++					    sg->offset);
++		if (rc != sg->length) {
++			pr_err("bio_integrity_add_page() failed; %d\n", rc);
++			return -ENOMEM;
++		}
++
++		pr_debug("Added bio integrity page: %p length: %d offset; %d\n",
++			 sg_page(sg), sg->length, sg->offset);
++	}
 +
 +	return 0;
 +}
 +
- static struct se_device *rd_alloc_device(struct se_hba *hba, const char *name)
+ static sense_reason_t
+ iblock_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+ 		  enum dma_data_direction data_direction)
  {
- 	struct rd_dev *rd_dev;
-@@ -479,6 +534,23 @@ static sector_t rd_get_blocks(struct se_device *dev)
- 	return blocks_long;
- }
+ 	struct se_device *dev = cmd->se_dev;
+ 	struct iblock_req *ibr;
+-	struct bio *bio;
++	struct bio *bio, *bio_start;
+ 	struct bio_list list;
+ 	struct scatterlist *sg;
+ 	u32 sg_num = sgl_nents;
+@@ -655,6 +735,7 @@ iblock_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+ 	if (!bio)
+ 		goto fail_free_ibr;
  
-+static int rd_init_prot(struct se_device *dev)
-+{
-+	struct rd_dev *rd_dev = RD_DEV(dev);
-+
-+        if (!dev->dev_attrib.pi_prot_type)
-+		return 0;
-+
-+	return rd_build_prot_space(rd_dev, dev->prot_length);
-+}
-+
-+static void rd_free_prot(struct se_device *dev)
-+{
-+	struct rd_dev *rd_dev = RD_DEV(dev);
-+
-+	rd_release_prot_space(rd_dev);
-+}
-+
- static struct sbc_ops rd_sbc_ops = {
- 	.execute_rw		= rd_execute_rw,
- };
-@@ -504,6 +576,8 @@ static struct se_subsystem_api rd_mcp_template = {
- 	.show_configfs_dev_params = rd_show_configfs_dev_params,
- 	.get_device_type	= sbc_get_device_type,
- 	.get_blocks		= rd_get_blocks,
-+	.init_prot		= rd_init_prot,
-+	.free_prot		= rd_free_prot,
- };
++	bio_start = bio;
+ 	bio_list_init(&list);
+ 	bio_list_add(&list, bio);
  
- int __init rd_module_init(void)
-diff --git a/drivers/target/target_core_rd.h b/drivers/target/target_core_rd.h
-index 1789d1e..cc46a6a 100644
---- a/drivers/target/target_core_rd.h
-+++ b/drivers/target/target_core_rd.h
-@@ -33,8 +33,12 @@ struct rd_dev {
- 	u32		rd_page_count;
- 	/* Number of SG tables in sg_table_array */
- 	u32		sg_table_count;
-+	/* Number of SG tables in sg_prot_array */
-+	u32		sg_prot_count;
- 	/* Array of rd_dev_sg_table_t containing scatterlists */
- 	struct rd_dev_sg_table *sg_table_array;
-+	/* Array of rd_dev_sg_table containing protection scatterlists */
-+	struct rd_dev_sg_table *sg_prot_array;
- 	/* Ramdisk HBA device is connected to */
- 	struct rd_host *rd_host;
- } ____cacheline_aligned;
+@@ -688,6 +769,12 @@ iblock_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+ 		sg_num--;
+ 	}
+ 
++	if (cmd->prot_type) {
++		int rc = iblock_alloc_bip(cmd, bio_start);
++		if (rc)
++			goto fail_put_bios;
++	}
++
+ 	iblock_submit_bios(&list, rw);
+ 	iblock_complete_cmd(cmd);
+ 	return 0;
 -- 
 1.7.10.4
 
