@@ -1,220 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaASM2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 07:28:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55711 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367AbaASMXP (ORCPT
+	id S1752276AbaASMbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 07:31:21 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:59607 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaASMbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 07:23:15 -0500
-Date: Sun, 19 Jan 2014 04:22:33 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-ad13701d4905e820f32ce3c2590e19ca65765d63@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1389839478-5887-2-git-send-email-namhyung@kernel.org>
-References: <1389839478-5887-2-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Add pevent_unregister_event_handler()
-Git-Commit-ID: ad13701d4905e820f32ce3c2590e19ca65765d63
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 19 Jan 2014 07:31:18 -0500
+Message-ID: <52DBC592.6010405@dev.mellanox.co.il>
+Date: Sun, 19 Jan 2014 14:31:14 +0200
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 19 Jan 2014 04:22:40 -0800 (PST)
+To: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH-v2 12/17] target/file: Add DIF protection init/format
+ support
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com> <1390099480-29013-13-git-send-email-nab@daterainc.com>
+In-Reply-To: <1390099480-29013-13-git-send-email-nab@daterainc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad13701d4905e820f32ce3c2590e19ca65765d63
-Gitweb:     http://git.kernel.org/tip/ad13701d4905e820f32ce3c2590e19ca65765d63
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 16 Jan 2014 11:31:07 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 16 Jan 2014 16:26:24 -0300
+On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>
+> This patch adds support for DIF protection init/format support into
+> the FILEIO backend.
+>
+> It involves using a seperate $FILE.protection for storing PI that is
+> opened via fd_init_prot() using the common pi_prot_type attribute.
+> The actual formatting of the protection is done via fd_format_prot()
+> using the common pi_prot_format attribute, that will populate the
+> initial PI data based upon the currently configured pi_prot_type.
+>
+> Based on original FILEIO code from Sagi.
 
-tools lib traceevent: Add pevent_unregister_event_handler()
+Nice! see comments below...
 
-When a plugin is unloaded it needs to unregister its handler from pevent.
+> v1 changes:
+>    - Fix sparse warnings in fd_init_format_buf (Fengguang)
+>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Sagi Grimberg <sagig@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>   drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
+>   drivers/target/target_core_file.h |    4 ++
+>   2 files changed, 141 insertions(+)
+>
+> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+> index 0e34cda..119d519 100644
+> --- a/drivers/target/target_core_file.c
+> +++ b/drivers/target/target_core_file.c
+> @@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
+>   		       dev->dev_attrib.block_size);
+>   }
+>   
+> +static int fd_init_prot(struct se_device *dev)
+> +{
+> +	struct fd_dev *fd_dev = FD_DEV(dev);
+> +	struct file *prot_file, *file = fd_dev->fd_file;
+> +	struct inode *inode;
+> +	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
+> +	char buf[FD_MAX_DEV_PROT_NAME];
+> +
+> +	if (!file) {
+> +		pr_err("Unable to locate fd_dev->fd_file\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	inode = file->f_mapping->host;
+> +	if (S_ISBLK(inode->i_mode)) {
+> +		pr_err("FILEIO Protection emulation only supported on"
+> +		       " !S_ISBLK\n");
+> +		return -ENOSYS;
+> +	}
+> +
+> +	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
+> +		flags &= ~O_DSYNC;
+> +
+> +	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
+> +		 fd_dev->fd_dev_name);
+> +
+> +	prot_file = filp_open(buf, flags, 0600);
+> +	if (IS_ERR(prot_file)) {
+> +		pr_err("filp_open(%s) failed\n", buf);
+> +		ret = PTR_ERR(prot_file);
+> +		return ret;
+> +	}
+> +	fd_dev->fd_prot_file = prot_file;
+> +
+> +	return 0;
+> +}
+> +
+> +static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
+> +			       u32 unit_size, u32 *ref_tag, u16 app_tag,
+> +			       bool inc_reftag)
+> +{
+> +	unsigned char *p = buf;
+> +	int i;
+> +
+> +	for (i = 0; i < unit_size; i += dev->prot_length) {
+> +		*((u16 *)&p[0]) = 0xffff;
+> +		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
+> +		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
+> +
+> +		if (inc_reftag)
+> +			(*ref_tag)++;
+> +
+> +		p += dev->prot_length;
+> +	}
+> +}
+> +
+> +static int fd_format_prot(struct se_device *dev)
+> +{
+> +	struct fd_dev *fd_dev = FD_DEV(dev);
+> +	struct file *prot_fd = fd_dev->fd_prot_file;
+> +	sector_t prot_length, prot;
+> +	unsigned char *buf;
+> +	loff_t pos = 0;
+> +	u32 ref_tag = 0;
+> +	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
+> +	int rc, ret = 0, size, len;
+> +	bool inc_reftag = false;
+> +
+> +	if (!dev->dev_attrib.pi_prot_type) {
+> +		pr_err("Unable to format_prot while pi_prot_type == 0\n");
+> +		return -ENODEV;
+> +	}
+> +	if (!prot_fd) {
+> +		pr_err("Unable to locate fd_dev->fd_prot_file\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	switch (dev->dev_attrib.pi_prot_type) {
+redundant - see below.
+> +	case TARGET_DIF_TYPE3_PROT:
+> +		ref_tag = 0xffffffff;
+> +		break;
+> +	case TARGET_DIF_TYPE2_PROT:
+> +	case TARGET_DIF_TYPE1_PROT:
+> +		inc_reftag = true;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	buf = vzalloc(unit_size);
+> +	if (!buf) {
+> +		pr_err("Unable to allocate FILEIO prot buf\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
+> +	size = prot_length;
+> +
+> +	pr_debug("Using FILEIO prot_length: %llu\n",
+> +		 (unsigned long long)prot_length);
+> +
+> +	for (prot = 0; prot < prot_length; prot += unit_size) {
+> +
+> +		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
+> +				   inc_reftag);
 
-So add an unregister function to do it.
+I didn't send you my latest patches (my fault...).T10-PI format should 
+only place
+escape values throughout the protection file (fill it with 0xff). so I 
+guess in this case
+fd_init_formast_buf() boils down to memset(buf, 0xff, unit_size) once  
+before the loop
+and just loop until prot_length writing buf, no need to address 
+apptag/reftag...
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1389839478-5887-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-parse.c | 113 ++++++++++++++++++++++++++++++++-----
- tools/lib/traceevent/event-parse.h |   3 +
- 2 files changed, 102 insertions(+), 14 deletions(-)
+> +
+> +		len = min(unit_size, size);
+> +
+> +		rc = kernel_write(prot_fd, buf, len, pos);
+> +		if (rc != len) {
+> +			pr_err("vfs_write to prot file failed: %d\n", rc);
+> +			ret = -ENODEV;
+> +			goto out;
+> +		}
+> +		pos += len;
+> +		size -= len;
+> +	}
+> +
+> +out:
+> +	vfree(buf);
+> +	return ret;
+> +}
+> +
+> +static void fd_free_prot(struct se_device *dev)
+> +{
+> +	struct fd_dev *fd_dev = FD_DEV(dev);
+> +
+> +	if (!fd_dev->fd_prot_file)
+> +		return;
+> +
+> +	filp_close(fd_dev->fd_prot_file, NULL);
+> +	fd_dev->fd_prot_file = NULL;
+> +}
+> +
+>   static struct sbc_ops fd_sbc_ops = {
+>   	.execute_rw		= fd_execute_rw,
+>   	.execute_sync_cache	= fd_execute_sync_cache,
+> @@ -730,6 +864,9 @@ static struct se_subsystem_api fileio_template = {
+>   	.show_configfs_dev_params = fd_show_configfs_dev_params,
+>   	.get_device_type	= sbc_get_device_type,
+>   	.get_blocks		= fd_get_blocks,
+> +	.init_prot		= fd_init_prot,
+> +	.format_prot		= fd_format_prot,
+> +	.free_prot		= fd_free_prot,
+>   };
+>   
+>   static int __init fileio_module_init(void)
+> diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
+> index 37ffc5b..583691e 100644
+> --- a/drivers/target/target_core_file.h
+> +++ b/drivers/target/target_core_file.h
+> @@ -4,6 +4,7 @@
+>   #define FD_VERSION		"4.0"
+>   
+>   #define FD_MAX_DEV_NAME		256
+> +#define FD_MAX_DEV_PROT_NAME	FD_MAX_DEV_NAME + 16
+>   #define FD_DEVICE_QUEUE_DEPTH	32
+>   #define FD_MAX_DEVICE_QUEUE_DEPTH 128
+>   #define FD_BLOCKSIZE		512
+> @@ -15,6 +16,8 @@
+>   #define FBDF_HAS_PATH		0x01
+>   #define FBDF_HAS_SIZE		0x02
+>   #define FDBD_HAS_BUFFERED_IO_WCE 0x04
+> +#define FDBD_FORMAT_UNIT_SIZE	2048
+> +
+>   
+>   struct fd_dev {
+>   	struct se_device dev;
+> @@ -29,6 +32,7 @@ struct fd_dev {
+>   	u32		fd_block_size;
+>   	unsigned long long fd_dev_size;
+>   	struct file	*fd_file;
+> +	struct file	*fd_prot_file;
+>   	/* FILEIO HBA device is connected to */
+>   	struct fd_host *fd_host;
+>   } ____cacheline_aligned;
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 2ce565a..d1973cb 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -5560,6 +5560,29 @@ int pevent_register_print_function(struct pevent *pevent,
- 	return ret;
- }
- 
-+static struct event_format *pevent_search_event(struct pevent *pevent, int id,
-+						const char *sys_name,
-+						const char *event_name)
-+{
-+	struct event_format *event;
-+
-+	if (id >= 0) {
-+		/* search by id */
-+		event = pevent_find_event(pevent, id);
-+		if (!event)
-+			return NULL;
-+		if (event_name && (strcmp(event_name, event->name) != 0))
-+			return NULL;
-+		if (sys_name && (strcmp(sys_name, event->system) != 0))
-+			return NULL;
-+	} else {
-+		event = pevent_find_event_by_name(pevent, sys_name, event_name);
-+		if (!event)
-+			return NULL;
-+	}
-+	return event;
-+}
-+
- /**
-  * pevent_register_event_handler - register a way to parse an event
-  * @pevent: the handle to the pevent
-@@ -5584,20 +5607,9 @@ int pevent_register_event_handler(struct pevent *pevent, int id,
- 	struct event_format *event;
- 	struct event_handler *handle;
- 
--	if (id >= 0) {
--		/* search by id */
--		event = pevent_find_event(pevent, id);
--		if (!event)
--			goto not_found;
--		if (event_name && (strcmp(event_name, event->name) != 0))
--			goto not_found;
--		if (sys_name && (strcmp(sys_name, event->system) != 0))
--			goto not_found;
--	} else {
--		event = pevent_find_event_by_name(pevent, sys_name, event_name);
--		if (!event)
--			goto not_found;
--	}
-+	event = pevent_search_event(pevent, id, sys_name, event_name);
-+	if (event == NULL)
-+		goto not_found;
- 
- 	pr_stat("overriding event (%d) %s:%s with new print handler",
- 		event->id, event->system, event->name);
-@@ -5637,6 +5649,79 @@ int pevent_register_event_handler(struct pevent *pevent, int id,
- 	return -1;
- }
- 
-+static int handle_matches(struct event_handler *handler, int id,
-+			  const char *sys_name, const char *event_name,
-+			  pevent_event_handler_func func, void *context)
-+{
-+	if (id >= 0 && id != handler->id)
-+		return 0;
-+
-+	if (event_name && (strcmp(event_name, handler->event_name) != 0))
-+		return 0;
-+
-+	if (sys_name && (strcmp(sys_name, handler->sys_name) != 0))
-+		return 0;
-+
-+	if (func != handler->func || context != handler->context)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+/**
-+ * pevent_unregister_event_handler - unregister an existing event handler
-+ * @pevent: the handle to the pevent
-+ * @id: the id of the event to unregister
-+ * @sys_name: the system name the handler belongs to
-+ * @event_name: the name of the event handler
-+ * @func: the function to call to parse the event information
-+ * @context: the data to be passed to @func
-+ *
-+ * This function removes existing event handler (parser).
-+ *
-+ * If @id is >= 0, then it is used to find the event.
-+ * else @sys_name and @event_name are used.
-+ *
-+ * Returns 0 if handler was removed successfully, -1 if event was not found.
-+ */
-+int pevent_unregister_event_handler(struct pevent *pevent, int id,
-+				    const char *sys_name, const char *event_name,
-+				    pevent_event_handler_func func, void *context)
-+{
-+	struct event_format *event;
-+	struct event_handler *handle;
-+	struct event_handler **next;
-+
-+	event = pevent_search_event(pevent, id, sys_name, event_name);
-+	if (event == NULL)
-+		goto not_found;
-+
-+	if (event->handler == func && event->context == context) {
-+		pr_stat("removing override handler for event (%d) %s:%s. Going back to default handler.",
-+			event->id, event->system, event->name);
-+
-+		event->handler = NULL;
-+		event->context = NULL;
-+		return 0;
-+	}
-+
-+not_found:
-+	for (next = &pevent->handlers; *next; next = &(*next)->next) {
-+		handle = *next;
-+		if (handle_matches(handle, id, sys_name, event_name,
-+				   func, context))
-+			break;
-+	}
-+
-+	if (!(*next))
-+		return -1;
-+
-+	*next = handle->next;
-+	free_handler(handle);
-+
-+	return 0;
-+}
-+
- /**
-  * pevent_alloc - create a pevent handle
-  */
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index a3beca5..c48acfb 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -624,6 +624,9 @@ int pevent_print_func_field(struct trace_seq *s, const char *fmt,
- int pevent_register_event_handler(struct pevent *pevent, int id,
- 				  const char *sys_name, const char *event_name,
- 				  pevent_event_handler_func func, void *context);
-+int pevent_unregister_event_handler(struct pevent *pevent, int id,
-+				    const char *sys_name, const char *event_name,
-+				    pevent_event_handler_func func, void *context);
- int pevent_register_print_function(struct pevent *pevent,
- 				   pevent_func_handler func,
- 				   enum pevent_func_arg_type ret_type,
