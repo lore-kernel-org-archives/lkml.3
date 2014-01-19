@@ -1,198 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaASTfE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 14:35:04 -0500
-Received: from smtprelay0125.hostedemail.com ([216.40.44.125]:45557 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751727AbaASTfB (ORCPT
+	id S1752055AbaASThK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 14:37:10 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47936 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaASThI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 14:35:01 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:2890:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3872:3873:3874:4042:4250:4321:5007:7652:7903:7904:9038:10004:10848:11026:11232:11473:11658:119
-X-HE-Tag: desk92_e0b107eab456
-X-Filterd-Recvd-Size: 5633
-Message-ID: <1390160095.2290.9.camel@joe-AO722>
-Subject: Re: ping [PATCH v3] WAN: Adding support for Lantiq PEF2256 E1
- chipset (FALC56)
-From: Joe Perches <joe@perches.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, marc.balemboy@c-s.fr
-Date: Sun, 19 Jan 2014 11:34:55 -0800
-In-Reply-To: <20140119180732.A1D99432AF@localhost.localdomain>
-References: <20140119180732.A1D99432AF@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Jan 2014 14:37:08 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] media: i2c: mt9p031: Check return value of clk_prepare_enable/clk_set_rate
+Date: Sun, 19 Jan 2014 20:37:49 +0100
+Message-ID: <2163823.ZEyLsU58On@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.25-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1389950253-31251-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1389950253-31251-1-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-19 at 19:07 +0100, Christophe Leroy wrote:
-> Pinging this watch as we got no feedback since 22 Nov, although we have taken
-> into account reviews from v1 and v2.
+Hi Prabhakar,
+
+Thank you for the patch.
+
+On Friday 17 January 2014 14:47:33 Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 > 
-> The patch adds WAN support for Lantiq FALC56 - PEF2256 E1 Chipset.
-
-trivia:
-
-> diff -urN a/drivers/net/wan/pef2256.c b/drivers/net/wan/pef2256.c
-[]
-> +static void config_hdlc_timeslot(struct pef2256_dev_priv *priv, int ts)
-> +{
-> +	static struct {
-> +		u32 ttr;
-> +		u32 rtr;
-> +	} regs[] = {
-> +		{ TTR1, RTR1 },
-> +		{ TTR2, RTR2 },
-> +		{ TTR3, RTR3 },
-> +		{ TTR4, RTR4 },
-> +	};
-
-const
-
-> +	int cfg_bit = 1 << (31 - ts);
-> +	int reg_bit = 1 << (7 - (ts % 8));
-> +	int j = ts / 8;
-
-looks endian specific
-
-> +
-> +	if (j >= 4)
-> +		return;
-> +
-> +	if (priv->Tx_TS & cfg_bit)
-> +		pef2256_s8(priv, regs[j].ttr, 1 << reg_bit);
-> +
-> +	if (priv->Rx_TS & cfg_bit)
-> +		pef2256_s8(priv, regs[j].rtr, 1 << reg_bit);
-> +}
-
-> +static void init_falc(struct pef2256_dev_priv *priv)
-> +{
-
-a lot of the below looks like it should use
-switch/case blocks.
-
-> +	/* Clocking rate for FALC56 */
-> +
-> +	/* Nothing to do for clocking rate 2M  */
-> +
-> +	/* clocking rate 4M  */
-> +	if (priv->clock_rate == CLOCK_RATE_4M)
-> +		pef2256_s8(priv, SIC1, SIC1_SSC0);
-> +
-> +	/* clocking rate 8M  */
-> +	if (priv->clock_rate == CLOCK_RATE_8M)
-> +		pef2256_s8(priv, SIC1, SIC1_SSC1);
-> +
-> +	/* clocking rate 16M  */
-> +	if (priv->clock_rate == CLOCK_RATE_16M) {
-> +		pef2256_s8(priv, SIC1, SIC1_SSC0);
-> +		pef2256_s8(priv, SIC1, SIC1_SSC1);
-> +	}
-> +
-> +	/* data rate for FALC56 */
-> +
-> +	/* Nothing to do for data rate 2M on the system data bus */
-> +
-> +	/* data rate 4M on the system data bus */
-> +	if (priv->data_rate == DATA_RATE_4M)
-> +		pef2256_s8(priv, FMR1, FMR1_SSD0);
-> +
-> +	/* data rate 8M on the system data bus */
-> +	if (priv->data_rate == DATA_RATE_8M)
-> +		pef2256_s8(priv, SIC1, SIC1_SSD1);
-> +
-> +	/* data rate 16M on the system data bus */
-> +	if (priv->data_rate == DATA_RATE_16M) {
-> +		pef2256_s8(priv, FMR1, FMR1_SSD0);
-> +		pef2256_s8(priv, SIC1, SIC1_SSD1);
-> +	}
-> +
-> +	/* channel phase for FALC56 */
-> +
-> +	/* Nothing to do for channel phase 1 */
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_2)
-> +		pef2256_s8(priv, SIC2, SIC2_SICS0);
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_3)
-> +		pef2256_s8(priv, SIC2, SIC2_SICS1);
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_4) {
-> +		pef2256_s8(priv, SIC2, SIC2_SICS0);
-> +		pef2256_s8(priv, SIC2, SIC2_SICS1);
-> +	}
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_5)
-> +		pef2256_s8(priv, SIC2, SIC2_SICS2);
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_6) {
-> +		pef2256_s8(priv, SIC2, SIC2_SICS0);
-> +		pef2256_s8(priv, SIC2, SIC2_SICS2);
-> +	}
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_7) {
-> +		pef2256_s8(priv, SIC2, SIC2_SICS1);
-> +		pef2256_s8(priv, SIC2, SIC2_SICS2);
-> +	}
-> +
-> +	if (priv->channel_phase == CHANNEL_PHASE_8) {
-> +		pef2256_s8(priv, SIC2, SIC2_SICS0);
-> +		pef2256_s8(priv, SIC2, SIC2_SICS1);
-> +		pef2256_s8(priv, SIC2, SIC2_SICS2);
-> +	}
-
-> +static ssize_t fs_attr_mode_store(struct device *dev,
-> +			struct device_attribute *attr,  const char *buf,
-> +			size_t count)
-> +{
-> +	struct net_device *ndev = dev_get_drvdata(dev);
-> +	struct pef2256_dev_priv *priv = dev_to_hdlc(ndev)->priv;
-> +	long int value;
-> +	int ret = kstrtol(buf, 10, &value);
-> +	int reconfigure = (value != priv->mode);
-
-Ugly test and set before determining if the previous
-function was successful.
-
-> +	if (value != MASTER_MODE && value != SLAVE_MODE)
-> +		ret = -EINVAL;
-> +
+> clk_set_rate(), clk_prepare_enable() functions can fail, so check the return
+> values to avoid surprises.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/media/i2c/mt9p031.c |   12 +++++++++---
+>  1 file changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+> index e5ddf47..dbe34d7 100644
+> --- a/drivers/media/i2c/mt9p031.c
+> +++ b/drivers/media/i2c/mt9p031.c
+> @@ -222,12 +222,15 @@ static int mt9p031_clk_setup(struct mt9p031 *mt9p031)
+> 
+>  	struct i2c_client *client = v4l2_get_subdevdata(&mt9p031->subdev);
+>  	struct mt9p031_platform_data *pdata = mt9p031->pdata;
+> +	int ret;
+> 
+>  	mt9p031->clk = devm_clk_get(&client->dev, NULL);
+>  	if (IS_ERR(mt9p031->clk))
+>  		return PTR_ERR(mt9p031->clk);
+> 
+> -	clk_set_rate(mt9p031->clk, pdata->ext_freq);
+> +	ret = clk_set_rate(mt9p031->clk, pdata->ext_freq);
 > +	if (ret < 0)
-> +		netdev_info(ndev, "Invalid mode (0 or 1 expected\n");
-> +	else {
-> +		priv->mode = value;
-> +		if (reconfigure && netif_carrier_ok(ndev))
-> +			init_falc(priv);
+> +		return ret;
+> 
+>  	mt9p031->pll.ext_clock = pdata->ext_freq;
+>  	mt9p031->pll.pix_clock = pdata->target_freq;
+> @@ -286,8 +289,11 @@ static int mt9p031_power_on(struct mt9p031 *mt9p031)
+>  		return ret;
+> 
+>  	/* Emable clock */
+> -	if (mt9p031->clk)
+> -		clk_prepare_enable(mt9p031->clk);
+> +	if (mt9p031->clk) {
+> +		ret = clk_prepare_enable(mt9p031->clk);
+> +		if (ret)
+> +			return ret;
+
+You should call regulator_bulk_disable() in the error path to cancel the 
+previous regulator_bulk_enable() call.
+
 > +	}
-> +
-> +	return strnlen(buf, count);
+> 
+>  	/* Now RESET_BAR must be high */
+>  	if (gpio_is_valid(mt9p031->reset)) {
+-- 
+Regards,
 
-odd that you set ret and then don't use it.
-
-
-> +static ssize_t fs_attr_Tx_TS_store(struct device *dev,
-> +			struct device_attribute *attr,  const char *buf,
-> +			size_t count)
-> +{
-> +	struct net_device *ndev = dev_get_drvdata(dev);
-> +	struct pef2256_dev_priv *priv = dev_to_hdlc(ndev)->priv;
-> +	unsigned long value;
-> +	int ret = kstrtoul(buf, 16, (long int *)&value);
-
-unportable cast
-
-> +	int reconfigure = (value != priv->mode);
-
-again with the test/set before determining function success.
+Laurent Pinchart
 
