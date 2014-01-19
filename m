@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaASDHG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 22:07:06 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44556 "EHLO
+	id S1752222AbaASDHB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 22:07:01 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44526 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977AbaASDF0 (ORCPT
+	with ESMTP id S1751974AbaASDFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 22:05:26 -0500
+	Sat, 18 Jan 2014 22:05:25 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Roland Dreier <roland@kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 08/17] target/spc: Expose ATO bit in control mode page
-Date: Sun, 19 Jan 2014 02:44:31 +0000
-Message-Id: <1390099480-29013-9-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 07/17] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+Date: Sun, 19 Jan 2014 02:44:30 +0000
+Message-Id: <1390099480-29013-8-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1390099480-29013-1-git-send-email-nab@daterainc.com>
 References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
@@ -28,9 +28,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch updates spc_modesense_control() to set the Application
-Tag Owner (ATO) bit when when DIF emulation is enabled by the
-backend device.
+This patch updates sbc_emulate_readcapacity_16() to set
+P_TYPE and PROT_EN bits when DIF emulation is enabled by
+the backend device.
 
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -39,33 +39,25 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_spc.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/target/target_core_sbc.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 73fdff5..43c5ca98 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -858,6 +858,19 @@ static int spc_modesense_control(struct se_device *dev, u8 pc, u8 *p)
- 	 * status (see SAM-4).
- 	 */
- 	p[5] = (dev->dev_attrib.emulate_tas) ? 0x40 : 0x00;
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index 26e8bfb..75364c7 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -106,6 +106,11 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+ 	buf[9] = (dev->dev_attrib.block_size >> 16) & 0xff;
+ 	buf[10] = (dev->dev_attrib.block_size >> 8) & 0xff;
+ 	buf[11] = dev->dev_attrib.block_size & 0xff;
 +	/*
-+	 * From spc4r30, section 7.5.7 Control mode page
-+	 *
-+	 * Application Tag Owner (ATO) bit set to one.
-+	 *
-+	 * If the ATO bit is set to one the device server shall not modify the
-+	 * LOGICAL BLOCK APPLICATION TAG field and, depending on the protection
-+	 * type, shall not modify the contents of the LOGICAL BLOCK REFERENCE
-+	 * TAG field.
++	 * Set P_TYPE and PROT_EN bits for DIF support
 +	 */
 +	if (dev->dev_attrib.pi_prot_type)
-+		p[5] |= 0x80;
-+
- 	p[8] = 0xff;
- 	p[9] = 0xff;
- 	p[11] = 30;
++		buf[12] = (dev->dev_attrib.pi_prot_type - 1) << 1 | 0x1;
+ 
+ 	if (dev->transport->get_lbppbe)
+ 		buf[13] = dev->transport->get_lbppbe(dev) & 0x0f;
 -- 
 1.7.10.4
 
