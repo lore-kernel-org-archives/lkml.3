@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaASPYa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 10:24:30 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63894 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752231AbaASPY2 (ORCPT
+	id S1752500AbaASP1T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 10:27:19 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:53663 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427AbaASP1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 10:24:28 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH] ACPI / PM: Use ACPI_COMPANION() to get ACPI companions of devices
-Date: Sun, 19 Jan 2014 16:38:33 +0100
-Message-ID: <3698474.jasU9n7YCg@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sun, 19 Jan 2014 10:27:18 -0500
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Subject: [PATCH] Adding makefile for tools/hv
+Date: Sun, 19 Jan 2014 15:27:05 +0000
+Message-Id: <1390145225-11030-1-git-send-email-gurligebis@gentoo.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Currently, there is no makefile for the Hyper-V tools.
+This patch adds the missing makefile, and adds it to the main tools makefile.
 
-The ACPI device PM code in device_pm.c uses a special function,
-acpi_dev_pm_get_node(), to obtain an ACPI companion object of a given
-device.  However, that is not necessary any more after recent changes
-that introduced the ACPI_COMPANION() macro serving exactly the same
-purpose, but working in a much more straightforward way.  For this
-reason, drop acpi_dev_pm_get_node() and use ACPI_COMPANION() instead
-of it everywhere.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
 ---
- drivers/acpi/device_pm.c |   24 ++++++------------------
- 1 file changed, 6 insertions(+), 18 deletions(-)
+ tools/Makefile    | 11 ++++++-----
+ tools/hv/Makefile | 13 +++++++++++++
+ 2 files changed, 19 insertions(+), 5 deletions(-)
+ create mode 100644 tools/hv/Makefile
 
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -727,18 +727,6 @@ int acpi_pm_device_sleep_wake(struct dev
- #endif /* CONFIG_PM_SLEEP */
+diff --git a/tools/Makefile b/tools/Makefile
+index a9b0200..35b46bc 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -6,6 +6,7 @@ help:
+ 	@echo '  cgroup     - cgroup tools'
+ 	@echo '  cpupower   - a tool for all things x86 CPU power'
+ 	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
++	@echo '  hv         - tools used when in Hyper-V clients'
+ 	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
+ 	@echo '  perf       - Linux performance measurement and analysis tool'
+ 	@echo '  selftests  - various kernel selftests'
+@@ -36,7 +37,7 @@ help:
+ cpupower: FORCE
+ 	$(call descend,power/$@)
  
- /**
-- * acpi_dev_pm_get_node - Get ACPI device node for the given physical device.
-- * @dev: Device to get the ACPI node for.
-- */
--struct acpi_device *acpi_dev_pm_get_node(struct device *dev)
--{
--	acpi_handle handle = ACPI_HANDLE(dev);
--	struct acpi_device *adev;
--
--	return handle && !acpi_bus_get_device(handle, &adev) ? adev : NULL;
--}
--
--/**
-  * acpi_dev_pm_low_power - Put ACPI device into a low-power state.
-  * @dev: Device to put into a low-power state.
-  * @adev: ACPI device node corresponding to @dev.
-@@ -778,7 +766,7 @@ static int acpi_dev_pm_full_power(struct
-  */
- int acpi_dev_runtime_suspend(struct device *dev)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	bool remote_wakeup;
- 	int error;
+-cgroup firewire guest usb virtio vm net: FORCE
++cgroup firewire hv guest usb virtio vm net: FORCE
+ 	$(call descend,$@)
  
-@@ -809,7 +797,7 @@ EXPORT_SYMBOL_GPL(acpi_dev_runtime_suspe
-  */
- int acpi_dev_runtime_resume(struct device *dev)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	int error;
+ liblk: FORCE
+@@ -57,7 +58,7 @@ tmon: FORCE
+ cpupower_install:
+ 	$(call descend,power/$(@:_install=),install)
  
- 	if (!adev)
-@@ -862,7 +850,7 @@ EXPORT_SYMBOL_GPL(acpi_subsys_runtime_re
-  */
- int acpi_dev_suspend_late(struct device *dev)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	u32 target_state;
- 	bool wakeup;
- 	int error;
-@@ -894,7 +882,7 @@ EXPORT_SYMBOL_GPL(acpi_dev_suspend_late)
-  */
- int acpi_dev_resume_early(struct device *dev)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	int error;
+-cgroup_install firewire_install lguest_install perf_install usb_install virtio_install vm_install net_install:
++cgroup_install firewire_install hv_install lguest_install perf_install usb_install virtio_install vm_install net_install:
+ 	$(call descend,$(@:_install=),install)
  
- 	if (!adev)
-@@ -985,7 +973,7 @@ static struct dev_pm_domain acpi_general
-  */
- int acpi_dev_pm_attach(struct device *dev, bool power_on)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
+ selftests_install:
+@@ -69,7 +70,7 @@ turbostat_install x86_energy_perf_policy_install:
+ tmon_install:
+ 	$(call descend,thermal/$(@:_install=),install)
  
- 	if (!adev)
- 		return -ENODEV;
-@@ -1017,7 +1005,7 @@ EXPORT_SYMBOL_GPL(acpi_dev_pm_attach);
-  */
- void acpi_dev_pm_detach(struct device *dev, bool power_off)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
+-install: cgroup_install cpupower_install firewire_install lguest_install \
++install: cgroup_install cpupower_install hv_install firewire_install lguest_install \
+ 		perf_install selftests_install turbostat_install usb_install \
+ 		virtio_install vm_install net_install x86_energy_perf_policy_install \
+ 	tmon
+@@ -77,7 +78,7 @@ install: cgroup_install cpupower_install firewire_install lguest_install \
+ cpupower_clean:
+ 	$(call descend,power/cpupower,clean)
  
- 	if (adev && dev->pm_domain == &acpi_general_pm_domain) {
- 		dev->pm_domain = NULL;
+-cgroup_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean net_clean:
++cgroup_clean hv_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean net_clean:
+ 	$(call descend,$(@:_clean=),clean)
+ 
+ liblk_clean:
+@@ -95,7 +96,7 @@ turbostat_clean x86_energy_perf_policy_clean:
+ tmon_clean:
+ 	$(call descend,thermal/tmon,clean)
+ 
+-clean: cgroup_clean cpupower_clean firewire_clean lguest_clean perf_clean \
++clean: cgroup_clean cpupower_clean hv_clean firewire_clean lguest_clean perf_clean \
+ 		selftests_clean turbostat_clean usb_clean virtio_clean \
+ 		vm_clean net_clean x86_energy_perf_policy_clean tmon_clean
+ 
+diff --git a/tools/hv/Makefile b/tools/hv/Makefile
+new file mode 100644
+index 0000000..bd22f78
+--- /dev/null
++++ b/tools/hv/Makefile
+@@ -0,0 +1,13 @@
++# Makefile for Hyper-V tools
++
++CC = $(CROSS_COMPILE)gcc
++PTHREAD_LIBS = -lpthread
++WARNINGS = -Wall -Wextra
++CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
++
++all: hv_kvp_daemon hv_vss_daemon
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++clean:
++	$(RM) hv_kvp_daemon hv_vss_daemon
+-- 
+1.8.5.3
 
