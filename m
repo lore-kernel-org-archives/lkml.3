@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaASDH0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 22:07:26 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44588 "EHLO
+	id S1752301AbaASDHP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 22:07:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44567 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaASDFb (ORCPT
+	with ESMTP id S1751976AbaASDF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 22:05:31 -0500
+	Sat, 18 Jan 2014 22:05:28 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Roland Dreier <roland@kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 13/17] target/file: Add DIF protection support to fd_execute_rw
-Date: Sun, 19 Jan 2014 02:44:36 +0000
-Message-Id: <1390099480-29013-14-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 10/17] target: Add protection SGLs to target_submit_cmd_map_sgls
+Date: Sun, 19 Jan 2014 02:44:33 +0000
+Message-Id: <1390099480-29013-11-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1390099480-29013-1-git-send-email-nab@daterainc.com>
 References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
@@ -28,12 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for DIF protection into fd_execute_rw() code
-for WRITE/READ I/O using sbc_dif_verify_[write,read]() logic.
+This patch adds support to target_submit_cmd_map_sgls() for
+accepting 'sgl_prot' + 'sgl_prot_count' parameters for
+DIF protection information.
 
-It adds fd_do_prot_rw() for handling interface with FILEIO PI, and
-uses a locally allocated fd_prot->prot_buf + fd_prot->prot_sg for
-interacting with SBC DIF verify emulation code.
+Note the passed parameters are stored at se_cmd->t_prot_sg
+and se_cmd->t_prot_nents respectively.
+
+Also, update tcm_loop and vhost-scsi fabrics usage of
+target_submit_cmd_map_sgls() to take into account the
+new parameters.
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -42,182 +46,107 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_file.c |  119 ++++++++++++++++++++++++++++++++++++-
- drivers/target/target_core_file.h |    5 ++
- 2 files changed, 123 insertions(+), 1 deletion(-)
+ drivers/target/loopback/tcm_loop.c     |    2 +-
+ drivers/target/target_core_transport.c |   16 ++++++++++++++--
+ drivers/vhost/scsi.c                   |    2 +-
+ include/target/target_core_fabric.h    |    3 ++-
+ 4 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 119d519..aaba7c5 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -257,6 +257,72 @@ static void fd_free_device(struct se_device *dev)
- 	kfree(fd_dev);
- }
- 
-+static int fd_do_prot_rw(struct se_cmd *cmd, struct fd_prot *fd_prot,
-+			 int is_write)
-+{
-+	struct se_device *se_dev = cmd->se_dev;
-+	struct fd_dev *dev = FD_DEV(se_dev);
-+	struct file *prot_fd = dev->fd_prot_file;
-+	struct scatterlist *sg;
-+	loff_t pos = (cmd->t_task_lba * se_dev->prot_length);
-+	unsigned char *buf;
-+	u32 prot_size, len, size;
-+	int rc, ret = 1, i;
-+
-+	prot_size = (cmd->data_length / se_dev->dev_attrib.block_size) *
-+		     se_dev->prot_length;
-+
-+	if (!is_write) {
-+		fd_prot->prot_buf = vzalloc(prot_size);
-+		if (!fd_prot->prot_buf) {
-+			pr_err("Unable to allocate fd_prot->prot_buf\n");
-+			return -ENOMEM;
-+		}
-+		buf = fd_prot->prot_buf;
-+
-+		fd_prot->prot_sg_nents = cmd->t_prot_nents;
-+		fd_prot->prot_sg = kzalloc(sizeof(struct scatterlist) *
-+					   fd_prot->prot_sg_nents, GFP_KERNEL);
-+		if (!fd_prot->prot_sg) {
-+			pr_err("Unable to allocate fd_prot->prot_sg\n");
-+			vfree(fd_prot->prot_buf);
-+			return -ENOMEM;
-+		}
-+		size = prot_size;
-+
-+		for_each_sg(fd_prot->prot_sg, sg, fd_prot->prot_sg_nents, i) {
-+
-+			len = min_t(u32, PAGE_SIZE, size);
-+			sg_set_buf(sg, buf, len);
-+			size -= len;
-+			buf += len;
-+		}
-+	}
-+
-+	if (is_write) {
-+		rc = kernel_write(prot_fd, fd_prot->prot_buf, prot_size, pos);
-+		if (rc < 0 || prot_size != rc) {
-+			pr_err("kernel_write() for fd_do_prot_rw failed:"
-+			       " %d\n", rc);
-+			ret = -EINVAL;
-+		}
-+	} else {
-+		rc = kernel_read(prot_fd, pos, fd_prot->prot_buf, prot_size);
-+		if (rc < 0) {
-+			pr_err("kernel_read() for fd_do_prot_rw failed:"
-+			       " %d\n", rc);
-+			ret = -EINVAL;
-+		}
-+	}
-+
-+	if (is_write || ret < 0) {
-+		kfree(fd_prot->prot_sg);
-+		vfree(fd_prot->prot_buf);
-+	}
-+
-+	return ret;
-+}
-+
- static int fd_do_rw(struct se_cmd *cmd, struct scatterlist *sgl,
- 		u32 sgl_nents, int is_write)
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index 763ee45..112b795 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -217,7 +217,7 @@ static void tcm_loop_submission_work(struct work_struct *work)
+ 			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+-			sgl_bidi, sgl_bidi_count);
++			sgl_bidi, sgl_bidi_count, NULL, 0);
+ 	if (rc < 0) {
+ 		set_host_byte(sc, DID_NO_CONNECT);
+ 		goto out_done;
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index fa4fc04..aebe0bb 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1310,6 +1310,8 @@ transport_generic_map_mem_to_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
+  * @sgl_count: scatterlist count for unidirectional mapping
+  * @sgl_bidi: struct scatterlist memory for bidirectional READ mapping
+  * @sgl_bidi_count: scatterlist count for bidirectional READ mapping
++ * @sgl_prot: struct scatterlist memory protection information
++ * @sgl_prot_count: scatterlist count for protection information
+  *
+  * Returns non zero to signal active I/O shutdown failure.  All other
+  * setup exceptions will be returned as a SCSI CHECK_CONDITION response,
+@@ -1322,7 +1324,8 @@ int target_submit_cmd_map_sgls(struct se_cmd *se_cmd, struct se_session *se_sess
+ 		unsigned char *cdb, unsigned char *sense, u32 unpacked_lun,
+ 		u32 data_length, int task_attr, int data_dir, int flags,
+ 		struct scatterlist *sgl, u32 sgl_count,
+-		struct scatterlist *sgl_bidi, u32 sgl_bidi_count)
++		struct scatterlist *sgl_bidi, u32 sgl_bidi_count,
++		struct scatterlist *sgl_prot, u32 sgl_prot_count)
  {
-@@ -551,6 +617,8 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	      enum dma_data_direction data_direction)
- {
- 	struct se_device *dev = cmd->se_dev;
-+	struct fd_prot fd_prot;
-+	sense_reason_t rc;
- 	int ret = 0;
- 
- 	/*
-@@ -558,8 +626,48 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	 * physical memory addresses to struct iovec virtual memory.
- 	 */
- 	if (data_direction == DMA_FROM_DEVICE) {
-+		memset(&fd_prot, 0, sizeof(struct fd_prot));
-+
-+		if (cmd->prot_type) {
-+			ret = fd_do_prot_rw(cmd, &fd_prot, false);
-+			if (ret < 0)
-+				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+		}
-+
- 		ret = fd_do_rw(cmd, sgl, sgl_nents, 0);
-+
-+		if (ret > 0 && cmd->prot_type) {
-+			u32 sectors = cmd->data_length / dev->dev_attrib.block_size;
-+
-+			rc = sbc_dif_verify_read(cmd, cmd->t_task_lba, sectors,
-+						 0, fd_prot.prot_sg, 0);
-+			if (rc) {
-+				kfree(fd_prot.prot_sg);
-+				vfree(fd_prot.prot_buf);
-+				return rc;
-+			}
-+			kfree(fd_prot.prot_sg);
-+			vfree(fd_prot.prot_buf);
-+		}
- 	} else {
-+		memset(&fd_prot, 0, sizeof(struct fd_prot));
-+
-+		if (cmd->prot_type) {
-+			u32 sectors = cmd->data_length / dev->dev_attrib.block_size;
-+
-+			ret = fd_do_prot_rw(cmd, &fd_prot, false);
-+			if (ret < 0)
-+				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+
-+			rc = sbc_dif_verify_write(cmd, cmd->t_task_lba, sectors,
-+						  0, fd_prot.prot_sg, 0);
-+			if (rc) {
-+				kfree(fd_prot.prot_sg);
-+				vfree(fd_prot.prot_buf);
-+				return rc;
-+			}
-+		}
-+
- 		ret = fd_do_rw(cmd, sgl, sgl_nents, 1);
- 		/*
- 		 * Perform implicit vfs_fsync_range() for fd_do_writev() ops
-@@ -576,10 +684,19 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 
- 			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
- 		}
-+
-+		if (ret > 0 && cmd->prot_type) {
-+			ret = fd_do_prot_rw(cmd, &fd_prot, true);
-+			if (ret < 0)
-+				return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+		}
+ 	struct se_portal_group *se_tpg;
+ 	sense_reason_t rc;
+@@ -1364,6 +1367,14 @@ int target_submit_cmd_map_sgls(struct se_cmd *se_cmd, struct se_session *se_sess
+ 		target_put_sess_cmd(se_sess, se_cmd);
+ 		return 0;
  	}
- 
--	if (ret < 0)
-+	if (ret < 0) {
-+		kfree(fd_prot.prot_sg);
-+		vfree(fd_prot.prot_buf);
- 		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
++	/*
++	 * Save pointers for SGLs containing protection information,
++	 * if present.
++	 */
++	if (sgl_prot_count) {
++		se_cmd->t_prot_sg = sgl_prot;
++		se_cmd->t_prot_nents = sgl_prot_count;
 +	}
  
- 	if (ret)
- 		target_complete_cmd(cmd, SAM_STAT_GOOD);
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index 583691e..97e5e7d 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -18,6 +18,11 @@
- #define FDBD_HAS_BUFFERED_IO_WCE 0x04
- #define FDBD_FORMAT_UNIT_SIZE	2048
+ 	rc = target_setup_cmd_from_cdb(se_cmd, cdb);
+ 	if (rc != 0) {
+@@ -1406,6 +1417,7 @@ int target_submit_cmd_map_sgls(struct se_cmd *se_cmd, struct se_session *se_sess
+ 			return 0;
+ 		}
+ 	}
++
+ 	/*
+ 	 * Check if we need to delay processing because of ALUA
+ 	 * Active/NonOptimized primary access state..
+@@ -1445,7 +1457,7 @@ int target_submit_cmd(struct se_cmd *se_cmd, struct se_session *se_sess,
+ {
+ 	return target_submit_cmd_map_sgls(se_cmd, se_sess, cdb, sense,
+ 			unpacked_lun, data_length, task_attr, data_dir,
+-			flags, NULL, 0, NULL, 0);
++			flags, NULL, 0, NULL, 0, NULL, 0);
+ }
+ EXPORT_SYMBOL(target_submit_cmd);
  
-+struct fd_prot {
-+	unsigned char	*prot_buf;
-+	struct scatterlist *prot_sg;
-+	u32 prot_sg_nents;
-+};
- 
- struct fd_dev {
- 	struct se_device dev;
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index f175629..84488a8 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -889,7 +889,7 @@ static void tcm_vhost_submission_work(struct work_struct *work)
+ 			cmd->tvc_lun, cmd->tvc_exp_data_len,
+ 			cmd->tvc_task_attr, cmd->tvc_data_direction,
+ 			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
+-			sg_bidi_ptr, sg_no_bidi);
++			sg_bidi_ptr, sg_no_bidi, NULL, 0);
+ 	if (rc < 0) {
+ 		transport_send_check_condition_and_sense(se_cmd,
+ 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
+diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
+index 4cf4fda..0218d68 100644
+--- a/include/target/target_core_fabric.h
++++ b/include/target/target_core_fabric.h
+@@ -105,7 +105,8 @@ sense_reason_t transport_lookup_cmd_lun(struct se_cmd *, u32);
+ sense_reason_t target_setup_cmd_from_cdb(struct se_cmd *, unsigned char *);
+ int	target_submit_cmd_map_sgls(struct se_cmd *, struct se_session *,
+ 		unsigned char *, unsigned char *, u32, u32, int, int, int,
+-		struct scatterlist *, u32, struct scatterlist *, u32);
++		struct scatterlist *, u32, struct scatterlist *, u32,
++		struct scatterlist *, u32);
+ int	target_submit_cmd(struct se_cmd *, struct se_session *, unsigned char *,
+ 		unsigned char *, u32, u32, int, int, int);
+ int	target_submit_tmr(struct se_cmd *se_cmd, struct se_session *se_sess,
 -- 
 1.7.10.4
 
