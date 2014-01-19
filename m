@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaASBI0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 20:08:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31876 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751539AbaASBIY (ORCPT
+	id S1751942AbaASBK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 20:10:57 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:40721 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaASBKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 20:08:24 -0500
-Date: Sat, 18 Jan 2014 20:08:22 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [RFC][PATCH] preempt: Debug for possible missed preemption
- checks
-Message-ID: <20140118200822.5d41ffce@gandalf.local.home>
-In-Reply-To: <20140119115253.d6974d9c188c6d9e88d04b80@canb.auug.org.au>
-References: <20140116235751.084728c8@gandalf.local.home>
-	<20140116211214.581197e5.akpm@linux-foundation.org>
-	<20140118184401.48b32cb3@gandalf.local.home>
-	<20140119115253.d6974d9c188c6d9e88d04b80@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Sat, 18 Jan 2014 20:10:52 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Antonio Quartulli <antonio@meshcoding.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, David Miller <davem@davemloft.net>,
+        mareklindner@neomailbox.ch, sw@simonwunderlich.de,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-metag@vger.kernel.org
+Subject: Re: [PATCH linux-next] net: batman-adv: use "__packed __aligned(2)" for each structure instead of "__packed(2)" region
+Date: Sun, 19 Jan 2014 01:10:39 +0000
+Message-ID: <4915262.qEFumRrH4p@radagast>
+Organization: Imagination Technologies
+User-Agent: KMail/4.11.2 (Linux/3.12.7+; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <52DA7B9E.4040202@meshcoding.com>
+References: <52DA65F4.5070501@gmail.com> <52DA7B9E.4040202@meshcoding.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; boundary="nextPart5248907.2zWhsaco1j"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jan 2014 11:52:53 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> Given that the merge window will probably open today or tomorrow, I would
-> prefer any new code not intended for 3.14 not be added to linux-next
-> until after v3.14-rc1 to avoid unneeded conflicts.  If, however, Andrew
-> thinks it is still worth the (maybe minimal) pain, then fine.
+--nextPart5248907.2zWhsaco1j
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-I'm not sure this is even intended for 3.15 either ;-)
+On Saturday 18 January 2014 14:03:26 Antonio Quartulli wrote:
+> On 18/01/14 12:31, Chen Gang wrote:
+> > Unfortunately, not all compilers assumes the structures within a pack
+> > region also need be packed (e.g. metag), so need add a pack explicitly
+> > to satisfy all compilers.
+> > 
+> > The related error (under metag with allmodconfig):
+> >     MODPOST 2952 modules
+> >   
+> >   ERROR: "__compiletime_assert_431" [net/batman-adv/batman-adv.ko]
+> >   undefined!
+> >   ERROR: "__compiletime_assert_432" [net/batman-adv/batman-adv.ko]
+> >   undefined!
+> >   ERROR: "__compiletime_assert_429" [net/batman-adv/batman-adv.ko]
+> >   undefined!
+> >   ERROR: "__compiletime_assert_428" [net/batman-adv/batman-adv.ko]
+> >   undefined!
+> >   ERROR: "__compiletime_assert_423" [net/batman-adv/batman-adv.ko]
+> >   undefined!
+> > 
+> > Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> 
+> David, what do you think about this change?
+> 
+> 
+> Can "__packed __aligned(2)" generate a different structure padding than
+> "#pragma pack(2)" ?
+> 
+> I am not really sure about the difference between the two. But if we
+> have the possibility that the padding may change then this patch should
+> go into net, otherwise we will have a protocol compatibility problem
+> between 3.13 and 3.14.
 
-I'm fine with waiting, to keep from adding any extra pain just before a
-merge window. I guess the question is, is it OK to keep it in
-linux-next for 3.15 even though it may not even go into 3.15?  Depends
-on how useful it proves to be. Perhaps it may require staying in
-linux-next till 3.16.
+(Chen: sorry I didn't twig what you were referring to before about #pragma 
+pack not working)
 
-Perhaps in order to keep merge windows from being an issue, I can add it
-at each -rc1, and remove it at -rc6, if it didn't catch any bugs. But as
-soon as it does catch a bug, we can say it's worth going into mainline.
+It appears that the following gcc patch adds support for #pragma pack:
+http://gcc.gnu.org/ml/gcc-patches/2006-10/msg01115.html
 
-Does that sound fine with you?
+I gave it a quick spin on metag gcc (which is unfortunately stuck on an old 
+version) and it seems to fix my simple test case so that #pragma pack(2) 
+becomes equivalent to __packed __aligned(2) (for sizeof and __alignof__).
 
--- Steve
+
+However, the __packed and __aligned are linux specific macros to abstract 
+compiler details, whereas #pragma pack appears to be a compiler-specific WIN32 
+style equivalent to GCC's __attribute__((packed)) and 
+__attribute__((aligned(2))) (these are what __packed and __aligned use in 
+compiler-gcc.h).
+
+Therefore I believe using the Linux abstractions is still more correct here.
+
+Cheers
+James
+
+--nextPart5248907.2zWhsaco1j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJS2yYYAAoJEKHZs+irPybfwPgP/RpixtlwIvbQJQ29rTzabkgS
+deB6rN/4332leZtIX1REV3s5zFxRJ5iC+NstNMtV8gLZY8JiBPy+RPOU45m7O77X
+b/Ryey4NKy7A0X2fxM8GrR+xZAVSLEJ+N21Ra6QpLOIFdRwL6RL1pBZ7OBfW85Wr
+4tVt18bjZkeFMq2BRqC6xyik3RsXMyyKx4Rk1w8ruEJPJWFzqfSv1Q8G6EiV3lD5
+bJ7A6KHagjI717VmB1QkPQhXBZXQF4Xut4yuC/0yZ/5Ivgp31Ve8Siu+uapgIeGA
+q1QV/SVA6sIpwmpoAooDUhUMmR2e0N2RBGBWCD10B+oFZbJ/5WFwqOyGkqhwDLNL
+rFBgeXNE9jYZsr1wZz/rH9NudZImExhQF3wmcHo0y/hZ3f4Qb3s3AOZL4O6J5Nnx
+hMkW+F6ChZywLrr4QKOymLAQrVxykyB8Z3XS6io+1MmkiFrvMTxLS2sKDV03t5HW
+rgb+I3QCnS8s6TKGTula72cKX4nq3FQ1p3wIPib+08nc92eruTpXclwmHWGbQeyl
+7krH+toHGBMP0rK6ndeMkk4E42+LMuXalf182umFz1y/eweUP4mZtZkPNviAfrhR
+yQ/3cH46tv0DwDZfPtotCoLMZtZ58wjQOQR5CY5WFmTiRE197zApWvruOGGoKU27
+enJQ/rrackYEQQzkUP8e
+=wy98
+-----END PGP SIGNATURE-----
+
+--nextPart5248907.2zWhsaco1j--
+
