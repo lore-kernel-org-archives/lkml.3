@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaASDHj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 22:07:39 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44610 "EHLO
+	id S1752462AbaASDHh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 22:07:37 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44604 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaASDFd (ORCPT
+	with ESMTP id S1751990AbaASDFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 22:05:33 -0500
+	Sat, 18 Jan 2014 22:05:34 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Roland Dreier <roland@kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 16/17] target/rd: Add DIF protection into rd_execute_rw
-Date: Sun, 19 Jan 2014 02:44:39 +0000
-Message-Id: <1390099480-29013-17-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 17/17] tcm_loop: Enable DIF/DIX modes in SCSI host LLD
+Date: Sun, 19 Jan 2014 02:44:40 +0000
+Message-Id: <1390099480-29013-18-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1390099480-29013-1-git-send-email-nab@daterainc.com>
 References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
@@ -28,123 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for DIF protection into rd_execute_rw() code
-for WRITE/READ I/O using sbc_dif_verify_[write,read]() logic.
+This patch updates tcm_loop_driver_probe() to set protection
+information using scsi_host_set_prot() and scsi_host_set_guard(),
+which currently enabled all modes of DIF/DIX protection, minus
+DIX TYPE0.
 
-It also adds rd_get_prot_table() for locating protection SGLs
-assoicated with the ramdisk backend device.
+Also, update tcm_loop_submission_work() to pass struct scsi_cmnd
+related protection into target_submit_cmd_map_sgls() during CDB
+dispatch.
 
-v2 changes:
-  - Make rd_execute_rw() to u32 sectors count instead of sector_t
-  - Drop SCF_PROT usage
-
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
 Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_rd.c |   65 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
+ drivers/target/loopback/tcm_loop.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index 660961d..66a5aba 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -356,6 +356,26 @@ static struct rd_dev_sg_table *rd_get_sg_table(struct rd_dev *rd_dev, u32 page)
- 	return NULL;
- }
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index 112b795..fadad7c 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -217,7 +217,8 @@ static void tcm_loop_submission_work(struct work_struct *work)
+ 			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+-			sgl_bidi, sgl_bidi_count, NULL, 0);
++			sgl_bidi, sgl_bidi_count,
++			scsi_prot_sglist(sc), scsi_prot_sg_count(sc));
+ 	if (rc < 0) {
+ 		set_host_byte(sc, DID_NO_CONNECT);
+ 		goto out_done;
+@@ -462,7 +463,7 @@ static int tcm_loop_driver_probe(struct device *dev)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+ 	struct Scsi_Host *sh;
+-	int error;
++	int error, host_prot;
  
-+static struct rd_dev_sg_table *rd_get_prot_table(struct rd_dev *rd_dev, u32 page)
-+{
-+	struct rd_dev_sg_table *sg_table;
-+	u32 i, sg_per_table = (RD_MAX_ALLOCATION_SIZE /
-+				sizeof(struct scatterlist));
-+
-+	i = page / sg_per_table;
-+	if (i < rd_dev->sg_prot_count) {
-+		sg_table = &rd_dev->sg_prot_array[i];
-+		if ((sg_table->page_start_offset <= page) &&
-+		     (sg_table->page_end_offset >= page))
-+			return sg_table;
-+	}
-+
-+	pr_err("Unable to locate struct prot rd_dev_sg_table for page: %u\n",
-+			page);
-+
-+	return NULL;
-+}
-+
- static sense_reason_t
- rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	      enum dma_data_direction data_direction)
-@@ -370,6 +390,7 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	u32 rd_page;
- 	u32 src_len;
- 	u64 tmp;
-+	sense_reason_t rc;
+ 	tl_hba = to_tcm_loop_hba(dev);
  
- 	if (dev->rd_flags & RDF_NULLIO) {
- 		target_complete_cmd(cmd, SAM_STAT_GOOD);
-@@ -392,6 +413,28 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 			data_direction == DMA_FROM_DEVICE ? "Read" : "Write",
- 			cmd->t_task_lba, rd_size, rd_page, rd_offset);
+@@ -486,6 +487,13 @@ static int tcm_loop_driver_probe(struct device *dev)
+ 	sh->max_channel = 0;
+ 	sh->max_cmd_len = TL_SCSI_MAX_CMD_LEN;
  
-+	if (cmd->prot_type && data_direction == DMA_TO_DEVICE) {
-+		struct rd_dev_sg_table *prot_table;
-+		struct scatterlist *prot_sg;
-+		u32 sectors = cmd->data_length / se_dev->dev_attrib.block_size;
-+		u32 prot_offset, prot_page;
++	host_prot = SHOST_DIF_TYPE1_PROTECTION | SHOST_DIF_TYPE2_PROTECTION |
++		    SHOST_DIF_TYPE3_PROTECTION | SHOST_DIX_TYPE1_PROTECTION |
++		    SHOST_DIX_TYPE2_PROTECTION | SHOST_DIX_TYPE3_PROTECTION;
 +
-+		tmp = cmd->t_task_lba * se_dev->prot_length;
-+		prot_offset = do_div(tmp, PAGE_SIZE);
-+		prot_page = tmp;
++	scsi_host_set_prot(sh, host_prot);
++	scsi_host_set_guard(sh, SHOST_DIX_GUARD_CRC);
 +
-+		prot_table = rd_get_prot_table(dev, prot_page);
-+		if (!prot_table)
-+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+
-+		prot_sg = &prot_table->sg_table[prot_page - prot_table->page_start_offset];
-+
-+		rc = sbc_dif_verify_write(cmd, cmd->t_task_lba, sectors, 0,
-+					  prot_sg, prot_offset);
-+		if (rc)
-+			return rc;
-+	}
-+
- 	src_len = PAGE_SIZE - rd_offset;
- 	sg_miter_start(&m, sgl, sgl_nents,
- 			data_direction == DMA_FROM_DEVICE ?
-@@ -453,6 +496,28 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	}
- 	sg_miter_stop(&m);
- 
-+	if (cmd->prot_type && data_direction == DMA_FROM_DEVICE) {
-+		struct rd_dev_sg_table *prot_table;
-+		struct scatterlist *prot_sg;
-+		u32 sectors = cmd->data_length / se_dev->dev_attrib.block_size;
-+		u32 prot_offset, prot_page;
-+
-+		tmp = cmd->t_task_lba * se_dev->prot_length;
-+		prot_offset = do_div(tmp, PAGE_SIZE);
-+		prot_page = tmp;
-+
-+		prot_table = rd_get_prot_table(dev, prot_page);
-+		if (!prot_table)
-+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+
-+		prot_sg = &prot_table->sg_table[prot_page - prot_table->page_start_offset];
-+
-+		rc = sbc_dif_verify_read(cmd, cmd->t_task_lba, sectors, 0,
-+					 prot_sg, prot_offset);
-+		if (rc)
-+			return rc;
-+	}
-+
- 	target_complete_cmd(cmd, SAM_STAT_GOOD);
- 	return 0;
- }
+ 	error = scsi_add_host(sh, &tl_hba->dev);
+ 	if (error) {
+ 		pr_err("%s: scsi_add_host failed\n", __func__);
 -- 
 1.7.10.4
 
