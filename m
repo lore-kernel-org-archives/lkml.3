@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaASPel (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 10:34:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59715 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752230AbaASPej (ORCPT
+	id S1751727AbaASRgj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 12:36:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54348 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaASRgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 10:34:39 -0500
-Message-ID: <1390145654.16433.102.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
- from device tree
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kishon@ti.com
-Date: Sun, 19 Jan 2014 15:34:14 +0000
-In-Reply-To: <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-References: <7510122.cayuQ6qt8r@wuerfel>
-	 <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-g+jb+UpMZLok7E/iYvC5"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.237
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 19 Jan 2014 12:36:36 -0500
+Date: Sun, 19 Jan 2014 09:37:12 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
+Message-ID: <20140119173712.GA26481@kroah.com>
+References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 19, 2014 at 02:55:07PM +0900, SeongJae Park wrote:
+> Following build comes while modprobe process:
+> > ERROR: "__clk_get_hw" [drivers/clk/clk-max77686.ko] undefined!
+> > make[2]: *** [__modpost] Error 1
+> > make[1]: *** [modules] Error 2
+> 
+> Export the symbol to fix it and for other part's usecase.
+> 
+> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+> ---
+>  drivers/clk/clk.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 2b38dc9..3883fba 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -575,6 +575,7 @@ struct clk_hw *__clk_get_hw(struct clk *clk)
+>  {
+>  	return !clk ? NULL : clk->hw;
+>  }
+> +EXPORT_SYMBOL_GPL(__clk_get_hw);
 
---=-g+jb+UpMZLok7E/iYvC5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+__ functions should usually only be for "internal" use, why does this
+get exported to modules?  Why not just put it in a .h file?
 
-On Fri, 2014-01-17 at 17:57 -0500, Matthew Garrett wrote:
-> Some hardware may be broken in interesting and board-specific ways, such
-> that various bits of functionality don't work. This patch provides a
-> mechanism for overriding mii registers during init based on the contents =
-of
-> the device tree data, allowing board-specific fixups without having to
-> pollute generic code.
-[...]
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -23,6 +23,21 @@ Optional Properties:
->    assume clause 22. The compatible list may also contain other
->    elements.
-> =20
-> +The following properties may be added to either the phy node or the pare=
-nt
-> +ethernet device. If not present, the hardware defaults will be used.
-> +
-> +- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disa=
-ble
-> +- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disa=
-ble
-> +- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to di=
-sable
-> +- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to di=
-sable
-> +- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
-> +- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to =
-disable
-> +- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to =
-disable
-
-Are these really all needed?  Apparently there is a standard 'max-speed'
-property on Ethernet devices already, which I think is probably
-sufficient to express the actual restrictions of some boards.
-
-> +- phy-mii-manual-master: 1 to enable manual master/slave configuration, =
-0
-> +  to disable manual master/slave configuration
-[...]
-
-Although the standard calls this 'manual', if it's set in the DT it
-won't really be a manual setting.  The description should probably
-clarify that.
-
-I think the name should include 'master-slave' or 'clock-role' rather
-than just 'master', as currently it suggests only the master role can be
-forced.
-
-Ben.
-
---=20
-Ben Hutchings
-friends: People who know you well, but like you anyway.
-
---=-g+jb+UpMZLok7E/iYvC5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUtvwdue/yOyVhhEJAQpktQ//QNzIw7A2wI0tIGy485xO5OH36N6VPO4e
-oS2bFp77f5bq5K4ycLnaL7/TYYBEOpoinlRk3EXhJAIfjf3OtwRviQcc2Uo6WQRk
-6tFMBMwMWtkqiSgBCdAp5l5lXwmrjsAcNO+8vNWajU8p0ZmbSxLiwjZL/umI5Mmh
-nqjEhg3Q/Akq3mZnwmbQX1MtpfeW/Apu6sr+k7X2Ey9xgzat6DE8CafkcZUEQKTc
-ptCPQ/ynWOUFYvXTvg/F+SKYE86vgbzroB1CyYUy9keFVvPTeHCVyjV/TTe93hoD
-ASDvy7JigZFTjwUYCsIyUmPY3T6s/cdDcPbp93SZKpqrb5Vq2iIaIOLnrlqjtBXG
-gvX6AMxtjPT/mx2ObqepVWxDzfDxQDFquwRaQc4J17Uk9CcU1464cMIPVyjvRRIu
-P8TJwoglYYslAkUoF/9acSEH1KdTqwKzjdpTsHtiH78fWf7xK0cB/PqFJUVO9z7G
-vjFWrBuHHujPG+XioK/ROD/nB6iy6wVrjsco3M4DViYfnMLvD7dTFMLu3RO3ao0o
-dnxbM/eUZ8mR4+nz7Z4onYq/2hAV+pZqQw/9E1YcoDB92ESESTatacVO1m+YP0Ii
-p7yNj4XMlvzv2LKUeiz76WGbkWtB4u0XxW2eUl3DSoAFJcrYpTG2UDw3gFfJcVf3
-LvokKbEz5fg=
-=JLlz
------END PGP SIGNATURE-----
-
---=-g+jb+UpMZLok7E/iYvC5--
+greg k-h
