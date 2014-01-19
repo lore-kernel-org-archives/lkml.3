@@ -1,159 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaASJwG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 04:52:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058AbaASJv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 04:51:57 -0500
-Date: Sun, 19 Jan 2014 11:56:39 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] net: core: orphan frags before queuing to slow qdisc
-Message-ID: <20140119095639.GB2984@redhat.com>
-References: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
- <1389968897.31367.489.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1752055AbaASKCv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 05:02:51 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41626 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751614AbaASKCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jan 2014 05:02:46 -0500
+Date: Sun, 19 Jan 2014 10:02:35 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Amarinder Bindra <a-bindra@ti.com>, Balaji T K <balajitk@ti.com>,
+        Chris Ball <cjb@laptop.org>, linux-sh@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mmc: omap_hsmmc: Restrict compilation to ARM
+Message-ID: <20140119100235.GN27282@n2100.arm.linux.org.uk>
+References: <1390123794-26401-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389968897.31367.489.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1390123794-26401-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 06:28:17AM -0800, Eric Dumazet wrote:
-> On Fri, 2014-01-17 at 17:42 +0800, Jason Wang wrote:
-> > Many qdiscs can queue a packet for a long time, this will lead an issue
-> > with zerocopy skb. It means the frags will not be orphaned in an expected
-> > short time, this breaks the assumption that virtio-net will transmit the
-> > packet in time.
-> > 
-> > So if guest packets were queued through such kind of qdisc and hit the
-> > limitation of the max pending packets for virtio/vhost. All packets that
-> > go to another destination from guest will also be blocked.
-> > 
-> > A case for reproducing the issue:
-> > 
-> > - Boot two VMs and connect them to the same bridge kvmbr.
-> > - Setup tbf with a very low rate/burst on eth0 which is a port of kvmbr.
-> > - Let VM1 send lots of packets thorugh eth0
-> > - After a while, VM1 is unable to send any packets out since the number of
-> >   pending packets (queued to tbf) were exceeds the limitation of vhost/virito
+On Sun, Jan 19, 2014 at 10:29:54AM +0100, Geert Uytterhoeven wrote:
+> commit bcf24e1daa94f4c52ef7a3f657e43cc6bc50d46b ("mmc: omap_hsmmc: use the
+> generic config for omap2plus devices"), enabled the build for other
+> platforms for compile testing.
 > 
-> So whats the problem ? If the limit is low, you cannot sent packets.
-
-I think this isn't the main problem.
-Say VM1 is using tap1 and VM2 uses tap2, all connected to
-same bridge.
-Set up tbf on tap2 and have VM1 send packets to VM2.
-VM1 will get blocked and won't be able to talk to
-host or eth0 for a long while, even though the path
-from VM1 to host is idle.
-
-The problem should appear with both zerocopy or with
-TUNSETSNDBUF used to set sndbuf to a finite value.
-
-
-> Solution : increase the limit, or tell the vm to lower its rate.
-
-The issue is that different links can have different policies.
-
-A VM that's unable to talk to host
-even though the path from this VM to the host is
-completely idle because some other VM's RX -
-which it used to talk to in the past - is throttled violates
-the principle of least surprise.
-
->
-> Oh wait, are you bitten because you did some prior skb_orphan() to allow
-> the vm to send unlimited number of skbs ???
-
-I think it's because the limit on number
-of skbs per VM is INT_MAX by default, in any case -
-for compatibility reasons.
-
-Further, e.g. QEMU also had to stop using
-TUNSETSNDBUF because of these issues.
-It would be nice to fix this, yes.
-
-> > 
-> > Solve this issue by orphaning the frags before queuing it to a slow qdisc (the
-> > one without TCQ_F_CAN_BYPASS).
+> sh-allmodconfig now fails with:
 > 
-> Why orphaning the frags only solves the problem ? A skb without zerocopy
-> frags should also be blocked for a while.
-
-I agree that if we want to fix behaviour for limited sndbuf,
-we have to orphan everything queued on tbf,
-possibly only if it's limit is set very low.
-Do you think it's reasonable?
-
->
-> Seriously, lets admit this zero copy stuff is utterly broken.
+>     include/linux/omap-dma.h:171:8: error: expected identifier before numeric constant
+>     make[4]: *** [drivers/mmc/host/omap_hsmmc.o] Error 1
 > 
-
-zero copy is simply newer, we didn't have compatibility to
-worry about so we set a finite limit there by default.
-As you point out the problem isn't specific to zero copy,
-it's happening whenever we try to limit # of skbs.
-
-
-So do you think the idea of limiting skbs is utterly
-broken, and we should just let it rip as fast as it can?
-
-> TCQ_F_CAN_BYPASS is not enough. Some NIC have separate queues with
-> strict priorities.
+> This happens because sh #defines "CCR", which is one of the enum values in
+> include/linux/omap-dma.h.
 > 
-> It seems to me that you are pushing to use FIFO (the only qdisc setting
-> TCQ_F_CAN_BYPASS), by adding yet another test in fast path (I do not
-> know how we can still call it a fast path), while we already have smart
-> qdisc to avoid the inherent HOL and unfairness problems of FIFO.
+> I expect a similar failure on blackfin, which also has #define CCR.
+> 
+> Restrict the build to ARM to fix this.
 
-TCQ_F_CAN_BYPASS doesn't look like a good idea to me either.
+This isn't the right fix.  When this has happened on ARM in the past, we've
+had a lot of pressure to change the definition since it's far too generic.
 
-I think the biggest problem is with tbf because it's not
-work-conserving, so a link can get
-throttled even in system which is mostly idle.
+"CCR" should only be used for stuff which is restricted to (eg) one driver,
+and not in some system wide header file included by lots of files.
 
+In the case of OMAP, the unfortunate thing is that include/linux/omap-dma.h
+was moved lock stock and barrel out of the ARM-private includes.  It
+really needs splitting up in two - one which drivers are expected to
+include, and the other for shared definitions between arch/arm/*omap*/dma.c
+and drivers/dma/omap-dma.c.
 
-> > 
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> >  net/core/dev.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/net/core/dev.c b/net/core/dev.c
-> > index 0ce469e..1209774 100644
-> > --- a/net/core/dev.c
-> > +++ b/net/core/dev.c
-> > @@ -2700,6 +2700,12 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
-> >  	contended = qdisc_is_running(q);
-> >  	if (unlikely(contended))
-> >  		spin_lock(&q->busylock);
-> > +	if (!(q->flags & TCQ_F_CAN_BYPASS) &&
-> > +	    unlikely(skb_orphan_frags(skb, GFP_ATOMIC))) {
-> > +		kfree_skb(skb);
-> > +		rc = NET_XMIT_DROP;
-> > +		goto out;
-> > +	}
-> 
-> Are you aware that copying stuff takes time ?
-> 
-> If yes, why is it done after taking the busylock spinlock ?
-> 
-> >  
-> >  	spin_lock(root_lock);
-> >  	if (unlikely(test_bit(__QDISC_STATE_DEACTIVATED, &q->state))) {
-> > @@ -2739,6 +2745,7 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
-> >  		}
-> >  	}
-> >  	spin_unlock(root_lock);
-> > +out:
-> >  	if (unlikely(contended))
-> >  		spin_unlock(&q->busylock);
-> >  	return rc;
-> 
-> 
+Even so, "CCR" will still exist - but will be localised to the compilation
+units which need it.  The same should happen with SH.
+
+So, as for this patch, that's a NAK.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
