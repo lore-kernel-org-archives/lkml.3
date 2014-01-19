@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaASHHt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 02:07:49 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:24284 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750774AbaASHHq (ORCPT
+	id S1752001AbaASIER (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 03:04:17 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34366 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaASIEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 02:07:46 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Jan 2014 02:07:45 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al0GADV421IOAjao/2dsb2JhbABZgwuEC7g5gQUXdIJPBBEeHgQBGBEGBgIFFgQHAgsDAgECASckDQEFAgIXh2mndJwrF4EpjVaCdoFJAQOFK58xhV6Bb4FRKQ
-Message-ID: <52DB7878.8000004@internode.on.net>
-Date: Sun, 19 Jan 2014 17:32:16 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	Sun, 19 Jan 2014 03:04:15 -0500
+Date: Sun, 19 Jan 2014 00:04:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Matt Turner <mattst88@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140119080405.GB10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140115205346.GF10038@linux.vnet.ibm.com>
+ <20140115232134.GM31570@twins.programming.kicks-ass.net>
+ <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com>
+ <20140116103659.GO7572@laptop.programming.kicks-ass.net>
+ <20140118100105.GV10038@linux.vnet.ibm.com>
+ <20140118113406.GY30183@twins.programming.kicks-ass.net>
+ <20140118122548.GX10038@linux.vnet.ibm.com>
+ <20140118124136.GZ30183@twins.programming.kicks-ass.net>
+ <20140118212227.GA10038@linux.vnet.ibm.com>
+ <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Anssi Hannula <anssi.hannula@iki.fi>,
-        ALSA devel <alsa-devel@alsa-project.org>, xorg-driver-ati@lists.x.org,
-        linux-kernel@vger.kernel.org
-Subject: ALSA: hda - Fix possible races in HDMI driver - lockup on shutdown
- when radeon.audio=1 after using audacity
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011908-6688-0000-0000-000005AE1A2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have had reproducible lock-ups on shut-down (at the shutting down ALSA 
-stage) of my AMD64 machine (Asus M3A78Pro motherboard, BIOS 1701 
-01/27/2011, CPU AMD Athlon(tm) II X4 640 Processor) running the 64 bit 
-Linux kernel more recent than 3.12 when *both* radeon.audio=1 was set 
-and I had been running audacity 2.0.5. (iommu=noaperture is also set).
+On Sat, Jan 18, 2014 at 04:57:05PM -0800, Linus Torvalds wrote:
+> On Sat, Jan 18, 2014 at 1:22 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Yes, this requires that -all- updates to the fields in the machine word
+> > in question use atomic rmw.  Which would not be pretty from a core-code
+> > perspective.  Hence my suggestion of ceasing Linux-kernel support for
+> > DEC Alpha CPUs that don't support byte operations.  Also need 16-bit
+> > operations as well, of course...
+> 
+> I'm not seeing this.
+> 
+> Why the hell would you have byte- or halfword-sized versions of the
+> store_release or load_acquire things on alpha anyway?
+> 
+> What it means is that data structures that do locking or atomics need
+> to be "int" or "long" on alpha.  That has always been true. What do
+> you claim has changed?
 
-The problem was reproducible with the stock Debian kernel 
-linux-image-3.13-rc6-amd64 version 3.13~rc6-1~exp1.
+OK, another approach would be to never add "select ARCH_USE_QUEUE_RWLOCK"
+on Alpha, at least if the queued rwlocks really do want to atomically
+manipulate bytes.  After all, the Alpha systems that I know about don't
+have enough CPUs to make queued rwlocks necessary anyway.
 
-The machine is using an ATI/AMD 3850HD video card with a DVI cable to a 
-DVI input on my monitor, and the default audio device is the 
-motherboard's on-board audio device:
+Much simpler solution!
 
-00:14.2 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] SBx00 
-Azalia (Intel HDA)
+Is this what you were getting at, or am I missing your point?
 
-01:00.0 VGA compatible controller: Advanced Micro Devices, Inc. 
-[AMD/ATI] RV670 [Radeon HD 3690/3850]
-01:00.1 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] RV670/680 
-HDMI Audio [Radeon HD 3690/3800 Series]
-
-$ git bisect bad
-cbbaa603a03cc46681e24d6b2804b62fde95a2af is the first bad commit
-commit cbbaa603a03cc46681e24d6b2804b62fde95a2af
-Author: Takashi Iwai <tiwai@suse.de>
-Date:   Thu Oct 17 18:03:24 2013 +0200
-
-     ALSA: hda - Fix possible races in HDMI driver
-
-     Some per_pin fields and ELD contents might be changed dynamically in
-     multiple ways where the concurrent accesses are still opened in the
-     current code.  This patch fixes such possible races by using eld->lock
-     in appropriate places.
-
-     Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
-     Signed-off-by: Takashi Iwai <tiwai@suse.de>
-
-:040000 040000 0c29281f82a3ebd9a704d481114f9cfcefea07c8 
-d71fd101125cd29a628cb5e66c7ee4f56e28329b M      sound
-
-When running audacity from the command line there was the following output:
-
-ALSA lib pcm_dsnoop.c:618:(snd_pcm_dsnoop_open) unable to open slave
-ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
-ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.rear
-ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.center_lfe
-ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.side
-ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
-Expression 'stream->playback.pcm' failed in 
-'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
-Expression 'stream->playback.pcm' failed in 
-'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
-Expression 'stream->playback.pcm' failed in 
-'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
-
-I am happy to supply further information or run further tests to help in 
-isolating the problem and verifying a solution.
-
-Arthur.
+							Thanx, Paul
 
