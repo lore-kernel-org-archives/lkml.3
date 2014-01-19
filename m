@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaASJHz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 04:07:55 -0500
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.101]:2822
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751051AbaASJHu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 04:07:50 -0500
-Content-Type: text/plain; charset=US-ASCII
+	id S1752021AbaASJRA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 04:17:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189AbaASJQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jan 2014 04:16:57 -0500
+Date: Sun, 19 Jan 2014 11:21:40 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] net: core: orphan frags before queuing to slow qdisc
+Message-ID: <20140119092140.GA2984@redhat.com>
+References: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: RE:LOAN
-To: Recipients <smith@FINANCIALHOME976.onmicrosoft.com>
-From: <smith@FINANCIALHOME976.onmicrosoft.com>
-Date: Sun, 19 Jan 2014 10:07:27 +0100
-Reply-To: <financial_home@siamza.com>
-X-Antivirus: avast! (VPS 140118-1, 01/18/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <b900c24a-d59a-4351-9da5-3977141850f4@DB4PR06MB031.eurprd06.prod.outlook.com>
-X-Originating-IP: [196.46.245.57]
-X-ClientProxiedBy: AM3PR01CA006.eurprd01.prod.exchangelabs.com
- (10.242.240.16) To DB4PR06MB031.eurprd06.prod.outlook.com (10.242.154.144)
-X-Forefront-PRVS: 00963989E5
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(189002)(199002)(52604005)(87976001)(74876001)(86362001)(86372001)(93136001)(76796001)(86152002)(76786001)(92726001)(54316002)(93516002)(81816001)(77096001)(81686001)(4396001)(33646001)(47736001)(49866001)(10806001)(47776003)(19580405001)(83322001)(63696002)(74662001)(23756003)(80976001)(74316001)(19580395003)(79102001)(53256004)(50466002)(74706001)(43066001)(47446002)(87266001)(74366001)(80022001)(74502001)(65816001)(66066001)(50986001)(47976001)(83072002)(81542001)(85852003)(69226001)(59766001)(77982001)(64872005)(56816005)(56776001)(90146001)(89136003)(46102001)(76576001)(81342001)(76176001)(76482001)(85306002)(54356001)(42186004)(51856001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:DB4PR06MB031;H:[10.146.231.237];CLIP:196.46.245.57;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: FINANCIALHOME976.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389951734-13234-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 17, 2014 at 05:42:14PM +0800, Jason Wang wrote:
+> Many qdiscs can queue a packet for a long time, this will lead an issue
+> with zerocopy skb. It means the frags will not be orphaned in an expected
+> short time, this breaks the assumption that virtio-net will transmit the
+> packet in time.
+> 
+> So if guest packets were queued through such kind of qdisc and hit the
+> limitation of the max pending packets for virtio/vhost. All packets that
+> go to another destination from guest will also be blocked.
+> 
+> A case for reproducing the issue:
+> 
+> - Boot two VMs and connect them to the same bridge kvmbr.
+> - Setup tbf with a very low rate/burst on eth0 which is a port of kvmbr.
+> - Let VM1 send lots of packets thorugh eth0
+> - After a while, VM1 is unable to send any packets out since the number of
+>   pending packets (queued to tbf) were exceeds the limitation of vhost/virito
+> 
+> Solve this issue by orphaning the frags before queuing it to a slow qdisc (the
+> one without TCQ_F_CAN_BYPASS).
 
-Have you been seeking for urgent financial help? you need urgent loan to pay off your existing bills 
-and debts? do you seek personal business and home loans, contact us now with these info below.
-Your names:
-country:
-state:
-Loan Amount:
-Duration:
-Occupation:
-Purpose of loan?
-Phone Number.
-Contact us now via: financial_home@siamza.com
-Thanks for coming.
+This seems too aggressive to me.
+The issue is that packet can stay queued indefinitely long.
+So I think we should only do this for tbf.
+
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  net/core/dev.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 0ce469e..1209774 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -2700,6 +2700,12 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
+>  	contended = qdisc_is_running(q);
+>  	if (unlikely(contended))
+>  		spin_lock(&q->busylock);
+> +	if (!(q->flags & TCQ_F_CAN_BYPASS) &&
+> +	    unlikely(skb_orphan_frags(skb, GFP_ATOMIC))) {
+> +		kfree_skb(skb);
+> +		rc = NET_XMIT_DROP;
+> +		goto out;
+> +	}
+>  
+>  	spin_lock(root_lock);
+>  	if (unlikely(test_bit(__QDISC_STATE_DEACTIVATED, &q->state))) {
+> @@ -2739,6 +2745,7 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
+>  		}
+>  	}
+>  	spin_unlock(root_lock);
+> +out:
+>  	if (unlikely(contended))
+>  		spin_unlock(&q->busylock);
+>  	return rc;
+> -- 
+> 1.8.3.2
