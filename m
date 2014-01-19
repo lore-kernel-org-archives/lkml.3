@@ -1,33 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaASItk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 03:49:40 -0500
-Received: from smtp303.alice.it ([82.57.200.119]:45731 "EHLO smtp303.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaASIti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 03:49:38 -0500
-Message-ID: <143a9afdeaf.sergio.ticca@alice.it>
-Date: Sun, 19 Jan 2014 09:48:31 +0100 (CET)
-From: "MR.Frank Buma" <sergio.ticca@alice.it>
-Reply-To: frankbuma@photofile.ru
-Subject: Fund Transfer Claim.
-Mime-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 37.59.49.163
-To: unlisted-recipients:; (no To-header on input)
+	id S1752010AbaASJHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 04:07:55 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.101]:2822
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751051AbaASJHu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jan 2014 04:07:50 -0500
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: RE:LOAN
+To: Recipients <smith@FINANCIALHOME976.onmicrosoft.com>
+From: <smith@FINANCIALHOME976.onmicrosoft.com>
+Date: Sun, 19 Jan 2014 10:07:27 +0100
+Reply-To: <financial_home@siamza.com>
+X-Antivirus: avast! (VPS 140118-1, 01/18/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <b900c24a-d59a-4351-9da5-3977141850f4@DB4PR06MB031.eurprd06.prod.outlook.com>
+X-Originating-IP: [196.46.245.57]
+X-ClientProxiedBy: AM3PR01CA006.eurprd01.prod.exchangelabs.com
+ (10.242.240.16) To DB4PR06MB031.eurprd06.prod.outlook.com (10.242.154.144)
+X-Forefront-PRVS: 00963989E5
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(189002)(199002)(52604005)(87976001)(74876001)(86362001)(86372001)(93136001)(76796001)(86152002)(76786001)(92726001)(54316002)(93516002)(81816001)(77096001)(81686001)(4396001)(33646001)(47736001)(49866001)(10806001)(47776003)(19580405001)(83322001)(63696002)(74662001)(23756003)(80976001)(74316001)(19580395003)(79102001)(53256004)(50466002)(74706001)(43066001)(47446002)(87266001)(74366001)(80022001)(74502001)(65816001)(66066001)(50986001)(47976001)(83072002)(81542001)(85852003)(69226001)(59766001)(77982001)(64872005)(56816005)(56776001)(90146001)(89136003)(46102001)(76576001)(81342001)(76176001)(76482001)(85306002)(54356001)(42186004)(51856001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:DB4PR06MB031;H:[10.146.231.237];CLIP:196.46.245.57;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: FINANCIALHOME976.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Dear,how are you? i am a banker in the bank,I got your contact from yahoo 
-terrorist search,reason, I am in need of your help as a foreigner,I want to 
-transfer an abandoned $15M to your acct, 40% for you and 60% for me,please 
-indicate your interest for more details.
-Your Full Name,
-phone No,
-Occupation,
-Your Sex,
-country,
-Reply me to ; frankbuma@photofile.ru
-Mr Frank Buma.
+
+Have you been seeking for urgent financial help? you need urgent loan to pay off your existing bills 
+and debts? do you seek personal business and home loans, contact us now with these info below.
+Your names:
+country:
+state:
+Loan Amount:
+Duration:
+Occupation:
+Purpose of loan?
+Phone Number.
+Contact us now via: financial_home@siamza.com
+Thanks for coming.
