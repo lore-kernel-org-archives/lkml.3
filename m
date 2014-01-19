@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaASDHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jan 2014 22:07:20 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44583 "EHLO
+	id S1752411AbaASDHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jan 2014 22:07:30 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44604 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaASDFa (ORCPT
+	with ESMTP id S1751987AbaASDFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jan 2014 22:05:30 -0500
+	Sat, 18 Jan 2014 22:05:33 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Roland Dreier <roland@kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 12/17] target/file: Add DIF protection init/format support
-Date: Sun, 19 Jan 2014 02:44:35 +0000
-Message-Id: <1390099480-29013-13-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 15/17] target/rd: Add support for protection SGL setup + release
+Date: Sun, 19 Jan 2014 02:44:38 +0000
+Message-Id: <1390099480-29013-16-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1390099480-29013-1-git-send-email-nab@daterainc.com>
 References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
@@ -28,19 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for DIF protection init/format support into
-the FILEIO backend.
+This patch adds rd_build_prot_space() + rd_release_prot_space() logic
+to setup + release protection information scatterlists.
 
-It involves using a seperate $FILE.protection for storing PI that is
-opened via fd_init_prot() using the common pi_prot_type attribute.
-The actual formatting of the protection is done via fd_format_prot()
-using the common pi_prot_format attribute, that will populate the
-initial PI data based upon the currently configured pi_prot_type.
+It also adds rd_init_prot() + rd_free_prot() se_subsystem_api
+callbacks used by target core code for setup + release of
+protection information.
 
-Based on original FILEIO code from Sagi.
-
-v1 changes:
-  - Fix sparse warnings in fd_init_format_buf (Fengguang)
+v2 changes:
+  - Drop unused sg_table from rd_release_prot_space (Wei)
+  - Drop rd_release_prot_space call from rd_free_device
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -49,193 +46,125 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
- drivers/target/target_core_file.h |    4 ++
- 2 files changed, 141 insertions(+)
+ drivers/target/target_core_rd.c |   74 +++++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_rd.h |    4 +++
+ 2 files changed, 78 insertions(+)
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 0e34cda..119d519 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
- 		       dev->dev_attrib.block_size);
+diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
+index e9fa879..660961d 100644
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -223,6 +223,61 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+ 	return 0;
  }
  
-+static int fd_init_prot(struct se_device *dev)
++static void rd_release_prot_space(struct rd_dev *rd_dev)
 +{
-+	struct fd_dev *fd_dev = FD_DEV(dev);
-+	struct file *prot_file, *file = fd_dev->fd_file;
-+	struct inode *inode;
-+	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
-+	char buf[FD_MAX_DEV_PROT_NAME];
++	u32 page_count;
 +
-+	if (!file) {
-+		pr_err("Unable to locate fd_dev->fd_file\n");
-+		return -ENODEV;
++	if (!rd_dev->sg_prot_array || !rd_dev->sg_prot_count)
++		return;
++
++	page_count = rd_release_sgl_table(rd_dev, rd_dev->sg_prot_array,
++					  rd_dev->sg_prot_count);
++
++	pr_debug("CORE_RD[%u] - Released protection space for Ramdisk"
++		 " Device ID: %u, pages %u in %u tables total bytes %lu\n",
++		 rd_dev->rd_host->rd_host_id, rd_dev->rd_dev_id, page_count,
++		 rd_dev->sg_table_count, (unsigned long)page_count * PAGE_SIZE);
++
++	rd_dev->sg_prot_array = NULL;
++	rd_dev->sg_prot_count = 0;
++}
++
++static int rd_build_prot_space(struct rd_dev *rd_dev, int prot_length)
++{
++	struct rd_dev_sg_table *sg_table;
++	u32 total_sg_needed, sg_tables;
++	u32 max_sg_per_table = (RD_MAX_ALLOCATION_SIZE /
++				sizeof(struct scatterlist));
++	int rc;
++
++	if (rd_dev->rd_flags & RDF_NULLIO)
++		return 0;
++
++	total_sg_needed = rd_dev->rd_page_count / prot_length;
++
++	sg_tables = (total_sg_needed / max_sg_per_table) + 1;
++
++	sg_table = kzalloc(sg_tables * sizeof(struct rd_dev_sg_table), GFP_KERNEL);
++	if (!sg_table) {
++		pr_err("Unable to allocate memory for Ramdisk protection"
++		       " scatterlist tables\n");
++		return -ENOMEM;
 +	}
 +
-+	inode = file->f_mapping->host;
-+	if (S_ISBLK(inode->i_mode)) {
-+		pr_err("FILEIO Protection emulation only supported on"
-+		       " !S_ISBLK\n");
-+		return -ENOSYS;
-+	}
++	rd_dev->sg_prot_array = sg_table;
++	rd_dev->sg_prot_count = sg_tables;
 +
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
-+		flags &= ~O_DSYNC;
++	rc = rd_allocate_sgl_table(rd_dev, sg_table, total_sg_needed, 0xff);
++	if (rc)
++		return rc;
 +
-+	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
-+		 fd_dev->fd_dev_name);
-+
-+	prot_file = filp_open(buf, flags, 0600);
-+	if (IS_ERR(prot_file)) {
-+		pr_err("filp_open(%s) failed\n", buf);
-+		ret = PTR_ERR(prot_file);
-+		return ret;
-+	}
-+	fd_dev->fd_prot_file = prot_file;
++	pr_debug("CORE_RD[%u] - Built Ramdisk Device ID: %u prot space of"
++		 " %u pages in %u tables\n", rd_dev->rd_host->rd_host_id,
++		 rd_dev->rd_dev_id, total_sg_needed, rd_dev->sg_prot_count);
 +
 +	return 0;
 +}
 +
-+static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
-+			       u32 unit_size, u32 *ref_tag, u16 app_tag,
-+			       bool inc_reftag)
+ static struct se_device *rd_alloc_device(struct se_hba *hba, const char *name)
+ {
+ 	struct rd_dev *rd_dev;
+@@ -479,6 +534,23 @@ static sector_t rd_get_blocks(struct se_device *dev)
+ 	return blocks_long;
+ }
+ 
++static int rd_init_prot(struct se_device *dev)
 +{
-+	unsigned char *p = buf;
-+	int i;
++	struct rd_dev *rd_dev = RD_DEV(dev);
 +
-+	for (i = 0; i < unit_size; i += dev->prot_length) {
-+		*((u16 *)&p[0]) = 0xffff;
-+		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
-+		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
++        if (!dev->dev_attrib.pi_prot_type)
++		return 0;
 +
-+		if (inc_reftag)
-+			(*ref_tag)++;
-+
-+		p += dev->prot_length;
-+	}
++	return rd_build_prot_space(rd_dev, dev->prot_length);
 +}
 +
-+static int fd_format_prot(struct se_device *dev)
++static void rd_free_prot(struct se_device *dev)
 +{
-+	struct fd_dev *fd_dev = FD_DEV(dev);
-+	struct file *prot_fd = fd_dev->fd_prot_file;
-+	sector_t prot_length, prot;
-+	unsigned char *buf;
-+	loff_t pos = 0;
-+	u32 ref_tag = 0;
-+	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
-+	int rc, ret = 0, size, len;
-+	bool inc_reftag = false;
++	struct rd_dev *rd_dev = RD_DEV(dev);
 +
-+	if (!dev->dev_attrib.pi_prot_type) {
-+		pr_err("Unable to format_prot while pi_prot_type == 0\n");
-+		return -ENODEV;
-+	}
-+	if (!prot_fd) {
-+		pr_err("Unable to locate fd_dev->fd_prot_file\n");
-+		return -ENODEV;
-+	}
-+
-+	switch (dev->dev_attrib.pi_prot_type) {
-+	case TARGET_DIF_TYPE3_PROT:
-+		ref_tag = 0xffffffff;
-+		break;
-+	case TARGET_DIF_TYPE2_PROT:
-+	case TARGET_DIF_TYPE1_PROT:
-+		inc_reftag = true;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	buf = vzalloc(unit_size);
-+	if (!buf) {
-+		pr_err("Unable to allocate FILEIO prot buf\n");
-+		return -ENOMEM;
-+	}
-+
-+	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
-+	size = prot_length;
-+
-+	pr_debug("Using FILEIO prot_length: %llu\n",
-+		 (unsigned long long)prot_length);
-+
-+	for (prot = 0; prot < prot_length; prot += unit_size) {
-+
-+		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
-+				   inc_reftag);
-+
-+		len = min(unit_size, size);
-+
-+		rc = kernel_write(prot_fd, buf, len, pos);
-+		if (rc != len) {
-+			pr_err("vfs_write to prot file failed: %d\n", rc);
-+			ret = -ENODEV;
-+			goto out;
-+		}
-+		pos += len;
-+		size -= len;
-+	}
-+
-+out:
-+	vfree(buf);
-+	return ret;
++	rd_release_prot_space(rd_dev);
 +}
 +
-+static void fd_free_prot(struct se_device *dev)
-+{
-+	struct fd_dev *fd_dev = FD_DEV(dev);
-+
-+	if (!fd_dev->fd_prot_file)
-+		return;
-+
-+	filp_close(fd_dev->fd_prot_file, NULL);
-+	fd_dev->fd_prot_file = NULL;
-+}
-+
- static struct sbc_ops fd_sbc_ops = {
- 	.execute_rw		= fd_execute_rw,
- 	.execute_sync_cache	= fd_execute_sync_cache,
-@@ -730,6 +864,9 @@ static struct se_subsystem_api fileio_template = {
- 	.show_configfs_dev_params = fd_show_configfs_dev_params,
+ static struct sbc_ops rd_sbc_ops = {
+ 	.execute_rw		= rd_execute_rw,
+ };
+@@ -504,6 +576,8 @@ static struct se_subsystem_api rd_mcp_template = {
+ 	.show_configfs_dev_params = rd_show_configfs_dev_params,
  	.get_device_type	= sbc_get_device_type,
- 	.get_blocks		= fd_get_blocks,
-+	.init_prot		= fd_init_prot,
-+	.format_prot		= fd_format_prot,
-+	.free_prot		= fd_free_prot,
+ 	.get_blocks		= rd_get_blocks,
++	.init_prot		= rd_init_prot,
++	.free_prot		= rd_free_prot,
  };
  
- static int __init fileio_module_init(void)
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index 37ffc5b..583691e 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -4,6 +4,7 @@
- #define FD_VERSION		"4.0"
- 
- #define FD_MAX_DEV_NAME		256
-+#define FD_MAX_DEV_PROT_NAME	FD_MAX_DEV_NAME + 16
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
-@@ -15,6 +16,8 @@
- #define FBDF_HAS_PATH		0x01
- #define FBDF_HAS_SIZE		0x02
- #define FDBD_HAS_BUFFERED_IO_WCE 0x04
-+#define FDBD_FORMAT_UNIT_SIZE	2048
-+
- 
- struct fd_dev {
- 	struct se_device dev;
-@@ -29,6 +32,7 @@ struct fd_dev {
- 	u32		fd_block_size;
- 	unsigned long long fd_dev_size;
- 	struct file	*fd_file;
-+	struct file	*fd_prot_file;
- 	/* FILEIO HBA device is connected to */
- 	struct fd_host *fd_host;
+ int __init rd_module_init(void)
+diff --git a/drivers/target/target_core_rd.h b/drivers/target/target_core_rd.h
+index 1789d1e..cc46a6a 100644
+--- a/drivers/target/target_core_rd.h
++++ b/drivers/target/target_core_rd.h
+@@ -33,8 +33,12 @@ struct rd_dev {
+ 	u32		rd_page_count;
+ 	/* Number of SG tables in sg_table_array */
+ 	u32		sg_table_count;
++	/* Number of SG tables in sg_prot_array */
++	u32		sg_prot_count;
+ 	/* Array of rd_dev_sg_table_t containing scatterlists */
+ 	struct rd_dev_sg_table *sg_table_array;
++	/* Array of rd_dev_sg_table containing protection scatterlists */
++	struct rd_dev_sg_table *sg_prot_array;
+ 	/* Ramdisk HBA device is connected to */
+ 	struct rd_host *rd_host;
  } ____cacheline_aligned;
 -- 
 1.7.10.4
