@@ -1,132 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaATS6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:58:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721AbaATS6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:58:14 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        Fengguang Wu <fengguang.wu@Intel.com>
-Subject: [PATCH] x86, cpu hotplug, use cpumask stack safe variant cpumask_var_t in check_irq_vectors_for_cpu_disable() [v2]
-Date: Mon, 20 Jan 2014 13:57:58 -0500
-Message-Id: <1390244278-30024-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <20140120085017.GB5243@gchen.bj.intel.com>
-References: <20140120085017.GB5243@gchen.bj.intel.com>
+	id S1752661AbaATS7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:59:30 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:18956 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaATS72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 13:59:28 -0500
+X-IronPort-AV: E=Sophos;i="4.95,691,1384300800"; 
+   d="scan'208";a="92533942"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH v3] xen/grant-table: Avoid m2p_override during mapping
+Date: Mon, 20 Jan 2014 18:58:08 +0000
+Message-ID: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kbuild, 0day kernel build service, outputs the warning:
+The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+for blkback and future netback patches it just cause a lock contention, as
+those pages never go to userspace. Therefore this series does the following:
+- the original functions were renamed to __gnttab_[un]map_refs, with a new
+  parameter m2p_override
+- based on m2p_override either they follow the original behaviour, or just set
+  the private flag and call set_phys_to_machine
+- gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+  m2p_override false
+- a new function gnttab_[un]map_refs_userspace provides the old behaviour
 
-arch/x86/kernel/irq.c:333:1: warning: the frame size of 2056 bytes
-is larger than 2048 bytes [-Wframe-larger-than=]
+v2:
+- move the storing of the old mfn in page->index to gnttab_map_refs
+- move the function header update to a separate patch
 
-because check_irq_vectors_for_cpu_disable() allocates two cpumasks on the
-stack.  Fix this by using cpumask_var_t, the cpumask stack safe variant.
+v3:
+- a new approach to retain old behaviour where it needed
+- squash the patches into one
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Janet Morgan <janet.morgan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Ruiv Wang <ruiv.wang@gmail.com>
-Cc: Gong Chen <gong.chen@linux.intel.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Gong Chen <gong.chen@linux.intel.com>
-Cc: x86@kernel.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-
-[v2]: switch from GFP_KERNEL to GFP_ATOMIC
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Suggested-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/x86/kernel/irq.c |   35 +++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
+ drivers/block/xen-blkback/blkback.c |   15 +++----
+ drivers/xen/gntdev.c                |   13 +++---
+ drivers/xen/grant-table.c           |   81 +++++++++++++++++++++++++++++------
+ include/xen/grant_table.h           |    8 +++-
+ 4 files changed, 87 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 4207e8d..c130cfa 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -269,15 +269,25 @@ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
-  */
- int check_irq_vectors_for_cpu_disable(void)
- {
--	int irq, cpu;
-+	int irq, cpu, ret = 0;
- 	unsigned int this_cpu, vector, this_count, count;
- 	struct irq_desc *desc;
- 	struct irq_data *data;
--	struct cpumask affinity_new, online_new;
-+	cpumask_var_t affinity_new, online_new;
-+
-+	if (!alloc_cpumask_var(&online_new, GFP_ATOMIC)){
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	if (!alloc_cpumask_var(&affinity_new, GFP_ATOMIC)) {
-+		ret = -ENOMEM;
-+		goto free_online_new;
-+	}
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 6620b73..875025f 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
  
- 	this_cpu = smp_processor_id();
--	cpumask_copy(&online_new, cpu_online_mask);
--	cpu_clear(this_cpu, online_new);
-+	cpumask_copy(online_new, cpu_online_mask);
-+	__cpu_clear(this_cpu, online_new);
+ 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+ 			!rb_next(&persistent_gnt->node)) {
+-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+-				segs_to_unmap);
++			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, pages, segs_to_unmap);
+ 			segs_to_unmap = 0;
+@@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
+ 		pages[segs_to_unmap] = persistent_gnt->page;
  
- 	this_count = 0;
- 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-@@ -285,8 +295,8 @@ int check_irq_vectors_for_cpu_disable(void)
- 		if (irq >= 0) {
- 			desc = irq_to_desc(irq);
- 			data = irq_desc_get_irq_data(desc);
--			cpumask_copy(&affinity_new, data->affinity);
--			cpu_clear(this_cpu, affinity_new);
-+			cpumask_copy(affinity_new, data->affinity);
-+			__cpu_clear(this_cpu, affinity_new);
- 
- 			/* Do not count inactive or per-cpu irqs. */
- 			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
-@@ -307,8 +317,8 @@ int check_irq_vectors_for_cpu_disable(void)
- 			 * mask is not zero; that is the down'd cpu is the
- 			 * last online cpu in a user set affinity mask.
- 			 */
--			if (cpumask_empty(&affinity_new) ||
--			    !cpumask_subset(&affinity_new, &online_new))
-+			if (cpumask_empty(affinity_new) ||
-+			    !cpumask_subset(affinity_new, online_new))
- 				this_count++;
+ 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+-				segs_to_unmap);
++			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, pages, segs_to_unmap);
+ 			segs_to_unmap = 0;
+@@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
+ 		kfree(persistent_gnt);
+ 	}
+ 	if (segs_to_unmap > 0) {
+-		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
++		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 		BUG_ON(ret);
+ 		put_free_pages(blkif, pages, segs_to_unmap);
+ 	}
+@@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
+ 				    GNTMAP_host_map, pages[i]->handle);
+ 		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+ 		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+-			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+-			                        invcount);
++			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, unmap_pages, invcount);
+ 			invcount = 0;
  		}
  	}
-@@ -327,9 +337,14 @@ int check_irq_vectors_for_cpu_disable(void)
- 	if (count < this_count) {
- 		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
- 			this_cpu, this_count, count);
--		return -ERANGE;
-+		ret = -ERANGE;
+ 	if (invcount) {
+-		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
++		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+ 		BUG_ON(ret);
+ 		put_free_pages(blkif, unmap_pages, invcount);
  	}
--	return 0;
-+
-+	free_cpumask_var(affinity_new);
-+free_online_new:
-+	free_cpumask_var(online_new);
-+out:
-+	return ret;
- }
+@@ -740,7 +737,7 @@ again:
+ 	}
  
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
--- 
-1.7.9.3
-
+ 	if (segs_to_map) {
+-		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
++		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+ 		BUG_ON(ret);
+ 	}
+ 
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index e41c79c..e652c0e 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+ 	}
+ 
+ 	pr_debug("map %d+%d\n", map->index, map->count);
+-	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+-			map->pages, map->count);
++	err = gnttab_map_refs_userspace(map->map_ops,
++					use_ptemod ? map->kmap_ops : NULL,
++					map->pages,
++					map->count);
+ 	if (err)
+ 		return err;
+ 
+@@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+ 		}
+ 	}
+ 
+-	err = gnttab_unmap_refs(map->unmap_ops + offset,
+-			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+-			pages);
++	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
++					  use_ptemod ? map->kmap_ops + offset : NULL,
++					  map->pages + offset,
++					  pages);
+ 	if (err)
+ 		return err;
+ 
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index aa846a4..87ded60 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+ }
+ EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+ 
+-int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
++int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		    struct gnttab_map_grant_ref *kmap_ops,
+-		    struct page **pages, unsigned int count)
++		    struct page **pages, unsigned int count,
++		    bool m2p_override)
+ {
+ 	int i, ret;
+ 	bool lazy = false;
+ 	pte_t *pte;
+ 	unsigned long mfn;
+ 
++	BUG_ON(kmap_ops && !m2p_override);
+ 	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+ 	if (ret)
+ 		return ret;
+@@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+ 					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+ 		}
+-		return ret;
++		return 0;
+ 	}
+ 
+-	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++	if (m2p_override &&
++	    !in_interrupt() &&
++	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
+ 		lazy = true;
+ 	}
+@@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		} else {
+ 			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+ 		}
+-		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+-				       &kmap_ops[i] : NULL);
++		if (m2p_override)
++			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
++					       &kmap_ops[i] : NULL);
++		else {
++			unsigned long pfn = page_to_pfn(pages[i]);
++			WARN_ON(PagePrivate(pages[i]));
++			SetPagePrivate(pages[i]);
++			set_page_private(pages[i], mfn);
++			pages[i]->index = pfn_to_mfn(pfn);
++			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
++				return -ENOMEM;
++		}
+ 		if (ret)
+ 			goto out;
+ 	}
+@@ -937,17 +951,33 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+ 
+-	return ret;
++	return 0;
++}
++
++int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
++		    struct page **pages, unsigned int count)
++{
++	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+ }
+ EXPORT_SYMBOL_GPL(gnttab_map_refs);
+ 
+-int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
++int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
++			      struct gnttab_map_grant_ref *kmap_ops,
++			      struct page **pages, unsigned int count)
++{
++	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
++}
++EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
++
++int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		      struct gnttab_map_grant_ref *kmap_ops,
+-		      struct page **pages, unsigned int count)
++		      struct page **pages, unsigned int count,
++		      bool m2p_override)
+ {
+ 	int i, ret;
+ 	bool lazy = false;
+ 
++	BUG_ON(kmap_ops && !m2p_override);
+ 	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+ 	if (ret)
+ 		return ret;
+@@ -958,17 +988,26 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+ 					INVALID_P2M_ENTRY);
+ 		}
+-		return ret;
++		return 0;
+ 	}
+ 
+-	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++	if (m2p_override &&
++	    !in_interrupt() &&
++	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
+ 		lazy = true;
+ 	}
+ 
+ 	for (i = 0; i < count; i++) {
+-		ret = m2p_remove_override(pages[i], kmap_ops ?
+-				       &kmap_ops[i] : NULL);
++		if (m2p_override)
++			ret = m2p_remove_override(pages[i], kmap_ops ?
++						  &kmap_ops[i] : NULL);
++		else {
++			unsigned long pfn = page_to_pfn(pages[i]);
++			WARN_ON(!PagePrivate(pages[i]));
++			ClearPagePrivate(pages[i]);
++			set_phys_to_machine(pfn, pages[i]->index);
++		}
+ 		if (ret)
+ 			goto out;
+ 	}
+@@ -977,10 +1016,24 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+ 
+-	return ret;
++	return 0;
++}
++
++int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
++		    struct page **pages, unsigned int count)
++{
++	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+ }
+ EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+ 
++int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
++				struct gnttab_map_grant_ref *kmap_ops,
++				struct page **pages, unsigned int count)
++{
++	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
++}
++EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
++
+ static unsigned nr_status_frames(unsigned nr_grant_frames)
+ {
+ 	BUG_ON(grefs_per_grant_frame == 0);
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index 694dcaf..9a919b1 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
+ #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+ 
+ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+-		    struct gnttab_map_grant_ref *kmap_ops,
+ 		    struct page **pages, unsigned int count);
++int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
++			      struct gnttab_map_grant_ref *kmap_ops,
++			      struct page **pages, unsigned int count);
+ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+-		      struct gnttab_map_grant_ref *kunmap_ops,
+ 		      struct page **pages, unsigned int count);
++int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
++				struct gnttab_map_grant_ref *kunmap_ops,
++				struct page **pages, unsigned int count);
+ 
+ /* Perform a batch of grant map/copy operations. Retry every batch slot
+  * for which the hypervisor returns GNTST_eagain. This is typically due
