@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaATNSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 08:18:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56385 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304AbaATNS3 (ORCPT
+	id S1753749AbaATNWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 08:22:35 -0500
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:60261 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168AbaATNWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 08:18:29 -0500
-Date: Mon, 20 Jan 2014 14:17:35 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v7 6/6] MCS Lock: add Kconfig entries to allow
- arch-specific hooks
-Message-ID: <20140120131735.GD3694@twins.programming.kicks-ass.net>
-References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
- <1389917316.3138.16.camel@schen9-DESK>
- <20140120123030.GE31570@twins.programming.kicks-ass.net>
+	Mon, 20 Jan 2014 08:22:33 -0500
+Date: Mon, 20 Jan 2014 10:22:25 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/3] perf tools: bring back old behavior when NO_DEMAGLE
+ doesn't link with libbfd
+Message-ID: <20140120132225.GA18862@ghostprotocols.net>
+References: <1390217980-22424-1-git-send-email-stfomichev@yandex-team.ru>
+ <1390217980-22424-4-git-send-email-stfomichev@yandex-team.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140120123030.GE31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1390217980-22424-4-git-send-email-stfomichev@yandex-team.ru>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 01:30:30PM +0100, Peter Zijlstra wrote:
-> Then again, people seem to whinge if you don't keep these Kbuild files
-> sorted, but manually sorting 29 files is just not something I like to
-> do.
+Em Mon, Jan 20, 2014 at 03:39:40PM +0400, Stanislav Fomichev escreveu:
+> This commit reverts part of the 3e6a147deef9 "perf tools: Separate lbfd
+> check out of NO_DEMANGLE condition" which always links perf with libbfd.
+> I'd like to preserve old behavior when NO_DEMAGLE does not link with
+> it, because some machines may contain different versions of binutils
+> (hence miss required libbfd version) and I still want an option to build perf
+> which works on any machine regardless of binutils version.
 
-This seems to do it..
+This is a tricky part, with another recent patch touching it to make it
+work on opensuse, where a linker script is not present to ask for extra
+libs.
 
-gawk '/^generic-y/ {
-	i = 3;
-	do {
-		for (; i<=NF; i++) {
-			if ($i == "\\") {
-				getline;
-				i=1;
-				continue;
-			}
-			if ($i != "")
-				hdr[$i] = $i;
-		}
-		break;
-	} while (1);
-	next;
-}
-// { print $0; }
-END {
-	n = asort(hdr);
-	for (i=1; i<=n; i++)
-		print "generic-y += " hdr[i];
-}'
+IIRC Andi's change made the if-else block to be irrelevant, if IIRC from
+reading Namhyung and Jiri Olsa comments, so, what were the tests you
+performed? I.e. which distros did you test your change on?
+
+For reference, this is the change from Andi to make it work on some
+opensuse release:
+
+http://lkml.kernel.org/r/1389661461-18996-2-git-send-email-andi@firstfloor.org
+
+I processed the two other patches, thanks,
 
 
+- Arnaldo
+ 
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> ---
+>  tools/perf/config/Makefile | 8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index d604e50fc167..4b76865c9bef 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -477,10 +477,6 @@ else
+>    endif
+>  endif
+>  
+> -ifeq ($(feature-libbfd), 1)
+> -  EXTLIBS += -lbfd
+> -endif
+> -
+>  ifdef NO_DEMANGLE
+>    CFLAGS += -DNO_DEMANGLE
+>  else
+> @@ -488,7 +484,9 @@ else
+>      EXTLIBS += -liberty
+>      CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+>    else
+> -    ifneq ($(feature-libbfd), 1)
+> +    ifeq ($(feature-libbfd), 1)
+> +      EXTLIBS += -lbfd
+> +    else
+>        $(call feature_check,liberty)
+>        ifeq ($(feature-liberty), 1)
+>          EXTLIBS += -lbfd -liberty
+> -- 
+> 1.8.3.2
