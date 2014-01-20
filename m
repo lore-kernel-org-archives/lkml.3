@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaATH1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 02:27:42 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:38000 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaATH1k (ORCPT
+	id S1751467AbaATHrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 02:47:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36829 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaATHrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 02:27:40 -0500
+	Mon, 20 Jan 2014 02:47:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D94006.2090104@balister.org>
-References: <1389894803-4147-1-git-send-email-sthokal@xilinx.com>
-	<1389894803-4147-2-git-send-email-sthokal@xilinx.com>
-	<52D94006.2090104@balister.org>
-Date: Mon, 20 Jan 2014 12:57:39 +0530
-Message-ID: <CA+mB=1J8hoTnVuN0DaC1kXH7mWe5Ydw8o12wuBj+MyWVAVuJfw@mail.gmail.com>
-Subject: Re: [PATCH] dma: Add Xilinx AXI Video Direct Memory Access Engine
- driver support
-From: Srikanth Thokala <sriku.linux@gmail.com>
-To: Philip Balister <philip@balister.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
+In-Reply-To: <20140119173712.GA26481@kroah.com>
+References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com> <20140119173712.GA26481@kroah.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Sun, 19 Jan 2014 23:47:01 -0800
+Message-ID: <CAPtuhTikj38yKy-=uF7O+VFG_N4AWee23f9woemM318fM3V4VQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: SeongJae Park <sj38.park@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philip,
-
-On Fri, Jan 17, 2014 at 8:06 PM, Philip Balister <philip@balister.org> wrote:
-> On 01/16/2014 12:53 PM, Srikanth Thokala wrote:
+On Sun, Jan 19, 2014 at 9:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Jan 19, 2014 at 02:55:07PM +0900, SeongJae Park wrote:
+>> Following build comes while modprobe process:
+>> > ERROR: "__clk_get_hw" [drivers/clk/clk-max77686.ko] undefined!
+>> > make[2]: *** [__modpost] Error 1
+>> > make[1]: *** [modules] Error 2
 >>
->> This is the driver for the AXI Video Direct Memory Access (AXI
->> VDMA) core, which is a soft Xilinx IP core that provides high-
->> bandwidth direct memory access between memory and AXI4-Stream
->> type video target peripherals. The core provides efficient two
->> dimensional DMA operations with independent asynchronous read
->> and write channel operation.
+>> Export the symbol to fix it and for other part's usecase.
 >>
+>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+>> ---
+>>  drivers/clk/clk.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 2b38dc9..3883fba 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -575,6 +575,7 @@ struct clk_hw *__clk_get_hw(struct clk *clk)
+>>  {
+>>       return !clk ? NULL : clk->hw;
+>>  }
+>> +EXPORT_SYMBOL_GPL(__clk_get_hw);
 >
-> [snip]
->
->
->> +/**
->> + * xilinx_vdma_start - Start VDMA channel
->> + * @chan: Driver specific VDMA channel
->> + */
->> +static void xilinx_vdma_start(struct xilinx_vdma_chan *chan)
->> +{
->> +       int loop = XILINX_VDMA_LOOP_COUNT + 1;
->> +
->> +       vdma_ctrl_set(chan, XILINX_VDMA_REG_DMACR,
->> XILINX_VDMA_DMACR_RUNSTOP);
->> +
->> +       /* Wait for the hardware to start */
->> +       while (loop)
->
->
->
-> loop-- ?
+> __ functions should usually only be for "internal" use, why does this
+> get exported to modules?  Why not just put it in a .h file?
 
-I will fix it in v2.
+It was originally used only within the clock core but it is sensible
+for hardware-specific clock drivers to use this as well. I plan to
+audit all of the double-underscore functions in
+include/linux/clk-provider.h for 3.15.
 
-Thanks
-Srikanth
+Regards,
+Mike
+
+>
+> greg k-h
