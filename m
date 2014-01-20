@@ -1,129 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaATMkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 07:40:08 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:51548 "EHLO
+	id S1753743AbaATMlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 07:41:18 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:51772 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaATMkF (ORCPT
+	with ESMTP id S1752879AbaATMkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 07:40:05 -0500
+	Mon, 20 Jan 2014 07:40:08 -0500
 From: dietmar.eggemann@arm.com
 To: peterz@infradead.org, mingo@redhat.com, vincent.guittot@linaro.org,
         morten.rasmussen@arm.com, chris.redpath@arm.com
 Cc: linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com
-Subject: [RFC v2 PATCH 01/11] sched: define sched_domain_topology_info
-Date: Mon, 20 Jan 2014 12:39:38 +0000
-Message-Id: <1390221588-20473-2-git-send-email-dietmar.eggemann@arm.com>
+Subject: [RFC v2 PATCH 09/11] sched: provide SD_ASYM_PACKING via topology info table
+Date: Mon, 20 Jan 2014 12:39:46 +0000
+Message-Id: <1390221588-20473-10-git-send-email-dietmar.eggemann@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
 References: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 20 Jan 2014 12:40:01.0972 (UTC) FILETIME=[BCB0B740:01CF15DC]
-X-MC-Unique: 114012012400306601
+X-OriginalArrivalTime: 20 Jan 2014 12:40:05.0644 (UTC) FILETIME=[BEE104C0:01CF15DC]
+X-MC-Unique: 114012012400610101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0KCfKgW003794
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0KCfS8F003798
 
 From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-The idea behind creating the struct sched_domain_topology_info is to be
-able to only export the scheduler data which can be changed by the arch.
-
-Exporting the existing struct sched_domain_topology_level means that we
-also have to expose struct sd_data anf other scheduler internals.
-
-The extra step of allocating the sched_domain_topology array for pure
-conventional sched domain set-up doesn't harm when this will be
-consolidated with the existing code in the sched_init_numa() function.
-
-This patch extracts the topology information which can be set by the arch
-(cpu mask and sd topology flags) from the existing struct
-sched_domain_topology and puts it in struct sched_domain_topology_info.
-
-The struct sched_domain_topology_info is exported in
-include/linux/sched.h.  It defines the default struct
-sched_domain_topology_info default_topology_info[] for all conventional
-scheduler domain level (SMT, MC, BOOK, CPU).
-
-In case an arch wants to use a different default topology info array, it
-can overwrite the pointer to this table via the new function
-set_sd_topology_info().
+The provision of the sd topology flag SD_ASYM_PACKING is shifted from the
+weak function arch_sd_sibling_asym_packing() towards an arch specific
+topology info table.
 
 Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 ---
- include/linux/sched.h |   10 ++++++++++
- kernel/sched/core.c   |   29 ++++++++++++++++++++++++++++-
- 2 files changed, 38 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/smp.c |   34 +++++++++++++++++++++++++---------
+ kernel/sched/core.c       |   13 -------------
+ 2 files changed, 25 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 53f97eb8dbc7..bf2ee608af67 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2780,4 +2780,14 @@ static inline unsigned long rlimit_max(unsigned int limit)
- 	return task_rlimit_max(current, limit);
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index c1cf4a1522d9..f8ba79dd9147 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -760,6 +760,30 @@ int setup_profiling_timer(unsigned int multiplier)
+ 	return 0;
  }
  
-+typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
-+
-+struct sched_domain_topology_info {
-+	sched_domain_mask_f mask;
-+	int		    flags;
-+};
-+
-+extern void
-+set_sd_topology_info(struct sched_domain_topology_info *ti, unsigned int s);
-+
- #endif
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a88f4a485c5e..8b8a37697a7d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5014,7 +5014,6 @@ enum s_alloc {
- struct sched_domain_topology_level;
- 
- typedef struct sched_domain *(*sched_domain_init_f)(struct sched_domain_topology_level *tl, int cpu);
--typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
- 
- #define SDTL_OVERLAP	0x01
- 
-@@ -5393,7 +5392,35 @@ static struct sched_domain_topology_level default_topology[] = {
- 	{ NULL, },
- };
- 
-+/*
-+ * Topology info list, bottom-up.
-+ */
-+static struct sched_domain_topology_info default_topology_info[] = {
 +#ifdef CONFIG_SCHED_SMT
-+	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES },
++static inline int arch_cpu_smt_flags(int cpu)
++{
++	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
++
++	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
++		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
++		flags |= SD_ASYM_PACKING;
++	}
++
++	return flags;
++}
++#endif
++
++static struct sched_domain_topology_info topology_info[] = {
++#ifdef CONFIG_SCHED_SMT
++	{ cpu_smt_mask, arch_cpu_smt_flags, SD_NAME(SIBLING) },
 +#endif
 +#ifdef CONFIG_SCHED_MC
-+	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
++	{ cpu_coregroup_mask, cpu_coregroup_flags, SD_NAME(MC) },
 +#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	{ cpu_book_mask, },
-+#endif
-+	{ cpu_cpu_mask, },
-+	{ NULL, },
++	{ cpu_cpu_mask, SD_NAME(CPU) },
 +};
 +
- static struct sched_domain_topology_level *sched_domain_topology = default_topology;
-+static struct sched_domain_topology_info *sched_domain_topology_info =
-+		default_topology_info;
-+static unsigned int sched_domain_topology_info_size =
-+		ARRAY_SIZE(default_topology_info);
-+
-+void
-+set_sd_topology_info(struct sched_domain_topology_info *ti, unsigned int s)
-+{
-+	sched_domain_topology_info = ti;
-+	sched_domain_topology_info_size = s;
-+}
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+ 	cpumask_var_t old_mask;
+@@ -784,15 +808,7 @@ void __init smp_cpus_done(unsigned int max_cpus)
  
- #define for_each_sd_topology(tl)			\
- 	for (tl = sched_domain_topology; tl->init; tl++)
+ 	dump_numa_cpu_topology();
+ 
+-}
+-
+-int arch_sd_sibling_asym_packing(void)
+-{
+-	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
+-		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
+-		return SD_ASYM_PACKING;
+-	}
+-	return 0;
++	set_sd_topology_info(topology_info, ARRAY_SIZE(topology_info));
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 79f34cc5f547..a3e945021e97 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5233,11 +5233,6 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
+ }
+ 
+-int __weak arch_sd_sibling_asym_packing(void)
+-{
+-       return 0*SD_ASYM_PACKING;
+-}
+-
+ /*
+  * Initializers for schedule domains
+  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
+@@ -5662,14 +5657,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
+ 	if (sd->flags & SD_SHARE_CPUPOWER) {
+ 		sd->imbalance_pct = 110;
+ 		sd->smt_gain = 1178; /* ~15% */
+-
+-		/*
+-		 * Call SMT specific arch topology function.
+-		 * This goes away once the powerpc arch uses
+-		 * the new interface for scheduler domain
+-		 * setup.
+-		 */
+-		sd->flags |= arch_sd_sibling_asym_packing();
+ 	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
+ 		sd->cache_nice_tries = 1;
+ 		sd->busy_idx = 2;
 -- 
 1.7.9.5
 
