@@ -1,149 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaATWtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 17:49:13 -0500
-Received: from mga14.intel.com ([143.182.124.37]:41382 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760AbaATWtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 17:49:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,692,1384329600"; 
-   d="scan'208";a="461915995"
-Date: Mon, 20 Jan 2014 15:48:56 -0700 (MST)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Alexander Gordeev <agordeev@redhat.com>
-cc: Keith Busch <keith.busch@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] nvme: Cleanup nvme_dev_start() and fix IRQ leak
-In-Reply-To: <20140120084212.GC19068@dhcp-26-207.brq.redhat.com>
-Message-ID: <alpine.LRH.2.03.1401201541000.25844@AMR>
-References: <cover.1389904166.git.agordeev@redhat.com> <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com> <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com> <alpine.LRH.2.03.1401171419370.25844@AMR>
- <20140120083835.GA19068@dhcp-26-207.brq.redhat.com> <20140120084212.GC19068@dhcp-26-207.brq.redhat.com>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1753382AbaATWxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 17:53:34 -0500
+Received: from leo.clearchain.com ([199.73.29.74]:50764 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaATWxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 17:53:32 -0500
+Date: Tue, 21 Jan 2014 08:56:51 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] input/uinput: add UI_GET_SYSNAME ioctl to retrieve
+ the sysfs path
+Message-ID: <20140120225651.GA30049@yabbi.local>
+References: <1389985971-541-1-git-send-email-benjamin.tissoires@redhat.com>
+ <20140120215313.GB4270@core.coreip.homeip.net>
+ <CAN+gG=EPXLR5H_h0UgaMOmAbwAivxCohtg3Gocws5fJucz4+eg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=EPXLR5H_h0UgaMOmAbwAivxCohtg3Gocws5fJucz4+eg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Tue, 21 Jan 2014 09:23:25 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014, Alexander Gordeev wrote:
-> This is an attempt to make handling of admin queue in a
-> single scope. This update also fixes a IRQ leak in case
-> nvme_setup_io_queues() failed to allocate enough iomem
-> and bailed out with -ENOMEM errno.
+On Mon, Jan 20, 2014 at 05:17:08PM -0500, Benjamin Tissoires wrote:
+> On Mon, Jan 20, 2014 at 4:53 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Hi Benjamin,
+> >
+> > On Fri, Jan 17, 2014 at 02:12:51PM -0500, Benjamin Tissoires wrote:
+> >> Evemu [1] uses uinput to replay devices traces it has recorded. However,
+> >> the way evemu uses uinput is slightly different from how uinput is
+> >> supposed to be used.
+> >> Evemu relies on libevdev, which creates the device node through uinput.
+> >> It then injects events through the input device node directly (and it
+> >> completely skips the uinput node).
+> >>
+> >> Currently, libevdev relies on an heuristic to guess which input node was
+> >> created. The problem is that is heuristic is subjected to races between
+> >> different uinput devices or even with physical devices. Having a way
+> >> to retrieve the sysfs path allows us to find the event node without
+> >> having to rely on this heuristic.
+> >
+> > I have been thinking about it and I think that providing tight coupling
+> > between uinput and resulting event device is wrong thing to do. We do
+> > allow sending input events through uinput interface and I think evemu
+> > should be using it, instead of going halfway through uinput and halfway
+> > though evdev. Replaying though uinput would actually be more correct as
+> > it would involve the same code paths throgugh input core as with using
+> > real devices (see input_event() vs. input_inject_event() that is used by
+> > input handlers).
+> >
+> 
+> Yes, I am perfectly aware of the fact that evemu is not using uinput
+> in the way it is intended to be.
+> I agree that it should be using the uinput node to inject events but
+> this means that only the process which has created the virtual device
+> can access it. It seems weird, I know, but the typical use of evemu is
+> the following:
+> - in a first terminal: $> sudo evemu-device mydevice.desc
+> - In a second: $> sudo evemu-play /dev/input/event12 < mydevice.events
+> 
+> It looks weird here, but it allows to inject different events
+> recording for the same virtual device node. 
 
-This definitely seems to improve the code flow, but this leak was already
-fixed in the latest linux-nvme tree with this commit:
+it also allows replaying an event through the device it was recorded on.
+it's not always necessary or desirable to create a uinput device, sometimes
+replaying it through the actual device is better to reproduce a certain bug.
 
-http://git.infradead.org/users/willy/linux-nvme.git/commit/c5dc9192d52a4a3a479f701e97386347d454af84
+Cheers,
+   Peter
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
-> drivers/block/nvme-core.c |   44 +++++++++++++++++++++++---------------------
-> 1 files changed, 23 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-> index 3e1ae55..e1e4ad4 100644
-> --- a/drivers/block/nvme-core.c
-> +++ b/drivers/block/nvme-core.c
-> @@ -1287,6 +1287,7 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
-> 	if (result)
-> 		return result;
->
-> +	dev->entry[0].vector = pdev->pci_dev->irq;
-> 	result = queue_request_irq(dev, nvmeq, "nvme admin");
-> 	if (result)
-> 		return result;
-> @@ -1297,6 +1298,11 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
-> 	return result;
-> }
->
-> +static int nvme_teardown_admin_queue(struct nvme_dev *dev)
-> +{
-> +	free_irq(dev->entry[0].vector, dev->queues[0]);
-> +}
-> +
-> struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
-> 				unsigned long addr, unsigned length)
-> {
-> @@ -1744,17 +1750,10 @@ static size_t db_bar_size(struct nvme_dev *dev, unsigned nr_io_queues)
-> 	return 4096 + ((nr_io_queues + 1) << (dev->db_stride + 3));
-> }
->
-> -static int nvme_setup_io_queues(struct nvme_dev *dev)
-> +static int nvme_setup_io_queues(struct nvme_dev *dev, int nr_io_queues)
-> {
-> 	struct pci_dev *pdev = dev->pci_dev;
-> -	int result, cpu, i, vecs, nr_io_queues, size, q_depth;
-> -
-> -	nr_io_queues = num_online_cpus();
-> -	result = set_queue_count(dev, nr_io_queues);
-> -	if (result < 0)
-> -		return result;
-> -	if (result < nr_io_queues)
-> -		nr_io_queues = result;
-> +	int result, cpu, i, vecs, size, q_depth;
->
-> 	size = db_bar_size(dev, nr_io_queues);
-> 	if (size > 8192) {
-> @@ -1771,20 +1770,15 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
-> 		dev->queues[0]->q_db = dev->dbs;
-> 	}
->
-> -	/* Deregister the admin queue's interrupt */
-> -	free_irq(dev->entry[0].vector, dev->queues[0]);
-> -
-> 	for (i = 0; i < nr_io_queues; i++)
-> 		dev->entry[i].entry = i;
-> 	vecs = pci_enable_msix_range(pdev, dev->entry, 1, nr_io_queues);
-> 	if (vecs < 0) {
-> 		vecs = pci_enable_msi_range(pdev, 1, min(nr_io_queues, 32));
-> -		if (vecs < 0) {
-> +		if (vecs < 0)
-> 			vecs = 1;
-> -		} else {
-> -			for (i = 0; i < vecs; i++)
-> -				dev->entry[i].vector = i + pdev->irq;
-> -		}
-> +		for (i = 0; i < vecs; i++)
-> +			dev->entry[i].vector = i + pdev->irq;
-> 	}
->
-> 	/*
-> @@ -1928,7 +1922,6 @@ static int nvme_dev_map(struct nvme_dev *dev)
-> 	if (pci_enable_device_mem(pdev))
-> 		return result;
->
-> -	dev->entry[0].vector = pdev->irq;
-> 	pci_set_master(pdev);
-> 	bars = pci_select_bars(pdev, IORESOURCE_MEM);
-> 	if (pci_request_selected_regions(pdev, bars, "nvme"))
-> @@ -2116,11 +2109,20 @@ static int nvme_dev_start(struct nvme_dev *dev)
-> 	list_add(&dev->node, &dev_list);
-> 	spin_unlock(&dev_list_lock);
->
-> -	result = nvme_setup_io_queues(dev);
-> -	if (result && result != -EBUSY)
-> +	result = set_queue_count(dev, num_online_cpus());
-> +	if (result == -EBUSY)
-> +		return -EBUSY;
-> +
-> +	nvme_teardown_admin_queue(dev);
-> +
-> +	if (result)
-> 		goto disable;
->
-> -	return result;
-> +	result = nvme_setup_io_queues(dev, result);
-> +	if (result)
-> +		goto disable;
-> +
-> +	return 0;
->
->  disable:
-> 	spin_lock(&dev_list_lock);
-> --
+
+
+> Using the uinput node to
+> inject events will force us to change the user "interface" and rely on
+> pipes to get the same separation of describe/inject.
+> Note that I am modifying evemu-play to be able to also create the
+> virtual device, so I am not entirely convinced about this argument
+> (but we have users).
+> 
+> The other use case I should have mentioned in the commit message is
+> that we extensively rely on evemu for the xorg-integration-tests (and
+> the upcoming wayland test suite if I am not wrong).
+> The tests are fully automatized, and we need to know which input node
+> has just been created to record the correct one and test against it.
+> 
+> 
+> Ok, I am stopping here because Peter already answered about this in his mail :)
+> 
+> Cheers,
+> Benjamin
