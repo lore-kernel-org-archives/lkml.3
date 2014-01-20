@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaATRyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:54:40 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40617 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072AbaATRyd (ORCPT
+	id S1754095AbaATRzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:55:13 -0500
+Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:36111 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753358AbaATRwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:54:33 -0500
-Date: Mon, 20 Jan 2014 18:54:32 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140120175431.GB25439@amd.pavel.ucw.cz>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
- <20140120164926.GB23051@amd.pavel.ucw.cz>
- <20140120171010.GB29971@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120171010.GB29971@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 20 Jan 2014 12:52:32 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::,RULES_HIT:41:355:379:541:800:960:973:981:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3353:3866:3867:3868:3870:3871:4321:5007:6261:7875:10004:10026:10848:11026:11473:11658:11914:12043:12296:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: feast07_32ff7cc53b25a
+X-Filterd-Recvd-Size: 3130
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] appletalk: Use ether_addr_copy
+Date: Mon, 20 Jan 2014 09:52:15 -0800
+Message-Id: <a69cec0feb40321e14ced127c139e149e731ed55.1390239869.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1390239869.git.joe@perches.com>
+References: <cover.1390239869.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-01-20 17:10:29, Catalin Marinas wrote:
-> On Mon, Jan 20, 2014 at 04:49:26PM +0000, Pavel Machek wrote:
-> > > To save energy, the higher frequencies should be avoided and only used
-> > > when the application performance requirements can not be satisfied
-> > > otherwise (e.g. spread tasks across more cpus if possible).
-> > 
-> > I argue this is untrue for any task where user waits for its
-> > completion with screen on. (And that's quite important subset).
-> > 
-> > Lets take Nokia n900 as an example. 
-> > 
-> > (source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
-> > 
-> > Sleeping CPU: 2mA
-> > Screen on: 230mA
-> > CPU loaded: 250mA
-> > 
-> > Now, lets believe your numbers and pretend system can operate at 33%
-> > of speed with 11% power consumption.
-> > 
-> > Lets take task that takes 10 seconds on max frequency:
-> > 
-> >       ~ 10s * 470mA     	     	    = 4700mAs
-> > 
-> > You suggest running at 33% speed, instead; that means 30 seconds on
-> > low requency.
-> > 
-> > CPU on low: 25mA (assumed).
-> > 
-> >      ~ 30s * 255mA			    = 7650mAs
-> > 
-> > Hmm. So race to idle is good thing on Intel machines, and it is good
-> > thing on ARM design I have access to.
-> 
-> Race to idle doesn't mean that the screen goes off as well. Let's say
-> the screen stays on for 1 min and the CPU needs to be running for 10s
-> over this minute, in the first case you have:
+Use ether_addr_copy instead of memcpy(a, b, ETH_ALEN) to
+save some cycles on arm and powerpc.
 
-No, it does not. I just assumed user is continuing to use his
-machine. Obviously, waiting 60 seconds with screen on will make the
-difference look smaller. But your solution still means user has to
-wait longer _and_ you consume more battery doing so.
+Convert struct aarp_entry.hwaddr[6] to hwaddr[ETH_ALEN].
 
-And this is for any task where user waits for result with screen
-on. Like rendering a webpage. Like opening settings screen. Like
-installing application.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/appletalk/aarp.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-There are not too many background tasks on a cellphone.
-
-But hey, maybe you are right and running at lowest possible frequency
-is right. Please provide concrete numbers like I did.
-
-									Pavel
+diff --git a/net/appletalk/aarp.c b/net/appletalk/aarp.c
+index 690356f..d0b7be1 100644
+--- a/net/appletalk/aarp.c
++++ b/net/appletalk/aarp.c
+@@ -67,7 +67,7 @@ struct aarp_entry {
+ 	unsigned long		expires_at;
+ 	struct atalk_addr	target_addr;
+ 	struct net_device	*dev;
+-	char			hwaddr[6];
++	char			hwaddr[ETH_ALEN];
+ 	unsigned short		xmit_count;
+ 	struct aarp_entry	*next;
+ };
+@@ -134,7 +134,7 @@ static void __aarp_send_query(struct aarp_entry *a)
+ 	eah->pa_len	 = AARP_PA_ALEN;
+ 	eah->function	 = htons(AARP_REQUEST);
+ 
+-	memcpy(eah->hw_src, dev->dev_addr, ETH_ALEN);
++	ether_addr_copy(eah->hw_src, dev->dev_addr);
+ 
+ 	eah->pa_src_zero = 0;
+ 	eah->pa_src_net	 = sat->s_net;
+@@ -181,7 +181,7 @@ static void aarp_send_reply(struct net_device *dev, struct atalk_addr *us,
+ 	eah->pa_len	 = AARP_PA_ALEN;
+ 	eah->function	 = htons(AARP_REPLY);
+ 
+-	memcpy(eah->hw_src, dev->dev_addr, ETH_ALEN);
++	ether_addr_copy(eah->hw_src, dev->dev_addr);
+ 
+ 	eah->pa_src_zero = 0;
+ 	eah->pa_src_net	 = us->s_net;
+@@ -190,7 +190,7 @@ static void aarp_send_reply(struct net_device *dev, struct atalk_addr *us,
+ 	if (!sha)
+ 		memset(eah->hw_dst, '\0', ETH_ALEN);
+ 	else
+-		memcpy(eah->hw_dst, sha, ETH_ALEN);
++		ether_addr_copy(eah->hw_dst, sha);
+ 
+ 	eah->pa_dst_zero = 0;
+ 	eah->pa_dst_net	 = them->s_net;
+@@ -232,7 +232,7 @@ static void aarp_send_probe(struct net_device *dev, struct atalk_addr *us)
+ 	eah->pa_len	 = AARP_PA_ALEN;
+ 	eah->function	 = htons(AARP_PROBE);
+ 
+-	memcpy(eah->hw_src, dev->dev_addr, ETH_ALEN);
++	ether_addr_copy(eah->hw_src, dev->dev_addr);
+ 
+ 	eah->pa_src_zero = 0;
+ 	eah->pa_src_net	 = us->s_net;
+@@ -790,7 +790,7 @@ static int aarp_rcv(struct sk_buff *skb, struct net_device *dev,
+ 			break;
+ 
+ 		/* We can fill one in - this is good. */
+-		memcpy(a->hwaddr, ea->hw_src, ETH_ALEN);
++		ether_addr_copy(a->hwaddr, ea->hw_src);
+ 		__aarp_resolved(&unresolved[hash], a, hash);
+ 		if (!unresolved_count)
+ 			mod_timer(&aarp_timer,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.2.459.gbcd45b4.dirty
+
