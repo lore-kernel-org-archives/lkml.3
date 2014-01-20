@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaATP1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:27:18 -0500
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:42407 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaATP1Q (ORCPT
+	id S1753990AbaATP2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:28:10 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47944 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaATP2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:27:16 -0500
-X-AuditID: cbfec37d-b7ff46d000005528-3f-52dd4052416c
-Message-id: <52DD4045.4050902@samsung.com>
-Date: Mon, 20 Jan 2014 08:27:01 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Shuah Khan'" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
-References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
- <15798389.lgk83XnI1i@vostro.rjw.lan>
- <001f01cf157f$ca2e8530$5e8b8f90$%han@samsung.com>
-In-reply-to: <001f01cf157f$ca2e8530$5e8b8f90$%han@samsung.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.6]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9hX90gh7tBBr8uKll0zrzGaHF54SVW
-	ixN9H1gtLu+aw2ax7uELJovHK96yW5w5DZTYvespq8XXnw4W6+ffYnPg8tg56y67x4ePcR6L
-	97xk8nh14Q6Lx5ar7Swee+b/YPXo27KK0eP4je1MHp83yQVwRnHZpKTmZJalFunbJXBlfDm4
-	m61gC0/FxG+T2BsYu7i6GDk5JARMJB6d/8IIYYtJXLi3nq2LkYtDSGAZo8Tizs1QTi+TxJUD
-	S9khnA2MEq3H5zODtPAKaEnsbv7GAmKzCKhKPD/QygpiswmoS3x+vYMdxBYSkJNoWrIarF5U
-	IELi1dmJLBC9ghI/Jt8Ds0UE/CW2ftzBArKAWaCDWeLZ0UawBmEBb4mOM2uYIDbPY5TYdvYY
-	0AYODk4BO4l/y21BapgFzCQetaxjhrDlJTavecsMsVhZ4s/lU0wQvylIPLrayj6BUWQWkt2z
-	kLTPQtK+gJF5FaNYaXFyQXFSemqFiV5xYm5xaV66XnJ+7iZGSDzW7mC8/9XmEKMAB6MSD6+B
-	250gIdbEsuLK3EOMEhzMSiK8QTZ3g4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUwphzUNZicNKF7
-	apJVp/zy+50R6xevjhJbfVL3/83EugstqWsV2k7MrrqzxP/Pj8D9esw5PAx3+FyXaPhFp2aJ
-	3F0q/er0Rc/IfEHDgxotxaG99nJpymvqu7I+PKh/E3GKxWGHqmTfx8/ivgsO2fy8N1dyaWDI
-	9kjbvQt3zJDV/LeUZY3pO9sgJZbijERDLeai4kQA45j2mqUCAAA=
+	Mon, 20 Jan 2014 10:28:06 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20140121001048.778ba63226f9f87c7bb920ee@canb.auug.org.au>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
+	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+	<20140116222536.GX30183@twins.programming.kicks-ass.net>
+	<20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
+	<52D8625C.1000902@zytor.com>
+	<20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
+	<1390038366.5676.10.camel@marge.simpson.net>
+	<20140120145122.a95b3e3a17d20117214098ca@canb.auug.org.au>
+	<CA+icZUVNdEkE0uR2gn0iY790sKKFzG7Py2mPqqJN+pUNiuYXDw@mail.gmail.com>
+	<CA+icZUWqLg+8i6RAEZbPBdoe_cbXvyjzSHSOugFeNhDw5FfJ1Q@mail.gmail.com>
+	<20140121001048.778ba63226f9f87c7bb920ee@canb.auug.org.au>
+Date: Mon, 20 Jan 2014 16:28:05 +0100
+Message-ID: <CA+icZUW_f+bVy=u8mz+9B+sqWodOH-Wb8EKFfZAtBQzXHde-6w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mike Galbraith <bitbucket@online.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2014 06:34 PM, Jingoo Han wrote:
-> On Monday, January 20, 2014 12:37 AM, Rafael J. Wysocki wrote:
->> On Wednesday, November 14, 2040 04:27:17 AM Shuah Khan wrote:
->>> Convert drivers/video/backlight/class to use dev_pm_ops for power
->>> management and remove Legacy PM ops hooks. With this change, rtc class
->>> registers suspend/resume callbacks via class->pm (dev_pm_ops) instead of
->>> Legacy class->suspend/resume. When __device_suspend() runs call-backs,
->>> it will find class->pm ops for the backlight class.
->>>
->>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->>> Cc: Shuah Khan <shuahkhan@gmail.com>
+On Mon, Jan 20, 2014 at 2:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Sedat,
+>
+> On Mon, 20 Jan 2014 09:46:55 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >>
->> Can you please resend the patches that nobody took with CCs to
->> linux-pm@vger.kernel.org?  If the original maintainers don't care, I'll be
->> able to pick those patches up then (if they look good).
+>> On Mon, Jan 20, 2014 at 9:42 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > On Mon, Jan 20, 2014 at 4:51 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >> On Sat, 18 Jan 2014 10:46:06 +0100 Mike Galbraith <bitbucket@online.de> wrote:
+>> >>>
+>> >>> I hope it doesn't look quite like that, next-20140117 is -ENOBOOT on
+>> >>> Q6600 box.  See below for an alternative.
+>> >>>
+>> >>> idle: kill unnecessary mwait_idle() resched IPIs
+>> >>
+>> >> OK, so despite even further discussion, I have applied this as a merge
+>> >> fix patch for today.  Let me know when it is all sorted out.
+>> >>
+>> >
+>> > Where is this fix?
+>> > ( Browsing Linux-next remote GIT repository online. )
+>> > 2x NOPE for me.
+>> >
+>> > - Sedat -
+>> >
+>> > [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20140120&qt=grep&q=mwait_idle
+>> > [2] http://git.kernel.org/cgit/linux/kernel/git/sfr/next-fixes.git
+>> >
+>>
+>> Hmmm... Found this in Next/merge.log
+>>
+>> +$ git am -3 ../patches/0001-x86-idle-mwait_idle-merge-update.patch
+>> +Applying: idle: kill unnecessary mwait_idle() resched IPIs
+>> +$ git reset HEAD^
+>> +Unstaged changes after reset:
+>> +M arch/x86/include/asm/processor.h
+>> +M arch/x86/kernel/process.c
 >
-> I already gave the comment, and am waiting v3 patch.
-> However, Shuah Khan did not send the v3 patch yet.
+> You missed the next three lines:
 >
-> Currently, backlight subsystem patches go through mm-tree
-> With my acked-by.
->
-> Shuah Khan,
-> Will you send the v3 patch? As I said, there is the typo in
-> commit message. Please fix it.
->     s/rtc class/backlight class
+> $ git add -A .
+> $ git commit -v -a --amend
+> [master 65d9a14a9a41] Merge remote-tracking branch 'tip/auto-latest'
 >
 
-Rafael/Jingoo Han,
+[ I was absent for a while from Linux-next, so I am asking for clarification. ]
+[ I might be wrong. ]
 
-I did send the v3 patch with the typo fixed. Here is the link:
+What does that mean?
+AFAICS you applied an important fix by yourself on top of tip/auto-latest?
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1306.0/00219.html
+>> Is this a local patch not shipped in the Linux-next (remote) GIT repo?
+>> Why is this not in your next-fixes GIT repo?
+>
+> Its part of the conflict resolution for the merge of the tip tree.  It
+> cannot go into my fixes tree - that is for fixes to bugs in Linus' tree
+> until they are integrated there.  The tip and pm trees are both fine on
+> their own, but combined they don't.  So this fix has to go into the actual
+> merge commit for the merge of the later tree.   When Linus' merges the
+> later of these trees he will also need this fix - or a better one - which
+> is what is still under discussion.
+>
 
-This is a while back. I will rebase and res-test and send it.
+I was asking in general about next-fixes to have a "bootable" (aka
+working) Linux-next kernel.
 
-thanks,
--- Shuah
+You see next-fixes as a place to fix Linus-tree, seriously?
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+The question here in this special case seems to be a "logical"
+(not-working-together) problem between tip and pm.
+
+And we are in a merge-window...
+
+>> A bit confused about your -next policies,
+>
+> Any better?
+>
+
+Not really.
+You should clarify on what you are doing in your next-fixes tree.
+Your daily report for Linux-next releases even does not mention next-fixes.
+
+Looking through my INBOX Thierry had the initial idea of "fixes for
+linux-next" when you were on vacation and he took over maintainership.
+
+- Sedat -
