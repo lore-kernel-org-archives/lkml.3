@@ -1,201 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751AbaATMYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 07:24:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53263 "EHLO mx1.redhat.com"
+	id S1753985AbaATM13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 07:27:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42062 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630AbaATMYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 07:24:46 -0500
+	id S1753758AbaATMYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 07:24:53 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 14/24] GFS2: Add hints to directory leaf blocks
-Date: Mon, 20 Jan 2014 12:23:37 +0000
-Message-Id: <1390220627-1571-15-git-send-email-swhiteho@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, Abhijith Das <adas@redhat.com>
+Subject: [PATCH 18/24] GFS2: Only run logd and quota when mounted read/write
+Date: Mon, 20 Jan 2014 12:23:41 +0000
+Message-Id: <1390220627-1571-19-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1390220627-1571-1-git-send-email-swhiteho@redhat.com>
 References: <1390220627-1571-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds four new fields to directory leaf blocks.
-The intent is not to use them in the kernel itself, although
-perhaps we may be able to use them as hints at some later date,
-but instead to provide more information for debug/fsck use.
+While investigating a rather strange bit of code in the quota
+clean up function, I spotted that the reason for its existence
+was that when remounting read only, we were not stopping the
+quotad thread, and thus it was possible for it to still have
+a reference to some of the quotas in that case.
 
-One new field adds a pointer to the inode to which the leaf
-belongs. This can be useful if the pointer to the leaf block
-has become corrupt, as it will allow us to know which inode
-this block should be associated with. This field is set when
-the leaf is created and never changed over its lifetime.
+This patch moves the logd and quota thread start and stop into
+the make_fs_rw/ro functions, so that we now stop those threads
+when mounted read only.
 
-The second field is a "distance from the hash table" field.
-The meaning is as follows:
- 0  = An old leaf in which this value has not been set
- 1  = This leaf is pointed to directly from the hash table
- 2+ = This leaf is part of a chain, pointed to by another leaf
-      block, the value gives the position in the chain.
-
-The third and fourth fields combine to give a time stamp of
-the most recent directory insertion or deletion from this
-leaf block. The time stamp is not updated when a new leaf
-block is chained from the current one. The code is currently
-written such that the timestamp on the dir inode will match
-that of the leaf block for the most recent insertion/deletion.
-
-For backwards compatibility, any of these new fields which is
-zero should be considered to be "unknown".
+This means that quotad will always be stopped before we call
+the quota clean up function, and we can thus dispose of the
+(rather hackish) code that waits for it to give up its
+reference on the quotas.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Abhijith Das <adas@redhat.com>
 
-diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-index b2e5ebf..fa32655 100644
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -834,6 +834,7 @@ static struct gfs2_leaf *new_leaf(struct inode *inode, struct buffer_head **pbh,
- 	struct gfs2_leaf *leaf;
- 	struct gfs2_dirent *dent;
- 	struct qstr name = { .name = "" };
-+	struct timespec tv = CURRENT_TIME;
- 
- 	error = gfs2_alloc_blocks(ip, &bn, &n, 0, NULL);
- 	if (error)
-@@ -850,7 +851,11 @@ static struct gfs2_leaf *new_leaf(struct inode *inode, struct buffer_head **pbh,
- 	leaf->lf_entries = 0;
- 	leaf->lf_dirent_format = cpu_to_be32(GFS2_FORMAT_DE);
- 	leaf->lf_next = 0;
--	memset(leaf->lf_reserved, 0, sizeof(leaf->lf_reserved));
-+	leaf->lf_inode = cpu_to_be64(ip->i_no_addr);
-+	leaf->lf_dist = cpu_to_be32(1);
-+	leaf->lf_nsec = cpu_to_be32(tv.tv_nsec);
-+	leaf->lf_sec = cpu_to_be64(tv.tv_sec);
-+	memset(leaf->lf_reserved2, 0, sizeof(leaf->lf_reserved2));
- 	dent = (struct gfs2_dirent *)(leaf+1);
- 	gfs2_qstr2dirent(&name, bh->b_size - sizeof(struct gfs2_leaf), dent);
- 	*pbh = bh;
-@@ -1612,11 +1617,31 @@ out:
- 	return ret;
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index 3b820b6..27648e8 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -969,40 +969,6 @@ fail:
+ 	return error;
  }
  
-+/**
-+ * dir_new_leaf - Add a new leaf onto hash chain
-+ * @inode: The directory
-+ * @name: The name we are adding
-+ *
-+ * This adds a new dir leaf onto an existing leaf when there is not
-+ * enough space to add a new dir entry. This is a last resort after
-+ * we've expanded the hash table to max size and also split existing
-+ * leaf blocks, so it will only occur for very large directories.
-+ *
-+ * The dist parameter is set to 1 for leaf blocks directly attached
-+ * to the hash table, 2 for one layer of indirection, 3 for two layers
-+ * etc. We are thus able to tell the difference between an old leaf
-+ * with dist set to zero (i.e. "don't know") and a new one where we
-+ * set this information for debug/fsck purposes.
-+ *
-+ * Returns: 0 on success, or -ve on error
-+ */
+-static int init_threads(struct gfs2_sbd *sdp, int undo)
+-{
+-	struct task_struct *p;
+-	int error = 0;
+-
+-	if (undo)
+-		goto fail_quotad;
+-
+-	p = kthread_run(gfs2_logd, sdp, "gfs2_logd");
+-	if (IS_ERR(p)) {
+-		error = PTR_ERR(p);
+-		fs_err(sdp, "can't start logd thread: %d\n", error);
+-		return error;
+-	}
+-	sdp->sd_logd_process = p;
+-
+-	p = kthread_run(gfs2_quotad, sdp, "gfs2_quotad");
+-	if (IS_ERR(p)) {
+-		error = PTR_ERR(p);
+-		fs_err(sdp, "can't start quotad thread: %d\n", error);
+-		goto fail;
+-	}
+-	sdp->sd_quotad_process = p;
+-
+-	return 0;
+-
+-
+-fail_quotad:
+-	kthread_stop(sdp->sd_quotad_process);
+-fail:
+-	kthread_stop(sdp->sd_logd_process);
+-	return error;
+-}
+-
+ static const match_table_t nolock_tokens = {
+ 	{ Opt_jid, "jid=%d\n", },
+ 	{ Opt_err, NULL },
+@@ -1267,15 +1233,11 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
+ 		goto fail_per_node;
+ 	}
+ 
+-	error = init_threads(sdp, DO);
+-	if (error)
+-		goto fail_per_node;
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		error = gfs2_make_fs_rw(sdp);
+ 		if (error) {
+ 			fs_err(sdp, "can't make FS RW: %d\n", error);
+-			goto fail_threads;
++			goto fail_per_node;
+ 		}
+ 	}
+ 
+@@ -1283,8 +1245,6 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
+ 	gfs2_online_uevent(sdp);
+ 	return 0;
+ 
+-fail_threads:
+-	init_threads(sdp, UNDO);
+ fail_per_node:
+ 	init_per_node(sdp, UNDO);
+ fail_inodes:
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index a1df01d..3287d98 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -1376,23 +1376,6 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
+ 	while (!list_empty(head)) {
+ 		qd = list_entry(head->prev, struct gfs2_quota_data, qd_list);
+ 
+-		/*
+-		 * To be removed in due course... we should be able to
+-		 * ensure that all refs to the qd have done by this point
+-		 * so that this rather odd test is not required
+-		 */
+-		spin_lock(&qd->qd_lockref.lock);
+-		if (qd->qd_lockref.count > 1 ||
+-		    (qd->qd_lockref.count && !test_bit(QDF_CHANGE, &qd->qd_flags))) {
+-			spin_unlock(&qd->qd_lockref.lock);
+-			list_move(&qd->qd_list, head);
+-			spin_unlock(&qd_lock);
+-			schedule();
+-			spin_lock(&qd_lock);
+-			continue;
+-		}
+-		spin_unlock(&qd->qd_lockref.lock);
+-
+ 		list_del(&qd->qd_list);
+ 
+ 		/* Also remove if this qd exists in the reclaim list */
+@@ -1404,11 +1387,8 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
+ 		hlist_bl_del_rcu(&qd->qd_hlist);
+ 		spin_unlock_bucket(qd->qd_hash);
+ 
+-		if (!qd->qd_lockref.count) {
+-			gfs2_assert_warn(sdp, !qd->qd_change);
+-			gfs2_assert_warn(sdp, !qd->qd_slot_count);
+-		} else
+-			gfs2_assert_warn(sdp, qd->qd_slot_count == 1);
++		gfs2_assert_warn(sdp, !qd->qd_change);
++		gfs2_assert_warn(sdp, !qd->qd_slot_count);
+ 		gfs2_assert_warn(sdp, !qd->qd_bh_count);
+ 
+ 		gfs2_glock_put(qd->qd_gl);
+diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
+index 35da5b1..60f60f6 100644
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -369,6 +369,33 @@ int gfs2_jdesc_check(struct gfs2_jdesc *jd)
+ 	return 0;
+ }
+ 
++static int init_threads(struct gfs2_sbd *sdp)
++{
++	struct task_struct *p;
++	int error = 0;
 +
- static int dir_new_leaf(struct inode *inode, const struct qstr *name)
- {
- 	struct buffer_head *bh, *obh;
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_leaf *leaf, *oleaf;
-+	u32 dist = 1;
++	p = kthread_run(gfs2_logd, sdp, "gfs2_logd");
++	if (IS_ERR(p)) {
++		error = PTR_ERR(p);
++		fs_err(sdp, "can't start logd thread: %d\n", error);
++		return error;
++	}
++	sdp->sd_logd_process = p;
++
++	p = kthread_run(gfs2_quotad, sdp, "gfs2_quotad");
++	if (IS_ERR(p)) {
++		error = PTR_ERR(p);
++		fs_err(sdp, "can't start quotad thread: %d\n", error);
++		goto fail;
++	}
++	sdp->sd_quotad_process = p;
++	return 0;
++
++fail:
++	kthread_stop(sdp->sd_logd_process);
++	return error;
++}
++
+ /**
+  * gfs2_make_fs_rw - Turn a Read-Only FS into a Read-Write one
+  * @sdp: the filesystem
+@@ -384,10 +411,14 @@ int gfs2_make_fs_rw(struct gfs2_sbd *sdp)
+ 	struct gfs2_log_header_host head;
  	int error;
- 	u32 index;
- 	u64 bn;
-@@ -1626,6 +1651,7 @@ static int dir_new_leaf(struct inode *inode, const struct qstr *name)
+ 
+-	error = gfs2_glock_nq_init(sdp->sd_trans_gl, LM_ST_SHARED, 0, &t_gh);
++	error = init_threads(sdp);
  	if (error)
  		return error;
- 	do {
-+		dist++;
- 		oleaf = (struct gfs2_leaf *)obh->b_data;
- 		bn = be64_to_cpu(oleaf->lf_next);
- 		if (!bn)
-@@ -1643,6 +1669,7 @@ static int dir_new_leaf(struct inode *inode, const struct qstr *name)
- 		brelse(obh);
- 		return -ENOSPC;
- 	}
-+	leaf->lf_dist = cpu_to_be32(dist);
- 	oleaf->lf_next = cpu_to_be64(bh->b_blocknr);
- 	brelse(bh);
- 	brelse(obh);
-@@ -1679,6 +1706,7 @@ int gfs2_dir_add(struct inode *inode, const struct qstr *name,
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct buffer_head *bh = da->bh;
- 	struct gfs2_dirent *dent = da->dent;
-+	struct timespec tv;
- 	struct gfs2_leaf *leaf;
+ 
++	error = gfs2_glock_nq_init(sdp->sd_trans_gl, LM_ST_SHARED, 0, &t_gh);
++	if (error)
++		goto fail_threads;
++
+ 	j_gl->gl_ops->go_inval(j_gl, DIO_METADATA);
+ 
+ 	error = gfs2_find_jhead(sdp->sd_jdesc, &head);
+@@ -417,7 +448,9 @@ int gfs2_make_fs_rw(struct gfs2_sbd *sdp)
+ fail:
+ 	t_gh.gh_flags |= GL_NOCACHE;
+ 	gfs2_glock_dq_uninit(&t_gh);
+-
++fail_threads:
++	kthread_stop(sdp->sd_quotad_process);
++	kthread_stop(sdp->sd_logd_process);
+ 	return error;
+ }
+ 
+@@ -800,6 +833,9 @@ static int gfs2_make_fs_ro(struct gfs2_sbd *sdp)
+ 	struct gfs2_holder t_gh;
  	int error;
  
-@@ -1693,15 +1721,18 @@ int gfs2_dir_add(struct inode *inode, const struct qstr *name,
- 			dent = gfs2_init_dirent(inode, dent, name, bh);
- 			gfs2_inum_out(nip, dent);
- 			dent->de_type = cpu_to_be16(IF2DT(nip->i_inode.i_mode));
-+			tv = CURRENT_TIME;
- 			if (ip->i_diskflags & GFS2_DIF_EXHASH) {
- 				leaf = (struct gfs2_leaf *)bh->b_data;
- 				be16_add_cpu(&leaf->lf_entries, 1);
-+				leaf->lf_nsec = cpu_to_be32(tv.tv_nsec);
-+				leaf->lf_sec = cpu_to_be64(tv.tv_sec);
- 			}
- 			da->dent = NULL;
- 			da->bh = NULL;
- 			brelse(bh);
- 			ip->i_entries++;
--			ip->i_inode.i_mtime = ip->i_inode.i_ctime = CURRENT_TIME;
-+			ip->i_inode.i_mtime = ip->i_inode.i_ctime = tv;
- 			if (S_ISDIR(nip->i_inode.i_mode))
- 				inc_nlink(&ip->i_inode);
- 			mark_inode_dirty(inode);
-@@ -1752,6 +1783,7 @@ int gfs2_dir_del(struct gfs2_inode *dip, const struct dentry *dentry)
- 	const struct qstr *name = &dentry->d_name;
- 	struct gfs2_dirent *dent, *prev = NULL;
- 	struct buffer_head *bh;
-+	struct timespec tv = CURRENT_TIME;
- 
- 	/* Returns _either_ the entry (if its first in block) or the
- 	   previous entry otherwise */
-@@ -1777,13 +1809,15 @@ int gfs2_dir_del(struct gfs2_inode *dip, const struct dentry *dentry)
- 		if (!entries)
- 			gfs2_consist_inode(dip);
- 		leaf->lf_entries = cpu_to_be16(--entries);
-+		leaf->lf_nsec = cpu_to_be32(tv.tv_nsec);
-+		leaf->lf_sec = cpu_to_be64(tv.tv_sec);
++	kthread_stop(sdp->sd_quotad_process);
++	kthread_stop(sdp->sd_logd_process);
++
+ 	flush_workqueue(gfs2_delete_workqueue);
+ 	gfs2_quota_sync(sdp->sd_vfs, 0);
+ 	gfs2_statfs_sync(sdp->sd_vfs, 0);
+@@ -857,9 +893,6 @@ restart:
  	}
- 	brelse(bh);
+ 	spin_unlock(&sdp->sd_jindex_spin);
  
- 	if (!dip->i_entries)
- 		gfs2_consist_inode(dip);
- 	dip->i_entries--;
--	dip->i_inode.i_mtime = dip->i_inode.i_ctime = CURRENT_TIME;
-+	dip->i_inode.i_mtime = dip->i_inode.i_ctime = tv;
- 	if (S_ISDIR(dentry->d_inode->i_mode))
- 		drop_nlink(&dip->i_inode);
- 	mark_inode_dirty(&dip->i_inode);
-diff --git a/include/uapi/linux/gfs2_ondisk.h b/include/uapi/linux/gfs2_ondisk.h
-index b2de1f9..0f24c07 100644
---- a/include/uapi/linux/gfs2_ondisk.h
-+++ b/include/uapi/linux/gfs2_ondisk.h
-@@ -319,7 +319,16 @@ struct gfs2_leaf {
- 	__be32 lf_dirent_format;	/* Format of the dirents */
- 	__be64 lf_next;			/* Next leaf, if overflow */
- 
--	__u8 lf_reserved[64];
-+	union {
-+		__u8 lf_reserved[64];
-+		struct {
-+			__be64 lf_inode;	/* Dir inode number */
-+			__be32 lf_dist;		/* Dist from inode on chain */
-+			__be32 lf_nsec;		/* Last ins/del usecs */
-+			__be64 lf_sec;		/* Last ins/del in secs */
-+			__u8 lf_reserved2[40];
-+		};
-+	};
- };
- 
- /*
+-	kthread_stop(sdp->sd_quotad_process);
+-	kthread_stop(sdp->sd_logd_process);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		error = gfs2_make_fs_ro(sdp);
+ 		if (error)
 -- 
 1.8.3.1
 
