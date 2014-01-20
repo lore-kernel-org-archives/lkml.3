@@ -1,265 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaATO6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:58:54 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:51949 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaATO6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:58:51 -0500
-Date: Mon, 20 Jan 2014 15:58:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/mm changes for v3.14
-Message-ID: <20140120145847.GA15317@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754023AbaATO7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:59:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16412 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669AbaATO7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 09:59:24 -0500
+Date: Mon, 20 Jan 2014 09:59:13 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, riel@redhat.com,
+        aarcange@redhat.com, aquini@redhat.com, mst@redhat.com,
+        vdavydov@parallels.com, amit.shah@redhat.com, dfediuck@redhat.com,
+        alitke@redhat.com, "Daniel Kiper" <dkiper@net-space.pl>
+Subject: Re: [RFC PATCH 3/4] virtio_balloon: add pressure notification via a
+ new virtqueue
+Message-ID: <20140120095913.31f8b0fd@redhat.com>
+In-Reply-To: <8761pftn6u.fsf@rustcorp.com.au>
+References: <1389889445-3855-1-git-send-email-lcapitulino@redhat.com>
+	<1389889445-3855-4-git-send-email-lcapitulino@redhat.com>
+	<87y52ftus0.fsf@rustcorp.com.au>
+	<20140116203819.0e7be6d4@redhat.com>
+	<8761pftn6u.fsf@rustcorp.com.au>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 20 Jan 2014 12:43:45 +1030
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Please pull the latest x86-mm-for-linus git tree from:
+> Luiz Capitulino <lcapitulino@redhat.com> writes:
+> > On Fri, 17 Jan 2014 09:10:47 +1030
+> > Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >
+> >> Luiz Capitulino <lcapitulino@redhat.com> writes:
+> >> > From: Luiz capitulino <lcapitulino@redhat.com>
+> >> >
+> >> > This commit adds support to a new virtqueue called message virtqueue.
+> >> 
+> >> OK, this needs a lot of thought (especially since reworking the virtio
+> >> balloon is on the TODO list for the OASIS virtio technical committee...)
+> >> 
+> >> But AFAICT this is a way of explicitly saying "no" to the host's target
+> >> (vs the implicit method of just not meeting the target).  I'm not sure
+> >> that gives enough information to the host.  On the other hand, I'm not
+> >> sure what information we *can* give.
+> >> 
+> >> Should we instead be counter-proposing a target?
+> >
+> > The problem is how to estimate a target value. I found it simpler
+> > to just try to obey what the host is asking for (and fail if not
+> > possible) than trying to make the guest negotiate with the host.
+> 
+> Understood, but we already do this the other way where the host tells
+> the guest how much memory to give up.
+> 
+> And is a guest expected to automatically inflate the balloon even if the
+> host doesn't want the memory, or wait to be asked?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mm-for-linus
+In my current design the guest always waits to be asked. Actually, all
+automatic inflates and deflates are started by the host. An advantage
+of this approach is that all the logic stays on the host, which makes
+things simple as it matches with current balloon design.
 
-   # HEAD: f3d815cb854b2f6262ade56a4d91a1ed3f1e50c4 x86/mm/numa: Fix 32-bit kernel NUMA boot
+Btw, you asked about what information we could provide to the host and
+I forgot something important. The vmpressure notification (take a look
+at patch 1/4 and patch 2/4) does provide an information that could be
+interesting to have in the host: it provides a pressure level ("low",
+"medium" or "critical") which is part of kernel's ABI with user-space.
 
-A cleanup, a fix and ASLR support for hugetlb mappings.
+I'm thinking about using this pressure level information to implement
+different policies for automatic ballooning, which could be set by
+the user or a management tool.
 
- Thanks,
+> > >> What does qemu do with this information?
+> > >
+> > > There are two possible scenarios:
+> > >
+> > >  1. The balloon driver is currently inflating when it gets under
+> > >     pressure
+> > >
+> > >     QEMU resets "num_pages" to the current balloon size. This
+> > >     cancels the on-going inflate
+> > >
+> > >  2. The balloon driver is not inflating, eg. it's possibly sleeping
+> > >
+> > >    QEMU issues a deflate
+> > >
+> > > But note that those scenarios are not supposed to be used with the
+> > > current device, they are part of the automatic ballooning feature.
+> > > I CC'ed you on the QEMU patch, you can find it here case you didn't
+> > > see it:
+> > >
+> > >  http://marc.info/?l=kvm&m=138988966315690&w=2
+> 
+> Yes, caught that after I replied; I should have checked first.
+> 
+> It seems like we are still figuring out how to do ballooning.  The
+> best approach in cases like this is to make it simple, so I don't hate
+> this.
 
-	Ingo
+Good news to me :)
 
------------------->
-Cyrill Gorcunov (1):
-      x86/mm: Unify pte_to_pgoff() and pgoff_to_pte() helpers
+> But note that Daniel Kiper and I have been discussing a new virtio
+> balloon for draft 2 of the standard.  I'll CC you when I post that to
+> one of the OASIS virtio mailing lists.
 
-Kirill A. Shutemov (1):
-      x86/mm: Implement ASLR for hugetlb mappings
-
-Lans Zhang (1):
-      x86/mm/numa: Fix 32-bit kernel NUMA boot
-
-
- arch/x86/include/asm/page.h           |   1 +
- arch/x86/include/asm/page_32.h        |   4 --
- arch/x86/include/asm/pgtable-2level.h | 100 ++++++++++++++++++++--------------
- arch/x86/mm/hugetlbpage.c             |   9 +--
- arch/x86/mm/numa.c                    |  10 +++-
- 5 files changed, 70 insertions(+), 54 deletions(-)
-
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index c878924..775873d 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -71,6 +71,7 @@ extern bool __virt_addr_valid(unsigned long kaddr);
- #include <asm-generic/getorder.h>
- 
- #define __HAVE_ARCH_GATE_AREA 1
-+#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
- 
- #endif	/* __KERNEL__ */
- #endif /* _ASM_X86_PAGE_H */
-diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
-index 4d550d0..904f528 100644
---- a/arch/x86/include/asm/page_32.h
-+++ b/arch/x86/include/asm/page_32.h
-@@ -5,10 +5,6 @@
- 
- #ifndef __ASSEMBLY__
- 
--#ifdef CONFIG_HUGETLB_PAGE
--#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
--#endif
--
- #define __phys_addr_nodebug(x)	((x) - PAGE_OFFSET)
- #ifdef CONFIG_DEBUG_VIRTUAL
- extern unsigned long __phys_addr(unsigned long);
-diff --git a/arch/x86/include/asm/pgtable-2level.h b/arch/x86/include/asm/pgtable-2level.h
-index 3bf2dd0..0d193e2 100644
---- a/arch/x86/include/asm/pgtable-2level.h
-+++ b/arch/x86/include/asm/pgtable-2level.h
-@@ -55,6 +55,13 @@ static inline pmd_t native_pmdp_get_and_clear(pmd_t *xp)
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
- 
-+/* Bit manipulation helper on pte/pgoff entry */
-+static inline unsigned long pte_bitop(unsigned long value, unsigned int rightshift,
-+				      unsigned long mask, unsigned int leftshift)
-+{
-+	return ((value >> rightshift) & mask) << leftshift;
-+}
-+
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
- /*
-@@ -71,31 +78,34 @@ static inline pmd_t native_pmdp_get_and_clear(pmd_t *xp)
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- #define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> (PTE_FILE_SHIFT1))				\
--	  & ((1U << PTE_FILE_BITS1) - 1)))				\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT2))			\
--	    & ((1U << PTE_FILE_BITS2) - 1))				\
--	   << (PTE_FILE_BITS1))						\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT3))			\
--	    & ((1U << PTE_FILE_BITS3) - 1))				\
--	   << (PTE_FILE_BITS1 + PTE_FILE_BITS2))			\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT4)))			\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 ((((off)) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1)					\
--	     & ((1U << PTE_FILE_BITS2) - 1))				\
--	    << PTE_FILE_SHIFT2)						\
--	 + ((((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	     & ((1U << PTE_FILE_BITS3) - 1))				\
--	    << PTE_FILE_SHIFT3)						\
--	 + ((((off) >>							\
--	      (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)))	\
--	    << PTE_FILE_SHIFT4)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
-+
-+static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
-+{
-+	return (pgoff_t)
-+		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
-+}
-+
-+static __always_inline pte_t pgoff_to_pte(pgoff_t off)
-+{
-+	return (pte_t){
-+		.pte_low =
-+			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
-+			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
-+			pte_bitop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
-+			pte_bitop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
-+			_PAGE_FILE,
-+	};
-+}
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
- 
-@@ -115,22 +125,30 @@ static inline pmd_t native_pmdp_get_and_clear(pmd_t *xp)
- #define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> PTE_FILE_SHIFT1)				\
--	  & ((1U << PTE_FILE_BITS1) - 1))				\
--	 + ((((pte).pte_low >> PTE_FILE_SHIFT2)				\
--	     & ((1U << PTE_FILE_BITS2) - 1)) << PTE_FILE_BITS1)		\
--	 + (((pte).pte_low >> PTE_FILE_SHIFT3)				\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2)))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 (((off) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1) & ((1U << PTE_FILE_BITS2) - 1))	\
--	    << PTE_FILE_SHIFT2)						\
--	 + (((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	    << PTE_FILE_SHIFT3)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+
-+static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
-+{
-+	return (pgoff_t)
-+		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3,           -1UL,  PTE_FILE_LSHIFT3));
-+}
-+
-+static __always_inline pte_t pgoff_to_pte(pgoff_t off)
-+{
-+	return (pte_t){
-+		.pte_low =
-+			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
-+			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
-+			pte_bitop(off, PTE_FILE_LSHIFT3,           -1UL,  PTE_FILE_SHIFT3) +
-+			_PAGE_FILE,
-+	};
-+}
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
- 
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index 9d980d8..8c9f647 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -87,9 +87,7 @@ int pmd_huge_support(void)
- }
- #endif
- 
--/* x86_64 also uses this file */
--
--#ifdef HAVE_ARCH_HUGETLB_UNMAPPED_AREA
-+#ifdef CONFIG_HUGETLB_PAGE
- static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
- 		unsigned long addr, unsigned long len,
- 		unsigned long pgoff, unsigned long flags)
-@@ -99,7 +97,7 @@ static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
- 
- 	info.flags = 0;
- 	info.length = len;
--	info.low_limit = TASK_UNMAPPED_BASE;
-+	info.low_limit = current->mm->mmap_legacy_base;
- 	info.high_limit = TASK_SIZE;
- 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
- 	info.align_offset = 0;
-@@ -172,8 +170,7 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 		return hugetlb_get_unmapped_area_topdown(file, addr, len,
- 				pgoff, flags);
- }
--
--#endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/
-+#endif /* CONFIG_HUGETLB_PAGE */
- 
- #ifdef CONFIG_X86_64
- static __init int setup_hugepagesz(char *opt)
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 24aec58..c85da7b 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -211,9 +211,13 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 */
- 	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
--		return;
-+		nd_pa = __memblock_alloc_base(nd_size, SMP_CACHE_BYTES,
-+					      MEMBLOCK_ALLOC_ACCESSIBLE);
-+		if (!nd_pa) {
-+			pr_err("Cannot find %zu bytes in node %d\n",
-+			       nd_size, nid);
-+			return;
-+		}
- 	}
- 	nd = __va(nd_pa);
- 
+Thank you, I appreciate that.
