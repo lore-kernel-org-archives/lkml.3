@@ -1,71 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaATQUw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:20:52 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:53223 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaATQUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:20:49 -0500
-Message-ID: <52DD4CDE.7020705@gmail.com>
-Date: Mon, 20 Jan 2014 17:20:46 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Sergei Ianovich <ynvich@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>	 <201312182210.30544.arnd@arndb.de>	 <1387401646.31516.14.camel@host5.omatika.ru>	 <201312190630.11087.arnd@arndb.de>	 <1389309176.32346.1.camel@host5.omatika.ru> <1390234117.25903.0.camel@host5.omatika.ru>
-In-Reply-To: <1390234117.25903.0.camel@host5.omatika.ru>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+	id S1753955AbaATQVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:21:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47981 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752818AbaATQVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 11:21:30 -0500
+Message-ID: <1390234886.8705.142.camel@bling.home>
+Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Jan 2014 09:21:26 -0700
+In-Reply-To: <4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <20140117203126.11429.25235.stgit@gimli.home>
+	 <4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 05:08 PM, Sergei Ianovich wrote:
-> On Fri, 2014-01-10 at 03:12 +0400, Sergei Ianovich wrote:
->> On Thu, 2013-12-19 at 06:30 +0100, Arnd Bergmann wrote:
->>> This would work only if we can probe the devices behind the external
->>> bus controller before the controller itsef has been set up, since
->>> the initialization order can depend on a number of things but not
->>> the bus hierarchy. It will also work if the code setting up the
->>> bus controller can be guaranteed to run before we call
->>> of_platform_populate for the regular devices, which is probably
->>> the best solution here.
->>
->> There has been no activity for 3 weeks. Could we resume the series?
+On Mon, 2014-01-20 at 14:45 +0000, Varun Sethi wrote:
 > 
-> It's over a month now. Is anything wrong?
-> 
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Saturday, January 18, 2014 2:06 AM
+> > To: Sethi Varun-B16395
+> > Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+> > Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+> > 
+> > RFC: This is not complete but I want to share with Varun the dirrection
+> > I'm thinking about.  In particular, I'm really not sure if we want to
+> > introduce a "v2" interface version with slightly different unmap
+> > semantics.  QEMU doesn't care about the difference, but other users
+> > might.  Be warned, I'm not even sure if this code works at the moment.
+> > Thanks,
+> > 
+> > Alex
+> > 
+> > 
+> > We currently have a problem that we cannot support advanced features of
+> > an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee that
+> > those features will be supported by all of the hardware units involved
+> > with the domain over its lifetime.  For instance, the Intel VT-d
+> > architecture does not require that all DRHDs support snoop control.  If
+> > we create a domain based on a device behind a DRHD that does support
+> > snoop control and enable SNP support via the IOMMU_CACHE mapping option,
+> > we cannot then add a device behind a DRHD which does not support snoop
+> > control or we'll get reserved bit faults from the SNP bit in the
+> > pagetables.  To add to the complexity, we can't know the properties of a
+> > domain until a device is attached.
+> [Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops
+> are common across all bus types. The hardware feature differences are
+> abstracted by the driver.
 
-No, I'm busy, that's all.
+That's a simplifying assumption that is not made anywhere else in the
+code.  The IOMMU API allows entirely independent IOMMU drivers to
+register per bus_type.  There is no guarantee that all devices are
+backed by the same IOMMU hardware unit or make use of the same
+iommu_ops.
 
-That said, the current situation is
+> > We could pass this problem off to userspace and require that a separate
+> > vfio container be used, but we don't know how to handle page accounting
+> > in that case.  How do we know that a page pinned in one container is the
+> > same page as a different container and avoid double billing the user for
+> > the page.
+> > 
+> > The solution is therefore to support multiple IOMMU domains per
+> > container.  In the majority of cases, only one domain will be required
+> > since hardware is typically consistent within a system.  However, this
+> > provides us the ability to validate compatibility of domains and support
+> > mixed environments where page table flags can be different between
+> > domains.
+> > 
+> > To do this, our DMA tracking needs to change.  We currently try to
+> > coalesce user mappings into as few tracking entries as possible.  The
+> > problem then becomes that we lose granularity of user mappings.  We've
+> > never guaranteed that a user is able to unmap at a finer granularity than
+> > the original mapping, but we must honor the granularity of the original
+> > mapping.  This coalescing code is therefore removed, allowing only unmaps
+> > covering complete maps.  The change in accounting is fairly small here, a
+> > typical QEMU VM will start out with roughly a dozen entries, so it's
+> > arguable if this coalescing was ever needed.
+> > 
+> > We also move IOMMU domain creation to the point where a group is attached
+> > to the container.  An interesting side-effect of this is that we now have
+> > access to the device at the time of domain creation and can probe the
+> > devices within the group to determine the bus_type.
+> > This finally makes vfio_iommu_type1 completely device/bus agnostic.
+> > In fact, each IOMMU domain can host devices on different buses managed by
+> > different physical IOMMUs, and present a single DMA mapping interface to
+> > the user.  When a new domain is created, mappings are replayed to bring
+> > the IOMMU pagetables up to the state of the current container.  And of
+> > course, DMA mapping and unmapping automatically traverse all of the
+> > configured IOMMU domains.
+> > 
+> [Sethi Varun-B16395] This code still checks to see that devices being
+> attached to the domain are connected to the same bus type. If we
+> intend to merge devices from different bus types but attached to
+> compatible domains in to a single domain, why can't we avoid the bus
+> check? Why can't we remove the bus dependency from domain allocation?
 
-a) we need someone to have a look at the performance regression of the
-MMC file system layer that you reported. I couldn't find a PXA-based
-board yet with a MMC slot soldered on it. But as you apparently have
-such hardware, I'd really appreciate your help here. Could you do some
-measurements and see whether you see major differences in packet size or
-timings?
+So if I were to test iommu_ops instead of bus_type (ie. assume that if a
+if an IOMMU driver manages iommu_ops across bus_types that it can accept
+the devices), would that satisfy your concern?
 
-b) Marek Vasut thankfully reported back to me and signaled success with
-his pxa-pata driver. So we're most probably good in that area.
+It may be possible to remove the bus_type dependency from domain
+allocation, but the IOMMU API currently makes the assumption that
+there's one IOMMU driver per bus_type.  Your fix to remove the bus_type
+dependency from iommu_domain_alloc() adds an assumption that there is
+only one IOMMU driver for all bus_types.  That may work on your
+platform, but I don't think it's a valid assumption in the general case.
+If you'd like to propose alternative ways to remove the bus_type
+dependency, please do.  Thanks,
 
-c) Robert Jarzmik is still in the process of converting the camera
-driver. Here as well, I lack hardware, I can't even compile-test
-anything here.
-
-
-So please, if you have any spare time, have a look at the MMC
-regressions and see if you can contribute anything. I'll hope to find
-some time to rebase my patches on top of 3.13 very soon, so we have a
-new base to work on.
-
-
-Thanks,
-Daniel
+Alex
 
