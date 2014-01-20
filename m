@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaATSZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:25:52 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:60810 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaATSZr (ORCPT
+	id S1752271AbaATS2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:28:44 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:40958 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaATS2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:25:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
-References: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
-Date: Mon, 20 Jan 2014 10:25:46 -0800
-X-Google-Sender-Auth: 40PpU6z0D_2yVpxoGsxRlc82TVw
-Message-ID: <CAA9_cmcXNC0WJ-4RgabLPtGU5=UGKZnVvpQneFaPmvqTRZZEfw@mail.gmail.com>
-Subject: Re: [PATCH] isci: correct erroneous for_each_isci_host macro
-From: Dan Williams <dan.j.williams@intel.com>
-To: Lukasz Dorau <lukasz.dorau@intel.com>
-Cc: "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "dave.jiang" <dave.jiang@intel.com>,
-        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "Baldysiak, Pawel" <pawel.baldysiak@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 Jan 2014 13:28:37 -0500
+Message-ID: <1390242438.587.16.camel@localhost>
+Subject: Re: [BUG] at drivers/md/raid5.c:291! kernel 3.13-rc8
+From: Ian Kumlien <ian.kumlien@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Date: Mon, 20 Jan 2014 19:27:18 +0100
+In-Reply-To: <20140120143748.33bb52d2@notabene.brown>
+References: <1390168823.587.1.camel@localhost>
+	 <20140120113851.3b476ed8@notabene.brown> <1390178957.587.9.camel@localhost>
+	 <20140120143748.33bb52d2@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 8:54 AM, Lukasz Dorau <lukasz.dorau@intel.com> wrote:
-> In the first place, the loop 'for' in the macro 'for_each_isci_host'
-> (drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-> the 3rd element of 2 element array. After the 2nd iteration it executes
-> the instruction:
->         ihost = to_pci_info(pdev)->hosts[2]
-> (while the size of the 'hosts' array equals 2) and reads an
-> out of range element.
->
-> In the second place, because of the following GCC v4.8 bug:
-> http://marc.info/?l=linux-kernel&m=138998871911336&w=2
-> this loop is incorrectly compiled by GCC v4.8.
-> As a result, on platforms with two SCU controllers,
-> the loop at drivers/scsi/isci/init.c:717 is executed
-> more times than it can be (for i=0,1 and 2).
-> It causes the following oops after 'rmmod isci':
->
+On mån, 2014-01-20 at 14:37 +1100, NeilBrown wrote:
+> 
+> Thanks - that extra info is quite useful.  Knowing that nothing else unusual
+> is happening can be quite valuable (and I don't like to assume).
+> 
+> I haven't found anything that would clearly cause your crash, but I have
+> found something that looks wrong and conceivably could.
+> 
+> Could you please try this patch on top of what you are currently using?  By
+> the look of it you get a crash at least every day, often more often.  So if
+> this produces a day with no crashes, that would be promising.
+> 
+> The important aspect of the patch is that it moves the "atomic_inc" of
+> "sh->count" back under the protection of ->device_lock in the case when some
+> other thread might be using the same 'sh'.
 
-Surprised those bugs lasted this long... some comments below.
+I have been unable to trip this up, so this was it!
 
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-> Oops: 0000 [#1] SMP
-> RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-> Call Trace:
->   [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
->   [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
->   [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
->   [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
->   [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
->   [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
->   [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
->   [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
->   [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
->   [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
->   [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
->   [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
->   [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
->   [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
->   [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
->   [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
->
-> The loop has been corrected.
-> This patch fixes the above oops.
->
-> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-> Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-> Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Dave Jiang <dave.jiang@intel.com>
-> Cc: <stable@vger.kernel.org>
-> ---
->  drivers/scsi/isci/host.h |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
-> index 4911310..95adf31 100644
-> --- a/drivers/scsi/isci/host.h
-> +++ b/drivers/scsi/isci/host.h
-> @@ -311,9 +311,9 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
+Tested-by: Ian Kumlien <ian.kumlien@gmail.com>
+
+I hope this hits stable ASAP ;)
+
+> Thanks,
+> NeilBrown
+> 
+> 
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index 3088d3af5a89..03f82ab87d9e 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -675,8 +675,10 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+>  					 || !conf->inactive_blocked),
+>  					*(conf->hash_locks + hash));
+>  				conf->inactive_blocked = 0;
+> -			} else
+> +			} else {
+>  				init_stripe(sh, sector, previous);
+> +				atomic_inc(&sh->count);
+> +			}
+>  		} else {
+>  			spin_lock(&conf->device_lock);
+>  			if (atomic_read(&sh->count)) {
+> @@ -695,13 +697,11 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+>  					sh->group = NULL;
+>  				}
+>  			}
+> +			atomic_inc(&sh->count);
+>  			spin_unlock(&conf->device_lock);
+>  		}
+>  	} while (sh == NULL);
+>  
+> -	if (sh)
+> -		atomic_inc(&sh->count);
+> -
+>  	spin_unlock_irq(conf->hash_locks + hash);
+>  	return sh;
 >  }
->
->  #define for_each_isci_host(id, ihost, pdev) \
-> -       for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
-> -            id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
-> -            ihost = to_pci_info(pdev)->hosts[++id])
-> +       for (id = 0, ihost = to_pci_info(pdev)->hosts[0]; \
 
-No need to initialize ihost here since we assign and check it later.
 
-> +            (id < ARRAY_SIZE(to_pci_info(pdev)->hosts)) && \
-
-Just use SCI_MAX_CONTROLLERS here.
-
-> +            (ihost = to_pci_info(pdev)->hosts[id]); id++)
-
---
-Dan
