@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaATQwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:52:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33608 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaATQw3 (ORCPT
+	id S1754054AbaATQwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:52:50 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:62630 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964AbaATQws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:52:29 -0500
-Date: Mon, 20 Jan 2014 17:52:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, chegu_vinod@hp.com,
-        mgorman@suse.de, mingo@redhat.com,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 4/7] numa,sched: tracepoints for NUMA balancing active
- nodemask changes
-Message-ID: <20140120165205.GJ31570@twins.programming.kicks-ass.net>
-References: <1389993129-28180-1-git-send-email-riel@redhat.com>
- <1389993129-28180-5-git-send-email-riel@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389993129-28180-5-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 20 Jan 2014 11:52:48 -0500
+Message-ID: <1390236763.25903.12.camel@host5.omatika.ru>
+Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Date: Mon, 20 Jan 2014 20:52:43 +0400
+In-Reply-To: <52DD4CDE.7020705@gmail.com>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+		 <201312182210.30544.arnd@arndb.de>
+		 <1387401646.31516.14.camel@host5.omatika.ru>
+		 <201312190630.11087.arnd@arndb.de>
+		 <1389309176.32346.1.camel@host5.omatika.ru>
+	 <1390234117.25903.0.camel@host5.omatika.ru> <52DD4CDE.7020705@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 04:12:06PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
+On Mon, 2014-01-20 at 17:20 +0100, Daniel Mack wrote:
+> On 01/20/2014 05:08 PM, Sergei Ianovich wrote:
+> > It's over a month now. Is anything wrong?
+> No, I'm busy, that's all.
+
+Thanks for reply.
+
+> That said, the current situation is
 > 
-> Being able to see how the active nodemask changes over time, and why,
-> can be quite useful.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/trace/events/sched.h | 34 ++++++++++++++++++++++++++++++++++
->  kernel/sched/fair.c          |  8 ++++++--
->  2 files changed, 40 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index 67e1bbf..91726b6 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -530,6 +530,40 @@ TRACE_EVENT(sched_swap_numa,
->  			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
->  			__entry->dst_cpu, __entry->dst_nid)
->  );
-> +
-> +TRACE_EVENT(update_numa_active_nodes_mask,
+> a) we need someone to have a look at the performance regression of the
+> MMC file system layer that you reported. I couldn't find a PXA-based
+> board yet with a MMC slot soldered on it. But as you apparently have
+> such hardware, I'd really appreciate your help here. Could you do some
+> measurements and see whether you see major differences in packet size or
+> timings?
 
-Please stick to the sched_ naming for these things.
+I have the hardware with MMC, but none of the other devices. Could you
+give some pointer where to start? How would you do measurements?
 
-Ideally we'd rename the sysctls too :/
+(...)
 
-> +++ b/kernel/sched/fair.c
-> @@ -1300,10 +1300,14 @@ static void update_numa_active_node_mask(struct task_struct *p)
->  		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
->  			 numa_group->faults_from[task_faults_idx(nid, 1)];
->  		if (!node_isset(nid, numa_group->active_nodes)) {
-> -			if (faults > max_faults * 4 / 10)
-> +			if (faults > max_faults * 4 / 10) {
-> +				trace_update_numa_active_nodes_mask(current->pid, numa_group->gid, nid, true, faults, max_faults);
+> So please, if you have any spare time, have a look at the MMC
+> regressions and see if you can contribute anything. I'll hope to find
+> some time to rebase my patches on top of 3.13 very soon, so we have a
+> new base to work on.
 
-While I think the tracepoint hookery is smart enough to avoid evaluating
-arguments when they're disabled, it might be best to simply pass:
-current and numa_group and do the dereference in fast_assign().
+It would be nice to have updated patches. Most interesting is whether
+the new DMA still works as expected for other devices.
 
-That said, this is the first and only numa tracepoint, I'm not sure why
-this qualifies and other metrics do not.
-
+Apart from that, would mind if my series is landed with a workaround
+(Patch v3 7/21). I hope you understand it doesn't feel good to depend on
+something with no development activity.
 
