@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaATRCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:02:04 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:55907 "EHLO smtp2-g21.free.fr"
+	id S1754127AbaATREx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:04:53 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:7473 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699AbaATRCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:02:01 -0500
-Message-ID: <1390237306.3865.13.camel@localhost.localdomain>
-Subject: Re: [PATCH 02/13] ppc/cell: use get_unused_fd_flags(0) instead of
- get_unused_fd()
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, Yann Droneaud <ydroneaud@opteya.com>
-Date: Mon, 20 Jan 2014 18:01:46 +0100
-In-Reply-To: <1389605449.1585.9.camel@localhost.localdomain>
-References: <cover.1372777600.git.ydroneaud@opteya.com>
-	 <72f6f9ae898a664033f6b958bc7976b994544963.1372777600.git.ydroneaud@opteya.com>
-	 <1389567961.4672.111.camel@pasglop>
-	 <1389605449.1585.9.camel@localhost.localdomain>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752910AbaATREv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 12:04:51 -0500
+X-IronPort-AV: E=Sophos;i="4.95,691,1384300800"; 
+   d="scan'208";a="92486622"
+Message-ID: <52DD5730.8080803@citrix.com>
+Date: Mon, 20 Jan 2014 17:04:48 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v4 2/9] xen-netback: Change TX path from grant
+ copy to mapping
+References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com> <1389731995-9887-3-git-send-email-zoltan.kiss@citrix.com> <20140116000107.GB5331@zion.uk.xensource.com>
+In-Reply-To: <20140116000107.GB5331@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 16/01/14 00:01, Wei Liu wrote:
+> On Tue, Jan 14, 2014 at 08:39:48PM +0000, Zoltan Kiss wrote:
+>> v3:
+>> - delete a surplus checking from tx_action
+>> - remove stray line
+>> - squash xenvif_idx_unmap changes into the first patch
+>> - init spinlocks
+>> - call map hypercall directly instead of gnttab_map_refs()
+>> - fix unmapping timeout in xenvif_free()
+>>
+>> v4:
+>> - fix indentations and comments
+>> - handle errors of set_phys_to_machine
+>
+> There's no call to set_phys_to_machine in this patch. Did I miss
+> something?
+I've made several changes between v3 and v4 about the grant mapping 
+stuff, this was an earlier concept, not the one I've finally sent in. It 
+should be the same comment as in the first patch: "go back to 
+gnttab_map_refs, now we rely on API changes"
 
-Le lundi 13 janvier 2014 à 10:30 +0100, Yann Droneaud a écrit :
-> Le lundi 13 janvier 2014 à 10:06 +1100, Benjamin Herrenschmidt a écrit :
-> > On Tue, 2013-07-02 at 18:39 +0200, Yann Droneaud wrote:
-> > > Macro get_unused_fd() is used to allocate a file descriptor with
-> > > default flags. Those default flags (0) can be "unsafe":
-> > > O_CLOEXEC must be used by default to not leak file descriptor
-> > > across exec().
-> > > 
-> > > Instead of macro get_unused_fd(), functions anon_inode_getfd()
-> > > or get_unused_fd_flags() should be used with flags given by userspace.
-> > > If not possible, flags should be set to O_CLOEXEC to provide userspace
-> > > with a default safe behavor.
-> > > 
-> > > In a further patch, get_unused_fd() will be removed so that
-> > > new code start using anon_inode_getfd() or get_unused_fd_flags()
-> > > with correct flags.
-> > > 
-> > > This patch replaces calls to get_unused_fd() with equivalent call to
-> > > get_unused_fd_flags(0) to preserve current behavor for existing code.
-> > > 
-> > > The hard coded flag value (0) should be reviewed on a per-subsystem basis,
-> > > and, if possible, set to O_CLOEXEC.
-> > > 
-> > > Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> > 
-> > Should I merge this (v5 on patchwork) or let Al do it ?
-> > 
-> 
-> Please merge it directly: patches from the previous patchsets were
-> picked individually by each subsystem maintainer after proper review
-> regarding setting close on exec flag by default.
-> 
-> > Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > 
-> 
-> Thanks a lot.
+>> --- a/drivers/net/xen-netback/interface.c
+>> +++ b/drivers/net/xen-netback/interface.c
+>> @@ -123,7 +123,9 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>   	BUG_ON(skb->dev != dev);
+>>
+>>   	/* Drop the packet if vif is not ready */
+>> -	if (vif->task == NULL || !xenvif_schedulable(vif))
+>> +	if (vif->task == NULL ||
+>> +	    vif->dealloc_task == NULL ||
+>> +	    !xenvif_schedulable(vif))
+>>   		goto drop;
+>>
+>>   	/* At best we'll need one slot for the header and one for each
+>> @@ -345,8 +347,26 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+>
+> At the beginning of the function there's BUG_ON checks for vif->task. I
+> would suggest you do the same for vif->dealloc_task, just to be
+> consistent.
+I guess you mean in xenvif_connect. Applied.
 
-> Note:
-> latest patch (from v5 patchset) is at
-> http://lkml.kernel.org/r/fe27abcfab5563d36a3e5e58ff36e5500c39be6a.1388952061.git.ydroneaud@opteya.com
-> v5 patchset is at
-> http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
-> 
+>> @@ -431,6 +452,16 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
+>>   		goto err_rx_unbind;
+>>   	}
+>>
+>> +	vif->dealloc_task = kthread_create(xenvif_dealloc_kthread,
+>> +					   (void *)vif,
+>> +					   "%s-dealloc",
+>> +					   vif->dev->name);
+>> +	if (IS_ERR(vif->dealloc_task)) {
+>> +		pr_warn("Could not allocate kthread for %s\n", vif->dev->name);
+>> +		err = PTR_ERR(vif->dealloc_task);
+>> +		goto err_rx_unbind;
+>> +	}
+>> +
+>>   	vif->task = task;
+>
+> Please move this line before the above hunk. Don't separate it from
+> corresponding kthread_create.
+Done, I've also used task for dealloc thread creation, the same way as 
+the rx thread does.
 
-I have not yet seen the patch in your trees at
-https://git.kernel.org/cgit/linux/kernel/git/benh/powerpc.git/
-
-I hope you would pick the patch, if possible in its latest version
-(unfortunately I'm not able to give the link to the astest patch in
-patchwork).
-
-Regards.
-
--- 
-Yann Droneaud
-OPTEYA
-
-
+> Last but not least, though I've looked at this patch for several rounds
+> and and the basic logic looks correct to me, I would like it to go
+> through XenRT tests if possible -- eye inspection is error-prone to such
+> complicated change. (If I'm not mistaken you once told me you've done
+> regression tests already. That would be neat!)
+Yes, that's ongoing, I don't expect the patches to be accepted before 
+they pass XenRT.
