@@ -1,138 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaATMmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 07:42:42 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:51659 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaATMkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 07:40:06 -0500
-From: dietmar.eggemann@arm.com
-To: peterz@infradead.org, mingo@redhat.com, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, chris.redpath@arm.com
-Cc: linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com
-Subject: [RFC v2 PATCH 05/11] sched: add a name to sched_domain_topology_info
-Date: Mon, 20 Jan 2014 12:39:42 +0000
-Message-Id: <1390221588-20473-6-git-send-email-dietmar.eggemann@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
-References: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 20 Jan 2014 12:40:03.0816 (UTC) FILETIME=[BDCA1680:01CF15DC]
-X-MC-Unique: 114012012400408501
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1753652AbaATMsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 07:48:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56948 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753013AbaATMsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 07:48:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,690,1384329600"; 
+   d="scan'208";a="441645059"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+CC: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
+ DW_DMAC.
+Thread-Topic: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
+ DW_DMAC.
+Thread-Index: AQHPFd3XWkJVaGCzdkO8r2hEbHq2wA==
+Date: Mon, 20 Jan 2014 12:47:56 +0000
+Message-ID: <1390222075.7619.29.camel@smile>
+References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
+	 <20131210101025.GF29580@intel.com> <1386676582.1871.137.camel@smile>
+	 <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
+	 <20131218154955.GF16227@intel.com> <1387450289.1871.240.camel@smile>
+	 <20140120092501.GS26823@intel.com>
+In-Reply-To: <20140120092501.GS26823@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.173]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E8CD8F25D636D247B2EB885E3FFEFE65@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0KChKpi003826
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KCmXkC003836
 
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+On Mon, 2014-01-20 at 14:55 +0530, Vinod Koul wrote:
+> On Thu, Dec 19, 2013 at 12:51:29PM +0200, Andy Shevchenko wrote:
+> > On Wed, 2013-12-18 at 21:19 +0530, Vinod Koul wrote:
+> > > On Mon, Dec 16, 2013 at 01:51:47PM +0530, Chew, Chiau Ee wrote:
+> > 
+> > > > As mentioned by Andy, we are using *_noirq  verion of suspend/resume PM
+> > > > callback whereby the callbacks would be executed after IRQ handlers have been
+> > > > disabled. If using SET_SYSTEM_SLEEP_PM_OPS, it would be the normal
+> > > > suspend/resume PM callback. Looking at the Desginware DMAC platform code
+> > > > (drivers/dma/dw/platform.c), it is using the *_noirq suspend/resume PM
+> > > > callback. Is it advisable to use the normal suspend/resume PM callback instead
+> > > > of *_noirq suspend/PM callback? 
+> > > 
+> > > i dont see a reason why we need the noirq versions
+> > 
+> > Okay. I imagine the following use case.
+> > 
+> > For example we have compiled in DMA driver (dw_dmac) along with, for
+> > example, SPI driver.
+> > 
+> > System was scheduled to go sleep.
+> > 
+> > An order of calling IIUC might be DMA first, then SPI (since they are
+> > not in parent / child relations).
+> > 
+> > What was happened when SPI would like to do a DMA transfer and DMA is
+> > going to sleep? I'm trying to understand if this is a case.
+> In that case how does no irq version help us?
 
-With this patch, an arbitrary name for a sd level has to be specified in
-the topology info table. This feature is still only active if
-CONFIG_SCHED_DEBUG is set.
+It guarantees that we have no user of DMA anymore, since there is no
+interrupt going on.
 
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- include/linux/sched.h |   11 ++++++++++-
- kernel/sched/core.c   |   23 +++++++----------------
- 2 files changed, 17 insertions(+), 17 deletions(-)
+> For these cases, I have been using suspend_late. Since the dmaengine driver is
+> providing service to other clients (SPI), it needs to esnure that it suspends
+> after SPI using suspend_late and resume using resume_early. That way dma is
+> availble whenever the client is active
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bf2ee608af67..f79a0d5041fb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2784,9 +2784,18 @@ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
- 
- struct sched_domain_topology_info {
- 	sched_domain_mask_f mask;
--	int		    flags;
-+	int flags;
-+#ifdef CONFIG_SCHED_DEBUG
-+	char *name;
-+#endif
- };
- 
-+#ifdef CONFIG_SCHED_DEBUG
-+# define SD_NAME(n)		.name = #n
-+#else
-+# define SD_NAME(n)
-+#endif
-+
- extern void
- set_sd_topology_info(struct sched_domain_topology_info *ti, unsigned int s);
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 90aa7c3d3a00..798a4d2c9d7b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5243,12 +5243,6 @@ int __weak arch_sd_sibling_asym_packing(void)
-  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-  */
- 
--#ifdef CONFIG_SCHED_DEBUG
--# define SD_INIT_NAME(sd, type)		sd->name = #type
--#else
--# define SD_INIT_NAME(sd, type)		do { } while (0)
--#endif
--
- static int default_relax_domain_level = -1;
- int sched_domain_level_max;
- 
-@@ -5341,15 +5335,15 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
-  */
- static struct sched_domain_topology_info default_topology_info[] = {
- #ifdef CONFIG_SCHED_SMT
--	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES },
-+	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES, SD_NAME(SIBLING) },
- #endif
- #ifdef CONFIG_SCHED_MC
--	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
-+	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES, SD_NAME(MC) },
- #endif
- #ifdef CONFIG_SCHED_BOOK
--	{ cpu_book_mask, },
-+	{ cpu_book_mask, SD_NAME(BOOK) },
- #endif
--	{ cpu_cpu_mask, },
-+	{ cpu_cpu_mask, SD_NAME(CPU) },
- };
- 
- static struct sched_domain_topology_level *sched_domain_topology;
-@@ -5676,6 +5670,9 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 
- 				.last_balance     = jiffies,
- 				.balance_interval = sd_weight,
-+#ifdef CONFIG_SCHED_DEBUG
-+				.name             = tl->info.name,
-+#endif
- 	};
- 
- 	/*
-@@ -5693,13 +5690,9 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 		 * setup.
- 		 */
- 		sd->flags |= arch_sd_sibling_asym_packing();
--
--		SD_INIT_NAME(sd, SMT);
- 	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
- 		sd->cache_nice_tries = 1;
- 		sd->busy_idx = 2;
--
--		SD_INIT_NAME(sd, MC);
- #ifdef CONFIG_NUMA
- 	} else if (sd->flags & SD_NUMA) {
- 		sd->busy_factor = 32,
-@@ -5719,8 +5712,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 		sd->busy_idx = 2;
- 		sd->idle_idx = 1;
- 		sd->flags |= SD_PREFER_SIBLING;
--
--		SD_INIT_NAME(sd, CPU);
- 	}
- 
- 	sd->private = &tl->data;
+suspend_late is working in context that interrupt handler may be
+invoked. Thus, to have DMA driver be properly shut down we have to
+wait / terminate possible ongoing transfer.
+
+It seems for me all DMA drivers that are using
+system .suspend()/.resume() are potentially buggy.
+
+> 
+> --
+> ~Vinod
+> 
+> > 
+> > > > > How about SET_SYSTEM_SLEEP_PM_OPS instead?
+> > > > 
+> > > > So, we are using *_noirq versions of the functions here. What happened when we switch to normal ones? Any side effects?
+> > 
+> > 
+> > 
+> > -- 
+> > Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > Intel Finland Oy
+> > 
+> 
+
 -- 
-1.7.9.5
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
 
-
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
