@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaATLWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 06:22:43 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:47496 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751853AbaATLWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 06:22:41 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Index: AQHPELhlWPjDYPI+s0G+DC1zL1oFlJqEeIcAgABE3oCABEGkcIAB9dCAgAKL5bA=
-Date: Mon, 20 Jan 2014 11:21:14 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45FF6C@AcuExch.aculab.com>
-References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com>
- <20140114172056.GB12126@xanatos> <52D5ABBD.7090202@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D45EDA3@AcuExch.aculab.com>
- <52DAE2BF.7020208@gmail.com>
-In-Reply-To: <52DAE2BF.7020208@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1751916AbaATLYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 06:24:49 -0500
+Received: from ring0.de ([91.143.88.219]:37188 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758AbaATLYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 06:24:47 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Mon, 20 Jan 2014 12:24:34 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Michael Trimarchi <michael@amarulasolutions.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
+Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
+ automode
+Message-ID: <20140120112434.GA3225@earth.universe>
+References: <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
+ <CAOf5uwkrep0PhOn67+9PHmP2A2Jxrp9DNK3BRp9D_sYu_PYvvw@mail.gmail.com>
+ <201311242001.23126@pali>
+ <CAOf5uw=-cy2QoDxjecxYTYsrQRD=LtN0N7DcYJHZ6HSbexzPRw@mail.gmail.com>
+ <20131201223730.GD6271@lizard>
+ <CAOf5uwnkQwkS7_fsLtC5nzdXyS1Rzw2SkxaziUuJrO9SKXh3yw@mail.gmail.com>
+ <20131202002444.GA22418@teo>
+ <CAOf5uwnz6SfeEsbGq62QFgRHJ2ys++VV1+VrULxyR4uH2Z_vJQ@mail.gmail.com>
+ <20140119205402.GA24185@earth.universe>
+ <20140120102129.GO27282@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <20140120102129.GO27282@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KBMlVC003177
 
-From: walt 
-> On 01/17/2014 06:34 AM, David Laight wrote:
-> 
-> > Can you try the patch I posted that stops the ownership on LINK TRBs
-> > being changed before that on the linked-to TRB?
-> 
-> Please disregard my earlier post about the patch not applying cleanly.
-> That was the usual html corruption, so I found the original on the usb
-> list and it was okay.
-> 
-> Sadly, the patch didn't fix the ASMedia lockup behavior, however :(
-> 
-> I did notice that the lockup occurred only when copying *to* the usb3
-> drive, and not when copying from it.  I think that may be new behavior
-> but I can't swear to it.
 
-Consistent with another report that says that ethernet worked provided
-that TSO was disabled (ie no sg tx).
-(Without the patch to delay he ownership change on link trbs it didn't
-work at all.)
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A guess...
+On Mon, Jan 20, 2014 at 10:21:29AM +0000, Russell King - ARM Linux wrote:
+> And another one using that evil mail-followup-to header:
+>=20
+> Mail-Followup-To: Pali Roh=E1r <pali.rohar@gmail.com>,
+>         Anton Vorontsov <anton@enomsg.org>,
+>         Michael Trimarchi <michael@amarulasolutions.com>,
+>         David Woodhouse <dwmw2@infradead.org>,
+>         Tony Lindgren <tony@atomide.com>,
+>         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.o=
+rg,
+>         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+>         freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
+>=20
+> which results in all the above being moved into the To: header by
+> unsuspecting recipients who reply to your message.
 
-In queue_bulk_sg_tx() try calling xhci_v1_0_td_remainder() instead
-of xhci_td_remainder().
+Thanks for the hint. Should be fixed now.
 
-You can try that on top of either of my other patches.
+-- Sebastian
 
-	David
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCAAGBQJS3QdyAAoJENju1/PIO/qaQtYQAJdbVMdRzkY3Rsn0FdQANKoF
+mqml3w5T3SsZ6sU2zE7UbhSETkONOYqp3rn3TcApUecOZiaERjrQCtYoMqhU+HVQ
+t0jY/ucXH4cyGZw0nrm9OhnnB+Itx1qyMPD6KrAq1EYMNG9wv18XF97UrI1oRT74
+jb2QJDGKcMpmDTJk+1vAHDa6vvnSxKXklMZiU/aBXZTdQmoWGMeFzU4i/JRZod8M
+sdjl0YHAtktwFcoD2FzxVIhVvPzQL8bk4axF89zoq6OAOf0ZCpaAcUVtUXOmX5vB
+LPpxnY+xbvmxvK8ldrXrnorAYGIiwNpuU6K1CKW6mVBb73BSTOMH6kL0vYBp8yxL
+kkXYB5JKwHmbM+AG+wsdPJ4e0SMOW4u7zVfjijp3lJ2SU1PMYPM+sl6kMmfsSqY8
+UJweEUkp3AzFmbiQ0iR1ycM3LmMWIWH2FXLjo25tlKJSToAsMojiVLWna1iyuLYs
+607wyI/WKGsCDozSWeP3dnTFTGSItAGfXbFLFURHJCZHKIaGyfNkDsGY5Sp0/0+c
+F/ZGNuZT64cmfjIYI7e6a8jn9xphsXIRyMNHyo6p3ynwwlg3uhj5JD8Og6QSQekB
+YRVOAPC8m66viXuyktIYfQGXXSVDcalJsACgBOfcRoXrawHjpRx+cohhnaNW0QC2
+DgTsWk6bx6523ztF9UNv
+=Oc7n
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
