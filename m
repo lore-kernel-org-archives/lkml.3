@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948AbaATOtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:49:18 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54269 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaATOtM convert rfc822-to-8bit (ORCPT
+	id S1753715AbaATOvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:51:14 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:60613 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaATOvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:49:12 -0500
+	Mon, 20 Jan 2014 09:51:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <2229282.4AAJ7iLdU7@phil>
-References: <201312201626.48119.heiko@sntech.de>
-	<2229282.4AAJ7iLdU7@phil>
-Date: Mon, 20 Jan 2014 08:49:11 -0600
-Message-ID: <CAL_JsqLwsJkCbu7rZDGTquryFzom4K4hg3GrczifbAV+pvpcaQ@mail.gmail.com>
-Subject: Re: [PATCH] dt-bindings: add rockchip vendor prefix
+In-Reply-To: <1390228888-5537-3-git-send-email-rogerq@ti.com>
+References: <1390228888-5537-1-git-send-email-rogerq@ti.com>
+	<1390228888-5537-3-git-send-email-rogerq@ti.com>
+Date: Mon, 20 Jan 2014 08:51:09 -0600
+Message-ID: <CAL_JsqL+nPAD2irDRr5tJLV=xOsGgPwmmMbSL7tG7Edq5d0xyw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] ata: ahci_platform: Update DT compatible list
 From: Rob Herring <robherring2@gmail.com>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, b.zolnierkie@samsung.com,
+        hdegoede@redhat.com, Arnd Bergmann <arnd@arndb.de>,
+        linux-ide@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 8:23 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Freitag, 20. Dezember 2013, 16:26:47 schrieb Heiko Stübner:
->> It seems I forgot to add the vendor prefix for rockchip to the vendor-prefix
->> list. Therefore add it now.
->>
->> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+On Mon, Jan 20, 2014 at 8:41 AM, Roger Quadros <rogerq@ti.com> wrote:
+> The ahci_platform driver supports "snps,exynos5440-ahci", "ibm,476gtr-ahci"
+> and "snps,dwc-ahci". Add this to the DT binding information.
 >
-> not sure, where this should go through
-> arm-soc? or is there a special dt-tree around?
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-Sorry, missed this one. I'll apply for 3.14.
+Acked-by: Rob Herring <robh@kernel.org>
 
-Rob
-
+> ---
+>  Documentation/devicetree/bindings/ata/ahci-platform.txt | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 >
+> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> index 89de156..08ba647 100644
+> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> @@ -4,7 +4,9 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+>  Each SATA controller should have its own node.
 >
-> Thanks
-> Heiko
+>  Required properties:
+> -- compatible        : compatible list, contains "snps,spear-ahci"
+> +- compatible        : compatible list, contains "snps,spear-ahci",
+> +                     "snps,exynos5440-ahci", "ibm,476gtr-ahci",
+> +                     or "snps,dwc-ahci"
+>  - interrupts        : <interrupt mapping for SATA IRQ>
+>  - reg               : <registers mapping>
 >
->> ---
->>  Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
->> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
->> ca2c190..2dc3b75 100644
->> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
->> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
->> @@ -65,6 +65,7 @@ ralink      Mediatek/Ralink Technology Corp.
->>  ramtron      Ramtron International
->>  realtek Realtek Semiconductor Corp.
->>  renesas      Renesas Electronics Corporation
->> +rockchip     Fuzhou Rockchip Electronics Co., Ltd
->>  samsung      Samsung Semiconductor
->>  sbs  Smart Battery System
->>  schindler    Schindler
+> --
+> 1.8.3.2
 >
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
