@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaATOf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:35:28 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:42550 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaATOfZ (ORCPT
+	id S1753841AbaATOge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:36:34 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:62287 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaATOgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:35:25 -0500
-Message-ID: <52DD3427.9020502@redhat.com>
-Date: Mon, 20 Jan 2014 15:35:19 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: Re: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
-References: <1386394315-48984-1-git-send-email-jinsong.liu@intel.com> <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com> <52A83606.40908@redhat.com> <DE8DF0795D48FD4CA783C40EC829233501421D73@SHSMSX101.ccr.corp.intel.com> <52A98548.9010008@redhat.com> <DE8DF0795D48FD4CA783C40EC829233501422743@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233501422743@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jan 2014 09:36:31 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC part2 PATCH 8/9] ACPI / ARM64: Update acpi_register_gsi to register with the core IRQ subsystem
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linaro-acpi@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        linux-acpi@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Bjorn Helgaas <bhelgaas@google.com>
+In-Reply-To: <201312110623.04341.arnd@arndb.de>
+References: <1385999094-3152-1-git-send-email-hanjun.guo@linaro.org> < 1385999094-3152-9-git-send-email-hanjun.guo@linaro.org> <20131210130521. 3FE89C40A27@trevor.secretlab.ca> <201312110623.04341.arnd@arndb.de>
+Date: Mon, 20 Jan 2014 14:36:25 +0000
+Message-Id: <20140120143625.EB0E2C40B12@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/12/2013 12:09, Liu, Jinsong ha scritto:
-> Paolo Bonzini wrote:
->> Il 12/12/2013 06:47, Liu, Jinsong ha scritto:
->>> Paolo Bonzini wrote:
->>>> Il 11/12/2013 09:31, Liu, Jinsong ha scritto:
->>>>> Paolo, comments for version 2?
->>>>
->>>> I think I commented that it's fine, I'm just waiting for a rebase
->>>> on top of the generic patches. 
->>>>
->>>> Paolo
->>>>
->>>
->>> Thanks! common MPX definiation patches have been checked in tip tree
->>> (both Qiaowei and I use that definiations):
->>> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=191f57c137bcce0e3e9313acb77b2f114d15afbb
->>> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=e7d820a5e549b3eb6c3f9467507566565646a669
->>
->> Ok, can you rebase and resend?
->>
->> Paolo
+On Wed, 11 Dec 2013 06:23:04 +0100, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 10 December 2013, Grant Likely wrote:
+> > > --- a/drivers/acpi/plat/arm-core.c
+> > > +++ b/drivers/acpi/plat/arm-core.c
+> > > @@ -90,7 +90,7 @@ enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
+> > >  
+> > >  static unsigned int gsi_to_irq(unsigned int gsi)
+> > >  {
+> > > -     int irq = irq_create_mapping(NULL, gsi);
+> > > +     int irq = irq_find_mapping(NULL, gsi);
+> > 
+> > I suspect this will break FDT users that depend on the old behaviour.
 > 
-> Sure, I have pulled and rebased on git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-> No confliction, patches v3 will send out later.
+> I think not, given this is only in drivers/acpi and gets added in one
+> of the prior patches of the same series.
 
-Didn't see this...  You still have a couple of days to send it out and
-address the review remarks.
+Ah, okay.
 
-Paolo
+g.
+
