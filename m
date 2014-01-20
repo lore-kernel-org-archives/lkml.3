@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaATKUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:20:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42806 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaATKUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:20:17 -0500
-Message-ID: <52DCF832.9050704@zytor.com>
-Date: Mon, 20 Jan 2014 02:19:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753115AbaATKUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:20:48 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:40758 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800AbaATKUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 05:20:46 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au> <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com> <20140120083021.GC30183@twins.programming.kicks-ass.net> <20140120101345.GC3694@twins.programming.kicks-ass.net>
-In-Reply-To: <20140120101345.GC3694@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
+In-Reply-To: <E1W5A0e-000MT9-A1@intern.SerNet.DE>
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+	<E1W5A0e-000MT9-A1@intern.SerNet.DE>
+Date: Mon, 20 Jan 2014 14:20:43 +0400
+X-Google-Sender-Auth: 9ymmR4ttW4ZGP4DR_KcOyxBckaM
+Message-ID: <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
+Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: "Volker.Lendecke@SerNet.DE" <Volker.Lendecke@sernet.de>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 02:13 AM, Peter Zijlstra wrote:
-> On Mon, Jan 20, 2014 at 09:30:21AM +0100, Peter Zijlstra wrote:
->> Then make them so. The fact was that most of the mwait idle sites
->> were bloody broken. And the single mwait_idle_with_hints() function
->> presents a single nice function that does all the required magics.
-> 
-> To stress this a bit more; have a look see at mwwait_idle_with_hints();
-> it does a whole lot of subtle magic.
-> 
->  - current_{set,clr}_polling*(), these are crucial in not missing and
->    wrecking NEED_RESCHED state.
-> 
->  - X86_FEATURE_CLFLUSH_MONTIOR quirk
-> 
->  - Does the monitor(); if (!need_resched()) mwait() thing.
-> 
-> All of those are required for a correct and functional idle loop. And
-> I've seen sites where any or all of the above were missing/broken.
-> 
-> Not unifying the lot into a simple usable function is just stupid --
-> history has shown people simply cannot be trusted to get this right.
-> 
+2014/1/20 Volker Lendecke <Volker.Lendecke@sernet.de>:
+> Hi!
+>
+> On Fri, Jan 17, 2014 at 02:07:05PM +0400, Pavel Shilovsky wrote:
+>> If O_DENYDELETE flag is specified and the open succeded,
+>> any further unlink operation will fail with -ESHAREDENIED
+>> untill this open is closed. Now this flag is processed by
+>> VFS and CIFS filesystem. NFS returns -EINVAL for opens
+>> with this flag.
+>
+> This looks really, really good, thanks!
+>
+> One question: If Samba wants to open a file for delete
+> access, there's no corresponding flag in the open
+> permissions. There can be the case where Samba wants to open
+> *just* for future unlink, no read or write access required.
+> Is there a way to achieve this atomically correct?
 
-I don't think anyone is arguing that.  The question is rather if the
-implementation is correct, and if it is ready for the merge window.
+You can try to use O_PATH flag. It doesn't give you a delete access
+but should be ok because further deleting will be done without file
+descriptor -- through unlink syscall.
 
-	-hpa
-
+-- 
+Best regards,
+Pavel Shilovsky.
