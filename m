@@ -1,130 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaATSZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:25:41 -0500
-Received: from ring0.de ([91.143.88.219]:39099 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaATSZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:25:37 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Mon, 20 Jan 2014 19:25:33 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140120182532.GB25920@earth.universe>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
- <20140120164926.GB23051@amd.pavel.ucw.cz>
- <20140120171010.GB29971@arm.com>
- <20140120175431.GB25439@amd.pavel.ucw.cz>
+	id S1752355AbaATSZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:25:52 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:60810 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaATSZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 13:25:47 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="24zk1gE8NUlDmwG9"
-Content-Disposition: inline
-In-Reply-To: <20140120175431.GB25439@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
+References: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
+Date: Mon, 20 Jan 2014 10:25:46 -0800
+X-Google-Sender-Auth: 40PpU6z0D_2yVpxoGsxRlc82TVw
+Message-ID: <CAA9_cmcXNC0WJ-4RgabLPtGU5=UGKZnVvpQneFaPmvqTRZZEfw@mail.gmail.com>
+Subject: Re: [PATCH] isci: correct erroneous for_each_isci_host macro
+From: Dan Williams <dan.j.williams@intel.com>
+To: Lukasz Dorau <lukasz.dorau@intel.com>
+Cc: "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "dave.jiang" <dave.jiang@intel.com>,
+        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "Baldysiak, Pawel" <pawel.baldysiak@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 20, 2014 at 8:54 AM, Lukasz Dorau <lukasz.dorau@intel.com> wrote:
+> In the first place, the loop 'for' in the macro 'for_each_isci_host'
+> (drivers/scsi/isci/host.h:314) is incorrect, because it accesses
+> the 3rd element of 2 element array. After the 2nd iteration it executes
+> the instruction:
+>         ihost = to_pci_info(pdev)->hosts[2]
+> (while the size of the 'hosts' array equals 2) and reads an
+> out of range element.
+>
+> In the second place, because of the following GCC v4.8 bug:
+> http://marc.info/?l=linux-kernel&m=138998871911336&w=2
+> this loop is incorrectly compiled by GCC v4.8.
+> As a result, on platforms with two SCU controllers,
+> the loop at drivers/scsi/isci/init.c:717 is executed
+> more times than it can be (for i=0,1 and 2).
+> It causes the following oops after 'rmmod isci':
+>
 
---24zk1gE8NUlDmwG9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Surprised those bugs lasted this long... some comments below.
 
-On Mon, Jan 20, 2014 at 06:54:32PM +0100, Pavel Machek wrote:
-> On Mon 2014-01-20 17:10:29, Catalin Marinas wrote:
-> > On Mon, Jan 20, 2014 at 04:49:26PM +0000, Pavel Machek wrote:
-> > > > To save energy, the higher frequencies should be avoided and only u=
-sed
-> > > > when the application performance requirements can not be satisfied
-> > > > otherwise (e.g. spread tasks across more cpus if possible).
-> > >=20
-> > > I argue this is untrue for any task where user waits for its
-> > > completion with screen on. (And that's quite important subset).
-> > >=20
-> > > Lets take Nokia n900 as an example.=20
-> > >=20
-> > > (source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
-> > >=20
-> > > Sleeping CPU: 2mA
-> > > Screen on: 230mA
-> > > CPU loaded: 250mA
-> > >=20
-> > > Now, lets believe your numbers and pretend system can operate at 33%
-> > > of speed with 11% power consumption.
-> > >=20
-> > > Lets take task that takes 10 seconds on max frequency:
-> > >=20
-> > >       ~ 10s * 470mA     	     	    =3D 4700mAs
-> > >=20
-> > > You suggest running at 33% speed, instead; that means 30 seconds on
-> > > low requency.
-> > >=20
-> > > CPU on low: 25mA (assumed).
-> > >=20
-> > >      ~ 30s * 255mA			    =3D 7650mAs
-> > >=20
-> > > Hmm. So race to idle is good thing on Intel machines, and it is good
-> > > thing on ARM design I have access to.
-> >=20
-> > Race to idle doesn't mean that the screen goes off as well. Let's say
-> > the screen stays on for 1 min and the CPU needs to be running for 10s
-> > over this minute, in the first case you have:
->=20
-> No, it does not. I just assumed user is continuing to use his
-> machine. Obviously, waiting 60 seconds with screen on will make the
-> difference look smaller. But your solution still means user has to
-> wait longer _and_ you consume more battery doing so.
->=20
-> And this is for any task where user waits for result with screen
-> on. Like rendering a webpage. Like opening settings screen. Like
-> installing application.
->=20
-> There are not too many background tasks on a cellphone.
->=20
-> But hey, maybe you are right and running at lowest possible frequency
-> is right. Please provide concrete numbers like I did.
+> BUG: unable to handle kernel NULL pointer dereference at (null)
+> IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
+> Oops: 0000 [#1] SMP
+> RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
+> Call Trace:
+>   [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
+>   [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
+>   [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
+>   [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
+>   [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
+>   [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
+>   [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
+>   [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
+>   [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
+>   [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
+>   [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
+>   [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
+>   [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
+>   [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
+>   [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
+>   [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+>
+> The loop has been corrected.
+> This patch fixes the above oops.
+>
+> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+> Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
+> Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Dave Jiang <dave.jiang@intel.com>
+> Cc: <stable@vger.kernel.org>
+> ---
+>  drivers/scsi/isci/host.h |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
+> index 4911310..95adf31 100644
+> --- a/drivers/scsi/isci/host.h
+> +++ b/drivers/scsi/isci/host.h
+> @@ -311,9 +311,9 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
+>  }
+>
+>  #define for_each_isci_host(id, ihost, pdev) \
+> -       for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+> -            id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+> -            ihost = to_pci_info(pdev)->hosts[++id])
+> +       for (id = 0, ihost = to_pci_info(pdev)->hosts[0]; \
 
-So what about using the display status information for power
-management? Basically always using the lowest frequency should be ok
-on phones if the display is disabled?
+No need to initialize ihost here since we assign and check it later.
 
--- Sebastian
+> +            (id < ARRAY_SIZE(to_pci_info(pdev)->hosts)) && \
 
---24zk1gE8NUlDmwG9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Just use SCI_MAX_CONTROLLERS here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +            (ihost = to_pci_info(pdev)->hosts[id]); id++)
 
-iQIcBAEBCAAGBQJS3WocAAoJENju1/PIO/qaxdgP+wT2BDChksSS/TwEq+Wkkmua
-ba0ateUXS9brlPY0Ng6Oi2CtD+1QVTRTPEu6PpVWiaktiNY/xEasXfLx+WSJvUi9
-xISylJstI0DC55vPDXD/9HtEsXUKennIFjcuosgEFtymtVfSmXvs05yAsCBlvvvx
-ExebyR+zMHjLVkk8C1Ogt5XgYENodx7MT2LlbHTEAw9HooO61jLoE4eZYoQwzZou
-ET/e8nu2F2YjtN2fPrRR8Og9lMX2CBljFdTwa98YGnNF0GaYxxWDjT+0LNp2SYKk
-OePRuhH3DejgXd5M0MnFLU6oAWEsd+LsiIYN8Z9cXUdCQeWnpmcf5jHX4jjnLDOd
-blyGCz97c6QcH0YstrZjsgc1YOhW0VXLe+jZUvQk4VJ7J5Su99tUs+H3KpX9UYZX
-8MhmEWqYPCLSTwqbP2hIkUyx11lJcvi6qjaXWnEyZBvlTfynhOtve0H7JXVwTid9
-1wbRS3U0AcWqWrhMdBDTG0qC9+zXrqSa55Jv4mFS6gQXfiordWhrDqP2zmC4aS04
-SB++ZWQ/pRjhn4W7plhTlzQAeiYsaZvnxMDhdmBZIoYa25h81F8M/48xL9D3pwZt
-9JfWuoT8DSsKVXk9hMinfHT2UNQFJhDnyspD5iACElkgU0YB55liQ7H2v+pHTG04
-/J4BJdIZ8mpeyfQ8J4wK
-=9fp1
------END PGP SIGNATURE-----
-
---24zk1gE8NUlDmwG9--
+--
+Dan
