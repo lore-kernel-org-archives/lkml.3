@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaATRFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:05:19 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:62798 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaATRFP (ORCPT
+	id S1753976AbaATRLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:11:07 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:57589 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751669AbaATRLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:05:15 -0500
+	Mon, 20 Jan 2014 12:11:04 -0500
+Date: Mon, 20 Jan 2014 17:10:29 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [11/11] system 1: Saving energy using DVFS
+Message-ID: <20140120171010.GB29971@arm.com>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+ <20140120164926.GB23051@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140117100723.GB16003@mudshark.cambridge.arm.com>
-References: <1389869123-5884-1-git-send-email-jean.pihet@linaro.org>
-	<20140116115634.GE30257@mudshark.cambridge.arm.com>
-	<CAFrcx1=eAHsGZDsedGvvNai7Vrnf5p8RKLGFPS+cn5yGp7UQJw@mail.gmail.com>
-	<20140116125727.GI30257@mudshark.cambridge.arm.com>
-	<CAFrcx1npWFs3=rooqiGKSv-p7ivcG1J7SCvcmsz-hd3waXBfdA@mail.gmail.com>
-	<CAFrcx1=QWPFeuNDc0JatiykGnRuvPyOgwwCxnW7pSAiNa9RsxA@mail.gmail.com>
-	<20140117100723.GB16003@mudshark.cambridge.arm.com>
-Date: Mon, 20 Jan 2014 18:05:14 +0100
-Message-ID: <CAFrcx1=53sUDjxa-DjuJUScxanhQJqAVA36RaYNo5-Dfegij7g@mail.gmail.com>
-Subject: Re: [PATCH] ARM64: perf: support dwarf unwinding in compat mode
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Steve Capper <steve.capper@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120164926.GB23051@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Mon, Jan 20, 2014 at 04:49:26PM +0000, Pavel Machek wrote:
+> > To save energy, the higher frequencies should be avoided and only used
+> > when the application performance requirements can not be satisfied
+> > otherwise (e.g. spread tasks across more cpus if possible).
+> 
+> I argue this is untrue for any task where user waits for its
+> completion with screen on. (And that's quite important subset).
+> 
+> Lets take Nokia n900 as an example. 
+> 
+> (source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
+> 
+> Sleeping CPU: 2mA
+> Screen on: 230mA
+> CPU loaded: 250mA
+> 
+> Now, lets believe your numbers and pretend system can operate at 33%
+> of speed with 11% power consumption.
+> 
+> Lets take task that takes 10 seconds on max frequency:
+> 
+>       ~ 10s * 470mA     	     	    = 4700mAs
+> 
+> You suggest running at 33% speed, instead; that means 30 seconds on
+> low requency.
+> 
+> CPU on low: 25mA (assumed).
+> 
+>      ~ 30s * 255mA			    = 7650mAs
+> 
+> Hmm. So race to idle is good thing on Intel machines, and it is good
+> thing on ARM design I have access to.
 
-Here is an updated version of the change, which uses compat_sp at only
-one place.
-The drawback is that compat_user_mode is checked when calling
-compat_user_stack_pointer, which seems unnecessary. Unfortunately the
-check is not optimized out by the complier as I could check with
-objdump -S.
+Race to idle doesn't mean that the screen goes off as well. Let's say
+the screen stays on for 1 min and the CPU needs to be running for 10s
+over this minute, in the first case you have:
 
-What do you think?
+	10s & 250mA + 60s * 230mA = 16300mAs
 
-diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
-index fda2704..e71f81f 100644
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -228,7 +228,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
-        return (u32)(unsigned long)uptr;
- }
+in the second case you have:
 
--#define compat_user_stack_pointer() (current_pt_regs()->compat_sp)
-+#define compat_user_stack_pointer() (user_stack_pointer(current_pt_regs()))
+	30s * 25mA + 60s * 230mA = 14550mAs
 
- static inline void __user *arch_compat_alloc_user_space(long len)
- {
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index fbb0020..86d5b54 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -133,7 +133,7 @@ struct pt_regs {
-        (!((regs)->pstate & PSR_F_BIT))
+That's a 1750mAs difference. There are of course other parts drawing
+current but simple things like the above really make a difference in the
+mobile space, both in terms of battery and thermal budget.
 
- #define user_stack_pointer(regs) \
--       ((regs)->sp)
-+       (!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
-
- /*
-  * Are the current registers suitable for user mode? (used to maintain
-
-
-
-Regards,
-Jean
-
-On 17 January 2014 11:07, Will Deacon <will.deacon@arm.com> wrote:
-> On Fri, Jan 17, 2014 at 09:00:09AM +0000, Jean Pihet wrote:
->> On 16 January 2014 14:47, Jean Pihet <jean.pihet@linaro.org> wrote:
->> >> So the simplest thing would be to make compat_user_stack_pointer expand to
->> >> user_stack_pointer(current_pt_regs()) on arm64 and merge that in with your
->> >> original patch fixing user_stack_pointer.
->>
->> I see 2 issues in your proposal:
->>
->> 1) user_stack_pointer(regs) calls compat_user_stack_pointer if
->> compat_user_mode(regs)) and compat_user_stack_pointer expands to
->> user_stack_pointer. I see a circular dependency in the macros.
->
-> Not today it doesn't, so you just need to avoid writing the circular
-> dependency and instead make user_stack_pointer access (regs)->compat_sp
-> instead.
->
->> 2) current_pt_regs() returns the current task regs although perf
->> passes a regs struct that had been recorded previously.
->
-> Yes, but compat_user_stack_pointer doesn't take a regs paramater anyway, so
-> there's no change in behaviour here.
->
-> Will
+-- 
+Catalin
