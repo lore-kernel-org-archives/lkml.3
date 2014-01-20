@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaATScO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:32:14 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:56671 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaATScK (ORCPT
+	id S1752004AbaATSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:33:56 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:59229 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaATSdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:32:10 -0500
+	Mon, 20 Jan 2014 13:33:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1401201307300.1652@knanqh.ubzr>
-References: <1387807592-26375-1-git-send-email-ard.biesheuvel@linaro.org>
-	<20140120173838.GD29971@arm.com>
-	<alpine.LFD.2.11.1401201242480.1652@knanqh.ubzr>
-	<CAKv+Gu8jqctGFsyccg6_VGkZ6ogf8BD_kq1rsRQrc+cw7pk+qA@mail.gmail.com>
-	<alpine.LFD.2.11.1401201307300.1652@knanqh.ubzr>
-Date: Mon, 20 Jan 2014 19:32:09 +0100
-Message-ID: <CAKv+Gu8JEaVZDiOEegUeYfWbAMMH0ddgcWaTjFBpjXzoiKRoQg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] arm64: advertise availability of CRC and crypto instructions
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <52DCFC8F.1050607@citrix.com>
+References: <20140117230219.GA28413@garbanzo.do-not-panic.com> <52DCFC8F.1050607@citrix.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 20 Jan 2014 10:33:32 -0800
+X-Google-Sender-Auth: ZveQULPY5sVhApxxD7WUPOTw98c
+Message-ID: <CAB=NE6X9iHbBbQXypJtT=e+aD-9nkJZ=7PgtfNR-D=mi+T4XLw@mail.gmail.com>
+Subject: Re: MAINTAINERS tree branches [xen tip as an example]
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 January 2014 19:17, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Mon, 20 Jan 2014, Ard Biesheuvel wrote:
+On Mon, Jan 20, 2014 at 2:38 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> On 17/01/14 23:02, Luis R. Rodriguez wrote:
+>> As per linux-next Next/Trees [0], and a recent January MAINTAINERS patch [1]
+>> from David one of the xen development kernel git trees to track is
+>> xen/git.git [2], this tree however gives has undefined references when doing a
+>> fresh clone [shown below], but as expected does work well when only cloning
+>> the linux-next branch [also below]. While I'm sure this is fine for
+>> folks who can do the guess work do we really want to live with trees like
+>> these on MAINTAINERS ? The MAINTAINERS file doesn't let us specify branches
+>> required, so perhaps it should -- if we want to live with these ? Curious, how
+>> many other git are there with a similar situation ?
 >
->> On 20 January 2014 18:44, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->> > On Mon, 20 Jan 2014, Catalin Marinas wrote:
->> >
->> >> On Mon, Dec 23, 2013 at 02:06:27PM +0000, Ard Biesheuvel wrote:
->> >> > This series is a followup to the patch that was recently merged by Catalin that
->> >> > allocates hwcaps bits for CRC and Crypto Extensions instructions so userland can
->> >> > discover whether the current CPU has any of those capabilities.
->> >> >
->> >> > Patch #1 enables ARM support for the ELF_HWCAP2/AT_HWCAP2 ELF auxv entry that
->> >> > was recently added to the kernel and glibc (2.18). It extends the feature bit
->> >> > space to 64 bits (on 32-bit architectures)
->> >> >
->> >> > Patch #2 adds generic support for ELF_HWCAP2/AT_HWCAP2 to the 32-bit ELF compat
->> >> > mode for 64-bit architectures.
->> >> >
->> >> > Patch #3 adds support for ELF_HWCAP2/AT_HWCAP2 to arm64's 32-bit ELF compat mode
->> >> >
->> >> > Patch #4 allocates the HWCAP2 bits in the arch/arm tree. This is necessary
->> >> > because 32-bit ARM binaries can execute both under ARM and under arm64 kernels,
->> >> > so there should be agreement about the meaning of feature bits, even if the ARM
->> >> > kernel has no support yet for ARMv8 32-bit only hardware (such as ARMv8-R).
->> >>
->> >> It looks a bit strange to start filling HWCAP2 before HWCAP is full but
->> >> I guess we want to preserve some future extensions in HWCAP for older
->> >> glibc.
->> >
->> > How could older glibc possibly care about future extensions?
->> >
->>
->> Calling getauxval(AT_HWCAP) on an outdated libc.so will give you the
->> whole value, not just the bits whose meaning was known to glibc at the
->> time.
->> So if desired, a program can interpret AT_HWCAP itself.
->>
->> AT_HWCAP2 is completely new, so you won't be able to retrieve it using
->> getauxval() on an older libc.
->
-> I agree.  And I don't dispute the bit placement choice either.
->
-> Still, an old glibc calling getauxval(AT_HWCAP) should already be
-> prepared to receive and rightfully ignore those bits it didn't know the
-> meaning of at the time.  So "preserving some future extensions in HWCAP
-> for older glibc" as a justification makes little sense to me... unless
-> I'm missing something?
->
-> Even if applications interpret those bits themselves, supposing they
-> still need to be linked against an old glibc, then why would
-> yet-to-be-defined future extensions be more important to be signaled
-> using the lower 32 bits than the extensions you propose?  That is what I
-> don't get.
->
+> We don't recommend doing development work for the Xen subsystem based on
+> xen/tip.git so I think it's fine to have to checkout the specific branch
+> you are interested in.
 
-In the general case, you are quite right.
+OK thanks.
 
-In this particular case, the extensions for which I am adding the
-feature bits are not supported on any hardware currently known or
-supported by the ARM port. At this time, the only known CPUs
-supporting these extensions are ARMv8 CPUs executing in 32-bit
-compatibility mode (i.e., ARMv8 defines instructions for the 32-bit
-execution state using previously unallocated opcodes)
+>> The xen project web site actually lists [3] Konrad's xen git tree [4] for
+>> development as the primary development tree, that probably should be
+>> updated now, and likely with instructions to clone only the linux-next
+>> branch ?
+>
+> I've updated the wiki to read:
+>
+>     For development the recommended branch is:
+>
+>         The mainline Linus linux.git tree.
 
-So the only reason (currently) for adding these feature bits to the
-ARM port is to align with the ARMv8 32-bit compat mode so that a
-32-bit userland requires no knowledge about whether its 32-bit
-execution environment is hosted by an ARM or an arm64 kernel. In the
-future, ARMv8 32-bit only CPUs may well turn up that support these
-extensions as well.
+Is the delta of what is queued for the next release typically small?
+Otherwise someone doing development based on linux.git alone should
+have conflicts with anything on the queue, no?
 
--- 
-Ard.
+>     To see what's queued for the next release, the next merge window,
+>     and other work in progress:
+>
+>         The Xen subsystem maintainers' tip.git tree.
+
+That's the thing, you can't clone the tip.git tree today well, there
+are undefined references and git gives up, asking for the linux-next
+branch however did work.
+
+  Luis
