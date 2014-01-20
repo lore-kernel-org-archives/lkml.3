@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaATJ4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:56:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52093 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731AbaATJz7 (ORCPT
+	id S1753453AbaATJ4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:56:30 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:40821 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996AbaATJ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:55:59 -0500
-Date: Mon, 20 Jan 2014 10:55:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20140120095532.GX31570@twins.programming.kicks-ass.net>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
- <20140116121955.GQ31570@twins.programming.kicks-ass.net>
- <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
- <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com>
- <20140120082620.GB30183@twins.programming.kicks-ass.net>
- <52DCE4CF.2060605@zytor.com>
- <20140120091600.GW31570@twins.programming.kicks-ass.net>
- <52DCEAF4.3040902@zytor.com>
+	Mon, 20 Jan 2014 04:56:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DCEAF4.3040902@zytor.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <051001cf13b4$080833b0$18189b10$@mindspring.com>
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+	<051001cf13b4$080833b0$18189b10$@mindspring.com>
+Date: Mon, 20 Jan 2014 13:56:26 +0400
+X-Google-Sender-Auth: rApLurKp7uqu3KcdlRsiImjkkqY
+Message-ID: <CAKywueTOi-WPpgH7x3VK7EkGJXE8fHUqcLgSUm6o6UA+uaQtjA@mail.gmail.com>
+Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Frank Filz <ffilzlnx@mindspring.com>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 01:23:00AM -0800, H. Peter Anvin wrote:
-> On 01/20/2014 01:16 AM, Peter Zijlstra wrote:
-> >>
-> >> The difference is the STI!
-> > 
-> > So do the local_irq_enable(); mwait_idle_with_hints(0,0); thing.
-> > 
-> 
-> No, that doesn't work.  The point of __sti_mwait() is that the STI is
-> the instruction immediately before the MWAIT, just like the combination
-> STI;HLT.  Since the execution of STI is always delayed by one
-> instruction, these two instructions form an atomic unit, which means
-> interrupts are enabled "after" we have entered MWAIT or HLT.
-> 
-> > But that's entirely different from saying that core2 doesn't support
-> > mwait_idle_with_hints because its a different instruction.
-> 
-> If you think of STI;MWAIT as a "compound instruction" it kind of is.
-> Newer CPUs don't have to play that trick anymore, because there is a
-> flag to MWAIT which breaks us out of MWAIT on a pending interrupt
-> without having to actually enable interrupts at the point of the MWAIT.
+2014/1/17 Frank Filz <ffilzlnx@mindspring.com>:
+> This looks wonderful and will be useful to the Ganesha user space NFS server
+> also.
+>
+> I do have a couple questions.
+>
+> 1. How will this interact with the idea of private locks from the patch set
+> Jeff Layton has been pushing?
 
-Ok, so I still don't get the problem of enabling interrupts early.
+They don't touch each other.
 
-If we enable them early we can get interrupts; which afaict fall into
-two groups, those that do and do not set NEED_RESCHED.
+>
+> 2. If a process opens multiple file descriptors with deny modes, will they
+> conflict with each other (which is the behavior we will want for Ganesha).
 
-For those that do not set NEED_RESCHED, we'd have woken from MWAIT/HLT
-and looped right back into it, so receiving those early -- before
-actually calling MWAIT/HLT seems like a NO-OP.
+Yes, a deny mode is associated with file descriptor - so, it will
+conflict with any other access/deny modes of file descriptors from any
+process.
 
-For those setting NEED_RESCHED, we test NEED_RESCHED in all the right
-places.
+>
+> 3. Is there any functionality to upgrade or downgrade the access and deny
+> modes (thinking in terms of NFS v4 support of OPEN upgrade and
+> OPEN_DOWNGRADE operations).
 
- - current_set_polling_and_test(), we test need_resched after telling
-   remote CPUs they don't need to send interrupts because we're polling
-   for it -- the remote cpus set NEED_RESCHED before testing if we're
-   polling for it.
+The proposed patchset doesn't allow to change deny modes after an open
+is done. But we can add a functionality to let flock syscall change
+deny modes as on option.
 
- - we test NEED_RESCHED after setting up the monitor and before calling
-   MWAIT. Therefore, if an interrupt would happen right before we call
-   MWAIT, the monitor is already set and the MWAIT does an immediate
-   exit.
-
-AFAICT we simply cannot get stuck and miss a NEED_RESCHED this way.
-
-
-
+-- 
+Best regards,
+Pavel Shilovsky.
