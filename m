@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaATISQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 03:18:16 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:31379 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaATISN (ORCPT
+	id S1752628AbaATITw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 03:19:52 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:51092 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaATITt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 03:18:13 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-cd-52dcdbc21bfb
-Message-id: <52DCDBC2.3000504@samsung.com>
-Date: Mon, 20 Jan 2014 09:18:10 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>
-Subject: Re: [PATCH] staging: lustre: fix GFP_ATOMIC macro usage
-References: <1389948416-26390-1-git-send-email-m.szyprowski@samsung.com>
- <20140117143329.GA6877@kroah.com>
-In-reply-to: <20140117143329.GA6877@kroah.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xa7qHbt8JMjiwUcOi4dorVos9Z36x
-	WzQvXs9mcXnXHDaLhg/X2RxYPe7tO8ziceTIbBaPxXteMnnsn7uG3ePzJrkA1igum5TUnMyy
-	1CJ9uwSujC3zDjEVHOStmHjHooHxGlcXIyeHhICJxPvGDSwQtpjEhXvr2boYuTiEBJYySuy+
-	f4UZwvnEKPHmUgcbSBWvgJbEnAOzgBIcHCwCqhL3e3RAwmwChhJdb7vASkQFQiX2fDzNCFEu
-	KPFj8j2wBSICxhL9Z2exg8xkFmhjlHh5eDYzSEJYwEFiypG5YM1CAjkSyw6vZAKxOQX0JP79
-	nQLWzCxgJvGoZR0zhC0vsXnNW+YJjAKzkOyYhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoTc4tL
-	89L1kvNzNzFCAvrLDsbFx6wOMQpwMCrx8HZ43AkSYk0sK67MPcQowcGsJMK75TBQiDclsbIq
-	tSg/vqg0J7X4ECMTB6dUA6PCMov1q7Y9PyxQ8ejDt7m6J/c/vuW27ZdfyPs/apemKMbmVNYx
-	RPy+tdu445qZ8cWYSacUoi97WPOJLfg2y5DrgXfRnMzHJnp3soJMHapM5KwPTp79cevDQ38q
-	gqSkv7NG1Mxe1Kpcs0nS7+gj7QlfOgsYuqf0vpn1WH9qnLNNymSGCLuVd7mUWIozEg21mIuK
-	EwHBsEnnRgIAAA==
+	Mon, 20 Jan 2014 03:19:49 -0500
+From: Surendra Patil <surendra.tux@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Surendra Patil <surendra.tux@gmail.com>
+Subject: [PATCH] Staging : comedi : comedidev.h Fixed warning space coding style issue
+Date: Mon, 20 Jan 2014 00:19:09 -0800
+Message-Id: <1390205949-12102-1-git-send-email-surendra.tux@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Fixed a coding style issue,removed space after the function pointer name
 
-On 2014-01-17 15:33, Greg Kroah-Hartman wrote:
-> On Fri, Jan 17, 2014 at 09:46:56AM +0100, Marek Szyprowski wrote:
-> > GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
-> > flags and LACK of __GFP_WAIT flag. To check if caller wanted to perform an
-> > atomic allocation, the code must test __GFP_WAIT flag presence.
-> >
-> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > ---
-> >  .../lustre/include/linux/libcfs/libcfs_private.h   |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_private.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_private.h
-> > index d0d942c..dddccca1 100644
-> > --- a/drivers/staging/lustre/include/linux/libcfs/libcfs_private.h
-> > +++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_private.h
-> > @@ -120,7 +120,7 @@ do {						\
-> >  do {									    \
-> >  	LASSERT(!in_interrupt() ||					    \
-> >  		((size) <= LIBCFS_VMALLOC_SIZE &&			    \
-> > -		 ((mask) & GFP_ATOMIC)) != 0);			    \
-> > +		 ((mask) & __GFP_WAIT) == 0));				    \
-> >  } while (0)
->
-> What a horrible assert, can't we just remove this entirely?
-> in_interrupt() usually should never be checked, if so, the code is doing
-> something wrong.  And __GFP flags shouldn't be used on their own.
+Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+---
+ drivers/staging/comedi/comedidev.h | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-Well, I've prepared this patch when I was checking kernel sources for 
-incorrect
-GFP_ATOMIC usage. I agree that drivers should use generic memory allocation
-methods instead of inventing their own stuff. Feel free to ignore my 
-patch in
-favor of removing this custom allocator at all.
-
-Best regards
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index f82bd42..588e9e7 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -61,29 +61,29 @@ struct comedi_subdevice {
+ 
+ 	unsigned int *chanlist;	/* driver-owned chanlist (not used) */
+ 
+-	int (*insn_read) (struct comedi_device *, struct comedi_subdevice *,
++	int (*insn_read)(struct comedi_device *, struct comedi_subdevice *,
+ 			  struct comedi_insn *, unsigned int *);
+-	int (*insn_write) (struct comedi_device *, struct comedi_subdevice *,
++	int (*insn_write)(struct comedi_device *, struct comedi_subdevice *,
+ 			   struct comedi_insn *, unsigned int *);
+-	int (*insn_bits) (struct comedi_device *, struct comedi_subdevice *,
++	int (*insn_bits)(struct comedi_device *, struct comedi_subdevice *,
+ 			  struct comedi_insn *, unsigned int *);
+-	int (*insn_config) (struct comedi_device *, struct comedi_subdevice *,
++	int (*insn_config)(struct comedi_device *, struct comedi_subdevice *,
+ 			    struct comedi_insn *, unsigned int *);
+ 
+-	int (*do_cmd) (struct comedi_device *, struct comedi_subdevice *);
+-	int (*do_cmdtest) (struct comedi_device *, struct comedi_subdevice *,
++	int (*do_cmd)(struct comedi_device *, struct comedi_subdevice *);
++	int (*do_cmdtest)(struct comedi_device *, struct comedi_subdevice *,
+ 			   struct comedi_cmd *);
+-	int (*poll) (struct comedi_device *, struct comedi_subdevice *);
+-	int (*cancel) (struct comedi_device *, struct comedi_subdevice *);
++	int (*poll)(struct comedi_device *, struct comedi_subdevice *);
++	int (*cancel)(struct comedi_device *, struct comedi_subdevice *);
+ 	/* int (*do_lock)(struct comedi_device *, struct comedi_subdevice *); */
+ 	/* int (*do_unlock)(struct comedi_device *, \
+ 			struct comedi_subdevice *); */
+ 
+ 	/* called when the buffer changes */
+-	int (*buf_change) (struct comedi_device *dev,
++	int (*buf_change)(struct comedi_device *dev,
+ 			   struct comedi_subdevice *s, unsigned long new_size);
+ 
+-	void (*munge) (struct comedi_device *dev, struct comedi_subdevice *s,
++	void (*munge)(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		       void *data, unsigned int num_bytes,
+ 		       unsigned int start_chan_index);
+ 	enum dma_data_direction async_dma_dir;
+@@ -146,7 +146,7 @@ struct comedi_async {
+ 
+ 	unsigned int cb_mask;
+ 
+-	int (*inttrig) (struct comedi_device *dev, struct comedi_subdevice *s,
++	int (*inttrig)(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			unsigned int x);
+ };
+ 
+@@ -155,9 +155,9 @@ struct comedi_driver {
+ 
+ 	const char *driver_name;
+ 	struct module *module;
+-	int (*attach) (struct comedi_device *, struct comedi_devconfig *);
+-	void (*detach) (struct comedi_device *);
+-	int (*auto_attach) (struct comedi_device *, unsigned long);
++	int (*attach)(struct comedi_device *, struct comedi_devconfig *);
++	void (*detach)(struct comedi_device *);
++	int (*auto_attach)(struct comedi_device *, unsigned long);
+ 
+ 	/* number of elements in board_name and board_id arrays */
+ 	unsigned int num_names;
+@@ -202,8 +202,8 @@ struct comedi_device {
+ 
+ 	struct fasync_struct *async_queue;
+ 
+-	int (*open) (struct comedi_device *dev);
+-	void (*close) (struct comedi_device *dev);
++	int (*open)(struct comedi_device *dev);
++	void (*close)(struct comedi_device *dev);
+ };
+ 
+ static inline const void *comedi_board(const struct comedi_device *dev)
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+1.8.3.2
 
