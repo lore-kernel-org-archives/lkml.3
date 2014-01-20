@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaATIrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 03:47:00 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:60664 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaATIq5 (ORCPT
+	id S1752669AbaATItT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 03:49:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54871 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaATItP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 03:46:57 -0500
+	Mon, 20 Jan 2014 03:49:15 -0500
+Message-ID: <52DCE2FC.30003@linaro.org>
+Date: Mon, 20 Jan 2014 16:49:00 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVNdEkE0uR2gn0iY790sKKFzG7Py2mPqqJN+pUNiuYXDw@mail.gmail.com>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
-	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-	<20140116222536.GX30183@twins.programming.kicks-ass.net>
-	<20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-	<52D8625C.1000902@zytor.com>
-	<20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
-	<1390038366.5676.10.camel@marge.simpson.net>
-	<20140120145122.a95b3e3a17d20117214098ca@canb.auug.org.au>
-	<CA+icZUVNdEkE0uR2gn0iY790sKKFzG7Py2mPqqJN+pUNiuYXDw@mail.gmail.com>
-Date: Mon, 20 Jan 2014 09:46:55 +0100
-Message-ID: <CA+icZUWqLg+8i6RAEZbPBdoe_cbXvyjzSHSOugFeNhDw5FfJ1Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mike Galbraith <bitbucket@online.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linaro-acpi@lists.linaro.org, Charles.Garcia-Tobin@arm.com
+Subject: Re: [PATCH 09/20] ARM64 / ACPI: Implement core functions for parsing
+ MADT table
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-10-git-send-email-hanjun.guo@linaro.org> <201401171512.42850.arnd@arndb.de>
+In-Reply-To: <201401171512.42850.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 9:42 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Mon, Jan 20, 2014 at 4:51 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> On Sat, 18 Jan 2014 10:46:06 +0100 Mike Galbraith <bitbucket@online.de> wrote:
->>>
->>> I hope it doesn't look quite like that, next-20140117 is -ENOBOOT on
->>> Q6600 box.  See below for an alternative.
->>>
->>> idle: kill unnecessary mwait_idle() resched IPIs
->>
->> OK, so despite even further discussion, I have applied this as a merge
->> fix patch for today.  Let me know when it is all sorted out.
->>
->
-> Where is this fix?
-> ( Browsing Linux-next remote GIT repository online. )
-> 2x NOPE for me.
->
-> - Sedat -
->
-> [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20140120&qt=grep&q=mwait_idle
-> [2] http://git.kernel.org/cgit/linux/kernel/git/sfr/next-fixes.git
->
+On 2014-1-17 22:12, Arnd Bergmann wrote:
+> On Friday 17 January 2014, Hanjun Guo wrote:
+>>  
+>> +/*
+>> + * Local interrupt controller address,
+>> + * GIC cpu interface base address on ARM/ARM64
+>> + */
+>> +static u64 acpi_lapic_addr __initdata;
+> 
+> If it's cpu local, don't you need more than one address to support SMP?
 
-Hmmm... Found this in Next/merge.log
+Good point, thanks for pointing this out. I have a question, do we really
+have some SoCs without banked registers?
 
-+$ git am -3 ../patches/0001-x86-idle-mwait_idle-merge-update.patch
-+Applying: idle: kill unnecessary mwait_idle() resched IPIs
-+$ git reset HEAD^
-+Unstaged changes after reset:
-+M arch/x86/include/asm/processor.h
-+M arch/x86/kernel/process.c
+I ask this question because we can do something for GIC cpu interface
+with per cpu offset, but ACPI do NOT support per cpu offset for GIC
+distributor.
 
-Is this a local patch not shipped in the Linux-next (remote) GIT repo?
-Why is this not in your next-fixes GIT repo?
+> Also, the variable appears to be write-only.
 
-A bit confused about your -next policies,
-- Sedat -
+Actually not, it will be used for GIC initialization.
+
+> 
+>> +#define BAD_MADT_ENTRY(entry, end) (					\
+>> +	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
+>> +	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
+>> +
+> 
+> Better make this an inline function.
+> 
+>> +static int __init
+>> +acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+>> +{
+>> +	struct acpi_madt_generic_interrupt *processor = NULL;
+>> +
+>> +	processor = (struct acpi_madt_generic_interrupt *)header;
+> 
+> You don't need the initialization in the first line when you write to the
+> variable before reading it. Same in the other functions.
+
+Ok, I will update them all in next version.
+
+Thanks
+hanjun
