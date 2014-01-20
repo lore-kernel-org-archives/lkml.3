@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaATQy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:54:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4293 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825AbaATQyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:54:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,691,1384329600"; 
-   d="scan'208";a="441754329"
-Subject: [PATCH] isci: correct erroneous for_each_isci_host macro
-To: JBottomley@Parallels.com
-From: Lukasz Dorau <lukasz.dorau@intel.com>
-Cc: dave.jiang@intel.com, maciej.patelczyk@intel.com,
-        linux-scsi@vger.kernel.org, pawel.baldysiak@intel.com,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com
-Date: Mon, 20 Jan 2014 17:54:50 +0100
-Message-ID: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
-User-Agent: StGit/0.16
+	id S1754280AbaATQzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:55:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33699 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaATQzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 11:55:43 -0500
+Date: Mon, 20 Jan 2014 17:55:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, chegu_vinod@hp.com,
+        mgorman@suse.de, mingo@redhat.com
+Subject: Re: [PATCH 3/7] numa,sched: build per numa_group active node mask
+ from faults_from statistics
+Message-ID: <20140120165523.GK31570@twins.programming.kicks-ass.net>
+References: <1389993129-28180-1-git-send-email-riel@redhat.com>
+ <1389993129-28180-4-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389993129-28180-4-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the first place, the loop 'for' in the macro 'for_each_isci_host'
-(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-the 3rd element of 2 element array. After the 2nd iteration it executes
-the instruction:
-        ihost = to_pci_info(pdev)->hosts[2]
-(while the size of the 'hosts' array equals 2) and reads an
-out of range element.
+On Fri, Jan 17, 2014 at 04:12:05PM -0500, riel@redhat.com wrote:
+>  /*
+> + * Iterate over the nodes from which NUMA hinting faults were triggered, in
+> + * other words where the CPUs that incurred NUMA hinting faults are. The
+> + * bitmask is used to limit NUMA page migrations, and spread out memory
+> + * between the actively used nodes. To prevent flip-flopping, and excessive
+> + * page migrations, nodes are added when they cause over 40% of the maximum
+> + * number of faults, but only removed when they drop below 20%.
+> + */
 
-In the second place, because of the following GCC v4.8 bug:
-http://marc.info/?l=linux-kernel&m=138998871911336&w=2
-this loop is incorrectly compiled by GCC v4.8.
-As a result, on platforms with two SCU controllers,
-the loop at drivers/scsi/isci/init.c:717 is executed
-more times than it can be (for i=0,1 and 2).
-It causes the following oops after 'rmmod isci':
+Maybe break the above into two paragraphs for added readability.
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Oops: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Call Trace:
-  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
-  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
-  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
-  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
-  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
-  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
-  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
-  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
-  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
-  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
-  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
-  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
-  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
-  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+Also, I think this might be a good spot to explain why you need the
+second fault metric -- that is, why can't we create the interleave mask
+from the existing memory location faults.
 
-The loop has been corrected.
-This patch fixes the above oops.
-
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/scsi/isci/host.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
-index 4911310..95adf31 100644
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -311,9 +311,9 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
- }
- 
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0, ihost = to_pci_info(pdev)->hosts[0]; \
-+	     (id < ARRAY_SIZE(to_pci_info(pdev)->hosts)) && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
- 
- static inline void wait_for_start(struct isci_host *ihost)
- {
-
+> +static void update_numa_active_node_mask(struct task_struct *p)
+> +{
+> +	unsigned long faults, max_faults = 0;
+> +	struct numa_group *numa_group = p->numa_group;
+> +	int nid;
+> +
+> +	for_each_online_node(nid) {
+> +		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
+> +			 numa_group->faults_from[task_faults_idx(nid, 1)];
+> +		if (faults > max_faults)
+> +			max_faults = faults;
+> +	}
+> +
+> +	for_each_online_node(nid) {
+> +		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
+> +			 numa_group->faults_from[task_faults_idx(nid, 1)];
+> +		if (!node_isset(nid, numa_group->active_nodes)) {
+> +			if (faults > max_faults * 4 / 10)
+> +				node_set(nid, numa_group->active_nodes);
+> +		} else if (faults < max_faults * 2 / 10)
+> +			node_clear(nid, numa_group->active_nodes);
+> +	}
+> +}
