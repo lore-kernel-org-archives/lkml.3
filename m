@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaATNq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 08:46:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7231 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaATNq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 08:46:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,690,1384329600"; 
-   d="scan'208";a="441668202"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: "JBottomley@Parallels.com" <JBottomley@Parallels.com>
-CC: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] isci: reformulate for_each_isci_host macro to fix an
- oops
-Thread-Topic: [PATCH] isci: reformulate for_each_isci_host macro to fix an
- oops
-Thread-Index: AQHPEr1WkBaf4d0XqEaBF9e1y+D1ipqNpWfw
-Date: Mon, 20 Jan 2014 13:46:11 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6A4055@IRSMSX105.ger.corp.intel.com>
-References: <20140116131624.24112.8745.stgit@gklab-154-244.igk.intel.com>
-In-Reply-To: <20140116131624.24112.8745.stgit@gklab-154-244.igk.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="utf-8"
+	id S1752353AbaATNwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 08:52:39 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40036 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaATNwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 08:52:36 -0500
+Date: Mon, 20 Jan 2014 05:52:31 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+Cc: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFSv4.1: PNFS_BLOCK_NONE_DATA should be handle properly
+ in bl_add_merge_extent?
+Message-ID: <20140120135231.GA17536@infradead.org>
+References: <n>
+ <1390212448-21354-1-git-send-email-shaobingqing@bwstor.com.cn>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390212448-21354-1-git-send-email-shaobingqing@bwstor.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KDl6T4004035
 
-On Thursday, January 16, 2014 2:16 PM Lukasz Dorau <lukasz.dorau@intel.com> wrote:
-> 
-> The loop 'for' in macro 'for_each_isci_host' (drivers/scsi/isci/init.c:717)
-> is executed more times than it can be. Regardless the condition:
->    'id < ARRAY_SIZE(to_pci_info(pdev)->hosts)' (drivers/scsi/isci/host.h:315)
-> it is executed when id equals ARRAY_SIZE(to_pci_info(pdev)->hosts) too.
-> (Remark: ARRAY_SIZE(to_pci_info(pdev)->hosts) always equals
-> SCI_MAX_CONTROLLERS = 2)
-> 
-> It sounds crazy, but it is truth. I have checked it in the following way:
-> I have added the line:
-> 
->    printk(KERN_ERR ">>> (%d < %d) == %d \n", \
->           i, SCI_MAX_CONTROLLERS, (i < SCI_MAX_CONTROLLERS));
-> 
-> after the 'for_each_isci_host' macro in drivers/scsi/isci/init.c:701
-> and received the following output:
-> 
->    >>> (0 < 2) == 1
->    >>> (1 < 2) == 1
->    >>> (2 < 2) == 1
-> 
-> after issuing 'modprobe isci' command on platform with two SCU controllers
-> (Patsburg D or T chipset required).
-> The kernel was compiled using gcc version 4.8.2.
-> 
+On Mon, Jan 20, 2014 at 06:07:28PM +0800, shaobingqing wrote:
+> In the current code, extents would not delete from the bl_extents list when 
+> lseg is removed from layout. Now one extent's lseg is deleted and its type 
+> is PNFS_BLOCK_NONE_DATA, while a layoutget request get a extent with the same
+> range and its type is PNFS_BLOCK_NONE_DATA. In this situation the function
+> bl_add_merge_extent will return -EIO. Furthermore, the READ op which request
+> the layout will be execute in band. This perhaps not only degrade performance,
+> but also result in data unconsistency. 
 
-Hi James,
+I think the right fix is to remove the extent when the lseg is removed.
+I can't see how the current pnfs block client could work in the case
+where a file is first truncated and then later written into again.
 
-Please disregard this patch.
-It turned to be a GCC 4.8 bug:
-http://marc.info/?l=linux-kernel&m=138998871911336&w=2
+This should be easily reproducable using fsx, btw.
 
-I will write a new patch.
-
-Lukasz
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
