@@ -1,163 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaATTWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 14:22:14 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:39513 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaATTV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 14:21:26 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: [PATCH 1/6] numa,sched,mm: remove p->numa_migrate_deferred
-Date: Mon, 20 Jan 2014 14:21:02 -0500
-Message-Id: <1390245667-24193-2-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1390245667-24193-1-git-send-email-riel@redhat.com>
-References: <1390245667-24193-1-git-send-email-riel@redhat.com>
+	id S1751994AbaATTbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:31:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:11936 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750721AbaATTbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 14:31:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,691,1384329600"; 
+   d="scan'208";a="469666178"
+Subject: Re: [PATCH v7 1/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <20140120120756.GB31570@twins.programming.kicks-ass.net>
+References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
+	 <1389917296.3138.11.camel@schen9-DESK>
+	 <20140120120756.GB31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Jan 2014 11:31:31 -0800
+Message-ID: <1390246291.3138.31.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Mon, 2014-01-20 at 13:07 +0100, Peter Zijlstra wrote:
+> On Thu, Jan 16, 2014 at 04:08:16PM -0800, Tim Chen wrote:
+> > +/*
+> > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> > + * time spent in this lock function.
+> > + */
+> > +static noinline
+> > +void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+> 
+> But given a vmlinux with sufficient DWARFs in, the IP will resolve to a
+> .ista. symbol, no?
 
-Excessive migration of pages can hurt the performance of workloads
-that span multiple NUMA nodes.  However, it turns out that the
-p->numa_migrate_deferred knob is a really big hammer, which does
-reduce migration rates, but does not actually help performance.
+I'm actually only renaming the mspin_lock code to mcs_spin_lock here
+and moving the code to header file.
+The noinline logic was in the original code.  Later on when we move 
+mcs_spin_lock to its own file and exporting the symbol, then I 
+think this issue will be resolved.
 
-Now that the second stage of the automatic numa balancing code
-has stabilized, it is time to replace the simplistic migration
-deferral code with something smarter.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/sched.h |  1 -
- kernel/sched/fair.c   |  8 --------
- kernel/sysctl.c       |  7 -------
- mm/mempolicy.c        | 45 ---------------------------------------------
- 4 files changed, 61 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68a0e84..97efba4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1469,7 +1469,6 @@ struct task_struct {
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
- 	int numa_preferred_nid;
--	int numa_migrate_deferred;
- 	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 867b0a4..41e2176 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -819,14 +819,6 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
- /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
- unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
--/*
-- * After skipping a page migration on a shared page, skip N more numa page
-- * migrations unconditionally. This reduces the number of NUMA migrations
-- * in shared memory workloads, and has the effect of pulling tasks towards
-- * where their memory lives, over pulling the memory towards the task.
-- */
--unsigned int sysctl_numa_balancing_migrate_deferred = 16;
--
- static unsigned int task_nr_scan_windows(struct task_struct *p)
- {
- 	unsigned long rss = 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 096db74..4d19492 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -384,13 +384,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
--		.procname       = "numa_balancing_migrate_deferred",
--		.data           = &sysctl_numa_balancing_migrate_deferred,
--		.maxlen         = sizeof(unsigned int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
--	{
- 		.procname	= "numa_balancing",
- 		.data		= NULL, /* filled in by handler */
- 		.maxlen		= sizeof(unsigned int),
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 36cb46c..052abac 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2301,35 +2301,6 @@ static void sp_free(struct sp_node *n)
- 	kmem_cache_free(sn_cache, n);
- }
- 
--#ifdef CONFIG_NUMA_BALANCING
--static bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	/* Never defer a private fault */
--	if (cpupid_match_pid(p, last_cpupid))
--		return false;
--
--	if (p->numa_migrate_deferred) {
--		p->numa_migrate_deferred--;
--		return true;
--	}
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--	p->numa_migrate_deferred = sysctl_numa_balancing_migrate_deferred;
--}
--#else
--static inline bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /**
-  * mpol_misplaced - check whether current page node is valid in policy
-  *
-@@ -2432,24 +2403,8 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		 */
- 		last_cpupid = page_cpupid_xchg_last(page, this_cpupid);
- 		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid) {
--
--			/* See sysctl_numa_balancing_migrate_deferred comment */
--			if (!cpupid_match_pid(current, last_cpupid))
--				defer_numa_migrate(current);
--
- 			goto out;
- 		}
--
--		/*
--		 * The quadratic filter above reduces extraneous migration
--		 * of shared pages somewhat. This code reduces it even more,
--		 * reducing the overhead of page migrations of shared pages.
--		 * This makes workloads with shared pages rely more on
--		 * "move task near its memory", and less on "move memory
--		 * towards its task", which is exactly what we want.
--		 */
--		if (numa_migrate_deferred(current, last_cpupid))
--			goto out;
- 	}
- 
- 	if (curnid != polnid)
--- 
-1.8.4.2
+Tim
 
