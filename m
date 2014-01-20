@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaATPBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:01:53 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16448 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754033AbaATPBI (ORCPT
+	id S1753976AbaATPEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:04:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59018 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbaATPEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:01:08 -0500
-Message-Id: <20140120150105.464357676@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 20 Jan 2014 10:00:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+	Mon, 20 Jan 2014 10:04:04 -0500
+Date: Mon, 20 Jan 2014 16:03:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [for-next][PATCH 2/2] tracing: Fix buggered tee(2) on tracing_pipe
-References: <20140120150042.470689818@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Fix-buggered-tee-2-on-tracing_pipe.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger
+ than long as atomic in x86
+Message-ID: <20140120150316.GG30183@twins.programming.kicks-ass.net>
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
+ <1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+On Tue, Jan 14, 2014 at 11:44:05PM -0500, Waiman Long wrote:
+> The generic __native_word() macro defined in include/linux/compiler.h
+> only allows "int" and "long" data types to be treated as native and
+> atomic. The x86 architecture, however, allow the use of char and short
+> data types as atomic as well.
+> 
+> This patch extends the data type allowed in the __native_word() macro to
+> allow the use of char and short.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> ---
+>  arch/x86/include/asm/barrier.h |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
+> index 04a4890..4d3e30a 100644
+> --- a/arch/x86/include/asm/barrier.h
+> +++ b/arch/x86/include/asm/barrier.h
+> @@ -24,6 +24,14 @@
+>  #define wmb()	asm volatile("sfence" ::: "memory")
+>  #endif
+>  
+> +/*
+> + * All data types <= long are atomic in x86
+> + */
+> +#ifdef __native_word
+> +#undef __native_word
+> +#endif
+> +#define __native_word(t)	(sizeof(t) <= sizeof(long))
 
-In kernel/trace/trace.c we have this:
-static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
-                                     struct pipe_buffer *buf)
-{
-        __free_page(buf->page);
-}
-static const struct pipe_buf_operations tracing_pipe_buf_ops = {
-        .can_merge              = 0,
-        .map                    = generic_pipe_buf_map,
-        .unmap                  = generic_pipe_buf_unmap,
-        .confirm                = generic_pipe_buf_confirm,
-        .release                = tracing_pipe_buf_release,
-        .steal                  = generic_pipe_buf_steal,
-        .get                    = generic_pipe_buf_get,
-};
-with
-void generic_pipe_buf_get(struct pipe_inode_info *pipe, struct pipe_buffer *buf)
-{
-        page_cache_get(buf->page);
-}
-
-and I don't see anything that would've prevented tee(2) called on the pipe
-that got stuff spliced into it from that sucker.  ->ops->get() will be
-called, then buf gets copied into target pipe's ->bufs[] and eventually
-readers get to both copies of the buffer.  With
-	get_page(page)
-	look at that page
-	__free_page(page)
-	look at that page
-	__free_page(page)
-which is not a good thing, to put it mildly.  AFAICS, that ought to use
-the normal generic_pipe_buf_release() (aka page_cache_release(buf->page)),
-shouldn't it?
-
-[
- SDR - As trace_pipe just allocates the page with alloc_page(GFP_KERNEL),
-  and doesn't do anything special with it (no LRU logic). The __free_page()
-  should be fine, as it wont actually free a page with reference count.
-  Maybe there's a chance to leak memory? Anyway, This change is at a minimum
-  good for being symmetric with generic_pipe_buf_get, it is fine to add.
-]
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ SDR - Removed no longer used tracing_pipe_buf_release ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cee9c1a..20c755e 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4243,12 +4243,6 @@ out:
- 	return sret;
- }
- 
--static void tracing_pipe_buf_release(struct pipe_inode_info *pipe,
--				     struct pipe_buffer *buf)
--{
--	__free_page(buf->page);
--}
--
- static void tracing_spd_release_pipe(struct splice_pipe_desc *spd,
- 				     unsigned int idx)
- {
-@@ -4260,7 +4254,7 @@ static const struct pipe_buf_operations tracing_pipe_buf_ops = {
- 	.map			= generic_pipe_buf_map,
- 	.unmap			= generic_pipe_buf_unmap,
- 	.confirm		= generic_pipe_buf_confirm,
--	.release		= tracing_pipe_buf_release,
-+	.release		= generic_pipe_buf_release,
- 	.steal			= generic_pipe_buf_steal,
- 	.get			= generic_pipe_buf_get,
- };
--- 
-1.8.4.3
-
-
+Yeah, not going to happen.
