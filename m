@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaATLxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 06:53:24 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:48564 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaATLxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 06:53:22 -0500
+	id S1751887AbaATL46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 06:56:58 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55650 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738AbaATL44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 06:56:56 -0500
+Message-ID: <52DD0EFF.2010305@imgtec.com>
+Date: Mon, 20 Jan 2014 11:56:47 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20140120100530.GY15937@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
-	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
-	<20140120100530.GY15937@n2100.arm.linux.org.uk>
-Date: Mon, 20 Jan 2014 17:23:21 +0530
-Message-ID: <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, <devel@driverdev.osuosl.org>,
+        <andreas.dilger@intel.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <bergwolf@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <oleg.drokin@intel.com>, <jacques-charles.lafoucriere@cea.fr>,
+        <jinshan.xiong@intel.com>, <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
+ for the related union
+References: <52DA4E6A.1000308@gmail.com> <20140118100547.GS7444@mwanda> <52DA56C2.5010802@gmail.com> <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com>
+In-Reply-To: <52DBA3D4.3090308@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2014_01_20_11_56_51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 January 2014 15:35, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Jan 20, 2014 at 02:32:34PM +0530, Tushar Behera wrote:
->> uart_register_driver call binds the driver to a specific device
->> node through tty_register_driver call. This should typically happen
->> during device probe call.
->>
->> In a multiplatform scenario, it is possible that multiple serial
->> drivers are part of the kernel. Currently the driver registration fails
->> if multiple serial drivers with same default major/minor numbers are
->> included in the kernel.
->>
->> A typical case is observed with amba-pl011 and samsung-uart drivers.
->
-> The samsung-uart driver is at fault here - the major/minor numbers were
-> officially registered to amba-pl011.  Samsung needs to be fixed properly.
->
+Hi Chen,
 
-I had earlier submitted a patch [1] to remove the hard coded
-major/minor number for Samsung UART driver, but that was rejected
-because of userspace breakage. Without this patch, Samsung UART driver
-can't bind to the hard-coded device node. Changing the default
-major/minor will also not help to fix the objections raised in [1].
+On 19/01/14 10:07, Chen Gang wrote:
+> BTW: this patch is related with another patch which is discussing (so I
+> have cc that patch to you and Greg too): "if we could sure that it is a
+> compiler's feature issue, we will skip this patch".
 
-Would you please suggest a way forward?
+If you're referring to the #pragma pack portability issue then this
+issue is unrelated since it doesn't use #pragma pack.
 
-[1] https://lkml.org/lkml/2013/12/27/2
+The issue is *not* that the compiler is defectively failing to pack
+nested structs. Doing that would be utterly broken since it would change
+the layout of the same struct depending on where it is placed in the
+program, Consider this example (which uses a nested struct rather than
+union to demonstrate the point):
 
--- 
-Tushar Behera
+struct a {
+	struct b {
+		unsigned int x;
+		unsigned short y;
+	} x;
+	unsigned short y;
+} __packed;
+
+Both ABIs behave the same here:
+
+Arch	sizeof(struct b)	sizeof(struct a)
+x86_64	8			10
+metag	8			10
+
+If struct b is made __packed, again both ABIs behave differently in the
+same way:
+
+Arch	sizeof(struct b)	sizeof(struct a)
+x86_64	6			8
+metag	6			8
+
+The issue is that C compiler ABIs may (and unfortunately metag ABI does)
+pack structs and unions to at least 4 bytes, even if no members of the
+struct or union are that large, which means that the nested struct/union
+should be __packed too to portably ensure it's the expected size.
+
+Cheers
+James
+
