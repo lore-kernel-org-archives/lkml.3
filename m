@@ -1,105 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaATPbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:31:15 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:57312 "EHLO multi.imgtec.com"
+	id S1752599AbaATPeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:34:01 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:6209 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753150AbaATPbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:31:12 -0500
-Message-ID: <52DD413D.2050905@imgtec.com>
-Date: Mon, 20 Jan 2014 15:31:09 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751669AbaATPd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:33:57 -0500
+X-IronPort-AV: E=Sophos;i="4.95,691,1384300800"; 
+   d="scan'208";a="94525667"
+Date: Mon, 20 Jan 2014 15:32:48 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Will Deacon <will.deacon@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gang.chen@asianux.com" <gang.chen@asianux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
+Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
+ dependencies for XEN
+In-Reply-To: <20140116193123.GB22105@mudshark.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1401201523240.21510@kaball.uk.xensource.com>
+References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140109103004.GB11089@mudshark.cambridge.arm.com> <201401091204.17932.arnd@arndb.de> <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com> <20140109184251.GL17838@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com> <20140116193123.GB22105@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-metag <linux-metag@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James <james.hogan@imgtec.com>, Jiang Liu <liuj97@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [GIT PULL] Metag architecture changes for v3.14
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="w5Pe5wrObtfHwvnQ7kA78MmbCdvIxcaG3"
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2014_01_20_15_31_10
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---w5Pe5wrObtfHwvnQ7kA78MmbCdvIxcaG3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 16 Jan 2014, Will Deacon wrote:
+> Hi Stefano,
+> 
+> On Thu, Jan 16, 2014 at 04:27:55PM +0000, Stefano Stabellini wrote:
+> > On Thu, 9 Jan 2014, Will Deacon wrote:
+> > > Ok, thanks for the explanation. Looking at the patch, I wonder whether it's
+> > > not cleaner just to implement xchg code separately for Xen? The Linux code
+> > > isn't always sufficient (due to the GENERIC_ATOMIC64 stuff) and most of the
+> > > churn coming out of this patch is an attempt to provide some small code
+> > > reuse at the cost of code readability.
+> > > 
+> > > What do others think?
+> > 
+> > I am OK with that, in fact my first version of the patch did just that:
+> > 
+> > http://marc.info/?l=linux-arm-kernel&m=138436406724990&w=2
+> > 
+> > Is that what you had in mind?
+> 
+> For the xchg part, yes, that looks a lot better. I don't like the #undef
+> CONFIG_CPU_V6 though, can that be rewritten to use __LINUX_ARM_ARCH__?
 
-Hi Linus,
+The problem is that the 1 and 2 byte parameter size cases in __cmpxchg
+are ifdef'ed CONFIG_CPU_V6 but drivers/xen/grant-table.c needs them.
 
-Please pull the following changes since commit 6ce4eac1f600b34f2f7f58f9cd=
-8f0503d79e42ae:
+So we can either undef CONFIG_CPU_V6 in grant-table.c or call a
+different function.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+If I switch from ifdef CONFIG_CPU_V6 to if __LINUX_ARM_ARCH__ > 6 in
+__cmpxchg, we still have the problem that if __LINUX_ARM_ARCH__ == 6,
+grant-table.c doesn't compile.
 
-which are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jhogan/metag.git tags/met=
-ag-for-v3.14
-
-for you to fetch changes up to e9a1d0165bbda4398d4a5d71736cf6390fb42c6f:
-
-  metag/smp: Make boot_secondary() static (2014-01-06 09:59:22 +0000)
-
-Thanks
-James
-
-----------------------------------------------------------------
-Metag architecture changes for v3.14
-
-- A few cleanups and minor bug fixes.
-- Kill SMP single function call IPI.
-
-----------------------------------------------------------------
-Chen Gang (1):
-      metag: topology: export 'cpu_core_map'
-
-Geert Uytterhoeven (1):
-      metag/smp: Make boot_secondary() static
-
-James Hogan (2):
-      metag: dma: remove dead code in dma_alloc_init()
-      metag: smp: don't set irq regs in do_IPI()
-
-Jiang Liu (1):
-      smp, metag: kill SMP single function call interrupt
-
- arch/metag/include/asm/smp.h |  2 --
- arch/metag/kernel/dma.c      |  5 -----
- arch/metag/kernel/smp.c      | 15 ++++-----------
- arch/metag/kernel/topology.c |  1 +
- 4 files changed, 5 insertions(+), 18 deletions(-)
+Maybe the approach taken by the other patch for cmpxchg is better, see
+below.
 
 
---w5Pe5wrObtfHwvnQ7kA78MmbCdvIxcaG3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3UE9AAoJEKHZs+irPybfM0IP/A3y4Mkj4Q4bBdvJokpmaCvm
-Zy0Tvyb4mZ9r+T7Nem6RJCIUQDJlaOz9Rg0ykzsXH8yZILnCzVXgup9TXRup748u
-aNmW89gRbJUPCZXOq+bekp76jLbleQuVoPOW3WUXEkwm3HyqoFXWm9bbI6TeHdsp
-XX4CjLAUMIKpvPn6TqMQ5/SAD2U0S8VnVh9jitYrTpR5FATubQNLI88YJwKQspGu
-9X+y7G8JqeIW0HFVd6UPInSZEOJUSk1t1z5e5xHcK+BIvnyp9/ig1ECoxB2Kt5mH
-K3WuQw8QX/mg160gg2gvtjb9J3HUiXEXIlRvTh5+QWe4iN76mNu9ZeLkc8enXDEx
-Q2sqXUhqW8cCOXjVmzqlewAX9LpZTdn1zwVZPxJWcsdZHN65v/n/Ecz48LQjhzga
-2i93xpZ1BnsSMS79PPMM/U3CGz2jar02ERnYxT9KPeuc4FRX6obWaI+UcRoNvN48
-kVZppE+LsqSqI3kHRJBflcBi8AE8uAwCL4rdFyiBztOd7dZc3V8Y0MBEtim+qF/I
-W8T0N5V8/3JT6uNIAi0yKhnEcbUUUDNBzgcCaJFTp4CZoNOtlr1qrw+GCxkvga4a
-82drJNf/Ahtn4bGZfvsb2IMfjRTs8BxpEWfaZAyiqmEdkhX+i/7t9oTKVkOrKxmy
-OQLIhhbp3RiO6VKSvBPa
-=cx3O
------END PGP SIGNATURE-----
-
---w5Pe5wrObtfHwvnQ7kA78MmbCdvIxcaG3--
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c1f1a7e..ae54ae0 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1881,8 +1881,7 @@ config XEN_DOM0
+ config XEN
+ 	bool "Xen guest support on ARM (EXPERIMENTAL)"
+ 	depends on ARM && AEABI && OF
+-	depends on CPU_V7 && !CPU_V6
+-	depends on !GENERIC_ATOMIC64
++	depends on CPU_V7
+ 	select ARM_PSCI
+ 	select SWIOTLB_XEN
+ 	help
+diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
+index df2fbba..cc8a4a2 100644
+--- a/arch/arm/include/asm/cmpxchg.h
++++ b/arch/arm/include/asm/cmpxchg.h
+@@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
+  * cmpxchg only support 32-bits operands on ARMv6.
+  */
+ 
++static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
++				      unsigned long new)
++{
++	unsigned long oldval, res;
++
++	do {
++		asm volatile("@ __cmpxchg1\n"
++		"	ldrexb	%1, [%2]\n"
++		"	mov	%0, #0\n"
++		"	teq	%1, %3\n"
++		"	strexbeq %0, %4, [%2]\n"
++			: "=&r" (res), "=&r" (oldval)
++			: "r" (ptr), "Ir" (old), "r" (new)
++			: "memory", "cc");
++	} while (res);
++
++	return oldval;
++}
++
++static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
++				      unsigned long new)
++{
++	unsigned long oldval, res;
++
++	do {
++		asm volatile("@ __cmpxchg1\n"
++		"	ldrexh	%1, [%2]\n"
++		"	mov	%0, #0\n"
++		"	teq	%1, %3\n"
++		"	strexheq %0, %4, [%2]\n"
++			: "=&r" (res), "=&r" (oldval)
++			: "r" (ptr), "Ir" (old), "r" (new)
++			: "memory", "cc");
++	} while (res);
++
++	return oldval;
++}
++
+ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+ 				      unsigned long new, int size)
+ {
+@@ -141,28 +179,10 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+ 	switch (size) {
+ #ifndef CONFIG_CPU_V6	/* min ARCH >= ARMv6K */
+ 	case 1:
+-		do {
+-			asm volatile("@ __cmpxchg1\n"
+-			"	ldrexb	%1, [%2]\n"
+-			"	mov	%0, #0\n"
+-			"	teq	%1, %3\n"
+-			"	strexbeq %0, %4, [%2]\n"
+-				: "=&r" (res), "=&r" (oldval)
+-				: "r" (ptr), "Ir" (old), "r" (new)
+-				: "memory", "cc");
+-		} while (res);
++		oldval = __cmpxchg8(ptr, old, new);
+ 		break;
+ 	case 2:
+-		do {
+-			asm volatile("@ __cmpxchg1\n"
+-			"	ldrexh	%1, [%2]\n"
+-			"	mov	%0, #0\n"
+-			"	teq	%1, %3\n"
+-			"	strexheq %0, %4, [%2]\n"
+-				: "=&r" (res), "=&r" (oldval)
+-				: "r" (ptr), "Ir" (old), "r" (new)
+-				: "memory", "cc");
+-		} while (res);
++		oldval = __cmpxchg16(ptr, old, new);
+ 		break;
+ #endif
+ 	case 4:
+diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
+index 63479ee..942659a 100644
+--- a/arch/arm/include/asm/sync_bitops.h
++++ b/arch/arm/include/asm/sync_bitops.h
+@@ -21,7 +21,29 @@
+ #define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
+ #define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
+ #define sync_test_bit(nr, addr)		test_bit(nr, addr)
+-#define sync_cmpxchg			cmpxchg
+ 
++static inline unsigned long sync_cmpxchg(volatile void *ptr,
++										 unsigned long old,
++										 unsigned long new)
++{
++	unsigned long oldval;
++	int size = sizeof(*(ptr));
++
++	smp_mb();
++	switch (size) {
++	case 1:
++		oldval = __cmpxchg8(ptr, old, new);
++		break;
++	case 2:
++		oldval = __cmpxchg16(ptr, old, new);
++		break;
++	default:
++		oldval = __cmpxchg(ptr, old, new, size);
++		break;
++	}
++	smp_mb();
++
++	return oldval;
++}
+ 
+ #endif
+diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+index 8b1f37b..2032ee6 100644
+--- a/arch/arm/include/asm/xen/events.h
++++ b/arch/arm/include/asm/xen/events.h
+@@ -16,7 +16,37 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+ 	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+ }
+ 
+-#define xchg_xen_ulong(ptr, val) atomic64_xchg(container_of((ptr),	\
++#ifdef CONFIG_GENERIC_ATOMIC64
++/* if CONFIG_GENERIC_ATOMIC64 is defined we cannot use the generic
++ * atomic64_xchg function because it is implemented using spin locks.
++ * Here we need proper atomic instructions to read and write memory
++ * shared with the hypervisor.
++ */
++static inline u64 xen_atomic64_xchg(atomic64_t *ptr, u64 new)
++{
++	u64 result;
++	unsigned long tmp;
++
++	smp_mb();
++
++	__asm__ __volatile__("@ xen_atomic64_xchg\n"
++"1:	ldrexd	%0, %H0, [%3]\n"
++"	strexd	%1, %4, %H4, [%3]\n"
++"	teq	%1, #0\n"
++"	bne	1b"
++	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
++	: "r" (&ptr->counter), "r" (new)
++	: "cc");
++
++	smp_mb();
++
++	return result;
++}
++#else
++#define xen_atomic64_xchg atomic64_xchg
++#endif
++
++#define xchg_xen_ulong(ptr, val) xen_atomic64_xchg(container_of((ptr),	\
+ 							    atomic64_t,	\
+ 							    counter), (val))
+ 
