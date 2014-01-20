@@ -1,120 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaATKMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:12:17 -0500
-Received: from mx.bwstor.com.cn ([211.103.180.228]:36666 "EHLO mx.bwstor.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750917AbaATKMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:12:15 -0500
-From: shaobingqing <shaobingqing@bwstor.com.cn>
-To: trond.myklebust@primarydata.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shaobingqing <shaobingqing@bwstor.com.cn>
-Subject: [PATCH] NFSv4.1: PNFS_BLOCK_NONE_DATA should be handle properly in bl_add_merge_extent?
-Date: Mon, 20 Jan 2014 18:07:28 +0800
-Message-Id: <1390212448-21354-1-git-send-email-shaobingqing@bwstor.com.cn>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <n>
-References: <n>
+	id S1752710AbaATKOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:14:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52364 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaATKOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 05:14:10 -0500
+Date: Mon, 20 Jan 2014 11:13:45 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140120101345.GC3694@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+ <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com>
+ <20140120083021.GC30183@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120083021.GC30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the current code, extents would not delete from the bl_extents list when 
-lseg is removed from layout. Now one extent's lseg is deleted and its type 
-is PNFS_BLOCK_NONE_DATA, while a layoutget request get a extent with the same
-range and its type is PNFS_BLOCK_NONE_DATA. In this situation the function
-bl_add_merge_extent will return -EIO. Furthermore, the READ op which request
-the layout will be execute in band. This perhaps not only degrade performance,
-but also result in data unconsistency. 
+On Mon, Jan 20, 2014 at 09:30:21AM +0100, Peter Zijlstra wrote:
+> Then make them so. The fact was that most of the mwait idle sites
+> were bloody broken. And the single mwait_idle_with_hints() function
+> presents a single nice function that does all the required magics.
 
-Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
----
- fs/nfs/blocklayout/extents.c |   50 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 50 insertions(+), 0 deletions(-)
+To stress this a bit more; have a look see at mwwait_idle_with_hints();
+it does a whole lot of subtle magic.
 
-diff --git a/fs/nfs/blocklayout/extents.c b/fs/nfs/blocklayout/extents.c
-index 9c3e117..7472b38 100644
---- a/fs/nfs/blocklayout/extents.c
-+++ b/fs/nfs/blocklayout/extents.c
-@@ -518,6 +518,34 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
- 						__func__);
- 					bl_put_extent(new);
- 					return 0;
-+				} else if (be->be_state ==
-+					PNFS_BLOCK_NONE_DATA) {
-+					splice = bl_alloc_extent();
-+					if (!splice) {
-+						bl_put_extent(new);
-+						return -ENOMEM;
-+					}
-+					memcpy(splice, be,
-+					  sizeof(struct pnfs_block_extent));
-+					splice->be_f_offset = end;
-+					splice->be_length = be->be_f_offset
-+						+ be->be_length - end;
-+					be->be_length = new->be_f_offset
-+						- be->be_f_offset;
-+					splice->be_v_offset = 0;
-+
-+					list_add(&new->be_node, &be->be_node);
-+					if (be->be_length == 0) {
-+						list_del(&be->be_node);
-+						bl_put_extent(be);
-+					}
-+					if (splice->be_length != 0)
-+						list_add(&splice->be_node,
-+							&new->be_node);
-+					else
-+						bl_put_extent(splice);
-+
-+					return 0;
- 				} else {
- 					goto out_err;
- 				}
-@@ -533,6 +561,13 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
- 					dprintk("%s: removing %p\n", __func__, be);
- 					list_del(&be->be_node);
- 					bl_put_extent(be);
-+			    } else if (be->be_state == PNFS_BLOCK_NONE_DATA) {
-+					be->be_length = new->be_f_offset
-+						- be->be_f_offset;
-+					if (be->be_length == 0) {
-+						list_del(&be->be_node);
-+						bl_put_extent(be);
-+					}
- 				} else {
- 					goto out_err;
- 				}
-@@ -544,6 +579,10 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
- 				dprintk("%s: removing %p\n", __func__, be);
- 				list_del(&be->be_node);
- 				bl_put_extent(be);
-+
-+			} else if (be->be_state == PNFS_BLOCK_NONE_DATA) {
-+				list_del(&be->be_node);
-+				bl_put_extent(be);
- 			} else {
- 				goto out_err;
- 			}
-@@ -557,6 +596,17 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
- 				dprintk("%s: removing %p\n", __func__, be);
- 				list_del(&be->be_node);
- 				bl_put_extent(be);
-+
-+			} else if (be->be_state == PNFS_BLOCK_NONE_DATA) {
-+				be->be_length -= end - be->be_f_offset;
-+				be->be_v_offset += end - be->be_f_offset;
-+				be->be_f_offset = end;
-+				list_add(&new->be_node, be->be_node.prev);
-+				if (be->be_length == 0) {
-+					list_del(&be->be_node);
-+					bl_put_extent(be);
-+				}
-+				return 0;
- 			} else {
- 				goto out_err;
- 			}
--- 
-1.7.4.2
+ - current_{set,clr}_polling*(), these are crucial in not missing and
+   wrecking NEED_RESCHED state.
 
+ - X86_FEATURE_CLFLUSH_MONTIOR quirk
+
+ - Does the monitor(); if (!need_resched()) mwait() thing.
+
+All of those are required for a correct and functional idle loop. And
+I've seen sites where any or all of the above were missing/broken.
+
+Not unifying the lot into a simple usable function is just stupid --
+history has shown people simply cannot be trusted to get this right.
