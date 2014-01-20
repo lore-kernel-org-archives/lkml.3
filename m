@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaATWSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 17:18:51 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:20245 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751824AbaATWSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 17:18:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj4IAFGg3VJ5LKVw/2dsb2JhbABZgwuDObNZhVKBFRd0giUBAQEDATocIxAIAw4KCRoLDwUlAyETh30HxAgXFo4gSQeEOASYIYpPh0qBb4FSKIEt
-Date: Tue, 21 Jan 2014 09:18:43 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Sergey Meirovich <rathamahata@gmail.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-Message-ID: <20140120221843.GJ18112@dastard>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz>
- <20140107155830.GA28395@infradead.org>
- <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
- <20140108140307.GA588@infradead.org>
- <CA+QCeVRuvNtZ8+9D-NtMOD=B9UEA5HMvKaGdXOQCjO-KTnZdbw@mail.gmail.com>
- <20140115220721.GY3469@dastard>
- <20140120135855.GA26280@infradead.org>
+	id S1752664AbaATWXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 17:23:38 -0500
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:25945
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750942AbaATWXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 17:23:36 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
+Thread-Topic: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
+Thread-Index: AQHPEVjnKHWBxAK/ME2641uqAhZ1vZqHLleAgAcH9OCAAAGDAIAAAeYQ
+Date: Mon, 20 Jan 2014 22:23:20 +0000
+Message-ID: <4c24066612cc4b5bac8efe9d075d421f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
+ <20140116104841.GA21768@aepfle.de>
+ <b29b3b91ff654abab607fe7b689bbfeb@BY2PR03MB299.namprd03.prod.outlook.com>
+ <20140120221622.GA25947@aepfle.de>
+In-Reply-To: <20140120221622.GA25947@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.159.229]
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 00979FCB3A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(24454002)(189002)(199002)(377454003)(13464003)(86362001)(56776001)(76796001)(85306002)(59766001)(77982001)(76786001)(33646001)(76576001)(83322001)(81342001)(19580405001)(19580395003)(49866001)(93516002)(47736001)(80976001)(4396001)(92566001)(69226001)(50986001)(74662001)(93136001)(74316001)(31966008)(80022001)(81542001)(74502001)(47976001)(54316002)(90146001)(81816001)(87266001)(83072002)(76482001)(74706001)(47446002)(2656002)(87936001)(65816001)(53806001)(56816005)(63696002)(85852003)(66066001)(46102001)(74366001)(79102001)(51856001)(81686001)(74876001)(54356001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.159.229;FPR:;InfoNoRecordsMX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120135855.GA26280@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KMNkUr006556
 
-On Mon, Jan 20, 2014 at 05:58:55AM -0800, Christoph Hellwig wrote:
-> On Thu, Jan 16, 2014 at 09:07:21AM +1100, Dave Chinner wrote:
-> > Yes, I think it can be done relatively simply. We'd have to change
-> > the code in xfs_file_aio_write_checks() to check whether EOF zeroing
-> > was required rather than always taking an exclusive lock (for block
-> > aligned IO at EOF sub-block zeroing isn't required),
+
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Monday, January 20, 2014 2:16 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
 > 
-> That's not even required for supporting aio appends, just a further
-> optimization for it.
-
-Oh, right, I got an off-by-one when reading the code - the EOF
-zeroing only occurs when the offset is beyond EOF, not at or beyond
-EOF...
-
-> > and then we'd
-> > have to modify the direct IO code to set the is_async flag
-> > appropriately. We'd probably need a new flag to say tell the DIO
-> > code that AIO beyond EOF is OK, but that isn't hard to do....
+> On Mon, Jan 20, KY Srinivasan wrote:
 > 
-> Yep, need a flag to allow appending writes and then defer them.
+> > I am cleaning up the code based on your feedback. By the time I am
+> > done with my cleanup, I doubt if this patch would apply. Do you mind
+> > if I were to include your changes here as part of my cleanup?
 > 
-> > Christoph, are you going to get any time to look at doing this in
-> > the next few days?
+> Yes, thats fine.
+
+Thanks Olaf.
+
+K. Y
 > 
-> I'll probably need at least another week before I can get to it.  If you
-> wanna pick it up before than feel free.
-
-I'm probably not going to get to it before then, either, so check
-back in a week?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> 
+> Olaf
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
