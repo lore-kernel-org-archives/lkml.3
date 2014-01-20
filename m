@@ -1,305 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaATMlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 07:41:55 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:51699 "EHLO
+	id S1753829AbaATMlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 07:41:49 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:51745 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaATMkH (ORCPT
+	with ESMTP id S1752869AbaATMkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Jan 2014 07:40:07 -0500
 From: dietmar.eggemann@arm.com
 To: peterz@infradead.org, mingo@redhat.com, vincent.guittot@linaro.org,
         morten.rasmussen@arm.com, chris.redpath@arm.com
 Cc: linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com
-Subject: [RFC v2 PATCH 06/11] sched: delete redundant sd init macros
-Date: Mon, 20 Jan 2014 12:39:43 +0000
-Message-Id: <1390221588-20473-7-git-send-email-dietmar.eggemann@arm.com>
+Subject: [RFC v2 PATCH 08/11] sched: introduce a func ptr for sd topology flags
+Date: Mon, 20 Jan 2014 12:39:45 +0000
+Message-Id: <1390221588-20473-9-git-send-email-dietmar.eggemann@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
 References: <1390221588-20473-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 20 Jan 2014 12:40:04.0254 (UTC) FILETIME=[BE0CEBE0:01CF15DC]
-X-MC-Unique: 114012012400509901
+X-OriginalArrivalTime: 20 Jan 2014 12:40:05.0176 (UTC) FILETIME=[BE999B80:01CF15DC]
+X-MC-Unique: 114012012400604801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0KCg4kB003810
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0KCgOAb003814
 
 From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-This patch deletes all occurrences of SD_SIBLING_INIT, SD_MC_INIT,
-SD_BOOK_INIT and SD_CPU_INIT.
+To be able to set sd topology flags via the topology_info[] table
+dependent on runtime information (cpu feature or per cpu), this patch
+changes the provision of the sd topology flags from a simple int to a func
+ptr.
 
-The SD_NODE_INIT in arch/metag/include/asm/topology.h seems to be
-leftover, probably because the metag arch got introduced at the same
-time (v3.9) the other archs moved away from SD_NODE_INIT.
+The default flags func ptr for SMT and MC level are defined in
+include/linux/sched.h.  Since there are no sd topology flags for BOOK and
+CPU level in the default topology info table, no default flags func ptr
+for these level are defined.  The function sd_init() can handle the fact
+that there is no sd devel flags func ptr defined.
+
+The sd topology flags func ptr definition has an int cpu argument which is
+only necessary when we start to set up sd topology flags differently for
+different sched groups.
 
 Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 ---
- arch/ia64/include/asm/topology.h  |   24 --------
- arch/metag/include/asm/topology.h |   27 ---------
- arch/s390/include/asm/topology.h  |    2 -
- arch/tile/include/asm/topology.h  |   33 -----------
- include/linux/topology.h          |  115 -------------------------------------
- 5 files changed, 201 deletions(-)
+ include/linux/sched.h |   15 ++++++++++++++-
+ kernel/sched/core.c   |   19 +++++++++++++------
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
-diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
-index a2496e449b75..20d12fa7e0cd 100644
---- a/arch/ia64/include/asm/topology.h
-+++ b/arch/ia64/include/asm/topology.h
-@@ -46,30 +46,6 @@
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f79a0d5041fb..055d79e594ef 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2781,10 +2781,11 @@ static inline unsigned long rlimit_max(unsigned int limit)
+ }
  
- void build_cpu_to_node_map(void);
+ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
++typedef int (*sched_domain_flags_f)(int cpu);
  
--#define SD_CPU_INIT (struct sched_domain) {		\
--	.parent			= NULL,			\
--	.child			= NULL,			\
--	.groups			= NULL,			\
--	.min_interval		= 1,			\
--	.max_interval		= 4,			\
--	.busy_factor		= 64,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 2,			\
--	.busy_idx		= 2,			\
--	.idle_idx		= 1,			\
--	.newidle_idx		= 0,			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_NEWIDLE	\
--				| SD_BALANCE_EXEC	\
--				| SD_BALANCE_FORK	\
--				| SD_WAKE_AFFINE,	\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
--	.nr_balance_failed	= 0,			\
--}
--
- #endif /* CONFIG_NUMA */
+ struct sched_domain_topology_info {
+ 	sched_domain_mask_f mask;
+-	int flags;
++	sched_domain_flags_f flags;
+ #ifdef CONFIG_SCHED_DEBUG
+ 	char *name;
+ #endif
+@@ -2799,4 +2800,16 @@ struct sched_domain_topology_info {
+ extern void
+ set_sd_topology_info(struct sched_domain_topology_info *ti, unsigned int s);
  
- #ifdef CONFIG_SMP
-diff --git a/arch/metag/include/asm/topology.h b/arch/metag/include/asm/topology.h
-index 8e9c0b3b9691..e95f874ded1b 100644
---- a/arch/metag/include/asm/topology.h
-+++ b/arch/metag/include/asm/topology.h
-@@ -3,33 +3,6 @@
++#ifdef CONFIG_SCHED_SMT
++static inline int cpu_smt_flags(int cpu)
++{
++	return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
++}
++#endif
++
++static inline int cpu_coregroup_flags(int cpu)
++{
++	return SD_SHARE_PKG_RESOURCES;
++}
++
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9edd1d511f3c..79f34cc5f547 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5335,10 +5335,10 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
+  */
+ static struct sched_domain_topology_info default_topology_info[] = {
+ #ifdef CONFIG_SCHED_SMT
+-	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES, SD_NAME(SIBLING) },
++	{ cpu_smt_mask, cpu_smt_flags, SD_NAME(SIBLING) },
+ #endif
+ #ifdef CONFIG_SCHED_MC
+-	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES, SD_NAME(MC) },
++	{ cpu_coregroup_mask, cpu_coregroup_flags, SD_NAME(MC) },
+ #endif
+ #ifdef CONFIG_SCHED_BOOK
+ 	{ cpu_book_mask, SD_NAME(BOOK) },
+@@ -5374,6 +5374,11 @@ static const struct cpumask *sd_numa_mask(int cpu)
+ 	return sched_domains_numa_masks[sched_domains_curr_level][cpu_to_node(cpu)];
+ }
+ 
++static int sd_numa_flags(int cpu)
++{
++	return SD_NUMA;
++}
++
+ static void sched_numa_warn(const char *str)
+ {
+ 	static int done = false;
+@@ -5598,7 +5603,7 @@ static void sched_init_topology(void)
+ 	for (j = 0; j < level; i++, j++) {
+ 		tl[i] = (struct sched_domain_topology_level){
+ 			.info.mask = sd_numa_mask,
+-			.info.flags = SD_NUMA,
++			.info.flags = sd_numa_flags,
+ 			.flags = SDTL_OVERLAP,
+ 			.numa_level = j,
+ 		};
+@@ -5613,6 +5618,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
+ {
+ 	struct sched_domain *sd = *per_cpu_ptr(tl->data.sd, cpu);
+ 	int sd_weight;
++	int flags;
  
  #ifdef CONFIG_NUMA
- 
--/* sched_domains SD_NODE_INIT for Meta machines */
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.parent			= NULL,			\
--	.child			= NULL,			\
--	.groups			= NULL,			\
--	.min_interval		= 8,			\
--	.max_interval		= 32,			\
--	.busy_factor		= 32,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 2,			\
--	.busy_idx		= 3,			\
--	.idle_idx		= 2,			\
--	.newidle_idx		= 0,			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_FORK	\
--				| SD_BALANCE_EXEC	\
--				| SD_BALANCE_NEWIDLE	\
--				| SD_SERIALIZE,		\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
--	.nr_balance_failed	= 0,			\
--	.max_newidle_lb_cost	= 0,			\
--	.next_decay_max_lb_cost	= jiffies,		\
--}
--
- #define cpu_to_node(cpu)	((void)(cpu), 0)
- #define parent_node(node)	((void)(node), 0)
- 
-diff --git a/arch/s390/include/asm/topology.h b/arch/s390/include/asm/topology.h
-index 05425b18c0aa..07763bdb408d 100644
---- a/arch/s390/include/asm/topology.h
-+++ b/arch/s390/include/asm/topology.h
-@@ -64,8 +64,6 @@ static inline void s390_init_cpu_topology(void)
- };
+ 	/*
+@@ -5622,10 +5628,11 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
  #endif
  
--#define SD_BOOK_INIT	SD_CPU_INIT
--
- #include <asm-generic/topology.h>
+ 	sd_weight = cpumask_weight(tl->info.mask(cpu));
++	flags = tl->info.flags ? tl->info.flags(cpu) : 0;
  
- #endif /* _ASM_S390_TOPOLOGY_H */
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index d15c0d8d550f..938311844233 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -44,39 +44,6 @@ static inline const struct cpumask *cpumask_of_node(int node)
- /* For now, use numa node -1 for global allocation. */
- #define pcibus_to_node(bus)		((void)(bus), -1)
+-	if (WARN_ONCE(tl->info.flags & ~TOPOLOGY_SD_FLAGS,
++	if (WARN_ONCE(flags & ~TOPOLOGY_SD_FLAGS,
+ 			"wrong flags in topology info\n"))
+-		tl->info.flags &= ~TOPOLOGY_SD_FLAGS;
++		flags &= ~TOPOLOGY_SD_FLAGS;
  
--/*
-- * TILE architecture has many cores integrated in one processor, so we need
-- * setup bigger balance_interval for both CPU/NODE scheduling domains to
-- * reduce process scheduling costs.
-- */
--
--/* sched_domains SD_CPU_INIT for TILE architecture */
--#define SD_CPU_INIT (struct sched_domain) {				\
--	.min_interval		= 4,					\
--	.max_interval		= 128,					\
--	.busy_factor		= 64,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 0*SD_WAKE_AFFINE			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 0*SD_SERIALIZE			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 32,					\
--}
--
- /* By definition, we create nodes based on online memory. */
- #define node_has_online_mem(nid) 1
+ 	*sd = (struct sched_domain){
+ 				.min_interval  = sd_weight,
+@@ -5638,7 +5645,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
+ 						| 1*SD_BALANCE_EXEC
+ 						| 1*SD_BALANCE_FORK
+ 						| 1*SD_WAKE_AFFINE
+-						| tl->info.flags
++						| flags
+ 						,
  
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index 0bfcead0ace7..0a7d6142f242 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -66,121 +66,6 @@ int arch_update_cpu_topology(void);
- #define PENALTY_FOR_NODE_WITH_CPUS	(1)
- #endif
- 
--/*
-- * Below are the 3 major initializers used in building sched_domains:
-- * SD_SIBLING_INIT, for SMT domains
-- * SD_CPU_INIT, for SMP domains
-- *
-- * Any architecture that cares to do any tuning to these values should do so
-- * by defining their own arch-specific initializer in include/asm/topology.h.
-- * A definition there will automagically override these default initializers
-- * and allow arch-specific performance tuning of sched_domains.
-- * (Only non-zero and non-null fields need be specified.)
-- */
--
--#ifdef CONFIG_SCHED_SMT
--/* MCD - Do we really need this?  It is always on if CONFIG_SCHED_SMT is,
-- * so can't we drop this in favor of CONFIG_SCHED_SMT?
-- */
--#define ARCH_HAS_SCHED_WAKE_IDLE
--/* Common values for SMT siblings */
--#ifndef SD_SIBLING_INIT
--#define SD_SIBLING_INIT (struct sched_domain) {				\
--	.min_interval		= 1,					\
--	.max_interval		= 2,					\
--	.busy_factor		= 64,					\
--	.imbalance_pct		= 110,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 1*SD_WAKE_AFFINE			\
--				| 1*SD_SHARE_CPUPOWER			\
--				| 1*SD_SHARE_PKG_RESOURCES		\
--				| 0*SD_SERIALIZE			\
--				| 0*SD_PREFER_SIBLING			\
--				| arch_sd_sibling_asym_packing()	\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 1,					\
--	.smt_gain		= 1178,	/* 15% */			\
--	.max_newidle_lb_cost	= 0,					\
--	.next_decay_max_lb_cost	= jiffies,				\
--}
--#endif
--#endif /* CONFIG_SCHED_SMT */
--
--#ifdef CONFIG_SCHED_MC
--/* Common values for MC siblings. for now mostly derived from SD_CPU_INIT */
--#ifndef SD_MC_INIT
--#define SD_MC_INIT (struct sched_domain) {				\
--	.min_interval		= 1,					\
--	.max_interval		= 4,					\
--	.busy_factor		= 64,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 1*SD_SHARE_PKG_RESOURCES		\
--				| 0*SD_SERIALIZE			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 1,					\
--	.max_newidle_lb_cost	= 0,					\
--	.next_decay_max_lb_cost	= jiffies,				\
--}
--#endif
--#endif /* CONFIG_SCHED_MC */
--
--/* Common values for CPUs */
--#ifndef SD_CPU_INIT
--#define SD_CPU_INIT (struct sched_domain) {				\
--	.min_interval		= 1,					\
--	.max_interval		= 4,					\
--	.busy_factor		= 64,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 0*SD_SERIALIZE			\
--				| 1*SD_PREFER_SIBLING			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 1,					\
--	.max_newidle_lb_cost	= 0,					\
--	.next_decay_max_lb_cost	= jiffies,				\
--}
--#endif
--
--#ifdef CONFIG_SCHED_BOOK
--#ifndef SD_BOOK_INIT
--#error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
--#endif
--#endif /* CONFIG_SCHED_BOOK */
--
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DECLARE_PER_CPU(int, numa_node);
- 
+ 				.last_balance     = jiffies,
 -- 
 1.7.9.5
 
