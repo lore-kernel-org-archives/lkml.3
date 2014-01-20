@@ -1,55 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaATLqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 06:46:46 -0500
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:38937 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750738AbaATLqh (ORCPT
+	id S1753599AbaATLrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 06:47:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54459 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaATLq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 06:46:37 -0500
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jan 2014 06:46:37 EST
-X-Yandex-Uniq: 75a4ac6f-d268-4e4b-8eba-99f808969fc3
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, stfomichev@yandex-team.ru,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        adrian.hunter@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] perf fixes
-Date: Mon, 20 Jan 2014 15:39:37 +0400
-Message-Id: <1390217980-22424-1-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 20 Jan 2014 06:46:58 -0500
+Date: Mon, 20 Jan 2014 12:46:06 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Henrik Austad <henrik@austad.us>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com, rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+Message-ID: <20140120114606.GA31570@twins.programming.kicks-ass.net>
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com>
+ <20140120112442.GA8907@austad.us>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120112442.GA8907@austad.us>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series contains couple of unrelated changes. I already sent two of them
-(perf util, perf tools) to the lkml but didn't get any response.
-Thus resending them along with new perf timechart fix.
+On Mon, Jan 20, 2014 at 12:24:42PM +0100, Henrik Austad wrote:
+> > +2. Task scheduling
+> > +==================
+> > +
+> > + The typical -deadline task is composed of a computation phase (instance)
+> > + which is activated on a periodic or sporadic fashion. The expected (maximum)
+> > + duration of such computation is called the task's runtime; the time interval
+> > + by which each instance needs to be completed is called the task's relative
+> > + deadline. The task's absolute deadline is dynamically calculated as the
+> > + time instant a task (or, more properly) activates plus the relative
+> > + deadline.
+> 
+> activates - released?
+> 
+> Since real-time papers from different rt-campus around the academia insist 
+> on using *slightly* different terminology, perhaps add a short dictionary 
+> for some of the more common terms?
 
-- perf timechart: fix wrong SVG height
-  removes unused empty space from generated SVG when called with -p 0 option
+Oh gawd, they really don't conform with their definitions? I'd not
+noticed that.
 
-- perf util: free cpu_map in perf_session__cpu_bitmap
-  frees temporary cpu_map
+> D: relative deadline, typically N ms after release
 
-- perf tools: bring back old behavior when NO_DEMAGLE doesn't link with libbfd
-  this is a patch I'd like to get feedback on. The motivation behind it is to
-  have a possibility to link without libbfd (because on 3.10 lts NO_DEMANGLE=1
-  does not link with libbfd and I'd like to preserve this behavior).
+You failed to define release :-) Its the 'wakeup' event, right? Where
+the activation would be the moment we actually schedule the
+job/instance?
 
-Stanislav Fomichev (3):
-  perf timechart: fix wrong SVG height
-  perf util: free cpu_map in perf_session__cpu_bitmap
-  perf tools: bring back old behavior when NO_DEMAGLE doesn't link with
-    libbfd
+> d: absolute deadline, the physical time when a given instance of a job 
+>    needs to be completed
+> R: relative release time, for periodic tasks, this is typically 'every N 
+>    ms'
+> r: absolute release time
+> C: Worst-case execution time
+> 
+>    ...you get the idea.
+> 
+> Perhaps too academic?
 
- tools/perf/builtin-timechart.c | 3 +++
- tools/perf/config/Makefile     | 8 +++-----
- tools/perf/util/session.c      | 2 ++
- 3 files changed, 8 insertions(+), 5 deletions(-)
+I think not, one can never be too clear about these things.
 
--- 
-1.8.3.2
+> > +4. Tasks CPU affinity
+> > +=====================
+> > +
+> > + -deadline tasks cannot have an affinity mask smaller that the entire
+> > + root_domain they are created on. However, affinities can be specified
+> > + through the cpuset facility (Documentation/cgroups/cpusets.txt).
+> 
+> Does this mean that sched_deadline is a somewhat global implementation? 
 
+Yes, its a GEDF like thing.
+
+> Or 
+> rather, at what point in time will sched_deadline take all cpus in a set 
+> into consideration and when will it only look at the current CPU? Where is 
+> the line drawn between global and fully partitioned?
+
+Its drawn >< that close to global.
+
+So I think adding a SCHED_FLAG_DL_HARD option which would reduce to
+strict per-cpu affinity and deliver 0 tardiness is a future work.
+
+Its slightly complicated in that you cannot share the DL tree between
+the GEDF and EDF jobs, because while a GEDF job might have an earlier
+deadline an EDF job might have a lesser laxity. Not running the EDF job
+in that case would result in a deadline miss (although, assuming we'd
+still have function GEDF admission control, still have bounded
+tardiness).
+
+I'm not entirely sure we want to do anything in between the fully global
+and per-cpu 'hard' mode -- random affinity masks seems like a terribly
+hard problem.
+
+NOTE: the 'global' nature is per root_domain, so cpusets can be used to
+carve the thing into smaller balance sets.
+
+> Also, how do you account the budget when a resource holder is boosted in 
+> order to release a resource? (IIRC, you use BWI, right?)
+
+Boosting is still work in progress, but yes, it does a BWI like thing.
