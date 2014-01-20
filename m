@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaATXQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 18:16:28 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43275 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751517AbaATXQ1 (ORCPT
+	id S1753296AbaATXRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 18:17:33 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63601 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaATXR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 18:16:27 -0500
-Date: Mon, 20 Jan 2014 23:16:03 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
-	device probe
-Message-ID: <20140120231603.GL15937@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <20140120211601.GB634@kroah.com> <20140120213206.GJ15937@n2100.arm.linux.org.uk> <20140120231141.GA2355@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120231141.GA2355@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 20 Jan 2014 18:17:28 -0500
+Message-ID: <1390259843.2501.2.camel@leira.trondhjem.org>
+Subject: Re: [PATCH] SUNRPC: Allow one callback request to be received from
+ two sk_buff
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+Cc: bfields@redhat.com, davem@davemloft.net, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 20 Jan 2014 16:17:23 -0700
+In-Reply-To: <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
+References: <n>
+	 <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
+Organization: Primary Data
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 03:11:41PM -0800, Greg KH wrote:
-> On Mon, Jan 20, 2014 at 09:32:06PM +0000, Russell King - ARM Linux wrote:
-> > On Mon, Jan 20, 2014 at 01:16:01PM -0800, Greg KH wrote:
-> > > On Mon, Jan 20, 2014 at 10:05:30AM +0000, Russell King - ARM Linux wrote:
-> > > > On Mon, Jan 20, 2014 at 02:32:34PM +0530, Tushar Behera wrote:
-> > > > > uart_register_driver call binds the driver to a specific device
-> > > > > node through tty_register_driver call. This should typically happen
-> > > > > during device probe call.
-> > > > > 
-> > > > > In a multiplatform scenario, it is possible that multiple serial
-> > > > > drivers are part of the kernel. Currently the driver registration fails
-> > > > > if multiple serial drivers with same default major/minor numbers are
-> > > > > included in the kernel.
-> > > > > 
-> > > > > A typical case is observed with amba-pl011 and samsung-uart drivers.
-> > > > 
-> > > > The samsung-uart driver is at fault here - the major/minor numbers were
-> > > > officially registered to amba-pl011.  Samsung needs to be fixed properly.
-> > > 
-> > > I agree, the Samsung driver is "broken" here, but that's no reason why
-> > > these two drivers can't register with the tty layer _after_ the hardware
-> > > is detected, and not before.
-> > > 
-> > > That saves resources on systems that build the drivers in, yet do not
-> > > have the hardware present, which is always a good thing.
-> > 
-> > Great, so what you're saying is that we need to wait until the first
-> > device calls into the probe function.  What about removal... how does
-> > a driver know when it's last device has been removed to de-register
-> > that?
+On Mon, 2014-01-20 at 14:59 +0800, shaobingqing wrote:
+> In current code, there only one struct rpc_rqst is prealloced. If one 
+> callback request is received from two sk_buff, the xprt_alloc_bc_request
+> would be execute two times with the same transport->xid. The first time
+> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
+> bit of transport->tcp_flags will not be cleared. The second time 
+> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
+> pointer will be returned, then xprt_force_disconnect occur. I think one 
+> callback request can be allowed to be received from two sk_buff.
 > 
-> The "bus" that the device is on handles that, right?
+> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+> ---
+>  net/sunrpc/xprtsock.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> > I guess it needs the driver model to provide some way to know when a
-> > driver is completely unbound - but isn't that racy?
-> 
-> How is it racy?  That's how the driver model works...
+> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+> index ee03d35..606950d 100644
+> --- a/net/sunrpc/xprtsock.c
+> +++ b/net/sunrpc/xprtsock.c
+> @@ -1271,8 +1271,13 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>  	struct sock_xprt *transport =
+>  				container_of(xprt, struct sock_xprt, xprt);
+>  	struct rpc_rqst *req;
+> +	static struct rpc_rqst *req_partial;
+> +
+> +	if (req_partial == NULL)
+> +		req = xprt_alloc_bc_request(xprt);
+> +	else if (req_partial->rq_xid == transport->tcp_xid)
+> +		req = req_partial;
 
-Think about what happens when the last device unregisters, but a new
-device comes along and is probed.
+What happens here if req_partial->rq_xid != transport->tcp_xid? AFAICS,
+req will be undefined. Either way, you cannot use a static variable for
+storage here: that isn't re-entrant.
 
-I don't believe the driver model has any locking to prevent a drivers
-->probe function running concurrently with it's ->remove function for
-two (or more) devices.
+> -	req = xprt_alloc_bc_request(xprt);
+>  	if (req == NULL) {
+>  		printk(KERN_WARNING "Callback slot table overflowed\n");
+>  		xprt_force_disconnect(xprt);
+> @@ -1285,6 +1290,7 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>  
+>  	if (!(transport->tcp_flags & TCP_RCV_COPY_DATA)) {
+>  		struct svc_serv *bc_serv = xprt->bc_serv;
+> +		req_partial = NULL;
+>  
+>  		/*
+>  		 * Add callback request to callback list.  The callback
+> @@ -1297,7 +1303,8 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>  		list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
+>  		spin_unlock(&bc_serv->sv_cb_lock);
+>  		wake_up(&bc_serv->sv_cb_waitq);
+> -	}
+> +	} else
+> +		req_partial = req;
+>  
+>  	req->rq_private_buf.len = transport->tcp_copied;
+>  
 
-The locking against this is done on a per-device basis, not a per-driver
-basis.
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Trond Myklebust
+Linux NFS client maintainer
+
