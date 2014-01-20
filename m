@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaATI5p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 03:57:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41882 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaATI5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 03:57:43 -0500
-Message-ID: <52DCE4CF.2060605@zytor.com>
-Date: Mon, 20 Jan 2014 00:56:47 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753138AbaATI6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 03:58:52 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51513 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaATI6v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 03:58:51 -0500
+Message-ID: <52DCE53E.90109@linaro.org>
+Date: Mon, 20 Jan 2014 16:58:38 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au> <20140116121955.GQ31570@twins.programming.kicks-ass.net> <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au> <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com> <20140120082620.GB30183@twins.programming.kicks-ass.net>
-In-Reply-To: <20140120082620.GB30183@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sudeep Holla <Sudeep.Holla@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
+Subject: Re: [PATCH 02/20] ARM64 : Add dummy asm/cpu.h
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-3-git-send-email-hanjun.guo@linaro.org> <52D93CAA.1080604@arm.com>
+In-Reply-To: <52D93CAA.1080604@arm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 12:26 AM, Peter Zijlstra wrote:
-> On Sun, Jan 19, 2014 at 11:45:43PM -0500, Len Brown wrote:
->> +static void mwait_idle(void)
->> +{
->> +       mwait_idle_with_hints(0, 0);
->> +}
+On 2014-1-17 22:22, Sudeep Holla wrote:
+> On 17/01/14 12:24, Hanjun Guo wrote:
+>> ACPI requires a cpu.h, add a dummy one copied from arm. This will need
+>> updated or replaced as ACPI based cpu hotplug or cpu topology for armv8
+>> is worked out.
+>>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  arch/arm64/include/asm/cpu.h |   25 +++++++++++++++++++++++++
+>>  1 file changed, 25 insertions(+)
+>>  create mode 100644 arch/arm64/include/asm/cpu.h
+>>
+>> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
+>> new file mode 100644
+>> index 0000000..8625eb1
+>> --- /dev/null
+>> +++ b/arch/arm64/include/asm/cpu.h
+>> @@ -0,0 +1,25 @@
+>> +/*
+>> + *  Copyright (C) 2004-2005 ARM Ltd.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +#ifndef __ASM_ARM_CPU_H
+>> +#define __ASM_ARM_CPU_H
 >> +
->>
->> The reason the patch above will crash Core2 machines is because
->> core2 machines don't support mwait_idle_with_hints().
->>
->> The calling sequence for old and new MWAIT instructions is different.
->> The former must be invoked with interrupts enabled,
->> and the later can be invoked with interrupts disabled,
->> which is a feature that Linux takes advantage of.
+>> +#include <linux/percpu.h>
+>> +#include <linux/cpu.h>
+>> +#include <linux/topology.h>
+>> +
+>> +struct cpuinfo_arm {
+>> +	struct cpu	cpu;
+>> +	u64		cpuid;
+>> +#ifdef CONFIG_SMP
+>> +	unsigned int	loops_per_jiffy;
 > 
-> What old and new? They're the same byte sequence: 0x0f 0x01 0xc9
-> 
-> And your 'old' __sti_mwait(0,0) has the exact same arguments as
-> mwait_idle_with_hints(0,0).
-> 
+> IIUC we don't have loop-based delay support in ARM64.
+> It's always timer based and in which case we don't need loops_per_jiffy
 
-The difference is the STI!
+Ok, will remove it.
 
-	-hpa
-
+Thanks
+Hanjun
