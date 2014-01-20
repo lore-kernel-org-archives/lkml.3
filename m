@@ -1,182 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaATKhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:37:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34050 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729AbaATKh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:37:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,689,1384329600"; 
-   d="scan'208";a="441603997"
-Date: Mon, 20 Jan 2014 15:05:41 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jingchang Lu <jingchang.lu@freescale.com>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Huan Wang <Huan.Wang@freescale.com>
-Subject: Re: [PATCHv10 2/2] dma: Add Freescale eDMA engine driver support
-Message-ID: <20140120093541.GX26823@intel.com>
-References: <1389938684-29467-1-git-send-email-b35083@freescale.com>
- <1389938684-29467-3-git-send-email-b35083@freescale.com>
- <20140120074019.GF26823@intel.com>
- <43d79ce905e24e9bb58ef49ac19db7d7@BL2PR03MB467.namprd03.prod.outlook.com>
+	id S1753058AbaATKiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:38:11 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:57304 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372AbaATKiJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 05:38:09 -0500
+X-IronPort-AV: E=Sophos;i="4.95,689,1384300800"; 
+   d="scan'208";a="92350801"
+Message-ID: <52DCFC8F.1050607@citrix.com>
+Date: Mon, 20 Jan 2014 10:38:07 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <43d79ce905e24e9bb58ef49ac19db7d7@BL2PR03MB467.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: MAINTAINERS tree branches [xen tip as an example]
+References: <20140117230219.GA28413@garbanzo.do-not-panic.com>
+In-Reply-To: <20140117230219.GA28413@garbanzo.do-not-panic.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 09:06:43AM +0000, Jingchang Lu wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Vinod Koul [mailto:vinod.koul@intel.com]
-> > Sent: Monday, January 20, 2014 3:40 PM
-> > To: Lu Jingchang-B35083
-> > Cc: dan.j.williams@intel.com; arnd@arndb.de; shawn.guo@linaro.org;
-> > pawel.moll@arm.com; mark.rutland@arm.com; swarren@wwwdotorg.org; linux-
-> > kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> > devicetree@vger.kernel.org; Wang Huan-B18965
-> > Subject: Re: [PATCHv10 2/2] dma: Add Freescale eDMA engine driver support
-> > 
-> > On Fri, Jan 17, 2014 at 02:04:44PM +0800, Jingchang Lu wrote:
-> > > Add Freescale enhanced direct memory(eDMA) controller support.
-> > > This module can be found on Vybrid and LS-1 SoCs.
-> > >
-> > > Signed-off-by: Alison Wang <b18965@freescale.com>
-> > > Signed-off-by: Jingchang Lu <b35083@freescale.com>
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > ---
-> > 
-> > > +static int fsl_edma_control(struct dma_chan *chan, enum dma_ctrl_cmd
-> > cmd,
-> > > +		unsigned long arg)
-> > > +{
-> > > +	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
-> > > +	struct dma_slave_config *cfg = (void *)arg;
-> > > +	unsigned long flags;
-> > > +	LIST_HEAD(head);
-> > > +
-> > > +	switch (cmd) {
-> > > +	case DMA_TERMINATE_ALL:
-> > > +		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
-> > > +		fsl_edma_disable_request(fsl_chan);
-> > > +		fsl_chan->edesc = NULL;
-> > > +		vchan_get_all_descriptors(&fsl_chan->vchan, &head);
-> > > +		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
-> > > +		vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
-> > > +		return 0;
-> > well what happens to the current ongoing transactions, i don't see those
-> > getting
-> > terminated?
-> The fsl_edma_disable_request(fsl_chan) would end the channel's ongoing transaction, then
-> the eDMA would not response to device dma request, and the vchan_dma_desc_free_list()
-> will release all associate memory. Thanks.
-Can you explain a bit more how terminate will happen, given taht you are using
-same thing for pause?
+On 17/01/14 23:02, Luis R. Rodriguez wrote:
+> As per linux-next Next/Trees [0], and a recent January MAINTAINERS patch [1]
+> from David one of the xen development kernel git trees to track is
+> xen/git.git [2], this tree however gives has undefined references when doing a
+> fresh clone [shown below], but as expected does work well when only cloning
+> the linux-next branch [also below]. While I'm sure this is fine for
+> folks who can do the guess work do we really want to live with trees like
+> these on MAINTAINERS ? The MAINTAINERS file doesn't let us specify branches
+> required, so perhaps it should -- if we want to live with these ? Curious, how
+> many other git are there with a similar situation ?
 
-> > 
-> > > +
-> > > +	case DMA_SLAVE_CONFIG:
-> > > +		fsl_chan->fsc.dir = cfg->direction;
-> > > +		if (cfg->direction == DMA_DEV_TO_MEM) {
-> > > +			fsl_chan->fsc.dev_addr = cfg->src_addr;
-> > > +			fsl_chan->fsc.addr_width = cfg->src_addr_width;
-> > > +			fsl_chan->fsc.burst = cfg->src_maxburst;
-> > > +			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg-
-> > >src_addr_width);
-> > > +		} else if (cfg->direction == DMA_MEM_TO_DEV) {
-> > > +			fsl_chan->fsc.dev_addr = cfg->dst_addr;
-> > > +			fsl_chan->fsc.addr_width = cfg->dst_addr_width;
-> > > +			fsl_chan->fsc.burst = cfg->dst_maxburst;
-> > > +			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg-
-> > >dst_addr_width);
-> > okay atrr is address width, why not save this standard struct instead?
-> The value saved in fsc.attr is transferred by fsl_edma_get_tcd_attr(), it can
-> be set into the channel control register later directly. the edma driver doesn't
-> need to save all dma_slave_config parameters, so it only gets the necessaries.
-Okay then this apprach looks okay
+We don't recommend doing development work for the Xen subsystem based on
+xen/tip.git so I think it's fine to have to checkout the specific branch
+you are interested in.
 
-> > > +		} else {
-> > > +			return -EINVAL;
-> > > +		}
-> > > +		return 0;
-> > > +
-> > > +	case DMA_PAUSE:
-> > > +		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
-> > > +		if (fsl_chan->edesc) {
-> > > +			fsl_edma_disable_request(fsl_chan);
-> > > +			fsl_chan->status = DMA_PAUSED;
-> > > +		}
-> > > +		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
-> > > +		return 0;
-> > > +
-> > > +	case DMA_RESUME:
-> > > +		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
-> > > +		if (fsl_chan->edesc) {
-> > > +			fsl_edma_enable_request(fsl_chan);
-> > > +			fsl_chan->status = DMA_IN_PROGRESS;
-> > > +		}
-> > > +		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
-> > > +		return 0;
-> > > +
-> > > +	default:
-> > > +		return -ENXIO;
-> > > +	}
-> > > +}
-> > > +
-> > 
-> > > +static struct fsl_edma_desc *fsl_edma_alloc_desc(struct fsl_edma_chan
-> > *fsl_chan,
-> > > +		int sg_len)
-> > > +{
-> > > +	struct fsl_edma_desc *fsl_desc;
-> > > +	int i;
-> > > +
-> > > +	fsl_desc = kzalloc(sizeof(*fsl_desc) + sizeof(struct
-> > fsl_edma_sw_tcd) * sg_len,
-> > > +				GFP_NOWAIT);
-> > > +	if (!fsl_desc)
-> > > +		return NULL;
-> > > +
-> > > +	fsl_desc->echan = fsl_chan;
-> > > +	fsl_desc->n_tcds = sg_len;
-> > > +	for (i = 0; i < sg_len; i++) {
-> > > +		fsl_desc->tcd[i].vtcd = dma_pool_alloc(fsl_chan->tcd_pool,
-> > > +					GFP_NOWAIT, &fsl_desc->tcd[i].ptcd);
-> > > +		if (!fsl_desc->tcd[i].vtcd)
-> > > +			goto err;
-> > > +	}
-> > > +	return fsl_desc;
-> > > +
-> > > +err:
-> > > +	while (--i >= 0)
-> > > +		dma_pool_free(fsl_chan->tcd_pool, fsl_desc->tcd[i].vtcd,
-> > > +				fsl_desc->tcd[i].ptcd);
-> > > +	kfree(fsl_desc);
-> > > +	return NULL;
-> > > +}
-> > > +
-> > > +static struct dma_async_tx_descriptor *fsl_edma_prep_dma_cyclic(
-> > > +		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
-> > > +		size_t period_len, enum dma_transfer_direction direction,
-> > > +		unsigned long flags, void *context)
-> > > +{
-> > you may want to implement the capablities api subsequently for audio
-> > usage.
-> Do you mean the device_slave_caps function? If it is, I will add it.
-Yes, that can be incrementally added..
+> The xen project web site actually lists [3] Konrad's xen git tree [4] for
+> development as the primary development tree, that probably should be
+> updated now, and likely with instructions to clone only the linux-next
+> branch ?
 
--- 
+I've updated the wiki to read:
+
+    For development the recommended branch is:
+
+        The mainline Linus linux.git tree.
+
+    To see what's queued for the next release, the next merge window,
+    and other work in progress:
+
+        The Xen subsystem maintainers' tip.git tree.
+
+David
