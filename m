@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaATHAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 02:00:14 -0500
-Received: from mx.nrchpc.ac.cn ([211.103.180.228]:34021 "EHLO mx.bwstor.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750733AbaATHAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 02:00:11 -0500
-From: shaobingqing <shaobingqing@bwstor.com.cn>
-To: trond.myklebust@primarydata.com, bfields@redhat.com, davem@davemloft.net
-Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        shaobingqing <shaobingqing@bwstor.com.cn>
-Subject: [PATCH] SUNRPC: Allow one callback request to be received from two sk_buff
-Date: Mon, 20 Jan 2014 14:59:14 +0800
-Message-Id: <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <n>
-References: <n>
+	id S1752656AbaATHHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 02:07:30 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:43507 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaATHH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 02:07:28 -0500
+Date: Mon, 20 Jan 2014 08:07:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        bp@suse.de, linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com,
+        hmh@hmh.eng.br, Kim.Naru@amd.com, Suravee.Suthikulpanit@amd.com
+Subject: Re: [PATCH] x86, quirks: Add workaround for AMD F16h Erratum792
+Message-ID: <20140120070724.GA31940@gmail.com>
+References: <1389983973-3965-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389983973-3965-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current code, there only one struct rpc_rqst is prealloced. If one 
-callback request is received from two sk_buff, the xprt_alloc_bc_request
-would be execute two times with the same transport->xid. The first time
-xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
-bit of transport->tcp_flags will not be cleared. The second time 
-xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
-pointer will be returned, then xprt_force_disconnect occur. I think one 
-callback request can be allowed to be received from two sk_buff.
 
-Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
----
- net/sunrpc/xprtsock.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+* Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com> wrote:
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index ee03d35..606950d 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1271,8 +1271,13 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
- 	struct sock_xprt *transport =
- 				container_of(xprt, struct sock_xprt, xprt);
- 	struct rpc_rqst *req;
-+	static struct rpc_rqst *req_partial;
-+
-+	if (req_partial == NULL)
-+		req = xprt_alloc_bc_request(xprt);
-+	else if (req_partial->rq_xid == transport->tcp_xid)
-+		req = req_partial;
- 
--	req = xprt_alloc_bc_request(xprt);
- 	if (req == NULL) {
- 		printk(KERN_WARNING "Callback slot table overflowed\n");
- 		xprt_force_disconnect(xprt);
-@@ -1285,6 +1290,7 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
- 
- 	if (!(transport->tcp_flags & TCP_RCV_COPY_DATA)) {
- 		struct svc_serv *bc_serv = xprt->bc_serv;
-+		req_partial = NULL;
- 
- 		/*
- 		 * Add callback request to callback list.  The callback
-@@ -1297,7 +1303,8 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
- 		list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
- 		spin_unlock(&bc_serv->sv_cb_lock);
- 		wake_up(&bc_serv->sv_cb_waitq);
--	}
-+	} else
-+		req_partial = req;
- 
- 	req->rq_private_buf.len = transport->tcp_copied;
- 
--- 
-1.7.4.2
+> The workaround for this Erratum is included in AGESA. But BIOSes spun
+> only after Jan2014 will have the fix (atleast server versions of the
+> chip). The erratum affects both client and server platforms and since
+> we cannot say with certainity that ALL BIOSes on systems out in the
+> field will have the fix, we should probably insulate ourselves in case
+> BIOS does not do the right thing or someone is using old BIOSes.
+> 
+> Refer Revision Guide for AMD F16h models 00h-0fh, document 51810
+> Rev. 3.04, November2013 for details on the Erratum.
+> 
+> Tested the patch on Fam16h server platform and works fine.
+> 
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>  arch/x86/kernel/quirks.c |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+> index 04ee1e2..e55ae02 100644
+> --- a/arch/x86/kernel/quirks.c
+> +++ b/arch/x86/kernel/quirks.c
+> @@ -571,3 +571,34 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
+>  			quirk_amd_nb_node);
+>  
+>  #endif
+> +
+> +#if defined(CONFIG_PCI)
+> +/*
+> + * Apply AMD Fam16h Erratum792
+> + * see Revision Guide for AMD F16h models 00h-0fh,
+> + * document 51810 rev. 3.04, Nov 2013
+> + */
+> +static void quirk_amd_dram_scrub(struct pci_dev *dev)
 
+The reference to the erratum is useful for people who want to see more 
+details, but at least a short description of the problem being fixed 
+and systems affected by the quirk is needed. 'DRAM scrub' is not very 
+informative.
+
+Thanks,
+
+	Ingo
