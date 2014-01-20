@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaATL2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 06:28:35 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42723 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752355AbaATL2c (ORCPT
+	id S1752803AbaATL2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 06:28:47 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:43497 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaATL2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 06:28:32 -0500
-Date: Mon, 20 Jan 2014 11:28:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonas Jensen <jonas.jensen@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, dan.j.williams@intel.com
-Subject: Re: [PATCH] dma: fix vchan_cookie_complete() debug print
-Message-ID: <20140120112822.GA15937@n2100.arm.linux.org.uk>
-References: <1386344529-25617-1-git-send-email-jonas.jensen@gmail.com> <20140120095917.GZ26823@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120095917.GZ26823@intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 20 Jan 2014 06:28:44 -0500
+Date: Mon, 20 Jan 2014 12:28:35 +0100
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: hannes@cmpxchg.org, liuj97@gmail.com, santosh.shilimkar@ti.com,
+        grygorii.strashko@ti.com, iamjoonsoo.kim@lge.com,
+        robin.m.holt@gmail.com, yinghai@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm/nobootmem: Fix unused variable
+Message-ID: <20140120122835.35e6d366@lilie>
+In-Reply-To: <20140117133831.2a9306a03f9c6174ff096e48@linux-foundation.org>
+References: <1389879186-43649-1-git-send-email-phacht@linux.vnet.ibm.com>
+	<20140117133831.2a9306a03f9c6174ff096e48@linux-foundation.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012011-6892-0000-0000-000007846848
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 03:29:17PM +0530, Vinod Koul wrote:
-> On Fri, Dec 06, 2013 at 04:42:09PM +0100, Jonas Jensen wrote:
-> > vd->tx.cookie is set zero on dma_cookie_complete(),
-> > save to local before printing it.
-> > 
-> > Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> > ---
-> > 
-> > Notes:
-> >     dev_vdbg() could also be moved to happen earlier, what do you prefer?
-> This would be preferred IMHO. Also pls cc dmaengine@vger on this
 
-I prefer this version - it means that the verbose debug printk doesn't
-impact the completion timing when printk is expensive (eg, because its
-outputting via a serial port.)
+Am Fri, 17 Jan 2014 13:38:31 -0800
+schrieb Andrew Morton <akpm@linux-foundation.org>:
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+> Yes, that is a bit of an eyesore.  We often approach the problem this
+> way, which is nicer:
+
+> [ ... ]
+> #ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> 	{
+> 		phys_addr_t size;
+> 
+> 		[ ... ]
+>	}
+> #endif
+
+This is a very nice idea! I have updated my fix. This leads to a V5
+patch series (which I will post now) because the following to patches
+had to be slightly updated
+to fit on top of the fix.
+
+Kind regards
+
+Philipp
+
