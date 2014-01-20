@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaATQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:58:38 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:45101 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308AbaATQ6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:58:36 -0500
-Message-ID: <52DD55BA.4000201@gmail.com>
-Date: Mon, 20 Jan 2014 17:58:34 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Sergei Ianovich <ynvich@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>		 <201312182210.30544.arnd@arndb.de>		 <1387401646.31516.14.camel@host5.omatika.ru>		 <201312190630.11087.arnd@arndb.de>		 <1389309176.32346.1.camel@host5.omatika.ru>	 <1390234117.25903.0.camel@host5.omatika.ru> <52DD4CDE.7020705@gmail.com> <1390236763.25903.12.camel@host5.omatika.ru>
-In-Reply-To: <1390236763.25903.12.camel@host5.omatika.ru>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754005AbaATRCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:02:04 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:55907 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699AbaATRCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 12:02:01 -0500
+Message-ID: <1390237306.3865.13.camel@localhost.localdomain>
+Subject: Re: [PATCH 02/13] ppc/cell: use get_unused_fd_flags(0) instead of
+ get_unused_fd()
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, Yann Droneaud <ydroneaud@opteya.com>
+Date: Mon, 20 Jan 2014 18:01:46 +0100
+In-Reply-To: <1389605449.1585.9.camel@localhost.localdomain>
+References: <cover.1372777600.git.ydroneaud@opteya.com>
+	 <72f6f9ae898a664033f6b958bc7976b994544963.1372777600.git.ydroneaud@opteya.com>
+	 <1389567961.4672.111.camel@pasglop>
+	 <1389605449.1585.9.camel@localhost.localdomain>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 05:52 PM, Sergei Ianovich wrote:
-> On Mon, 2014-01-20 at 17:20 +0100, Daniel Mack wrote:
->> On 01/20/2014 05:08 PM, Sergei Ianovich wrote:
->>> It's over a month now. Is anything wrong?
->> No, I'm busy, that's all.
+Hi,
+
+Le lundi 13 janvier 2014 à 10:30 +0100, Yann Droneaud a écrit :
+> Le lundi 13 janvier 2014 à 10:06 +1100, Benjamin Herrenschmidt a écrit :
+> > On Tue, 2013-07-02 at 18:39 +0200, Yann Droneaud wrote:
+> > > Macro get_unused_fd() is used to allocate a file descriptor with
+> > > default flags. Those default flags (0) can be "unsafe":
+> > > O_CLOEXEC must be used by default to not leak file descriptor
+> > > across exec().
+> > > 
+> > > Instead of macro get_unused_fd(), functions anon_inode_getfd()
+> > > or get_unused_fd_flags() should be used with flags given by userspace.
+> > > If not possible, flags should be set to O_CLOEXEC to provide userspace
+> > > with a default safe behavor.
+> > > 
+> > > In a further patch, get_unused_fd() will be removed so that
+> > > new code start using anon_inode_getfd() or get_unused_fd_flags()
+> > > with correct flags.
+> > > 
+> > > This patch replaces calls to get_unused_fd() with equivalent call to
+> > > get_unused_fd_flags(0) to preserve current behavor for existing code.
+> > > 
+> > > The hard coded flag value (0) should be reviewed on a per-subsystem basis,
+> > > and, if possible, set to O_CLOEXEC.
+> > > 
+> > > Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> > 
+> > Should I merge this (v5 on patchwork) or let Al do it ?
+> > 
 > 
-> Thanks for reply.
+> Please merge it directly: patches from the previous patchsets were
+> picked individually by each subsystem maintainer after proper review
+> regarding setting close on exec flag by default.
 > 
->> That said, the current situation is
->>
->> a) we need someone to have a look at the performance regression of the
->> MMC file system layer that you reported. I couldn't find a PXA-based
->> board yet with a MMC slot soldered on it. But as you apparently have
->> such hardware, I'd really appreciate your help here. Could you do some
->> measurements and see whether you see major differences in packet size or
->> timings?
+> > Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > 
 > 
-> I have the hardware with MMC, but none of the other devices. Could you
-> give some pointer where to start? How would you do measurements?
+> Thanks a lot.
 
-Please check whether the DMA engine transfers data in chunks of
-comparable size in both cases. Also, take time stamps when the packet is
-submitted, and calculate the delta when the transfer returns. See if any
-significant time gap contributes to the regression you see.
+> Note:
+> latest patch (from v5 patchset) is at
+> http://lkml.kernel.org/r/fe27abcfab5563d36a3e5e58ff36e5500c39be6a.1388952061.git.ydroneaud@opteya.com
+> v5 patchset is at
+> http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
+> 
 
-After all, it's still quite possible that the DMA driver has performance
-bottlenecks. We need to find the code where so much more time is spent
-with the new implementation.
+I have not yet seen the patch in your trees at
+https://git.kernel.org/cgit/linux/kernel/git/benh/powerpc.git/
 
-> It would be nice to have updated patches. Most interesting is whether
-> the new DMA still works as expected for other devices.
+I hope you would pick the patch, if possible in its latest version
+(unfortunately I'm not able to give the link to the astest patch in
+patchwork).
 
-I'll allocate a time slot for that :)
+Regards.
 
-> Apart from that, would mind if my series is landed with a workaround
-> (Patch v3 7/21). I hope you understand it doesn't feel good to depend on
-> something with no development activity.
+-- 
+Yann Droneaud
+OPTEYA
 
-I understand, but that shouldn't keep you you from maintaining a patch
-stack out-of-tree until things are in shape enough to go mainline.
-
-
-Thanks for you help,
-Daniel
 
