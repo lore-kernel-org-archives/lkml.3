@@ -1,156 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538AbaATOUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:20:10 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:39220 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaATOUA (ORCPT
+	id S1752882AbaATOYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:24:00 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:35914 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751643AbaATOX6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:20:00 -0500
-Date: Mon, 20 Jan 2014 15:19:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu change for v3.14
-Message-ID: <20140120141957.GA13278@gmail.com>
+	Mon, 20 Jan 2014 09:23:58 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dt-bindings: add rockchip vendor prefix
+Date: Mon, 20 Jan 2014 15:23:14 +0100
+Message-ID: <2229282.4AAJ7iLdU7@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <201312201626.48119.heiko@sntech.de>
+References: <201312201626.48119.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Am Freitag, 20. Dezember 2013, 16:26:47 schrieb Heiko Stübner:
+> It seems I forgot to add the vendor prefix for rockchip to the vendor-prefix
+> list. Therefore add it now.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-Please pull the latest x86-cpu-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
-
-   # HEAD: dd360393f4d948eb518372316e52101cf3b44212 x86, cpu: Detect more TLB configuration
-
-A single change that extends our TLB cache size detection+reporting 
-code.
-
- Thanks,
-
-	Ingo
-
------------------->
-Kirill A. Shutemov (1):
-      x86, cpu: Detect more TLB configuration
+not sure, where this should go through
+arm-soc? or is there a special dt-tree around?
 
 
- arch/x86/include/asm/processor.h |  1 +
- arch/x86/kernel/cpu/common.c     |  7 ++++---
- arch/x86/kernel/cpu/intel.c      | 26 ++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 3 deletions(-)
+Thanks
+Heiko
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7b034a4..1dd6260 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -72,6 +72,7 @@ extern u16 __read_mostly tlb_lli_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4k[NR_INFO];
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
-+extern u16 __read_mostly tlb_lld_1g[NR_INFO];
- extern s8  __read_mostly tlb_flushall_shift;
- 
- /*
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 6abc172..24b6fd1 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -472,6 +472,7 @@ u16 __read_mostly tlb_lli_4m[NR_INFO];
- u16 __read_mostly tlb_lld_4k[NR_INFO];
- u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
-+u16 __read_mostly tlb_lld_1g[NR_INFO];
- 
- /*
-  * tlb_flushall_shift shows the balance point in replacing cr3 write
-@@ -486,13 +487,13 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
- 	if (this_cpu->c_detect_tlb)
- 		this_cpu->c_detect_tlb(c);
- 
--	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
-+	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n"
- 		"tlb_flushall_shift: %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
- 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
--		tlb_flushall_shift);
-+		tlb_lld_1g[ENTRIES], tlb_flushall_shift);
- }
- 
- void detect_ht(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index ea04b34..5eb7ea5 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -506,6 +506,7 @@ static unsigned int intel_size_cache(struct cpuinfo_x86 *c, unsigned int size)
- #define TLB_DATA0_2M_4M	0x23
- 
- #define STLB_4K		0x41
-+#define STLB_4K_2M	0x42
- 
- static const struct _tlb_table intel_tlb_table[] = {
- 	{ 0x01, TLB_INST_4K,		32,	" TLB_INST 4 KByte pages, 4-way set associative" },
-@@ -526,13 +527,20 @@ static const struct _tlb_table intel_tlb_table[] = {
- 	{ 0x5b, TLB_DATA_4K_4M,		64,	" TLB_DATA 4 KByte and 4 MByte pages" },
- 	{ 0x5c, TLB_DATA_4K_4M,		128,	" TLB_DATA 4 KByte and 4 MByte pages" },
- 	{ 0x5d, TLB_DATA_4K_4M,		256,	" TLB_DATA 4 KByte and 4 MByte pages" },
-+	{ 0x61, TLB_INST_4K,		48,	" TLB_INST 4 KByte pages, full associative" },
-+	{ 0x63, TLB_DATA_1G,		4,	" TLB_DATA 1 GByte pages, 4-way set associative" },
-+	{ 0x76, TLB_INST_2M_4M,		8,	" TLB_INST 2-MByte or 4-MByte pages, fully associative" },
- 	{ 0xb0, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 4-way set associative" },
- 	{ 0xb1, TLB_INST_2M_4M,		4,	" TLB_INST 2M pages, 4-way, 8 entries or 4M pages, 4-way entries" },
- 	{ 0xb2, TLB_INST_4K,		64,	" TLB_INST 4KByte pages, 4-way set associative" },
- 	{ 0xb3, TLB_DATA_4K,		128,	" TLB_DATA 4 KByte pages, 4-way set associative" },
- 	{ 0xb4, TLB_DATA_4K,		256,	" TLB_DATA 4 KByte pages, 4-way associative" },
-+	{ 0xb5, TLB_INST_4K,		64,	" TLB_INST 4 KByte pages, 8-way set ssociative" },
-+	{ 0xb6, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 8-way set ssociative" },
- 	{ 0xba, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way associative" },
- 	{ 0xc0, TLB_DATA_4K_4M,		8,	" TLB_DATA 4 KByte and 4 MByte pages, 4-way associative" },
-+	{ 0xc1, STLB_4K_2M,		1024,	" STLB 4 KByte and 2 MByte pages, 8-way associative" },
-+	{ 0xc2, TLB_DATA_2M_4M,		16,	" DTLB 2 MByte/4MByte pages, 4-way associative" },
- 	{ 0xca, STLB_4K,		512,	" STLB 4 KByte pages, 4-way associative" },
- 	{ 0x00, 0, 0 }
- };
-@@ -558,6 +566,20 @@ static void intel_tlb_lookup(const unsigned char desc)
- 		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
- 		break;
-+	case STLB_4K_2M:
-+		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lli_2m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_2m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_2m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_2m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lli_4m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_4m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
-+		break;
- 	case TLB_INST_ALL:
- 		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
-@@ -603,6 +625,10 @@ static void intel_tlb_lookup(const unsigned char desc)
- 		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
- 		break;
-+	case TLB_DATA_1G:
-+		if (tlb_lld_1g[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_1g[ENTRIES] = intel_tlb_table[k].entries;
-+		break;
- 	}
- }
- 
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
+> ca2c190..2dc3b75 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -65,6 +65,7 @@ ralink	Mediatek/Ralink Technology Corp.
+>  ramtron	Ramtron International
+>  realtek Realtek Semiconductor Corp.
+>  renesas	Renesas Electronics Corporation
+> +rockchip	Fuzhou Rockchip Electronics Co., Ltd
+>  samsung	Samsung Semiconductor
+>  sbs	Smart Battery System
+>  schindler	Schindler
+
