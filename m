@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaATTVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 14:21:31 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:39510 "EHLO
+	id S1753256AbaATTVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:21:34 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:39512 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaATTV0 (ORCPT
+	with ESMTP id S1752191AbaATTV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Jan 2014 14:21:26 -0500
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
         mingo@redhat.com, chegu_vinod@hp.com
-Subject: [PATCH v3 0/6] pseudo-interleaving for automatic NUMA balancing
-Date: Mon, 20 Jan 2014 14:21:01 -0500
-Message-Id: <1390245667-24193-1-git-send-email-riel@redhat.com>
+Subject: [PATCH 3/6] numa,sched: build per numa_group active node mask from faults_from statistics
+Date: Mon, 20 Jan 2014 14:21:04 -0500
+Message-Id: <1390245667-24193-4-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1390245667-24193-1-git-send-email-riel@redhat.com>
+References: <1390245667-24193-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current automatic NUMA balancing code base has issues with
-workloads that do not fit on one NUMA load. Page migration is
-slowed down, but memory distribution between the nodes where
-the workload runs is essentially random, often resulting in a
-suboptimal amount of memory bandwidth being available to the
-workload.
+From: Rik van Riel <riel@redhat.com>
 
-In order to maximize performance of workloads that do not fit in one NUMA
-node, we want to satisfy the following criteria:
-1) keep private memory local to each thread
-2) avoid excessive NUMA migration of pages
-3) distribute shared memory across the active nodes, to
-   maximize memory bandwidth available to the workload
+The faults_from statistics are used to maintain an active_nodes nodemask
+per numa_group. This allows us to be smarter about when to do numa migrations.
 
-This patch series identifies the NUMA nodes on which the workload
-is actively running, and balances (somewhat lazily) the memory
-between those nodes, satisfying the criteria above.
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Chegu Vinod <chegu_vinod@hp.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-As usual, the series has had some performance testing, but it
-could always benefit from more testing, on other systems.
-
-Changes since v2:
- - dropped tracepoint (for now?)
- - implement obvious improvements suggested by Peter
- - use the scheduler maintained CPU use statistics, drop
-   the NUMA specific ones for now. We can add those later
-   if they turn out to be beneficial
-Changes since v1:
- - fix divide by zero found by Chegu Vinod
- - improve comment, as suggested by Peter Zijlstra
- - do stats calculations in task_numa_placement in local variables
-
-
-Some performance numbers, with two 40-warehouse specjbb instances
-on an 8 node system with 10 CPU cores per node, using a pre-cleanup
-version of these patches, courtesy of Chegu Vinod:
-
-numactl manual pinning
-spec1.txt:           throughput =     755900.20 SPECjbb2005 bops
-spec2.txt:           throughput =     754914.40 SPECjbb2005 bops
-
-NO-pinning results (Automatic NUMA balancing, with patches)
-spec1.txt:           throughput =     706439.84 SPECjbb2005 bops
-spec2.txt:           throughput =     729347.75 SPECjbb2005 bops
-
-NO-pinning results (Automatic NUMA balancing, without patches)
-spec1.txt:           throughput =     667988.47 SPECjbb2005 bops
-spec2.txt:           throughput =     638220.45 SPECjbb2005 bops
-
-No Automatic NUMA and NO-pinning results
-spec1.txt:           throughput =     544120.97 SPECjbb2005 bops
-spec2.txt:           throughput =     453553.41 SPECjbb2005 bops
-
-
-My own performance numbers are not as relevant, since I have been
-running with a more hostile workload on purpose, and I have run
-into a scheduler issue that caused the workload to run on only
-two of the four NUMA nodes on my test system...
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1945ddc..ea8b2ae 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -885,6 +885,7 @@ struct numa_group {
+ 	struct list_head task_list;
+ 
+ 	struct rcu_head rcu;
++	nodemask_t active_nodes;
+ 	unsigned long total_faults;
+ 	unsigned long *faults_from;
+ 	unsigned long faults[0];
+@@ -1275,6 +1276,41 @@ static void numa_migrate_preferred(struct task_struct *p)
+ }
+ 
+ /*
++ * Find the nodes on which the workload is actively running. We do this by
++ * tracking the nodes from which NUMA hinting faults are triggered. This can
++ * be different from the set of nodes where the workload's memory is currently
++ * located.
++ *
++ * The bitmask is used to make smarter decisions on when to do NUMA page
++ * migrations, To prevent flip-flopping, and excessive page migrations, nodes
++ * are added when they cause over 6/16 of the maximum number of faults, but
++ * only removed when they drop below 3/16.
++ */
++static void update_numa_active_node_mask(struct task_struct *p)
++{
++	unsigned long faults, max_faults = 0;
++	struct numa_group *numa_group = p->numa_group;
++	int nid;
++
++	for_each_online_node(nid) {
++		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
++			 numa_group->faults_from[task_faults_idx(nid, 1)];
++		if (faults > max_faults)
++			max_faults = faults;
++	}
++
++	for_each_online_node(nid) {
++		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
++			 numa_group->faults_from[task_faults_idx(nid, 1)];
++		if (!node_isset(nid, numa_group->active_nodes)) {
++			if (faults > max_faults * 6 / 16)
++				node_set(nid, numa_group->active_nodes);
++		} else if (faults < max_faults * 3 / 16)
++			node_clear(nid, numa_group->active_nodes);
++	}
++}
++
++/*
+  * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
+  * increments. The more local the fault statistics are, the higher the scan
+  * period will be for the next scan window. If local/remote ratio is below
+@@ -1416,6 +1452,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	update_task_scan_period(p, fault_types[0], fault_types[1]);
+ 
+ 	if (p->numa_group) {
++		update_numa_active_node_mask(p);
+ 		/*
+ 		 * If the preferred task and group nids are different,
+ 		 * iterate over the nodes again to find the best place.
+@@ -1478,6 +1515,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 		/* Second half of the array tracks where faults come from */
+ 		grp->faults_from = grp->faults + 2 * nr_node_ids;
+ 
++		node_set(task_node(current), grp->active_nodes);
++
+ 		for (i = 0; i < 4*nr_node_ids; i++)
+ 			grp->faults[i] = p->numa_faults[i];
+ 
+@@ -1547,6 +1586,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	my_grp->nr_tasks--;
+ 	grp->nr_tasks++;
+ 
++	update_numa_active_node_mask(p);
++
+ 	spin_unlock(&my_grp->lock);
+ 	spin_unlock(&grp->lock);
+ 
+-- 
+1.8.4.2
 
