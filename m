@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907AbaATPWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:22:03 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59413 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaATPWB (ORCPT
+	id S1753314AbaATP1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:27:18 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:42407 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaATP1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:22:01 -0500
-Date: Mon, 20 Jan 2014 16:21:29 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v9 1/5] qrwlock: A queue read/write lock implementation
-Message-ID: <20140120152129.GH31570@twins.programming.kicks-ass.net>
-References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
- <1389761047-47566-2-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389761047-47566-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 20 Jan 2014 10:27:16 -0500
+X-AuditID: cbfec37d-b7ff46d000005528-3f-52dd4052416c
+Message-id: <52DD4045.4050902@samsung.com>
+Date: Mon, 20 Jan 2014 08:27:01 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Shuah Khan'" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
+References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
+ <15798389.lgk83XnI1i@vostro.rjw.lan>
+ <001f01cf157f$ca2e8530$5e8b8f90$%han@samsung.com>
+In-reply-to: <001f01cf157f$ca2e8530$5e8b8f90$%han@samsung.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.6]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9hX90gh7tBBr8uKll0zrzGaHF54SVW
+	ixN9H1gtLu+aw2ax7uELJovHK96yW5w5DZTYvespq8XXnw4W6+ffYnPg8tg56y67x4ePcR6L
+	97xk8nh14Q6Lx5ar7Swee+b/YPXo27KK0eP4je1MHp83yQVwRnHZpKTmZJalFunbJXBlfDm4
+	m61gC0/FxG+T2BsYu7i6GDk5JARMJB6d/8IIYYtJXLi3nq2LkYtDSGAZo8Tizs1QTi+TxJUD
+	S9khnA2MEq3H5zODtPAKaEnsbv7GAmKzCKhKPD/QygpiswmoS3x+vYMdxBYSkJNoWrIarF5U
+	IELi1dmJLBC9ghI/Jt8Ds0UE/CW2ftzBArKAWaCDWeLZ0UawBmEBb4mOM2uYIDbPY5TYdvYY
+	0AYODk4BO4l/y21BapgFzCQetaxjhrDlJTavecsMsVhZ4s/lU0wQvylIPLrayj6BUWQWkt2z
+	kLTPQtK+gJF5FaNYaXFyQXFSemqFiV5xYm5xaV66XnJ+7iZGSDzW7mC8/9XmEKMAB6MSD6+B
+	250gIdbEsuLK3EOMEhzMSiK8QTZ3g4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUwphzUNZicNKF7
+	apJVp/zy+50R6xevjhJbfVL3/83EugstqWsV2k7MrrqzxP/Pj8D9esw5PAx3+FyXaPhFp2aJ
+	3F0q/er0Rc/IfEHDgxotxaG99nJpymvqu7I+PKh/E3GKxWGHqmTfx8/ivgsO2fy8N1dyaWDI
+	9kjbvQt3zJDV/LeUZY3pO9sgJZbijERDLeai4kQA45j2mqUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 11:44:03PM -0500, Waiman Long wrote:
-> +#ifndef arch_mutex_cpu_relax
-> +# define arch_mutex_cpu_relax() cpu_relax()
-> +#endif
+On 01/19/2014 06:34 PM, Jingoo Han wrote:
+> On Monday, January 20, 2014 12:37 AM, Rafael J. Wysocki wrote:
+>> On Wednesday, November 14, 2040 04:27:17 AM Shuah Khan wrote:
+>>> Convert drivers/video/backlight/class to use dev_pm_ops for power
+>>> management and remove Legacy PM ops hooks. With this change, rtc class
+>>> registers suspend/resume callbacks via class->pm (dev_pm_ops) instead of
+>>> Legacy class->suspend/resume. When __device_suspend() runs call-backs,
+>>> it will find class->pm ops for the backlight class.
+>>>
+>>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>>> Cc: Shuah Khan <shuahkhan@gmail.com>
+>>
+>> Can you please resend the patches that nobody took with CCs to
+>> linux-pm@vger.kernel.org?  If the original maintainers don't care, I'll be
+>> able to pick those patches up then (if they look good).
+>
+> I already gave the comment, and am waiting v3 patch.
+> However, Shuah Khan did not send the v3 patch yet.
+>
+> Currently, backlight subsystem patches go through mm-tree
+> With my acked-by.
+>
+> Shuah Khan,
+> Will you send the v3 patch? As I said, there is the typo in
+> commit message. Please fix it.
+>     s/rtc class/backlight class
+>
 
-Include <linux/mutex.h>
+Rafael/Jingoo Han,
 
+I did send the v3 patch with the typo fixed. Here is the link:
 
-> +#ifndef smp_load_acquire
-> +# ifdef CONFIG_X86
-> +#   define smp_load_acquire(p)				\
-> +	({						\
-> +		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
-> +		barrier();				\
-> +		___p1;					\
-> +	})
-> +# else
-> +#   define smp_load_acquire(p)				\
-> +	({						\
-> +		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
-> +		smp_mb();				\
-> +		___p1;					\
-> +	})
-> +# endif
-> +#endif
-> +
-> +#ifndef smp_store_release
-> +# ifdef CONFIG_X86
-> +#   define smp_store_release(p, v)			\
-> +	do {						\
-> +		barrier();				\
-> +		ACCESS_ONCE(*p) = v;			\
-> +	} while (0)
-> +# else
-> +#   define smp_store_release(p, v)			\
-> +	do {						\
-> +		smp_mb();				\
-> +		ACCESS_ONCE(*p) = v;			\
-> +	} while (0)
-> +# endif
-> +#endif
+http://lkml.indiana.edu/hypermail/linux/kernel/1306.0/00219.html
 
-Remove these.
+This is a while back. I will rebase and res-test and send it.
 
-> +/*
-> + * If an xadd (exchange-add) macro isn't available, simulate one with
-> + * the atomic_add_return() function.
-> + */
-> +#ifdef xadd
-> +# define qrw_xadd(rw, inc)	xadd(&(rw).rwc, inc)
-> +#else
-> +# define qrw_xadd(rw, inc)	(u32)(atomic_add_return(inc, &(rw).rwa) - inc)
-> +#endif
+thanks,
+-- Shuah
 
-Is GCC really so stupid that you cannot always use the
-atomic_add_return()? The x86 atomic_add_return is i + xadd(), so you'll
-end up with:
-
- i + xadd() - i
-
-Surely it can just remove the two i terms?
-
-> +/**
-> + * wait_in_queue - Add to queue and wait until it is at the head
-> + * @lock: Pointer to queue rwlock structure
-> + * @node: Node pointer to be added to the queue
-> + */
-> +static inline void wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
-> +{
-> +	struct qrwnode *prev;
-> +
-> +	node->next = NULL;
-> +	node->wait = true;
-> +	prev = xchg(&lock->waitq, node);
-> +	if (prev) {
-> +		prev->next = node;
-> +		/*
-> +		 * Wait until the waiting flag is off
-> +		 */
-> +		while (smp_load_acquire(&node->wait))
-> +			arch_mutex_cpu_relax();
-> +	}
-> +}
-
-Please rebase on top of the MCS lock patches such that this is gone.
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
