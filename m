@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505AbaATBI2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 20:08:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37778 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166AbaATBIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 20:08:25 -0500
-Message-ID: <52DC76B8.7050808@zytor.com>
-Date: Sun, 19 Jan 2014 17:07:04 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752525AbaATB2D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 20:28:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56766 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbaATB2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jan 2014 20:28:01 -0500
+Date: Mon, 20 Jan 2014 01:27:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] fs: export simple_dname for drm drivers.
+Message-ID: <20140120012758.GQ10323@ZenIV.linux.org.uk>
+References: <1390179284-4824-1-git-send-email-airlied@redhat.com>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au> <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com>
-In-Reply-To: <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390179284-4824-1-git-send-email-airlied@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2014 05:00 PM, Len Brown wrote:
-> On Wed, Jan 15, 2014 at 10:58 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
->> failed like this:
->>
->> arch/x86/kernel/process.c: In function 'mwait_idle':
->> /scratch/sfr/next/arch/x86/kernel/process.c:434:3: error: implicit declaration of function '__monitor' [-Werror=implicit-function-declaration]
->>    __monitor((void *)&current_thread_info()->flags, 0, 0);
->>    ^
->> arch/x86/kernel/process.c:437:4: error: implicit declaration of function '__sti_mwait' [-Werror=implicit-function-declaration]
->>     __sti_mwait(0, 0);
->>     ^
->>
->> Caused by commit 16824255394f ("x86, acpi, idle: Restructure the mwait
->> idle routines") interacting with commit 7760518cce95 ("x86 idle: restore
->> mwait_idle()") from the idle tree.
->>
->> I am not sure how to fix this so I just reverted the idle tree commit for
->> now (since it reverted cleanly). Please let me know if there is a better
->> solution.
+On Mon, Jan 20, 2014 at 10:54:44AM +1000, Dave Airlie wrote:
+> David Herrmann's changes to use a pseudo filesystem for drm's shared
+> inodes requires this be exported for drm to build as a module.
 > 
-> IMO, a regression fix (restore mwait_idle()) is more important than a clean up
-> (restructure mwait routines), and the clean-up should take a back seat;
-> in -tip, in -next, upstream, and in -stable.
-> 
-> Also, I'm wondering if that clean-up went too far -- as not all users of mwait
-> are necessarily under the same conditions...
-> 
+> I'd like to merge this via the drm tree, so please ack.
 
-Sounds like a NAK to me, in which case that bit should probably be
-deferred and reintroduced after fixing via the idle tree?
+Having looked through these patches...  The problem is that you'll get
+your module impossible to unload.  Sane solution:
 
-	-hpa
+static struct vfsmount *drm_mnt;
+static int count;
+struct inode *drm_alloc_inode(void)
+{
+	struct inode *res;
+	int err = simple_pin_fs(&drm_fs, &drm_mnt, &count);
+	if (err)
+		return ERR_PTR(err);
+	res = alloc_anon_inode(drm_mnt->mnt_sb);
+	if (IS_ERR(res))
+		simple_release_fs(&drm_mnt, &count);
+	return res;
+}
 
+/* call from drm_free_dev() */
+void drm_put_anon_inode(struct drm_device *dev)
+{
+	iput(dev->anon_inode);
+	simple_release_fs(&drm_mnt, &count);
+}
 
+and lose those kern_mount/kern_umount.
