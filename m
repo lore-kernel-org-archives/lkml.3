@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaATSlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:41:20 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51924 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaATSlQ (ORCPT
+	id S1752102AbaATSpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:45:41 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:38145 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaATSpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:41:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Subject: Re: [PATCH] dma: Add Xilinx AXI Video Direct Memory Access Engine driver support
-Date: Mon, 20 Jan 2014 19:41:07 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
-        vinod.koul@intel.com, michal.simek@xilinx.com,
-        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        dmaengine@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1389894803-4147-1-git-send-email-sthokal@xilinx.com> <201401201239.47665.arnd@arndb.de> <CA+mB=1+mrWAzBCxdMEji2MDRzHajmnxuWtz7iu96ML0DuAB3RQ@mail.gmail.com>
-In-Reply-To: <CA+mB=1+mrWAzBCxdMEji2MDRzHajmnxuWtz7iu96ML0DuAB3RQ@mail.gmail.com>
+	Mon, 20 Jan 2014 13:45:39 -0500
+Date: Mon, 20 Jan 2014 19:45:25 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: Deadlock in do_page_fault() on ARM (old kernel)
+Message-ID: <20140120184525.GA29193@dhcp22.suse.cz>
+References: <52D73220.3030108@signal11.us>
+ <20140120101509.GA2626@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401201941.07633.arnd@arndb.de>
-X-Provags-ID: V02:K0:NSVVJiWv5/yhOcthNo0krE3W+Dkd4rtx9fK1MiLACOe
- tBJbPk2Pt+RUIwtefGg9W6xkLKvgLqjHgP2FX4okZFb7dDxDoC
- M+FDETDlYvQf8TjCGZa4hmvaiOg1XSjXMjLqVLM2Jwj8H3rzh/
- hCMniuIoSs9mwBD1yQhQMKpRqWd5LoiyYxMhGVmddx1gIIkZEr
- 7ASw8ufb51gJV/d+SFcOZpSFh5ie1fnE4oEhFB16z91q4u3AGB
- smADQJZsJqtECoNUMxaHAZybs9lpLgWlXdWWOgISctM3goV+im
- z2Of430g4loDAc7rzBffq6auZl4Qk1pNhWNuwZ5zsuMW9zxJqN
- Wuq4vd0pU/gwcEGKPC9w=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120101509.GA2626@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 January 2014, Srikanth Thokala wrote:
-> >
-> >> > * data width should be a property of the slave driver that is configured
-> >> >   through dma_slave_config(), unless you can have dma engines that only
-> >> >   support certain a width.
-> >>
-> >> Yes, this VDMA engine soft IP support only certain widths, which is
-> >> configurable during IP synthesis.
-> >
-> > But what is this property used for in that case? Surely you can't
-> > connect a slave device to a dmaengine if the bus width doesn't match.
-> > You probably have a point here, but I don't understand it yet.
+On Mon 20-01-14 11:15:09, Michal Hocko wrote:
+> On Wed 15-01-14 20:13:04, Alan Ott wrote:
+> [...]
+> > 2. __copy_to_user_memcpy() takes a read lock (down_read()) on
 > 
-> There is a Data-Realignment Engine (DRE) in the IP which is only available for
-> data width setting of 64-bits and less.  So, we use the data-width DT parameter
-> to verify this condition and we update alignment shift accordingly.
+> This looks like a bug. copy_to_user_* shouldn't take mmap_sem at all
+> Check the might_fault annotation used in generic code. Arm version of
+> copy_to_user* doesn't seem to use the annotation and I do not see a good
+> reason for that.
 
-Ok, I have to admit I didn't understand all of that, but you clearly
-know what you are talking about here, so I assume you are correct.
+OK, so I have looked at the implementation of __copy_to_user_memcpy and
+it drops the semaphore before it does __put_user to fault memory in.  It
+then reacquires the lock to make sure that the pte doesn't vanish during
+memcpy. It holds pte lock to ensure that.
 
-	Arnd
+The mmap_sem reacquire happens with pte lock held though and this smells
+like a deadlock situation because the page fault takes mmap_sem first
+and only then takes ptl. I am not sure this is exactly what happens in
+your case though because you seem to have tasks blocked on the mmap_sem
+already.
+
+> > mm->mmap_sem. While that lock is held, __copy_to_user_memcpy() can
+> > generate a page fault, causing do_page_fault() to get called, which
+> > will also try to get a read lock (down_read()) on mm->mmap_sem.
+> > Multiple read locks can be taken on an rw_semaphore, but deadlock
+> > will occur if another thread tries to get a write lock
+> > (down_write()) in between. For example:
+> >     Task 1:         Task 2:
+> >     down_read(sem)
+> >                     down_write(sem)    <-- Goes to sleep
+> >     down_read(sem)                     <-- Goes to sleep
+> > 
+> > There is a thread from 2005[3] which seems to discuss the same
+> > concept of recursive rw_semaphores, but for futexes.
+> > 
+> > Other comments:
+> > 1. My analysis of this probably wrong. Otherwise it seems many
+> > others would have the same problem, and they don't seem to. I'm
+> > hoping this email will help to correct my understanding.
+> > 2. I looked through the git logs for recent (since 2.6.37 time
+> > frame) and nothing else jumped out at me as being an obvious fix for
+> > this situation.
+> > 
+> > Thanks for any insight you can give,
+> > 
+> > Alan.
+> > 
+> > [1] http://www.signal11.us/~alan/show-all-tasks-deadlock.txt
+> > 
+> > [2] Some websites/bugtrackers mention this commit with a similar
+> > issue, but I'm not entirely sure how it's related:
+> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8878a539ff19a43cf3729e7562cd528f490246ae
+> > 
+> > This one seems obviously related, but has no effect on my system:
+> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=435a7ef52db7d86e67a009b36cac1457f8972391
+> > 
+> > [3] http://thread.gmane.org/gmane.linux.kernel/280900
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+SUSE Labs
