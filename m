@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaATJx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:53:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40907 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaATJx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:53:57 -0500
-Date: Mon, 20 Jan 2014 10:53:41 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] EDAC fixes for 3.14
-Message-ID: <20140120095341.GA3003@pd.tnic>
+	id S1752271AbaATJyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:54:50 -0500
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:39175 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaATJys convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:54:48 -0500
+Date: Mon, 20 Jan 2014 10:54:10 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Olof Johansson <olof@lixom.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 16/24] drm/i2c: tda998x: add DT documentation
+Message-ID: <20140120105410.15705f32@armhf>
+In-Reply-To: <CAOesGMi96wkHM8jfHNVnM7RJyW2vVoP6FT4YyYzKp-kfc0jTuQ@mail.gmail.com>
+References: <cover.1390153344.git.moinejf@free.fr>
+	<20140119195844.0c975b90@armhf>
+	<CAOesGMi96wkHM8jfHNVnM7RJyW2vVoP6FT4YyYzKp-kfc0jTuQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, 19 Jan 2014 20:06:09 -0800
+Olof Johansson <olof@lixom.net> wrote:
 
-please pull a bunch of enhancements/fixes from all around the world of
-EDAC.
+> Hi,
+> 
+> On Sun, Jan 19, 2014 at 10:58 AM, Jean-Francois Moine <moinejf@free.fr> wrote:
+> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> > ---
+> >  .../devicetree/bindings/drm/i2c/tda998x.txt        | 24 ++++++++++++++++++++++
+> >  1 file changed, 24 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> 
+> Please cc bindings for review to devicetree@vger.kernel.org (cc:d here now)
+> 
+> > diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> > new file mode 100644
+> > index 0000000..72da71d
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> > @@ -0,0 +1,24 @@
+> > +Device-Tree bindings for the NXP TDA998x HDMI transmitter
+> > +
+> > +Required properties;
+> > +  - compatible: must be "nxp,tda998x"
+> > +
+> > +Optional properties:
+> > +  - interrupts: interrupt number for HDMI exchanges - default: by polling
+> 
+> What are HDMI exchanges, and how do they differ from other interrupts?
 
-Thanks.
+The used HDMI interrupt events are screen plug/unplug and EDID read.
+There are also CEC read/write which are not yet implemented in the
+tda998x driver.
 
---
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+There is no difference from normal interrupts, except that the events
+may be get by polling, so, the interrupt number is optional.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+> > +
+> > +  - pinctrl-0: pin control group to be used for this controller (IRQ).
+> > +
+> > +  - pinctrl-names: must contain a "default" entry.
+> > +
+> > +  - video-ports: 24 bits value - default: <0x230145>
+> 
+> What is this?
 
-are available in the git repository at:
+The video-ports value defines how the video controller is connected to
+the tda998x chip. Each 4 bits value tells from which input pins comes
+the video data and if there is any bit inversion. Each byte of this
+video-ports is used to load the VIP_CNTRL_{0,1,2} registers. These ones
+are described in the TDA9983B documentation which is the closer
+available document about the TDA998x family.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_for_3.14
-
-for you to fetch changes up to 881f0fcef9993992c24f5b649a3fb67fd4208f8f:
-
-  EDAC: Don't try to cancel workqueue when it's never setup (2014-01-10 15:57:36 +0100)
-
-----------------------------------------------------------------
-* mpc85xx PCIe error interrupt support
-* misc small enhancements/fixes all over the place.
-
-----------------------------------------------------------------
-Aravind Gopalakrishnan (1):
-      amd64_edac: Fix condition to verify max channels allowed for F15 M30h
-
-Aristeu Rozanski (1):
-      e752x_edac: Fix pci_dev usage count
-
-Borislav Petkov (2):
-      amd64_edac: Simplify code around decode_bus_error
-      amd64_edac: Remove "amd64" prefix from static functions
-
-Chunhe Lan (1):
-      edac/85xx: Add PCIe error interrupt edac support
-
-Jingoo Han (1):
-      EDAC: Remove DEFINE_PCI_DEVICE_TABLE macro
-
-Rashika Kheria (3):
-      amd64_edac: Mark amd64_decode_bus_error as static
-      EDAC: Mark edac_create_debug_nodes as static
-      sb_edac: Mark get_mci_for_node_id as static
-
-Stephen Boyd (1):
-      EDAC: Don't try to cancel workqueue when it's never setup
-
- drivers/edac/amd64_edac.c      | 135 +++++++++++++++++++----------------------
- drivers/edac/amd76x_edac.c     |   2 +-
- drivers/edac/e752x_edac.c      |   6 +-
- drivers/edac/e7xxx_edac.c      |   2 +-
- drivers/edac/edac_device.c     |   3 +
- drivers/edac/edac_mc_sysfs.c   |   2 +-
- drivers/edac/i3000_edac.c      |   2 +-
- drivers/edac/i3200_edac.c      |   2 +-
- drivers/edac/i5000_edac.c      |   2 +-
- drivers/edac/i5100_edac.c      |   2 +-
- drivers/edac/i5400_edac.c      |   2 +-
- drivers/edac/i7300_edac.c      |   2 +-
- drivers/edac/i7core_edac.c     |   2 +-
- drivers/edac/i82443bxgx_edac.c |   2 +-
- drivers/edac/i82860_edac.c     |   2 +-
- drivers/edac/i82875p_edac.c    |   2 +-
- drivers/edac/i82975x_edac.c    |   2 +-
- drivers/edac/mpc85xx_edac.c    |  98 ++++++++++++++++++++++++++----
- drivers/edac/mpc85xx_edac.h    |   7 +++
- drivers/edac/r82600_edac.c     |   2 +-
- drivers/edac/sb_edac.c         |   4 +-
- drivers/edac/x38_edac.c        |   2 +-
- 22 files changed, 181 insertions(+), 104 deletions(-)
+The default value is the one defined for TI boards.
+A known other value is <0x234501> which is used for Russell's Armada
+DRM driver in the Cubox (Marvell A510), but this driver has no DT
+support.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
