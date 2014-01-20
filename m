@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967AbaATEme (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 23:42:34 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48579 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367AbaATEmb (ORCPT
+	id S1753030AbaATEps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 23:45:48 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47984 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaATEpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 23:42:31 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-8d-52dca9351e40
-Date: Mon, 20 Jan 2014 13:43:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/3] zram: delete zram_init_device() function
-Message-ID: <20140120044336.GA28712@bbox>
-References: <1389956657-5486-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389956657-5486-2-git-send-email-sergey.senozhatsky@gmail.com>
+	Sun, 19 Jan 2014 23:45:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389956657-5486-2-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+	<20140116121955.GQ31570@twins.programming.kicks-ass.net>
+	<20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+Date: Sun, 19 Jan 2014 23:45:43 -0500
+X-Google-Sender-Auth: oH9IM4a8LINAe54mS4zV5-myO8Y
+Message-ID: <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+From: Len Brown <lenb@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
++static void mwait_idle(void)
++{
++       mwait_idle_with_hints(0, 0);
++}
++
 
-Looks good to me and I found a bug which had been in there so I rebased
-this patch on the top.
-https://git.kernel.org/cgit/linux/kernel/git/minchan/linux.git/commit/?h=zram-next&id=241e34fc6c3c1a41575fbe6383436be70df300d1
+The reason the patch above will crash Core2 machines is because
+core2 machines don't support mwait_idle_with_hints().
 
-On Fri, Jan 17, 2014 at 02:04:15PM +0300, Sergey Senozhatsky wrote:
-> allocate new `zram_meta' in disksize_store() only for uninitialised
-> zram device, saving a number of allocations and deallocations in case
-> if disksize_store() was called on currently used device. at the same
-> time zram_meta stack variable is not necessary, because we can set
-> ->meta directly. there is also no need in setting QUEUE_FLAG_NONROT
-> queue on every disksize_store(), set it once during device creation.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+The calling sequence for old and new MWAIT instructions is different.
+The former must be invoked with interrupts enabled,
+and the later can be invoked with interrupts disabled,
+which is a feature that Linux takes advantage of.
 
-Otherwise,
-
-Acked-by: Minchan Kim <minchan@kernel.org>
-
--- 
-Kind regards,
-Minchan Kim
+thanks,
+-Len
