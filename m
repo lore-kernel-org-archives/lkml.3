@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaATQta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:49:30 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57574 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaATQt2 (ORCPT
+	id S1753831AbaATQwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:52:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33608 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaATQw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:49:28 -0500
-Date: Mon, 20 Jan 2014 17:49:26 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: peterz@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
-        markgross@thegnar.org, vincent.guittot@linaro.org,
-        catalin.marinas@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140120164926.GB23051@amd.pavel.ucw.cz>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+	Mon, 20 Jan 2014 11:52:29 -0500
+Date: Mon, 20 Jan 2014 17:52:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, chegu_vinod@hp.com,
+        mgorman@suse.de, mingo@redhat.com,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 4/7] numa,sched: tracepoints for NUMA balancing active
+ nodemask changes
+Message-ID: <20140120165205.GJ31570@twins.programming.kicks-ass.net>
+References: <1389993129-28180-1-git-send-email-riel@redhat.com>
+ <1389993129-28180-5-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1389993129-28180-5-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Jan 17, 2014 at 04:12:06PM -0500, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
+> 
+> Being able to see how the active nodemask changes over time, and why,
+> can be quite useful.
+> 
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Chegu Vinod <chegu_vinod@hp.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  include/trace/events/sched.h | 34 ++++++++++++++++++++++++++++++++++
+>  kernel/sched/fair.c          |  8 ++++++--
+>  2 files changed, 40 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+> index 67e1bbf..91726b6 100644
+> --- a/include/trace/events/sched.h
+> +++ b/include/trace/events/sched.h
+> @@ -530,6 +530,40 @@ TRACE_EVENT(sched_swap_numa,
+>  			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
+>  			__entry->dst_cpu, __entry->dst_nid)
+>  );
+> +
+> +TRACE_EVENT(update_numa_active_nodes_mask,
 
-> To save energy, the higher frequencies should be avoided and only used
-> when the application performance requirements can not be satisfied
-> otherwise (e.g. spread tasks across more cpus if possible).
+Please stick to the sched_ naming for these things.
 
-I argue this is untrue for any task where user waits for its
-completion with screen on. (And that's quite important subset).
+Ideally we'd rename the sysctls too :/
 
-Lets take Nokia n900 as an example. 
+> +++ b/kernel/sched/fair.c
+> @@ -1300,10 +1300,14 @@ static void update_numa_active_node_mask(struct task_struct *p)
+>  		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
+>  			 numa_group->faults_from[task_faults_idx(nid, 1)];
+>  		if (!node_isset(nid, numa_group->active_nodes)) {
+> -			if (faults > max_faults * 4 / 10)
+> +			if (faults > max_faults * 4 / 10) {
+> +				trace_update_numa_active_nodes_mask(current->pid, numa_group->gid, nid, true, faults, max_faults);
 
-(source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
+While I think the tracepoint hookery is smart enough to avoid evaluating
+arguments when they're disabled, it might be best to simply pass:
+current and numa_group and do the dereference in fast_assign().
 
-Sleeping CPU: 2mA
-Screen on: 230mA
-CPU loaded: 250mA
+That said, this is the first and only numa tracepoint, I'm not sure why
+this qualifies and other metrics do not.
 
-Now, lets believe your numbers and pretend system can operate at 33%
-of speed with 11% power consumption.
 
-Lets take task that takes 10 seconds on max frequency:
-
-      ~ 10s * 470mA     	     	    = 4700mAs
-
-You suggest running at 33% speed, instead; that means 30 seconds on
-low requency.
-
-CPU on low: 25mA (assumed).
-
-     ~ 30s * 255mA			    = 7650mAs
-
-Hmm. So race to idle is good thing on Intel machines, and it is good
-thing on ARM design I have access to.
-
-And you even acknowledge it here, right:
-
-> When considering the total system power it may save energy in some
-> scenarios by running the cpu faster to allow other power hungry parts of
-> the system to be shut down faster. However, this is highly platform and
-> application dependent.
-
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
