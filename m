@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaATVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 16:25:29 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:45710 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaATVZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 16:25:02 -0500
+	id S1753291AbaATVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 16:24:57 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:20333 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120AbaATVYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 16:24:50 -0500
 X-IronPort-AV: E=Sophos;i="4.95,692,1384300800"; 
-   d="scan'208";a="92595855"
+   d="scan'208";a="94665753"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v5 9/9] xen-netback: Aggregate TX unmap operations
-Date: Mon, 20 Jan 2014 21:24:29 +0000
-Message-ID: <1390253069-25507-10-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v5 5/9] xen-netback: Add stat counters for zerocopy
+Date: Mon, 20 Jan 2014 21:24:25 +0000
+Message-ID: <1390253069-25507-6-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
 References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
@@ -28,105 +27,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unmapping causes TLB flushing, therefore we should make it in the largest
-possible batches. However we shouldn't starve the guest for too long. So if
-the guest has space for at least two big packets and we don't have at least a
-quarter ring to unmap, delay it for at most 1 milisec.
-
-v4:
-- use bool for tx_dealloc_work_todo
+These counters help determine how often the buffers had to be copied. Also
+they help find out if packets are leaked, as if "sent != success + fail",
+there are probably packets never freed up properly.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
- drivers/net/xen-netback/common.h    |    2 ++
- drivers/net/xen-netback/interface.c |    2 ++
- drivers/net/xen-netback/netback.c   |   34 +++++++++++++++++++++++++++++++++-
- 3 files changed, 37 insertions(+), 1 deletion(-)
+ drivers/net/xen-netback/common.h    |    3 +++
+ drivers/net/xen-netback/interface.c |   15 +++++++++++++++
+ drivers/net/xen-netback/netback.c   |    9 ++++++++-
+ 3 files changed, 26 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index d1cd8ce..95498c8 100644
+index 419e63c..e3c28ff 100644
 --- a/drivers/net/xen-netback/common.h
 +++ b/drivers/net/xen-netback/common.h
-@@ -118,6 +118,8 @@ struct xenvif {
- 	u16 dealloc_ring[MAX_PENDING_REQS];
- 	struct task_struct *dealloc_task;
- 	wait_queue_head_t dealloc_wq;
-+	struct timer_list dealloc_delay;
-+	bool dealloc_delay_timed_out;
+@@ -155,6 +155,9 @@ struct xenvif {
  
- 	/* Use kthread for guest RX */
- 	struct task_struct *task;
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
++	unsigned long tx_zerocopy_sent;
++	unsigned long tx_zerocopy_success;
++	unsigned long tx_zerocopy_fail;
+ 
+ 	/* Miscellaneous private stuff. */
+ 	struct net_device *dev;
 diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 40aa500..f925af5 100644
+index af5216f..75fe683 100644
 --- a/drivers/net/xen-netback/interface.c
 +++ b/drivers/net/xen-netback/interface.c
-@@ -407,6 +407,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 			  .desc = i };
- 		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
- 	}
-+	init_timer(&vif->dealloc_delay);
+@@ -239,6 +239,21 @@ static const struct xenvif_stat {
+ 		"rx_gso_checksum_fixup",
+ 		offsetof(struct xenvif, rx_gso_checksum_fixup)
+ 	},
++	/* If (sent != success + fail), there are probably packets never
++	 * freed up properly!
++	 */
++	{
++		"tx_zerocopy_sent",
++		offsetof(struct xenvif, tx_zerocopy_sent),
++	},
++	{
++		"tx_zerocopy_success",
++		offsetof(struct xenvif, tx_zerocopy_success),
++	},
++	{
++		"tx_zerocopy_fail",
++		offsetof(struct xenvif, tx_zerocopy_fail)
++	},
+ };
  
- 	/*
- 	 * Initialise a dummy MAC address. We choose the numerically
-@@ -557,6 +558,7 @@ void xenvif_disconnect(struct xenvif *vif)
- 	}
- 
- 	if (vif->dealloc_task) {
-+		del_timer_sync(&vif->dealloc_delay);
- 		kthread_stop(vif->dealloc_task);
- 		vif->dealloc_task = NULL;
- 	}
+ static int xenvif_get_sset_count(struct net_device *dev, int string_set)
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index bb65c7c..c098276 100644
+index a1b03e4..e2dd565 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -135,6 +135,11 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
- 		vif->pending_prod + vif->pending_cons;
- }
- 
-+static inline pending_ring_idx_t nr_free_slots(struct xen_netif_tx_back_ring *ring)
-+{
-+	return ring->nr_ents -	(ring->sring->req_prod - ring->rsp_prod_pvt);
-+}
-+
- bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
- {
- 	RING_IDX prod, cons;
-@@ -1932,9 +1937,36 @@ static inline int tx_work_todo(struct xenvif *vif)
- 	return 0;
- }
- 
-+static void xenvif_dealloc_delay(unsigned long data)
-+{
-+	struct xenvif *vif = (struct xenvif *)data;
-+
-+	vif->dealloc_delay_timed_out = true;
-+	wake_up(&vif->dealloc_wq);
-+}
-+
- static inline bool tx_dealloc_work_todo(struct xenvif *vif)
- {
--	return vif->dealloc_cons != vif->dealloc_prod
-+	if (vif->dealloc_cons != vif->dealloc_prod) {
-+		if ((nr_free_slots(&vif->tx) > 2 * XEN_NETBK_LEGACY_SLOTS_MAX) &&
-+		    (vif->dealloc_prod - vif->dealloc_cons < MAX_PENDING_REQS / 4) &&
-+		    !vif->dealloc_delay_timed_out) {
-+			if (!timer_pending(&vif->dealloc_delay)) {
-+				vif->dealloc_delay.function =
-+					xenvif_dealloc_delay;
-+				vif->dealloc_delay.data = (unsigned long)vif;
-+				mod_timer(&vif->dealloc_delay,
-+					  jiffies + msecs_to_jiffies(1));
-+
-+			}
-+			return false;
+@@ -1611,8 +1611,10 @@ static int xenvif_tx_submit(struct xenvif *vif, int budget)
+ 		 * skb_copy_ubufs while we are still in control of the skb. E.g.
+ 		 * the __pskb_pull_tail earlier can do such thing.
+ 		 */
+-		if (skb_shinfo(skb)->destructor_arg)
++		if (skb_shinfo(skb)->destructor_arg) {
+ 			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
++			vif->tx_zerocopy_sent++;
 +		}
-+		del_timer_sync(&vif->dealloc_delay);
-+		vif->dealloc_delay_timed_out = false;
-+		return true;
-+	}
+ 
+ 		netif_receive_skb(skb);
+ 	}
+@@ -1645,6 +1647,11 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+ 		napi_schedule(&vif->napi);
+ 	} while (ubuf);
+ 	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
 +
-+	return false;
++	if (likely(zerocopy_success))
++		vif->tx_zerocopy_success++;
++	else
++		vif->tx_zerocopy_fail++;
  }
  
- void xenvif_unmap_frontend_rings(struct xenvif *vif)
+ static inline void xenvif_tx_action_dealloc(struct xenvif *vif)
