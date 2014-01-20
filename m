@@ -1,124 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaATQtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:49:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48288 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599AbaATQtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:49:09 -0500
-Date: Mon, 20 Jan 2014 08:48:43 -0800
-Message-Id: <201401201648.s0KGmhJP004248@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/x32 for v3.14
-Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+	id S1754226AbaATQta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:49:30 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57574 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaATQt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 11:49:28 -0500
+Date: Mon, 20 Jan 2014 17:49:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: peterz@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
+        markgross@thegnar.org, vincent.guittot@linaro.org,
+        catalin.marinas@arm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [11/11] system 1: Saving energy using DVFS
+Message-ID: <20140120164926.GB23051@amd.pavel.ucw.cz>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi!
 
-This is the first few of a set of patches by H.J. Lu to make the
-kernel uapi headers usable for x32, as required by some non-glibc
-libcs.  These particular patches make the stat and statfs structures
-usable.
+> To save energy, the higher frequencies should be avoided and only used
+> when the application performance requirements can not be satisfied
+> otherwise (e.g. spread tasks across more cpus if possible).
 
-The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+I argue this is untrue for any task where user waits for its
+completion with screen on. (And that's quite important subset).
 
-  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+Lets take Nokia n900 as an example. 
 
-are available in the git repository at:
+(source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-x32-for-linus
+Sleeping CPU: 2mA
+Screen on: 230mA
+CPU loaded: 250mA
 
-The head of this tree is 79dbbc60493f357912d5f1da5a23147ba0c01c7a.
+Now, lets believe your numbers and pretend system can operate at 33%
+of speed with 11% power consumption.
 
-  x86, x32: Use __kernel_long_t for __statfs_word (2013-12-20 16:06:21 -0800)
+Lets take task that takes 10 seconds on max frequency:
 
-----------------------------------------------------------------
+      ~ 10s * 470mA     	     	    = 4700mAs
 
-H.J. Lu (2):
-      x86, x32: Use __kernel_long_t/__kernel_ulong_t in x86-64 stat.h
-      x86, x32: Use __kernel_long_t for __statfs_word
+You suggest running at 33% speed, instead; that means 30 seconds on
+low requency.
 
- arch/x86/include/uapi/asm/stat.h  | 42 ++++++++++++++++++++-------------------
- include/uapi/asm-generic/statfs.h |  2 +-
- 2 files changed, 23 insertions(+), 21 deletions(-)
+CPU on low: 25mA (assumed).
 
-diff --git a/arch/x86/include/uapi/asm/stat.h b/arch/x86/include/uapi/asm/stat.h
-index 7b3ddc348585..bc03eb5d6360 100644
---- a/arch/x86/include/uapi/asm/stat.h
-+++ b/arch/x86/include/uapi/asm/stat.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_STAT_H
- #define _ASM_X86_STAT_H
- 
-+#include <asm/posix_types.h>
-+
- #define STAT_HAVE_NSEC 1
- 
- #ifdef __i386__
-@@ -78,26 +80,26 @@ struct stat64 {
- #else /* __i386__ */
- 
- struct stat {
--	unsigned long	st_dev;
--	unsigned long	st_ino;
--	unsigned long	st_nlink;
--
--	unsigned int	st_mode;
--	unsigned int	st_uid;
--	unsigned int	st_gid;
--	unsigned int	__pad0;
--	unsigned long	st_rdev;
--	long		st_size;
--	long		st_blksize;
--	long		st_blocks;	/* Number 512-byte blocks allocated. */
--
--	unsigned long	st_atime;
--	unsigned long	st_atime_nsec;
--	unsigned long	st_mtime;
--	unsigned long	st_mtime_nsec;
--	unsigned long	st_ctime;
--	unsigned long   st_ctime_nsec;
--	long		__unused[3];
-+	__kernel_ulong_t	st_dev;
-+	__kernel_ulong_t	st_ino;
-+	__kernel_ulong_t	st_nlink;
-+
-+	unsigned int		st_mode;
-+	unsigned int		st_uid;
-+	unsigned int		st_gid;
-+	unsigned int		__pad0;
-+	__kernel_ulong_t	st_rdev;
-+	__kernel_long_t		st_size;
-+	__kernel_long_t		st_blksize;
-+	__kernel_long_t		st_blocks;	/* Number 512-byte blocks allocated. */
-+
-+	__kernel_ulong_t	st_atime;
-+	__kernel_ulong_t	st_atime_nsec;
-+	__kernel_ulong_t	st_mtime;
-+	__kernel_ulong_t	st_mtime_nsec;
-+	__kernel_ulong_t	st_ctime;
-+	__kernel_ulong_t	st_ctime_nsec;
-+	__kernel_long_t		__unused[3];
- };
- 
- /* We don't need to memset the whole thing just to initialize the padding */
-diff --git a/include/uapi/asm-generic/statfs.h b/include/uapi/asm-generic/statfs.h
-index 0999647fca13..cb89cc730f0b 100644
---- a/include/uapi/asm-generic/statfs.h
-+++ b/include/uapi/asm-generic/statfs.h
-@@ -13,7 +13,7 @@
-  */
- #ifndef __statfs_word
- #if __BITS_PER_LONG == 64
--#define __statfs_word long
-+#define __statfs_word __kernel_long_t
- #else
- #define __statfs_word __u32
- #endif
+     ~ 30s * 255mA			    = 7650mAs
+
+Hmm. So race to idle is good thing on Intel machines, and it is good
+thing on ARM design I have access to.
+
+And you even acknowledge it here, right:
+
+> When considering the total system power it may save energy in some
+> scenarios by running the cpu faster to allow other power hungry parts of
+> the system to be shut down faster. However, this is highly platform and
+> application dependent.
+
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
