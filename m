@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaATRLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:11:42 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:17243 "EHLO mail.abilis.ch"
+	id S1753907AbaATRPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:15:45 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:48805 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077AbaATRLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:11:15 -0500
-X-Greylist: delayed 1423 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jan 2014 12:11:14 EST
-From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        romainba@abilis.com
-Subject: [PATCH v2 2/2] i2c designware add support of I2C standard mode
-Date: Mon, 20 Jan 2014 17:45:38 +0100
-Message-Id: <1390236338-21407-1-git-send-email-romainba@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20140116193345.GB4127@katana>
-References: <20140116193345.GB4127@katana>
+	id S1751740AbaATRPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 12:15:43 -0500
+Message-ID: <1390238130.3865.20.camel@localhost.localdomain>
+Subject: Re: [PATCHv5 5/7] fanotify: enable close-on-exec on events' fd when
+ requested in fanotify_init()
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 20 Jan 2014 18:15:30 +0100
+In-Reply-To: <3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
+	 <3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some legacy devices support ony I2C standard mode at 100kHz.
-This patch allows to select the standard mode through the DTS
-with the use of the existing clock-frequency parameter.
+Hi Lino,
 
-When clock-frequency parameter is not set, the fast mode is selected.
-Only when the parameter is set at 100000, the standard mode is selected.
+I've recently sent this patch which may fix a bug in the way fanotify
+creates its file descriptors.
 
-Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
-Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- drivers/i2c/busses/i2c-designware-platdrv.c |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+I failed to noticed you've been working recently on fanotify subsystem
+and miss the opportunity to add you in the Cc:s. 
 
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index fc24399..ae0a256 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -122,6 +122,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 	struct i2c_adapter *adap;
- 	struct resource *mem;
- 	int irq, r;
-+	u32 clk_freq;
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
-@@ -151,6 +152,9 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 		return PTR_ERR(dev->clk);
- 	clk_prepare_enable(dev->clk);
- 
-+	/* fast mode by default */
-+	clk_freq = 400000;
-+
- 	if (pdev->dev.of_node) {
- 		u32 ht = 0;
- 		u32 ic_clk = dev->get_clk_rate_khz(dev);
-@@ -166,6 +170,15 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 		of_property_read_u32(pdev->dev.of_node,
- 				     "i2c-scl-falling-time-ns",
- 				     &dev->scl_falling_time);
-+
-+		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
-+				     &clk_freq);
-+
-+		/* Only standard mode at 100kHz and fast mode at 400kHz
-+		 * are supported.
-+		 */
-+		if (clk_freq != 100000 && clk_freq != 400000)
-+			return -EINVAL;
- 	}
- 
- 	dev->functionality =
-@@ -175,8 +188,12 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 		I2C_FUNC_SMBUS_BYTE_DATA |
- 		I2C_FUNC_SMBUS_WORD_DATA |
- 		I2C_FUNC_SMBUS_I2C_BLOCK;
--	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
--		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
-+	if (clk_freq == 100000)
-+		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-+			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
-+	else
-+		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-+			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
- 
- 	/* Try first if we can configure the device from ACPI */
- 	r = dw_i2c_acpi_configure(pdev);
+Please have a look to this patch and help to get it merged.
+
+Le dimanche 05 janvier 2014 à 21:36 +0100, Yann Droneaud a écrit :
+> According to commit 80af258867648, file descriptor created as part
+> of file access notification events inherit flags from the event_f_flags
+> argument passed to syscall fanotify_init(2).
+> 
+> So while it is legal for userspace to call fanotify_init() with O_CLOEXEC
+> as part of its second argument, O_CLOEXEC is currently silently ignored.
+> 
+> Indeed event_f_flags are only given to dentry_open(), which only
+> seems to care about O_ACCMODE and O_PATH in do_dentry_open(), O_DIRECT
+> in open_check_o_direct() and O_LARGEFILE in generic_file_open().
+> 
+> More, there's no effective check on event_f_flags value that would
+> catch unknown / unsupported values, unlike the one on f_flags argument
+> of the syscall (see FAN_ALL_INIT_FLAGS in include/uapi/linux/fanotify.h).
+
+...
+
+> But it seems logical to set close-on-exec flag on the file descriptor
+> if userspace is allowed to request it with O_CLOEXEC.
+> 
+
+...
+
+> So this patch replaces call to macro get_unused_fd() by a call to
+> function get_unused_fd_flags() with event_f_flags value as argument.
+> This way O_CLOEXEC flag in the second argument of fanotify_init(2)
+> syscall is interpreted so that close-on-exec get enabled.
+
+...
+
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> Link:
+> http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
+> 
+> ---
+>  fs/notify/fanotify/fanotify_user.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index 57d7c083cb4b..6d0eaabba02e 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -71,7 +71,7 @@ static int create_fd(struct fsnotify_group *group,
+>  
+>  	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+>  
+> -	client_fd = get_unused_fd();
+> +	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
+>  	if (client_fd < 0)
+>  		return client_fd;
+>  
+
+Regards.
+
 -- 
-1.7.1
+Yann Droneaud
+OPTEYA
+
+
 
