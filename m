@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaATM4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 07:56:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52286 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752496AbaATM4F (ORCPT
+	id S1753413AbaATM4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 07:56:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41934 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaATM4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 07:56:05 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT][PATCH 4/5] ACPI / LPSS: Support for device latency tolerance PM QoS
-Date: Mon, 20 Jan 2014 14:10:10 +0100
-Message-ID: <1623216.7y3zYLQxqp@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140120111518.GE18029@intel.com>
-References: <5434847.aCyiWHNRe7@vostro.rjw.lan> <12327024.lrSi2qfq01@vostro.rjw.lan> <20140120111518.GE18029@intel.com>
+	Mon, 20 Jan 2014 07:56:15 -0500
+Date: Mon, 20 Jan 2014 15:56:03 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, devel@driverdev.osuosl.org,
+        andreas.dilger@intel.com, Greg KH <gregkh@linuxfoundation.org>,
+        bergwolf@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        oleg.drokin@intel.com, jacques-charles.lafoucriere@cea.fr,
+        jinshan.xiong@intel.com, linux-metag@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add
+ "__attribute__((packed))" for the related union
+Message-ID: <20140120125603.GD4815@mwanda>
+References: <52DA4E6A.1000308@gmail.com>
+ <20140118100547.GS7444@mwanda>
+ <52DA56C2.5010802@gmail.com>
+ <20140118142404.GT7444@mwanda>
+ <52DBA3D4.3090308@gmail.com>
+ <52DD0EFF.2010305@imgtec.com>
+ <20140120123045.GV7444@mwanda>
+ <52DD18A5.1090308@imgtec.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DD18A5.1090308@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 20, 2014 01:15:19 PM Mika Westerberg wrote:
-> On Fri, Jan 17, 2014 at 03:46:40PM +0100, Rafael J. Wysocki wrote:
-> > @@ -415,11 +472,12 @@ static int acpi_lpss_platform_notify(str
-> >  		return 0;
-> >  	}
-> >  
-> > -	if (action == BUS_NOTIFY_ADD_DEVICE)
-> > +	if (action == BUS_NOTIFY_ADD_DEVICE) {
-> >  		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
-> > -	else if (action == BUS_NOTIFY_DEL_DEVICE)
-> > +		pdev->dev.power.set_latency_tolerance = acpi_lpss_set_ltr;
+On Mon, Jan 20, 2014 at 12:37:57PM +0000, James Hogan wrote:
+> On 20/01/14 12:30, Dan Carpenter wrote:
+> > Ah.  From so metag is a new arch and not a compiler like the changelog
+> > says.
+> > 
+> > On Mon, Jan 20, 2014 at 11:56:47AM +0000, James Hogan wrote:
+> >> struct a {
+> >> 	struct b {
+> >> 		unsigned int x;
+> >> 		unsigned short y;
+> >> 	} x;
+> >> 	unsigned short y;
+> >> } __packed;
+> > 
+> > This is not the code we are discussing.  It should look like:
+> > 
+> > struct a {
+> > 	union {
+> > 		short x;
+> > 		short y;
+> > 	}
+> > 	short z;
+> > };
+> > 
+> > Any normal person would assume that sizeof(struct a) would be 4 but
+> > apparently on metag it is 8.  That totally defeats the point of using
+> > a union in the first place.  It's easy enough to add a __packed to the
+> > lustre declaration but I expect this to cause an endless stream of bugs.
+> > 
+> > It it is really stupid.
 > 
-> While trying to test this I noticed that BUS_NOTIFY_ADD_DEVICE happens
-> after call to dpm_sysfs_add(), so LTR field is never exposed to the
-> userspace.
+> I agree completely (and did request this be changed when I first found
+> out about it, but since it's an ABI issue it was really too late).
+> That's why I'm not actively pushing for every case to be fixed unless
+> it's in generic code that actually affects metag.
+> 
 
-Ahh, I confused things, thanks for reporting this!
+It would be easy enough to make the compiler complain about any union
+which would normally have size which is not a multiple of 4.
 
-I'll need to hook it up to acpi_platform_notify() somehow I think.
+Warning: union will be padded with 2 bytes unless __attribute__((packed)).
 
-> > +	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
-> >  		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-> > -
-> > +	}
-> >  	return ret;
-> >  }
-> >  
+Otherwise you will be fighting this for ever.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+regards,
+dan carpenter
+
