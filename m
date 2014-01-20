@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaATVoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 16:44:06 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58285 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaATVoE (ORCPT
+	id S1752447AbaATVwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 16:52:24 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39455 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaATVwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 16:44:04 -0500
-Date: Mon, 20 Jan 2014 21:43:05 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-Message-ID: <20140120214305.54f65ffa@www.etchedpixels.co.uk>
-In-Reply-To: <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
-	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
-	<20140120100530.GY15937@n2100.arm.linux.org.uk>
-	<CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jan 2014 16:52:20 -0500
+Date: Mon, 20 Jan 2014 22:51:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140120215151.GN31570@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+ <20140116121955.GQ31570@twins.programming.kicks-ass.net>
+ <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+ <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com>
+ <20140120082620.GB30183@twins.programming.kicks-ass.net>
+ <52DCE4CF.2060605@zytor.com>
+ <20140120091600.GW31570@twins.programming.kicks-ass.net>
+ <52DCEAF4.3040902@zytor.com>
+ <20140120092931.GA3836@gmail.com>
+ <CAJvTdKmF0Bzo+=VRD=3dZKVZAxAQ=am33fFGR7XH4hYd2=9Mww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJvTdKmF0Bzo+=VRD=3dZKVZAxAQ=am33fFGR7XH4hYd2=9Mww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I had earlier submitted a patch [1] to remove the hard coded
-> major/minor number for Samsung UART driver, but that was rejected
-> because of userspace breakage. Without this patch, Samsung UART driver
-> can't bind to the hard-coded device node. Changing the default
-> major/minor will also not help to fix the objections raised in [1].
+On Mon, Jan 20, 2014 at 04:39:45PM -0500, Len Brown wrote:
+> > As a side note, at minimum the semantic and compatibility difference
+> > needs to be _very_ clearly present in the naming. Something like
+> > mwait_old_() or mwait_core2_(). That way such dependencies and
+> > assumptions don't get lost in code restructuring, etc.
 > 
-> Would you please suggest a way forward?
+> Agreed.
+> We started with mwait_idle() -- which was erroneously removed
+> and is now being restored under it original name.
 > 
-> [1] https://lkml.org/lkml/2013/12/27/2
+> The "new" function is mwait_idle_with_hints() -- which uses
+> the additional hints that were not available w/ the original MWAIT instruction.
+> Where "new" is Core Duo and later -- all the processor that can use
+> MWAIT for C-states deeper than C1.
 
-The dynamic major/minor is the right patch. If the userspace breaks then
-the userspace was broken, but I see no evidence in the discussion that
-the userspace broke.
+I'm still waiting for someone to explain what's wrong with:
 
-204,64 belongs to Altix so neither of the clashing drivers should use it.
-We had a table to stop messes like this, and we have dynamic numbering
-to stop the table being needed for the future
-
-           50 = /dev/ttyIOC0              Altix serial card
-                    ...
-           81 = /dev/ttyIOC31             Altix serial card
-
-
-Thats what the list says. Samsung should have followed the rules, they
-didn't so they get to pick up the pieces. The Amba driver wants moving as
-well. It's easy. If you want something to be ABI then make sure you get
-it upstream first, if not you get to own all the pain down the line.
-
-Hacking up the core code to paper over this crap is not on. We've been
-insisting firmly and robustly for years that people don't keep borrowing
-names and numbers they are not allocated, and use dynamic values whenever
-possible.
-
-If the hardware isn't present then the driver shouldn't even register
-with the tty layer in the first place so it doesn't make any resource
-differeneces either for properly written code.
-
-Alan
+static inline void mwait_idle(void)
+{
+	local_irq_enable();
+	mwait_idle_with_hints(0, 0);
+}
