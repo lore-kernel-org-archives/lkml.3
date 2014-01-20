@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917AbaATFa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 00:30:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13241 "EHLO mga01.intel.com"
+	id S1751740AbaATFct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 00:32:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28268 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708AbaATFa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 00:30:57 -0500
+	id S1750710AbaATFcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 00:32:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,689,1384329600"; 
-   d="scan'208";a="467567616"
-Date: Mon, 20 Jan 2014 09:59:09 +0530
+   d="scan'208";a="469324412"
+Date: Mon, 20 Jan 2014 10:01:04 +0530
 From: Vinod Koul <vinod.koul@intel.com>
-To: Rob Landley <rob@landley.net>
-Cc: hongbo.zhang@freescale.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@redhat.com>,
-        Richard Henderson <rth@cygnus.com>, Jakub Jelinek <jakub@redhat.com>,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        Arthur Kepner <akepner@sgi.com>, sumit.semwal@linaro.org,
-        Pierre Ossman <drzeus@drzeus.cx>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Subject: Re: [PATCH resend 1/2] Documentation: move all DMA documentations
- into Documentaion/dma
-Message-ID: <20140120042909.GA26823@intel.com>
-References: <1389869405-10363-1-git-send-email-hongbo.zhang@freescale.com>
- <20140116155921.GJ25466@intel.com>
- <52DAC0F1.9080202@landley.net>
+To: Florian Meier <florian.meier@koalo.de>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] dmaengine: Add DMA_PRIVATE to BCM2835 driver
+Message-ID: <20140120043103.GB26823@intel.com>
+References: <52D96315.9090604@koalo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52DAC0F1.9080202@landley.net>
+In-Reply-To: <52D96315.9090604@koalo.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 11:59:13AM -0600, Rob Landley wrote:
-> On 01/16/14 09:59, Vinod Koul wrote:
-> >On Thu, Jan 16, 2014 at 06:50:04PM +0800, hongbo.zhang@freescale.com wrote:
-> >>From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> >>
-> >>Since there are already seven DMA documentations under the top Documentation/,
-> >>it is better to create one dedicated directory for them.
-> >
-> >Well the problem is that not everything is same. Some of these mean how to use
-> >dma mapping API, couple are related to dmaengine, so clubing everything into
-> >"dma" doesnt sound right to me!
+On Fri, Jan 17, 2014 at 06:06:29PM +0100, Florian Meier wrote:
+> Without DMA_PRIVATE the driver is not able to allocate more than one channel.
+> Since it uses dma_get_any_slave_channel that calls private_candidate,
+> the second allocation fails at
+> /* some channels are already publicly allocated */
+> Maybe it should be fixed in the core, but at least this fixes the bug.
 > 
-> Putting everything in the world in the top level directory isn't all
-> flowers and kittens either.
+> Signed-off-by: Florian Meier <florian.meier@koalo.de>
+> ---
+>  drivers/dma/bcm2835-dma.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> Where would be a _better_ place to move one of those files to?
-As pointed mostly things dma* are dma-mapping and dmaengine, so would apt
-that we move to two folders, unless i overlooked and assumed everything else is
-dma-mapping!
+> diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
+> index 6ae0708..a036021 100644
+> --- a/drivers/dma/bcm2835-dma.c
+> +++ b/drivers/dma/bcm2835-dma.c
+> @@ -611,6 +611,7 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
+>  	od->base = base;
+>  
+>  	dma_cap_set(DMA_SLAVE, od->ddev.cap_mask);
+> +	dma_cap_set(DMA_PRIVATE, od->ddev.cap_mask);
+>  	dma_cap_set(DMA_CYCLIC, od->ddev.cap_mask);
+>  	od->ddev.device_alloc_chan_resources = bcm2835_dma_alloc_chan_resources;
+>  	od->ddev.device_free_chan_resources = bcm2835_dma_free_chan_resources;
+
+Applied, thanks
 
 --
 ~Vinod
