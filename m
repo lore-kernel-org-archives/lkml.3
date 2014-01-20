@@ -1,101 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaATPeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:34:10 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32085 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751669AbaATPeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:34:05 -0500
-Date: Mon, 20 Jan 2014 10:34:03 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org
-Subject: [GIT PULL] localmodconfig: Add config depends by default settings
-Message-ID: <20140120103403.33012eb2@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1754011AbaATPhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:37:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797AbaATPhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:37:06 -0500
+Date: Mon, 20 Jan 2014 16:37:03 +0100
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.24.1
+Message-ID: <20140120153703.GB2153@x2.net.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Linus,
+The util-linux release v2.24.1 is available at
 
-While debugging the problem with localmodconfig and the ALSA codec
-modules all being set, I discovered a small bug in the dependency
-logic.
+  ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.24/
 
-If a config has a dependency based on its setting value, localmodcondig
-misses it.
+Feedback and bug reports, as always, are welcomed.
 
-For example:
-
-config FOO
-    default y if BAR || ZOO
-
-If FOO is needed for a module and is set to '=m', and so are BAR or ZOO,
-localmodconfig will not see that BAR or ZOO are also needed for the foo
-module, and will incorrectly disable them.
-
-Please pull the latest localmodconfig-v3.14 tree, which can be found at:
+    Karel
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git
-localmodconfig-v3.14
 
-Tag SHA1: 3e4892e9201af46ba6df30b7bb8925da06f28cbc
-Head SHA1: 95edca5c523c4b404dd60baa0a1bea0e4c38fd72
+Util-linux 2.24.1 Release Notes
+===============================
 
+agetty:
+   - support the special terminal on first serial line on a S/390  [Werner Fink]
+blkdiscard:
+   - BLKSSZGET fills in an int, not a uint64  [Theodore Ts'o]
+blkid:
+   - escape quotes in the output  [Karel Zak]
+   - simple typo  [Phillip Susi]
+blockdev:
+   - don't use HDIO_GETGEO  [Phillip Susi]
+build-sys:
+   - add --with-smack to config-gen.d  [Karel Zak]
+   - fstrim depends on libmount  [Karel Zak]
+chsh, chfn:
+   - add info about non-local support to the man pages  [Karel Zak]
+dmesg:
+   - fix --raw zero timestamp for kmsg  [Karel Zak]
+docs:
+   - add patching process to howto-contribute.txt  [Sami Kerola]
+   - update AUTHORS file  [Karel Zak]
+   - update links to http //git.kernel.org/ web repository views  [Sami Kerola]
+fdisk:
+   - don't care about partition type  [Karel Zak]
+   - fix printf stuff  [Karel Zak]
+   - fix usage(), -l [<disk>]  [Karel Zak]
+flock:
+   - Change the 'exit status' man page section to make more sense  [Wieland Hoffmann]
+fsck:
+   - add ext4 to list of filesystems with progress bars in fsck man page  [Phillip Susi]
+fstrim:
+   - add --all to discard all filesystem  [Karel Zak]
+   - cleanup usage()  [Karel Zak]
+lib/path:
+   - add path_strdup()  [Karel Zak]
+libblkid:
+   - (nilfs2) check also backup superblock  [Karel Zak]
+   - detect alone PMBR  [Karel Zak]
+   - fix memory leak in blkid_parse_tag_string()  [Karel Zak]
+   - fix swap-area version  [Karel Zak]
+libfdisk:
+   - (dos) be more verbose when change bootable flag  [Karel Zak]
+   - (dos) fix free part counter  [Karel Zak]
+   - (dos) warn on type 0  [Karel Zak]
+   - (gpt) add /home GUID  [Karel Zak]
+   - (gpt) improve and cleanup recovery code  [Karel Zak]
+   - (gpt) recover from corrupted primary/backup PT  [Karel Zak]
+   - (sgi) generate partname according to partition position  [Karel Zak]
+   - (sun) fix end sectors with +1 error  [Karel Zak]
+libmount:
+   - add efivarfs to the list of pseudo filesystems  [Karel Zak]
+   - add mnt_tag_is_valid()  [Karel Zak]
+   - cleanup fix_optstr() regards to selinux and smack  [Karel Zak]
+   - fix typo in smack path  [Karel Zak]
+   - remove smackfs* option when SMACK not enabled  [Karel Zak]
+lsblk:
+   - fix -D segfault  [Karel Zak]
+lscpu:
+   - sort NUMA nodes to keep output human readable  [Karel Zak]
+   - support discontinuous NUMA nodes  [Karel Zak]
+   - support non sequentially numbering of CPUs  [Alexander Troosh]
+man:
+   - Syntax and spelling fixes.  [Ville Skyttä]
+mkfs.minix:
+   - fix fscanf() format string [coverity scan]  [Karel Zak]
+mkswap:
+   - fix compiler warning [-Wunused-variable]  [Karel Zak]
+   - remove cruft from the man page  [Phillip Susi]
+mount:
+   - add note about "noauto" to --all description  [Karel Zak]
+   - correct mount man page default iso9660 permission  [Phillip Susi]
+   - fix man mount page type  [Phillip Susi]
+   - improve -s man mage info  [Karel Zak]
+   - make NAME=value tags usable for non-root  [Karel Zak]
+   - mount.8 fix grammar  [Phillip Susi]
+   - update man page ext3/4 mount options  [Carlos Maiolino]
+partx:
+   - fix --update ranges and out of order tables  [Scott Moser]
+po:
+   - merge changes  [Karel Zak]
+   - update da.po (from translationproject.org)  [Joe Hansen]
+   - update de.po (from translationproject.org)  [Mario Blättermann]
+   - update pt_BR.po (from translationproject.org)  [Rafael Ferreira]
+   - update zh_CN.po (from translationproject.org)  [Wylmer Wang]
+pylibmount:
+   - correctly import from pylibmount.so  [Dave Reisner]
+   - import directly from pylibmount in tests  [Karel Zak]
+   - remove unncessary subdirectory  [Karel Zak]
+script:
+   - don't call TIOCGWINSZ in signal handler  [Karel Zak]
+   - restore errno in signal handler  [Karel Zak]
+   - use poll() rather then O_NONBLOCK  [Karel Zak]
+setpriv:
+   - simplify usage()  [Karel Zak]
+setterm:
+   - fix -dump man page info  [Karel Zak]
+sulogin:
+   - use dirent->d_type when scans /dev  [Karel Zak]
+taskset:
+   - fix PERMISSIONS section of taskset man page  [Rik van Riel]
+tests:
+   - update blkid swap tests  [Karel Zak]
+   - update build-sys tests  [Karel Zak]
+   - update lscpu tests  [Karel Zak]
+textual:
+   - small inprovements to usage and man page of fstrim  [Benno Schulenberg]
+umount:
+   - fix umount by tag for non-roots  [Karel Zak]
+unshare:
+   - add more hints about mount namespaces to the man page  [Karel Zak]
+wipefs:
+   - call BLKRRPART when erase partition table  [Karel Zak]
 
-Steven Rostedt (Red Hat) (1):
-      localmodconfig: Add config depends by default settings
-
-----
- scripts/kconfig/streamline_config.pl | 7 +++++++
- 1 file changed, 7 insertions(+)
----------------------------
-commit 95edca5c523c4b404dd60baa0a1bea0e4c38fd72
-Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-Date:   Wed Dec 18 12:35:20 2013 -0500
-
-    localmodconfig: Add config depends by default settings
-    
-    Currently localmodconfig will miss dependencies from the default option.
-    For example:
-    
-    config FOO
-    	default y if BAR || ZOO
-    
-    If FOO is needed for a module and is set to '=m', and so are BAR or ZOO,
-    localmodconfig will not see that BOO or ZOO are also needed for the foo
-    module, and will incorrectly disable them.
-    
-    Link: http://lkml.kernel.org/r/20131218175137.162937350@goodmis.org
-    
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
-index 4606cdf..3133172 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -219,6 +219,13 @@ sub read_kconfig {
- 	    $depends{$config} = $1;
- 	} elsif ($state eq "DEP" && /^\s*depends\s+on\s+(.*)$/) {
- 	    $depends{$config} .= " " . $1;
-+	} elsif ($state eq "DEP" && /^\s*def(_(bool|tristate)|ault)\s+(\S.*)$/) {
-+	    my $dep = $3;
-+	    if ($dep !~ /^\s*(y|m|n)\s*$/) {
-+		$dep =~ s/.*\sif\s+//;
-+		$depends{$config} .= " " . $dep;
-+		dprint "Added default depends $dep to $config\n";
-+	    }
- 
- 	# Get the configs that select this config
- 	} elsif ($state ne "NONE" && /^\s*select\s+(\S+)/) {
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
