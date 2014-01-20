@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233AbaATGK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 01:10:59 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:51389 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaATGK5 (ORCPT
+	id S1752660AbaATGWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 01:22:33 -0500
+Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:59857 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750710AbaATGWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 01:10:57 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-13-52dcbdef5995
-Date: Mon, 20 Jan 2014 15:12:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: Improve documentation of page_order
-Message-ID: <20140120061202.GB28712@bbox>
-References: <520B0B75.4030708@huawei.com>
- <20130814085711.GK2296@suse.de>
- <20130814155205.GA2706@gmail.com>
- <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
- <20130814222241.GQ2296@suse.de>
- <20140117143221.GA24851@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140117143221.GA24851@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 20 Jan 2014 01:22:30 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2525:2553:2560:2563:2682:2685:2828:2859:2890:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:3873:3874:3934:3936:3938:394
+X-HE-Tag: clock44_898e6f702eb22
+X-Filterd-Recvd-Size: 2579
+Message-ID: <1390198942.2472.5.camel@joe-AO722>
+Subject: Re: ping [PATCH v3] WAN: Adding support for Lantiq PEF2256 E1
+ chipset (FALC56)
+From: Joe Perches <joe@perches.com>
+To: Rob Landley <rob@landley.net>
+Cc: Christophe Leroy <christophe.leroy@c-s.fr>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Krzysztof Halasa <khc@pm.waw.pl>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, marc.balemboy@c-s.fr
+Date: Sun, 19 Jan 2014 22:22:22 -0800
+In-Reply-To: <52DC72CA.3090403@landley.net>
+References: <20140119180732.A1D99432AF@localhost.localdomain>
+	 <1390160095.2290.9.camel@joe-AO722> <52DC72CA.3090403@landley.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 02:32:21PM +0000, Mel Gorman wrote:
-> Developers occasionally try and optimise PFN scanners by using page_order
-> but miss that in general it requires zone->lock. This has happened twice for
-> compaction.c and rejected both times.  This patch clarifies the documentation
-> of page_order and adds a note to compaction.c why page_order is not used.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Sun, 2014-01-19 at 18:50 -0600, Rob Landley wrote:
+> On 01/19/14 13:34, Joe Perches wrote:
+> > On Sun, 2014-01-19 at 19:07 +0100, Christophe Leroy wrote:
+> >> Pinging this watch as we got no feedback since 22 Nov, although we have taken
+> >> into account reviews from v1 and v2.
+> >>
+> >> The patch adds WAN support for Lantiq FALC56 - PEF2256 E1 Chipset.
+> ...
+> >> +static ssize_t fs_attr_Tx_TS_store(struct device *dev,
+> >> +			struct device_attribute *attr,  const char *buf,
+> >> +			size_t count)
+> >> +{
+> >> +	struct net_device *ndev = dev_get_drvdata(dev);
+> >> +	struct pef2256_dev_priv *priv = dev_to_hdlc(ndev)->priv;
+> >> +	unsigned long value;
+> >> +	int ret = kstrtoul(buf, 16, (long int *)&value);
+> >
+> > unportable cast
 
-Except Laura pointed out,
+> How is that not portable? It's long == pointer on Linux, which supports 
+> LP64 on all targets. (As do BSD, MacOSX, android, and iOS.)
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+Sorry, I read it wrong.
+long int is the same size as long and is fine.
+I thought it was just int.
 
-Thanks for following up this issue without forgetting.
--- 
-Kind regards,
-Minchan Kim
+Still, declaring
+	unsigned long foo;
+and using
+	(long int *)&foo;
+
+is mixing implicit and explicit styles and perhaps
+should be avoided.
+
+> Do you mean it's not portable to Windows?
+>    http://blogs.msdn.com/oldnewthing/archive/2005/01/31/363790.aspx
+
+I hardly remember that stuff anymore.
+
+cheers, Joe
+
