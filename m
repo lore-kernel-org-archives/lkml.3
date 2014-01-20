@@ -1,165 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaATIyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 03:54:39 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:46094 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbaATIyf (ORCPT
+	id S1753405AbaATIzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 03:55:31 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:52184 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176AbaATIz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 03:54:35 -0500
-Date: Mon, 20 Jan 2014 09:54:27 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for the 3.14 merge window
-Message-ID: <20140120095427.3b59259b@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 20 Jan 2014 03:55:29 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s0K8t2HC015012, This message is accepted by code: ctloc85258
+Message-ID: <52DCE498.2010409@realtek.com>
+Date: Mon, 20 Jan 2014 16:55:52 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        "micky_ching@realsil.com.cn" <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
+References: <1389685656-880-1-git-send-email-rogerable@realtek.com> <1389685656-880-2-git-send-email-rogerable@realtek.com> <20140114130409.GB11820@lee--X1> <52D79E31.6000300@realtek.com> <20140116093506.GI11820@lee--X1>
+In-Reply-To: <20140116093506.GI11820@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012008-3548-0000-0000-000007C7328B
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 01/16/2014 05:35 PM, Lee Jones wrote:
+>>>> +static int rtsx_usb_bulk_transfer_sglist(struct rtsx_ucr *ucr,
+>>>> +             unsigned int pipe, struct scatterlist *sg, int num_sg,
+>>>> +             unsigned int length, unsigned int *act_len, int timeout)
+>>>> +{
+>>>> +     int ret;
+>>>> +
+>>>> +     dev_dbg(&ucr->pusb_intf->dev, "%s: xfer %u bytes, %d entries\n",
+>>>> +                     __func__, length, num_sg);
+>>>> +     ret = usb_sg_init(&ucr->current_sg, ucr->pusb_dev, pipe, 0,
+>>>> +                     sg, num_sg, length, GFP_NOIO);
+>>>> +     if (ret)
+>>>> +             return ret;
+>>>> +
+>>>> +     ucr->sg_timer.expires = jiffies + msecs_to_jiffies(timeout);
+>>>> +     add_timer(&ucr->sg_timer);
+>>>> +     usb_sg_wait(&ucr->current_sg);
+>>>> +     del_timer(&ucr->sg_timer);
+>>>> +
+>>>> +     if (act_len)
+>>>> +             *act_len = ucr->current_sg.bytes;
+>>>> +
+>>>> +     return ucr->current_sg.status;
+>>>> +}
+>>>
+>>> Code looks fine, but shouldn't this live in a USB driver?
+>>>
+>> We have studied drivers in usb/storage, the place that most likely
+>> to put the driver. All of them are for STANDARD usb mass storage
+>> class(something like USB_CLASS_MASS_STORAGE). But this is not the
+>> same case. This driver is for our vendor-class device with
+>> completely different protocol. It is really an USB interfaced flash
+>> card command converter(or channel) device rather than a real
+>> storage. It also has two derived modules(rtsx_usb_sdmmc,
+>> rtsx_usb_memstick) for other two subsystems.
+>>
+>> We also have another driver: rtsx_pcr.c resident in mfd/ for similar
+>> devices but of PCIe interface. It is nature for us to choose the
+>> same place for this variant.
+>
+> Very well, as long as it truly does not fit in drivers/usb. It would
+> be good to have one of the USB folk give the nod though.
+>
+I found Greg K-H is exactly one of the maintainers of USB subsystem as I 
+read the MAINTAINERS document.
 
-please pull from the 'for-linus' branch of
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
-
-to receive the following updates:
-The bulk of the s390 updates for v3.14. New features are the perf support
-for the CPU-Measurement Sample Facility and the EP11 support for the crypto
-cards. And the normal cleanups and bug-fixes.
-
-Eugene Crosser (1):
-      s390/qdio: bridgeport support - CHSC part
-
-Heiko Carstens (4):
-      s390/smp: only send external call ipi if needed
-      s390/smp: reduce memory consumption of pcpu_devices array
-      s390: use IS_ENABLED to check if a CONFIG is set to y or m
-      s390/compat: fix PSW32_USER_BITS definition
-
-Hendrik Brueckner (19):
-      s390/sclp_early: Get rid of sclp_early_read_info_sccb_valid
-      s390/sclp_early: Replace early_read_info_sccb with sccb_early
-      s390/sclp_early: Pass sccb pointer to every *_detect() function
-      s390/sclp_early: Add function to detect sclp console capabilities
-      s390/oprofile: move hwsampler interfaces to cpu_mf.h
-      s390/cpum_cf: Export event names in sysfs
-      s390/perf: add support for the CPU-Measurement Sampling Facility
-      s390/perf: Improve PMU selection for PERF_COUNT_HW_CPU_CYCLES events
-      s390/perf,oprofile: Share sampling facility
-      s390/perf: Add service level information for CPU-Measurement Facilities
-      s390/cpum_sf: Dynamically extend the sampling buffer if overflows occur
-      s390/cpum_sf: Atomically reset trailer entry fields of sample-data-blocks
-      s390/cpum_sf: Add helper to read TOD from trailer entries
-      s390/cpum_sf: Detect KVM guest samples
-      s390/cpum_sf: Filter perf events based event->attr.exclude_* settings
-      s390/cpum_sf: Add raw data sampling to support the diagnostic-sampling function
-      s390/cpum_sf: Add flag to process full SDBs only
-      s390: Fix misspellings using 'codespell' tool
-      s390/cpum_sf: fix printk format warnings
-
-Ingo Tuchscherer (1):
-      s390/zcrypt: add support for EP11 coprocessor cards
-
-Martin Schwidefsky (5):
-      s390/ptrace: simplify enable/disable single step
-      s390: optimize control register update
-      s390/3270: fix use after free of tty3270_screen structure
-      s390/compat: correct check for EFAULT in rt-signal frame creation
-      s390/mm: optimize randomize_et_dyn for !PF_RANDOMIZE
-
-Paul Gortmaker (1):
-      s390: delete new instances of __cpuinit usage
-
-Peter Oberparleiter (5):
-      s390/cio: More efficient handling of CHPID availability events
-      s390/cio: Relax subchannel scan loop
-      s390/cio: Delay scan for newly available I/O devices
-      s390/css: Prevent unnecessary allocation in subchannel loop
-      s390/blacklist: Perform subchannel scan only when needed
-
-Sebastian Ott (8):
-      s390/pci: prevent inadvertently triggered bus scans
-      s390/pci: fix removal of nonexistent pci bus
-      s390/pci: set error state for unavailable functions
-      s390/pci/dma: fix accounting of allocated_pages
-      s390/pci: reenable per default
-      s390/cio: fix unlocked access of online member
-      s390/cio: use device_lock to synchronize calls to the ccw driver
-      s390/cio: use device_lock to synchronize calls to the ccwgroup driver
-
- Documentation/kmsg/s390/zcrypt         |   20 +
- arch/s390/include/asm/compat.h         |    3 +-
- arch/s390/include/asm/cpu_mf.h         |  181 ++++
- arch/s390/include/asm/css_chars.h      |    2 +
- arch/s390/include/asm/pci.h            |    1 +
- arch/s390/include/asm/perf_event.h     |   80 +-
- arch/s390/include/asm/qdio.h           |   35 +-
- arch/s390/include/asm/sclp.h           |    4 +-
- arch/s390/include/uapi/asm/zcrypt.h    |   65 ++
- arch/s390/kernel/Makefile              |    3 +-
- arch/s390/kernel/compat_signal.c       |    5 +-
- arch/s390/kernel/entry64.S             |    8 +-
- arch/s390/kernel/perf_cpum_cf.c        |    1 +
- arch/s390/kernel/perf_cpum_cf_events.c |  322 +++++++
- arch/s390/kernel/perf_cpum_sf.c        | 1641 ++++++++++++++++++++++++++++++++
- arch/s390/kernel/perf_event.c          |  174 +++-
- arch/s390/kernel/process.c             |   14 +-
- arch/s390/kernel/ptrace.c              |   27 +-
- arch/s390/kernel/s390_ksyms.c          |    2 +-
- arch/s390/kernel/setup.c               |    2 +-
- arch/s390/kernel/smp.c                 |   19 +-
- arch/s390/kvm/priv.c                   |    2 +-
- arch/s390/lib/uaccess_pt.c             |    4 +-
- arch/s390/mm/pgtable.c                 |    4 +-
- arch/s390/oprofile/hwsampler.c         |   78 +-
- arch/s390/oprofile/hwsampler.h         |   52 +-
- arch/s390/oprofile/init.c              |   23 +-
- arch/s390/pci/pci.c                    |   16 +-
- arch/s390/pci/pci_dma.c                |   13 +-
- arch/s390/pci/pci_event.c              |   26 +-
- drivers/s390/block/dasd.c              |    2 +-
- drivers/s390/char/sclp.h               |    1 -
- drivers/s390/char/sclp_cmd.c           |    2 -
- drivers/s390/char/sclp_early.c         |  125 +--
- drivers/s390/char/tty3270.c            |    7 +-
- drivers/s390/cio/blacklist.c           |    6 +-
- drivers/s390/cio/ccwgroup.c            |   12 +-
- drivers/s390/cio/chsc.c                |   73 +-
- drivers/s390/cio/chsc.h                |   51 +-
- drivers/s390/cio/css.c                 |   26 +-
- drivers/s390/cio/css.h                 |    1 +
- drivers/s390/cio/device.c              |   29 +-
- drivers/s390/cio/qdio_main.c           |   91 ++
- drivers/s390/crypto/ap_bus.c           |   31 +-
- drivers/s390/crypto/ap_bus.h           |    4 +-
- drivers/s390/crypto/zcrypt_api.c       |  109 ++-
- drivers/s390/crypto/zcrypt_api.h       |    2 +
- drivers/s390/crypto/zcrypt_cex4.c      |   20 +-
- drivers/s390/crypto/zcrypt_error.h     |   18 +-
- drivers/s390/crypto/zcrypt_msgtype50.c |   12 +
- drivers/s390/crypto/zcrypt_msgtype6.c  |  260 +++++
- drivers/s390/crypto/zcrypt_msgtype6.h  |    2 +
- drivers/s390/crypto/zcrypt_pcica.c     |   11 +
- drivers/s390/crypto/zcrypt_pcicc.c     |   12 +
- 54 files changed, 3383 insertions(+), 351 deletions(-)
- create mode 100644 Documentation/kmsg/s390/zcrypt
- create mode 100644 arch/s390/kernel/perf_cpum_cf_events.c
- create mode 100644 arch/s390/kernel/perf_cpum_sf.c
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Greg, would you please comment this subsystem concern or introduce 
+other members? Thanks.
