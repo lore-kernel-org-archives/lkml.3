@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaATOMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:12:31 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49382 "EHLO comal.ext.ti.com"
+	id S1753931AbaATOMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:12:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48510 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301AbaATOM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:12:26 -0500
+	id S1753880AbaATOMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 09:12:35 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balbi@ti.com>, <lee.jones@linaro.org>, <arnd@arndb.de>, <sre@debian.org>,
@@ -14,9 +14,9 @@ CC: <balbi@ti.com>, <lee.jones@linaro.org>, <arnd@arndb.de>, <sre@debian.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
         Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v6 02/10] mfd: omap-usb-host: Get clocks based on hardware revision
-Date: Mon, 20 Jan 2014 16:11:23 +0200
-Message-ID: <1390227091-4523-3-git-send-email-rogerq@ti.com>
+Subject: [PATCH v6 03/10] mfd: omap-usb-host: Use clock names as per function for reference clocks
+Date: Mon, 20 Jan 2014 16:11:24 +0200
+Message-ID: <1390227091-4523-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1390227091-4523-1-git-send-email-rogerq@ti.com>
 References: <1390227091-4523-1-git-send-email-rogerq@ti.com>
@@ -26,167 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all revisions have all the clocks so get the necessary clocks
-based on hardware revision.
-
-This should avoid un-necessary clk_get failure messages that were
-observed earlier.
-
-Be more strict and always fail on clk_get() error.
+Use a meaningful name for the reference clocks so that it indicates the function.
 
 CC: Lee Jones <lee.jones@linaro.org>
 CC: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c | 92 +++++++++++++++++++++++++++++++--------------
- 1 file changed, 64 insertions(+), 28 deletions(-)
+ drivers/mfd/omap-usb-host.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 1c9bca2..eaafd2e 100644
+index eaafd2e..d6fab3e 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -665,22 +665,41 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+@@ -714,21 +714,21 @@ static int usbhs_omap_probe(struct platform_device *pdev)
  		goto err_mem;
  	}
  
--	need_logic_fck = false;
-+	/* Set all clocks as invalid to begin with */
-+	omap->ehci_logic_fck = omap->init_60m_fclk = ERR_PTR(-ENODEV);
-+	omap->utmi_p1_gfclk = omap->utmi_p2_gfclk = ERR_PTR(-ENODEV);
-+	omap->xclk60mhsp1_ck = omap->xclk60mhsp2_ck = ERR_PTR(-ENODEV);
-+
- 	for (i = 0; i < omap->nports; i++) {
--		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
--			is_ehci_hsic_mode(i))
--				need_logic_fck |= true;
-+		omap->utmi_clk[i] = ERR_PTR(-ENODEV);
-+		omap->hsic480m_clk[i] = ERR_PTR(-ENODEV);
-+		omap->hsic60m_clk[i] = ERR_PTR(-ENODEV);
+-	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
++	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
+ 	if (IS_ERR(omap->xclk60mhsp1_ck)) {
+ 		ret = PTR_ERR(omap->xclk60mhsp1_ck);
+ 		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+ 		goto err_mem;
  	}
  
--	omap->ehci_logic_fck = ERR_PTR(-EINVAL);
--	if (need_logic_fck) {
--		omap->ehci_logic_fck = devm_clk_get(dev, "ehci_logic_fck");
--		if (IS_ERR(omap->ehci_logic_fck)) {
--			ret = PTR_ERR(omap->ehci_logic_fck);
--			dev_dbg(dev, "ehci_logic_fck failed:%d\n", ret);
-+	/* for OMAP3 i.e. USBHS REV1 */
-+	if (omap->usbhs_rev == OMAP_USBHS_REV1) {
-+		need_logic_fck = false;
-+		for (i = 0; i < omap->nports; i++) {
-+			if (is_ehci_phy_mode(pdata->port_mode[i]) ||
-+			    is_ehci_tll_mode(pdata->port_mode[i]) ||
-+			    is_ehci_hsic_mode(pdata->port_mode[i]))
-+
-+				need_logic_fck |= true;
-+		}
-+
-+		if (need_logic_fck) {
-+			omap->ehci_logic_fck = clk_get(dev, "usbhost_120m_fck");
-+			if (IS_ERR(omap->ehci_logic_fck)) {
-+				ret = PTR_ERR(omap->ehci_logic_fck);
-+				dev_err(dev, "usbhost_120m_fck failed:%d\n",
-+					ret);
-+				goto err_mem;
-+			}
- 		}
-+		goto initialize;
+-	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
++	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
+ 	if (IS_ERR(omap->xclk60mhsp2_ck)) {
+ 		ret = PTR_ERR(omap->xclk60mhsp2_ck);
+ 		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+ 		goto err_mem;
  	}
  
-+	/* for OMAP4+ i.e. USBHS REV2+ */
- 	omap->utmi_p1_gfclk = devm_clk_get(dev, "utmi_p1_gfclk");
- 	if (IS_ERR(omap->utmi_p1_gfclk)) {
- 		ret = PTR_ERR(omap->utmi_p1_gfclk);
-@@ -728,54 +747,71 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		 * them
- 		 */
- 		omap->utmi_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->utmi_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->utmi_clk[i]));
-+		if (IS_ERR(omap->utmi_clk[i])) {
-+			ret = PTR_ERR(omap->utmi_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 
- 		snprintf(clkname, sizeof(clkname),
- 				"usb_host_hs_hsic480m_p%d_clk", i + 1);
- 		omap->hsic480m_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->hsic480m_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->hsic480m_clk[i]));
-+		if (IS_ERR(omap->hsic480m_clk[i])) {
-+			ret = PTR_ERR(omap->hsic480m_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 
- 		snprintf(clkname, sizeof(clkname),
- 				"usb_host_hs_hsic60m_p%d_clk", i + 1);
- 		omap->hsic60m_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->hsic60m_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->hsic60m_clk[i]));
-+		if (IS_ERR(omap->hsic60m_clk[i])) {
-+			ret = PTR_ERR(omap->hsic60m_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 	}
- 
- 	if (is_ehci_phy_mode(pdata->port_mode[0])) {
--		/* for OMAP3, clk_set_parent fails */
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->xclk60mhsp1_ck);
--		if (ret != 0)
--			dev_dbg(dev, "xclk60mhsp1_ck set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "xclk60mhsp1_ck set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->init_60m_fclk);
--		if (ret != 0)
--			dev_dbg(dev, "P0 init_60m_fclk set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "P0 init_60m_fclk set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	}
- 
- 	if (is_ehci_phy_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 					omap->xclk60mhsp2_ck);
--		if (ret != 0)
--			dev_dbg(dev, "xclk60mhsp2_ck set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "xclk60mhsp2_ck set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 						omap->init_60m_fclk);
--		if (ret != 0)
--			dev_dbg(dev, "P1 init_60m_fclk set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "P1 init_60m_fclk set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	}
- 
-+initialize:
- 	omap_usbhs_init(dev);
- 
- 	if (dev->of_node) {
+-	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
++	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
+ 	if (IS_ERR(omap->init_60m_fclk)) {
+ 		ret = PTR_ERR(omap->init_60m_fclk);
+ 		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
 -- 
 1.8.3.2
 
