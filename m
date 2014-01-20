@@ -1,92 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaATJyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:54:50 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:39175 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaATJys convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:54:48 -0500
-Date: Mon, 20 Jan 2014 10:54:10 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Olof Johansson <olof@lixom.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 16/24] drm/i2c: tda998x: add DT documentation
-Message-ID: <20140120105410.15705f32@armhf>
-In-Reply-To: <CAOesGMi96wkHM8jfHNVnM7RJyW2vVoP6FT4YyYzKp-kfc0jTuQ@mail.gmail.com>
-References: <cover.1390153344.git.moinejf@free.fr>
-	<20140119195844.0c975b90@armhf>
-	<CAOesGMi96wkHM8jfHNVnM7RJyW2vVoP6FT4YyYzKp-kfc0jTuQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752699AbaATJz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:55:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751947AbaATJz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:55:27 -0500
+Message-ID: <1390211726.11931.10.camel@linux-fkkt.site>
+Subject: Re: [PATCH v3] HID: New hid-cp2112 driver
+From: Oliver Neukum <oneukum@suse.de>
+To: David Barksdale <dbarksdale@uplogix.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jakub =?ISO-8859-1?Q?K=E1kona?= <kjakub@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 20 Jan 2014 10:55:26 +0100
+In-Reply-To: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
+References: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jan 2014 20:06:09 -0800
-Olof Johansson <olof@lixom.net> wrote:
+On Thu, 2014-01-16 at 15:52 -0600, David Barksdale wrote:
 
-> Hi,
-> 
-> On Sun, Jan 19, 2014 at 10:58 AM, Jean-Francois Moine <moinejf@free.fr> wrote:
-> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> > ---
-> >  .../devicetree/bindings/drm/i2c/tda998x.txt        | 24 ++++++++++++++++++++++
-> >  1 file changed, 24 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> 
-> Please cc bindings for review to devicetree@vger.kernel.org (cc:d here now)
-> 
-> > diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> > new file mode 100644
-> > index 0000000..72da71d
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> > @@ -0,0 +1,24 @@
-> > +Device-Tree bindings for the NXP TDA998x HDMI transmitter
-> > +
-> > +Required properties;
-> > +  - compatible: must be "nxp,tda998x"
-> > +
-> > +Optional properties:
-> > +  - interrupts: interrupt number for HDMI exchanges - default: by polling
-> 
-> What are HDMI exchanges, and how do they differ from other interrupts?
+> +enum {
+> +	STATUS1_TIMEOUT_NACK = 0x00,
+> +	STATUS1_TIMEOUT_BUS = 0x01,
+> +	STATUS1_ARBITRATION_LOST = 0x02,
+> +	STATUS1_READ_INCOMPLETE = 0x03,
+> +	STATUS1_WRITE_INCOMPLETE = 0x04,
+> +	STATUS1_SUCCESS = 0x05,
+> +};
+> +
+> +/* All values are in big-endian */
 
-The used HDMI interrupt events are screen plug/unplug and EDID read.
-There are also CEC read/write which are not yet implemented in the
-tda998x driver.
+We have data types like be32.
 
-There is no difference from normal interrupts, except that the events
-may be get by polling, so, the interrupt number is optional.
+> +struct __attribute__ ((__packed__)) cp2112_smbus_config_report {
+> +	uint8_t report; /* CP2112_SMBUS_CONFIG */
+> +	uint32_t clock_speed; /* Hz */
+> +	uint8_t device_address; /* Stored in the upper 7 bits */
+> +	uint8_t auto_send_read; /* 1 = enabled, 0 = disabled */
+> +	uint16_t write_timeout; /* ms, 0 = no timeout */
+> +	uint16_t read_timeout; /* ms, 0 = no timeout */
+> +	uint8_t scl_low_timeout; /* 1 = enabled, 0 = disabled */
+> +	uint16_t retry_time; /* # of retries, 0 = no limit */
+> +};
+> +
+> +struct  __attribute__ ((__packed__)) cp2112_usb_config_report {
+> +	uint8_t report; /* CP2112_USB_CONFIG */
+> +	uint16_t vid; /* Vendor ID - little endian */
+> +	uint16_t pid; /* Product ID - little endian */
+> +	uint8_t max_power; /* Power requested in 2mA units */
+> +	uint8_t power_mode; /* 0x00 = bus powered
+> +			       0x01 = self powered & regulator off
+> +			       0x02 = self powered & regulator on */
+> +	uint8_t release_major;
+> +	uint8_t release_minor;
+> +	uint8_t mask; /* What fields to program */
+> +};
+> +
+> +/* Number of times to request transfer status before giving up waiting for a
+> +   transfer to complete. */
+> +static const int XFER_TIMEOUT = 100;
+> +
+> +/* Time in ms to wait for a CP2112_DATA_READ_RESPONSE or
+> +   CP2112_TRANSFER_STATUS_RESPONSE. */
+> +static const int RESPONSE_TIMEOUT = 50;
+> +
+> +static const struct hid_device_id cp2112_devices[] = {
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_CYGNAL, USB_DEVICE_ID_CYGNAL_CP2112) },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(hid, cp2112_devices);
+> +
+> +struct cp2112_device {
+> +	struct i2c_adapter adap;
+> +	struct hid_device *hdev;
+> +	wait_queue_head_t wait;
+> +	uint8_t read_data[61];
+> +	uint8_t read_length;
+> +	int xfer_status;
+> +	atomic_t read_avail;
+> +	atomic_t xfer_avail;
+> +	struct gpio_chip gc;
+> +};
 
-> > +
-> > +  - pinctrl-0: pin control group to be used for this controller (IRQ).
-> > +
-> > +  - pinctrl-names: must contain a "default" entry.
-> > +
-> > +  - video-ports: 24 bits value - default: <0x230145>
-> 
-> What is this?
+> +static int cp2112_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct cp2112_device *dev = container_of(chip, struct cp2112_device,
+> +						 gc);
+> +	struct hid_device *hdev = dev->hdev;
+> +	uint8_t buf[2];
+> +	int ret;
+> +
+> +	ret = hdev->hid_get_raw_report(hdev, CP2112_GPIO_GET, buf,
+> +				       sizeof (buf), HID_FEATURE_REPORT);
+> +	if (ret != sizeof (buf)) {
+> +		hid_err(hdev, "error requesting GPIO values: %d\n", ret);
+> +		return ret;
+> +	}
+> +	return (buf[1] >> offset) & 1;
 
-The video-ports value defines how the video controller is connected to
-the tda998x chip. Each 4 bits value tells from which input pins comes
-the video data and if there is any bit inversion. Each byte of this
-video-ports is used to load the VIP_CNTRL_{0,1,2} registers. These ones
-are described in the TDA9983B documentation which is the closer
-available document about the TDA998x family.
+We do have a test_bit() primitive.
 
-The default value is the one defined for TI boards.
-A known other value is <0x234501> which is used for Russell's Armada
-DRM driver in the Cubox (Marvell A510), but this driver has no DT
-support.
+> +}
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+
+> +static int cp2112_read(struct cp2112_device *dev, uint8_t *data, size_t size)
+> +{
+> +	struct hid_device *hdev = dev->hdev;
+> +	uint8_t buf[3];
+> +	int ret;
+> +
+> +	buf[0] = CP2112_DATA_READ_FORCE_SEND;
+> +	*(uint16_t *)&buf[1] = htons(size);
+
+Ouch. Please use put_unaligned()
+
+> +	atomic_set(&dev->read_avail, 0);
+> +	ret = cp2112_hid_output(hdev, buf, 3, HID_OUTPUT_REPORT);
+> +	if (ret < 0) {
+> +		hid_warn(hdev, "Error requesting data: %d\n", ret);
+> +		return ret;
+> +	}
+> +	ret = cp2112_wait(dev, &dev->read_avail);
+> +	if (ret)
+> +		return ret;
+> +	hid_dbg(hdev, "read %d of %d bytes requested\n",
+> +		dev->read_length, size);
+> +	if (size > dev->read_length)
+> +		size = dev->read_length;
+> +	memcpy(data, dev->read_data, size);
+> +	return dev->read_length;
+> +}
+> +
+
+	Regards
+		Oliver
+
+
