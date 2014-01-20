@@ -1,151 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbaATPhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:37:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaATPhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:37:06 -0500
-Date: Mon, 20 Jan 2014 16:37:03 +0100
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.24.1
-Message-ID: <20140120153703.GB2153@x2.net.home>
+	id S1753879AbaATPlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:41:13 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:43944 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaATPlK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:41:10 -0500
+Date: Mon, 20 Jan 2014 16:41:01 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lei Wen <adrian.wenl@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
+Message-ID: <20140120154058.GA9436@localhost.localdomain>
+References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
+ <CALZhoSRvhqJXU=z=h30SS6USjHFe3yKLsJN9WzQr6ch0sxoN-g@mail.gmail.com>
+ <CAKohpokbb3ko3sW4kuDKZSoY1qJ6apVVR3-jpv=7m5ZX__YP8Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <CAKohpokbb3ko3sW4kuDKZSoY1qJ6apVVR3-jpv=7m5ZX__YP8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 20, 2014 at 08:30:10PM +0530, Viresh Kumar wrote:
+> On 20 January 2014 19:29, Lei Wen <adrian.wenl@gmail.com> wrote:
+> > Hi Viresh,
+> 
+> Hi Lei,
+> 
+> > I have one question regarding unbounded workqueue migration in your case.
+> > You use hotplug to migrate the unbounded work to other cpus, but its cpu mask
+> > would still be 0xf, since cannot be changed by cpuset.
+> >
+> > My question is how you could prevent this unbounded work migrate back
+> > to your isolated cpu?
+> > Seems to me there is no such mechanism in kernel, am I understand wrong?
+> 
+> These workqueues are normally queued back from workqueue handler. And we
+> normally queue them on the local cpu, that's the default behavior of workqueue
+> subsystem. And so they land up on the same CPU again and again.
 
-The util-linux release v2.24.1 is available at
+But for workqueues having a global affinity, I think they can be rescheduled later
+on the old CPUs. Although I'm not sure about that, I'm Cc'ing Tejun.
 
-  ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.24/
-
-Feedback and bug reports, as always, are welcomed.
-
-    Karel
-
-
-
-Util-linux 2.24.1 Release Notes
-===============================
-
-agetty:
-   - support the special terminal on first serial line on a S/390  [Werner Fink]
-blkdiscard:
-   - BLKSSZGET fills in an int, not a uint64  [Theodore Ts'o]
-blkid:
-   - escape quotes in the output  [Karel Zak]
-   - simple typo  [Phillip Susi]
-blockdev:
-   - don't use HDIO_GETGEO  [Phillip Susi]
-build-sys:
-   - add --with-smack to config-gen.d  [Karel Zak]
-   - fstrim depends on libmount  [Karel Zak]
-chsh, chfn:
-   - add info about non-local support to the man pages  [Karel Zak]
-dmesg:
-   - fix --raw zero timestamp for kmsg  [Karel Zak]
-docs:
-   - add patching process to howto-contribute.txt  [Sami Kerola]
-   - update AUTHORS file  [Karel Zak]
-   - update links to http //git.kernel.org/ web repository views  [Sami Kerola]
-fdisk:
-   - don't care about partition type  [Karel Zak]
-   - fix printf stuff  [Karel Zak]
-   - fix usage(), -l [<disk>]  [Karel Zak]
-flock:
-   - Change the 'exit status' man page section to make more sense  [Wieland Hoffmann]
-fsck:
-   - add ext4 to list of filesystems with progress bars in fsck man page  [Phillip Susi]
-fstrim:
-   - add --all to discard all filesystem  [Karel Zak]
-   - cleanup usage()  [Karel Zak]
-lib/path:
-   - add path_strdup()  [Karel Zak]
-libblkid:
-   - (nilfs2) check also backup superblock  [Karel Zak]
-   - detect alone PMBR  [Karel Zak]
-   - fix memory leak in blkid_parse_tag_string()  [Karel Zak]
-   - fix swap-area version  [Karel Zak]
-libfdisk:
-   - (dos) be more verbose when change bootable flag  [Karel Zak]
-   - (dos) fix free part counter  [Karel Zak]
-   - (dos) warn on type 0  [Karel Zak]
-   - (gpt) add /home GUID  [Karel Zak]
-   - (gpt) improve and cleanup recovery code  [Karel Zak]
-   - (gpt) recover from corrupted primary/backup PT  [Karel Zak]
-   - (sgi) generate partname according to partition position  [Karel Zak]
-   - (sun) fix end sectors with +1 error  [Karel Zak]
-libmount:
-   - add efivarfs to the list of pseudo filesystems  [Karel Zak]
-   - add mnt_tag_is_valid()  [Karel Zak]
-   - cleanup fix_optstr() regards to selinux and smack  [Karel Zak]
-   - fix typo in smack path  [Karel Zak]
-   - remove smackfs* option when SMACK not enabled  [Karel Zak]
-lsblk:
-   - fix -D segfault  [Karel Zak]
-lscpu:
-   - sort NUMA nodes to keep output human readable  [Karel Zak]
-   - support discontinuous NUMA nodes  [Karel Zak]
-   - support non sequentially numbering of CPUs  [Alexander Troosh]
-man:
-   - Syntax and spelling fixes.  [Ville Skyttä]
-mkfs.minix:
-   - fix fscanf() format string [coverity scan]  [Karel Zak]
-mkswap:
-   - fix compiler warning [-Wunused-variable]  [Karel Zak]
-   - remove cruft from the man page  [Phillip Susi]
-mount:
-   - add note about "noauto" to --all description  [Karel Zak]
-   - correct mount man page default iso9660 permission  [Phillip Susi]
-   - fix man mount page type  [Phillip Susi]
-   - improve -s man mage info  [Karel Zak]
-   - make NAME=value tags usable for non-root  [Karel Zak]
-   - mount.8 fix grammar  [Phillip Susi]
-   - update man page ext3/4 mount options  [Carlos Maiolino]
-partx:
-   - fix --update ranges and out of order tables  [Scott Moser]
-po:
-   - merge changes  [Karel Zak]
-   - update da.po (from translationproject.org)  [Joe Hansen]
-   - update de.po (from translationproject.org)  [Mario Blättermann]
-   - update pt_BR.po (from translationproject.org)  [Rafael Ferreira]
-   - update zh_CN.po (from translationproject.org)  [Wylmer Wang]
-pylibmount:
-   - correctly import from pylibmount.so  [Dave Reisner]
-   - import directly from pylibmount in tests  [Karel Zak]
-   - remove unncessary subdirectory  [Karel Zak]
-script:
-   - don't call TIOCGWINSZ in signal handler  [Karel Zak]
-   - restore errno in signal handler  [Karel Zak]
-   - use poll() rather then O_NONBLOCK  [Karel Zak]
-setpriv:
-   - simplify usage()  [Karel Zak]
-setterm:
-   - fix -dump man page info  [Karel Zak]
-sulogin:
-   - use dirent->d_type when scans /dev  [Karel Zak]
-taskset:
-   - fix PERMISSIONS section of taskset man page  [Rik van Riel]
-tests:
-   - update blkid swap tests  [Karel Zak]
-   - update build-sys tests  [Karel Zak]
-   - update lscpu tests  [Karel Zak]
-textual:
-   - small inprovements to usage and man page of fstrim  [Benno Schulenberg]
-umount:
-   - fix umount by tag for non-roots  [Karel Zak]
-unshare:
-   - add more hints about mount namespaces to the man page  [Karel Zak]
-wipefs:
-   - call BLKRRPART when erase partition table  [Karel Zak]
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Also, one of the plan is to extend the sysfs interface of workqueues to override
+their affinity. If any of you guys want to try something there, that would be welcome.
+Also we want to work on the timer affinity. Perhaps we don't need a user interface
+for that, or maybe something on top of full dynticks to outline that we want the unbound
+timers to run on housekeeping CPUs only.
