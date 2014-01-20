@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaATKPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:15:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41167 "EHLO mx2.suse.de"
+	id S1752656AbaATKUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:20:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42806 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaATKPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:15:11 -0500
-Date: Mon, 20 Jan 2014 11:15:09 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: Deadlock in do_page_fault() on ARM (old kernel)
-Message-ID: <20140120101509.GA2626@dhcp22.suse.cz>
-References: <52D73220.3030108@signal11.us>
+	id S1750801AbaATKUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 05:20:17 -0500
+Message-ID: <52DCF832.9050704@zytor.com>
+Date: Mon, 20 Jan 2014 02:19:30 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D73220.3030108@signal11.us>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au> <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com> <20140120083021.GC30183@twins.programming.kicks-ass.net> <20140120101345.GC3694@twins.programming.kicks-ass.net>
+In-Reply-To: <20140120101345.GC3694@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-01-14 20:13:04, Alan Ott wrote:
-[...]
-> 2. __copy_to_user_memcpy() takes a read lock (down_read()) on
+On 01/20/2014 02:13 AM, Peter Zijlstra wrote:
+> On Mon, Jan 20, 2014 at 09:30:21AM +0100, Peter Zijlstra wrote:
+>> Then make them so. The fact was that most of the mwait idle sites
+>> were bloody broken. And the single mwait_idle_with_hints() function
+>> presents a single nice function that does all the required magics.
+> 
+> To stress this a bit more; have a look see at mwwait_idle_with_hints();
+> it does a whole lot of subtle magic.
+> 
+>  - current_{set,clr}_polling*(), these are crucial in not missing and
+>    wrecking NEED_RESCHED state.
+> 
+>  - X86_FEATURE_CLFLUSH_MONTIOR quirk
+> 
+>  - Does the monitor(); if (!need_resched()) mwait() thing.
+> 
+> All of those are required for a correct and functional idle loop. And
+> I've seen sites where any or all of the above were missing/broken.
+> 
+> Not unifying the lot into a simple usable function is just stupid --
+> history has shown people simply cannot be trusted to get this right.
+> 
 
-This looks like a bug. copy_to_user_* shouldn't take mmap_sem at all
-Check the might_fault annotation used in generic code. Arm version of
-copy_to_user* doesn't seem to use the annotation and I do not see a good
-reason for that.
+I don't think anyone is arguing that.  The question is rather if the
+implementation is correct, and if it is ready for the merge window.
 
-> mm->mmap_sem. While that lock is held, __copy_to_user_memcpy() can
-> generate a page fault, causing do_page_fault() to get called, which
-> will also try to get a read lock (down_read()) on mm->mmap_sem.
-> Multiple read locks can be taken on an rw_semaphore, but deadlock
-> will occur if another thread tries to get a write lock
-> (down_write()) in between. For example:
->     Task 1:         Task 2:
->     down_read(sem)
->                     down_write(sem)    <-- Goes to sleep
->     down_read(sem)                     <-- Goes to sleep
-> 
-> There is a thread from 2005[3] which seems to discuss the same
-> concept of recursive rw_semaphores, but for futexes.
-> 
-> Other comments:
-> 1. My analysis of this probably wrong. Otherwise it seems many
-> others would have the same problem, and they don't seem to. I'm
-> hoping this email will help to correct my understanding.
-> 2. I looked through the git logs for recent (since 2.6.37 time
-> frame) and nothing else jumped out at me as being an obvious fix for
-> this situation.
-> 
-> Thanks for any insight you can give,
-> 
-> Alan.
-> 
-> [1] http://www.signal11.us/~alan/show-all-tasks-deadlock.txt
-> 
-> [2] Some websites/bugtrackers mention this commit with a similar
-> issue, but I'm not entirely sure how it's related:
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8878a539ff19a43cf3729e7562cd528f490246ae
-> 
-> This one seems obviously related, but has no effect on my system:
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=435a7ef52db7d86e67a009b36cac1457f8972391
-> 
-> [3] http://thread.gmane.org/gmane.linux.kernel/280900
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	-hpa
 
--- 
-Michal Hocko
-SUSE Labs
