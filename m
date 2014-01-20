@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaATSvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:51:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35062 "EHLO mx1.redhat.com"
+	id S1751936AbaATSyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:54:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52461 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822AbaATSvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:51:41 -0500
-Message-ID: <52DD7016.9080708@redhat.com>
-Date: Mon, 20 Jan 2014 13:51:02 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1750721AbaATSyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 13:54:12 -0500
+Date: Mon, 20 Jan 2014 19:54:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 0/5] lockdep: (Was: check && lockdep_no_validate)
+Message-ID: <20140120185401.GA27651@redhat.com>
+References: <20140120181942.GA20783@redhat.com> <Pine.LNX.4.44L0.1401201328330.24630-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, chegu_vinod@hp.com,
-        mgorman@suse.de, mingo@redhat.com,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 4/7] numa,sched: tracepoints for NUMA balancing active
- nodemask changes
-References: <1389993129-28180-1-git-send-email-riel@redhat.com> <1389993129-28180-5-git-send-email-riel@redhat.com> <20140120165205.GJ31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140120165205.GJ31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1401201328330.24630-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 11:52 AM, Peter Zijlstra wrote:
-> On Fri, Jan 17, 2014 at 04:12:06PM -0500, riel@redhat.com wrote:
+On 01/20, Alan Stern wrote:
+>
+> On Mon, 20 Jan 2014, Oleg Nesterov wrote:
+>
+> > On 01/17, Alan Stern wrote:
+> > >
+> > > Also, take a look at commit 356c05d58af0.  It's a similar situation
+> > > (not exactly the same).
+> >
+> > At first glance, can't __ATTR_IGNORE_LOCKDEP() use no_validate too ?
+> > (ignoring the fact checkpatch.pl won't be happy). This can simplify
+> > the code, it seems.
+>
+> Well, the macro itself doesn't specify the lockdep class.  That happens
+> implicitly in sysfs_get_active(), in the call to rwsem_acquire_read().
+> However, it ought to be possible to change the code so that when
+> ignore_lockdep(sd) returns nonzero, we end up using no_validate.
 
->> +++ b/kernel/sched/fair.c
->> @@ -1300,10 +1300,14 @@ static void update_numa_active_node_mask(struct task_struct *p)
->>  		faults = numa_group->faults_from[task_faults_idx(nid, 0)] +
->>  			 numa_group->faults_from[task_faults_idx(nid, 1)];
->>  		if (!node_isset(nid, numa_group->active_nodes)) {
->> -			if (faults > max_faults * 4 / 10)
->> +			if (faults > max_faults * 4 / 10) {
->> +				trace_update_numa_active_nodes_mask(current->pid, numa_group->gid, nid, true, faults, max_faults);
-> 
-> While I think the tracepoint hookery is smart enough to avoid evaluating
-> arguments when they're disabled, it might be best to simply pass:
-> current and numa_group and do the dereference in fast_assign().
-> 
-> That said, this is the first and only numa tracepoint, I'm not sure why
-> this qualifies and other metrics do not.
+sysfs_dirent_init_lockdep() can check ->ignore_lockdep and do
+lockdep_set_novalidate_class(). This way sysfs_ignore_lockdep() can
+go away.
 
-It's there because I needed it in development.
+I guess we could even change __ATTR_IGNORE_LOCKDEP() to initialize
+->key = __lockdep_no_validate__ and kill ->ignore_lockdep.
 
-If you think it is not merge material, I would be comfortable
-leaving it out.
+Oleg.
 
--- 
-All rights reversed
