@@ -1,107 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970AbaATXa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 18:30:57 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:37934 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223AbaATXax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 18:30:53 -0500
-X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jan 2014 18:30:53 EST
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1753993AbaATXc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 18:32:29 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44886 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329AbaATXc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 18:32:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,692,1384329600"; 
+   d="scan'208";a="441947093"
+Subject: Re: [PATCH v7 6/6] MCS Lock: add Kconfig entries to allow
+ arch-specific hooks
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <20140120123030.GE31570@twins.programming.kicks-ass.net>
+References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
+	 <1389917316.3138.16.camel@schen9-DESK>
+	 <20140120123030.GE31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Jan 2014 15:31:57 -0800
+Message-ID: <1390260717.3138.33.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Date: Tue, 21 Jan 2014 00:22:53 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Jan Kara <jack@suse.cz>, John Twideldum <twideldums_throwaway@gmx.at>
-Cc: linux-kernel@vger.kernel.org, linux-kernel-owner@vger.kernel.org,
-        powertop@ml01.01.org
-Subject: Re: 3.12-rc5 and overwritten partition table - by
- =?UTF-8?Q?powertop=3F?=
-In-Reply-To: <20131029201032.GC9568@quack.suse.cz>
-References: <trinity-ee0bd2b5-ce28-4895-8c2a-2f60f40e49f4-1383046621263@3capp-gmx-bs07>
- <trinity-f65147f9-012f-4e78-a5a6-3f969ff5b9bf-1383058674646@3capp-gmx-bs07>
- <20131029201032.GC9568@quack.suse.cz>
-Message-ID: <95f3d045b73e5fc326912975b24fec7f@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2013-10-29 21:10, schrieb Jan Kara:
->> The first ~170kb of /dev/sda got blown away with what seems to be a logging output
->> by Powertop, when I was playing with the tuneables.
->> (Luckily the first partition starts later :-))
->   So did you log the output to some file? I'm just trying to understand how
-> it could get onto your disk in the first place...
+On Mon, 2014-01-20 at 13:30 +0100, Peter Zijlstra wrote:
+
 > 
->> Why is that I don't know, but maybe when turning on the SATA knobs
->> something goes wrong. I'm afraid to try again, but I accept rather higher
->> power use than data loss again :-/
+> Then again, people seem to whinge if you don't keep these Kbuild files
+> sorted, but manually sorting 29 files is just not something I like to
+> do.
+> 
 
-I experienced the same on the very same hardware (Lenovo T440s). Like
-John, I turned all those knobs in powertop, including the SATA ones.
-Several time I ended up with broken partition table. Once, even my EFI
-System partition (first partition) was broken. However, since I use EFI
-I was able to recover the partition table quite easily (gdisk asks for
-recovery from backup partition table, kudos to the designer of the GPT
-format!).
+Peter,
 
-This happens running on Arch Linux with stock 3.12.7 as well as mainline
-3.13 kernel. I use latest T440s firmware (2.17). 
+Can you clarify what exactly needs to be sorted?  The Kbuild files
+spit out by git diff appears to be sorted already.
 
-Is it possible to disable/warn user when using that knob (at least on
-Lenovo T440s), in order to avoid users left at an unbootable system...?
+Tim
 
-dmesg output:
-[    2.744398] ata1: SATA max UDMA/133 abar m2048@0xf063c000 port
-0xf063c100 irq 59
-[    2.744400] ata2: DUMMY
-[    2.744401] ata3: DUMMY
-[    3.063804] ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-[    3.064532] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[    3.064536] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-LOCK) filtered out
-[    3.064538] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
-filtered out
-[    3.064606] ata1.00: ACPI cmd ef/10:09:00:00:00:a0 (SET FEATURES)
-succeeded
-[    3.064926] ata1.00: failed to get NCQ Send/Recv Log Emask 0x1
-[    3.064929] ata1.00: ATA-9: Samsung SSD 840 PRO Series, DXM05B0Q, max
-UDMA/133
-[    3.064931] ata1.00: 500118192 sectors, multi 16: LBA48 NCQ (depth
-31/32), AA
-[    3.065256] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[    3.065259] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-LOCK) filtered out
-[    3.065261] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
-filtered out
-[    3.065286] ata1.00: ACPI cmd ef/10:09:00:00:00:a0 (SET FEATURES)
-succeeded
-[    3.065545] ata1.00: failed to get NCQ Send/Recv Log Emask 0x1
-[    3.065605] ata1.00: configured for UDMA/133
-...
-[  130.578789] ata1.00: exception Emask 0x0 SAct 0x7fffffff SErr 0x40000
-action 0x0
-[  130.578794] ata1.00: irq_stat 0x40000001
-[  130.578796] ata1: SError: { CommWake }
-[  130.578798] ata1.00: failed command: WRITE FPDMA QUEUED
-[  130.578802] ata1.00: cmd 61/10:00:f0:29:05/00:00:00:00:00/40 tag 0
-ncq 8192 out
-[  130.578804] ata1.00: status: { DRDY ERR }
-[  130.578806] ata1.00: error: { ABRT }
-...
-[  130.579011] ata1.00: failed command: WRITE FPDMA QUEUED
-[  130.579014] ata1.00: cmd 61/10:f0:58:7c:0f/00:00:00:00:00/40 tag 30
-ncq 8192 out
-[  130.579016] ata1.00: status: { DRDY ERR }
-[  130.579017] ata1.00: error: { ABRT }
-[  130.579207] ata1.00: failed to get NCQ Send/Recv Log Emask 0x1
-[  130.579456] ata1.00: failed to get NCQ Send/Recv Log Emask 0x1
-[  130.579511] ata1.00: configured for UDMA/133
-[  130.579583] ata1: EH complete
+> ---
+>  arch/alpha/include/asm/Kbuild      |  1 +
+>  arch/arc/include/asm/Kbuild        |  1 +
+>  arch/arm/include/asm/Kbuild        |  1 +
+>  arch/arm64/include/asm/Kbuild      |  1 +
+>  arch/avr32/include/asm/Kbuild      |  1 +
+>  arch/blackfin/include/asm/Kbuild   |  1 +
+>  arch/c6x/include/asm/Kbuild        |  1 +
+>  arch/cris/include/asm/Kbuild       |  1 +
+>  arch/frv/include/asm/Kbuild        |  1 +
+>  arch/hexagon/include/asm/Kbuild    |  1 +
+>  arch/ia64/include/asm/Kbuild       |  2 +-
+>  arch/m32r/include/asm/Kbuild       |  1 +
+>  arch/m68k/include/asm/Kbuild       |  1 +
+>  arch/metag/include/asm/Kbuild      |  1 +
+>  arch/microblaze/include/asm/Kbuild |  1 +
+>  arch/mips/include/asm/Kbuild       |  1 +
+>  arch/mn10300/include/asm/Kbuild    |  1 +
+>  arch/openrisc/include/asm/Kbuild   |  1 +
+>  arch/parisc/include/asm/Kbuild     |  1 +
+>  arch/powerpc/include/asm/Kbuild    |  2 +-
+>  arch/s390/include/asm/Kbuild       |  1 +
+>  arch/score/include/asm/Kbuild      |  1 +
+>  arch/sh/include/asm/Kbuild         |  1 +
+>  arch/sparc/include/asm/Kbuild      |  1 +
+>  arch/tile/include/asm/Kbuild       |  1 +
+>  arch/um/include/asm/Kbuild         |  1 +
+>  arch/unicore32/include/asm/Kbuild  |  1 +
+>  arch/x86/include/asm/Kbuild        |  1 +
+>  arch/xtensa/include/asm/Kbuild     |  1 +
+>  include/asm-generic/mcs_spinlock.h | 13 +++++++++++++
+>  30 files changed, 42 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> index f01fb505ad52..14cbbbcec01f 100644
+> --- a/arch/alpha/include/asm/Kbuild
+> +++ b/arch/alpha/include/asm/Kbuild
+> @@ -4,3 +4,4 @@ generic-y += clkdev.h
+>  generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
+> index 9ae21c198007..c0773a5c2ca7 100644
+> --- a/arch/arc/include/asm/Kbuild
+> +++ b/arch/arc/include/asm/Kbuild
+> @@ -48,3 +48,4 @@ generic-y += user.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
+> index c38b58c80202..c68cfdde8783 100644
+> --- a/arch/arm/include/asm/Kbuild
+> +++ b/arch/arm/include/asm/Kbuild
+> @@ -34,3 +34,4 @@ generic-y += timex.h
+>  generic-y += trace_clock.h
+>  generic-y += unaligned.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+> index 519f89f5b6a3..24a3c10cdf38 100644
+> --- a/arch/arm64/include/asm/Kbuild
+> +++ b/arch/arm64/include/asm/Kbuild
+> @@ -51,3 +51,4 @@ generic-y += user.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
+> index 658001b52400..466e13d06bd3 100644
+> --- a/arch/avr32/include/asm/Kbuild
+> +++ b/arch/avr32/include/asm/Kbuild
+> @@ -18,3 +18,4 @@ generic-y       += sections.h
+>  generic-y       += topology.h
+>  generic-y	+= trace_clock.h
+>  generic-y       += xor.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
+> index f2b43474b0e2..0bd1c5c688e3 100644
+> --- a/arch/blackfin/include/asm/Kbuild
+> +++ b/arch/blackfin/include/asm/Kbuild
+> @@ -45,3 +45,4 @@ generic-y += unaligned.h
+>  generic-y += user.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
+> index fc0b3c356027..21d7100ddef9 100644
+> --- a/arch/c6x/include/asm/Kbuild
+> +++ b/arch/c6x/include/asm/Kbuild
+> @@ -57,3 +57,4 @@ generic-y += user.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+> index 199b1a9dab89..c571cc12a4d2 100644
+> --- a/arch/cris/include/asm/Kbuild
+> +++ b/arch/cris/include/asm/Kbuild
+> @@ -13,3 +13,4 @@ generic-y += trace_clock.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
+> index 74742dc6a3da..ccca92eb782a 100644
+> --- a/arch/frv/include/asm/Kbuild
+> +++ b/arch/frv/include/asm/Kbuild
+> @@ -3,3 +3,4 @@ generic-y += clkdev.h
+>  generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
+> index ada843c701ef..553077d0f50c 100644
+> --- a/arch/hexagon/include/asm/Kbuild
+> +++ b/arch/hexagon/include/asm/Kbuild
+> @@ -55,3 +55,4 @@ generic-y += ucontext.h
+>  generic-y += unaligned.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
+> index f93ee087e8fe..25aed55ffeba 100644
+> --- a/arch/ia64/include/asm/Kbuild
+> +++ b/arch/ia64/include/asm/Kbuild
+> @@ -4,4 +4,4 @@ generic-y += exec.h
+>  generic-y += kvm_para.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> -generic-y += vtime.h
+> \ No newline at end of file
+> +generic-y += vtime.hgeneric-y += mcs_spinlock.h
+> diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
+> index 2b58c5f0bc38..d64fdd1b152b 100644
+> --- a/arch/m32r/include/asm/Kbuild
+> +++ b/arch/m32r/include/asm/Kbuild
+> @@ -4,3 +4,4 @@ generic-y += exec.h
+>  generic-y += module.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
+> index a5d27f272a59..1f4d44c7cc33 100644
+> --- a/arch/m68k/include/asm/Kbuild
+> +++ b/arch/m68k/include/asm/Kbuild
+> @@ -32,3 +32,4 @@ generic-y += types.h
+>  generic-y += word-at-a-time.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
+> index 84d0c1d6b9b3..ae0ae6e7ff77 100644
+> --- a/arch/metag/include/asm/Kbuild
+> +++ b/arch/metag/include/asm/Kbuild
+> @@ -53,3 +53,4 @@ generic-y += user.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
+> index a82426589fff..6eb70bde6212 100644
+> --- a/arch/microblaze/include/asm/Kbuild
+> +++ b/arch/microblaze/include/asm/Kbuild
+> @@ -5,3 +5,4 @@ generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += syscalls.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
+> index 1acbb8b77a71..c718d6342326 100644
+> --- a/arch/mips/include/asm/Kbuild
+> +++ b/arch/mips/include/asm/Kbuild
+> @@ -14,3 +14,4 @@ generic-y += trace_clock.h
+>  generic-y += preempt.h
+>  generic-y += ucontext.h
+>  generic-y += xor.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
+> index 032143ec2324..1393ae55ddaa 100644
+> --- a/arch/mn10300/include/asm/Kbuild
+> +++ b/arch/mn10300/include/asm/Kbuild
+> @@ -4,3 +4,4 @@ generic-y += clkdev.h
+>  generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
+> index da1951a22907..7e049d3c0be0 100644
+> --- a/arch/openrisc/include/asm/Kbuild
+> +++ b/arch/openrisc/include/asm/Kbuild
+> @@ -69,3 +69,4 @@ generic-y += vga.h
+>  generic-y += word-at-a-time.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
+> index 34b0be4ca52d..ebe16498339d 100644
+> --- a/arch/parisc/include/asm/Kbuild
+> +++ b/arch/parisc/include/asm/Kbuild
+> @@ -6,3 +6,4 @@ generic-y += word-at-a-time.h auxvec.h user.h cputime.h emergency-restart.h \
+>  	  poll.h xor.h clkdev.h exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
+> index d8f9d2f18a23..426001bd9c9e 100644
+> --- a/arch/powerpc/include/asm/Kbuild
+> +++ b/arch/powerpc/include/asm/Kbuild
+> @@ -3,4 +3,4 @@ generic-y += clkdev.h
+>  generic-y += rwsem.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> -generic-y += vtime.h
+> \ No newline at end of file
+> +generic-y += vtime.hgeneric-y += mcs_spinlock.h
+> diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
+> index 7a5288f3479a..850891317efe 100644
+> --- a/arch/s390/include/asm/Kbuild
+> +++ b/arch/s390/include/asm/Kbuild
+> @@ -3,3 +3,4 @@
+>  generic-y += clkdev.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
+> index fe7471eb0167..8e39afcd2efd 100644
+> --- a/arch/score/include/asm/Kbuild
+> +++ b/arch/score/include/asm/Kbuild
+> @@ -6,3 +6,4 @@ generic-y += clkdev.h
+>  generic-y += trace_clock.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
+> index 231efbb68108..1aed131fbbfa 100644
+> --- a/arch/sh/include/asm/Kbuild
+> +++ b/arch/sh/include/asm/Kbuild
+> @@ -35,3 +35,4 @@ generic-y += trace_clock.h
+>  generic-y += ucontext.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
+> index bf390667657a..8843299956cc 100644
+> --- a/arch/sparc/include/asm/Kbuild
+> +++ b/arch/sparc/include/asm/Kbuild
+> @@ -17,3 +17,4 @@ generic-y += trace_clock.h
+>  generic-y += types.h
+>  generic-y += word-at-a-time.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+> index 22f3bd147fa7..152fc4821424 100644
+> --- a/arch/tile/include/asm/Kbuild
+> +++ b/arch/tile/include/asm/Kbuild
+> @@ -39,3 +39,4 @@ generic-y += trace_clock.h
+>  generic-y += types.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+> index fdde187e6087..620d7292d54b 100644
+> --- a/arch/um/include/asm/Kbuild
+> +++ b/arch/um/include/asm/Kbuild
+> @@ -4,3 +4,4 @@ generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
+>  generic-y += switch_to.h clkdev.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
+> index 00045cbe5c63..cd7822c1effe 100644
+> --- a/arch/unicore32/include/asm/Kbuild
+> +++ b/arch/unicore32/include/asm/Kbuild
+> @@ -61,3 +61,4 @@ generic-y += user.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+> index 7f669853317a..a8fee078b92f 100644
+> --- a/arch/x86/include/asm/Kbuild
+> +++ b/arch/x86/include/asm/Kbuild
+> @@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
+>  genhdr-y += unistd_x32.h
+>  
+>  generic-y += clkdev.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
+> index 228d6aee3a16..9653e5cfe345 100644
+> --- a/arch/xtensa/include/asm/Kbuild
+> +++ b/arch/xtensa/include/asm/Kbuild
+> @@ -29,3 +29,4 @@ generic-y += topology.h
+>  generic-y += trace_clock.h
+>  generic-y += xor.h
+>  generic-y += preempt.h
+> +generic-y += mcs_spinlock.h
+> diff --git a/include/asm-generic/mcs_spinlock.h b/include/asm-generic/mcs_spinlock.h
+> index e69de29bb2d1..8b921a41f351 100644
+> --- a/include/asm-generic/mcs_spinlock.h
+> +++ b/include/asm-generic/mcs_spinlock.h
+> @@ -0,0 +1,13 @@
+> +#ifndef __ASM_MCS_SPINLOCK_H
+> +#define __ASM_MCS_SPINLOCK_H
+> +
+> +/*
+> + * Architectures can define their own:
+> + *
+> + *   mcs_spin_lock_contended(l)
+> + *   mcs_spin_unlock_contended(l)
+> + *
+> + * See kernel/locking/mcs_spinlock.c.
+> + */
+> +
+> +#endif /* __ASM_MCS_SPINLOCK_H */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---
-Stefan
+
