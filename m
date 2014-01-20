@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaATPnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:43:09 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47176 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124AbaATPnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:43:05 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org, bhelgaas@google.com,
-        linux-pci@vger.kernel.org
-Cc: agordeev@redhat.com, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH][trivial] pci: Fix make htmldocs failure caused by msi.c 
-Date: Tue, 21 Jan 2014 00:42:55 +0900
-Message-Id: <1390232575-4284-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.rc0
+	id S1754169AbaATPni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:43:38 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:36577 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035AbaATPnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:43:33 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v7 2/7] dt-bindings: sram: describe option to reserve parts of the memory
+Date: Mon, 20 Jan 2014 16:42:58 +0100
+Message-ID: <1782709.QdZpsrsctf@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <4970034.fqvMoHdOyd@phil>
+References: <4970034.fqvMoHdOyd@phil>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An empty line in msi.c caused "make htmldocs" failure.
-Warning(/home/iida/Repo/linux-next//drivers/pci/msi.c:962): bad line:
-Remove the empty line fixed the issue.
+Some SoCs need parts of their sram for special purposes. So while being part
+of the peripheral, it should not be part of the genpool controlling the sram.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Therefore add an option mmio-sram-reserved to keep arbitrary portions of the
+sram from general usage.
 
+Suggested-by: Rob Herring <robherring2@gmail.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+Acked-by: Rob Herring <robh@kernel.org>
 ---
- drivers/pci/msi.c | 1 -
- 1 file changed, 1 deletion(-)
+ Documentation/devicetree/bindings/misc/sram.txt |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 7a0fec6..a9d5176 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -959,7 +959,6 @@ EXPORT_SYMBOL(pci_disable_msi);
- /**
-  * pci_msix_vec_count - return the number of device's MSI-X table entries
-  * @dev: pointer to the pci_dev data structure of MSI-X device function
--
-  * This function returns the number of device's MSI-X table entries and
-  * therefore the number of MSI-X vectors device is capable of sending.
-  * It returns a negative errno if the device is not capable of sending MSI-X
+diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
+index 4d0a00e..09ee7a3 100644
+--- a/Documentation/devicetree/bindings/misc/sram.txt
++++ b/Documentation/devicetree/bindings/misc/sram.txt
+@@ -8,9 +8,17 @@ Required properties:
+ 
+ - reg : SRAM iomem address range
+ 
++Optional properties:
++
++- mmio-sram-reserved: ordered list of reserved chunks inside the sram that
++  should not be used by the operating system.
++  Format is <base size>, <base size>, ...; with base being relative to the
++  reg property base.
++
+ Example:
+ 
+ sram: sram@5c000000 {
+ 	compatible = "mmio-sram";
+ 	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
++	mmio-sram-reserved = <0x0 0x100>; /* reserve 0x5c000000-0x5c000100 */
+ };
 -- 
-1.9.rc0
+1.7.10.4
+
 
