@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaATJIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:08:50 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58404 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338AbaATJIs (ORCPT
+	id S1753425AbaATJJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:09:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27236 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaATJJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:08:48 -0500
-Message-ID: <52DCE790.6080809@linaro.org>
-Date: Mon, 20 Jan 2014 17:08:32 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 20 Jan 2014 04:09:34 -0500
+Date: Mon, 20 Jan 2014 12:09:33 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Surendra Patil <surendra.tux@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, abbotti@mev.co.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging : comedi : comedidev.h Fixed warning space
+ coding style issue
+Message-ID: <20140120090933.GU7444@mwanda>
+References: <1390205949-12102-1-git-send-email-surendra.tux@gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, Charles.Garcia-Tobin@arm.com,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org> <201401171521.35940.arnd@arndb.de>
-In-Reply-To: <201401171521.35940.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390205949-12102-1-git-send-email-surendra.tux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-1-17 22:21, Arnd Bergmann wrote:
-> On Friday 17 January 2014, Hanjun Guo wrote:
->>
->> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>
->> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
->> name from the ACPI timer table is matched with all the registered
->> timer controllers and matching initialisation routine is invoked.
+On Mon, Jan 20, 2014 at 12:19:09AM -0800, Surendra Patil wrote:
+> Fixed a coding style issue,removed space after the function pointer name
 > 
-> I wouldn't anticipate this infrastructure to be required. Shouldn't all
-> ARMv8 machines have an architected timer?
+> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+> ---
+>  drivers/staging/comedi/comedidev.h | 32 ++++++++++++++++----------------
+>  1 file changed, 16 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> index f82bd42..588e9e7 100644
+> --- a/drivers/staging/comedi/comedidev.h
+> +++ b/drivers/staging/comedi/comedidev.h
+> @@ -61,29 +61,29 @@ struct comedi_subdevice {
+>  
+>  	unsigned int *chanlist;	/* driver-owned chanlist (not used) */
+>  
+> -	int (*insn_read) (struct comedi_device *, struct comedi_subdevice *,
+> +	int (*insn_read)(struct comedi_device *, struct comedi_subdevice *,
+>  			  struct comedi_insn *, unsigned int *);
 
-I not sure of this, could anyone can give some guidance? if only arch
-timer is available for ARM64, this will make thing very simple.
+Now the the second line has one extra space.  The 's' characters in
+"struct comedi_device *" and "struct comedi_insn *" should be on the
+same column.
 
-Thanks
-Hanjun
+regards,
+dan carpenter
+
