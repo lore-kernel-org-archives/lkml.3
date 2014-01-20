@@ -1,208 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750782AbaATFLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 00:11:30 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58346 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaATFL2 (ORCPT
+	id S1750822AbaATFRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 00:17:24 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61083 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaATFRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 00:11:28 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-94-52dcafff0d46
-Date: Mon, 20 Jan 2014 14:12:33 +0900
+	Mon, 20 Jan 2014 00:17:21 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-9f-52dcb15f1dac
+Date: Mon, 20 Jan 2014 14:18:25 +0900
 From: Minchan Kim <minchan@kernel.org>
 To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/3] zram: introduce zram compressor operations struct
-Message-ID: <20140120051233.GC8155@bbox>
+Subject: Re: [RFC PATCH 3/3] zram: list and select compression algorithms
+Message-ID: <20140120051825.GD8155@bbox>
 References: <1389956657-5486-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389956657-5486-3-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389956657-5486-4-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389956657-5486-3-git-send-email-sergey.senozhatsky@gmail.com>
+In-Reply-To: <1389956657-5486-4-git-send-email-sergey.senozhatsky@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
-
-I reviewed this patchset and I suggest somethings.
-Please have a look and feedback to me. :)
-
-1. Let's define new file zram_comp.c
-2. zram_comp includes following field
-   .create
-   .compress
-   .decompress.
-   .destroy
-   .name
-
-1) create/destroy
-Will set up necessary things like allocating buffer, lock init or other things
-might happen in future when initialization time.
-I have a plan to support multiple buffer to do compression/decompression in
-parallel so we could optimize write VS write path, too.
-
-2) compress/decompress
-
-It's very clear.
-
-3) name field will be used for tell to user what's kinds of compression
-algorithm zram support.
-
-On Fri, Jan 17, 2014 at 02:04:16PM +0300, Sergey Senozhatsky wrote:
-> This is preparation patch to add LZ4 compression support.
+On Fri, Jan 17, 2014 at 02:04:17PM +0300, Sergey Senozhatsky wrote:
+> Add compressor device attr that allows to list and select
+> compression algorithms.
 > 
-> struct zram_compress_ops defines common compress and decompress
-> prototypes. Use these ops->compress and ops->decompress callbacks
-> instead of direct LZO lzo1x_1_compress() and lzo1x_decompress_safe()
-> calls.
+> Define and make available for selection LZ4 compressor ops.
 > 
-> Compressor ops should be defined before zram meta allocation,
-> because the size of meta->compress_workmem depends on selected
-> compression algorithm.
+> usage example:
+> List available compression algorithms (currently selected
+> one is LZO):
+>   cat /sys/block/zram0/compressor
+>   <lzo> lz4
 > 
-> Define LZO compressor ops and set it as the only one available
-> zram compressor at the moment.
+> Change compression algorithm to LZ4:
+>   echo lz4 > /sys/block/zram0/compressor
+>   cat /sys/block/zram0/compressor
+>   lzo <lz4>
+
+Interface looks good to me.
+
+> 
+> Update documentation with "Select compression algorithm" section
 > 
 > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > ---
->  drivers/block/zram/zram_drv.c | 20 +++++++++++++-------
->  drivers/block/zram/zram_drv.h | 10 ++++++++++
->  2 files changed, 23 insertions(+), 7 deletions(-)
+>  Documentation/blockdev/zram.txt | 23 ++++++++++++++++-----
+>  drivers/block/zram/Kconfig      |  2 ++
+>  drivers/block/zram/zram_drv.c   | 46 +++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 62 insertions(+), 9 deletions(-)
 > 
+> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> index 393541be..af90d29 100644
+> --- a/Documentation/blockdev/zram.txt
+> +++ b/Documentation/blockdev/zram.txt
+> @@ -21,7 +21,20 @@ Following shows a typical sequence of steps for using zram.
+>  	This creates 4 devices: /dev/zram{0,1,2,3}
+>  	(num_devices parameter is optional. Default: 1)
+>  
+> -2) Set Disksize
+> +2) Select compression algorithm
+> +'compressor' sysfs node allows to see available, currently used
+> +and change compression algorithms.
+> +In order to list available compression algorithms (currently selected
+> +one is LZO):
+> +	cat /sys/block/zram0/compressor
+> +	<lzo> lz4
+> +
+> +Change compression algorithm to LZ4:
+> +	echo lz4 > /sys/block/zram0/compressor
+> +	cat /sys/block/zram0/compressor
+> +	lzo <lz4>
+> +
+> +3) Set Disksize
+>          Set disk size by writing the value to sysfs node 'disksize'.
+>          The value can be either in bytes or you can use mem suffixes.
+>          Examples:
+> @@ -38,14 +51,14 @@ There is little point creating a zram of greater than twice the size of memory
+>  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+>  size of the disk when not in use so a huge zram is wasteful.
+>  
+> -3) Activate:
+> +4) Activate:
+>  	mkswap /dev/zram0
+>  	swapon /dev/zram0
+>  
+>  	mkfs.ext4 /dev/zram1
+>  	mount /dev/zram1 /tmp
+>  
+> -4) Stats:
+> +5) Stats:
+>  	Per-device statistics are exported as various nodes under
+>  	/sys/block/zram<id>/
+>  		disksize
+> @@ -59,11 +72,11 @@ size of the disk when not in use so a huge zram is wasteful.
+>  		compr_data_size
+>  		mem_used_total
+>  
+> -5) Deactivate:
+> +6) Deactivate:
+>  	swapoff /dev/zram0
+>  	umount /dev/zram1
+>  
+> -6) Reset:
+> +7) Reset:
+>  	Write any positive value to 'reset' sysfs node
+>  	echo 1 > /sys/block/zram0/reset
+>  	echo 1 > /sys/block/zram1/reset
+> diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+> index 3450be8..09dacd6 100644
+> --- a/drivers/block/zram/Kconfig
+> +++ b/drivers/block/zram/Kconfig
+> @@ -3,6 +3,8 @@ config ZRAM
+>  	depends on BLOCK && SYSFS && ZSMALLOC
+>  	select LZO_COMPRESS
+>  	select LZO_DECOMPRESS
+> +	select LZ4_COMPRESS
+> +	select LZ4_DECOMPRESS
+
+But user should select what kinds of compressor then want
+some user want only lzo while others want lzo, lz2 and zlib all.
+
+
+>  	default n
+>  	help
+>  	  Creates virtual block devices called /dev/zramX (X = 0, 1, ...).
 > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 7124042..4f2c748 100644
+> index 4f2c748..f1434f8 100644
 > --- a/drivers/block/zram/zram_drv.c
 > +++ b/drivers/block/zram/zram_drv.c
-> @@ -28,10 +28,9 @@
->  #include <linux/device.h>
->  #include <linux/genhd.h>
->  #include <linux/highmem.h>
-> -#include <linux/slab.h>
-> -#include <linux/lzo.h>
+> @@ -31,6 +31,7 @@
 >  #include <linux/string.h>
 >  #include <linux/vmalloc.h>
-> +#include <linux/lzo.h>
-
-Let's include zram_comps.h only and zram_comps.h includes other compression
-alrogithms header. If user don't want to support some compression
-alrogithm, it shouldn't be included.
-Of course, user can select kinds of compressor in configuration step.
-
+>  #include <linux/lzo.h>
+> +#include <linux/lz4.h>
 >  
 >  #include "zram_drv.h"
 >  
-> @@ -42,6 +41,12 @@ static struct zram *zram_devices;
->  /* Module params (documentation at end) */
->  static unsigned int num_devices = 1;
+> @@ -47,6 +48,12 @@ static struct zram_compress_ops lzo_compressor = {
+>  	.decompress = lzo1x_decompress_safe,
+>  };
 >  
-> +static struct zram_compress_ops lzo_compressor = {
-> +	.workmem_sz = LZO1X_MEM_COMPRESS,
-
-workmem_sz should be part of compressor internal.
-
-> +	.compress = lzo1x_1_compress,
-> +	.decompress = lzo1x_decompress_safe,
+> +static struct zram_compress_ops lz4_compressor = {
+> +	.workmem_sz = LZ4_MEM_COMPRESS,
+> +	.compress = lz4_compress,
+> +	.decompress = lz4_decompress_unknownoutputsize,
 > +};
 > +
 >  #define ZRAM_ATTR_RO(name)						\
 >  static ssize_t zram_attr_##name##_show(struct device *d,		\
 >  				struct device_attribute *attr, char *b)	\
-> @@ -166,14 +171,14 @@ static void zram_meta_free(struct zram_meta *meta)
->  	kfree(meta);
+> @@ -113,6 +120,34 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  	return sprintf(buf, "%llu\n", val);
 >  }
 >  
-> -static struct zram_meta *zram_meta_alloc(u64 disksize)
-> +static struct zram_meta *zram_meta_alloc(int workmem_sz, u64 disksize)
+> +static ssize_t compressor_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct zram *zram = dev_to_zram(dev);
+> +	if (zram->ops == &lzo_compressor)
+> +		return sprintf(buf, "<lzo> lz4\n");
+> +	return sprintf(buf, "lzo <lz4>\n");
+> +}
+> +
+> +static ssize_t compressor_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t len)
+> +{
+> +	struct zram *zram = dev_to_zram(dev);
+> +
+> +	down_write(&zram->init_lock);
+> +	if (init_done(zram)) {
+> +		up_write(&zram->init_lock);
+> +		pr_info("Cannot change compressor for initialized device\n");
+> +		return -EBUSY;
+> +	}
+> +	if (strncmp(buf, "lzo", 3) == 0)
+> +		zram->ops = &lzo_compressor;
+> +	else
+> +		zram->ops = &lz4_compressor;
+> +	up_write(&zram->init_lock);
+> +	return len;
+> +}
+
+Changing compressow should be allowed only when zram was created or
+reset. IOW, there should be no datacompressed by old compressor in memory.
+
+> +
+>  /* flag operations needs meta->tb_lock */
+>  static int zram_test_flag(struct zram_meta *meta, u32 index,
+>  			enum zram_pageflags flag)
+> @@ -285,7 +320,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  
+>  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 >  {
->  	size_t num_pages;
->  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
->  	if (!meta)
->  		goto out;
->  
-> -	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> +	meta->compress_workmem = kzalloc(workmem_sz, GFP_KERNEL);
-
-Instead of exposing compression internal stuff, let's call comp->create.
-
->  	if (!meta->compress_workmem)
->  		goto free_meta;
->  
-> @@ -301,7 +306,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
->  	if (size == PAGE_SIZE)
->  		copy_page(mem, cmem);
->  	else
-> -		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
-> +		ret = zram->ops->decompress(cmem, size, mem, &clen);
->  	zs_unmap_object(meta->mem_pool, handle);
+> -	int ret = LZO_E_OK;
+> +	int ret = 0;
+>  	size_t clen = PAGE_SIZE;
+>  	unsigned char *cmem;
+>  	struct zram_meta *meta = zram->meta;
+> @@ -311,7 +346,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 >  	read_unlock(&meta->tb_lock);
 >  
-> @@ -420,7 +425,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	/* Should NEVER happen. Return bio error if it does. */
+> -	if (unlikely(ret != LZO_E_OK)) {
+> +	if (unlikely(ret)) {
+>  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+>  		atomic64_inc(&zram->stats.failed_reads);
+>  		return ret;
+> @@ -354,7 +389,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  
+>  	ret = zram_decompress_page(zram, uncmem, index);
+>  	/* Should NEVER happen. Return bio error if it does. */
+> -	if (unlikely(ret != LZO_E_OK))
+> +	if (unlikely(ret))
+>  		goto out_cleanup;
+>  
+>  	if (is_partial_io(bvec))
+> @@ -433,7 +468,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		uncmem = NULL;
+>  	}
+>  
+> -	if (unlikely(ret != LZO_E_OK)) {
+> +	if (unlikely(ret)) {
+>  		pr_err("Compression failed! err=%d\n", ret);
 >  		goto out;
 >  	}
+> @@ -705,6 +740,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(compressor, S_IRUGO | S_IWUSR,
+> +		compressor_show, compressor_store);
 >  
-> -	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
-> +	ret = zram->ops->compress(uncmem, PAGE_SIZE, src, &clen,
->  			       meta->compress_workmem);
-
-Ditto. compress_workmem should be part of compressor itself.
-
-
->  	if (!is_partial_io(bvec)) {
->  		kunmap_atomic(user_mem);
-> @@ -551,7 +556,7 @@ static ssize_t disksize_store(struct device *dev,
->  	}
->  
->  	disksize = PAGE_ALIGN(disksize);
-> -	zram->meta = zram_meta_alloc(disksize);
-> +	zram->meta = zram_meta_alloc(zram->ops->workmem_sz, disksize);
-
-So, we don't need zram->ops->workmem_sz.
-
->  
->  	zram->disksize = disksize;
->  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> @@ -785,6 +790,7 @@ static int create_device(struct zram *zram, int device_id)
->  		goto out_free_disk;
->  	}
->  
-> +	zram->ops = &lzo_compressor;
-
-Let's define choose_compressor function with some argument
-so the result is following as
-
-zram->comp = choose_compressor("lzo");
-
->  	zram->meta = NULL;
->  	return 0;
->  
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 1d5b1f5..5488682 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -88,8 +88,18 @@ struct zram_meta {
->  	struct mutex buffer_lock; /* protect compress buffers */
->  };
->  
-> +/* compression/decompression functions and algorithm-specific workmem size */
-> +struct zram_compress_ops {
-> +	int (*compress)(const unsigned char *src, size_t src_len,
-> +			unsigned char *dst, size_t *dst_len, void *wrkmem);
-> +	int (*decompress)(const unsigned char *src, size_t src_len,
-> +			unsigned char *dst, size_t *dst_len);
-> +	long workmem_sz;
-> +};
-> +
->  struct zram {
->  	struct zram_meta *meta;
-> +	struct zram_compress_ops *ops;
->  	struct request_queue *queue;
->  	struct gendisk *disk;
->  	/* Prevent concurrent execution of device init, reset and R/W request */
+>  ZRAM_ATTR_RO(num_reads);
+>  ZRAM_ATTR_RO(num_writes);
+> @@ -719,6 +756,7 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_disksize.attr,
+>  	&dev_attr_initstate.attr,
+>  	&dev_attr_reset.attr,
+> +	&dev_attr_compressor.attr,
+>  	&dev_attr_num_reads.attr,
+>  	&dev_attr_num_writes.attr,
+>  	&dev_attr_failed_reads.attr,
 > -- 
 > 1.8.5.3.493.gb139ac2
 > 
