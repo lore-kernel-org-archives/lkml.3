@@ -1,137 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaAWAgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:36:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545AbaAWAgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:36:51 -0500
-Date: Wed, 22 Jan 2014 19:36:36 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Dongmao Zhang <dmzhang@suse.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: [git pull] device mapper changes for 3.14
-Message-ID: <20140123003635.GA30979@redhat.com>
+	id S1756101AbaAWAhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:37:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36449 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764AbaAWAhE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 19:37:04 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [Xen-devel] [PATCH v3] xen/grant-table: Avoid m2p_override during	mapping
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 20 Jan 2014 16:22:47 -0500
+To: Zoltan Kiss <zoltan.kiss@citrix.com>, ian.campbell@citrix.com,
+        wei.liu2@citrix.com, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jonathan.davies@citrix.com
+Message-ID: <a6736948-c67e-4509-89a8-42ec9693830f@email.android.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+>The grant mapping API does m2p_override unnecessarily: only gntdev
+>needs it,
+>for blkback and future netback patches it just cause a lock contention,
+>as
+>those pages never go to userspace. Therefore this series does the
+>following:
+>- the original functions were renamed to __gnttab_[un]map_refs, with a
+>new
+>  parameter m2p_override
+>- based on m2p_override either they follow the original behaviour, or
+>just set
+>  the private flag and call set_phys_to_machine
+>- gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs
+>with
+>  m2p_override false
+>- a new function gnttab_[un]map_refs_userspace provides the old
+>behaviour
 
-  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+You don't say anything about the 'return ret' changed to 'return 0'.
 
-are available in the git repository at:
+Any particular reason for that?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.14-changes
+Thanks
+>
+>v2:
+>- move the storing of the old mfn in page->index to gnttab_map_refs
+>- move the function header update to a separate patch
+>
+>v3:
+>- a new approach to retain old behaviour where it needed
+>- squash the patches into one
+>
+>Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>Suggested-by: David Vrabel <david.vrabel@citrix.com>
+>---
+> drivers/block/xen-blkback/blkback.c |   15 +++----
+> drivers/xen/gntdev.c                |   13 +++---
+>drivers/xen/grant-table.c           |   81
+>+++++++++++++++++++++++++++++------
+> include/xen/grant_table.h           |    8 +++-
+> 4 files changed, 87 insertions(+), 30 deletions(-)
+>
+>diff --git a/drivers/block/xen-blkback/blkback.c
+>b/drivers/block/xen-blkback/blkback.c
+>index 6620b73..875025f 100644
+>--- a/drivers/block/xen-blkback/blkback.c
+>+++ b/drivers/block/xen-blkback/blkback.c
+>@@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif
+>*blkif, struct rb_root *root,
+> 
+> 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+> 			!rb_next(&persistent_gnt->node)) {
+>-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+>-				segs_to_unmap);
+>+			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+> 			BUG_ON(ret);
+> 			put_free_pages(blkif, pages, segs_to_unmap);
+> 			segs_to_unmap = 0;
+>@@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct
+>*work)
+> 		pages[segs_to_unmap] = persistent_gnt->page;
+> 
+> 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+>-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+>-				segs_to_unmap);
+>+			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+> 			BUG_ON(ret);
+> 			put_free_pages(blkif, pages, segs_to_unmap);
+> 			segs_to_unmap = 0;
+>@@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct
+>*work)
+> 		kfree(persistent_gnt);
+> 	}
+> 	if (segs_to_unmap > 0) {
+>-		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
+>+		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+> 		BUG_ON(ret);
+> 		put_free_pages(blkif, pages, segs_to_unmap);
+> 	}
+>@@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif
+>*blkif,
+> 				    GNTMAP_host_map, pages[i]->handle);
+> 		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+> 		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+>-			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+>-			                        invcount);
+>+			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+> 			BUG_ON(ret);
+> 			put_free_pages(blkif, unmap_pages, invcount);
+> 			invcount = 0;
+> 		}
+> 	}
+> 	if (invcount) {
+>-		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
+>+		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+> 		BUG_ON(ret);
+> 		put_free_pages(blkif, unmap_pages, invcount);
+> 	}
+>@@ -740,7 +737,7 @@ again:
+> 	}
+> 
+> 	if (segs_to_map) {
+>-		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
+>+		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+> 		BUG_ON(ret);
+> 	}
+> 
+>diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+>index e41c79c..e652c0e 100644
+>--- a/drivers/xen/gntdev.c
+>+++ b/drivers/xen/gntdev.c
+>@@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+> 	}
+> 
+> 	pr_debug("map %d+%d\n", map->index, map->count);
+>-	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops :
+>NULL,
+>-			map->pages, map->count);
+>+	err = gnttab_map_refs_userspace(map->map_ops,
+>+					use_ptemod ? map->kmap_ops : NULL,
+>+					map->pages,
+>+					map->count);
+> 	if (err)
+> 		return err;
+> 
+>@@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map
+>*map, int offset, int pages)
+> 		}
+> 	}
+> 
+>-	err = gnttab_unmap_refs(map->unmap_ops + offset,
+>-			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+>-			pages);
+>+	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
+>+					  use_ptemod ? map->kmap_ops + offset : NULL,
+>+					  map->pages + offset,
+>+					  pages);
+> 	if (err)
+> 		return err;
+> 
+>diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+>index aa846a4..87ded60 100644
+>--- a/drivers/xen/grant-table.c
+>+++ b/drivers/xen/grant-table.c
+>@@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch,
+>unsigned count)
+> }
+> EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+> 
+>-int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>+int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> 		    struct gnttab_map_grant_ref *kmap_ops,
+>-		    struct page **pages, unsigned int count)
+>+		    struct page **pages, unsigned int count,
+>+		    bool m2p_override)
+> {
+> 	int i, ret;
+> 	bool lazy = false;
+> 	pte_t *pte;
+> 	unsigned long mfn;
+> 
+>+	BUG_ON(kmap_ops && !m2p_override);
+>	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops,
+>count);
+> 	if (ret)
+> 		return ret;
+>@@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref
+>*map_ops,
+> 			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+> 					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+> 		}
+>-		return ret;
+>+		return 0;
+> 	}
+> 
+>-	if (!in_interrupt() && paravirt_get_lazy_mode() ==
+>PARAVIRT_LAZY_NONE) {
+>+	if (m2p_override &&
+>+	    !in_interrupt() &&
+>+	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> 		arch_enter_lazy_mmu_mode();
+> 		lazy = true;
+> 	}
+>@@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref
+>*map_ops,
+> 		} else {
+> 			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+> 		}
+>-		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>-				       &kmap_ops[i] : NULL);
+>+		if (m2p_override)
+>+			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>+					       &kmap_ops[i] : NULL);
+>+		else {
+>+			unsigned long pfn = page_to_pfn(pages[i]);
+>+			WARN_ON(PagePrivate(pages[i]));
+>+			SetPagePrivate(pages[i]);
+>+			set_page_private(pages[i], mfn);
+>+			pages[i]->index = pfn_to_mfn(pfn);
+>+			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+>+				return -ENOMEM;
+>+		}
+> 		if (ret)
+> 			goto out;
+> 	}
+>@@ -937,17 +951,33 @@ int gnttab_map_refs(struct gnttab_map_grant_ref
+>*map_ops,
+> 	if (lazy)
+> 		arch_leave_lazy_mmu_mode();
+> 
+>-	return ret;
+>+	return 0;
+>+}
+>+
+>+int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>+		    struct page **pages, unsigned int count)
+>+{
+>+	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+> }
+> EXPORT_SYMBOL_GPL(gnttab_map_refs);
+> 
+>-int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>+int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+>+			      struct gnttab_map_grant_ref *kmap_ops,
+>+			      struct page **pages, unsigned int count)
+>+{
+>+	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
+>+}
+>+EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
+>+
+>+int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> 		      struct gnttab_map_grant_ref *kmap_ops,
+>-		      struct page **pages, unsigned int count)
+>+		      struct page **pages, unsigned int count,
+>+		      bool m2p_override)
+> {
+> 	int i, ret;
+> 	bool lazy = false;
+> 
+>+	BUG_ON(kmap_ops && !m2p_override);
+>	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops,
+>count);
+> 	if (ret)
+> 		return ret;
+>@@ -958,17 +988,26 @@ int gnttab_unmap_refs(struct
+>gnttab_unmap_grant_ref *unmap_ops,
+> 			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+> 					INVALID_P2M_ENTRY);
+> 		}
+>-		return ret;
+>+		return 0;
+> 	}
+> 
+>-	if (!in_interrupt() && paravirt_get_lazy_mode() ==
+>PARAVIRT_LAZY_NONE) {
+>+	if (m2p_override &&
+>+	    !in_interrupt() &&
+>+	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> 		arch_enter_lazy_mmu_mode();
+> 		lazy = true;
+> 	}
+> 
+> 	for (i = 0; i < count; i++) {
+>-		ret = m2p_remove_override(pages[i], kmap_ops ?
+>-				       &kmap_ops[i] : NULL);
+>+		if (m2p_override)
+>+			ret = m2p_remove_override(pages[i], kmap_ops ?
+>+						  &kmap_ops[i] : NULL);
+>+		else {
+>+			unsigned long pfn = page_to_pfn(pages[i]);
+>+			WARN_ON(!PagePrivate(pages[i]));
+>+			ClearPagePrivate(pages[i]);
+>+			set_phys_to_machine(pfn, pages[i]->index);
+>+		}
+> 		if (ret)
+> 			goto out;
+> 	}
+>@@ -977,10 +1016,24 @@ int gnttab_unmap_refs(struct
+>gnttab_unmap_grant_ref *unmap_ops,
+> 	if (lazy)
+> 		arch_leave_lazy_mmu_mode();
+> 
+>-	return ret;
+>+	return 0;
+>+}
+>+
+>+int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
+>+		    struct page **pages, unsigned int count)
+>+{
+>+	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+> }
+> EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+> 
+>+int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref
+>*map_ops,
+>+				struct gnttab_map_grant_ref *kmap_ops,
+>+				struct page **pages, unsigned int count)
+>+{
+>+	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
+>+}
+>+EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
+>+
+> static unsigned nr_status_frames(unsigned nr_grant_frames)
+> {
+> 	BUG_ON(grefs_per_grant_frame == 0);
+>diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+>index 694dcaf..9a919b1 100644
+>--- a/include/xen/grant_table.h
+>+++ b/include/xen/grant_table.h
+>@@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
+> #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+> 
+> int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>-		    struct gnttab_map_grant_ref *kmap_ops,
+> 		    struct page **pages, unsigned int count);
+>+int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+>+			      struct gnttab_map_grant_ref *kmap_ops,
+>+			      struct page **pages, unsigned int count);
+> int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>-		      struct gnttab_map_grant_ref *kunmap_ops,
+> 		      struct page **pages, unsigned int count);
+>+int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref
+>*unmap_ops,
+>+				struct gnttab_map_grant_ref *kunmap_ops,
+>+				struct page **pages, unsigned int count);
+> 
+>/* Perform a batch of grant map/copy operations. Retry every batch slot
+> * for which the hypervisor returns GNTST_eagain. This is typically due
+>
+>_______________________________________________
+>Xen-devel mailing list
+>Xen-devel@lists.xen.org
+>http://lists.xen.org/xen-devel
 
-for you to fetch changes up to 5066a4df1f427faac8372d20494483bb09a4a1cd:
 
-  dm log userspace: allow mark requests to piggyback on flush requests (2014-01-21 23:46:27 -0500)
-
-----------------------------------------------------------------
-A set of device-mapper changes for 3.14.
-
-A lot of attention was paid to improving the thin-provisioning target's
-handling of metadata operation failures and running out of space.  A new
-'error_if_no_space' feature was added to allow users to error IOs rather
-than queue them when either the data or metadata space is exhausted.
-
-Additional fixes/features include:
-- a few fixes to properly support thin metadata device resizing
-- a solution for reliably waiting for a DM device's embedded kobject to
-  be released before destroying the device
-- old dm-snapshot is updated to use the dm-bufio interface to take
-  advantage of readahead capabilities that improve snapshot activation
-- new dm-cache target tunables to control how quickly data is promoted
-  to the cache (fast) device
-- improved write efficiency of cluster mirror target by combining
-  userspace flush and mark requests
-
-----------------------------------------------------------------
-Chuansheng Liu (1):
-      dm snapshot: call destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()
-
-Dongmao Zhang (1):
-      dm log userspace: allow mark requests to piggyback on flush requests
-
-Joe Thornber (9):
-      dm thin: fix discard support to a previously shared block
-      dm thin: return error from alloc_data_block if pool is not in write mode
-      dm thin: factor out check_low_water_mark and use bools
-      dm thin: handle metadata failures more consistently
-      dm cache policy mq: introduce three promotion threshold tunables
-      dm space map common: make sure new space is used during extend
-      dm space map metadata: fix extending the space map
-      dm btree: add dm_btree_find_lowest_key
-      dm space map metadata: fix bug in resizing of thin metadata
-
-Mike Snitzer (14):
-      dm thin: initialize dm_thin_new_mapping returned by get_next_mapping
-      dm space map metadata: limit errors in sm_metadata_new_block
-      dm persistent data: cleanup dm-thin specific references in text
-      dm thin: use bool rather than unsigned for flags in structures
-      dm thin: add mappings to end of prepared_* lists
-      dm thin: log info when growing the data or metadata device
-      dm thin: cleanup and improve no space handling
-      dm thin: requeue bios to DM core if no_free_space and in read-only mode
-      dm thin: add error_if_no_space feature
-      dm thin: eliminate the no_free_space flag
-      dm thin: fix set_pool_mode exposed pool operation races
-      dm cache: add block sizes and total cache blocks to status output
-      dm thin: fix pool feature parsing
-      dm cache: add policy name to status output
-
-Mikulas Patocka (9):
-      dm table: remove unused buggy code that extends the targets array
-      dm delay: use per-bio data instead of a mempool and slab cache
-      dm: remove pointless kobject comparison in dm_get_from_kobject
-      dm: wait until embedded kobject is released before destroying a device
-      dm snapshot: use GFP_KERNEL when initializing exceptions
-      dm snapshot: prepare for switch to using dm-bufio
-      dm snapshot: use dm-bufio
-      dm snapshot: use dm-bufio prefetch
-      dm sysfs: fix a module unload race
-
-Wei Yongjun (1):
-      dm cache policy mq: use list_del_init instead of list_del + INIT_LIST_HEAD
-
- Documentation/device-mapper/cache-policies.txt     |  16 +-
- Documentation/device-mapper/cache.txt              |  51 ++--
- Documentation/device-mapper/thin-provisioning.txt  |   7 +
- drivers/md/Kconfig                                 |  11 +-
- drivers/md/Makefile                                |   1 +
- drivers/md/dm-bufio.c                              |  36 ++-
- drivers/md/dm-bufio.h                              |  12 +
- drivers/md/dm-builtin.c                            |  48 ++++
- drivers/md/dm-cache-policy-mq.c                    |  70 +++--
- drivers/md/dm-cache-policy.c                       |   4 +
- drivers/md/dm-cache-policy.h                       |   6 +
- drivers/md/dm-cache-target.c                       |  20 +-
- drivers/md/dm-delay.c                              |  35 +--
- drivers/md/dm-log-userspace-base.c                 | 206 +++++++++++----
- drivers/md/dm-snap-persistent.c                    |  87 +++++--
- drivers/md/dm-snap.c                               |  10 +-
- drivers/md/dm-sysfs.c                              |   5 +-
- drivers/md/dm-table.c                              |  22 +-
- drivers/md/dm-thin-metadata.c                      |  20 ++
- drivers/md/dm-thin-metadata.h                      |   4 +-
- drivers/md/dm-thin.c                               | 284 +++++++++++++--------
- drivers/md/dm.c                                    |  15 +-
- drivers/md/dm.h                                    |  17 ++
- drivers/md/persistent-data/dm-block-manager.c      |   2 +-
- drivers/md/persistent-data/dm-btree.c              |  33 ++-
- drivers/md/persistent-data/dm-btree.h              |   8 +
- drivers/md/persistent-data/dm-space-map-common.c   |   6 +-
- drivers/md/persistent-data/dm-space-map-metadata.c |  32 ++-
- include/uapi/linux/dm-log-userspace.h              |  20 +-
- 29 files changed, 767 insertions(+), 321 deletions(-)
- create mode 100644 drivers/md/dm-builtin.c
