@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaATNjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 08:39:11 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56282 "EHLO multi.imgtec.com"
+	id S1753921AbaATNji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 08:39:38 -0500
+Received: from mail2.unitn.it ([193.205.206.22]:53044 "EHLO mail2.unitn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744AbaATNjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 08:39:08 -0500
-Message-ID: <52DD26F1.20104@imgtec.com>
-Date: Mon, 20 Jan 2014 13:38:57 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752173AbaATNjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 08:39:36 -0500
+Message-ID: <52DD2711.9080504@unitn.it>
+Date: Mon, 20 Jan 2014 14:39:29 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <devel@driverdev.osuosl.org>, <andreas.dilger@intel.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <oleg.drokin@intel.com>, <jacques-charles.lafoucriere@cea.fr>,
-        <jinshan.xiong@intel.com>, <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
- for the related union
-References: <52DA4E6A.1000308@gmail.com> <20140118100547.GS7444@mwanda> <52DA56C2.5010802@gmail.com> <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120130116.GW7444@mwanda>
-In-Reply-To: <20140120130116.GW7444@mwanda>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com> <20140120112442.GA8907@austad.us> <52DD1377.5090201@gmail.com> <20140120131616.GB8907@austad.us>
+In-Reply-To: <20140120131616.GB8907@austad.us>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2014_01_20_13_39_07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/01/14 13:01, Dan Carpenter wrote:
-> It would be easy enough to make the compiler complain about any union
-> which would normally have size which is not a multiple of 4.
-> 
-> Warning: union will be padded with 2 bytes unless __attribute__((packed)).
-> 
-> Otherwise you will be fighting this for ever.
+Hi all,
 
-A good idea, but the problem is that most of the time it just doesn't
-matter since all users of the data structure do so with the same ABI. We
-already expect the compiler to take some liberties with padding and
-alignment since the C standard permits it, so it's only when the exact
-layout really matters (data structures dealing with hardware, stored to
-disk, or passed over networks) that it ever becomes a problem.
+On 01/20/2014 02:16 PM, Henrik Austad wrote:
+[...]
+>>>> + The typical -deadline task is composed of a computation phase (instance)
+>>>> + which is activated on a periodic or sporadic fashion. The expected (maximum)
+>>>> + duration of such computation is called the task's runtime; the time interval
+>>>> + by which each instance needs to be completed is called the task's relative
+>>>> + deadline. The task's absolute deadline is dynamically calculated as the
+>>>> + time instant a task (or, more properly) activates plus the relative
+>>>> + deadline.
+>>>
+>>> activates - released?
+>>>
+>>
+>> I'd keep (modifying a bit):
+>>
+>> "time instant a task activates plus the relative deadline."
+>>
+>> This is probably the nearest thing to what is implemented that we can say
+>> (without entering into the theory too much), a task that "activates" can mean
+>> that it is first released, enqueued, woken-up, etc.
+>
+> So, if we look at release (yes, I'm avoiding activates for a little while)
+> as the time at the *beginning* of a new period, then, and only then should
+> the *absolute* deadline be computed.
+>
+> If you den move on to use 'activate' as a term for when a task becomes
+> eligble to run, then 'release' becomes a subset of 'activate', and you
+> should only compute the absolute deadline at that time. Did that make
+> sense?
+I think things are a little bit complex here, because there are 2 different
+"deadlines" we can think about:
+- the "jobs deadlines" (the absolute job deadline can be computed at job
+   arrival, as the arrival time + the relative deadline). These are generally
+   used for performance metrics, to see if a job is respecting its timing
+   constraints or not
+- the "scheduling deadlines", which are the ones used by the scheduler to
+   schedule the tasks. These are computed at tasks' wake-up time - notice that
+   for self-suspending jobs there can be wake-up times that are not job arrival
+   times. And are assigned according to the rules described in the CBS paper.
+I think this can easily become very confusing, so I currently have no concrete
+proposals for improving the documentation... But I wanted to point out that
+things here are more complex than in the "traditional" real-time task model.
 
-> Are you sure it's padding the unions, and not just treating the unions
-> as structs?
+Maybe a solution could be to simply describe scheduling deadlines (which are
+what sched_deadline uses) without going into the details of jobs' deadlines.
+So, the document could avoid talking about instances (or jobs), and can say
+that a task is guaranteed to receive "runtime" time units every "period" time
+units (and these "runtime" time units are available within "deadline" time
+units from the beginning of the period). Every time the task wakes up, the
+scheduler computes a scheduling deadline consistent with this constraint,
+and tasks are scheduled using EDF on these scheduling deadlines.
+Every time "runtime" time units are consumed in a period, the scheduling
+deadline is postponed by a period.
 
-Yes
+This is of course an approximative description, but I think it can give an
+intuitive idea of how the scheduler works, and about the meaning of the three
+scheduling parameters.
 
-> What is the size of this union?
-> 
-> union a {
-> 	int x;
-> 	short y;
-> };
 
-4
 
-Thanks
-James
-
+				Luca
