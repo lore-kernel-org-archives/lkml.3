@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaATSzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:55:13 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:62375 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494AbaATSzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:55:09 -0500
-Date: Mon, 20 Jan 2014 13:55:07 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] arm64: advertise availability of CRC and crypto
- instructions
-In-Reply-To: <CAKv+Gu8JEaVZDiOEegUeYfWbAMMH0ddgcWaTjFBpjXzoiKRoQg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1401201351120.1652@knanqh.ubzr>
-References: <1387807592-26375-1-git-send-email-ard.biesheuvel@linaro.org> <20140120173838.GD29971@arm.com> <alpine.LFD.2.11.1401201242480.1652@knanqh.ubzr> <CAKv+Gu8jqctGFsyccg6_VGkZ6ogf8BD_kq1rsRQrc+cw7pk+qA@mail.gmail.com> <alpine.LFD.2.11.1401201307300.1652@knanqh.ubzr>
- <CAKv+Gu8JEaVZDiOEegUeYfWbAMMH0ddgcWaTjFBpjXzoiKRoQg@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752586AbaATS6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:58:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750721AbaATS6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 13:58:14 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        Fengguang Wu <fengguang.wu@Intel.com>
+Subject: [PATCH] x86, cpu hotplug, use cpumask stack safe variant cpumask_var_t in check_irq_vectors_for_cpu_disable() [v2]
+Date: Mon, 20 Jan 2014 13:57:58 -0500
+Message-Id: <1390244278-30024-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <20140120085017.GB5243@gchen.bj.intel.com>
+References: <20140120085017.GB5243@gchen.bj.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014, Ard Biesheuvel wrote:
+kbuild, 0day kernel build service, outputs the warning:
 
-> On 20 January 2014 19:17, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > On Mon, 20 Jan 2014, Ard Biesheuvel wrote:
-> >> Calling getauxval(AT_HWCAP) on an outdated libc.so will give you the
-> >> whole value, not just the bits whose meaning was known to glibc at the
-> >> time.
-> >> So if desired, a program can interpret AT_HWCAP itself.
-> >>
-> >> AT_HWCAP2 is completely new, so you won't be able to retrieve it using
-> >> getauxval() on an older libc.
-> >
-> > I agree.  And I don't dispute the bit placement choice either.
-> >
-> > Still, an old glibc calling getauxval(AT_HWCAP) should already be
-> > prepared to receive and rightfully ignore those bits it didn't know the
-> > meaning of at the time.  So "preserving some future extensions in HWCAP
-> > for older glibc" as a justification makes little sense to me... unless
-> > I'm missing something?
-> >
-> > Even if applications interpret those bits themselves, supposing they
-> > still need to be linked against an old glibc, then why would
-> > yet-to-be-defined future extensions be more important to be signaled
-> > using the lower 32 bits than the extensions you propose?  That is what I
-> > don't get.
-> >
-> 
-> In the general case, you are quite right.
-> 
-> In this particular case, the extensions for which I am adding the
-> feature bits are not supported on any hardware currently known or
-> supported by the ARM port. At this time, the only known CPUs
-> supporting these extensions are ARMv8 CPUs executing in 32-bit
-> compatibility mode (i.e., ARMv8 defines instructions for the 32-bit
-> execution state using previously unallocated opcodes)
+arch/x86/kernel/irq.c:333:1: warning: the frame size of 2056 bytes
+is larger than 2048 bytes [-Wframe-larger-than=]
 
-So?
+because check_irq_vectors_for_cpu_disable() allocates two cpumasks on the
+stack.  Fix this by using cpumask_var_t, the cpumask stack safe variant.
 
-> So the only reason (currently) for adding these feature bits to the
-> ARM port is to align with the ARMv8 32-bit compat mode so that a
-> 32-bit userland requires no knowledge about whether its 32-bit
-> execution environment is hosted by an ARM or an arm64 kernel. In the
-> future, ARMv8 32-bit only CPUs may well turn up that support these
-> extensions as well.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Janet Morgan <janet.morgan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Ruiv Wang <ruiv.wang@gmail.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>
+Cc: x86@kernel.org
+Cc: Fengguang Wu <fengguang.wu@intel.com>
 
-I agree with all you've said so far.  But that doesn't answer my 
-question.
+[v2]: switch from GFP_KERNEL to GFP_ATOMIC
+---
+ arch/x86/kernel/irq.c |   35 +++++++++++++++++++++++++----------
+ 1 file changed, 25 insertions(+), 10 deletions(-)
 
-And my unanswered question isn't that important either.
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 4207e8d..c130cfa 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -269,15 +269,25 @@ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+  */
+ int check_irq_vectors_for_cpu_disable(void)
+ {
+-	int irq, cpu;
++	int irq, cpu, ret = 0;
+ 	unsigned int this_cpu, vector, this_count, count;
+ 	struct irq_desc *desc;
+ 	struct irq_data *data;
+-	struct cpumask affinity_new, online_new;
++	cpumask_var_t affinity_new, online_new;
++
++	if (!alloc_cpumask_var(&online_new, GFP_ATOMIC)){
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	if (!alloc_cpumask_var(&affinity_new, GFP_ATOMIC)) {
++		ret = -ENOMEM;
++		goto free_online_new;
++	}
+ 
+ 	this_cpu = smp_processor_id();
+-	cpumask_copy(&online_new, cpu_online_mask);
+-	cpu_clear(this_cpu, online_new);
++	cpumask_copy(online_new, cpu_online_mask);
++	__cpu_clear(this_cpu, online_new);
+ 
+ 	this_count = 0;
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+@@ -285,8 +295,8 @@ int check_irq_vectors_for_cpu_disable(void)
+ 		if (irq >= 0) {
+ 			desc = irq_to_desc(irq);
+ 			data = irq_desc_get_irq_data(desc);
+-			cpumask_copy(&affinity_new, data->affinity);
+-			cpu_clear(this_cpu, affinity_new);
++			cpumask_copy(affinity_new, data->affinity);
++			__cpu_clear(this_cpu, affinity_new);
+ 
+ 			/* Do not count inactive or per-cpu irqs. */
+ 			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
+@@ -307,8 +317,8 @@ int check_irq_vectors_for_cpu_disable(void)
+ 			 * mask is not zero; that is the down'd cpu is the
+ 			 * last online cpu in a user set affinity mask.
+ 			 */
+-			if (cpumask_empty(&affinity_new) ||
+-			    !cpumask_subset(&affinity_new, &online_new))
++			if (cpumask_empty(affinity_new) ||
++			    !cpumask_subset(affinity_new, online_new))
+ 				this_count++;
+ 		}
+ 	}
+@@ -327,9 +337,14 @@ int check_irq_vectors_for_cpu_disable(void)
+ 	if (count < this_count) {
+ 		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
+ 			this_cpu, this_count, count);
+-		return -ERANGE;
++		ret = -ERANGE;
+ 	}
+-	return 0;
++
++	free_cpumask_var(affinity_new);
++free_online_new:
++	free_cpumask_var(online_new);
++out:
++	return ret;
+ }
+ 
+ /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
+-- 
+1.7.9.3
 
-
-Nicolas
