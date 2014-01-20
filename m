@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaATRvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:51:44 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:43619 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaATRvm (ORCPT
+	id S1753291AbaATRw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:52:29 -0500
+Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:55010 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752156AbaATRw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:51:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140120175033.GA11534@infradead.org>
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
-	<20131228163308.GA1638@infradead.org>
-	<52DD6101.4010708@zytor.com>
-	<20140120175033.GA11534@infradead.org>
-Date: Mon, 20 Jan 2014 09:51:40 -0800
-Message-ID: <CAMe9rOr1nAvgurUNT8W=w1+bqcFMJw-6W5=E3O22R3RfcmPu8g@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 Jan 2014 12:52:26 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2915:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:3874:4321:4605:5007:6119:6261:7576:7903:10004:10026:10848:10967:11026:11232:11658:11914:12050:12438:12517:12519:12679:12740:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: nose58_322d96d9acd4f
+X-Filterd-Recvd-Size: 2280
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] net: Convert aligned memcpy to ether_addr_copy
+Date: Mon, 20 Jan 2014 09:52:13 -0800
+Message-Id: <cover.1390239869.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <20140115.164540.450877805879786067.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 9:50 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Jan 20, 2014 at 09:46:41AM -0800, H. Peter Anvin wrote:
->> This comment by Christoph was literally the only feedback on this
->> patchset.  The definition of __kernel_[u]long_t is "the size of 'long'
->> for the native kernel for the ABI".  H.J.'s patchset only affects x86
->> (specifically x86-64) since on all other platforms __kernel_[u]long_t is
->> simply defined as long/unsigned long.
->
-> Btw, sorry for the delay in getting back yo your question.  How about
-> __abi_long_t or __kabi_long_t instead?
->
+On Wed, 2014-01-15 at 16:45 -0800, David Miller wrote:
+From: Joe Perches <joe@perches.com>
+> Date: Wed, 15 Jan 2014 16:07:58 -0800
+> 
+> > If you want the ones for net-next net/ now (but not
+> > for batman-adv, that maybe could use a new function like
+> > ether_addr_copy_unaligned) here's a changestat.
+> > 
+> > Otherwise, I'll wait for the next cycle.
+> 
+> This looks fine, why don't you toss it my way over the weekend as I
+> still have some backlog to process at the moment?
+ 
+I didn't get that done this weekend, so next cycle
+for most of net/.
 
-FWIW, in glibc, we use __syscall_ulong_t/__syscall_ulong_t instead of
-__kernel_[u]long_t.
+I don't want to introduce any breakage this late and
+there are possible unaligned memcpy(foo, bar, ETH_ALEN)
+where one or both of foo/bar are stack pointers where
+the alignment is hard to verify.
 
+There are also statics declared without __aligned(2)
+that will need updating.
+
+Maybe ether_addr_copy_unaligned should be added too.
+
+Here are the ones I could easily verify...
+No worries if it's this cycle or next.
+
+Joe Perches (7):
+  8021q: Use ether_addr_copy
+  appletalk: Use ether_addr_copy
+  atm: Use ether_addr_copy
+  caif_usb: Use ether_addr_copy
+  netpoll: Use ether_addr_copy
+  pktgen: Use ether_addr_copy
+  dsa: Use ether_addr_copy
+
+ net/8021q/vlan.c     |  2 +-
+ net/8021q/vlan_dev.c |  6 +++---
+ net/appletalk/aarp.c | 12 ++++++------
+ net/atm/lec.c        |  9 +++++----
+ net/atm/mpc.c        |  2 +-
+ net/caif/caif_usb.c  |  4 ++--
+ net/core/netpoll.c   |  4 ++--
+ net/core/pktgen.c    |  8 ++++----
+ net/dsa/slave.c      |  2 +-
+ 9 files changed, 25 insertions(+), 24 deletions(-)
 
 -- 
-H.J.
+1.8.1.2.459.gbcd45b4.dirty
+
