@@ -1,1034 +1,762 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaATOpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:45:15 -0500
-Received: from mail-bn1lp0153.outbound.protection.outlook.com ([207.46.163.153]:9168
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740AbaATOpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:45:13 -0500
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-Thread-Topic: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-Thread-Index: AQHPE8PT6BnndueXIU+jZO3SkYX87JqNrb0Q
-Date: Mon, 20 Jan 2014 14:45:09 +0000
-Message-ID: <4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <20140117203126.11429.25235.stgit@gimli.home>
-In-Reply-To: <20140117203126.11429.25235.stgit@gimli.home>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.69.7.57]
-x-forefront-prvs: 00979FCB3A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(13464003)(51704005)(199002)(164054003)(377454003)(189002)(4396001)(47446002)(31966008)(85306002)(87936001)(76786001)(81686001)(87266001)(74876001)(74502001)(80022001)(81542001)(93516002)(86362001)(85852003)(74366001)(83072002)(56816005)(90146001)(66066001)(2656002)(69226001)(74706001)(76576001)(76482001)(74316001)(63696002)(47976001)(74662001)(19580405001)(81342001)(19580395003)(51856001)(47736001)(76796001)(80976001)(93136001)(53806001)(92566001)(54356001)(49866001)(65816001)(50986001)(46102001)(79102001)(54316002)(83322001)(59766001)(77982001)(33646001)(81816001)(56776001)(24736002)(559001)(579004)(569005);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB468.namprd03.prod.outlook.com;CLIP:182.69.7.57;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1753779AbaATOq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:46:28 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:55617 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaATOqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 09:46:23 -0500
+Date: Mon, 20 Jan 2014 15:46:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/intel-mid changes for v3.14
+Message-ID: <20140120144619.GA14469@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KEjNOh004344
+
+Linus,
+
+Please pull the latest x86-intel-mid-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-intel-mid-for-linus
+
+   # HEAD: ee87c751d88f9b03fee7349556817fe80c113b32 x86, intel_mid: Replace memcpy with struct assignment
+
+This tree improves Intel MID (Mobile Internet Device) platform 
+support:
+
+  - Merrifield platform support (David Cohen)
+  - Clovertrail platform support (Kuppuswamy Sathyanarayanan)
+  - Various cleanups and fixes (David Cohen)
+
+ Thanks,
+
+	Ingo
+
+------------------>
+David Cohen (6):
+      x86, intel-mid: Move Medfield code out of intel-mid.c core file
+      x86, intel-mid: Add Merrifield platform support
+      x86, intel-mid: Remove deprecated X86_MDFLD and X86_WANT_INTEL_MID configs
+      x86, intel-mid: sfi_handle_*_dev() should check for pdata error code
+      x86, intel-mid: Check get_gpio_by_name() error code on platform code
+      x86, intel-mid: Return proper error code from get_gpio_by_name()
+
+Fengguang Wu (1):
+      x86, intel_mid: Replace memcpy with struct assignment
+
+Kuppuswamy Sathyanarayanan (1):
+      x86, intel-mid: Add Clovertrail platform support
 
 
+ arch/x86/Kconfig                                   |  30 ++----
+ arch/x86/include/asm/intel-mid.h                   |  48 +++++++++-
+ arch/x86/pci/intel_mid_pci.c                       |   6 +-
+ arch/x86/platform/intel-mid/Makefile               |   4 +-
+ .../intel-mid/device_libs/platform_emc1403.c       |   4 +-
+ .../intel-mid/device_libs/platform_gpio_keys.c     |   2 +-
+ .../intel-mid/device_libs/platform_lis331.c        |   4 +-
+ .../intel-mid/device_libs/platform_max7315.c       |   2 +-
+ .../intel-mid/device_libs/platform_mpu3050.c       |   2 +-
+ .../intel-mid/device_libs/platform_pmic_gpio.c     |   2 +-
+ .../intel-mid/device_libs/platform_tca6416.c       |   4 +-
+ arch/x86/platform/intel-mid/intel-mid.c            |  64 +++++++------
+ arch/x86/platform/intel-mid/intel_mid_weak_decls.h |  19 ++++
+ arch/x86/platform/intel-mid/mfld.c                 |  75 +++++++++++++++
+ arch/x86/platform/intel-mid/mrfl.c                 | 103 +++++++++++++++++++++
+ arch/x86/platform/intel-mid/sfi.c                  |  46 +++++++--
+ 16 files changed, 340 insertions(+), 75 deletions(-)
+ create mode 100644 arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+ create mode 100644 arch/x86/platform/intel-mid/mfld.c
+ create mode 100644 arch/x86/platform/intel-mid/mrfl.c
 
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Saturday, January 18, 2014 2:06 AM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-> 
-> RFC: This is not complete but I want to share with Varun the dirrection
-> I'm thinking about.  In particular, I'm really not sure if we want to
-> introduce a "v2" interface version with slightly different unmap
-> semantics.  QEMU doesn't care about the difference, but other users
-> might.  Be warned, I'm not even sure if this code works at the moment.
-> Thanks,
-> 
-> Alex
-> 
-> 
-> We currently have a problem that we cannot support advanced features of
-> an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee that
-> those features will be supported by all of the hardware units involved
-> with the domain over its lifetime.  For instance, the Intel VT-d
-> architecture does not require that all DRHDs support snoop control.  If
-> we create a domain based on a device behind a DRHD that does support
-> snoop control and enable SNP support via the IOMMU_CACHE mapping option,
-> we cannot then add a device behind a DRHD which does not support snoop
-> control or we'll get reserved bit faults from the SNP bit in the
-> pagetables.  To add to the complexity, we can't know the properties of a
-> domain until a device is attached.
-[Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops are common across all bus types. The hardware feature differences are abstracted by the driver.
-
-> 
-> We could pass this problem off to userspace and require that a separate
-> vfio container be used, but we don't know how to handle page accounting
-> in that case.  How do we know that a page pinned in one container is the
-> same page as a different container and avoid double billing the user for
-> the page.
-> 
-> The solution is therefore to support multiple IOMMU domains per
-> container.  In the majority of cases, only one domain will be required
-> since hardware is typically consistent within a system.  However, this
-> provides us the ability to validate compatibility of domains and support
-> mixed environments where page table flags can be different between
-> domains.
-> 
-> To do this, our DMA tracking needs to change.  We currently try to
-> coalesce user mappings into as few tracking entries as possible.  The
-> problem then becomes that we lose granularity of user mappings.  We've
-> never guaranteed that a user is able to unmap at a finer granularity than
-> the original mapping, but we must honor the granularity of the original
-> mapping.  This coalescing code is therefore removed, allowing only unmaps
-> covering complete maps.  The change in accounting is fairly small here, a
-> typical QEMU VM will start out with roughly a dozen entries, so it's
-> arguable if this coalescing was ever needed.
-> 
-> We also move IOMMU domain creation to the point where a group is attached
-> to the container.  An interesting side-effect of this is that we now have
-> access to the device at the time of domain creation and can probe the
-> devices within the group to determine the bus_type.
-> This finally makes vfio_iommu_type1 completely device/bus agnostic.
-> In fact, each IOMMU domain can host devices on different buses managed by
-> different physical IOMMUs, and present a single DMA mapping interface to
-> the user.  When a new domain is created, mappings are replayed to bring
-> the IOMMU pagetables up to the state of the current container.  And of
-> course, DMA mapping and unmapping automatically traverse all of the
-> configured IOMMU domains.
-> 
-[Sethi Varun-B16395] This code still checks to see that devices being attached to the domain are connected to the same bus type. If we intend to merge devices from different bus types but attached to compatible domains in to a single domain, why can't we avoid the bus check? Why can't we remove the bus dependency from domain allocation?
-
-
-Regards
-Varun
-
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  drivers/vfio/vfio_iommu_type1.c |  631 ++++++++++++++++++++-------------
-> ------
->  include/uapi/linux/vfio.h       |    1
->  2 files changed, 329 insertions(+), 303 deletions(-)
-> 
-> diff --git a/drivers/vfio/vfio_iommu_type1.c
-> b/drivers/vfio/vfio_iommu_type1.c index 4fb7a8f..983aae5 100644
-> --- a/drivers/vfio/vfio_iommu_type1.c
-> +++ b/drivers/vfio/vfio_iommu_type1.c
-> @@ -30,7 +30,6 @@
->  #include <linux/iommu.h>
->  #include <linux/module.h>
->  #include <linux/mm.h>
-> -#include <linux/pci.h>		/* pci_bus_type */
->  #include <linux/rbtree.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> @@ -55,11 +54,18 @@ MODULE_PARM_DESC(disable_hugepages,
->  		 "Disable VFIO IOMMU support for IOMMU hugepages.");
-> 
->  struct vfio_iommu {
-> -	struct iommu_domain	*domain;
-> +	struct list_head	domain_list;
->  	struct mutex		lock;
->  	struct rb_root		dma_list;
-> +	bool v2;
-> +};
-> +
-> +struct vfio_domain {
-> +	struct iommu_domain	*domain;
-> +	struct bus_type		*bus;
-> +	struct list_head	next;
->  	struct list_head	group_list;
-> -	bool			cache;
-> +	int			prot;		/* IOMMU_CACHE */
->  };
-> 
->  struct vfio_dma {
-> @@ -99,7 +105,7 @@ static struct vfio_dma *vfio_find_dma(struct
-> vfio_iommu *iommu,
->  	return NULL;
->  }
-> 
-> -static void vfio_insert_dma(struct vfio_iommu *iommu, struct vfio_dma
-> *new)
-> +static void vfio_link_dma(struct vfio_iommu *iommu, struct vfio_dma
-> +*new)
->  {
->  	struct rb_node **link = &iommu->dma_list.rb_node, *parent = NULL;
->  	struct vfio_dma *dma;
-> @@ -118,7 +124,7 @@ static void vfio_insert_dma(struct vfio_iommu *iommu,
-> struct vfio_dma *new)
->  	rb_insert_color(&new->node, &iommu->dma_list);  }
-> 
-> -static void vfio_remove_dma(struct vfio_iommu *iommu, struct vfio_dma
-> *old)
-> +static void vfio_unlink_dma(struct vfio_iommu *iommu, struct vfio_dma
-> +*old)
->  {
->  	rb_erase(&old->node, &iommu->dma_list);  } @@ -322,32 +328,39 @@
-> static long vfio_unpin_pages(unsigned long pfn, long npage,
->  	return unlocked;
->  }
-> 
-> -static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma
-> *dma,
-> -			    dma_addr_t iova, size_t *size)
-> +static void vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma
-> +*dma)
->  {
-> -	dma_addr_t start = iova, end = iova + *size;
-> +	dma_addr_t iova = dma->iova, end = dma->iova + dma->size;
-> +	struct vfio_domain *domain, *d;
->  	long unlocked = 0;
-> 
-> +	if (!dma->size)
-> +		return;
-> +	/*
-> +	 * We use the IOMMU to track the physical addresses, otherwise we'd
-> +	 * need a much more complicated tracking system.  Unfortunately
-> that
-> +	 * means we need to use one of the iommu domains to figure out the
-> +	 * pfns to unpin.  The rest need to be unmapped in advance so we
-> have
-> +	 * no iommu translations remaining when the pages are unpinned.
-> +	 */
-> +	domain = d = list_first_entry(&iommu->domain_list,
-> +				      struct vfio_domain, next);
-> +
-> +	list_for_each_entry_continue(d, &iommu->domain_list, next)
-> +		iommu_unmap(d->domain, dma->iova, dma->size);
-> +
->  	while (iova < end) {
->  		size_t unmapped;
->  		phys_addr_t phys;
-> 
-> -		/*
-> -		 * We use the IOMMU to track the physical address.  This
-> -		 * saves us from having a lot more entries in our mapping
-> -		 * tree.  The downside is that we don't track the size
-> -		 * used to do the mapping.  We request unmap of a single
-> -		 * page, but expect IOMMUs that support large pages to
-> -		 * unmap a larger chunk.
-> -		 */
-> -		phys = iommu_iova_to_phys(iommu->domain, iova);
-> +		phys = iommu_iova_to_phys(domain->domain, iova);
->  		if (WARN_ON(!phys)) {
->  			iova += PAGE_SIZE;
->  			continue;
->  		}
-> 
-> -		unmapped = iommu_unmap(iommu->domain, iova, PAGE_SIZE);
-> -		if (!unmapped)
-> +		unmapped = iommu_unmap(domain->domain, iova, PAGE_SIZE);
-> +		if (WARN_ON(!unmapped))
->  			break;
-> 
->  		unlocked += vfio_unpin_pages(phys >> PAGE_SHIFT, @@ -357,119
-> +370,26 @@ static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct
-> vfio_dma *dma,
->  	}
-> 
->  	vfio_lock_acct(-unlocked);
-> -
-> -	*size = iova - start;
-> -
-> -	return 0;
->  }
-> 
-> -static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t
-> start,
-> -				   size_t *size, struct vfio_dma *dma)
-> +static void vfio_remove_dma(struct vfio_iommu *iommu, struct vfio_dma
-> +*dma)
->  {
-> -	size_t offset, overlap, tmp;
-> -	struct vfio_dma *split;
-> -	int ret;
-> -
-> -	if (!*size)
-> -		return 0;
-> -
-> -	/*
-> -	 * Existing dma region is completely covered, unmap all.  This is
-> -	 * the likely case since userspace tends to map and unmap buffers
-> -	 * in one shot rather than multiple mappings within a buffer.
-> -	 */
-> -	if (likely(start <= dma->iova &&
-> -		   start + *size >= dma->iova + dma->size)) {
-> -		*size = dma->size;
-> -		ret = vfio_unmap_unpin(iommu, dma, dma->iova, size);
-> -		if (ret)
-> -			return ret;
-> -
-> -		/*
-> -		 * Did we remove more than we have?  Should never happen
-> -		 * since a vfio_dma is contiguous in iova and vaddr.
-> -		 */
-> -		WARN_ON(*size != dma->size);
-> -
-> -		vfio_remove_dma(iommu, dma);
-> -		kfree(dma);
-> -		return 0;
-> -	}
-> -
-> -	/* Overlap low address of existing range */
-> -	if (start <= dma->iova) {
-> -		overlap = start + *size - dma->iova;
-> -		ret = vfio_unmap_unpin(iommu, dma, dma->iova, &overlap);
-> -		if (ret)
-> -			return ret;
-> -
-> -		vfio_remove_dma(iommu, dma);
-> -
-> -		/*
-> -		 * Check, we may have removed to whole vfio_dma.  If not
-> -		 * fixup and re-insert.
-> -		 */
-> -		if (overlap < dma->size) {
-> -			dma->iova += overlap;
-> -			dma->vaddr += overlap;
-> -			dma->size -= overlap;
-> -			vfio_insert_dma(iommu, dma);
-> -		} else
-> -			kfree(dma);
-> -
-> -		*size = overlap;
-> -		return 0;
-> -	}
-> -
-> -	/* Overlap high address of existing range */
-> -	if (start + *size >= dma->iova + dma->size) {
-> -		offset = start - dma->iova;
-> -		overlap = dma->size - offset;
-> -
-> -		ret = vfio_unmap_unpin(iommu, dma, start, &overlap);
-> -		if (ret)
-> -			return ret;
-> -
-> -		dma->size -= overlap;
-> -		*size = overlap;
-> -		return 0;
-> -	}
-> -
-> -	/* Split existing */
-> -
-> -	/*
-> -	 * Allocate our tracking structure early even though it may not
-> -	 * be used.  An Allocation failure later loses track of pages and
-> -	 * is more difficult to unwind.
-> -	 */
-> -	split = kzalloc(sizeof(*split), GFP_KERNEL);
-> -	if (!split)
-> -		return -ENOMEM;
-> -
-> -	offset = start - dma->iova;
-> -
-> -	ret = vfio_unmap_unpin(iommu, dma, start, size);
-> -	if (ret || !*size) {
-> -		kfree(split);
-> -		return ret;
-> -	}
-> -
-> -	tmp = dma->size;
-> +	vfio_unmap_unpin(iommu, dma);
-> +	vfio_unlink_dma(iommu, dma);
-> +	kfree(dma);
-> +}
-> 
-> -	/* Resize the lower vfio_dma in place, before the below insert */
-> -	dma->size = offset;
-> +static unsigned long vfio_pgsize_bitmap(struct vfio_iommu *iommu) {
-> +	struct vfio_domain *domain;
-> +	unsigned long bitmap = PAGE_MASK;
-> 
-> -	/* Insert new for remainder, assuming it didn't all get unmapped */
-> -	if (likely(offset + *size < tmp)) {
-> -		split->size = tmp - offset - *size;
-> -		split->iova = dma->iova + offset + *size;
-> -		split->vaddr = dma->vaddr + offset + *size;
-> -		split->prot = dma->prot;
-> -		vfio_insert_dma(iommu, split);
-> -	} else
-> -		kfree(split);
-> +	mutex_lock(&iommu->lock);
-> +	list_for_each_entry(domain, &iommu->domain_list, next)
-> +		bitmap &= domain->domain->ops->pgsize_bitmap;
-> +	mutex_unlock(&iommu->lock);
-> 
-> -	return 0;
-> +	return bitmap;
->  }
-> 
->  static int vfio_dma_do_unmap(struct vfio_iommu *iommu, @@ -477,10
-> +397,10 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,  {
->  	uint64_t mask;
->  	struct vfio_dma *dma;
-> -	size_t unmapped = 0, size;
-> +	size_t unmapped = 0;
->  	int ret = 0;
-> 
-> -	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) -
-> 1;
-> +	mask = ((uint64_t)1 << __ffs(vfio_pgsize_bitmap(iommu))) - 1;
-> 
->  	if (unmap->iova & mask)
->  		return -EINVAL;
-> @@ -491,20 +411,61 @@ static int vfio_dma_do_unmap(struct vfio_iommu
-> *iommu,
-> 
->  	mutex_lock(&iommu->lock);
-> 
-> +	/*
-> +	 * vfio-iommu-type1 (v1) - User mappings were coalesced together to
-> +	 * avoid tracking individual mappings.  This means that the
-> granularity
-> +	 * of the original mapping was lost and the user was allowed to
-> attempt
-> +	 * to unmap any range.  Depending on the contiguousness of physical
-> +	 * memory and page sizes supported by the IOMMU, arbitrary unmaps
-> may
-> +	 * or may not have worked.  We only guaranteed unmap granularity
-> +	 * matching the original mapping; even though it was untracked
-> here,
-> +	 * the original mappings are reflected in IOMMU mappings.  This
-> +	 * resulted in a couple unusual behaviors.  First, if a range is
-> not
-> +	 * able to be unmapped, ex. a set of 4k pages that was mapped as a
-> +	 * 2M hugepage into the IOMMU, the unmap ioctl returns success but
-> with
-> +	 * a zero sized unmap.  Also, if an unmap request overlaps the
-> first
-> +	 * address of a hugepage, the IOMMU will unmap the entire hugepage.
-> +	 * This also returns success and the returned unmap size reflects
-> the
-> +	 * actual size unmapped.
-> +	 *
-> +	 * We attempt to maintain compatibility with this interface, but we
-> +	 * take control out of the hands of the IOMMU.  An unmap request
-> offset
-> +	 * from the beginning of the original mapping will return success
-> with
-> +	 * zero sized unmap.  An unmap request covering the first iova of
-> +	 * mapping will unmap the entire range.
-> +	 *
-> +	 * The v2 version of this interface intends to be more
-> deterministic.
-> +	 * Unmap requests must fully cover previous mappings.  Multiple
-> +	 * mappings may still be unmaped by specifying large ranges, but
-> there
-> +	 * must not be any previous mappings bisected by the range.  An
-> error
-> +	 * will be returned if these conditions are not met.  The v2
-> interface
-> +	 * will only return success and a size of zero if there were no
-> +	 * mappings within the range.
-> +	 */
-> +	if (iommu->v2 ) {
-> +		dma = vfio_find_dma(iommu, unmap->iova, 0);
-> +		if (dma && dma->iova != unmap->iova) {
-> +			ret = -EINVAL;
-> +			goto unlock;
-> +		}
-> +		dma = vfio_find_dma(iommu, unmap->iova + unmap->size - 1, 0);
-> +		if (dma && dma->iova + dma->size != unmap->iova + unmap-
-> >size) {
-> +			ret = -EINVAL;
-> +			goto unlock;
-> +		}
-> +	}
-> +
->  	while ((dma = vfio_find_dma(iommu, unmap->iova, unmap->size))) {
-> -		size = unmap->size;
-> -		ret = vfio_remove_dma_overlap(iommu, unmap->iova, &size,
-> dma);
-> -		if (ret || !size)
-> +		if (!iommu->v2 && unmap->iova > dma->iova)
->  			break;
-> -		unmapped += size;
-> +		unmapped += dma->size;
-> +		vfio_remove_dma(iommu, dma);
->  	}
-> 
-> +unlock:
->  	mutex_unlock(&iommu->lock);
-> 
-> -	/*
-> -	 * We may unmap more than requested, update the unmap struct so
-> -	 * userspace can know.
-> -	 */
-> +	/* Report how much was unmapped */
->  	unmap->size = unmapped;
-> 
->  	return ret;
-> @@ -516,22 +477,47 @@ static int vfio_dma_do_unmap(struct vfio_iommu
-> *iommu,
->   * soon, so this is just a temporary workaround to break mappings down
-> into
->   * PAGE_SIZE.  Better to map smaller pages than nothing.
->   */
-> -static int map_try_harder(struct vfio_iommu *iommu, dma_addr_t iova,
-> +static int map_try_harder(struct vfio_domain *domain, dma_addr_t iova,
->  			  unsigned long pfn, long npage, int prot)  {
->  	long i;
->  	int ret;
-> 
->  	for (i = 0; i < npage; i++, pfn++, iova += PAGE_SIZE) {
-> -		ret = iommu_map(iommu->domain, iova,
-> +		ret = iommu_map(domain->domain, iova,
->  				(phys_addr_t)pfn << PAGE_SHIFT,
-> -				PAGE_SIZE, prot);
-> +				PAGE_SIZE, prot | domain->prot);
->  		if (ret)
->  			break;
->  	}
-> 
->  	for (; i < npage && i > 0; i--, iova -= PAGE_SIZE)
-> -		iommu_unmap(iommu->domain, iova, PAGE_SIZE);
-> +		iommu_unmap(domain->domain, iova, PAGE_SIZE);
-> +
-> +	return ret;
-> +}
-> +
-> +static int vfio_iommu_map(struct vfio_iommu *iommu, dma_addr_t iova,
-> +			  unsigned long pfn, long npage, int prot) {
-> +	struct vfio_domain *d;
-> +	int ret;
-> +
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		ret = iommu_map(d->domain, iova, (phys_addr_t)pfn <<
-> PAGE_SHIFT,
-> +				npage << PAGE_SHIFT, prot | d->prot);
-> +		if (ret) {
-> +			if (ret != -EBUSY ||
-> +			    map_try_harder(d, iova, pfn, npage, prot))
-> +				goto unwind;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +unwind:
-> +	list_for_each_entry_continue_reverse(d, &iommu->domain_list, next)
-> +		iommu_unmap(d->domain, iova, npage << PAGE_SHIFT);
-> 
->  	return ret;
->  }
-> @@ -545,12 +531,12 @@ static int vfio_dma_do_map(struct vfio_iommu
-> *iommu,
->  	long npage;
->  	int ret = 0, prot = 0;
->  	uint64_t mask;
-> -	struct vfio_dma *dma = NULL;
-> +	struct vfio_dma *dma;
->  	unsigned long pfn;
-> 
->  	end = map->iova + map->size;
-> 
-> -	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) -
-> 1;
-> +	mask = ((uint64_t)1 << __ffs(vfio_pgsize_bitmap(iommu))) - 1;
-> 
->  	/* READ/WRITE from device perspective */
->  	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE) @@ -561,9 +547,6 @@
-> static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  	if (!prot)
->  		return -EINVAL; /* No READ/WRITE? */
-> 
-> -	if (iommu->cache)
-> -		prot |= IOMMU_CACHE;
-> -
->  	if (vaddr & mask)
->  		return -EINVAL;
->  	if (map->iova & mask)
-> @@ -588,180 +571,249 @@ static int vfio_dma_do_map(struct vfio_iommu
-> *iommu,
->  		return -EEXIST;
->  	}
-> 
-> -	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
-> -		long i;
-> +	dma = kzalloc(sizeof(*dma), GFP_KERNEL);
-> +	if (!dma) {
-> +		mutex_unlock(&iommu->lock);
-> +		return -ENOMEM;
-> +	}
-> 
-> +	dma->iova = map->iova;
-> +	dma->vaddr = map->vaddr;
-> +	dma->prot = prot;
-> +
-> +	/* Insert zero-sized and grow as we map chunks of it */
-> +	vfio_link_dma(iommu, dma);
-> +
-> +	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
->  		/* Pin a contiguous chunk of memory */
->  		npage = vfio_pin_pages(vaddr, (end - iova) >> PAGE_SHIFT,
->  				       prot, &pfn);
->  		if (npage <= 0) {
->  			WARN_ON(!npage);
->  			ret = (int)npage;
-> -			goto out;
-> -		}
-> -
-> -		/* Verify pages are not already mapped */
-> -		for (i = 0; i < npage; i++) {
-> -			if (iommu_iova_to_phys(iommu->domain,
-> -					       iova + (i << PAGE_SHIFT))) {
-> -				ret = -EBUSY;
-> -				goto out_unpin;
-> -			}
-> +			break;
->  		}
-> 
-> -		ret = iommu_map(iommu->domain, iova,
-> -				(phys_addr_t)pfn << PAGE_SHIFT,
-> -				npage << PAGE_SHIFT, prot);
-> +		/* Map it! */
-> +		ret = vfio_iommu_map(iommu, iova, pfn, npage, prot);
->  		if (ret) {
-> -			if (ret != -EBUSY ||
-> -			    map_try_harder(iommu, iova, pfn, npage, prot)) {
-> -				goto out_unpin;
-> -			}
-> +			vfio_unpin_pages(pfn, npage, prot, true);
-> +			break;
->  		}
-> 
->  		size = npage << PAGE_SHIFT;
-> +		dma->size += size;
-> +	}
-> 
-> -		/*
-> -		 * Check if we abut a region below - nothing below 0.
-> -		 * This is the most likely case when mapping chunks of
-> -		 * physically contiguous regions within a virtual address
-> -		 * range.  Update the abutting entry in place since iova
-> -		 * doesn't change.
-> -		 */
-> -		if (likely(iova)) {
-> -			struct vfio_dma *tmp;
-> -			tmp = vfio_find_dma(iommu, iova - 1, 1);
-> -			if (tmp && tmp->prot == prot &&
-> -			    tmp->vaddr + tmp->size == vaddr) {
-> -				tmp->size += size;
-> -				iova = tmp->iova;
-> -				size = tmp->size;
-> -				vaddr = tmp->vaddr;
-> -				dma = tmp;
-> -			}
-> -		}
-> +	if (ret)
-> +		vfio_remove_dma(iommu, dma);
-> 
-> -		/*
-> -		 * Check if we abut a region above - nothing above ~0 + 1.
-> -		 * If we abut above and below, remove and free.  If only
-> -		 * abut above, remove, modify, reinsert.
-> -		 */
-> -		if (likely(iova + size)) {
-> -			struct vfio_dma *tmp;
-> -			tmp = vfio_find_dma(iommu, iova + size, 1);
-> -			if (tmp && tmp->prot == prot &&
-> -			    tmp->vaddr == vaddr + size) {
-> -				vfio_remove_dma(iommu, tmp);
-> -				if (dma) {
-> -					dma->size += tmp->size;
-> -					kfree(tmp);
-> -				} else {
-> -					size += tmp->size;
-> -					tmp->size = size;
-> -					tmp->iova = iova;
-> -					tmp->vaddr = vaddr;
-> -					vfio_insert_dma(iommu, tmp);
-> -					dma = tmp;
-> -				}
-> -			}
-> -		}
-> +	mutex_unlock(&iommu->lock);
-> +	return ret;
-> +}
-> +
-> +static int vfio_bus_type(struct device *dev, void *data) {
-> +	struct vfio_domain *domain = data;
-> +
-> +	if (domain->bus && domain->bus != dev->bus)
-> +		return -EINVAL;
-> +
-> +	domain->bus = dev->bus;
-> +
-> +	return 0;
-> +}
-> +
-> +static int vfio_iommu_replay(struct vfio_iommu *iommu,
-> +			     struct vfio_domain *domain)
-> +{
-> +	struct vfio_domain *d;
-> +	struct rb_node *n;
-> +	int ret;
-> +
-> +	/* Arbitrarily pick the first domain in the list for lookups */
-> +	d = list_first_entry(&iommu->domain_list, struct vfio_domain,
-> next);
-> +	n = rb_first(&iommu->dma_list);
-> +
-> +	/* If there's not a domain, there better not be any mappings */
-> +	if (WARN_ON(n && !d))
-> +		return -EINVAL;
-> +
-> +	for (; n; n = rb_next(n)) {
-> +		struct vfio_dma *dma;
-> +		dma_addr_t iova;
-> +
-> +		dma = rb_entry(n, struct vfio_dma, node);
-> +		iova = dma->iova;
-> 
-> -		if (!dma) {
-> -			dma = kzalloc(sizeof(*dma), GFP_KERNEL);
-> -			if (!dma) {
-> -				iommu_unmap(iommu->domain, iova, size);
-> -				ret = -ENOMEM;
-> -				goto out_unpin;
-> +		while (iova < dma->iova + dma->size) {
-> +			phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
-> +			size_t size;
-> +
-> +			if (WARN_ON(!phys)) {
-> +				iova += PAGE_SIZE;
-> +				continue;
->  			}
-> 
-> -			dma->size = size;
-> -			dma->iova = iova;
-> -			dma->vaddr = vaddr;
-> -			dma->prot = prot;
-> -			vfio_insert_dma(iommu, dma);
-> -		}
-> -	}
-> +			size = PAGE_SIZE;
-> 
-> -	WARN_ON(ret);
-> -	mutex_unlock(&iommu->lock);
-> -	return ret;
-> +			while (iova + size < dma->iova + dma->size &&
-> +			       phys + size == iommu_iova_to_phys(d->domain,
-> +								 iova + size))
-> +				size += PAGE_SIZE;
-> 
-> -out_unpin:
-> -	vfio_unpin_pages(pfn, npage, prot, true);
-> +			ret = iommu_map(domain->domain, iova, phys,
-> +					size, dma->prot | domain->prot);
-> +			if (ret)
-> +				return ret;
-> 
-> -out:
-> -	iova = map->iova;
-> -	size = map->size;
-> -	while ((dma = vfio_find_dma(iommu, iova, size))) {
-> -		int r = vfio_remove_dma_overlap(iommu, iova,
-> -						&size, dma);
-> -		if (WARN_ON(r || !size))
-> -			break;
-> +			iova += size;
-> +		}
->  	}
-> 
-> -	mutex_unlock(&iommu->lock);
-> -	return ret;
-> +	return 0;
->  }
-> 
->  static int vfio_iommu_type1_attach_group(void *iommu_data,
->  					 struct iommu_group *iommu_group)
->  {
->  	struct vfio_iommu *iommu = iommu_data;
-> -	struct vfio_group *group, *tmp;
-> +	struct vfio_group *group, *g;
-> +	struct vfio_domain *domain, *d;
->  	int ret;
-> 
-> -	group = kzalloc(sizeof(*group), GFP_KERNEL);
-> -	if (!group)
-> -		return -ENOMEM;
-> -
->  	mutex_lock(&iommu->lock);
-> 
-> -	list_for_each_entry(tmp, &iommu->group_list, next) {
-> -		if (tmp->iommu_group == iommu_group) {
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		list_for_each_entry(g, &d->group_list, next) {
-> +			if (g->iommu_group != iommu_group)
-> +				continue;
-> +
->  			mutex_unlock(&iommu->lock);
-> -			kfree(group);
->  			return -EINVAL;
->  		}
->  	}
-> 
-> -	/*
-> -	 * TODO: Domain have capabilities that might change as we add
-> -	 * groups (see iommu->cache, currently never set).  Check for
-> -	 * them and potentially disallow groups to be attached when it
-> -	 * would change capabilities (ugh).
-> -	 */
-> -	ret = iommu_attach_group(iommu->domain, iommu_group);
-> -	if (ret) {
-> -		mutex_unlock(&iommu->lock);
-> -		kfree(group);
-> -		return ret;
-> +	group = kzalloc(sizeof(*group), GFP_KERNEL);
-> +	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
-> +	if (!group || !domain) {
-> +		ret = -ENOMEM;
-> +		goto out_free;
->  	}
-> 
->  	group->iommu_group = iommu_group;
-> -	list_add(&group->next, &iommu->group_list);
-> +
-> +	/* Determine bus_type in order to allocate a domain */
-> +	ret = iommu_group_for_each_dev(iommu_group, domain, vfio_bus_type);
-> +	if (ret)
-> +		goto out_free;
-> +
-> +	domain->domain = iommu_domain_alloc(domain->bus);
-> +	if (!domain->domain) {
-> +		ret = -EIO;
-> +		goto out_free;
-> +	}
-> +
-> +	ret = iommu_attach_group(domain->domain, iommu_group);
-> +	if (ret)
-> +		goto out_domain;
-> +
-> +	INIT_LIST_HEAD(&domain->group_list);
-> +	list_add(&group->next, &domain->group_list);
-> +
-> +	if (!allow_unsafe_interrupts &&
-> +	    !iommu_domain_has_cap(domain->domain, IOMMU_CAP_INTR_REMAP)) {
-> +		pr_warn("%s: No interrupt remapping support.  Use the module
-> param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this
-> platform\n",
-> +		       __func__);
-> +		ret = -EPERM;
-> +		goto out_detach;
-> +	}
-> +
-> +	if (iommu_domain_has_cap(domain->domain,
-> IOMMU_CAP_CACHE_COHERENCY))
-> +		domain->prot |= IOMMU_CACHE;
-> +
-> +	/* Try to match an existing compatible domain. */
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		if (d->bus == domain->bus && d->prot == domain->prot) {
-> +			iommu_detach_group(domain->domain, iommu_group);
-> +			if (!iommu_attach_group(d->domain, iommu_group)) {
-> +				list_add(&group->next, &d->group_list);
-> +				iommu_domain_free(domain->domain);
-> +				kfree(domain);
-> +				mutex_unlock(&iommu->lock);
-> +				return 0;
-> +			}
-> +
-> +			ret = iommu_attach_group(domain->domain, iommu_group);
-> +			if (ret)
-> +				goto out_domain;
-> +		}
-> +	}
-> +
-> +	/* replay mappings on new domains */
-> +	ret = vfio_iommu_replay(iommu, domain);
-> +	if (ret)
-> +		goto out_detach;
-> +
-> +	list_add(&domain->next, &iommu->domain_list);
-> 
->  	mutex_unlock(&iommu->lock);
-> 
->  	return 0;
-> +
-> +out_detach:
-> +	iommu_detach_group(domain->domain, iommu_group);
-> +out_domain:
-> +	iommu_domain_free(domain->domain);
-> +out_free:
-> +	kfree(domain);
-> +	kfree(group);
-> +	mutex_unlock(&iommu->lock);
-> +	return ret;
-> +}
-> +
-> +static void vfio_iommu_unmap_unpin_all(struct vfio_iommu *iommu) {
-> +	struct rb_node *node;
-> +
-> +	while ((node = rb_first(&iommu->dma_list)))
-> +		vfio_remove_dma(iommu, rb_entry(node, struct vfio_dma,
-> node));
->  }
-> 
->  static void vfio_iommu_type1_detach_group(void *iommu_data,
->  					  struct iommu_group *iommu_group)  {
->  	struct vfio_iommu *iommu = iommu_data;
-> +	struct vfio_domain *domain;
->  	struct vfio_group *group;
-> 
->  	mutex_lock(&iommu->lock);
-> 
-> -	list_for_each_entry(group, &iommu->group_list, next) {
-> -		if (group->iommu_group == iommu_group) {
-> -			iommu_detach_group(iommu->domain, iommu_group);
-> +	list_for_each_entry(domain, &iommu->domain_list, next) {
-> +		list_for_each_entry(group, &domain->group_list, next) {
-> +			if (group->iommu_group != iommu_group)
-> +				continue;
-> +
-> +			iommu_detach_group(domain->domain, iommu_group);
->  			list_del(&group->next);
->  			kfree(group);
-> -			break;
-> +			/*
-> +			 * Group ownership provides privilege, if the group
-> +			 * list is empty, the domain goes away.  If it's the
-> +			 * last domain, then all the mappings go away too.
-> +			 */
-> +			if (list_empty(&domain->group_list)) {
-> +				if (list_is_singular(&iommu->domain_list))
-> +					vfio_iommu_unmap_unpin_all(iommu);
-> +				iommu_domain_free(domain->domain);
-> +				list_del(&domain->next);
-> +				kfree(domain);
-> +			}
-> +			goto done;
->  		}
->  	}
-> 
-> +done:
->  	mutex_unlock(&iommu->lock);
->  }
-> 
-> @@ -769,40 +821,17 @@ static void *vfio_iommu_type1_open(unsigned long
-> arg)  {
->  	struct vfio_iommu *iommu;
-> 
-> -	if (arg != VFIO_TYPE1_IOMMU)
-> +	if (arg != VFIO_TYPE1_IOMMU || arg != VFIO_TYPE1v2_IOMMU)
->  		return ERR_PTR(-EINVAL);
-> 
->  	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
->  	if (!iommu)
->  		return ERR_PTR(-ENOMEM);
-> 
-> -	INIT_LIST_HEAD(&iommu->group_list);
-> +	INIT_LIST_HEAD(&iommu->domain_list);
->  	iommu->dma_list = RB_ROOT;
->  	mutex_init(&iommu->lock);
-> -
-> -	/*
-> -	 * Wish we didn't have to know about bus_type here.
-> -	 */
-> -	iommu->domain = iommu_domain_alloc(&pci_bus_type);
-> -	if (!iommu->domain) {
-> -		kfree(iommu);
-> -		return ERR_PTR(-EIO);
-> -	}
-> -
-> -	/*
-> -	 * Wish we could specify required capabilities rather than create
-> -	 * a domain, see what comes out and hope it doesn't change along
-> -	 * the way.  Fortunately we know interrupt remapping is global for
-> -	 * our iommus.
-> -	 */
-> -	if (!allow_unsafe_interrupts &&
-> -	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
-> -		pr_warn("%s: No interrupt remapping support.  Use the module
-> param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this
-> platform\n",
-> -		       __func__);
-> -		iommu_domain_free(iommu->domain);
-> -		kfree(iommu);
-> -		return ERR_PTR(-EPERM);
-> -	}
-> +	iommu->v2 = (arg == VFIO_TYPE1v2_IOMMU);
-> 
->  	return iommu;
->  }
-> @@ -810,25 +839,24 @@ static void *vfio_iommu_type1_open(unsigned long
-> arg)  static void vfio_iommu_type1_release(void *iommu_data)  {
->  	struct vfio_iommu *iommu = iommu_data;
-> +	struct vfio_domain *domain, *domain_tmp;
->  	struct vfio_group *group, *group_tmp;
-> -	struct rb_node *node;
-> 
-> -	list_for_each_entry_safe(group, group_tmp, &iommu->group_list,
-> next) {
-> -		iommu_detach_group(iommu->domain, group->iommu_group);
-> -		list_del(&group->next);
-> -		kfree(group);
-> -	}
-> +	vfio_iommu_unmap_unpin_all(iommu);
-> 
-> -	while ((node = rb_first(&iommu->dma_list))) {
-> -		struct vfio_dma *dma = rb_entry(node, struct vfio_dma, node);
-> -		size_t size = dma->size;
-> -		vfio_remove_dma_overlap(iommu, dma->iova, &size, dma);
-> -		if (WARN_ON(!size))
-> -			break;
-> +	list_for_each_entry_safe(domain, domain_tmp,
-> +				 &iommu->domain_list, next) {
-> +		list_for_each_entry_safe(group, group_tmp,
-> +					 &domain->group_list, next) {
-> +			iommu_detach_group(domain->domain, group->iommu_group);
-> +			list_del(&group->next);
-> +			kfree(group);
-> +		}
-> +		iommu_domain_free(domain->domain);
-> +		list_del(&domain->next);
-> +		kfree(domain);
->  	}
-> 
-> -	iommu_domain_free(iommu->domain);
-> -	iommu->domain = NULL;
->  	kfree(iommu);
->  }
-> 
-> @@ -858,7 +886,7 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
-> 
->  		info.flags = 0;
-> 
-> -		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
-> +		info.iova_pgsizes = vfio_pgsize_bitmap(iommu);
-> 
->  		return copy_to_user((void __user *)arg, &info, minsz);
-> 
-> @@ -911,9 +939,6 @@ static const struct vfio_iommu_driver_ops
-> vfio_iommu_driver_ops_type1 = {
-> 
->  static int __init vfio_iommu_type1_init(void)  {
-> -	if (!iommu_present(&pci_bus_type))
-> -		return -ENODEV;
-> -
->  	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_type1);
->  }
-> 
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h index
-> 0fd47f5..460fdf2 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -23,6 +23,7 @@
-> 
->  #define VFIO_TYPE1_IOMMU		1
->  #define VFIO_SPAPR_TCE_IOMMU		2
-> +#define VFIO_TYPE1v2_IOMMU		3
-> 
->  /*
->   * The IOCTL interface is designed for extensibility by embedding the
-> 
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0952ecd..edcf80e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -438,42 +438,26 @@ config X86_INTEL_CE
+ 	  This option compiles in support for the CE4100 SOC for settop
+ 	  boxes and media devices.
+ 
+-config X86_WANT_INTEL_MID
++config X86_INTEL_MID
+ 	bool "Intel MID platform support"
+ 	depends on X86_32
+ 	depends on X86_EXTENDED_PLATFORM
+-	---help---
+-	  Select to build a kernel capable of supporting Intel MID platform
+-	  systems which do not have the PCI legacy interfaces (Moorestown,
+-	  Medfield). If you are building for a PC class system say N here.
+-
+-if X86_WANT_INTEL_MID
+-
+-config X86_INTEL_MID
+-	bool
+-
+-config X86_MDFLD
+-       bool "Medfield MID platform"
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
+-	select X86_INTEL_MID
+ 	select SFI
++	select I2C
+ 	select DW_APB_TIMER
+ 	select APB_TIMER
+-	select I2C
+-	select SPI
+ 	select INTEL_SCU_IPC
+-	select X86_PLATFORM_DEVICES
+ 	select MFD_INTEL_MSIC
+ 	---help---
+-	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
+-	  Internet Device(MID) platform. 
+-	  Unlike standard x86 PCs, Medfield does not have many legacy devices
+-	  nor standard legacy replacement devices/features. e.g. Medfield does
+-	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
++	  Select to build a kernel capable of supporting Intel MID (Mobile
++	  Internet Device) platform systems which do not have the PCI legacy
++	  interfaces. If you are building for a PC class system say N here.
+ 
+-endif
++	  Intel MID platforms are based on an Intel processor and chipset which
++	  consume less power than most of the x86 derivatives.
+ 
+ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
+diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
+index 459769d..e34e097 100644
+--- a/arch/x86/include/asm/intel-mid.h
++++ b/arch/x86/include/asm/intel-mid.h
+@@ -51,10 +51,41 @@ struct devs_id {
+ enum intel_mid_cpu_type {
+ 	/* 1 was Moorestown */
+ 	INTEL_MID_CPU_CHIP_PENWELL = 2,
++	INTEL_MID_CPU_CHIP_CLOVERVIEW,
++	INTEL_MID_CPU_CHIP_TANGIER,
+ };
+ 
+ extern enum intel_mid_cpu_type __intel_mid_cpu_chip;
+ 
++/**
++ * struct intel_mid_ops - Interface between intel-mid & sub archs
++ * @arch_setup: arch_setup function to re-initialize platform
++ *             structures (x86_init, x86_platform_init)
++ *
++ * This structure can be extended if any new interface is required
++ * between intel-mid & its sub arch files.
++ */
++struct intel_mid_ops {
++	void (*arch_setup)(void);
++};
++
++/* Helper API's for INTEL_MID_OPS_INIT */
++#define DECLARE_INTEL_MID_OPS_INIT(cpuname, cpuid)	\
++				[cpuid] = get_##cpuname##_ops
++
++/* Maximum number of CPU ops */
++#define MAX_CPU_OPS(a) (sizeof(a)/sizeof(void *))
++
++/*
++ * For every new cpu addition, a weak get_<cpuname>_ops() function needs be
++ * declared in arch/x86/platform/intel_mid/intel_mid_weak_decls.h.
++ */
++#define INTEL_MID_OPS_INIT {\
++	DECLARE_INTEL_MID_OPS_INIT(penwell, INTEL_MID_CPU_CHIP_PENWELL), \
++	DECLARE_INTEL_MID_OPS_INIT(cloverview, INTEL_MID_CPU_CHIP_CLOVERVIEW), \
++	DECLARE_INTEL_MID_OPS_INIT(tangier, INTEL_MID_CPU_CHIP_TANGIER) \
++};
++
+ #ifdef CONFIG_X86_INTEL_MID
+ 
+ static inline enum intel_mid_cpu_type intel_mid_identify_cpu(void)
+@@ -86,8 +117,21 @@ extern enum intel_mid_timer_options intel_mid_timer_options;
+  * Penwell uses spread spectrum clock, so the freq number is not exactly
+  * the same as reported by MSR based on SDM.
+  */
+-#define PENWELL_FSB_FREQ_83SKU         83200
+-#define PENWELL_FSB_FREQ_100SKU        99840
++#define FSB_FREQ_83SKU	83200
++#define FSB_FREQ_100SKU	99840
++#define FSB_FREQ_133SKU	133000
++
++#define FSB_FREQ_167SKU	167000
++#define FSB_FREQ_200SKU	200000
++#define FSB_FREQ_267SKU	267000
++#define FSB_FREQ_333SKU	333000
++#define FSB_FREQ_400SKU	400000
++
++/* Bus Select SoC Fuse value */
++#define BSEL_SOC_FUSE_MASK	0x7
++#define BSEL_SOC_FUSE_001	0x1 /* FSB 133MHz */
++#define BSEL_SOC_FUSE_101	0x5 /* FSB 100MHz */
++#define BSEL_SOC_FUSE_111	0x7 /* FSB 83MHz */
+ 
+ #define SFI_MTMR_MAX_NUM 8
+ #define SFI_MRTC_MAX	8
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 51384ca..84b9d67 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -31,6 +31,7 @@
+ #include <asm/pci_x86.h>
+ #include <asm/hw_irq.h>
+ #include <asm/io_apic.h>
++#include <asm/intel-mid.h>
+ 
+ #define PCIE_CAP_OFFSET	0x100
+ 
+@@ -219,7 +220,10 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 	irq_attr.ioapic = mp_find_ioapic(dev->irq);
+ 	irq_attr.ioapic_pin = dev->irq;
+ 	irq_attr.trigger = 1; /* level */
+-	irq_attr.polarity = 1; /* active low */
++	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER)
++		irq_attr.polarity = 0; /* active high */
++	else
++		irq_attr.polarity = 1; /* active low */
+ 	io_apic_set_pci_routing(&dev->dev, dev->irq, &irq_attr);
+ 
+ 	return 0;
+diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
+index 01cc29e..0a8ee70 100644
+--- a/arch/x86/platform/intel-mid/Makefile
++++ b/arch/x86/platform/intel-mid/Makefile
+@@ -1,6 +1,6 @@
+-obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
+-obj-$(CONFIG_X86_INTEL_MID) += intel_mid_vrtc.o
++obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o intel_mid_vrtc.o mfld.o mrfl.o
+ obj-$(CONFIG_EARLY_PRINTK_INTEL_MID) += early_printk_intel_mid.o
++
+ # SFI specific code
+ ifdef CONFIG_X86_INTEL_MID
+ obj-$(CONFIG_SFI) += sfi.o device_libs/
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
+index 0d942c1..69a7836 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
+@@ -22,7 +22,9 @@ static void __init *emc1403_platform_data(void *info)
+ 	int intr = get_gpio_by_name("thermal_int");
+ 	int intr2nd = get_gpio_by_name("thermal_alert");
+ 
+-	if (intr == -1 || intr2nd == -1)
++	if (intr < 0)
++		return NULL;
++	if (intr2nd < 0)
+ 		return NULL;
+ 
+ 	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
+index a013a48..dccae6b 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
+@@ -66,7 +66,7 @@ static int __init pb_keys_init(void)
+ 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
+ 		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
+ 					gb[i].gpio);
+-		if (gb[i].gpio == -1)
++		if (gb[i].gpio < 0)
+ 			continue;
+ 
+ 		if (i != good)
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_lis331.c b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
+index 15278c1..54226de 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
+@@ -21,7 +21,9 @@ static void __init *lis331dl_platform_data(void *info)
+ 	int intr = get_gpio_by_name("accel_int");
+ 	int intr2nd = get_gpio_by_name("accel_2");
+ 
+-	if (intr == -1 || intr2nd == -1)
++	if (intr < 0)
++		return NULL;
++	if (intr2nd < 0)
+ 		return NULL;
+ 
+ 	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max7315.c b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
+index 94ade10..2c8acbc 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
+@@ -48,7 +48,7 @@ static void __init *max7315_platform_data(void *info)
+ 	gpio_base = get_gpio_by_name(base_pin_name);
+ 	intr = get_gpio_by_name(intr_pin_name);
+ 
+-	if (gpio_base == -1)
++	if (gpio_base < 0)
+ 		return NULL;
+ 	max7315->gpio_base = gpio_base;
+ 	if (intr != -1) {
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
+index dd28d63..cfe9a47 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
+@@ -19,7 +19,7 @@ static void *mpu3050_platform_data(void *info)
+ 	struct i2c_board_info *i2c_info = info;
+ 	int intr = get_gpio_by_name("mpu3050_int");
+ 
+-	if (intr == -1)
++	if (intr < 0)
+ 		return NULL;
+ 
+ 	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
+index d87182a..65c2a9a 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
+@@ -26,7 +26,7 @@ static void __init *pmic_gpio_platform_data(void *info)
+ 	static struct intel_pmic_gpio_platform_data pmic_gpio_pdata;
+ 	int gpio_base = get_gpio_by_name("pmic_gpio_base");
+ 
+-	if (gpio_base == -1)
++	if (gpio_base < 0)
+ 		gpio_base = 64;
+ 	pmic_gpio_pdata.gpio_base = gpio_base;
+ 	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
+index 22881c9..33be0b3 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
+@@ -34,10 +34,10 @@ static void *tca6416_platform_data(void *info)
+ 	gpio_base = get_gpio_by_name(base_pin_name);
+ 	intr = get_gpio_by_name(intr_pin_name);
+ 
+-	if (gpio_base == -1)
++	if (gpio_base < 0)
+ 		return NULL;
+ 	tca6416.gpio_base = gpio_base;
+-	if (intr != -1) {
++	if (intr >= 0) {
+ 		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+ 		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+ 	} else {
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index f90e290..1bbedc4 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -35,6 +35,8 @@
+ #include <asm/apb_timer.h>
+ #include <asm/reboot.h>
+ 
++#include "intel_mid_weak_decls.h"
++
+ /*
+  * the clockevent devices on Moorestown/Medfield can be APBT or LAPIC clock,
+  * cmdline option x86_intel_mid_timer can be used to override the configuration
+@@ -58,12 +60,16 @@
+ 
+ enum intel_mid_timer_options intel_mid_timer_options;
+ 
++/* intel_mid_ops to store sub arch ops */
++struct intel_mid_ops *intel_mid_ops;
++/* getter function for sub arch ops*/
++static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
+ enum intel_mid_cpu_type __intel_mid_cpu_chip;
+ EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
+ 
+ static void intel_mid_power_off(void)
+ {
+-}
++};
+ 
+ static void intel_mid_reboot(void)
+ {
+@@ -72,32 +78,6 @@ static void intel_mid_reboot(void)
+ 
+ static unsigned long __init intel_mid_calibrate_tsc(void)
+ {
+-	unsigned long fast_calibrate;
+-	u32 lo, hi, ratio, fsb;
+-
+-	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
+-	pr_debug("IA32 perf status is 0x%x, 0x%0x\n", lo, hi);
+-	ratio = (hi >> 8) & 0x1f;
+-	pr_debug("ratio is %d\n", ratio);
+-	if (!ratio) {
+-		pr_err("read a zero ratio, should be incorrect!\n");
+-		pr_err("force tsc ratio to 16 ...\n");
+-		ratio = 16;
+-	}
+-	rdmsr(MSR_FSB_FREQ, lo, hi);
+-	if ((lo & 0x7) == 0x7)
+-		fsb = PENWELL_FSB_FREQ_83SKU;
+-	else
+-		fsb = PENWELL_FSB_FREQ_100SKU;
+-	fast_calibrate = ratio * fsb;
+-	pr_debug("read penwell tsc %lu khz\n", fast_calibrate);
+-	lapic_timer_frequency = fsb * 1000 / HZ;
+-	/* mark tsc clocksource as reliable */
+-	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
+-
+-	if (fast_calibrate)
+-		return fast_calibrate;
+-
+ 	return 0;
+ }
+ 
+@@ -125,13 +105,37 @@ static void __init intel_mid_time_init(void)
+ 
+ static void intel_mid_arch_setup(void)
+ {
+-	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
+-		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
+-	else {
++	if (boot_cpu_data.x86 != 6) {
+ 		pr_err("Unknown Intel MID CPU (%d:%d), default to Penwell\n",
+ 			boot_cpu_data.x86, boot_cpu_data.x86_model);
+ 		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
++		goto out;
+ 	}
++
++	switch (boot_cpu_data.x86_model) {
++	case 0x35:
++		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_CLOVERVIEW;
++		break;
++	case 0x3C:
++	case 0x4A:
++		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_TANGIER;
++		break;
++	case 0x27:
++	default:
++		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
++		break;
++	}
++
++	if (__intel_mid_cpu_chip < MAX_CPU_OPS(get_intel_mid_ops))
++		intel_mid_ops = get_intel_mid_ops[__intel_mid_cpu_chip]();
++	else {
++		intel_mid_ops = get_intel_mid_ops[INTEL_MID_CPU_CHIP_PENWELL]();
++		pr_info("ARCH: Uknown SoC, assuming PENWELL!\n");
++	}
++
++out:
++	if (intel_mid_ops->arch_setup)
++		intel_mid_ops->arch_setup();
+ }
+ 
+ /* MID systems don't have i8042 controller */
+diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+new file mode 100644
+index 0000000..a537ffc
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+@@ -0,0 +1,19 @@
++/*
++ * intel_mid_weak_decls.h: Weak declarations of intel-mid.c
++ *
++ * (C) Copyright 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++
++/* __attribute__((weak)) makes these declarations overridable */
++/* For every CPU addition a new get_<cpuname>_ops interface needs
++ * to be added.
++ */
++extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
++extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
++extern void * __init get_tangier_ops(void) __attribute__((weak));
+diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
+new file mode 100644
+index 0000000..4f7884e
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/mfld.c
+@@ -0,0 +1,75 @@
++/*
++ * mfld.c: Intel Medfield platform setup code
++ *
++ * (C) Copyright 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/init.h>
++
++#include <asm/apic.h>
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
++
++#include "intel_mid_weak_decls.h"
++
++static void penwell_arch_setup(void);
++/* penwell arch ops */
++static struct intel_mid_ops penwell_ops = {
++	.arch_setup = penwell_arch_setup,
++};
++
++static void mfld_power_off(void)
++{
++}
++
++static unsigned long __init mfld_calibrate_tsc(void)
++{
++	unsigned long fast_calibrate;
++	u32 lo, hi, ratio, fsb;
++
++	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
++	pr_debug("IA32 perf status is 0x%x, 0x%0x\n", lo, hi);
++	ratio = (hi >> 8) & 0x1f;
++	pr_debug("ratio is %d\n", ratio);
++	if (!ratio) {
++		pr_err("read a zero ratio, should be incorrect!\n");
++		pr_err("force tsc ratio to 16 ...\n");
++		ratio = 16;
++	}
++	rdmsr(MSR_FSB_FREQ, lo, hi);
++	if ((lo & 0x7) == 0x7)
++		fsb = FSB_FREQ_83SKU;
++	else
++		fsb = FSB_FREQ_100SKU;
++	fast_calibrate = ratio * fsb;
++	pr_debug("read penwell tsc %lu khz\n", fast_calibrate);
++	lapic_timer_frequency = fsb * 1000 / HZ;
++	/* mark tsc clocksource as reliable */
++	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
++
++	if (fast_calibrate)
++		return fast_calibrate;
++
++	return 0;
++}
++
++static void __init penwell_arch_setup()
++{
++	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
++	pm_power_off = mfld_power_off;
++}
++
++void * __cpuinit get_penwell_ops()
++{
++	return &penwell_ops;
++}
++
++void * __cpuinit get_cloverview_ops()
++{
++	return &penwell_ops;
++}
+diff --git a/arch/x86/platform/intel-mid/mrfl.c b/arch/x86/platform/intel-mid/mrfl.c
+new file mode 100644
+index 0000000..09d1015
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/mrfl.c
+@@ -0,0 +1,103 @@
++/*
++ * mrfl.c: Intel Merrifield platform specific setup code
++ *
++ * (C) Copyright 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/init.h>
++
++#include <asm/apic.h>
++#include <asm/intel-mid.h>
++
++#include "intel_mid_weak_decls.h"
++
++static unsigned long __init tangier_calibrate_tsc(void)
++{
++	unsigned long fast_calibrate;
++	u32 lo, hi, ratio, fsb, bus_freq;
++
++	/* *********************** */
++	/* Compute TSC:Ratio * FSB */
++	/* *********************** */
++
++	/* Compute Ratio */
++	rdmsr(MSR_PLATFORM_INFO, lo, hi);
++	pr_debug("IA32 PLATFORM_INFO is 0x%x : %x\n", hi, lo);
++
++	ratio = (lo >> 8) & 0xFF;
++	pr_debug("ratio is %d\n", ratio);
++	if (!ratio) {
++		pr_err("Read a zero ratio, force tsc ratio to 4 ...\n");
++		ratio = 4;
++	}
++
++	/* Compute FSB */
++	rdmsr(MSR_FSB_FREQ, lo, hi);
++	pr_debug("Actual FSB frequency detected by SOC 0x%x : %x\n",
++			hi, lo);
++
++	bus_freq = lo & 0x7;
++	pr_debug("bus_freq = 0x%x\n", bus_freq);
++
++	if (bus_freq == 0)
++		fsb = FSB_FREQ_100SKU;
++	else if (bus_freq == 1)
++		fsb = FSB_FREQ_100SKU;
++	else if (bus_freq == 2)
++		fsb = FSB_FREQ_133SKU;
++	else if (bus_freq == 3)
++		fsb = FSB_FREQ_167SKU;
++	else if (bus_freq == 4)
++		fsb = FSB_FREQ_83SKU;
++	else if (bus_freq == 5)
++		fsb = FSB_FREQ_400SKU;
++	else if (bus_freq == 6)
++		fsb = FSB_FREQ_267SKU;
++	else if (bus_freq == 7)
++		fsb = FSB_FREQ_333SKU;
++	else {
++		BUG();
++		pr_err("Invalid bus_freq! Setting to minimal value!\n");
++		fsb = FSB_FREQ_100SKU;
++	}
++
++	/* TSC = FSB Freq * Resolved HFM Ratio */
++	fast_calibrate = ratio * fsb;
++	pr_debug("calculate tangier tsc %lu KHz\n", fast_calibrate);
++
++	/* ************************************ */
++	/* Calculate Local APIC Timer Frequency */
++	/* ************************************ */
++	lapic_timer_frequency = (fsb * 1000) / HZ;
++
++	pr_debug("Setting lapic_timer_frequency = %d\n",
++			lapic_timer_frequency);
++
++	/* mark tsc clocksource as reliable */
++	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
++
++	if (fast_calibrate)
++		return fast_calibrate;
++
++	return 0;
++}
++
++static void __init tangier_arch_setup(void)
++{
++	x86_platform.calibrate_tsc = tangier_calibrate_tsc;
++}
++
++/* tangier arch ops */
++static struct intel_mid_ops tangier_ops = {
++	.arch_setup = tangier_arch_setup,
++};
++
++void * __cpuinit get_tangier_ops()
++{
++	return &tangier_ops;
++}
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index c84c1ca..994c40b 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -224,7 +224,7 @@ int get_gpio_by_name(const char *name)
+ 		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+ 			return pentry->pin_no;
+ 	}
+-	return -1;
++	return -EINVAL;
+ }
+ 
+ void __init intel_scu_device_register(struct platform_device *pdev)
+@@ -250,7 +250,7 @@ static void __init intel_scu_spi_device_register(struct spi_board_info *sdev)
+ 			sdev->modalias);
+ 		return;
+ 	}
+-	memcpy(new_dev, sdev, sizeof(*sdev));
++	*new_dev = *sdev;
+ 
+ 	spi_devs[spi_next_dev++] = new_dev;
+ }
+@@ -271,7 +271,7 @@ static void __init intel_scu_i2c_device_register(int bus,
+ 			idev->type);
+ 		return;
+ 	}
+-	memcpy(new_dev, idev, sizeof(*idev));
++	*new_dev = *idev;
+ 
+ 	i2c_bus[i2c_next_dev] = bus;
+ 	i2c_devs[i2c_next_dev++] = new_dev;
+@@ -337,6 +337,8 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
+ 	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
+ 		pentry->name, pentry->irq);
+ 	pdata = intel_mid_sfi_get_pdata(dev, pentry);
++	if (IS_ERR(pdata))
++		return;
+ 
+ 	pdev = platform_device_alloc(pentry->name, 0);
+ 	if (pdev == NULL) {
+@@ -370,6 +372,8 @@ static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
+ 		spi_info.chip_select);
+ 
+ 	pdata = intel_mid_sfi_get_pdata(dev, &spi_info);
++	if (IS_ERR(pdata))
++		return;
+ 
+ 	spi_info.platform_data = pdata;
+ 	if (dev->delay)
+@@ -395,6 +399,8 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
+ 		i2c_info.addr);
+ 	pdata = intel_mid_sfi_get_pdata(dev, &i2c_info);
+ 	i2c_info.platform_data = pdata;
++	if (IS_ERR(pdata))
++		return;
+ 
+ 	if (dev->delay)
+ 		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
+@@ -443,13 +449,35 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 			 * so we have to enable them one by one here
+ 			 */
+ 			ioapic = mp_find_ioapic(irq);
+-			irq_attr.ioapic = ioapic;
+-			irq_attr.ioapic_pin = irq;
+-			irq_attr.trigger = 1;
+-			irq_attr.polarity = 1;
+-			io_apic_set_pci_routing(NULL, irq, &irq_attr);
+-		} else
++			if (ioapic >= 0) {
++				irq_attr.ioapic = ioapic;
++				irq_attr.ioapic_pin = irq;
++				irq_attr.trigger = 1;
++				if (intel_mid_identify_cpu() ==
++						INTEL_MID_CPU_CHIP_TANGIER) {
++					if (!strncmp(pentry->name,
++							"r69001-ts-i2c", 13))
++						/* active low */
++						irq_attr.polarity = 1;
++					else if (!strncmp(pentry->name,
++							"synaptics_3202", 14))
++						/* active low */
++						irq_attr.polarity = 1;
++					else if (irq == 41)
++						/* fast_int_1 */
++						irq_attr.polarity = 1;
++					else
++						/* active high */
++						irq_attr.polarity = 0;
++				} else {
++					/* PNW and CLV go with active low */
++					irq_attr.polarity = 1;
++				}
++				io_apic_set_pci_routing(NULL, irq, &irq_attr);
++			}
++		} else {
+ 			irq = 0; /* No irq */
++		}
+ 
+ 		dev = get_device_id(pentry->type, pentry->name);
+ 
