@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaATKUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:20:48 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40758 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaATKUq (ORCPT
+	id S1753331AbaATKVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:21:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60135 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753218AbaATKVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:20:46 -0500
+	Mon, 20 Jan 2014 05:21:04 -0500
+Date: Mon, 20 Jan 2014 10:20:51 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: spinlock lockup
+Message-ID: <20140120102051.GB16496@mudshark.cambridge.arm.com>
+References: <CAJ8eaTzT4Os5RjtTu5gWpA=t-8Gg9rwmthEHVUOf+3+XhRpu6Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <E1W5A0e-000MT9-A1@intern.SerNet.DE>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-	<E1W5A0e-000MT9-A1@intern.SerNet.DE>
-Date: Mon, 20 Jan 2014 14:20:43 +0400
-X-Google-Sender-Auth: 9ymmR4ttW4ZGP4DR_KcOyxBckaM
-Message-ID: <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
-Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "Volker.Lendecke@SerNet.DE" <Volker.Lendecke@sernet.de>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ8eaTzT4Os5RjtTu5gWpA=t-8Gg9rwmthEHVUOf+3+XhRpu6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/20 Volker Lendecke <Volker.Lendecke@sernet.de>:
-> Hi!
->
-> On Fri, Jan 17, 2014 at 02:07:05PM +0400, Pavel Shilovsky wrote:
->> If O_DENYDELETE flag is specified and the open succeded,
->> any further unlink operation will fail with -ESHAREDENIED
->> untill this open is closed. Now this flag is processed by
->> VFS and CIFS filesystem. NFS returns -EINVAL for opens
->> with this flag.
->
-> This looks really, really good, thanks!
->
-> One question: If Samba wants to open a file for delete
-> access, there's no corresponding flag in the open
-> permissions. There can be the case where Samba wants to open
-> *just* for future unlink, no read or write access required.
-> Is there a way to achieve this atomically correct?
+On Sat, Jan 18, 2014 at 07:25:51AM +0000, naveen yadav wrote:
+> We are using 3.8.x  kernel on ARM, We are facing soft lockup issue.
+> Following are the logs.
 
-You can try to use O_PATH flag. It doesn't give you a delete access
-but should be ok because further deleting will be done without file
-descriptor -- through unlink syscall.
+Which CPU/SoC are you using?
 
--- 
-Best regards,
-Pavel Shilovsky.
+> BUG: spinlock lockup suspected on CPU#0, process1/525
+> lock: 0xd8ac9a64, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+> 
+> 
+> 1 . Looks like lock is available as owner is -1, why arch_spin_trylock
+> is getting failed ?
+
+Is this with or without the ticket lock patches? Can you inspect the actual
+value of the arch_spinlock_t?
+
+> 2. There is a patch : ARM: spinlock: retry trylock operation if strex
+> fails on free lock
+> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/240913
+> In this patch, A loop has been added around strexeq %2, %0, [%3]".
+> {Comment "retry the trylock operation if the lock appears
+> to be free but the strex reported failure"}
+> 
+> but arch_spin_trylock is called by __spin_lock_debug and its already
+> getting called in loops. So what purpose is resolves?
+
+Does this patch help your issue? The purpose of it is to distinguish between
+two types of contention:
+
+  (1) The lock is actually taken
+  (2) The lock is free, but two people are doing a trylock at the same time
+
+In the case of (2), we do actually want to spin again otherwise you could
+potentially end up in a pathological case where the two CPUs repeatedly
+shoot down each other's monitor and forward progress isn't made until the
+sequence is broken by something like an interrupt.
+
+> static void __spin_lock_debug(raw_spinlock_t *lock)
+> {
+>         u64 i;
+>         u64 loops = loops_per_jiffy * HZ;
+> 
+>         for (i = 0; i < loops; i++) {
+>                 if (arch_spin_trylock(&lock->raw_lock))
+>                         return;
+>                 __delay(1);
+>         }
+>         /* lockup suspected: */
+>         spin_dump(lock, "lockup suspected");
+> }
+> 
+> 3. Is this patch useful to us, How can we reproduce this scenario ?
+> Scenario : Lock is available but arch_spin_trylock  is returning as failure
+
+Potentially. Why can't you simply apply the patch and see if it resolves your
+issue?
+
+Will
