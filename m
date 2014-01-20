@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaATJHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:07:53 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:62160 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943AbaATJHH (ORCPT
+	id S1753292AbaATJH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:07:56 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:47247 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058AbaATJHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:07:07 -0500
+	Mon, 20 Jan 2014 04:07:11 -0500
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
 Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, linux@arm.linux.org.uk,
         ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: [PATCH 1/2] serial: samsung: Move uart_register_driver call to device probe
-Date: Mon, 20 Jan 2014 14:32:34 +0530
-Message-Id: <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+Subject: [PATCH 2/2] serial: pl011: Move uart_register_driver call to device probe
+Date: Mon, 20 Jan 2014 14:32:35 +0530
+Message-Id: <1390208555-27770-3-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
 References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
@@ -35,74 +35,65 @@ A typical case is observed with amba-pl011 and samsung-uart drivers.
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- drivers/tty/serial/samsung.c |   40 +++++++++++-----------------------------
- 1 file changed, 11 insertions(+), 29 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index c1af04d..f8f41dc 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -1283,6 +1283,14 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		goto probe_err;
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index d58783d..d4eda24 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -2154,9 +2154,19 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 	amba_ports[i] = uap;
  
-+	if (!s3c24xx_uart_drv.state) {
-+		ret = uart_register_driver(&s3c24xx_uart_drv);
+ 	amba_set_drvdata(dev, uap);
++
++	if (!amba_reg.state) {
++		ret = uart_register_driver(&amba_reg);
 +		if (ret < 0) {
-+			pr_err("Failed to register Samsung UART driver\n");
++			pr_err("Failed to register AMBA-PL011 driver\n");
 +			return ret;
 +		}
 +	}
 +
- 	dbg("%s: adding port\n", __func__);
- 	uart_add_one_port(&s3c24xx_uart_drv, &ourport->port);
- 	platform_set_drvdata(pdev, &ourport->port);
-@@ -1315,6 +1323,8 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
- 		uart_remove_one_port(&s3c24xx_uart_drv, port);
+ 	ret = uart_add_one_port(&amba_reg, &uap->port);
+ 	if (ret) {
+ 		amba_ports[i] = NULL;
++		uart_unregister_driver(&amba_reg);
+ 		pl011_dma_remove(uap);
  	}
+  out:
+@@ -2175,6 +2185,7 @@ static int pl011_remove(struct amba_device *dev)
+ 			amba_ports[i] = NULL;
  
-+	uart_unregister_driver(&s3c24xx_uart_drv);
-+
+ 	pl011_dma_remove(uap);
++	uart_unregister_driver(&amba_reg);
  	return 0;
  }
  
-@@ -1814,35 +1824,7 @@ static struct platform_driver samsung_serial_driver = {
- 	},
- };
+@@ -2230,22 +2241,14 @@ static struct amba_driver pl011_driver = {
  
--/* module initialisation code */
--
--static int __init s3c24xx_serial_modinit(void)
--{
+ static int __init pl011_init(void)
+ {
 -	int ret;
--
--	ret = uart_register_driver(&s3c24xx_uart_drv);
--	if (ret < 0) {
--		pr_err("Failed to register Samsung UART driver\n");
--		return ret;
--	}
--
--	ret = platform_driver_register(&samsung_serial_driver);
--	if (ret < 0) {
--		pr_err("Failed to register platform driver\n");
--		uart_unregister_driver(&s3c24xx_uart_drv);
--	}
--
--	return ret;
--}
--
--static void __exit s3c24xx_serial_modexit(void)
--{
--	platform_driver_unregister(&samsung_serial_driver);
--	uart_unregister_driver(&s3c24xx_uart_drv);
--}
--
--module_init(s3c24xx_serial_modinit);
--module_exit(s3c24xx_serial_modexit);
-+module_platform_driver(samsung_serial_driver);
+ 	printk(KERN_INFO "Serial: AMBA PL011 UART driver\n");
  
- MODULE_ALIAS("platform:samsung-uart");
- MODULE_DESCRIPTION("Samsung SoC Serial port driver");
+-	ret = uart_register_driver(&amba_reg);
+-	if (ret == 0) {
+-		ret = amba_driver_register(&pl011_driver);
+-		if (ret)
+-			uart_unregister_driver(&amba_reg);
+-	}
+-	return ret;
++	return amba_driver_register(&pl011_driver);
+ }
+ 
+ static void __exit pl011_exit(void)
+ {
+ 	amba_driver_unregister(&pl011_driver);
+-	uart_unregister_driver(&amba_reg);
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
