@@ -1,246 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaATS7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:59:50 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:65185 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaATS7s (ORCPT
+	id S1753710AbaATTCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:02:09 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:36278 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619AbaATTB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:59:48 -0500
+	Mon, 20 Jan 2014 14:01:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4SHqy4Q3+iPZMoQjJnoNZTUw0YstLnsvto2E5GKv6XaSw@mail.gmail.com>
-References: <1389985971-541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4SHqy4Q3+iPZMoQjJnoNZTUw0YstLnsvto2E5GKv6XaSw@mail.gmail.com>
-Date: Mon, 20 Jan 2014 13:59:46 -0500
-Message-ID: <CAN+gG=G1Rn-pHea5E3Gq2p7a_wCZVOGDxRB9eAOk94t7iyG5QA@mail.gmail.com>
-Subject: Re: [PATCH v3] input/uinput: add UI_GET_SYSNAME ioctl to retrieve the
- sysfs path
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.11.1401201351120.1652@knanqh.ubzr>
+References: <1387807592-26375-1-git-send-email-ard.biesheuvel@linaro.org>
+	<20140120173838.GD29971@arm.com>
+	<alpine.LFD.2.11.1401201242480.1652@knanqh.ubzr>
+	<CAKv+Gu8jqctGFsyccg6_VGkZ6ogf8BD_kq1rsRQrc+cw7pk+qA@mail.gmail.com>
+	<alpine.LFD.2.11.1401201307300.1652@knanqh.ubzr>
+	<CAKv+Gu8JEaVZDiOEegUeYfWbAMMH0ddgcWaTjFBpjXzoiKRoQg@mail.gmail.com>
+	<alpine.LFD.2.11.1401201351120.1652@knanqh.ubzr>
+Date: Mon, 20 Jan 2014 20:01:56 +0100
+Message-ID: <CAKv+Gu8G+oSFWhVxbjPuj+Vn8Tk9E-g6og-fFjGdKsbmheHz-A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] arm64: advertise availability of CRC and crypto instructions
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-thanks for the review
-
-On Sat, Jan 18, 2014 at 5:51 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
+On 20 January 2014 19:55, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Mon, 20 Jan 2014, Ard Biesheuvel wrote:
 >
-> On Fri, Jan 17, 2014 at 8:12 PM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> Evemu [1] uses uinput to replay devices traces it has recorded. However,
->> the way evemu uses uinput is slightly different from how uinput is
->> supposed to be used.
->> Evemu relies on libevdev, which creates the device node through uinput.
->> It then injects events through the input device node directly (and it
->> completely skips the uinput node).
+>> On 20 January 2014 19:17, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>> > On Mon, 20 Jan 2014, Ard Biesheuvel wrote:
+>> >> Calling getauxval(AT_HWCAP) on an outdated libc.so will give you the
+>> >> whole value, not just the bits whose meaning was known to glibc at the
+>> >> time.
+>> >> So if desired, a program can interpret AT_HWCAP itself.
+>> >>
+>> >> AT_HWCAP2 is completely new, so you won't be able to retrieve it using
+>> >> getauxval() on an older libc.
+>> >
+>> > I agree.  And I don't dispute the bit placement choice either.
+>> >
+>> > Still, an old glibc calling getauxval(AT_HWCAP) should already be
+>> > prepared to receive and rightfully ignore those bits it didn't know the
+>> > meaning of at the time.  So "preserving some future extensions in HWCAP
+>> > for older glibc" as a justification makes little sense to me... unless
+>> > I'm missing something?
+>> >
+>> > Even if applications interpret those bits themselves, supposing they
+>> > still need to be linked against an old glibc, then why would
+>> > yet-to-be-defined future extensions be more important to be signaled
+>> > using the lower 32 bits than the extensions you propose?  That is what I
+>> > don't get.
+>> >
 >>
->> Currently, libevdev relies on an heuristic to guess which input node was
->> created. The problem is that is heuristic is subjected to races between
->> different uinput devices or even with physical devices. Having a way
->> to retrieve the sysfs path allows us to find the event node without
->> having to rely on this heuristic.
+>> In the general case, you are quite right.
 >>
->> [1] http://www.freedesktop.org/wiki/Evemu/
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>
->> Ok, I am resurrecting this. The original patch was sent last July here:
->> https://patchwork.kernel.org/patch/2827524/
->>
->> changes since v2:
->> - the ioctl returns only the device name, thus I renamed the ioctl to UI_GET_SYSNAME
->> - reordered uinput_str_to_user() arguments
->> - be sure to terminate the user string we send by \0
->> - abort if udev->state is not UIST_CREATED
->> - dropped the patch 1/2 (adding resolution to uinput) because I think David has
->>   already it in one of his queues (ABS2 IIRC)
->>
->> I also posted the corresponding libevdev here:
->> http://lists.freedesktop.org/archives/input-tools/2014-January/000757.html
->>
->> Cheers,
->> Benjamin
->>
->>  drivers/input/misc/uinput.c | 46 ++++++++++++++++++++++++++++++++++++++++++++-
->>  include/linux/uinput.h      |  2 ++
->>  include/uapi/linux/uinput.h | 13 ++++++++++++-
->>  3 files changed, 59 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
->> index 7728359..0203219 100644
->> --- a/drivers/input/misc/uinput.c
->> +++ b/drivers/input/misc/uinput.c
->> @@ -20,6 +20,8 @@
->>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->>   *
->>   * Changes/Revisions:
->> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
->> + *             - add UI_GET_SYSNAME ioctl
->>   *     0.3     09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
->>   *             - updated ff support for the changes in kernel interface
->>   *             - added MODULE_VERSION
->> @@ -670,6 +672,27 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
->>         __ret;                                          \
->>  })
->>
->> +static int uinput_str_to_user(void __user *dest, const char *str,
->> +                             unsigned int maxlen)
->> +{
->> +       int len, ret;
->> +
->> +       if (!str)
->> +               return -ENOENT;
->> +
->> +       len = strlen(str) + 1;
->> +       if (len > maxlen)
->> +               len = maxlen;
->> +
->> +       ret = copy_to_user(dest, str, len);
->> +       if (ret)
->> +               return -EFAULT;
->> +
->> +       /* force terminating '\0' */
->> +       ret = copy_to_user(dest + len - 1, "\0", 1);
+>> In this particular case, the extensions for which I am adding the
+>> feature bits are not supported on any hardware currently known or
+>> supported by the ARM port. At this time, the only known CPUs
+>> supporting these extensions are ARMv8 CPUs executing in 32-bit
+>> compatibility mode (i.e., ARMv8 defines instructions for the 32-bit
+>> execution state using previously unallocated opcodes)
 >
-> You must make sure "maxlen != 0", otherwise you write beyond buffer
-> boundaries here. I'd say return -EINVAL in case maxlen == 0.
-
-oh, yes, you are right.
-
+> So?
 >
-> btw., you can also use: put_user(0, (char*)dest + len - 1);
-
-k, will amend
-
+>> So the only reason (currently) for adding these feature bits to the
+>> ARM port is to align with the ARMv8 32-bit compat mode so that a
+>> 32-bit userland requires no knowledge about whether its 32-bit
+>> execution environment is hosted by an ARM or an arm64 kernel. In the
+>> future, ARMv8 32-bit only CPUs may well turn up that support these
+>> extensions as well.
 >
->> +       return ret ? -EFAULT : len;
->> +}
->> +
->>  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->>                                  unsigned long arg, void __user *p)
->>  {
->> @@ -679,6 +702,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->>         struct uinput_ff_erase  ff_erase;
->>         struct uinput_request   *req;
->>         char                    *phys;
->> +       const char              *name;
->> +       unsigned int            size;
->>
->>         retval = mutex_lock_interruptible(&udev->mutex);
->>         if (retval)
->> @@ -831,7 +856,26 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->>                         break;
->>
->>                 default:
->> -                       retval = -EINVAL;
->> +                       retval = -EAGAIN;
->> +       }
->> +
->> +       if (retval == -EAGAIN) {
+> I agree with all you've said so far.  But that doesn't answer my
+> question.
 >
-> Ehh, in case another ioctl returns -EAGAIN, we overwrite the error
-> with -EINVAL below in the "default:" clause. Maybe we should first
-> convert all the "break;" commands to "goto out;".
-
-yep, that was one of the thing which also made me some trouble by
-re-reading the patch after this amount of time.
-Either I can make a "goto out" patch before, or I can just add a bool
-probe_variable_length which would be set be the previous default case.
-The latter implies less changes, but might be more ugly than the previous.
-Any preferences?
-
-
+> And my unanswered question isn't that important either.
 >
-> Patch looks good to me.
 
-Thanks!
+Quoting Russell:
 
-Cheers,
-Benjamin
-
-> Thanks
-> David
+On 18 December 2013 12:42, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> The point is that they'll never appear on an ARMv7 implementation because
+> they're not part of the ARMv7 architecture.  I see no point in needlessly
+> polluting ARM32 with ARM64 stuff - in exactly the same way that you see
+> no point in polluting ARM64 with ARM32 stuff.
 >
->> +               size = _IOC_SIZE(cmd);
->> +
->> +               /* Now check variable-length commands */
->> +               switch (cmd & ~IOCSIZE_MASK) {
->> +                       case UI_GET_SYSNAME(0):
->> +                               if (udev->state != UIST_CREATED) {
->> +                                       retval = -ENOENT;
->> +                                       goto out;
->> +                               }
->> +                               name = dev_name(&udev->dev->dev);
->> +                               retval = uinput_str_to_user(p, name, size);
->> +                               break;
->> +
->> +                       default:
->> +                               retval = -EINVAL;
->> +               }
->>         }
->>
->>   out:
->> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
->> index 0a4487d..0994c0d 100644
->> --- a/include/linux/uinput.h
->> +++ b/include/linux/uinput.h
->> @@ -20,6 +20,8 @@
->>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->>   *
->>   * Changes/Revisions:
->> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
->> + *             - add UI_GET_SYSNAME ioctl
->>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->>   *             - update ff support for the changes in kernel interface
->>   *             - add UINPUT_VERSION
->> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
->> index fe46431..0389b48 100644
->> --- a/include/uapi/linux/uinput.h
->> +++ b/include/uapi/linux/uinput.h
->> @@ -20,6 +20,8 @@
->>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
->>   *
->>   * Changes/Revisions:
->> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
->> + *             - add UI_GET_SYSNAME ioctl
->>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->>   *             - update ff support for the changes in kernel interface
->>   *             - add UINPUT_VERSION
->> @@ -35,7 +37,7 @@
->>  #include <linux/types.h>
->>  #include <linux/input.h>
->>
->> -#define UINPUT_VERSION         3
->> +#define UINPUT_VERSION         4
->>
->>
->>  struct uinput_ff_upload {
->> @@ -73,6 +75,15 @@ struct uinput_ff_erase {
->>  #define UI_BEGIN_FF_ERASE      _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
->>  #define UI_END_FF_ERASE                _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
->>
->> +/**
->> + * UI_GET_SYSNAME - get the sysfs name of the created uinput device
->> + *
->> + * @return the sysfs name of the created virtual input device.
->> + * The complete sysfs path is then /sys/devices/virtual/input/--NAME--
->> + * Usually, it is in the form "inputN"
->> + */
->> +#define UI_GET_SYSNAME(len)    _IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
->> +
->>  /*
->>   * To write a force-feedback-capable driver, the upload_effect
->>   * and erase_effect callbacks in input_dev must be implemented.
->> --
->> 1.8.3.1
->>
+> So, frankly, find a different way to this.  We don't need to needlessly
+> waste HWCAP bits on ARM32.
+
+So my idea was to use HWCAP2 bits instead ...
+
+-- 
+Ard.
