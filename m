@@ -1,360 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaATPq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:46:56 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:36720 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaATPqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:46:53 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v7 7/7] ARM: rockchip: add smp bringup code
-Date: Mon, 20 Jan 2014 16:46:15 +0100
-Message-ID: <49656088.hl7gr3DUdp@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <4970034.fqvMoHdOyd@phil>
-References: <4970034.fqvMoHdOyd@phil>
+	id S1754244AbaATPrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:47:35 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:10398 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751898AbaATPrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:47:33 -0500
+Date: Mon, 20 Jan 2014 10:47:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] ktest: New features
+Message-ID: <20140120104731.391271f7@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the necessary smp-operations and startup code to use
-additional cores on Rockchip SoCs.
 
-We currently hog the power management unit in the smp code, as it is
-necessary to control the power to the cpu core and nothing else is
-currently using it, so a generic implementation can be done later.
+Linus,
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
----
- arch/arm/mach-rockchip/Makefile   |    1 +
- arch/arm/mach-rockchip/core.h     |   22 ++++
- arch/arm/mach-rockchip/headsmp.S  |   30 ++++++
- arch/arm/mach-rockchip/platsmp.c  |  208 +++++++++++++++++++++++++++++++++++++
- arch/arm/mach-rockchip/rockchip.c |    2 +
- 5 files changed, 263 insertions(+)
- create mode 100644 arch/arm/mach-rockchip/core.h
- create mode 100644 arch/arm/mach-rockchip/headsmp.S
- create mode 100644 arch/arm/mach-rockchip/platsmp.c
+Note, I just realized that I did not base this branch on any specific
+SHA1 (like a release). I must have updated the branch and forgot about
+it before doing development on it. But this has been in linux-next for
+a bit, and I understand that it is looked down upon to rebase this late
+in the game. Sorry for the inconvenience, and I'll try to make sure
+that doesn't happen again.
 
-diff --git a/arch/arm/mach-rockchip/Makefile b/arch/arm/mach-rockchip/Makefile
-index 1547d4f..4377a14 100644
---- a/arch/arm/mach-rockchip/Makefile
-+++ b/arch/arm/mach-rockchip/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_ARCH_ROCKCHIP) += rockchip.o
-+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
-new file mode 100644
-index 0000000..e2e7c9d
---- /dev/null
-+++ b/arch/arm/mach-rockchip/core.h
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+extern char rockchip_secondary_trampoline;
-+extern char rockchip_secondary_trampoline_end;
-+
-+extern unsigned long rockchip_boot_fn;
-+extern void rockchip_secondary_startup(void);
-+
-+extern struct smp_operations rockchip_smp_ops;
-diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
-new file mode 100644
-index 0000000..73206e3
---- /dev/null
-+++ b/arch/arm/mach-rockchip/headsmp.S
-@@ -0,0 +1,30 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+
-+ENTRY(rockchip_secondary_startup)
-+	bl	v7_invalidate_l1
-+	b	secondary_startup
-+ENDPROC(rockchip_secondary_startup)
-+
-+ENTRY(rockchip_secondary_trampoline)
-+	ldr	pc, 1f
-+ENDPROC(rockchip_secondary_trampoline)
-+	.globl	rockchip_boot_fn
-+rockchip_boot_fn:
-+1:	.space	4
-+
-+ENTRY(rockchip_secondary_trampoline_end)
-diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
-new file mode 100644
-index 0000000..3459b17
---- /dev/null
-+++ b/arch/arm/mach-rockchip/platsmp.c
-@@ -0,0 +1,208 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/smp.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/smp_scu.h>
-+#include <asm/smp_plat.h>
-+#include <asm/mach/map.h>
-+
-+#include "core.h"
-+
-+static void __iomem *scu_base_addr;
-+static void __iomem *sram_base_addr;
-+static int ncores;
-+
-+#define PMU_PWRDN_CON		0x08
-+#define PMU_PWRDN_ST		0x0c
-+
-+#define PMU_PWRDN_SCU		4
-+
-+static void __iomem *pmu_base_addr;
-+
-+static inline bool pmu_power_domain_is_on(int pd)
-+{
-+	return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
-+}
-+
-+static void pmu_set_power_domain(int pd, bool on)
-+{
-+	u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
-+	if (on)
-+		val &= ~BIT(pd);
-+	else
-+		val |=  BIT(pd);
-+	writel(val, pmu_base_addr + PMU_PWRDN_CON);
-+
-+	while (pmu_power_domain_is_on(pd) != on) { }
-+}
-+
-+/*
-+ * Handling of CPU cores
-+ */
-+
-+static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
-+					     struct task_struct *idle)
-+{
-+	if (!sram_base_addr || !pmu_base_addr) {
-+		pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
-+		return -ENXIO;
-+	}
-+
-+	if (cpu >= ncores) {
-+		pr_err("%s: cpu %d outside maximum number of cpus %d\n",
-+							__func__, cpu, ncores);
-+		return -ENXIO;
-+	}
-+
-+	/* start the core */
-+	pmu_set_power_domain(0 + cpu, true);
-+
-+	return 0;
-+}
-+
-+/**
-+ * rockchip_smp_prepare_sram - populate necessary sram block
-+ * Starting cores execute the code residing at the start of the on-chip sram
-+ * after power-on. Therefore make sure, this sram region is reserved and
-+ * big enough. After this check, copy the trampoline code that directs the
-+ * core to the real startup code in ram into the sram-region.
-+ * @node: mmio-sram device node
-+ */
-+static int __init rockchip_smp_prepare_sram(struct device_node *node)
-+{
-+	unsigned int trampoline_sz = &rockchip_secondary_trampoline_end -
-+					    &rockchip_secondary_trampoline;
-+	const __be32 *reserved_list = NULL;
-+	int reserved_size;
-+	int rstart = -1;
-+	unsigned int rsize;
-+	unsigned int i;
-+
-+	reserved_list = of_get_property(node, "mmio-sram-reserved",
-+					&reserved_size);
-+	if (!reserved_list) {
-+		pr_err("%s: wrong number of arguments in mmio-sram-reserved\n",
-+		       __func__);
-+		return -ENOENT;
-+	}
-+
-+	reserved_size /= sizeof(*reserved_list);
-+	if (!reserved_size || reserved_size % 2) {
-+		pr_err("%s: wrong number of arguments in mmio-sram-reserved\n",
-+		       __func__);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < reserved_size; i += 2) {
-+		/* get the next reserved block */
-+		rstart = be32_to_cpu(*reserved_list++);
-+		rsize = be32_to_cpu(*reserved_list++);
-+
-+		if (!rstart)
-+			break;
-+	}
-+
-+	if (rstart) {
-+		pr_err("%s: start of sram is not reserved from mmio-sram\n",
-+		       __func__);
-+		return -EINVAL;
-+	}
-+
-+	if (rsize < trampoline_sz) {
-+		pr_err("%s: reserved block with size 0x%x is to small for trampoline size 0x%x\n",
-+		       __func__, rsize, trampoline_sz);
-+		return -EINVAL;
-+	}
-+
-+	sram_base_addr = of_iomap(node, 0);
-+
-+	/* set the boot function for the sram code */
-+	rockchip_boot_fn = virt_to_phys(rockchip_secondary_startup);
-+
-+	/* copy the trampoline to sram, that runs during startup of the core */
-+	memcpy(sram_base_addr, &rockchip_secondary_trampoline, trampoline_sz);
-+	flush_cache_all();
-+	outer_clean_range(0, trampoline_sz);
-+
-+	dsb_sev();
-+
-+	return 0;
-+}
-+
-+static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	struct device_node *node;
-+	unsigned int i;
-+
-+	node = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
-+	if (!node) {
-+		pr_err("%s: missing scu\n", __func__);
-+		return;
-+	}
-+
-+	scu_base_addr = of_iomap(node, 0);
-+	if (!scu_base_addr) {
-+		pr_err("%s: could not map scu registers\n", __func__);
-+		return;
-+	}
-+
-+	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-sram");
-+	if (!node) {
-+		pr_err("%s: could not find sram dt node\n", __func__);
-+		return;
-+	}
-+
-+	if (rockchip_smp_prepare_sram(node))
-+		return;
-+
-+	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
-+	if (!node) {
-+		pr_err("%s: could not find sram dt node\n", __func__);
-+		return;
-+	}
-+
-+	pmu_base_addr = of_iomap(node, 0);
-+	if (!pmu_base_addr) {
-+		pr_err("%s: could not map pmu registers\n", __func__);
-+		return;
-+	}
-+
-+	/* enable the SCU power domain */
-+	pmu_set_power_domain(PMU_PWRDN_SCU, true);
-+
-+	/*
-+	 * While the number of cpus is gathered from dt, also get the number
-+	 * of cores from the scu to verify this value when booting the cores.
-+	 */
-+	ncores = scu_get_core_count(scu_base_addr);
-+
-+	scu_enable(scu_base_addr);
-+
-+	/* Make sure that all cores except the first are really off */
-+	for (i = 1; i < ncores; i++)
-+		pmu_set_power_domain(0 + i, false);
-+}
-+
-+struct smp_operations rockchip_smp_ops __initdata = {
-+	.smp_prepare_cpus	= rockchip_smp_prepare_cpus,
-+	.smp_boot_secondary	= rockchip_boot_secondary,
-+};
-diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
-index 82c0b07..d211d6f 100644
---- a/arch/arm/mach-rockchip/rockchip.c
-+++ b/arch/arm/mach-rockchip/rockchip.c
-@@ -22,6 +22,7 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include "core.h"
+This code was based on:
+
+  commit 5a5a1bf099d6942399ea0b34a62e5f0bc4c5c36e
+  Merge: 74c7d2f 5379f8c
+  Author: Linus Torvalds <torvalds@linux-foundation.org>
+  Date:   Tue Apr 30 08:42:45 2013 -0700
+
+    Merge branch 'x86-ras-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+
+
+Here's some basic updates to ktest.pl. They include:
+
+ o Add config to modify the signal to terminate console
+ o Update to documentation (missing some config options)
+ o Add KERNEL_VERSION variable to use for other configs
+ o Add '=~' to let configs eval other configs
+ o Add BISECT_TRIES to run multiple tests per git bisect good
+
+Please pull the latest ktest-v3.14 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-v3.14
+
+Tag SHA1: 9d6294375197af259de0afe574a4e9faf34a1cc1
+Head SHA1: 961d9caceea2d5350a15c17b7d3ffc24c08c9b09
+
+
+Satoru Takeuchi (1):
+      ktest: Make the signal to terminate the console configurable
+
+Steven Rostedt (Red Hat) (4):
+      ktest: Add documentation of CLOSE_CONSOLE_SIGNAL
+      ktest: Add special variable ${KERNEL_VERSION}
+      ktest: Add eval '=~' command to modify variables in config file
+      ktest: Add BISECT_TRIES to bisect test
+
+----
+ tools/testing/ktest/ktest.pl    | 158
+++++++++++++++++++++++++++++++++--------
+tools/testing/ktest/sample.conf |  21 ++++++ 2 files changed, 147
+insertions(+), 32 deletions(-) ---------------------------
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 0d7fd8b..a511d4a 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -18,6 +18,7 @@ $| = 1;
+ my %opt;
+ my %repeat_tests;
+ my %repeats;
++my %evals;
  
- static void __init rockchip_dt_init(void)
- {
-@@ -38,6 +39,7 @@ static const char * const rockchip_board_dt_compat[] = {
- };
+ #default opts
+ my %default = (
+@@ -25,6 +26,7 @@ my %default = (
+     "TEST_TYPE"			=> "build",
+     "BUILD_TYPE"		=> "randconfig",
+     "MAKE_CMD"			=> "make",
++    "CLOSE_CONSOLE_SIGNAL"	=> "INT",
+     "TIMEOUT"			=> 120,
+     "TMP_DIR"			=> "/tmp/ktest/\${MACHINE}",
+     "SLEEP_TIME"		=> 60,	# sleep time between
+tests @@ -39,6 +41,7 @@ my %default = (
+     "CLEAR_LOG"			=> 0,
+     "BISECT_MANUAL"		=> 0,
+     "BISECT_SKIP"		=> 1,
++    "BISECT_TRIES"		=> 1,
+     "MIN_CONFIG_TYPE"		=> "boot",
+     "SUCCESS_LINE"		=> "login:",
+     "DETECT_TRIPLE_FAULT"	=> 1,
+@@ -137,6 +140,7 @@ my $bisect_bad_commit = "";
+ my $reverse_bisect;
+ my $bisect_manual;
+ my $bisect_skip;
++my $bisect_tries;
+ my $config_bisect_good;
+ my $bisect_ret_good;
+ my $bisect_ret_bad;
+@@ -163,6 +167,7 @@ my $timeout;
+ my $booted_timeout;
+ my $detect_triplefault;
+ my $console;
++my $close_console_signal;
+ my $reboot_success_line;
+ my $success_line;
+ my $stop_after_success;
+@@ -273,6 +278,7 @@ my %option_map = (
+     "IGNORE_ERRORS"		=> \$ignore_errors,
+     "BISECT_MANUAL"		=> \$bisect_manual,
+     "BISECT_SKIP"		=> \$bisect_skip,
++    "BISECT_TRIES"		=> \$bisect_tries,
+     "CONFIG_BISECT_GOOD"	=> \$config_bisect_good,
+     "BISECT_RET_GOOD"		=> \$bisect_ret_good,
+     "BISECT_RET_BAD"		=> \$bisect_ret_bad,
+@@ -285,6 +291,7 @@ my %option_map = (
+     "TIMEOUT"			=> \$timeout,
+     "BOOTED_TIMEOUT"		=> \$booted_timeout,
+     "CONSOLE"			=> \$console,
++    "CLOSE_CONSOLE_SIGNAL"	=> \$close_console_signal,
+     "DETECT_TRIPLE_FAULT"	=> \$detect_triplefault,
+     "SUCCESS_LINE"		=> \$success_line,
+     "REBOOT_SUCCESS_LINE"	=> \$reboot_success_line,
+@@ -445,6 +452,27 @@ $config_help{"REBOOT_SCRIPT"} = << "EOF"
+ EOF
+     ;
  
- DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
-+	.smp		= smp_ops(rockchip_smp_ops),
- 	.init_machine	= rockchip_dt_init,
- 	.dt_compat	= rockchip_board_dt_compat,
- MACHINE_END
--- 
-1.7.10.4
-
-
++sub _logit {
++    if (defined($opt{"LOG_FILE"})) {
++	open(OUT, ">> $opt{LOG_FILE}") or die "Can't write to
+$opt{LOG_FILE}";
++	print OUT @_;
++	close(OUT);
++    }
++}
++
++sub logit {
++    if (defined($opt{"LOG_FILE"})) {
++	_logit @_;
++    } else {
++	print @_;
++    }
++}
++
++sub doprint {
++    print @_;
++    _logit @_;
++}
++
+ sub read_prompt {
+     my ($cancel, $prompt) = @_;
+ 
+@@ -662,6 +690,22 @@ sub set_value {
+     }
+ }
+ 
++sub set_eval {
++    my ($lvalue, $rvalue, $name) = @_;
++
++    my $prvalue = process_variables($rvalue);
++    my $arr;
++
++    if (defined($evals{$lvalue})) {
++	$arr = $evals{$lvalue};
++    } else {
++	$arr = [];
++	$evals{$lvalue} = $arr;
++    }
++
++    push @{$arr}, $rvalue;
++}
++
+ sub set_variable {
+     my ($lvalue, $rvalue) = @_;
+ 
+@@ -947,6 +991,20 @@ sub __read_config {
+ 		$test_case = 1;
+ 	    }
+ 
++	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=~\s*(.*?)\s*$/) {
++
++	    next if ($skip);
++
++	    my $lvalue = $1;
++	    my $rvalue = $2;
++
++	    if ($default || $lvalue =~ /\[\d+\]$/) {
++		set_eval($lvalue, $rvalue, $name);
++	    } else {
++		my $val = "$lvalue\[$test_num\]";
++		set_eval($val, $rvalue, $name);
++	    }
++
+ 	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=\s*(.*?)\s*$/) {
+ 
+ 	    next if ($skip);
+@@ -1126,6 +1184,10 @@ sub __eval_option {
+ 	} elsif (defined($opt{$var})) {
+ 	    $o = $opt{$var};
+ 	    $retval = "$retval$o";
++	} elsif ($var eq "KERNEL_VERSION" && defined($make)) {
++	    # special option KERNEL_VERSION uses kernel version
++	    get_version();
++	    $retval = "$retval$version";
+ 	} else {
+ 	    $retval = "$retval\$\{$var\}";
+ 	}
+@@ -1140,6 +1202,33 @@ sub __eval_option {
+     return $retval;
+ }
+ 
++sub process_evals {
++    my ($name, $option, $i) = @_;
++
++    my $option_name = "$name\[$i\]";
++    my $ev;
++
++    my $old_option = $option;
++
++    if (defined($evals{$option_name})) {
++	$ev = $evals{$option_name};
++    } elsif (defined($evals{$name})) {
++	$ev = $evals{$name};
++    } else {
++	return $option;
++    }
++
++    for my $e (@{$ev}) {
++	eval "\$option =~ $e";
++    }
++
++    if ($option ne $old_option) {
++	doprint("$name changed from '$old_option' to '$option'\n");
++    }
++
++    return $option;
++}
++
+ sub eval_option {
+     my ($name, $option, $i) = @_;
+ 
+@@ -1160,28 +1249,9 @@ sub eval_option {
+ 	$option = __eval_option($name, $option, $i);
+     }
+ 
+-    return $option;
+-}
++    $option = process_evals($name, $option, $i);
+ 
+-sub _logit {
+-    if (defined($opt{"LOG_FILE"})) {
+-	open(OUT, ">> $opt{LOG_FILE}") or die "Can't write to
+$opt{LOG_FILE}";
+-	print OUT @_;
+-	close(OUT);
+-    }
+-}
+-
+-sub logit {
+-    if (defined($opt{"LOG_FILE"})) {
+-	_logit @_;
+-    } else {
+-	print @_;
+-    }
+-}
+-
+-sub doprint {
+-    print @_;
+-    _logit @_;
++    return $option;
+ }
+ 
+ sub run_command;
+@@ -1296,7 +1366,7 @@ sub close_console {
+     my ($fp, $pid) = @_;
+ 
+     doprint "kill child process $pid\n";
+-    kill 2, $pid;
++    kill $close_console_signal, $pid;
+ 
+     print "closing!\n";
+     close($fp);
+@@ -2517,12 +2587,29 @@ sub run_bisect {
+ 	$buildtype = "useconfig:$minconfig";
+     }
+ 
+-    my $ret = run_bisect_test $type, $buildtype;
++    # If the user sets bisect_tries to less than 1, then no tries
++    # is a success.
++    my $ret = 1;
+ 
+-    if ($bisect_manual) {
++    # Still let the user manually decide that though.
++    if ($bisect_tries < 1 && $bisect_manual) {
+ 	$ret = answer_bisect;
+     }
+ 
++    for (my $i = 0; $i < $bisect_tries; $i++) {
++	if ($bisect_tries > 1) {
++	    my $t = $i + 1;
++	    doprint("Running bisect trial $t of $bisect_tries:\n");
++	}
++	$ret = run_bisect_test $type, $buildtype;
++
++	if ($bisect_manual) {
++	    $ret = answer_bisect;
++	}
++
++	last if (!$ret);
++    }
++
+     # Are we looking for where it worked, not failed?
+     if ($reverse_bisect && $ret >= 0) {
+ 	$ret = !$ret;
+@@ -3916,6 +4003,18 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+ 
+     my $makecmd = set_test_option("MAKE_CMD", $i);
+ 
++    $outputdir = set_test_option("OUTPUT_DIR", $i);
++    $builddir = set_test_option("BUILD_DIR", $i);
++
++    chdir $builddir || die "can't change directory to $builddir";
++
++    if (!-d $outputdir) {
++	mkpath($outputdir) or
++	    die "can't create $outputdir";
++    }
++
++    $make = "$makecmd O=$outputdir";
++
+     # Load all the options into their mapped variable names
+     foreach my $opt (keys %option_map) {
+ 	${$option_map{$opt}} = set_test_option($opt, $i);
+@@ -3940,13 +4039,9 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+ 	$start_minconfig = $minconfig;
+     }
+ 
+-    chdir $builddir || die "can't change directory to $builddir";
+-
+-    foreach my $dir ($tmpdir, $outputdir) {
+-	if (!-d $dir) {
+-	    mkpath($dir) or
+-		die "can't create $dir";
+-	}
++    if (!-d $tmpdir) {
++	mkpath($tmpdir) or
++	    die "can't create $tmpdir";
+     }
+ 
+     $ENV{"SSH_USER"} = $ssh_user;
+@@ -3955,7 +4050,6 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     $buildlog = "$tmpdir/buildlog-$machine";
+     $testlog = "$tmpdir/testlog-$machine";
+     $dmesg = "$tmpdir/dmesg-$machine";
+-    $make = "$makecmd O=$outputdir";
+     $output_config = "$outputdir/.config";
+ 
+     if (!$buildonly) {
+diff --git a/tools/testing/ktest/sample.conf
+b/tools/testing/ktest/sample.conf index 0a290fb..172eec4 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -328,6 +328,13 @@
+ # For a virtual machine with guest name "Guest".
+ #CONSOLE =  virsh console Guest
+ 
++# Signal to send to kill console.
++# ktest.pl will create a child process to monitor the console.
++# When the console is finished, ktest will kill the child process
++# with this signal.
++# (default INT)
++#CLOSE_CONSOLE_SIGNAL = HUP
++
+ # Required version ending to differentiate the test
+ # from other linux builds on the system.
+ #LOCALVERSION = -test
+@@ -1021,6 +1028,20 @@
+ #   BISECT_BAD with BISECT_CHECK = good or
+ #   BISECT_CHECK = bad, respectively.
+ #
++# BISECT_TRIES = 5 (optional, default 1)
++#
++#   For those cases that it takes several tries to hit a bug,
++#   the BISECT_TRIES is useful. It is the number of times the
++#   test is ran before it says the kernel is good. The first failure
++#   will stop trying and mark the current SHA1 as bad.
++#
++#   Note, as with all race bugs, there's no guarantee that if
++#   it succeeds, it is really a good bisect. But it helps in case
++#   the bug is some what reliable.
++#
++#   You can set BISECT_TRIES to zero, and all tests will be considered
++#   good, unless you also set BISECT_MANUAL.
++#
+ # BISECT_RET_GOOD = 0 (optional, default undefined)
+ #
+ #   In case the specificed test returns something other than just
