@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaATXnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 18:43:39 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:53338 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaATXng (ORCPT
+	id S1752563AbaATXsC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 18:48:02 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58393 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaATXr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 18:43:36 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Date: Mon, 20 Jan 2014 15:43:25 -0800
-Message-ID: <87fvoi6wyq.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19EMDHfi2T+Fkpe4EoeLWvLdPHugP8yDoc=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3300]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: [PATCH] vfs: Remove second variable named error in __dentry_path
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Mon, 20 Jan 2014 18:47:59 -0500
+Date: Mon, 20 Jan 2014 23:47:34 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+Message-ID: <20140120234734.11b78578@www.etchedpixels.co.uk>
+In-Reply-To: <20140120231457.GZ17314@sirena.org.uk>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+	<20140120100530.GY15937@n2100.arm.linux.org.uk>
+	<CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+	<20140120214305.54f65ffa@www.etchedpixels.co.uk>
+	<20140120231457.GZ17314@sirena.org.uk>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 20 Jan 2014 23:14:57 +0000
+Mark Brown <broonie@kernel.org> wrote:
 
-In commit  232d2d60aa5469bb097f55728f65146bd49c1d25
-Author: Waiman Long <Waiman.Long@hp.com>
-Date:   Mon Sep 9 12:18:13 2013 -0400
+> On Mon, Jan 20, 2014 at 09:43:05PM +0000, Alan Cox wrote:
+> 
+> > The dynamic major/minor is the right patch. If the userspace breaks then
+> > the userspace was broken, but I see no evidence in the discussion that
+> > the userspace broke.
+> 
+> The userspace breakage is that if someone has a static /dev that doesn't
+> handle any dynamic devices then renumbering the device will cause that
+> static /dev to stop matching the kernel.
 
-    dcache: Translating dentry into pathname without taking rename_lock
+Diddums and you've only provided theoretical cases not real world ones.
 
-The __dentry_path locking was changed and the variable error was
-intended to be moved outside of the loop.  Unfortunately the inner
-declaration of error was not removed. Resulting in a version of
-__dentry_path that will never return an error.
+They should have followed proper practice and reserved their minors. The
+device number belongs to the Altix. The driver should just move.
 
-Remove the problematic inner declaration of error and allow
-__dentry_path to return errors once again.
+> > Thats what the list says. Samsung should have followed the rules, they
+> > didn't so they get to pick up the pieces. The Amba driver wants moving as
+> > well. It's easy. If you want something to be ABI then make sure you get
+> > it upstream first, if not you get to own all the pain down the line.
+> 
+> This stuff is all upstream already, a quick check suggests both drivers
+> predate git - it's been noticed because the ARM multiplatform work has
+> caused people to try booting kernels with both built in.
 
-Cc: stable@vger.kernel.org
-Cc: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/dcache.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+So ARM people didn't follow the policy on allocating device minors even
+within their own community and got burned by it. That's despite having
+previously been burned by abusing the ttyS0 8250 major/minor in the same
+way, for the same purposes, and creating the same mess.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index cb4a10690868..fdbe23027810 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -3135,7 +3135,6 @@ restart:
- 	read_seqbegin_or_lock(&rename_lock, &seq);
- 	while (!IS_ROOT(dentry)) {
- 		struct dentry *parent = dentry->d_parent;
--		int error;
- 
- 		prefetch(parent);
- 		error = prepend_name(&end, &len, &dentry->d_name);
--- 
-1.7.5.4
+{facepalm...}
 
+> > If the hardware isn't present then the driver shouldn't even register
+> > with the tty layer in the first place so it doesn't make any resource
+> > differeneces either for properly written code.
+> 
+> Right, that's not the idiom that has been followed by any of serial
+> drivers though so needs fixing too.
+
+Actally some drivers do get this right but not many. ehv-bc for example
+does.
+
+But yes I agree about the idiom, but a definite NAK to any attempts to
+plaster over this grand screwup by crapping in the tty core. Your turd,
+deal with it locally in the ARM code if you can't apply common sense and
+just go dynamic.
+
+And please, after screwing this up twice - *learn* from the mess.
+
+Alan
