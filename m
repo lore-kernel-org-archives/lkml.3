@@ -1,56 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaATQs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:48:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50424 "EHLO mx1.redhat.com"
+	id S1754207AbaATQtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:49:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48288 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857AbaATQsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:48:53 -0500
-Message-ID: <52DD5368.5020301@redhat.com>
-Date: Mon, 20 Jan 2014 17:48:40 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, tj@kernel.org
-CC: sergei.shtylyov@cogentembedded.com, kishon@ti.com,
-        b.zolnierkie@samsung.com, arnd@arndb.de, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] ata: ahci_platform: Add PHY support and OMAP support
-References: <1390228888-5537-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1390228888-5537-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752599AbaATQtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 11:49:09 -0500
+Date: Mon, 20 Jan 2014 08:48:43 -0800
+Message-Id: <201401201648.s0KGmhJP004248@tazenda.hos.anvin.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/x32 for v3.14
+Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Linus,
 
-On 01/20/2014 03:41 PM, Roger Quadros wrote:
-> Hi,
->
-> Some platforms have a PHY hooked up to the SATA controller.
-> The PHY needs to be initialized and powered up for SATA to work.
-> We do that using the Generic PHY framework in PATCH 3.
->
-> In order to support SATA on the OMAP platforms we need to runtime
-> resume the device before use. PATCH 4 takes care of that.
+This is the first few of a set of patches by H.J. Lu to make the
+kernel uapi headers usable for x32, as required by some non-glibc
+libcs.  These particular patches make the stat and statfs structures
+usable.
 
-Thanks for keeping me in the loop on this. I'm afraid this conflicts
-quite a bit with my recent ahci_platform.c work, not a big problem
-really, the series can go in either way.
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
 
-Your phy support will slot nicely into the new ahci_platform_get_resources
-and ahci_platform_enable_resources functions my refactoring introduces,
-looking at it from this pov it might be better / easier to rebase your series
-on top of the v4 of my series I've just send.
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
 
-Which brings me to one comment about your series why are you not doing phy_exit
-and phy_init on suspend resp. resume ? The phy can use quite a bit of power,
-if the phy init / exit end up in ahci_platform_enable_resources /
-ahci_platform_disable_resources, this will happen automatically for better or
-worse. So it would be good to test if this would work or not ...
+are available in the git repository at:
 
-Thanks & Regards,
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-x32-for-linus
 
-Hans
+The head of this tree is 79dbbc60493f357912d5f1da5a23147ba0c01c7a.
+
+  x86, x32: Use __kernel_long_t for __statfs_word (2013-12-20 16:06:21 -0800)
+
+----------------------------------------------------------------
+
+H.J. Lu (2):
+      x86, x32: Use __kernel_long_t/__kernel_ulong_t in x86-64 stat.h
+      x86, x32: Use __kernel_long_t for __statfs_word
+
+ arch/x86/include/uapi/asm/stat.h  | 42 ++++++++++++++++++++-------------------
+ include/uapi/asm-generic/statfs.h |  2 +-
+ 2 files changed, 23 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/include/uapi/asm/stat.h b/arch/x86/include/uapi/asm/stat.h
+index 7b3ddc348585..bc03eb5d6360 100644
+--- a/arch/x86/include/uapi/asm/stat.h
++++ b/arch/x86/include/uapi/asm/stat.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_STAT_H
+ #define _ASM_X86_STAT_H
+ 
++#include <asm/posix_types.h>
++
+ #define STAT_HAVE_NSEC 1
+ 
+ #ifdef __i386__
+@@ -78,26 +80,26 @@ struct stat64 {
+ #else /* __i386__ */
+ 
+ struct stat {
+-	unsigned long	st_dev;
+-	unsigned long	st_ino;
+-	unsigned long	st_nlink;
+-
+-	unsigned int	st_mode;
+-	unsigned int	st_uid;
+-	unsigned int	st_gid;
+-	unsigned int	__pad0;
+-	unsigned long	st_rdev;
+-	long		st_size;
+-	long		st_blksize;
+-	long		st_blocks;	/* Number 512-byte blocks allocated. */
+-
+-	unsigned long	st_atime;
+-	unsigned long	st_atime_nsec;
+-	unsigned long	st_mtime;
+-	unsigned long	st_mtime_nsec;
+-	unsigned long	st_ctime;
+-	unsigned long   st_ctime_nsec;
+-	long		__unused[3];
++	__kernel_ulong_t	st_dev;
++	__kernel_ulong_t	st_ino;
++	__kernel_ulong_t	st_nlink;
++
++	unsigned int		st_mode;
++	unsigned int		st_uid;
++	unsigned int		st_gid;
++	unsigned int		__pad0;
++	__kernel_ulong_t	st_rdev;
++	__kernel_long_t		st_size;
++	__kernel_long_t		st_blksize;
++	__kernel_long_t		st_blocks;	/* Number 512-byte blocks allocated. */
++
++	__kernel_ulong_t	st_atime;
++	__kernel_ulong_t	st_atime_nsec;
++	__kernel_ulong_t	st_mtime;
++	__kernel_ulong_t	st_mtime_nsec;
++	__kernel_ulong_t	st_ctime;
++	__kernel_ulong_t	st_ctime_nsec;
++	__kernel_long_t		__unused[3];
+ };
+ 
+ /* We don't need to memset the whole thing just to initialize the padding */
+diff --git a/include/uapi/asm-generic/statfs.h b/include/uapi/asm-generic/statfs.h
+index 0999647fca13..cb89cc730f0b 100644
+--- a/include/uapi/asm-generic/statfs.h
++++ b/include/uapi/asm-generic/statfs.h
+@@ -13,7 +13,7 @@
+  */
+ #ifndef __statfs_word
+ #if __BITS_PER_LONG == 64
+-#define __statfs_word long
++#define __statfs_word __kernel_long_t
+ #else
+ #define __statfs_word __u32
+ #endif
