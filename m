@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaATQwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:52:50 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:62630 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964AbaATQws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:52:48 -0500
-Message-ID: <1390236763.25903.12.camel@host5.omatika.ru>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Date: Mon, 20 Jan 2014 20:52:43 +0400
-In-Reply-To: <52DD4CDE.7020705@gmail.com>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-		 <201312182210.30544.arnd@arndb.de>
-		 <1387401646.31516.14.camel@host5.omatika.ru>
-		 <201312190630.11087.arnd@arndb.de>
-		 <1389309176.32346.1.camel@host5.omatika.ru>
-	 <1390234117.25903.0.camel@host5.omatika.ru> <52DD4CDE.7020705@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	id S1754177AbaATQxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:53:39 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:59848 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898AbaATQxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 11:53:38 -0500
+X-IronPort-AV: E=Sophos;i="4.95,691,1384300800"; 
+   d="scan'208";a="94558144"
+Message-ID: <52DD548F.2060409@citrix.com>
+Date: Mon, 20 Jan 2014 16:53:35 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v4 1/9] xen-netback: Introduce TX grant map definitions
+References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com> <1389731995-9887-2-git-send-email-zoltan.kiss@citrix.com> <20140116000040.GA5331@zion.uk.xensource.com>
+In-Reply-To: <20140116000040.GA5331@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-20 at 17:20 +0100, Daniel Mack wrote:
-> On 01/20/2014 05:08 PM, Sergei Ianovich wrote:
-> > It's over a month now. Is anything wrong?
-> No, I'm busy, that's all.
+On 16/01/14 00:00, Wei Liu wrote:
+> There is a stray blank line change in xenvif_tx_create_gop. (I removed
+> that part too early and didn't bother to paste it back...)
+Ok, fixed
 
-Thanks for reply.
+>> +static inline bool tx_dealloc_work_todo(struct xenvif *vif)
+>> +{
+>> +	if (vif->dealloc_cons != vif->dealloc_prod)
+>> +		return true;
+>> +
+>> +	return false;
+>
+> This can be simplified as
+>    return vif->dealloc_cons != vif->dealloc_prod;
+Indeed, done.
 
-> That said, the current situation is
-> 
-> a) we need someone to have a look at the performance regression of the
-> MMC file system layer that you reported. I couldn't find a PXA-based
-> board yet with a MMC slot soldered on it. But as you apparently have
-> such hardware, I'd really appreciate your help here. Could you do some
-> measurements and see whether you see major differences in packet size or
-> timings?
-
-I have the hardware with MMC, but none of the other devices. Could you
-give some pointer where to start? How would you do measurements?
-
-(...)
-
-> So please, if you have any spare time, have a look at the MMC
-> regressions and see if you can contribute anything. I'll hope to find
-> some time to rebase my patches on top of 3.13 very soon, so we have a
-> new base to work on.
-
-It would be nice to have updated patches. Most interesting is whether
-the new DMA still works as expected for other devices.
-
-Apart from that, would mind if my series is landed with a workaround
-(Patch v3 7/21). I hope you understand it doesn't feel good to depend on
-something with no development activity.
 
