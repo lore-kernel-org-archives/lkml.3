@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109AbaATPBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:01:18 -0500
-Received: from mx2.splius.lt ([62.80.224.22]:59172 "EHLO mail.splius.lt"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753314AbaATPBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:01:14 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jan 2014 10:01:14 EST
-MIME-Version: 1.0
-Date: Mon, 20 Jan 2014 16:54:25 +0200
-From: UNICAMP E-mail do Administrador <d.darius@splius.lt>
-To: undisclosed-recipients:;
-Subject: ATUALIZAR SUA CONTA UNICAMP WEBMAIL
-Organization: UNICAMP E-mail do Administrador
-Reply-To: department1@engineer.com
-Message-ID: <1e97bdca354bbd37b425c04b2e79d7de@mail>
-User-Agent: Splius Webmail/0.3-RC1
-X-Originating-IP: 41.203.69.3
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754056AbaATPBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:01:09 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:47631 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752179AbaATPBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:01:07 -0500
+Message-Id: <20140120150105.317964292@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 20 Jan 2014 10:00:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 1/2] tracing: Have trace buffer point back to trace_array
+References: <20140120150042.470689818@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Have-trace-buffer-point-back-to-trace_array.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
+The trace buffer has a descriptor pointer that goes back to the trace
+array. But it was never assigned. Luckily, nothing uses it (yet), but
+it will in the future.
 
+Although nothing currently uses this, if any of the new features get
+backported to older kernels, and because this is such a simple change,
+I'm marking it for stable too.
+
+Cc: stable@vger.kernel.org # v3.10+
+Fixes: 12883efb670c "tracing: Consolidate max_tr into main trace_array structure"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e32a2f4..cee9c1a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5914,6 +5914,8 @@ allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size
+ 
+ 	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
+ 
++	buf->tr = tr;
++
+ 	buf->buffer = ring_buffer_alloc(size, rb_flags);
+ 	if (!buf->buffer)
+ 		return -ENOMEM;
 -- 
-Caros assinantes válidos Unicamp,
+1.8.4.3
 
-Esta mensagem é a partir da UNICAMP Administrador Email Serviço a todos os
-nossos subscribers.You conta de e-mail são para nos fornecer as informações
-abaixo para revalidar sua conta devido a spam e UNICAMP atualizar a versão
-de spam New mês.
 
-Aviso: A sua conta Email UNICAMP será expirado depois de uma semana, se
-você não revalidar ou UNICAMP namorar sua conta. Por favor, cooperar
-conosco para que possamos atendê-lo melhor, em contato com o administrador!
-****
-
-Nome de usuário:
-Senha:
-Confirme sua senha:
-E-mail alternativo:
-
-Obrigado.
-UNICAMP E-mail do Administrador
