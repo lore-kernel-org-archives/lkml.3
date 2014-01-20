@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaATAuh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jan 2014 19:50:37 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:53709 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233AbaATAue (ORCPT
+	id S1752617AbaATAwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jan 2014 19:52:25 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49382 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347AbaATAwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 19:50:34 -0500
-Message-ID: <52DC72CA.3090403@landley.net>
-Date: Sun, 19 Jan 2014 18:50:18 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 19 Jan 2014 19:52:21 -0500
+Date: Sun, 19 Jan 2014 16:52:15 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Matt Turner <mattst88@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140120005215.GH10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com>
+ <20140116103659.GO7572@laptop.programming.kicks-ass.net>
+ <20140118100105.GV10038@linux.vnet.ibm.com>
+ <20140118113406.GY30183@twins.programming.kicks-ass.net>
+ <20140118122548.GX10038@linux.vnet.ibm.com>
+ <20140118124136.GZ30183@twins.programming.kicks-ass.net>
+ <20140118212227.GA10038@linux.vnet.ibm.com>
+ <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com>
+ <20140119080405.GB10038@linux.vnet.ibm.com>
+ <CA+55aFwPpEOqkhi8C=ck+6WFQJHOW3LsNg-0DxjMm9m1HW1AYA@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Christophe Leroy <christophe.leroy@c-s.fr>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, marc.balemboy@c-s.fr
-Subject: Re: ping [PATCH v3] WAN: Adding support for Lantiq PEF2256 E1 chipset
- (FALC56)
-References: <20140119180732.A1D99432AF@localhost.localdomain> <1390160095.2290.9.camel@joe-AO722>
-In-Reply-To: <1390160095.2290.9.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwPpEOqkhi8C=ck+6WFQJHOW3LsNg-0DxjMm9m1HW1AYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012000-1344-0000-0000-0000051081C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/14 13:34, Joe Perches wrote:
-> On Sun, 2014-01-19 at 19:07 +0100, Christophe Leroy wrote:
->> Pinging this watch as we got no feedback since 22 Nov, although we have taken
->> into account reviews from v1 and v2.
->>
->> The patch adds WAN support for Lantiq FALC56 - PEF2256 E1 Chipset.
-...
->> +static ssize_t fs_attr_Tx_TS_store(struct device *dev,
->> +			struct device_attribute *attr,  const char *buf,
->> +			size_t count)
->> +{
->> +	struct net_device *ndev = dev_get_drvdata(dev);
->> +	struct pef2256_dev_priv *priv = dev_to_hdlc(ndev)->priv;
->> +	unsigned long value;
->> +	int ret = kstrtoul(buf, 16, (long int *)&value);
->
-> unportable cast
+On Sun, Jan 19, 2014 at 11:56:02AM -0800, Linus Torvalds wrote:
+> On Sun, Jan 19, 2014 at 12:04 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > OK, another approach would be to never add "select ARCH_USE_QUEUE_RWLOCK"
+> > on Alpha, at least if the queued rwlocks really do want to atomically
+> > manipulate bytes.  After all, the Alpha systems that I know about don't
+> > have enough CPUs to make queued rwlocks necessary anyway.
+> >
+> > Much simpler solution!
+> >
+> > Is this what you were getting at, or am I missing your point?
+> 
+> You're missing something.
+> 
+> Just make the "writer" field be an "int" on little-endian archiectures
+> (like alpha).
+> 
+> There is no reason for that field to be a "char" to begin with, as far
+> as I can tell, since the padding of the structure means that it
+> doesn't save any space. But even if that wasn't true, we could make an
+> arch-specific type for "minimum type for locking".
 
-How is that not portable? It's long == pointer on Linux, which supports 
-LP64 on all targets. (As do BSD, MacOSX, android, and iOS.)
+On 64-bit systems (which includes Alpha), agreed, the field can be a
+32-bit portion of a 64-bit structure that is then manipulated atomically.
+Many 32-bit systems need the reader and writer counts to fix in 32 bits
+in order to allow things like queue_read_trylock() to correctly account
+for both readers and writers.
 
-   http://www.unix.org/whitepapers/64bit.html
-   http://www.unix.org/version2/whatsnew/lp64_wp.html
+If there was a 32-bit system running Linux that did not support byte
+accesses, there would be a problem, but I don't know of any such system.
 
-Do you mean it's not portable to Windows?
+> So my *point* was that it should be easy enough to just make sure that
+> any data structures used for locking have types that are appropriate
+> for that locking.
 
-   http://blogs.msdn.com/oldnewthing/archive/2005/01/31/363790.aspx
+So something like the following for the qrwlock definition, with
+appropriate C-preprocessor wrappers for the atomic-add accesses?
 
-Rob
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+typedef struct qrwlock {
+	union qrwcnts {
+#ifdef CONFIG_64B
+		struct (
+			int writer;
+			int reader;
+		};
+		atomic_long_t rwa;
+		u64	 rwc;
+#else
+		struct {
+#ifdef __LITTLE_ENDIAN
+			u8  writer;	/* Writer state		*/
+#else
+			u16 r16;	/* Reader count - msb	*/
+			u8  r8;		/* Reader count - lsb	*/
+			u8  writer;	/* Writer state		*/
+#endif
+		};
+		atomic_t    rwa;	/* Reader/writer atomic	*/
+		u32	    rwc;	/* Reader/writer counts */
+	} cnts;
+#endif
+	struct mcs_spinlock *waitq;	/* Tail of waiting queue */
+} arch_rwlock_t;
+
