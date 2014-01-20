@@ -1,171 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427AbaATJX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:23:28 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:53899 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141AbaATJXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:23:25 -0500
-Message-ID: <1390209726.587.12.camel@localhost>
-Subject: Re: [BUG] at drivers/md/raid5.c:291! kernel 3.13-rc8
-From: Ian Kumlien <ian.kumlien@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Date: Mon, 20 Jan 2014 10:22:06 +0100
-In-Reply-To: <20140120143748.33bb52d2@notabene.brown>
-References: <1390168823.587.1.camel@localhost>
-	 <20140120113851.3b476ed8@notabene.brown> <1390178957.587.9.camel@localhost>
-	 <20140120143748.33bb52d2@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753489AbaATJXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:23:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42057 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753068AbaATJXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:23:45 -0500
+Message-ID: <52DCEAF4.3040902@zytor.com>
+Date: Mon, 20 Jan 2014 01:23:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au> <20140116121955.GQ31570@twins.programming.kicks-ass.net> <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au> <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com> <20140120082620.GB30183@twins.programming.kicks-ass.net> <52DCE4CF.2060605@zytor.com> <20140120091600.GW31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140120091600.GW31570@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On mån, 2014-01-20 at 14:37 +1100, NeilBrown wrote:
-> On Mon, 20 Jan 2014 01:49:17 +0100 Ian Kumlien <ian.kumlien@gmail.com> wrote:
+On 01/20/2014 01:16 AM, Peter Zijlstra wrote:
+>>
+>> The difference is the STI!
 > 
-> > On mån, 2014-01-20 at 11:38 +1100, NeilBrown wrote:
-> > > On Sun, 19 Jan 2014 23:00:23 +0100 Ian Kumlien <ian.kumlien@gmail.com> wrote:
-> > > 
-> > > > Ok, so third try to actually email this... 
-> > > > ---
-> > > > 
-> > > > Hi,
-> > > > 
-> > > > I started testing 3.13-rc8 on another machine since the first one seemed
-> > > > to be working fine...
-> > > > 
-> > > > One spontaneous reboot later i'm not so sure ;)
-> > > > 
-> > > > Right now i captured a kernel oops in the raid code it seems...
-> > > > 
-> > > > (Also attached to avoid mangling)
-> > > > 
-> > > > [33411.934672] ------------[ cut here ]------------
-> > > > [33411.934685] kernel BUG at drivers/md/raid5.c:291!
-> > > > [33411.934690] invalid opcode: 0000 [#1] PREEMPT SMP 
-> > > > [33411.934696] Modules linked in: bonding btrfs microcode
-> > > > [33411.934705] CPU: 4 PID: 2319 Comm: md2_raid6 Not tainted 3.13.0-rc8 #83
-> > > > [33411.934709] Hardware name: System manufacturer System Product Name/Crosshair IV Formula, BIOS 3029    10/09/2012
-> > > > [33411.934716] task: ffff880326265880 ti: ffff880320472000 task.ti: ffff880320472000
-> > > > [33411.934720] RIP: 0010:[<ffffffff81a3a5be>]  [<ffffffff81a3a5be>] do_release_stripe+0x18e/0x1a0
-> > > > [33411.934731] RSP: 0018:ffff880320473d28  EFLAGS: 00010087
-> > > > [33411.934735] RAX: ffff8802f0875a60 RBX: 0000000000000001 RCX: ffff8800b0d816b0
-> > > > [33411.934739] RDX: ffff880324eeee98 RSI: ffff8802f0875a40 RDI: ffff880324eeec00
-> > > > [33411.934743] RBP: ffff8802f0875a50 R08: 0000000000000000 R09: 0000000000000001
-> > > > [33411.934747] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880324eeec00
-> > > > [33411.934752] R13: ffff880324eeee58 R14: ffff880320473e88 R15: 0000000000000000
-> > > > [33411.934756] FS:  00007fc38654d700(0000) GS:ffff880337d00000(0000) knlGS:0000000000000000
-> > > > [33411.934761] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > > > [33411.934765] CR2: 00007f0cb28bd000 CR3: 00000002ebcf6000 CR4: 00000000000407e0
-> > > > [33411.934769] Stack:
-> > > > [33411.934771]  ffff8800bba09690 ffff8800b4f16588 ffff880303005a40 0000000000000001
-> > > > [33411.934779]  ffff8800b33e43d0 ffffffff81a3a62d ffff880324eeee58 0000000000000000
-> > > > [33411.934786]  ffff880324eeee58 ffff880326660670 ffff880326265880 ffffffff81a41692
-> > > > [33411.934794] Call Trace:
-> > > > [33411.934798]  [<ffffffff81a3a62d>] ? release_stripe_list+0x4d/0x70
-> > > > [33411.934803]  [<ffffffff81a41692>] ? raid5d+0xa2/0x4d0
-> > > > [33411.934808]  [<ffffffff81a65ed6>] ? md_thread+0xe6/0x120
-> > > > [33411.934814]  [<ffffffff81122060>] ? finish_wait+0x90/0x90
-> > > > [33411.934818]  [<ffffffff81a65df0>] ? md_rdev_init+0x100/0x100
-> > > > [33411.934823]  [<ffffffff8110958c>] ? kthread+0xbc/0xe0
-> > > > [33411.934828]  [<ffffffff81110000>] ? smpboot_park_threads+0x70/0x70Hi,
-> > > 
-> > > Thanks for the report.
-> > > Can you provide any more context about the details of the array in question?
-> > > I see it was RAID6.  Was it degraded?  Was it resyncing?  Was it being
-> > > reshaped?
-> > > Was there any way that it was different from the array one the machine where
-> > > it seemed to work?
-> > 
-> > Yes, it's a raid6 and no, there is no reshaping or syncing going on... 
-> > 
-> > Basically everything worked fine before:
-> > reboot   system boot  3.13.0-rc8       Sun Jan 19 21:47 - 01:42  (03:55)    
-> > reboot   system boot  3.13.0-rc8       Sun Jan 19 21:38 - 01:42  (04:04)    
-> > reboot   system boot  3.13.0-rc8       Sun Jan 19 12:13 - 01:42  (13:29)    
-> > reboot   system boot  3.13.0-rc8       Sat Jan 18 21:23 - 01:42 (1+04:19)   
-> > reboot   system boot  3.12.6           Mon Dec 30 16:27 - 22:21 (19+05:53)  
-> > 
-> > As in, no problems before the 3.13.0-rc8 upgrade...
-> > 
-> > cat /proc/mdstat:
-> > Personalities : [linear] [raid0] [raid1] [raid10] [raid6] [raid5] [raid4] [multipath] 
-> > md2 : active raid6 sdf1[2] sdd1[9] sdj1[8] sdg1[4] sde1[5] sdi1[11] sdc1[0] sdh1[10]
-> >       11721074304 blocks super 1.2 level 6, 64k chunk, algorithm 2 [8/8] [UUUUUUUU]
-> >       bitmap: 0/15 pages [0KB], 65536KB chunk
-> > 
-> > What i do do is:
-> > echo 32768 > /sys/block/*/md/stripe_cache_size
-> > 
-> > Which has caused no problems during intense write operations before... 
-> > 
-> > I find it quite surprising since it only requires ~3 gigabytes of writes
-> > to die and almost assume that it's related to the stripe_cache_size.
-> > (Since all memory is ECC and i doubt it would break, quite literally,
-> > over night i haven't run extensive memory tests)
-> > 
-> > I don't quite know what other information you might need...
+> So do the local_irq_enable(); mwait_idle_with_hints(0,0); thing.
 > 
-> Thanks - that extra info is quite useful.  Knowing that nothing else unusual
-> is happening can be quite valuable (and I don't like to assume).
 
-Yeah, i know, it can be hard to know which information to provide though
-=)
+No, that doesn't work.  The point of __sti_mwait() is that the STI is
+the instruction immediately before the MWAIT, just like the combination
+STI;HLT.  Since the execution of STI is always delayed by one
+instruction, these two instructions form an atomic unit, which means
+interrupts are enabled "after" we have entered MWAIT or HLT.
 
-> I haven't found anything that would clearly cause your crash, but I have
-> found something that looks wrong and conceivably could.
-> 
-> Could you please try this patch on top of what you are currently using?  By
-> the look of it you get a crash at least every day, often more often.  So if
-> this produces a day with no crashes, that would be promising.
+> But that's entirely different from saying that core2 doesn't support
+> mwait_idle_with_hints because its a different instruction.
 
-I haven't been able to crash it yet, it looks like we've found out
-culprit =)
+If you think of STI;MWAIT as a "compound instruction" it kind of is.
+Newer CPUs don't have to play that trick anymore, because there is a
+flag to MWAIT which breaks us out of MWAIT on a pending interrupt
+without having to actually enable interrupts at the point of the MWAIT.
 
-> The important aspect of the patch is that it moves the "atomic_inc" of
-> "sh->count" back under the protection of ->device_lock in the case when some
-> other thread might be using the same 'sh'.
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> index 3088d3af5a89..03f82ab87d9e 100644
-> --- a/drivers/md/raid5.c
-> +++ b/drivers/md/raid5.c
-> @@ -675,8 +675,10 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
->  					 || !conf->inactive_blocked),
->  					*(conf->hash_locks + hash));
->  				conf->inactive_blocked = 0;
-> -			} else
-> +			} else {
->  				init_stripe(sh, sector, previous);
-> +				atomic_inc(&sh->count);
-> +			}
->  		} else {
->  			spin_lock(&conf->device_lock);
->  			if (atomic_read(&sh->count)) {
-> @@ -695,13 +697,11 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
->  					sh->group = NULL;
->  				}
->  			}
-> +			atomic_inc(&sh->count);
->  			spin_unlock(&conf->device_lock);
->  		}
->  	} while (sh == NULL);
->  
-> -	if (sh)
-> -		atomic_inc(&sh->count);
-> -
->  	spin_unlock_irq(conf->hash_locks + hash);
->  	return sh;
->  }
+	-hpa
+
 
 
