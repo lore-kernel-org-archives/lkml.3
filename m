@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaATKaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 05:30:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58064 "EHLO mga02.intel.com"
+	id S1753590AbaATKbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:31:34 -0500
+Received: from mail1.SerNet.de ([193.175.80.2]:50548 "EHLO mail.SerNet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732AbaATKaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:30:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,689,1384329600"; 
-   d="scan'208";a="461569962"
-Date: Mon, 20 Jan 2014 14:58:29 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/25] drivers/dma: fix error return code
-Message-ID: <20140120092829.GU26823@intel.com>
-References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
- <1388357260-4843-9-git-send-email-Julia.Lawall@lip6.fr>
+	id S1751732AbaATKbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 05:31:32 -0500
+Date: Mon, 20 Jan 2014 11:31:13 +0100
+Date: Mon, 20 Jan 2014 11:31:13 +0100
+From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Reply-To: Volker.Lendecke@SerNet.DE
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+ <E1W5A0e-000MT9-A1@intern.SerNet.DE>
+ <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1388357260-4843-9-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <E1W5C8U-000ozD-Ku@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 11:47:23PM +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Mon, Jan 20, 2014 at 02:20:43PM +0400, Pavel Shilovsky wrote:
+> > One question: If Samba wants to open a file for delete
+> > access, there's no corresponding flag in the open
+> > permissions. There can be the case where Samba wants to open
+> > *just* for future unlink, no read or write access required.
+> > Is there a way to achieve this atomically correct?
 > 
-> Set the return variable to an error code as done elsewhere in the function.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Applied, thanks
+> You can try to use O_PATH flag. It doesn't give you a delete access
+> but should be ok because further deleting will be done without file
+> descriptor -- through unlink syscall.
 
---
-~Vinod
-> 
-> ---
-> Not tested.
-> 
->  drivers/dma/cppi41.c      |    4 +++-
->  drivers/dma/ppc4xx/adma.c |    1 +
->  2 files changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-> index c29dacf..c18aebf 100644
-> --- a/drivers/dma/cppi41.c
-> +++ b/drivers/dma/cppi41.c
-> @@ -972,8 +972,10 @@ static int cppi41_dma_probe(struct platform_device *pdev)
->  		goto err_chans;
->  
->  	irq = irq_of_parse_and_map(dev->of_node, 0);
-> -	if (!irq)
-> +	if (!irq) {
-> +		ret = -EINVAL;
->  		goto err_irq;
-> +	}
->  
->  	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
->  
-> diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-> index 8bba298..ce7a8d7 100644
-> --- a/drivers/dma/ppc4xx/adma.c
-> +++ b/drivers/dma/ppc4xx/adma.c
-> @@ -4114,6 +4114,7 @@ static int ppc440spe_adma_probe(struct platform_device *ofdev)
->  	regs = ioremap(res.start, resource_size(&res));
->  	if (!regs) {
->  		dev_err(&ofdev->dev, "failed to ioremap regs!\n");
-> +		ret = -ENOMEM;
->  		goto err_regs_alloc;
->  	}
->  
-> 
+Ok, I did not know about O_PATH. Thanks for that!
+
+So I do an open with O_PATH. How do I then make sure that
+nobody else has a O_DENYDELETE set without doing the unlink
+itself?
+
+Thanks,
+
+Volker
 
 -- 
+SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
+phone: +49-551-370000-0, fax: +49-551-370000-9
+AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
+http://www.sernet.de, mailto:kontakt@sernet.de
