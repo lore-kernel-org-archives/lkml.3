@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaATQIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 11:08:44 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:38709 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759AbaATQIm (ORCPT
+	id S1754144AbaATQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 11:08:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60672 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759AbaATQIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 11:08:42 -0500
-Message-ID: <1390234117.25903.0.camel@host5.omatika.ru>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Date: Mon, 20 Jan 2014 20:08:37 +0400
-In-Reply-To: <1389309176.32346.1.camel@host5.omatika.ru>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-	 <201312182210.30544.arnd@arndb.de>
-	 <1387401646.31516.14.camel@host5.omatika.ru>
-	 <201312190630.11087.arnd@arndb.de>
-	 <1389309176.32346.1.camel@host5.omatika.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jan 2014 11:08:52 -0500
+Date: Mon, 20 Jan 2014 17:08:06 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 2/5] qrwlock x86: Enable x86 to use queue read/write
+ lock
+Message-ID: <20140120160806.GI30183@twins.programming.kicks-ass.net>
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
+ <1389761047-47566-3-git-send-email-Waiman.Long@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389761047-47566-3-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-10 at 03:12 +0400, Sergei Ianovich wrote:
-> On Thu, 2013-12-19 at 06:30 +0100, Arnd Bergmann wrote:
-> > This would work only if we can probe the devices behind the external
-> > bus controller before the controller itsef has been set up, since
-> > the initialization order can depend on a number of things but not
-> > the bus hierarchy. It will also work if the code setting up the
-> > bus controller can be guaranteed to run before we call
-> > of_platform_populate for the regular devices, which is probably
-> > the best solution here.
+On Tue, Jan 14, 2014 at 11:44:04PM -0500, Waiman Long wrote:
+> This patch makes the necessary changes at the x86 architecture specific
+> layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
+> to replace the read/write lock by the queue read/write lock.
 > 
-> There has been no activity for 3 weeks. Could we resume the series?
+> It also enables the CONFIG_QUEUE_RWLOCK option by default for x86 which
+> will force the use of queue read/write lock. That will greatly improve
+> the fairness of read/write lock and eliminate live-lock situation
+> where one task may not get the lock for an indefinite period of time.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  arch/x86/Kconfig                      |    1 +
+>  arch/x86/include/asm/spinlock.h       |    2 ++
+>  arch/x86/include/asm/spinlock_types.h |    4 ++++
+>  3 files changed, 7 insertions(+), 0 deletions(-)
 
-It's over a month now. Is anything wrong?
-
+This patch doesn't have nearly enough -, you should rip out all traces
+of the old rwlock. There's no point in having it configurable, either
+qrwlock is good or not.
