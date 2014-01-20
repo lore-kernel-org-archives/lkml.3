@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaATVEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 16:04:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34778 "EHLO
+	id S1752268AbaATVFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 16:05:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaATVEv (ORCPT
+	with ESMTP id S1752138AbaATVFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 16:04:51 -0500
-Date: Mon, 20 Jan 2014 13:05:37 -0800
+	Mon, 20 Jan 2014 16:05:17 -0500
+Date: Mon, 20 Jan 2014 13:06:03 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
+        Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] char/misc patches for 3.14-rc1
-Message-ID: <20140120210537.GA32680@kroah.com>
+Subject: [GIT PULL] Driver core / sysfs patches for 3.14-rc1
+Message-ID: <20140120210603.GA32738@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,283 +22,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 802eee95bde72fd0cd0f3a5b2098375a487d1eda:
+The following changes since commit 413541dd66d51f791a0b169d9b9014e4f56be13c:
 
-  Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
+  Linux 3.13-rc5 (2013-12-22 13:08:32 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.14-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.14-rc1
 
-for you to fetch changes up to 6adb8efb024a7e413b93b22848fc13395b1a438a:
+for you to fetch changes up to db4aad209bc9aefd91f0a9aeb9e37364088b39ad:
 
-  mei: limit the number of consecutive resets (2014-01-13 14:57:21 -0800)
+  kernfs: associate a new kernfs_node with its parent on creation (2014-01-17 11:50:07 -0800)
 
 ----------------------------------------------------------------
-Char/Misc driver patches for 3.14-rc1
+Driver core / sysfs patches for 3.14-rc1
 
-Here's the big char/misc driver patches for 3.14-rc1.
+Here's the big driver core and sysfs patch set for 3.14-rc1.
 
-Lots of little things, and a new "big" driver, genwqe.  Full details are
-in the shortlog.
+There's a lot of work here moving sysfs logic out into a "kernfs" to
+allow other subsystems to also have a virtual filesystem with the same
+attributes of sysfs (handle device disconnect, dynamic creation /
+removal  as needed / unneeded, etc.  This is primarily being done for
+the cgroups filesystem, but the goal is to also move debugfs to it when
+it is ready, solving all of the known issues in that filesystem as well.
+The code isn't completed yet, but all should be stable now (there is a
+big section that was reverted due to problems found when testing.)
+
+There's also some other smaller fixes, and a driver core addition that
+allows for a "collection" of objects, that the DRM people will be using
+soon (it's in this tree to make merges after -rc1 easier.)
+
+All of this has been in linux-next with no reported issues.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Aaro Koskinen (1):
-      uio: fix devm_request_irq usage
+Axel Lin (1):
+      devtmpfs: Calling delete_path() only when necessary
 
-Alexander Shiyan (3):
-      w1: mxc_w1: Remove unused field "clkdiv" from private structure
-      w1: mxc_w1: Add warning for base frequency calculation
-      w1: mxc_w1: Check the clk_prepare_enable() return value
+Bart Van Assche (3):
+      kobject: Fix source code comment spelling
+      firmware loader: Add sparse annotation
+      driver-core: Fix use-after-free triggered by bus_unregister()
 
-Alexander Usyskin (2):
-      mei: drop redundant list_del_init
-      mei: fix syntax in comments and debug output
+Ben Hutchings (1):
+      firmware_class: Fix the file size check
 
-Andrew Lunn (1):
-      Phy: Add a PHY driver for Marvell MVEBU SATA PHY.
+Bjorn Helgaas (5):
+      kobject: fix kset sample error path
+      kobject: delay kobject release for random time
+      kobject: remove kset from sysfs immediately in kset_unregister()
+      firmware: dmi-sysfs: Don't remove dmi-sysfs "raw" file explicitly
+      firmware: dmi-sysfs: Remove "dmi" directory on module exit
 
-Arnd Bergmann (2):
-      sgi-xp: open-code interruptible_sleep_on_timeout
-      char: nwbutton: open-code interruptible_sleep_on
+David Herrmann (1):
+      driver core: fix device_create() error path
 
-Boris BREZILLON (2):
-      drivers/misc: atmel_tclib: document clock properties
-      drivers/misc: atmel-ssc: document clock properties
+Greg Kroah-Hartman (19):
+      Merge branch 'driver-core-linus' into driver-core-next
+      Merge 3.13-rc2 into driver-core-next
+      Merge 3.13-rc5 into staging-next
+      Revert "kobject: introduce kobj_completion"
+      Revert "kernfs: remove unnecessary NULL check in __kernfs_remove()"
+      Revert "sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()"
+      Revert "s390: use device_remove_file_self() instead of device_schedule_callback()"
+      Revert "scsi: use device_remove_file_self() instead of device_schedule_callback()"
+      Revert "pci: use device_remove_file_self() instead of device_schedule_callback()"
+      Revert "kernfs, sysfs, driver-core: implement kernfs_remove_self() and its wrappers"
+      Revert "kernfs: implement kernfs_{de|re}activate[_self]()"
+      Revert "kernfs: make kernfs_get_active() block if the node is deactivated but not removed"
+      Revert "kernfs: remove kernfs_addrm_cxt"
+      Revert "kernfs: invoke kernfs_unmap_bin_file() directly from __kernfs_remove()"
+      Revert "kernfs: restructure removal path to fix possible premature return"
+      Revert "kernfs: remove KERNFS_REMOVED"
+      Revert "kernfs: remove KERNFS_ACTIVE_REF and add kernfs_lockdep()"
+      Revert "kernfs: replace kernfs_node->u.completion with kernfs_root->deactivate_waitq"
+      Revert "kernfs: fix get_active failure handling in kernfs_seq_*()"
 
-Chanwoo Choi (2):
-      MAINTAINERS: Add git repository for extcon
-      extcon: max14577: Add extcon-max14577 driver to support MUIC device
+Linus Walleij (2):
+      Documentation: start documenting driver design patterns
+      Documentation: fix spelling in design-patterns
 
-Charles Keepax (5):
-      extcon: arizona: Add defines for microphone detection levels
-      extcon: arizona: Fix reset of HPDET after race with removal
-      extcon: arizona: Fix race with microphone detection and removal
-      extcon: arizona: No need to switch back down HPDET ranges
-      extcon: arizona: Add support for headphone detection on wm5110 rev D
+Maurizio Lombardi (1):
+      kobject: fix memory leak in kobject_set_name_vargs
 
-Dasaratharaman Chandramouli (1):
-      misc: mic: bug fix for interrupt acknowledgement in MSI/INTx case.
+Rafael J. Wysocki (1):
+      Driver core: Fix device_add_attrs() error code path
 
-Dmitry Torokhov (1):
-      VMCI: fix error handling path when registering guest driver
+Rashika Kheria (1):
+      drivers: base: Add prototype declaration to the header file
 
-Felipe Balbi (1):
-      phy: core: properly handle failure of pm_runtime_get functions
+Russell King (1):
+      drivers/base: provide an infrastructure for componentised subsystems
 
-Frank Haverkamp (12):
-      GenWQE PCI support, health monitoring and recovery
-      GenWQE Character device and DDCB queue
-      GenWQE Utility functions
-      GenWQE Debugfs interfaces
-      GenWQE Sysfs interfaces
-      GenWQE Enable driver
-      GenWQE: Fix endian issues detected by sparse
-      GenWQE: Replace dynamic_hex_dump with print_hex_dump_debug
-      GenWQE: Accidently casting to u32 where u64 is required
-      GenWQE: Rework return code for flash-update ioctl
-      GenWQE: Fix compile problems for Alpha
-      GenWQE: Fix warnings for sparc
+Takashi Iwai (4):
+      firmware: Introduce request_firmware_direct()
+      microcode: Use request_firmware_direct()
+      firmware: Use bit flags instead of boolean combos
+      firmware: Suppress fallback warnings when CONFIG_FW_LOADER_USER_HELPER=n
 
-Geert Uytterhoeven (1):
-      pcmcia: Remove superfluous name casts
-
-George Cherian (1):
-      extcon: palmas: Handle ID interrupt properly using USB_ID_INT_SRC
-
-Greg Kroah-Hartman (4):
-      Merge 3.13-rc4 into char-misc-next
-      Merge v3.13-rc6 into char-misc-next
-      Merge tag 'for_3.14' of git://git.kernel.org/.../kishon/linux-phy into char-misc-next
-      Merge tag 'extcon-next-for-3.14' of git://git.kernel.org/.../chanwoo/extcon into char-misc-next
-
-Guenter Roeck (15):
-      i8k: Convert to use pr_ functions instead of printk
-      i8k: Fix various checkpatch warnings and errors
-      i8k: Convert to use to hwmon_device_register_with_groups hwmon API
-      i8k: Support additional temperature sensors
-      MAINTAINERS: Add myself as i8k maintainer
-      i8k: Remove obsolete link to out-of-tree driver
-      i8k: Drop driver version number and info message at startup
-      i8k: Force SMM to run on CPU 0
-      i8k: Add copyright
-      i8k: Add support for Dell Studio laptops
-      i8k: Add support for Dell XPS M140
-      i8k: Use driver_data field of dmi_system_id to override fan multiplier
-      i8k: Stop reading SMM BIOS version during driver probe
-      i8k: Implement hwmon based fan speed control
-      extcon: gpio: Request gpio pin before modifying its state
-
-Jingoo Han (4):
-      misc: eeprom_93xx46: remove unnecessary spi_set_drvdata()
-      char: amd64-agp: remove DEFINE_PCI_DEVICE_TABLE macro
-      uio: uio_mf624: remove DEFINE_PCI_DEVICE_TABLE macro
-      parport_pc: remove unnecessary pci_set_drvdata()
-
-Kees Cook (1):
-      lkdtm: clean up sparse warnings
-
-Kishon Vijay Abraham I (3):
-      phy: phy-core: increment refcounting variables only on 'success'
-      phy: phy-core.c: remove unnecessary initialization of local variables
-      extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-
-Marek Belisko (2):
-      misc: bmp085: Clean up and enable use of interrupt for completion.
-      misc: bmp085: devicetree irq update.
-
-MyungJoo Ham (1):
-      extcon: fix switch class porting guide (Documentation)
-
-Olaf Hering (1):
-      Tools: hv: remove inclusion of linux/types.h
-
-Paul Bolle (1):
-      Documentation/misc-devices/mei/mei-amt-version.c: remove unneeded call of mei_deinit()
-
-Paul Gortmaker (1):
-      drivers/char: don't use module_init in non-modular ttyprintk.c
-
-Peter Hurley (1):
-      drivers/misc/ti-st: Prefer tty_driver_flush_buffer
-
-Rashika Kheria (3):
-      drivers: misc: Mark function jp_generic_ide_ioctl() as static in lkdtm.c
-      drivers: misc: Mark functions as static in ad525x_dpot.c
-      drivers: hv: Mark the function hv_synic_free_cpu() as static in hv.c
-
-Rongjun Ying (1):
-      extcon: gpio: Add power resume support
-
-Sebastian Andrzej Siewior (2):
-      parport: parport_pc: fix id print of a device
-      parport: parport_pc: remove double PCI ID for NetMos
-
-SeongJae Park (8):
-      Documentation: HOWTO: Update broken links to tpp
-      Documentation: ko_KR: Update broken link to tpp
-      Documentation: zh_CN: Update broken link to tpp
-      Documentation: ja_JP: Update broken link to tpp
-      Documentation: HOWTO: update LXR web link in ko_KR
-      Documentation: HOWTO: update stable address in ko_KR
-      Documentation: HOWTO: update for 2.6.x -> 3.x versioning in ko_KR
-      Documentation: HOWTO: Updates on subsystem trees, patchwork, -next (vs. -mm) in ko_KR
-
-Tomas Winkler (9):
-      mei: remove flash_work_queue
-      mei: cleanup mei_irq_read_handler
-      mei: enable marking internal commands
-      mei: me: set dma mask using DMA mapping API
-      mei: do not run reset flow from the interrupt thread
-      mei: use hbm idle state to prevent spurious resets
-      mei: nfc: mei_nfc_free has to be called under lock
-      mei: revamp mei reset state machine
-      mei: limit the number of consecutive resets
+Tejun Heo (76):
+      sysfs: drop kobj_ns_type handling, take #2
+      sysfs: make __sysfs_add_one() fail if the parent isn't a directory
+      sysfs, kernfs: add skeletons for kernfs
+      sysfs, kernfs: introduce kernfs_remove[_by_name[_ns]]()
+      sysfs, kernfs: introduce kernfs_create_link()
+      sysfs, kernfs: introduce kernfs_rename[_ns]()
+      sysfs, kernfs: introduce kernfs_setattr()
+      sysfs, kernfs: replace sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with ->priv
+      sysfs, kernfs: introduce kernfs_create_dir[_ns]()
+      sysfs, kernfs: prepare read path for kernfs
+      sysfs, kernfs: prepare write path for kernfs
+      sysfs, kernfs: prepare mmap path for kernfs
+      sysfs, kernfs: prepare open, release, poll paths for kernfs
+      sysfs, kernfs: move sysfs_open_file to include/linux/kernfs.h
+      sysfs, kernfs: introduce kernfs_ops
+      sysfs, kernfs: add sysfs_dirent->s_attr.size
+      sysfs, kernfs: remove SYSFS_KOBJ_BIN_ATTR
+      sysfs, kernfs: introduce kernfs_create_file[_ns]()
+      sysfs, kernfs: remove sysfs_add_one()
+      sysfs, kernfs: add kernfs_ops->seq_{start|next|stop}()
+      sysfs, kernfs: introduce kernfs_notify()
+      sysfs, kernfs: reorganize SYSFS_* constants
+      sysfs, kernfs: revamp sysfs_dirent active_ref lockdep annotation
+      sysfs, kernfs: introduce kernfs[_find_and]_get() and kernfs_put()
+      sysfs, kernfs: move internal decls to fs/kernfs/kernfs-internal.h
+      sysfs, kernfs: move inode code to fs/kernfs/inode.c
+      sysfs, kernfs: move dir core code to fs/kernfs/dir.c
+      sysfs, kernfs: move file core code to fs/kernfs/file.c
+      sysfs, kernfs: move symlink core code to fs/kernfs/symlink.c
+      sysfs, kernfs: drop unused params from sysfs_fill_super()
+      sysfs, kernfs: make sysfs_super_info->ns const
+      sysfs, kernfs: no need to kern_mount() sysfs from sysfs_init()
+      sysfs, kernfs: introduce sysfs_root_sd
+      sysfs, kernfs: implement kernfs_create/destroy_root()
+      sysfs, kernfs: make inode number ida per kernfs_root
+      sysfs, kernfs: make super_blocks bind to different kernfs_roots
+      sysfs, kernfs: prepare mount path for kernfs
+      sysfs, kernfs: move mount core code to fs/kernfs/mount.c
+      sysfs, kernfs: make sysfs_dirent definition public
+      sysfs, kernfs: implement kernfs_ns_enabled()
+      sysfs, kernfs: remove cross inclusions of internal headers
+      kernfs: update sysfs_init_inode_attrs()
+      kernfs: implement "trusted.*" xattr support
+      Merge branch 'driver-core-linus' into driver-core-next
+      sysfs: bail early from kernfs_file_mmap() to avoid spurious lockdep warning
+      sysfs: fix use-after-free in sysfs_kill_sb()
+      kernfs: s/sysfs_dirent/kernfs_node/ and rename its friends accordingly
+      kernfs: drop s_ prefix from kernfs_node members
+      kernfs: s/sysfs/kernfs/ in various data structures
+      kernfs: s/sysfs/kernfs/ in constants
+      kernfs: s/sysfs/kernfs/ in global variables
+      kernfs: s/sysfs/kernfs/ in internal functions and whatever is left
+      kernfs: add @mode to kernfs_create_dir[_ns]()
+      kernfs: add REMOVED check to create and rename paths
+      kernfs: mark static names with KERNFS_STATIC_NAME
+      kernfs: update kernfs_rename_ns() to consider KERNFS_STATIC_NAME
+      kernfs: allow negative dentries
+      kernfs: add kernfs_dir_ops
+      kernfs: fix get_active failure handling in kernfs_seq_*()
+      kernfs: replace kernfs_node->u.completion with kernfs_root->deactivate_waitq
+      kernfs: remove KERNFS_ACTIVE_REF and add kernfs_lockdep()
+      kernfs: remove KERNFS_REMOVED
+      kernfs: restructure removal path to fix possible premature return
+      kernfs: invoke kernfs_unmap_bin_file() directly from __kernfs_remove()
+      kernfs: remove kernfs_addrm_cxt
+      kernfs: make kernfs_get_active() block if the node is deactivated but not removed
+      kernfs: implement kernfs_{de|re}activate[_self]()
+      kernfs, sysfs, driver-core: implement kernfs_remove_self() and its wrappers
+      pci: use device_remove_file_self() instead of device_schedule_callback()
+      scsi: use device_remove_file_self() instead of device_schedule_callback()
+      s390: use device_remove_file_self() instead of device_schedule_callback()
+      sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()
+      kernfs: remove unnecessary NULL check in __kernfs_remove()
+      kernfs: fix get_active failure handling in kernfs_seq_*()
+      kernfs: add struct dentry declaration in kernfs.h
+      kernfs: associate a new kernfs_node with its parent on creation
 
 Wei Yongjun (1):
-      misc: genwqe: fix return value check in genwqe_device_create()
+      sysfs, kernfs: remove duplicated include from file.c
 
-Yongjian Xu (1):
-      char: Int overflow in lp_do_ioctl().
-
- Documentation/ABI/testing/debugfs-driver-genwqe    |   91 ++
- Documentation/ABI/testing/sysfs-driver-genwqe      |   62 +
- Documentation/HOWTO                                |    4 +-
- .../devicetree/bindings/arm/atmel-at91.txt         |    8 +
- .../devicetree/bindings/extcon/extcon-palmas.txt   |    6 +-
- .../devicetree/bindings/misc/atmel-ssc.txt         |    5 +
- Documentation/devicetree/bindings/misc/bmp085.txt  |    4 +
- Documentation/extcon/porting-android-switch-class  |    9 +-
- Documentation/ja_JP/HOWTO                          |    4 +-
- Documentation/ko_KR/HOWTO                          |  130 +-
- Documentation/misc-devices/mei/mei-amt-version.c   |    2 -
- Documentation/zh_CN/HOWTO                          |    4 +-
- MAINTAINERS                                        |    3 +-
- drivers/char/agp/amd64-agp.c                       |    2 +-
- drivers/char/i8k.c                                 |  358 ++---
- drivers/char/lp.c                                  |    2 +
- drivers/char/nwbutton.c                            |    5 +-
- drivers/char/ttyprintk.c                           |    2 +-
- drivers/extcon/Kconfig                             |   10 +
- drivers/extcon/Makefile                            |    1 +
- drivers/extcon/extcon-arizona.c                    |   73 +-
- drivers/extcon/extcon-gpio.c                       |   32 +-
- drivers/extcon/extcon-max14577.c                   |  752 +++++++++++
- drivers/extcon/extcon-palmas.c                     |   17 +-
- drivers/hv/hv.c                                    |    2 +-
- drivers/misc/Kconfig                               |    1 +
- drivers/misc/Makefile                              |    1 +
- drivers/misc/ad525x_dpot.c                         |    4 +-
- drivers/misc/bmp085-i2c.c                          |    2 +-
- drivers/misc/bmp085-spi.c                          |    2 +-
- drivers/misc/bmp085.c                              |   39 +-
- drivers/misc/bmp085.h                              |    2 +-
- drivers/misc/eeprom/eeprom_93xx46.c                |    1 -
- drivers/misc/genwqe/Kconfig                        |   13 +
- drivers/misc/genwqe/Makefile                       |    7 +
- drivers/misc/genwqe/card_base.c                    | 1205 +++++++++++++++++
- drivers/misc/genwqe/card_base.h                    |  557 ++++++++
- drivers/misc/genwqe/card_ddcb.c                    | 1376 +++++++++++++++++++
- drivers/misc/genwqe/card_ddcb.h                    |  188 +++
- drivers/misc/genwqe/card_debugfs.c                 |  500 +++++++
- drivers/misc/genwqe/card_dev.c                     | 1414 ++++++++++++++++++++
- drivers/misc/genwqe/card_sysfs.c                   |  288 ++++
- drivers/misc/genwqe/card_utils.c                   |  944 +++++++++++++
- drivers/misc/genwqe/genwqe_driver.h                |   77 ++
- drivers/misc/lkdtm.c                               |    7 +-
- drivers/misc/mei/amthif.c                          |    6 +-
- drivers/misc/mei/client.c                          |   27 +-
- drivers/misc/mei/debugfs.c                         |    4 +-
- drivers/misc/mei/hbm.c                             |  239 ++--
- drivers/misc/mei/hbm.h                             |    7 +-
- drivers/misc/mei/hw-me.c                           |   40 +-
- drivers/misc/mei/hw.h                              |    3 +-
- drivers/misc/mei/init.c                            |  278 ++--
- drivers/misc/mei/interrupt.c                       |  122 +-
- drivers/misc/mei/main.c                            |    2 +-
- drivers/misc/mei/mei_dev.h                         |   33 +-
- drivers/misc/mei/nfc.c                             |   20 +-
- drivers/misc/mei/pci-me.c                          |   27 +-
- drivers/misc/mei/wd.c                              |    1 +
- drivers/misc/mic/host/mic_device.h                 |    3 +
- drivers/misc/mic/host/mic_main.c                   |    2 +-
- drivers/misc/mic/host/mic_virtio.c                 |    2 +-
- drivers/misc/mic/host/mic_x100.c                   |   36 +-
- drivers/misc/sgi-xp/xpc_channel.c                  |    5 +-
- drivers/misc/ti-st/st_core.c                       |    2 +-
- drivers/misc/ti-st/st_kim.c                        |    1 -
- drivers/misc/vmw_vmci/vmci_guest.c                 |   10 +-
- drivers/parport/parport_pc.c                       |   20 +-
- drivers/pcmcia/bfin_cf_pcmcia.c                    |    2 +-
- drivers/pcmcia/electra_cf.c                        |    2 +-
- drivers/phy/Kconfig                                |    6 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-core.c                             |   44 +-
- drivers/phy/phy-mvebu-sata.c                       |  137 ++
- drivers/uio/uio.c                                  |    2 +-
- drivers/uio/uio_mf624.c                            |    2 +-
- drivers/w1/masters/mxc_w1.c                        |   31 +-
- include/linux/extcon/extcon-gpio.h                 |    1 +
- include/linux/mfd/arizona/registers.h              |    9 +
- include/uapi/linux/genwqe/genwqe_card.h            |  500 +++++++
- tools/hv/hv_kvp_daemon.c                           |    1 -
- tools/hv/hv_vss_daemon.c                           |    1 -
- 82 files changed, 9170 insertions(+), 675 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-driver-genwqe
- create mode 100644 Documentation/ABI/testing/sysfs-driver-genwqe
- create mode 100644 drivers/extcon/extcon-max14577.c
- create mode 100644 drivers/misc/genwqe/Kconfig
- create mode 100644 drivers/misc/genwqe/Makefile
- create mode 100644 drivers/misc/genwqe/card_base.c
- create mode 100644 drivers/misc/genwqe/card_base.h
- create mode 100644 drivers/misc/genwqe/card_ddcb.c
- create mode 100644 drivers/misc/genwqe/card_ddcb.h
- create mode 100644 drivers/misc/genwqe/card_debugfs.c
- create mode 100644 drivers/misc/genwqe/card_dev.c
- create mode 100644 drivers/misc/genwqe/card_sysfs.c
- create mode 100644 drivers/misc/genwqe/card_utils.c
- create mode 100644 drivers/misc/genwqe/genwqe_driver.h
- create mode 100644 drivers/phy/phy-mvebu-sata.c
- create mode 100644 include/uapi/linux/genwqe/genwqe_card.h
+ Documentation/driver-model/design-patterns.txt |  116 +++
+ Documentation/kobject.txt                      |    5 +-
+ arch/x86/kernel/microcode_amd.c                |    2 +-
+ arch/x86/kernel/microcode_intel.c              |    2 +-
+ drivers/base/Makefile                          |    2 +-
+ drivers/base/bus.c                             |   13 +-
+ drivers/base/component.c                       |  382 +++++++++
+ drivers/base/core.c                            |    7 +-
+ drivers/base/devtmpfs.c                        |    2 +-
+ drivers/base/firmware_class.c                  |   93 +-
+ drivers/firmware/dmi-sysfs.c                   |    3 +-
+ drivers/gpio/gpiolib.c                         |    4 +-
+ drivers/md/bitmap.c                            |    2 +-
+ drivers/md/bitmap.h                            |    2 +-
+ drivers/md/md.h                                |   10 +-
+ drivers/misc/mic/host/mic_device.h             |    2 +-
+ fs/Makefile                                    |    2 +-
+ fs/kernfs/Makefile                             |    5 +
+ fs/kernfs/dir.c                                | 1073 +++++++++++++++++++++++
+ fs/kernfs/file.c                               |  867 +++++++++++++++++++
+ fs/kernfs/inode.c                              |  377 +++++++++
+ fs/kernfs/kernfs-internal.h                    |  122 +++
+ fs/kernfs/mount.c                              |  165 ++++
+ fs/kernfs/symlink.c                            |  151 ++++
+ fs/namespace.c                                 |    2 +
+ fs/sysfs/Makefile                              |    2 +-
+ fs/sysfs/dir.c                                 | 1075 +-----------------------
+ fs/sysfs/file.c                                |  961 ++++-----------------
+ fs/sysfs/group.c                               |  102 +--
+ fs/sysfs/inode.c                               |  331 --------
+ fs/sysfs/mount.c                               |  184 +---
+ fs/sysfs/symlink.c                             |  219 +----
+ fs/sysfs/sysfs.h                               |  236 +-----
+ include/linux/component.h                      |   32 +
+ include/linux/firmware.h                       |    7 +
+ include/linux/kernfs.h                         |  376 +++++++++
+ include/linux/kobj_completion.h                |   18 -
+ include/linux/kobject.h                        |    2 +-
+ include/linux/memory.h                         |    1 +
+ include/linux/sysfs.h                          |   47 +-
+ lib/kobject.c                                  |   95 +--
+ samples/kobject/kset-example.c                 |    1 +
+ 42 files changed, 4186 insertions(+), 2914 deletions(-)
+ create mode 100644 Documentation/driver-model/design-patterns.txt
+ create mode 100644 drivers/base/component.c
+ create mode 100644 fs/kernfs/Makefile
+ create mode 100644 fs/kernfs/dir.c
+ create mode 100644 fs/kernfs/file.c
+ create mode 100644 fs/kernfs/inode.c
+ create mode 100644 fs/kernfs/kernfs-internal.h
+ create mode 100644 fs/kernfs/mount.c
+ create mode 100644 fs/kernfs/symlink.c
+ delete mode 100644 fs/sysfs/inode.c
+ create mode 100644 include/linux/component.h
+ create mode 100644 include/linux/kernfs.h
+ delete mode 100644 include/linux/kobj_completion.h
