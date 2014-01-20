@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaATKpF (ORCPT <rfc822;w@1wt.eu>);
+	id S1753609AbaATKpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 05:45:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44579 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797AbaATKpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Jan 2014 05:45:05 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63289 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaATKpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 05:45:03 -0500
+X-IronPort-AV: E=Sophos;i="4.95,689,1384272000"; 
+   d="scan'208";a="9436307"
+Message-ID: <52DCFC6A.8060200@cn.fujitsu.com>
+Date: Mon, 20 Jan 2014 18:37:30 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140117181847.6c1f3831@alan.etchedpixels.co.uk>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-	<1389953232-9428-2-git-send-email-piastry@etersoft.ru>
-	<20140117181847.6c1f3831@alan.etchedpixels.co.uk>
-Date: Mon, 20 Jan 2014 14:45:00 +0400
-X-Google-Sender-Auth: GqOGjm8N4Y7Y9FT2MVtixhRWyJ8
-Message-ID: <CAKywueT=JsTkNC+w-vrN0ftam7F8Eqb8DXJ0w2G4q9vnt0hVNQ@mail.gmail.com>
-Subject: Re: [PATCH v7 1/7] VFS: Introduce new O_DENY* open flags
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 2/2] f2fs: remove the orphan block page array
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/20 18:43:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/20 18:43:42,
+	Serialize complete at 2014/01/20 18:43:42
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/17 One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>:
->> +#define ESHAREDENIED 258     /* File is locked with a sharelock */
->
-> Have you prepared C library patches to match this ?
+As the orphan_blocks may be max to 504, so it is not security
+and rigorous to store such a large array in the kernel stack
+as Dan Carpenter said.
+In fact, grab_meta_page has locked the page in the page cache,
+and we can use find_get_page() to fetch the page safely in the
+downstream, so we can remove the page array directly.
 
-I don't have it for now.
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/checkpoint.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
->
-> (and why not just use EPERM, it has the meaning you want already)
-
-We need to determine if we have a share reservation error to map it
-accurately in file servers and wine.
-
->
->
->> + * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
->> + * tell us whether the reservation allows other readers and writers.
->> + */
->> +static int
->> +locks_mand_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
->> +{
->
-> Shouldn't this also check for CAP_SYS_DAC or some similar permission so
-> that root can override such a mess (eg to fix full disks in an
-> emergency) ?
-
-May be it's better to let root an ability to remount the system
-without sharelock mount option and then fix an emergency?
-
->
->
->> +
->> +     /*
->> +      * For sharelock mounts if a file was created but not opened, we need
->> +      * to keep parent i_mutex until we finish the open to prevent races when
->> +      * somebody opens newly created by us file and locks it with a sharelock
->> +      * before we open it.
->> +      */
->> +     if (IS_SHARELOCK(dir->d_inode) && error > 0 && *opened & FILE_CREATED) {
->> +             /* Don't check for write permission, don't truncate */
->> +             open_flag &= ~O_TRUNC;
->> +             will_truncate = false;
->> +             acc_mode = MAY_OPEN;
->> +             path_to_nameidata(path, nd);
->> +
->> +             error = may_open(&nd->path, acc_mode, open_flag);
->> +             if (error) {
->> +                     mutex_unlock(&dir->d_inode->i_mutex);
->> +                     goto out;
->> +             }
->> +             file->f_path.mnt = nd->path.mnt;
->> +             error = finish_open(file, nd->path.dentry, NULL, opened);
->> +             if (error) {
->> +                     mutex_unlock(&dir->d_inode->i_mutex);
->> +                     if (error == -EOPENSTALE)
->> +                             goto stale_open;
->> +                     goto out;
->> +             }
->> +             error = sharelock_lock_file(file);
->> +             mutex_unlock(&dir->d_inode->i_mutex);
->> +             if (error)
->> +                     goto exit_fput;
->> +             goto opened;
->> +     }
->> +
->>       mutex_unlock(&dir->d_inode->i_mutex);
->
-> What stops the file system changing mount flags via a remount between
-> these two ?
-
-Nothing, but it doesn't bring problems here: if the first IS_SHARELOCK
-condition is true, we don't get into the second (see 'goto opened').
-
->
->>
->>       if (error <= 0) {
->> @@ -3034,6 +3073,18 @@ finish_open_created:
->>                       goto stale_open;
->>               goto out;
->>       }
->> +
->> +     if (IS_SHARELOCK(dir->d_inode)) {
->> +             /*
->> +              * Lock parent i_mutex to prevent races with sharelocks on
->> +              * newly created files.
->> +              */
->> +             mutex_lock(&dir->d_inode->i_mutex);
->> +             error = sharelock_lock_file(file);
->> +             mutex_unlock(&dir->d_inode->i_mutex);
->> +             if (error)
->> +                     goto exit_fput;
->> +     }
->>  opened:
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index f9d4f7d..ed82de6 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -311,11 +311,10 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t start_blk)
+ 	unsigned short orphan_blocks = (unsigned short)((sbi->n_orphans +
+ 		(F2FS_ORPHANS_PER_BLOCK - 1)) / F2FS_ORPHANS_PER_BLOCK);
+ 	struct page *page = NULL;
+-	struct page *pages[orphan_blocks];
+ 	struct orphan_inode_entry *orphan = NULL;
+ 
+ 	for (index = 0; index < orphan_blocks; index++)
+-		pages[index] = grab_meta_page(sbi, start_blk + index);
++		grab_meta_page(sbi, start_blk + index);
+ 
+ 	index = 1;
+ 	spin_lock(&sbi->orphan_inode_lock);
+@@ -324,10 +323,12 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t start_blk)
+ 	/* loop for each orphan inode entry and write them in Jornal block */
+ 	list_for_each_entry(orphan, head, list) {
+ 		if (!page) {
+-			page = pages[index - 1];
++			page = find_get_page(META_MAPPING(sbi), start_blk++);
++			f2fs_bug_on(!page);
+ 			orphan_blk =
+ 				(struct f2fs_orphan_block *)page_address(page);
+ 			memset(orphan_blk, 0, sizeof(*orphan_blk));
++			f2fs_put_page(page, 0);
+ 		}
+ 
+ 		orphan_blk->ino[nentries++] = cpu_to_le32(orphan->ino);
 -- 
-Best regards,
-Pavel Shilovsky.
+1.7.7
+
