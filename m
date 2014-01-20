@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaATJuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:50:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58048 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371AbaATJuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:50:20 -0500
-Message-ID: <1390211310.5483.43.camel@marge.simpson.net>
-Subject: Re: linux-next: build failure after merge of the tip tree
-From: Mike Galbraith <bitbucket@online.de>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Jan 2014 10:48:30 +0100
-In-Reply-To: <CA+icZUU2WVB+tyQd6_B2YHAgj4a=+v4OxeKVztYWWVLo7nQMQg@mail.gmail.com>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
-	 <20140116121955.GQ31570@twins.programming.kicks-ass.net>
-	 <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
-	 <20140116222536.GX30183@twins.programming.kicks-ass.net>
-	 <20140117093426.ee8e3d1bb2e95c9f67ec625b@canb.auug.org.au>
-	 <52D8625C.1000902@zytor.com>
-	 <20140117144518.231fa4bccb16a8d7edd36662@canb.auug.org.au>
-	 <1390038366.5676.10.camel@marge.simpson.net>
-	 <20140120145122.a95b3e3a17d20117214098ca@canb.auug.org.au>
-	 <CA+icZUVNdEkE0uR2gn0iY790sKKFzG7Py2mPqqJN+pUNiuYXDw@mail.gmail.com>
-	 <1390209434.5483.26.camel@marge.simpson.net>
-	 <CA+icZUU2WVB+tyQd6_B2YHAgj4a=+v4OxeKVztYWWVLo7nQMQg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:I1+jLMja5JQMyK9bED/eG0beXbMdTpQaUyLO8Msu7aJ
- dDQyPxPZ50SRBjB0DaLcfX8mycjewEn3R+ZaStl9rvTtveEB0e
- v1hL6m0kJz61ZnuWMjqWg6azeJPBwuM4N1y+PMNh49gCKp4LR1
- bQl17XJJwtWy1YW7RZFr9Hz0yW8DbcdhfLKsBlLzhsIHKMI3fz
- X/hDCR8ZC3dtYgt5nKBcLU5HjzCgPPXbiHduMz6akFh4NAqlox
- 2IvO3mIH5zxaruQGXOSc4zERg6gpjN6LDAXec6hLrdrL8b5Pot
- tPXwYlNkjT3+bSQjbatzccTQ8x02APmg7CTNg2eq8wB4Gvu3Pn
- ZnVO0qAdxlRymtvX8PffR5zXarenbaXwcG7tajTGvbcjGeFDZf
- UGqPvbbqrG+bA==
+	id S1751917AbaATJx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:53:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40907 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801AbaATJx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:53:57 -0500
+Date: Mon, 20 Jan 2014 10:53:41 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fixes for 3.14
+Message-ID: <20140120095341.GA3003@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-20 at 10:25 +0100, Sedat Dilek wrote:
+Hi Linus,
 
-> It's about the handling of fixes for -next.
+please pull a bunch of enhancements/fixes from all around the world of
+EDAC.
 
-Ah, it was a gripe in query form.  My bad.
+Thanks.
 
--Mike
+--
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_for_3.14
+
+for you to fetch changes up to 881f0fcef9993992c24f5b649a3fb67fd4208f8f:
+
+  EDAC: Don't try to cancel workqueue when it's never setup (2014-01-10 15:57:36 +0100)
+
+----------------------------------------------------------------
+* mpc85xx PCIe error interrupt support
+* misc small enhancements/fixes all over the place.
+
+----------------------------------------------------------------
+Aravind Gopalakrishnan (1):
+      amd64_edac: Fix condition to verify max channels allowed for F15 M30h
+
+Aristeu Rozanski (1):
+      e752x_edac: Fix pci_dev usage count
+
+Borislav Petkov (2):
+      amd64_edac: Simplify code around decode_bus_error
+      amd64_edac: Remove "amd64" prefix from static functions
+
+Chunhe Lan (1):
+      edac/85xx: Add PCIe error interrupt edac support
+
+Jingoo Han (1):
+      EDAC: Remove DEFINE_PCI_DEVICE_TABLE macro
+
+Rashika Kheria (3):
+      amd64_edac: Mark amd64_decode_bus_error as static
+      EDAC: Mark edac_create_debug_nodes as static
+      sb_edac: Mark get_mci_for_node_id as static
+
+Stephen Boyd (1):
+      EDAC: Don't try to cancel workqueue when it's never setup
+
+ drivers/edac/amd64_edac.c      | 135 +++++++++++++++++++----------------------
+ drivers/edac/amd76x_edac.c     |   2 +-
+ drivers/edac/e752x_edac.c      |   6 +-
+ drivers/edac/e7xxx_edac.c      |   2 +-
+ drivers/edac/edac_device.c     |   3 +
+ drivers/edac/edac_mc_sysfs.c   |   2 +-
+ drivers/edac/i3000_edac.c      |   2 +-
+ drivers/edac/i3200_edac.c      |   2 +-
+ drivers/edac/i5000_edac.c      |   2 +-
+ drivers/edac/i5100_edac.c      |   2 +-
+ drivers/edac/i5400_edac.c      |   2 +-
+ drivers/edac/i7300_edac.c      |   2 +-
+ drivers/edac/i7core_edac.c     |   2 +-
+ drivers/edac/i82443bxgx_edac.c |   2 +-
+ drivers/edac/i82860_edac.c     |   2 +-
+ drivers/edac/i82875p_edac.c    |   2 +-
+ drivers/edac/i82975x_edac.c    |   2 +-
+ drivers/edac/mpc85xx_edac.c    |  98 ++++++++++++++++++++++++++----
+ drivers/edac/mpc85xx_edac.h    |   7 +++
+ drivers/edac/r82600_edac.c     |   2 +-
+ drivers/edac/sb_edac.c         |   4 +-
+ drivers/edac/x38_edac.c        |   2 +-
+ 22 files changed, 181 insertions(+), 104 deletions(-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
