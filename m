@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaATXsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 18:48:02 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58393 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaATXr7 (ORCPT
+	id S1753010AbaATXup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 18:50:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaATXul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 18:47:59 -0500
-Date: Mon, 20 Jan 2014 23:47:34 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
+	Mon, 20 Jan 2014 18:50:41 -0500
+Date: Mon, 20 Jan 2014 15:51:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
 Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
  device probe
-Message-ID: <20140120234734.11b78578@www.etchedpixels.co.uk>
-In-Reply-To: <20140120231457.GZ17314@sirena.org.uk>
+Message-ID: <20140120235128.GA5012@kroah.com>
 References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
-	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
-	<20140120100530.GY15937@n2100.arm.linux.org.uk>
-	<CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
-	<20140120214305.54f65ffa@www.etchedpixels.co.uk>
-	<20140120231457.GZ17314@sirena.org.uk>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+ <20140120100530.GY15937@n2100.arm.linux.org.uk>
+ <20140120211601.GB634@kroah.com>
+ <20140120213206.GJ15937@n2100.arm.linux.org.uk>
+ <20140120231141.GA2355@kroah.com>
+ <20140120231603.GL15937@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120231603.GL15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014 23:14:57 +0000
-Mark Brown <broonie@kernel.org> wrote:
-
-> On Mon, Jan 20, 2014 at 09:43:05PM +0000, Alan Cox wrote:
+On Mon, Jan 20, 2014 at 11:16:03PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 20, 2014 at 03:11:41PM -0800, Greg KH wrote:
+> > On Mon, Jan 20, 2014 at 09:32:06PM +0000, Russell King - ARM Linux wrote:
+> > > On Mon, Jan 20, 2014 at 01:16:01PM -0800, Greg KH wrote:
+> > > > On Mon, Jan 20, 2014 at 10:05:30AM +0000, Russell King - ARM Linux wrote:
+> > > > > On Mon, Jan 20, 2014 at 02:32:34PM +0530, Tushar Behera wrote:
+> > > > > > uart_register_driver call binds the driver to a specific device
+> > > > > > node through tty_register_driver call. This should typically happen
+> > > > > > during device probe call.
+> > > > > > 
+> > > > > > In a multiplatform scenario, it is possible that multiple serial
+> > > > > > drivers are part of the kernel. Currently the driver registration fails
+> > > > > > if multiple serial drivers with same default major/minor numbers are
+> > > > > > included in the kernel.
+> > > > > > 
+> > > > > > A typical case is observed with amba-pl011 and samsung-uart drivers.
+> > > > > 
+> > > > > The samsung-uart driver is at fault here - the major/minor numbers were
+> > > > > officially registered to amba-pl011.  Samsung needs to be fixed properly.
+> > > > 
+> > > > I agree, the Samsung driver is "broken" here, but that's no reason why
+> > > > these two drivers can't register with the tty layer _after_ the hardware
+> > > > is detected, and not before.
+> > > > 
+> > > > That saves resources on systems that build the drivers in, yet do not
+> > > > have the hardware present, which is always a good thing.
+> > > 
+> > > Great, so what you're saying is that we need to wait until the first
+> > > device calls into the probe function.  What about removal... how does
+> > > a driver know when it's last device has been removed to de-register
+> > > that?
+> > 
+> > The "bus" that the device is on handles that, right?
+> > 
+> > > I guess it needs the driver model to provide some way to know when a
+> > > driver is completely unbound - but isn't that racy?
+> > 
+> > How is it racy?  That's how the driver model works...
 > 
-> > The dynamic major/minor is the right patch. If the userspace breaks then
-> > the userspace was broken, but I see no evidence in the discussion that
-> > the userspace broke.
+> Think about what happens when the last device unregisters, but a new
+> device comes along and is probed.
 > 
-> The userspace breakage is that if someone has a static /dev that doesn't
-> handle any dynamic devices then renumbering the device will cause that
-> static /dev to stop matching the kernel.
+> I don't believe the driver model has any locking to prevent a drivers
+> ->probe function running concurrently with it's ->remove function for
+> two (or more) devices.
 
-Diddums and you've only provided theoretical cases not real world ones.
+The bus prevents this from happening.
 
-They should have followed proper practice and reserved their minors. The
-device number belongs to the Altix. The driver should just move.
+> The locking against this is done on a per-device basis, not a per-driver
+> basis.
 
-> > Thats what the list says. Samsung should have followed the rules, they
-> > didn't so they get to pick up the pieces. The Amba driver wants moving as
-> > well. It's easy. If you want something to be ABI then make sure you get
-> > it upstream first, if not you get to own all the pain down the line.
-> 
-> This stuff is all upstream already, a quick check suggests both drivers
-> predate git - it's been noticed because the ARM multiplatform work has
-> caused people to try booting kernels with both built in.
+No, on a per-bus basis.
 
-So ARM people didn't follow the policy on allocating device minors even
-within their own community and got burned by it. That's despite having
-previously been burned by abusing the ttyS0 8250 major/minor in the same
-way, for the same purposes, and creating the same mess.
+thanks,
 
-{facepalm...}
-
-> > If the hardware isn't present then the driver shouldn't even register
-> > with the tty layer in the first place so it doesn't make any resource
-> > differeneces either for properly written code.
-> 
-> Right, that's not the idiom that has been followed by any of serial
-> drivers though so needs fixing too.
-
-Actally some drivers do get this right but not many. ehv-bc for example
-does.
-
-But yes I agree about the idiom, but a definite NAK to any attempts to
-plaster over this grand screwup by crapping in the tty core. Your turd,
-deal with it locally in the ARM code if you can't apply common sense and
-just go dynamic.
-
-And please, after screwing this up twice - *learn* from the mess.
-
-Alan
+greg k-h
