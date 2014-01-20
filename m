@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaATTkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 14:40:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50407 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaATTkP (ORCPT
+	id S1752664AbaATTm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:42:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42796 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaATTmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 14:40:15 -0500
-Date: Mon, 20 Jan 2014 11:39:27 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-741e3902cd89a7fbc04ae53f29a7ca0da452aa8e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86/intel/mpx: Remove unused LWP structure
-Git-Commit-ID: 741e3902cd89a7fbc04ae53f29a7ca0da452aa8e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 20 Jan 2014 14:42:24 -0500
+Date: Mon, 20 Jan 2014 19:42:16 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Scott Wood <scottwood@freescale.com>,
+        Wang Dongsheng <dongsheng.wang@freescale.com>,
+        Jia Hongtao <hongtao.jia@freescale.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH] powerpc/mpic: Fix build errors for CONFIG_MPIC_WEIRD
+Message-ID: <20140120194212.GA5684@hercules>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 20 Jan 2014 11:39:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  741e3902cd89a7fbc04ae53f29a7ca0da452aa8e
-Gitweb:     http://git.kernel.org/tip/741e3902cd89a7fbc04ae53f29a7ca0da452aa8e
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 20 Jan 2014 19:51:05 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 20 Jan 2014 19:57:39 +0100
+When CONFIG_MPIC_WEIRD is defined, the following build error occurs:
 
-x86/intel/mpx: Remove unused LWP structure
+arch/powerpc/sysdev/mpic.c: In function 'mpic_set_irq_type':
+arch/powerpc/sysdev/mpic.c:892:9: error: case label does not reduce to an integer constant
+         MPIC_INFO(VECPRI_POLARITY_POSITIVE):
+         ^
+arch/powerpc/sysdev/mpic.c:896:9: error: case label does not reduce to an integer constant
+         MPIC_INFO(VECPRI_POLARITY_NEGATIVE):
+         ^
+arch/powerpc/sysdev/mpic.c:900:9: error: case label does not reduce to an integer constant
+         MPIC_INFO(VECPRI_POLARITY_POSITIVE):
+         ^
+arch/powerpc/sysdev/mpic.c:904:9: error: case label does not reduce to an integer constant
+         MPIC_INFO(VECPRI_POLARITY_NEGATIVE):
+         ^
 
-We don't support LWP yet, don't give the impression that we do:
-represent the LWP state as opaque 128 bytes, the way Linux sees it
-currently.
+This is because the case labels are built by accessing mpic->hw_set, and not an
+integer constant.
 
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-ecarmjtfKpanpAapfck6dj6g@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 446f6d06fab0 ("powerpc/mpic: Properly set default triggers")
+Cc: <stable@vger.kernel.org> (3.4+)
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/processor.h | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ arch/powerpc/sysdev/mpic.c | 34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b7845a1..865c399 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -370,15 +370,9 @@ struct ymmh_struct {
- 	u32 ymmh_space[64];
- };
+diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
+index 0e166ed..e7bf1a2 100644
+--- a/arch/powerpc/sysdev/mpic.c
++++ b/arch/powerpc/sysdev/mpic.c
+@@ -886,25 +886,21 @@ int mpic_set_irq_type(struct irq_data *d, unsigned int flow_type)
  
-+/* We don't support LWP yet: */
- struct lwp_struct {
--	u64 lwpcb_addr;
--	u32 flags;
--	u32 buf_head_offset;
--	u64 buf_base;
--	u32 buf_size;
--	u32 filters;
--	u64 saved_event_record[4];
--	u32 event_counter[16];
-+	u8 reserved[128];
- };
+ 	/* Default: read HW settings */
+ 	if (flow_type == IRQ_TYPE_DEFAULT) {
+-		switch(vold & (MPIC_INFO(VECPRI_POLARITY_MASK) |
+-			       MPIC_INFO(VECPRI_SENSE_MASK))) {
+-			case MPIC_INFO(VECPRI_SENSE_EDGE) |
+-			     MPIC_INFO(VECPRI_POLARITY_POSITIVE):
+-				flow_type = IRQ_TYPE_EDGE_RISING;
+-				break;
+-			case MPIC_INFO(VECPRI_SENSE_EDGE) |
+-			     MPIC_INFO(VECPRI_POLARITY_NEGATIVE):
+-				flow_type = IRQ_TYPE_EDGE_FALLING;
+-				break;
+-			case MPIC_INFO(VECPRI_SENSE_LEVEL) |
+-			     MPIC_INFO(VECPRI_POLARITY_POSITIVE):
+-				flow_type = IRQ_TYPE_LEVEL_HIGH;
+-				break;
+-			case MPIC_INFO(VECPRI_SENSE_LEVEL) |
+-			     MPIC_INFO(VECPRI_POLARITY_NEGATIVE):
+-				flow_type = IRQ_TYPE_LEVEL_LOW;
+-				break;
+-		}
++		unsigned int info;
++		info = vold & (MPIC_INFO(VECPRI_POLARITY_MASK) |
++			       MPIC_INFO(VECPRI_SENSE_MASK));
++		if (info == (MPIC_INFO(VECPRI_SENSE_EDGE) |
++			     MPIC_INFO(VECPRI_POLARITY_POSITIVE)))
++			flow_type = IRQ_TYPE_EDGE_RISING;
++		else if (info == (MPIC_INFO(VECPRI_SENSE_EDGE) |
++				  MPIC_INFO(VECPRI_POLARITY_NEGATIVE)))
++			flow_type = IRQ_TYPE_EDGE_FALLING;
++		else if (info == (MPIC_INFO(VECPRI_SENSE_LEVEL) |
++				  MPIC_INFO(VECPRI_POLARITY_POSITIVE)))
++			flow_type = IRQ_TYPE_LEVEL_HIGH;
++		else if (info == (MPIC_INFO(VECPRI_SENSE_LEVEL) |
++				  MPIC_INFO(VECPRI_POLARITY_NEGATIVE)))
++			flow_type = IRQ_TYPE_LEVEL_LOW;
+ 	}
  
- struct bndregs_struct {
+ 	/* Apply to irq desc */
+-- 
+1.8.3.2
+
+Cheers,
+--
+Luis
