@@ -1,113 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaATJbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:31:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:10588 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198AbaATJa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:30:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,689,1384329600"; 
-   d="scan'208";a="461546625"
-Date: Mon, 20 Jan 2014 17:30:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Eric Dumazet <edumazet@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [rcu] 878d7439d0: -100% softirqs.RCU
-Message-ID: <20140120093053.GF18632@localhost>
+	id S1753456AbaATJbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:31:10 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44663 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162AbaATJbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:31:06 -0500
+Message-ID: <52DCECAD.9090906@linaro.org>
+Date: Mon, 20 Jan 2014 17:30:21 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+To: Sudeep Holla <Sudeep.Holla@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH 07/20] ARM64 / ACPI: Enable ARM64 in Kconfig
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-8-git-send-email-hanjun.guo@linaro.org> <52D93F88.8090801@arm.com>
+In-Reply-To: <52D93F88.8090801@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 2014-1-17 22:34, Sudeep Holla wrote:
+> On 17/01/14 12:25, Hanjun Guo wrote:
+>> Add Kconfigs to build ACPI on ARM64, and make ACPI runable on ARM64.
+>>
+>> acpi_idle driver is x86/IA64 dependent now, so make CONFIG_ACPI_PROCESSOR
+>> depends on X86 || IA64, and implement it on ARM/ARM64 in the furture.
+>>
+>> In order to make arm-core.c can both run on ARM and ARM64, introduce
+>> CONFIG_ACPI_ARM to support it.
+>>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  arch/arm64/Kconfig         |    2 ++
+>>  drivers/acpi/Kconfig       |   11 ++++++++---
+>>  drivers/acpi/plat/Makefile |    2 +-
+>>  3 files changed, 11 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>> index 6d4dd22..2b1fb1d 100644
+>> --- a/arch/arm64/Kconfig
+>> +++ b/arch/arm64/Kconfig
+>> @@ -279,6 +279,8 @@ source "net/Kconfig"
+>>  
+>>  source "drivers/Kconfig"
+>>  
+>> +source "drivers/acpi/Kconfig"
+>> +
+>>  source "fs/Kconfig"
+>>  
+>>  source "arch/arm64/kvm/Kconfig"
+>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>> index 4770de5..cae5dc9 100644
+>> --- a/drivers/acpi/Kconfig
+>> +++ b/drivers/acpi/Kconfig
+>> @@ -2,13 +2,16 @@
+>>  # ACPI Configuration
+>>  #
+>>  
+>> +config ACPI_ARM
+>> +	bool
+>> +
+>>  menuconfig ACPI
+>>  	bool "ACPI (Advanced Configuration and Power Interface) Support"
+>>  	depends on !IA64_HP_SIM
+>> -	depends on IA64 || X86
+>> -	depends on PCI
+>> +	depends on ((IA64 || X86) && PCI) || ARM64
+>>  	select PNP
+>> -	default y
+>> +	select ACPI_ARM if ARM64
+>> +	default y if !ARM64
+>>  	help
+>>  	  Advanced Configuration and Power Interface (ACPI) support for 
+>>  	  Linux requires an ACPI-compliant platform (hardware/firmware),
+>> @@ -149,6 +152,7 @@ config ACPI_PROCESSOR
+>>  	tristate "Processor"
+>>  	select THERMAL
+>>  	select CPU_IDLE
+>> +	depends on X86 || IA64
+> 
+> This doesn't look correct to me. You are disabling Perf/Idle/Thermal/Throttling
+> support for ARM64. Any particular reason ?
 
-Just FYI, we noticed the below changes in old commit 878d7439d0 ("rcu:
-Fix batch-limit size problem") in test case will-it-scale/open1:
+As I said in the change log, acpi_idle driver is x86/IA64 dependent now,
+we should revisit it later for these drivers on ARM64.
 
-62da1921292ef78  878d7439d0f45a95869e41757  
----------------  -------------------------  
-      0.00 ~200%  +60900.0%       1.22 ~18%  TOTAL perf-profile.cpu-clock.file_free_rcu.rcu_process_callbacks.__do_softirq.call_softirq.do_softirq
-      0.28 ~126%    +339.3%       1.23       TOTAL perf-profile.cpu-clock.__d_lookup_rcu.link_path_walk.do_filp_open.do_sys_open.sys_open
-      1.16 ~15%    -100.0%       0.00       TOTAL perf-profile.cpu-clock.file_free_rcu.rcu_process_callbacks.__do_softirq.run_ksoftirqd.smpboot_thread_fn
-  1.89e+08 ~14%    -100.0%      63093 ~ 6%  TOTAL softirqs.RCU
-      3.66 ~ 7%    -100.0%       0.00       TOTAL perf-profile.cpu-clock.rcu_process_callbacks.__do_softirq.run_ksoftirqd.smpboot_thread_fn.kthread
-      1.29 ~11%    -100.0%       0.00       TOTAL perf-profile.cpu-clock.rcu_process_gp_end.isra.23.rcu_process_callbacks.__do_softirq.run_ksoftirqd.smpboot_thread_fn
-      1.39 ~ 9%    -100.0%       0.00       TOTAL perf-profile.cpu-clock.check_for_new_grace_period.isra.25.rcu_process_callbacks.__do_softirq.run_ksoftirqd.smpboot_thread_fn
-     57276 ~ 9%    +110.2%     120367 ~15%  TOTAL slabinfo.kmalloc-256.active_objs
-      3582 ~ 9%    +110.0%       7525 ~15%  TOTAL slabinfo.kmalloc-256.active_slabs
-      3582 ~ 9%    +110.0%       7525 ~15%  TOTAL slabinfo.kmalloc-256.num_slabs
-     57331 ~ 9%    +110.0%     120407 ~15%  TOTAL slabinfo.kmalloc-256.num_objs
-     23741 ~ 6%     +71.2%      40652 ~13%  TOTAL meminfo.SUnreclaim
-     19830 ~ 4%     -44.1%      11094 ~ 8%  TOTAL interrupts.RES
-      6113 ~ 8%     +74.6%      10674 ~12%  TOTAL proc-vmstat.nr_slab_unreclaimable
-      2.44 ~13%     +62.9%       3.98 ~13%  TOTAL perf-profile.cpu-clock.__slab_alloc.kmem_cache_alloc.get_empty_filp.do_filp_open.do_sys_open
-         3 ~ 0%     -33.3%          2 ~ 0%  TOTAL vmstat.procs.r
-     53183 ~ 3%     +31.6%      70006 ~ 8%  TOTAL meminfo.Slab
-      1001 ~ 9%     -14.3%        858 ~10%  TOTAL slabinfo.kmalloc-128.num_objs
-      1001 ~ 9%     -14.3%        858 ~10%  TOTAL slabinfo.kmalloc-128.active_objs
-      2.47 ~ 7%     +12.1%       2.76 ~ 6%  TOTAL perf-profile.cpu-clock.__call_rcu.call_rcu_sched.__fput.____fput.task_work_run
-      6686 ~ 5%     -95.9%        272 ~ 3%  TOTAL time.involuntary_context_switches
-       109 ~ 1%     +21.3%        132 ~ 1%  TOTAL time.system_time
-        55 ~ 0%     +19.6%         66 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-       899 ~ 3%     +10.5%        993 ~ 7%  TOTAL vmstat.system.cs
+Since this is the ARM ACPI core patches, I think we can implement it later.
 
-                                 time.system_time
+> 
+> Also this is conflicting with other change where you are adding/exporting
+> boot_option_idle_override which is mainly used in processor_idle and that's
+> disabled for ARM64 here.
 
-   140 ++-------------------------------------------------------------------+
-       |                    O         O    O                        O       |
-   135 ++                                                                   |
-       O O O   O O    O O O   O O O O   O    O   O O           O      O O O O
-   130 ++    O      O                          O     O O O O O    O         |
-       |                                                                    |
-   125 ++                                                                   |
-       |                                                                    |
-   120 ++                                                                   |
-       |                                                                    |
-   115 ++                                                                   |
-       |                         .*.              .*.          *..          |
-   110 *+ .*.      .*. .*.*.*. .*   *.*.*..*.*.*.*   *. .*.   +      .*.    |
-       | *   *.*.*.   *       *                        *   *.*    *.*   *   |
-   105 ++-------------------------------------------------------------------+
+boot_option_idle_override is used in processor_core.c and it is the common
+file used by every processor drivers including the processor_idle driver,
+if I didn't introduce boot_option_idle_override there will be compile errors.
 
-
-                         time.percent_of_cpu_this_job_got
-
-   66 O+O-O-O-O--O-O-O-O-O-O-O-O--O-O-O-O-O-O-O-O--O-O-O-O-O-O-O-O--O-O-O-O-O
-      |                                                                     |
-   64 ++                                                                    |
-      |                                                                     |
-      |                                                                     |
-   62 ++                                                                    |
-      |                                                                     |
-   60 ++                                                                    |
-      |                                                                     |
-   58 ++                                                                    |
-      |                           *           *                             |
-      |                          + +         + +                            |
-   56 ++                .*.*.   +   *.*.*.*.*   *..*.*.       .*.           |
-      *.*.*.*.*..*.*.*.*     *.*                       *.*.*.*   *..*.*.*   |
-   54 ++--------------------------------------------------------------------+
-
-
-                          time.involuntary_context_switches
-
-   9000 ++------------------------------------------------------------------+
-        |                                              *                    |
-   8000 ++ .*.*. .*   *    *. .*.*.         .*   *.   + +  .*.              |
-   7000 *+*     *  + + + ..  *     *.*.*.*.*  + +  *.*   *.   *. .*.*.      |
-        |           *   *                      *                *     *.*   |
-   6000 ++                                                                  |
-   5000 ++                                                                  |
-        |                                                                   |
-   4000 ++                                                                  |
-   3000 ++                                                                  |
-        |                                                                   |
-   2000 ++                                                                  |
-   1000 ++                                                                  |
-        | O     O   O                                                       |
-      0 O+--O-O---O---O-O--O-O-O-O-O-O-O-O-O-O-O-O-O-O-O-O--O-O-O-O-O-O-O-O-O
+Thanks
+Hanjun
