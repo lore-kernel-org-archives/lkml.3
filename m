@@ -1,146 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaATJz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 04:55:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947AbaATJz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 04:55:27 -0500
-Message-ID: <1390211726.11931.10.camel@linux-fkkt.site>
-Subject: Re: [PATCH v3] HID: New hid-cp2112 driver
-From: Oliver Neukum <oneukum@suse.de>
-To: David Barksdale <dbarksdale@uplogix.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jakub =?ISO-8859-1?Q?K=E1kona?= <kjakub@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 20 Jan 2014 10:55:26 +0100
-In-Reply-To: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
-References: <1389909144-11050-1-git-send-email-dbarksdale@uplogix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753347AbaATJ4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 04:56:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52093 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731AbaATJz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 04:55:59 -0500
+Date: Mon, 20 Jan 2014 10:55:32 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140120095532.GX31570@twins.programming.kicks-ass.net>
+References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
+ <20140116121955.GQ31570@twins.programming.kicks-ass.net>
+ <20140117074628.88698f59939c9002b7c12968@canb.auug.org.au>
+ <CAJvTdKnoNh2YAvtXraYxTct+8e6e_8Om9cAZGSTpy8UO=t=W4w@mail.gmail.com>
+ <20140120082620.GB30183@twins.programming.kicks-ass.net>
+ <52DCE4CF.2060605@zytor.com>
+ <20140120091600.GW31570@twins.programming.kicks-ass.net>
+ <52DCEAF4.3040902@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DCEAF4.3040902@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-16 at 15:52 -0600, David Barksdale wrote:
+On Mon, Jan 20, 2014 at 01:23:00AM -0800, H. Peter Anvin wrote:
+> On 01/20/2014 01:16 AM, Peter Zijlstra wrote:
+> >>
+> >> The difference is the STI!
+> > 
+> > So do the local_irq_enable(); mwait_idle_with_hints(0,0); thing.
+> > 
+> 
+> No, that doesn't work.  The point of __sti_mwait() is that the STI is
+> the instruction immediately before the MWAIT, just like the combination
+> STI;HLT.  Since the execution of STI is always delayed by one
+> instruction, these two instructions form an atomic unit, which means
+> interrupts are enabled "after" we have entered MWAIT or HLT.
+> 
+> > But that's entirely different from saying that core2 doesn't support
+> > mwait_idle_with_hints because its a different instruction.
+> 
+> If you think of STI;MWAIT as a "compound instruction" it kind of is.
+> Newer CPUs don't have to play that trick anymore, because there is a
+> flag to MWAIT which breaks us out of MWAIT on a pending interrupt
+> without having to actually enable interrupts at the point of the MWAIT.
 
-> +enum {
-> +	STATUS1_TIMEOUT_NACK = 0x00,
-> +	STATUS1_TIMEOUT_BUS = 0x01,
-> +	STATUS1_ARBITRATION_LOST = 0x02,
-> +	STATUS1_READ_INCOMPLETE = 0x03,
-> +	STATUS1_WRITE_INCOMPLETE = 0x04,
-> +	STATUS1_SUCCESS = 0x05,
-> +};
-> +
-> +/* All values are in big-endian */
+Ok, so I still don't get the problem of enabling interrupts early.
 
-We have data types like be32.
+If we enable them early we can get interrupts; which afaict fall into
+two groups, those that do and do not set NEED_RESCHED.
 
-> +struct __attribute__ ((__packed__)) cp2112_smbus_config_report {
-> +	uint8_t report; /* CP2112_SMBUS_CONFIG */
-> +	uint32_t clock_speed; /* Hz */
-> +	uint8_t device_address; /* Stored in the upper 7 bits */
-> +	uint8_t auto_send_read; /* 1 = enabled, 0 = disabled */
-> +	uint16_t write_timeout; /* ms, 0 = no timeout */
-> +	uint16_t read_timeout; /* ms, 0 = no timeout */
-> +	uint8_t scl_low_timeout; /* 1 = enabled, 0 = disabled */
-> +	uint16_t retry_time; /* # of retries, 0 = no limit */
-> +};
-> +
-> +struct  __attribute__ ((__packed__)) cp2112_usb_config_report {
-> +	uint8_t report; /* CP2112_USB_CONFIG */
-> +	uint16_t vid; /* Vendor ID - little endian */
-> +	uint16_t pid; /* Product ID - little endian */
-> +	uint8_t max_power; /* Power requested in 2mA units */
-> +	uint8_t power_mode; /* 0x00 = bus powered
-> +			       0x01 = self powered & regulator off
-> +			       0x02 = self powered & regulator on */
-> +	uint8_t release_major;
-> +	uint8_t release_minor;
-> +	uint8_t mask; /* What fields to program */
-> +};
-> +
-> +/* Number of times to request transfer status before giving up waiting for a
-> +   transfer to complete. */
-> +static const int XFER_TIMEOUT = 100;
-> +
-> +/* Time in ms to wait for a CP2112_DATA_READ_RESPONSE or
-> +   CP2112_TRANSFER_STATUS_RESPONSE. */
-> +static const int RESPONSE_TIMEOUT = 50;
-> +
-> +static const struct hid_device_id cp2112_devices[] = {
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_CYGNAL, USB_DEVICE_ID_CYGNAL_CP2112) },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(hid, cp2112_devices);
-> +
-> +struct cp2112_device {
-> +	struct i2c_adapter adap;
-> +	struct hid_device *hdev;
-> +	wait_queue_head_t wait;
-> +	uint8_t read_data[61];
-> +	uint8_t read_length;
-> +	int xfer_status;
-> +	atomic_t read_avail;
-> +	atomic_t xfer_avail;
-> +	struct gpio_chip gc;
-> +};
+For those that do not set NEED_RESCHED, we'd have woken from MWAIT/HLT
+and looped right back into it, so receiving those early -- before
+actually calling MWAIT/HLT seems like a NO-OP.
 
-> +static int cp2112_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct cp2112_device *dev = container_of(chip, struct cp2112_device,
-> +						 gc);
-> +	struct hid_device *hdev = dev->hdev;
-> +	uint8_t buf[2];
-> +	int ret;
-> +
-> +	ret = hdev->hid_get_raw_report(hdev, CP2112_GPIO_GET, buf,
-> +				       sizeof (buf), HID_FEATURE_REPORT);
-> +	if (ret != sizeof (buf)) {
-> +		hid_err(hdev, "error requesting GPIO values: %d\n", ret);
-> +		return ret;
-> +	}
-> +	return (buf[1] >> offset) & 1;
+For those setting NEED_RESCHED, we test NEED_RESCHED in all the right
+places.
 
-We do have a test_bit() primitive.
+ - current_set_polling_and_test(), we test need_resched after telling
+   remote CPUs they don't need to send interrupts because we're polling
+   for it -- the remote cpus set NEED_RESCHED before testing if we're
+   polling for it.
 
-> +}
+ - we test NEED_RESCHED after setting up the monitor and before calling
+   MWAIT. Therefore, if an interrupt would happen right before we call
+   MWAIT, the monitor is already set and the MWAIT does an immediate
+   exit.
 
+AFAICT we simply cannot get stuck and miss a NEED_RESCHED this way.
 
-> +static int cp2112_read(struct cp2112_device *dev, uint8_t *data, size_t size)
-> +{
-> +	struct hid_device *hdev = dev->hdev;
-> +	uint8_t buf[3];
-> +	int ret;
-> +
-> +	buf[0] = CP2112_DATA_READ_FORCE_SEND;
-> +	*(uint16_t *)&buf[1] = htons(size);
-
-Ouch. Please use put_unaligned()
-
-> +	atomic_set(&dev->read_avail, 0);
-> +	ret = cp2112_hid_output(hdev, buf, 3, HID_OUTPUT_REPORT);
-> +	if (ret < 0) {
-> +		hid_warn(hdev, "Error requesting data: %d\n", ret);
-> +		return ret;
-> +	}
-> +	ret = cp2112_wait(dev, &dev->read_avail);
-> +	if (ret)
-> +		return ret;
-> +	hid_dbg(hdev, "read %d of %d bytes requested\n",
-> +		dev->read_length, size);
-> +	if (size > dev->read_length)
-> +		size = dev->read_length;
-> +	memcpy(data, dev->read_data, size);
-> +	return dev->read_length;
-> +}
-> +
-
-	Regards
-		Oliver
 
 
