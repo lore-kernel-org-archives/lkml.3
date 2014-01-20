@@ -1,188 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaATRLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:11:44 -0500
+	id S1754191AbaATRLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:11:42 -0500
 Received: from mail.abilis.ch ([195.70.19.74]:17243 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100AbaATRLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:11:33 -0500
+	id S1754077AbaATRLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 12:11:15 -0500
 X-Greylist: delayed 1423 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jan 2014 12:11:14 EST
 From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
 To: Wolfram Sang <wsa@the-dreams.de>
-Cc: rmallon@gmail.com, mika.westerberg@linux.intel.com,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        pierrick.hascoet@abilis.com, vgupta@synopsys.com,
-        christian.ruppert@abilis.com, chiau.ee.chew@intel.com,
-        khali@linux-fr.org, rafael.j.wysocki@intel.com,
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Chiau Ee Chew <chiau.ee.chew@intel.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
         romainba@abilis.com
-Subject: [PATCH v2 1/2] i2c designware make SCL and SDA falling time configurable
-Date: Mon, 20 Jan 2014 17:43:43 +0100
-Message-Id: <1390236223-22584-1-git-send-email-romainba@abilis.com>
+Subject: [PATCH v2 2/2] i2c designware add support of I2C standard mode
+Date: Mon, 20 Jan 2014 17:45:38 +0100
+Message-Id: <1390236338-21407-1-git-send-email-romainba@abilis.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20140116194303.GC4127@katana>
-References: <20140116194303.GC4127@katana>
+In-Reply-To: <20140116193345.GB4127@katana>
+References: <20140116193345.GB4127@katana>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows to set independantly SCL and SDA falling times.
-The tLOW period is computed by taking into account the SCL falling time.
-The tHIGH period is computed by taking into account the SDA falling time.
+Some legacy devices support ony I2C standard mode at 100kHz.
+This patch allows to select the standard mode through the DTS
+with the use of the existing clock-frequency parameter.
 
-For instance in case the margin on tLOW is considered too small, it can
-be increased by increasing the SCL falling time which is by default set
-at 300ns.
-
-The same applies for tHIGH period with the help of SDA falling time.
+When clock-frequency parameter is not set, the fast mode is selected.
+Only when the parameter is set at 100000, the standard mode is selected.
 
 Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
 Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
 ---
- .../devicetree/bindings/i2c/i2c-designware.txt     |    8 ++++++
- drivers/i2c/busses/i2c-designware-core.c           |   27 +++++++++++--------
- drivers/i2c/busses/i2c-designware-core.h           |    2 +
- drivers/i2c/busses/i2c-designware-platdrv.c        |    7 +++++
- 4 files changed, 33 insertions(+), 11 deletions(-)
+ drivers/i2c/busses/i2c-designware-platdrv.c |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-index 7fd7fa2..5199b0c 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -14,6 +14,12 @@ Optional properties :
-  - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
-    This option is only supported in hardware blocks version 1.11a or newer.
- 
-+ - i2c-scl-falling-time : should contain the SCL falling time in nanoseconds.
-+   This value which is by default 300ns is used to compute the tLOW period.
-+
-+ - i2c-sda-falling-time : should contain the SDA falling time in nanoseconds.
-+   This value which is by default 300ns is used to compute the tHIGH period.
-+
- Example :
- 
- 	i2c@f0000 {
-@@ -34,4 +40,6 @@ Example :
- 		interrupts = <12 1>;
- 		clock-frequency = <400000>;
- 		i2c-sda-hold-time-ns = <300>;
-+		i2c-sda-falling-time-ns = <300>;
-+		i2c-scl-falling-time-ns = <300>;
- 	};
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index e89e3e2..3bcdebf 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -219,7 +219,7 @@ i2c_dw_scl_hcnt(u32 ic_clk, u32 tSYMBOL, u32 tf, int cond, int offset)
- 		 *
- 		 * If your hardware is free from tHD;STA issue, try this one.
- 		 */
--		return (ic_clk * tSYMBOL + 5000) / 10000 - 8 + offset;
-+		return (ic_clk * tSYMBOL + 500000) / 1000000 - 8 + offset;
- 	else
- 		/*
- 		 * Conditional expression:
-@@ -235,7 +235,8 @@ i2c_dw_scl_hcnt(u32 ic_clk, u32 tSYMBOL, u32 tf, int cond, int offset)
- 		 * The reason why we need to take into account "tf" here,
- 		 * is the same as described in i2c_dw_scl_lcnt().
- 		 */
--		return (ic_clk * (tSYMBOL + tf) + 5000) / 10000 - 3 + offset;
-+		return (ic_clk * (tSYMBOL + tf) + 500000) / 1000000
-+			- 3 + offset;
- }
- 
- static u32 i2c_dw_scl_lcnt(u32 ic_clk, u32 tLOW, u32 tf, int offset)
-@@ -251,7 +252,7 @@ static u32 i2c_dw_scl_lcnt(u32 ic_clk, u32 tLOW, u32 tf, int offset)
- 	 * account the fall time of SCL signal (tf).  Default tf value
- 	 * should be 0.3 us, for safety.
- 	 */
--	return ((ic_clk * (tLOW + tf) + 5000) / 10000) - 1 + offset;
-+	return ((ic_clk * (tLOW + tf) + 500000) / 1000000) - 1 + offset;
- }
- 
- static void __i2c_dw_enable(struct dw_i2c_dev *dev, bool enable)
-@@ -288,6 +289,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	u32 input_clock_khz;
- 	u32 hcnt, lcnt;
- 	u32 reg;
-+	u32 sda_falling_time, scl_falling_time;
- 
- 	input_clock_khz = dev->get_clk_rate_khz(dev);
- 
-@@ -309,15 +311,18 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 
- 	/* set standard and fast speed deviders for high/low periods */
- 
-+	sda_falling_time = dev->sda_falling_time ?: 300; /* ns */
-+	scl_falling_time = dev->scl_falling_time ?: 300; /* ns */
-+
- 	/* Standard-mode */
- 	hcnt = i2c_dw_scl_hcnt(input_clock_khz,
--				40,	/* tHD;STA = tHIGH = 4.0 us */
--				3,	/* tf = 0.3 us */
-+				4000,	/* tHD;STA = tHIGH = 4.0 us */
-+				sda_falling_time,
- 				0,	/* 0: DW default, 1: Ideal */
- 				0);	/* No offset */
- 	lcnt = i2c_dw_scl_lcnt(input_clock_khz,
--				47,	/* tLOW = 4.7 us */
--				3,	/* tf = 0.3 us */
-+				4700,	/* tLOW = 4.7 us */
-+				scl_falling_time,
- 				0);	/* No offset */
- 
- 	/* Allow platforms to specify the ideal HCNT and LCNT values */
-@@ -331,13 +336,13 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 
- 	/* Fast-mode */
- 	hcnt = i2c_dw_scl_hcnt(input_clock_khz,
--				6,	/* tHD;STA = tHIGH = 0.6 us */
--				3,	/* tf = 0.3 us */
-+				600,	/* tHD;STA = tHIGH = 0.6 us */
-+				sda_falling_time,
- 				0,	/* 0: DW default, 1: Ideal */
- 				0);	/* No offset */
- 	lcnt = i2c_dw_scl_lcnt(input_clock_khz,
--				13,	/* tLOW = 1.3 us */
--				3,	/* tf = 0.3 us */
-+				1300,	/* tLOW = 1.3 us */
-+				scl_falling_time,
- 				0);	/* No offset */
- 
- 	if (dev->fs_hcnt && dev->fs_lcnt) {
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index e8a7565..d66b6cb 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -99,6 +99,8 @@ struct dw_i2c_dev {
- 	unsigned int		rx_fifo_depth;
- 	int			rx_outstanding;
- 	u32			sda_hold_time;
-+	u32			sda_falling_time;
-+	u32			scl_falling_time;
- 	u16			ss_hcnt;
- 	u16			ss_lcnt;
- 	u16			fs_hcnt;
 diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index d0bdac0..fc24399 100644
+index fc24399..ae0a256 100644
 --- a/drivers/i2c/busses/i2c-designware-platdrv.c
 +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -159,6 +159,13 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 					"i2c-sda-hold-time-ns", &ht);
- 		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
- 					     1000000);
+@@ -122,6 +122,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	struct i2c_adapter *adap;
+ 	struct resource *mem;
+ 	int irq, r;
++	u32 clk_freq;
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+@@ -151,6 +152,9 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		return PTR_ERR(dev->clk);
+ 	clk_prepare_enable(dev->clk);
+ 
++	/* fast mode by default */
++	clk_freq = 400000;
 +
-+		of_property_read_u32(pdev->dev.of_node,
-+				     "i2c-sda-falling-time-ns",
-+				     &dev->sda_falling_time);
-+		of_property_read_u32(pdev->dev.of_node,
-+				     "i2c-scl-falling-time-ns",
-+				     &dev->scl_falling_time);
+ 	if (pdev->dev.of_node) {
+ 		u32 ht = 0;
+ 		u32 ic_clk = dev->get_clk_rate_khz(dev);
+@@ -166,6 +170,15 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		of_property_read_u32(pdev->dev.of_node,
+ 				     "i2c-scl-falling-time-ns",
+ 				     &dev->scl_falling_time);
++
++		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
++				     &clk_freq);
++
++		/* Only standard mode at 100kHz and fast mode at 400kHz
++		 * are supported.
++		 */
++		if (clk_freq != 100000 && clk_freq != 400000)
++			return -EINVAL;
  	}
  
  	dev->functionality =
+@@ -175,8 +188,12 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		I2C_FUNC_SMBUS_BYTE_DATA |
+ 		I2C_FUNC_SMBUS_WORD_DATA |
+ 		I2C_FUNC_SMBUS_I2C_BLOCK;
+-	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+-		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
++	if (clk_freq == 100000)
++		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
++			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
++	else
++		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
++			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+ 
+ 	/* Try first if we can configure the device from ACPI */
+ 	r = dw_i2c_acpi_configure(pdev);
 -- 
 1.7.1
 
