@@ -1,130 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaATPls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:41:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7976 "EHLO mx1.redhat.com"
+	id S1754077AbaATPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:42:26 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:36537 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947AbaATPlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:41:45 -0500
-Date: Mon, 20 Jan 2014 10:41:15 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Young <dyoung@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] x86, perf_p4:  block PMIs on init to prevent a stream of
- unkown NMIs
-Message-ID: <20140120154115.GZ25953@redhat.com>
-References: <1389973301-134448-1-git-send-email-dzickus@redhat.com>
- <20140120083859.GD30183@twins.programming.kicks-ass.net>
+	id S1753711AbaATPmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 10:42:24 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v7 0/7] ARM: rockchip: add smp functionality
+Date: Mon, 20 Jan 2014 16:41:43 +0100
+Message-ID: <4970034.fqvMoHdOyd@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120083859.GD30183@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 09:38:59AM +0100, Peter Zijlstra wrote:
-> On Fri, Jan 17, 2014 at 10:41:41AM -0500, Don Zickus wrote:
-> > I could have removed the ENABLE bit too, but was worried it would impact
-> > BIOS vendors secret ability to monitor cpu states.  I figured the ability to
-> > generate a PMI or not is not interesting to them and chose that route instead.
-> 
-> 
-> You worry about the wrong things, just clear the things.
+This series enables the use of the additional cores on Rockchip
+Cortex-A9 SoCs.
 
-Like this?
+To achieve this, add the scu, the needed sram and power-management-unit.
 
-Cheers,
-Don
+Tested on both a BQ Curie2 (rk3066a / dual core) and
+on a Radxa Rock (rk3188 / quad core).
 
-----------------------8<-------------
-From: Don Zickus <dzickus@redhat.com>
-Date: Fri, 17 Jan 2014 10:23:53 -0500
-Subject: [PATCH v2] x86, perf_p4:  block PMIs on init to prevent a stream of unkown NMIs
+changes since v6:
+- address comments from Mark Rutland
+  - using of_property_read_u32_index instead of parsing the list manually
+  - include v4 of "of: add functions to count number of elements in a property"
+    to not have to count property-elements manually anymore
+changes since v5:
+- Grant Likely liked it better to "specify reserved regions of the
+  memory instead of the valid ranges", so go back to the mmio-sram-reserved
+  property originally suggested by Rob Herring
 
-A bunch of unknown NMIs have popped up on a Pentium4 recently when booting
-into a kdump kernel.  This was exposed because the watchdog timer went
-from 60 seconds down to 10 seconds (increasing the ability to reproduce
-this problem).
+changes since v4:
+- rebase on top of the recent rk3188 board support
+- implement suggestion from Matt Sealey in moving the sram-limit from
+  marking reserved regions to marking available regions - hopefully
+  I got the usage right 
+- remove __CPUINIT as suggested by Fabio Estevam
 
-What is happening is on boot up of the second kernel (the kdump one),
-the previous nmi_watchdogs were enabled on thread 0 and thread 1.  The
-second kernel only initializes one cpu but the perf counter on thread 1
-still counts.
+changes since v3:
+- address comments from Rob Herring:
+  - split the gathering of the reserve-data into a separate loop
+  - spelling and style fixes
+- first patch only included for reference, already part of the
+  char-misc git tree
 
-Normally in a kdump scenario, the other cpus are blocking in an NMI loop,
-but more importantly their local apics have the performance counters disabled
-(iow LVTPC is masked).  So any counters that fire are masked and never get
-through to the second kernel.
+changes since v2:
+- rework the sram allocation following the suggestion from Philipp Zabel
 
-However, on a P4 the local apic is shared by both threads and thread1's PMI
-(despite being configured to only interrupt thread1) will generate an NMI on
-thread0.  Because thread0 knows nothing about this NMI, it is seen as an
-unknown NMI.
+changes since v1:
+- add reserved block feature for mmio-sram, to not use two logical
+  sram nodes
+- the sram content is kept intact while the device is running, so
+  copying the trampoline is only needed once
 
-This would be fine because it is a kdump kernel, strange things happen
-what is the big deal about a single unknown NMI.
+Heiko Stuebner (7):
+  of: add functions to count number of elements in a property
+  dt-bindings: sram: describe option to reserve parts of the memory
+  misc: sram: implement mmio-sram-reserved option
+  ARM: rockchip: add snoop-control-unit
+  ARM: rockchip: add sram dt nodes and documentation
+  ARM: rockchip: add power-management-unit
+  ARM: rockchip: add smp bringup code
 
-Unfortunately, the P4 comes with another quirk: clearing the overflow bit
-to prevent a stream of NMIs.  This is the problem.
+ .../devicetree/bindings/arm/rockchip/pmu.txt       |   16 ++
+ .../devicetree/bindings/arm/rockchip/smp-sram.txt  |   23 +++
+ Documentation/devicetree/bindings/misc/sram.txt    |    8 +
+ arch/arm/boot/dts/rk3066a.dtsi                     |    6 +
+ arch/arm/boot/dts/rk3188.dtsi                      |    6 +
+ arch/arm/boot/dts/rk3xxx.dtsi                      |   10 +
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/core.h                      |   22 +++
+ arch/arm/mach-rockchip/headsmp.S                   |   30 +++
+ arch/arm/mach-rockchip/platsmp.c                   |  208 ++++++++++++++++++++
+ arch/arm/mach-rockchip/rockchip.c                  |    2 +
+ drivers/misc/sram.c                                |  121 +++++++++++-
+ drivers/of/base.c                                  |   32 +++
+ include/linux/of.h                                 |   76 +++++++
+ 15 files changed, 554 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
+ create mode 100644 arch/arm/mach-rockchip/core.h
+ create mode 100644 arch/arm/mach-rockchip/headsmp.S
+ create mode 100644 arch/arm/mach-rockchip/platsmp.c
 
-The kdump kernel can not execute because of the endless NMIs that happen.
-
-To solve this, I instrumented the p4 perf init code, to walk all the counters
-and zero them out (just like a normal reset would).
-
-Now when the counters go off, they do not generate anything and no unknown
-NMIs are seen.
-
-I tested this on a P4 we have in our lab.  After two or three crashes, I could
-normally reproduce the problem.  Now after 10 crashes, everything continues
-to boot correctly.
-
-Cc: Dave Young <dyoung@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/cpu/perf_event_p4.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-V2 - zero out the register per Peter's suggestion.
-
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 3486e66..075f18c 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1322,6 +1322,7 @@ static __initconst const struct x86_pmu p4_pmu = {
- __init int p4_pmu_init(void)
- {
- 	unsigned int low, high;
-+	int i, reg;
- 
- 	/* If we get stripped -- indexing fails */
- 	BUILD_BUG_ON(ARCH_P4_MAX_CCCR > INTEL_PMC_MAX_GENERIC);
-@@ -1340,5 +1341,19 @@ __init int p4_pmu_init(void)
- 
- 	x86_pmu = p4_pmu;
- 
-+	/*
-+	 * Even though the counters are configured to interrupt a particular
-+	 * logical processor when an overflow happens, testing has shown that
-+	 * on kdump kernels (which uses a single cpu), thread1's counter
-+	 * continues to run and will report an NMI on thread0.  Due to the
-+	 * overflow bug, this leads to a stream of unknown NMIs.
-+	 *
-+	 * Solve this by zero'ing out the registers to mimic a reset.
-+	 */
-+        for (i = 0; i < x86_pmu.num_counters; i++) {
-+		reg = x86_pmu_config_addr(i);
-+		wrmsrl_safe(reg, 0ULL);
-+        }
-+
- 	return 0;
- }
 -- 
-1.7.1
+1.7.10.4
+
 
