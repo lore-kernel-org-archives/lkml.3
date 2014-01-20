@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaATTLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 14:11:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18681 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210AbaATTL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 14:11:28 -0500
-X-ExtLoop1: 1
+	id S1752736AbaATTPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:15:37 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:48276 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaATTPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 14:15:35 -0500
 X-IronPort-AV: E=Sophos;i="4.95,691,1384329600"; 
-   d="scan'208";a="441826306"
-Subject: Re: [PATCH v7 2/6] MCS Lock: optimizations and extra comments
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <20140120135803.GF31570@twins.programming.kicks-ass.net>
-References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
-	 <1389917300.3138.12.camel@schen9-DESK>
-	 <20140120135803.GF31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Jan 2014 11:11:25 -0800
-Message-ID: <1390245085.3138.24.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+   d="scan'208";a="10102399"
+Message-ID: <52DD75B1.3090701@broadcom.com>
+Date: Mon, 20 Jan 2014 11:14:57 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>, Matt Porter <mporter@linaro.org>
+CC: "arm@kernel.org" <arm@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>	<1387592016-13740-1-git-send-email-syin@broadcom.com>	<1387592016-13740-4-git-send-email-syin@broadcom.com>	<CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>	<52D98B99.5050604@broadcom.com>	<20140118025600.GS31049@beef> <CACRpkdYAANtY=9QtDnYNZLSrF09nTWUH4nK5oJ7mzznS+_=bHA@mail.gmail.com>
+In-Reply-To: <CACRpkdYAANtY=9QtDnYNZLSrF09nTWUH4nK5oJ7mzznS+_=bHA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-20 at 14:58 +0100, Peter Zijlstra wrote:
-> On Thu, Jan 16, 2014 at 04:08:20PM -0800, Tim Chen wrote:
-> > Remove unnecessary operation and make the cmpxchg(lock, node, NULL) == node
-> > check in mcs_spin_unlock() likely() as it is likely that a race did not occur
-> > most of the time.
-> 
-> It might be good to describe why the node->locked=1 is thought
-> unnecessary. I concur it is, but upon reading this changelog I was left
-> wondering and had to go read the code and run through the logic to
-> convince myself.
-> 
-> Having done so, I'm now wondering if we think so for the same reason --
-> although I'm fairly sure we are.
-> 
-> The argument goes like: everybody only looks at his own ->locked value,
-> therefore the only one possibly interested in node->locked is the lock
-> owner. However the lock owner doesn't care what's in it, it simply
-> assumes its 1 but really doesn't care one way or another.
+On 14-01-20 12:16 AM, Linus Walleij wrote:
+> On Sat, Jan 18, 2014 at 3:56 AM, Matt Porter <mporter@linaro.org> wrote:
+>
+>> I wonder if Linus would accept a rename at this point (too late for 3.14
+>> presumably, but for 3.15) of s/capri/bcm281xx throughout, bcm11351 for
+>> the compatible string, as we have for the machine compatible, and also
+>> BCM281XX for the Kconfig option.
+>
+> Yes, if there is some consensus that this is what we want to do.
+>
+> I can certainly merge that during the 3.14-rc phase for that matter.
 
-Yes, it is done for the same reason you mentioned.  I'll update
-the comments better to reflect this.
+Hi Linus,
 
-> 
-> That said, a possible DEBUG mode might want to actually set it, validate
-> that all other linked nodes are 0 and upon unlock verify the same before
-> flipping next->locked to 1.
+I'll confirm the new name with Matt before sending out another patch. 
+Which would work better for you - a) a set of patches replacing my 
+previous ones, b) a set of patches on top of my previous ones, c) a 
+single patch on top of my previous ones? d) something else?
 
-I'll leave a comment to indicate this. If we need a DEBUG mode later,
-we can come back to add this easily.
-
-Thanks.
-
-Tim
-
-
+Thanks,
+Sherman
 
