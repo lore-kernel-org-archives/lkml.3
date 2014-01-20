@@ -1,596 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751AbaATPEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 10:04:06 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:50073 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaATPED (ORCPT
+	id S1753413AbaATPJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 10:09:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:31598 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaATPJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 10:04:03 -0500
-Date: Mon, 20 Jan 2014 16:03:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/platform changes for v3.14
-Message-ID: <20140120150359.GA15571@gmail.com>
+	Mon, 20 Jan 2014 10:09:41 -0500
+Date: Mon, 20 Jan 2014 10:09:30 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com
+Cc: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V0 PATCH] xen/pvh: set some cr flags upon vcpu start
+Message-ID: <20140120150930.GA4598@phenom.dumpdata.com>
+References: <1390011895-28123-1-git-send-email-mukesh.rathor@oracle.com>
+ <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Jan 17, 2014 at 06:24:55PM -0800, Mukesh Rathor wrote:
+> pvh was designed to start with pv flags, but a commit in xen tree
 
-Please pull the latest x86-platform-for-linus git tree from:
+Thank you for posting this!
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-platform-for-linus
+> 51e2cac257ec8b4080d89f0855c498cbbd76a5e5 removed some of the flags as
 
-   # HEAD: ca1e631c3acf80bc5f5934ce9054a9b4880c96e1 x86, tsc, apic: Unbreak static (MSR) calibration when CONFIG_X86_LOCAL_APIC=n
+You need to always include the title of said commit.
 
-Improved Intel SoC platform support.
+> they are not necessary. As a result, these CR flags must be set in the
+> guest.
 
- Thanks,
-
-	Ingo
-
------------------->
-Bin Gao (1):
-      x86, tsc: Add static (MSR) TSC calibration on Intel Atom SoCs
-
-David E. Box (1):
-      arch: x86: New MailBox support driver for Intel SOC's
-
-H. Peter Anvin (1):
-      x86, tsc, apic: Unbreak static (MSR) calibration when CONFIG_X86_LOCAL_APIC=n
+I sent out replies to this over the weekend but somehow they are not
+showing up.
 
 
- arch/x86/Kconfig                |   8 ++
- arch/x86/include/asm/iosf_mbi.h |  90 ++++++++++++++++
- arch/x86/include/asm/tsc.h      |   3 +
- arch/x86/kernel/Makefile        |   3 +-
- arch/x86/kernel/iosf_mbi.c      | 226 ++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/tsc.c           |  10 ++
- arch/x86/kernel/tsc_msr.c       | 127 ++++++++++++++++++++++
- 7 files changed, 466 insertions(+), 1 deletion(-)
- create mode 100644 arch/x86/include/asm/iosf_mbi.h
- create mode 100644 arch/x86/kernel/iosf_mbi.c
- create mode 100644 arch/x86/kernel/tsc_msr.c
+> 
+> Signed-off-by: Roger Pau Monne <roger.pau@citrix.com>
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0952ecd..ca5959a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2393,6 +2393,14 @@ config X86_DMA_REMAP
- 	bool
- 	depends on STA2X11
+Since his SoB is first that implies that he is the author. But the
+'From' line is from you. You can modify that by doing:
+
+git commit --amend --author "Roger Pau Monne <roger.pau@citrix.com>"
+
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c |   43 +++++++++++++++++++++++++++++++++++++------
+>  arch/x86/xen/smp.c       |    2 +-
+>  arch/x86/xen/xen-ops.h   |    2 +-
+>  3 files changed, 39 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 628099a..4a2aaa6 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1410,12 +1410,8 @@ static void __init xen_boot_params_init_edd(void)
+>   * Set up the GDT and segment registers for -fstack-protector.  Until
+>   * we do this, we have to be careful not to call any stack-protected
+>   * function, which is most of the kernel.
+> - *
+> - * Note, that it is refok - because the only caller of this after init
+> - * is PVH which is not going to use xen_load_gdt_boot or other
+> - * __init functions.
+>   */
+> -void __ref xen_setup_gdt(int cpu)
+> +static void xen_setup_gdt(int cpu)
+>  {
+>  	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+>  #ifdef CONFIG_X86_64
+> @@ -1463,13 +1459,48 @@ void __ref xen_setup_gdt(int cpu)
+>  	pv_cpu_ops.load_gdt = xen_load_gdt;
+>  }
+>  
+> +/*
+> + * A pv guest starts with default flags that are not set for pvh, set them
+> + * here asap.
+> + */
+> +static void xen_pvh_set_cr_flags(int cpu)
+> +{
+> +	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_WP | X86_CR0_AM);
+
+You seem to be missing the X86_CR0_NE ?
+
+The hypervisor sets "X86_CR0_PG" for PVH and uncondtionally for HVM
+X86_CR0_TS, X86_CR0_PE, X86_CR0_ET so from the list of them that
+'secondary_startup_64' sets:
+
+208         /* Setup cr0 */
+209 #define CR0_STATE       (X86_CR0_PE | X86_CR0_MP | X86_CR0_ET | \
+210                          X86_CR0_NE | X86_CR0_WP | X86_CR0_AM | \
+211                          X86_CR0_PG)
+212         movl    $CR0_STATE, %eax
+
+
+The one that is missing is NE. I fixed it up.
+
+> +
+> +	if (!cpu)
+> +		return;
+
+And what happens if don't have this check? Will be bad if do multiple
+cr4 writes?
+
+Fyi, this (cr4) should have been a seperate patch. I fixed it up that way.
+> +	/*
+> +	 * Unlike PV, for pvh xen does not set: PSE PGE OSFXSR OSXMMEXCPT
+> +	 * For BSP, PSE PGE will be set in probe_page_size_mask(), for AP
+> +	 * set them here. For all, OSFXSR OSXMMEXCPT will be set in fpu_init
+> +	 */
+> +	if (cpu_has_pse)
+> +		set_in_cr4(X86_CR4_PSE);
+> +
+> +	if (cpu_has_pge)
+> +		set_in_cr4(X86_CR4_PGE);
+> +}
+
+Seperate patch and since the PGE part is more complicated that just
+setting the CR4 - you also have to tweak this:
+
+1512         /* Prevent unwanted bits from being set in PTEs. */                     
+1513         __supported_pte_mask &= ~_PAGE_GLOBAL;                                  
+
+I think it should be done once we have actually confirmed that you can
+do 2MB pages within the guest. (might need some more tweaking?)
+
+> +
+> +/*
+> + * Note, that it is refok - because the only caller of this after init
+
+Ah, you based this on a old commit. #linux-next is the one that has
+the patches.
+
+> + * is PVH which is not going to use xen_load_gdt_boot or other
+> + * __init functions.
+> + */
+> +void __ref xen_pvh_secondary_vcpu_init(int cpu)
+> +{
+> +	xen_setup_gdt(cpu);
+> +	xen_pvh_set_cr_flags(cpu);
+> +}
+> +
+>  static void __init xen_pvh_early_guest_init(void)
+>  {
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap))
+>  		return;
+>  
+> -	if (xen_feature(XENFEAT_hvm_callback_vector))
+> +	if (xen_feature(XENFEAT_hvm_callback_vector)) {
+>  		xen_have_vector_callback = 1;
+> +		xen_pvh_set_cr_flags(0);
+
+Why? Why not make it unconditional? Or just change the
+code to error out if !hvm_callback_vector?
+
+Anyhow, I changed it in the patch.
+
+> +	}
+>  
+>  #ifdef CONFIG_X86_32
+>  	BUG(); /* PVH: Implement proper support. */
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 5e46190..a18eadd 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -105,7 +105,7 @@ static void cpu_bringup_and_idle(int cpu)
+>  #ifdef CONFIG_X86_64
+>  	if (xen_feature(XENFEAT_auto_translated_physmap) &&
+>  	    xen_feature(XENFEAT_supervisor_mode_kernel))
+> -		xen_setup_gdt(cpu);
+> +		xen_pvh_secondary_vcpu_init(cpu);
+>  #endif
+>  	cpu_bringup();
+>  	cpu_startup_entry(CPUHP_ONLINE);
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 9059c24..1cb6f4c 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -123,5 +123,5 @@ __visible void xen_adjust_exception_frame(void);
+>  
+>  extern int xen_panic_handler_init(void);
+>  
+> -void xen_setup_gdt(int cpu);
+> +void xen_pvh_secondary_vcpu_init(int cpu);
+>  #endif /* XEN_OPS_H */
+> -- 
+> 1.7.2.3
+> 
+
+
+Here is what I am thinking we should have in the tree:
+
+>From 0a1574661b47544d2e880d579d1954dcbb6aa2c1 Mon Sep 17 00:00:00 2001
+From: Roger Pau Monne <roger.pau@citrix.com>
+Date: Mon, 20 Jan 2014 09:20:07 -0500
+Subject: [PATCH] xen/pvh: Set X86_CR0_WP and others in CR0
+
+otherwise we will get for some user-space applications
+that use 'clone' with CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID
+end up hitting an assert in glibc manifested by:
+
+general protection ip:7f80720d364c sp:7fff98fd8a80 error:0 in
+libc-2.13.so[7f807209e000+180000]
+
+This is due to the nature of said operations which sets and clears
+the PID.  "In the successful one I can see that the page table of
+the parent process has been updated successfully to use a
+different physical page, so the write of the tid on
+that page only affects the child...
+
+On the other hand, in the failed case, the write seems to happen before
+the copy of the original page is done, so both the parent _and_ the child
+end up with the same value (because the parent copies the page after
+the write of the child tid has already happened)."
+(Roger's analysis). The nature of this is due to the Xen's commit
+of 51e2cac257ec8b4080d89f0855c498cbbd76a5e5
+"x86/pvh: set only minimal cr0 and cr4 flags in order to use paging"
+the CR0_WP was removed so COW features of the Linux kernel were not
+operating properly.
+
+While doing that also update the rest of the CR0 flags to be inline
+with what a baremetal Linux kernel would set them to.
+
+In 'secondary_startup_64' (baremetal Linux) sets:
+
+X86_CR0_PE | X86_CR0_MP | X86_CR0_ET | X86_CR0_NE | X86_CR0_WP |
+X86_CR0_AM | X86_CR0_PG
+
+The hypervisor for HVM type guests (which PVH is a subset of) sets:
+X86_CR0_PE | X86_CR0_ET | X86_CR0_TS
+For PVH it specifically sets:
+X86_CR0_PG
+
+Which means we need to set the rest: X86_CR0_MP | X86_CR0_NE  |
+X86_CR0_WP | X86_CR0_AM to have full parity.
+
+Reported-and-Tested-by: Roger Pau Monne <roger.pau@citrix.com>
+Signed-off-by: Roger Pau Monne <roger.pau@citrix.com>
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[v1: Took out the cr4 writes to be a seperate patch]
+---
+ arch/x86/xen/enlighten.c |   31 +++++++++++++++++++++++++++++--
+ arch/x86/xen/smp.c       |    2 +-
+ arch/x86/xen/xen-ops.h   |    2 +-
+ 3 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index b6d61c3..b320f2b 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1462,13 +1462,40 @@ void __ref xen_setup_gdt(int cpu)
+ 	pv_cpu_ops.load_gdt = xen_load_gdt;
+ }
  
-+config IOSF_MBI
-+	bool
-+	depends on PCI
-+	---help---
-+	  To be selected by modules requiring access to the Intel OnChip System
-+	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
-+	  enumerable by PCI.
-+
- source "net/Kconfig"
- 
- source "drivers/Kconfig"
-diff --git a/arch/x86/include/asm/iosf_mbi.h b/arch/x86/include/asm/iosf_mbi.h
-new file mode 100644
-index 0000000..8e71c79
---- /dev/null
-+++ b/arch/x86/include/asm/iosf_mbi.h
-@@ -0,0 +1,90 @@
 +/*
-+ * iosf_mbi.h: Intel OnChip System Fabric MailBox access support
++ * A PV guest starts with default flags that are not set for PVH, set them
++ * here asap.
 + */
-+
-+#ifndef IOSF_MBI_SYMS_H
-+#define IOSF_MBI_SYMS_H
-+
-+#define MBI_MCR_OFFSET		0xD0
-+#define MBI_MDR_OFFSET		0xD4
-+#define MBI_MCRX_OFFSET		0xD8
-+
-+#define MBI_RD_MASK		0xFEFFFFFF
-+#define MBI_WR_MASK		0X01000000
-+
-+#define MBI_MASK_HI		0xFFFFFF00
-+#define MBI_MASK_LO		0x000000FF
-+#define MBI_ENABLE		0xF0
-+
-+/* Baytrail available units */
-+#define BT_MBI_UNIT_AUNIT	0x00
-+#define BT_MBI_UNIT_SMC		0x01
-+#define BT_MBI_UNIT_CPU		0x02
-+#define BT_MBI_UNIT_BUNIT	0x03
-+#define BT_MBI_UNIT_PMC		0x04
-+#define BT_MBI_UNIT_GFX		0x06
-+#define BT_MBI_UNIT_SMI		0x0C
-+#define BT_MBI_UNIT_USB		0x43
-+#define BT_MBI_UNIT_SATA	0xA3
-+#define BT_MBI_UNIT_PCIE	0xA6
-+
-+/* Baytrail read/write opcodes */
-+#define BT_MBI_AUNIT_READ	0x10
-+#define BT_MBI_AUNIT_WRITE	0x11
-+#define BT_MBI_SMC_READ		0x10
-+#define BT_MBI_SMC_WRITE	0x11
-+#define BT_MBI_CPU_READ		0x10
-+#define BT_MBI_CPU_WRITE	0x11
-+#define BT_MBI_BUNIT_READ	0x10
-+#define BT_MBI_BUNIT_WRITE	0x11
-+#define BT_MBI_PMC_READ		0x06
-+#define BT_MBI_PMC_WRITE	0x07
-+#define BT_MBI_GFX_READ		0x00
-+#define BT_MBI_GFX_WRITE	0x01
-+#define BT_MBI_SMIO_READ	0x06
-+#define BT_MBI_SMIO_WRITE	0x07
-+#define BT_MBI_USB_READ		0x06
-+#define BT_MBI_USB_WRITE	0x07
-+#define BT_MBI_SATA_READ	0x00
-+#define BT_MBI_SATA_WRITE	0x01
-+#define BT_MBI_PCIE_READ	0x00
-+#define BT_MBI_PCIE_WRITE	0x01
-+
-+/**
-+ * iosf_mbi_read() - MailBox Interface read command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data to be read
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
-+
-+/**
-+ * iosf_mbi_write() - MailBox unmasked write command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data to be written
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
-+
-+/**
-+ * iosf_mbi_modify() - MailBox masked write command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data being modified
-+ * @mask:	mask indicating bits in mdr to be modified
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
-+
-+#endif /* IOSF_MBI_SYMS_H */
-diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-index 235be70..57ae63c 100644
---- a/arch/x86/include/asm/tsc.h
-+++ b/arch/x86/include/asm/tsc.h
-@@ -65,4 +65,7 @@ extern int notsc_setup(char *);
- extern void tsc_save_sched_clock_state(void);
- extern void tsc_restore_sched_clock_state(void);
- 
-+/* MSR based TSC calibration for Intel Atom SoC platforms */
-+int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
-+
- #endif /* _ASM_X86_TSC_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9b0a34e..6dbbb1e 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -32,7 +32,7 @@ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
--obj-y			+= tsc.o io_delay.o rtc.o
-+obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
- obj-y			+= resource.o
- 
-@@ -111,6 +111,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
- 
- obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
- obj-$(CONFIG_TRACING)			+= tracepoint.o
-+obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
- 
- ###
- # 64 bit specific files
-diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
-new file mode 100644
-index 0000000..c3aae66
---- /dev/null
-+++ b/arch/x86/kernel/iosf_mbi.c
-@@ -0,0 +1,226 @@
-+/*
-+ * IOSF-SB MailBox Interface Driver
-+ * Copyright (c) 2013, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ *
-+ * The IOSF-SB is a fabric bus available on Atom based SOC's that uses a
-+ * mailbox interface (MBI) to communicate with mutiple devices. This
-+ * driver implements access to this interface for those platforms that can
-+ * enumerate the device using PCI.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
-+#include <linux/pci.h>
-+
-+#include <asm/iosf_mbi.h>
-+
-+static DEFINE_SPINLOCK(iosf_mbi_lock);
-+
-+static inline u32 iosf_mbi_form_mcr(u8 op, u8 port, u8 offset)
++static void xen_pvh_set_cr_flags(int cpu)
 +{
-+	return (op << 24) | (port << 16) | (offset << 8) | MBI_ENABLE;
++
++	/* Some of these are setup in 'secondary_startup_64'. The others:
++	 * X86_CR0_TS, X86_CR0_PE, X86_CR0_ET are set by Xen for HVM guests
++	 * (which PVH shared codepaths), while X86_CR0_PG is for PVH. */
++	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_NE | X86_CR0_WP | X86_CR0_AM);
 +}
-+
-+static struct pci_dev *mbi_pdev;	/* one mbi device */
-+
-+static int iosf_mbi_pci_read_mdr(u32 mcrx, u32 mcr, u32 *mdr)
-+{
-+	int result;
-+
-+	if (!mbi_pdev)
-+		return -ENODEV;
-+
-+	if (mcrx) {
-+		result = pci_write_config_dword(mbi_pdev, MBI_MCRX_OFFSET,
-+						mcrx);
-+		if (result < 0)
-+			goto fail_read;
-+	}
-+
-+	result = pci_write_config_dword(mbi_pdev, MBI_MCR_OFFSET, mcr);
-+	if (result < 0)
-+		goto fail_read;
-+
-+	result = pci_read_config_dword(mbi_pdev, MBI_MDR_OFFSET, mdr);
-+	if (result < 0)
-+		goto fail_read;
-+
-+	return 0;
-+
-+fail_read:
-+	dev_err(&mbi_pdev->dev, "PCI config access failed with %d\n", result);
-+	return result;
-+}
-+
-+static int iosf_mbi_pci_write_mdr(u32 mcrx, u32 mcr, u32 mdr)
-+{
-+	int result;
-+
-+	if (!mbi_pdev)
-+		return -ENODEV;
-+
-+	result = pci_write_config_dword(mbi_pdev, MBI_MDR_OFFSET, mdr);
-+	if (result < 0)
-+		goto fail_write;
-+
-+	if (mcrx) {
-+		result = pci_write_config_dword(mbi_pdev, MBI_MCRX_OFFSET,
-+						mcrx);
-+		if (result < 0)
-+			goto fail_write;
-+	}
-+
-+	result = pci_write_config_dword(mbi_pdev, MBI_MCR_OFFSET, mcr);
-+	if (result < 0)
-+		goto fail_write;
-+
-+	return 0;
-+
-+fail_write:
-+	dev_err(&mbi_pdev->dev, "PCI config access failed with %d\n", result);
-+	return result;
-+}
-+
-+int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-+{
-+	u32 mcr, mcrx;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	if (port == BT_MBI_UNIT_GFX) {
-+		WARN_ON(1);
-+		return -EPERM;
-+	}
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & MBI_MASK_LO);
-+	mcrx = offset & MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+	ret = iosf_mbi_pci_read_mdr(mcrx, mcr, mdr);
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(iosf_mbi_read);
-+
-+int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-+{
-+	u32 mcr, mcrx;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	if (port == BT_MBI_UNIT_GFX) {
-+		WARN_ON(1);
-+		return -EPERM;
-+	}
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & MBI_MASK_LO);
-+	mcrx = offset & MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+	ret = iosf_mbi_pci_write_mdr(mcrx, mcr, mdr);
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(iosf_mbi_write);
-+
-+int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
-+{
-+	u32 mcr, mcrx;
-+	u32 value;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	if (port == BT_MBI_UNIT_GFX) {
-+		WARN_ON(1);
-+		return -EPERM;
-+	}
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & MBI_MASK_LO);
-+	mcrx = offset & MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+
-+	/* Read current mdr value */
-+	ret = iosf_mbi_pci_read_mdr(mcrx, mcr & MBI_RD_MASK, &value);
-+	if (ret < 0) {
-+		spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+		return ret;
-+	}
-+
-+	/* Apply mask */
-+	value &= ~mask;
-+	mdr &= mask;
-+	value |= mdr;
-+
-+	/* Write back */
-+	ret = iosf_mbi_pci_write_mdr(mcrx, mcr | MBI_WR_MASK, value);
-+
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(iosf_mbi_modify);
-+
-+static int iosf_mbi_probe(struct pci_dev *pdev,
-+			  const struct pci_device_id *unused)
-+{
-+	int ret;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "error: could not enable device\n");
-+		return ret;
-+	}
-+
-+	mbi_pdev = pci_dev_get(pdev);
-+	return 0;
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F00) },
-+	{ 0, },
-+};
-+MODULE_DEVICE_TABLE(pci, iosf_mbi_pci_ids);
-+
-+static struct pci_driver iosf_mbi_pci_driver = {
-+	.name		= "iosf_mbi_pci",
-+	.probe		= iosf_mbi_probe,
-+	.id_table	= iosf_mbi_pci_ids,
-+};
-+
-+static int __init iosf_mbi_init(void)
-+{
-+	return pci_register_driver(&iosf_mbi_pci_driver);
-+}
-+
-+static void __exit iosf_mbi_exit(void)
-+{
-+	pci_unregister_driver(&iosf_mbi_pci_driver);
-+	if (mbi_pdev) {
-+		pci_dev_put(mbi_pdev);
-+		mbi_pdev = NULL;
-+	}
-+}
-+
-+module_init(iosf_mbi_init);
-+module_exit(iosf_mbi_exit);
-+
-+MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
-+MODULE_DESCRIPTION("IOSF Mailbox Interface accessor");
-+MODULE_LICENSE("GPL v2");
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 930e5d4..e574716 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -419,6 +419,16 @@ unsigned long native_calibrate_tsc(void)
- 	unsigned long flags, latch, ms, fast_calibrate;
- 	int hpet = is_hpet_enabled(), i, loopmin;
- 
-+	/* Calibrate TSC using MSR for Intel Atom SoCs */
-+	local_irq_save(flags);
-+	i = try_msr_calibrate_tsc(&fast_calibrate);
-+	local_irq_restore(flags);
-+	if (i >= 0) {
-+		if (i == 0)
-+			pr_warn("Fast TSC calibration using MSR failed\n");
-+		return fast_calibrate;
-+	}
-+
- 	local_irq_save(flags);
- 	fast_calibrate = quick_pit_calibrate();
- 	local_irq_restore(flags);
-diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
-new file mode 100644
-index 0000000..8b5434f
---- /dev/null
-+++ b/arch/x86/kernel/tsc_msr.c
-@@ -0,0 +1,127 @@
-+/*
-+ * tsc_msr.c - MSR based TSC calibration on Intel Atom SoC platforms.
-+ *
-+ * TSC in Intel Atom SoC runs at a constant rate which can be figured
-+ * by this formula:
-+ * <maximum core-clock to bus-clock ratio> * <maximum resolved frequency>
-+ * See Intel 64 and IA-32 System Programming Guid section 16.12 and 30.11.5
-+ * for details.
-+ * Especially some Intel Atom SoCs don't have PIT(i8254) or HPET, so MSR
-+ * based calibration is the only option.
-+ *
-+ *
-+ * Copyright (C) 2013 Intel Corporation
-+ * Author: Bin Gao <bin.gao@intel.com>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <asm/processor.h>
-+#include <asm/setup.h>
-+#include <asm/apic.h>
-+#include <asm/param.h>
-+
-+/* CPU reference clock frequency: in KHz */
-+#define FREQ_83		83200
-+#define FREQ_100	99840
-+#define FREQ_133	133200
-+#define FREQ_166	166400
-+
-+#define MAX_NUM_FREQS	8
 +
 +/*
-+ * According to Intel 64 and IA-32 System Programming Guide,
-+ * if MSR_PERF_STAT[31] is set, the maximum resolved bus ratio can be
-+ * read in MSR_PLATFORM_ID[12:8], otherwise in MSR_PERF_STAT[44:40].
-+ * Unfortunately some Intel Atom SoCs aren't quite compliant to this,
-+ * so we need manually differentiate SoC families. This is what the
-+ * field msr_plat does.
++ * Note, that it is ref - because the only caller of this after init
++ * is PVH which is not going to use xen_load_gdt_boot or other
++ * __init functions.
 + */
-+struct freq_desc {
-+	u8 x86_family;	/* CPU family */
-+	u8 x86_model;	/* model */
-+	u8 msr_plat;	/* 1: use MSR_PLATFORM_INFO, 0: MSR_IA32_PERF_STATUS */
-+	u32 freqs[MAX_NUM_FREQS];
-+};
-+
-+static struct freq_desc freq_desc_tables[] = {
-+	/* PNW */
-+	{ 6, 0x27, 0, { 0, 0, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
-+	/* CLV+ */
-+	{ 6, 0x35, 0, { 0, FREQ_133, 0, 0, 0, FREQ_100, 0, FREQ_83 } },
-+	/* TNG */
-+	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
-+	/* VLV2 */
-+	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
-+	/* ANN */
-+	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
-+};
-+
-+static int match_cpu(u8 family, u8 model)
++void __ref xen_pvh_secondary_vcpu_init(int cpu)
 +{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(freq_desc_tables); i++) {
-+		if ((family == freq_desc_tables[i].x86_family) &&
-+			(model == freq_desc_tables[i].x86_model))
-+			return i;
-+	}
-+
-+	return -1;
++	xen_setup_gdt(cpu);
++	xen_pvh_set_cr_flags(cpu);
 +}
 +
-+/* Map CPU reference clock freq ID(0-7) to CPU reference clock freq(KHz) */
-+#define id_to_freq(cpu_index, freq_id) \
-+	(freq_desc_tables[cpu_index].freqs[freq_id])
+ static void __init xen_pvh_early_guest_init(void)
+ {
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap))
+ 		return;
+ 
+-	if (xen_feature(XENFEAT_hvm_callback_vector))
+-		xen_have_vector_callback = 1;
++	if (!xen_feature(XENFEAT_hvm_callback_vector))
++		return;
 +
-+/*
-+ * Do MSR calibration only for known/supported CPUs.
-+ * Return values:
-+ * -1: CPU is unknown/unsupported for MSR based calibration
-+ *  0: CPU is known/supported, but calibration failed
-+ *  1: CPU is known/supported, and calibration succeeded
-+ */
-+int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
-+{
-+	int cpu_index;
-+	u32 lo, hi, ratio, freq_id, freq;
-+
-+	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
-+	if (cpu_index < 0)
-+		return -1;
-+
-+	*fast_calibrate = 0;
-+
-+	if (freq_desc_tables[cpu_index].msr_plat) {
-+		rdmsr(MSR_PLATFORM_INFO, lo, hi);
-+		ratio = (lo >> 8) & 0x1f;
-+	} else {
-+		rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
-+		ratio = (hi >> 8) & 0x1f;
-+	}
-+	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
-+
-+	if (!ratio)
-+		return 0;
-+
-+	/* Get FSB FREQ ID */
-+	rdmsr(MSR_FSB_FREQ, lo, hi);
-+	freq_id = lo & 0x7;
-+	freq = id_to_freq(cpu_index, freq_id);
-+	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
-+				freq_id, freq);
-+	if (!freq)
-+		return 0;
-+
-+	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
-+	*fast_calibrate = freq * ratio;
-+	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
-+
-+#ifdef CONFIG_X86_LOCAL_APIC
-+	lapic_timer_frequency = (freq * 1000) / HZ;
-+	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
-+#endif
-+
-+	return 1;
-+}
++	xen_have_vector_callback = 1;
++	xen_pvh_set_cr_flags(0);
+ 
+ #ifdef CONFIG_X86_32
+ 	BUG(); /* PVH: Implement proper support. */
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 5e46190..a18eadd 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -105,7 +105,7 @@ static void cpu_bringup_and_idle(int cpu)
+ #ifdef CONFIG_X86_64
+ 	if (xen_feature(XENFEAT_auto_translated_physmap) &&
+ 	    xen_feature(XENFEAT_supervisor_mode_kernel))
+-		xen_setup_gdt(cpu);
++		xen_pvh_secondary_vcpu_init(cpu);
+ #endif
+ 	cpu_bringup();
+ 	cpu_startup_entry(CPUHP_ONLINE);
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 9059c24..1cb6f4c 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -123,5 +123,5 @@ __visible void xen_adjust_exception_frame(void);
+ 
+ extern int xen_panic_handler_init(void);
+ 
+-void xen_setup_gdt(int cpu);
++void xen_pvh_secondary_vcpu_init(int cpu);
+ #endif /* XEN_OPS_H */
+-- 
+1.7.7.6
+
