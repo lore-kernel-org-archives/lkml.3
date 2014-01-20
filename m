@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaATWXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 17:23:38 -0500
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:25945
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750942AbaATWXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 17:23:36 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Topic: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Index: AQHPEVjnKHWBxAK/ME2641uqAhZ1vZqHLleAgAcH9OCAAAGDAIAAAeYQ
-Date: Mon, 20 Jan 2014 22:23:20 +0000
-Message-ID: <4c24066612cc4b5bac8efe9d075d421f@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
- <20140116104841.GA21768@aepfle.de>
- <b29b3b91ff654abab607fe7b689bbfeb@BY2PR03MB299.namprd03.prod.outlook.com>
- <20140120221622.GA25947@aepfle.de>
-In-Reply-To: <20140120221622.GA25947@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.159.229]
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 00979FCB3A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(24454002)(189002)(199002)(377454003)(13464003)(86362001)(56776001)(76796001)(85306002)(59766001)(77982001)(76786001)(33646001)(76576001)(83322001)(81342001)(19580405001)(19580395003)(49866001)(93516002)(47736001)(80976001)(4396001)(92566001)(69226001)(50986001)(74662001)(93136001)(74316001)(31966008)(80022001)(81542001)(74502001)(47976001)(54316002)(90146001)(81816001)(87266001)(83072002)(76482001)(74706001)(47446002)(2656002)(87936001)(65816001)(53806001)(56816005)(63696002)(85852003)(66066001)(46102001)(74366001)(79102001)(51856001)(81686001)(74876001)(54356001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.159.229;FPR:;InfoNoRecordsMX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1752229AbaATW1i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 17:27:38 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59677 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaATW1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 17:27:33 -0500
+Message-ID: <52DDA2CD.9040001@dragonslave.de>
+Date: Mon, 20 Jan 2014 23:27:25 +0100
+From: Daniel Exner <dex@dragonslave.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Poor network performance x86_64.. also with 3.13
+References: <52DAD66F.7080306@dragonslave.de> <20140118195026.GA15543@pd.tnic> <52DB0439.2060905@dragonslave.de>
+In-Reply-To: <52DB0439.2060905@dragonslave.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0KMNkUr006556
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Hi,
+
+Am 18.01.2014 23:46, schrieb Daniel Exner:
+> Hi again,
+> 
+> Am 18.01.2014 20:50, schrieb Borislav Petkov:
+>> + netdev.
+> Thx
+> 
+> Am 18.01.2014 20:49, schrieb Holger Hoffst√§tte:> [This mail was
+> also posted to gmane.linux.kernel.]
+> 
+>> On Sat, 18 Jan 2014 20:30:55 +0100, Daniel Exner wrote:
+> 
+>>> I recently upgraded the Kernel from version 3.10 to latest 
+>>> stable 3.12.8, did the usual "make oldconfig" (resulting
+>>> config attached).
+>>> 
+>>> But now I noticed some _really_ low network performance.
+> 
+>> Try: sysctl net.ipv4.tcp_limit_output_bytes=262144
+> 
+> Tried that. Even 10 times the value. Same effect.
 
 
+I just did the same procedure with Kernel Version 3.13: same poor rates.
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Monday, January 20, 2014 2:16 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
-> Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-> 
-> On Mon, Jan 20, KY Srinivasan wrote:
-> 
-> > I am cleaning up the code based on your feedback. By the time I am
-> > done with my cleanup, I doubt if this patch would apply. Do you mind
-> > if I were to include your changes here as part of my cleanup?
-> 
-> Yes, thats fine.
+I think I will try to see of 3.12.6 was still ok and bisect from there.
 
-Thanks Olaf.
+Greetings
+Daniel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-K. Y
-> 
-> 
-> Olaf
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQIcBAEBCgAGBQJS3aLFAAoJEPI6v6bI/Qkf9+4QAJkfljUsRQn6DA6gWy3XYsn4
+ZB3F2Mu8kLsCMVjpASsi7+km2qTiFv4qGOgezHCJmqMcdCFszBweGQrnYBLA5PCD
+XSZ7G4S0U71aHWtY6iQd1q4ywnA21pfnGRqIpc5+OuIiIOm+YY+RXpJAHC5y1OVo
+MxsPL1ZVp/enJoZuvblw6i+JT+soAbSypPWcNQ78qb+CYzLVMLZHcqQvMwpAsRvQ
+LNKx8nyj8p32CdZo1GoT3f/nWvBeh/V/ViLrtt64u/oXMJyk5INVRFpSNUUviP8c
+42y+r2K31+nY11K2dHsdJYbv5lZ8p8g0SNoLG1SrjgDspaptnT8jptxxn7GcQqdL
+PZ3waUB7qYU15IxCA2iXwNPqjtsv8V5l55H/cunKQgxNbb318ui/a3cW7+R++CeL
+onv9HFNUkHJiP/MvZJ1/FXE0AsjX70un9NuQ0+xFjCRwJ/YLZzCHkWMERcev500O
+vS1yFTGiVY1HndoA4VFYzEkjOyHgDHHQA+0JkfBspVlhL7ow9hccmULZtEn9LzwU
+9rooQHyXwdKr6KIbsjHECyjIsBhW4Jfj6195bZ9ddBDBXSqYyGqjiuy7l7TjlZVa
+YmPNTlkEfMeXkO2h3km8TD2f+MPntYXkYjZVVUcK8NucgnIdLuWDk/GLrt73VTd8
+Cww6B/u4YnGJSF5v/nit
+=xCa3
+-----END PGP SIGNATURE-----
