@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaATOO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:14:27 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:48497 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaATOOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:14:21 -0500
-Message-ID: <52DD2F23.2010109@linaro.org>
-Date: Mon, 20 Jan 2014 22:13:55 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754111AbaATOOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:14:52 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48524 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753950AbaATOMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 09:12:49 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <balbi@ti.com>, <lee.jones@linaro.org>, <arnd@arndb.de>, <sre@debian.org>,
+        <mark.rutland@arm.com>, <m.paolino@virtualopensystems.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v6 08/10] ARM: dts: omap4-panda: Provide USB PHY clock
+Date: Mon, 20 Jan 2014 16:11:29 +0200
+Message-ID: <1390227091-4523-9-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1390227091-4523-1-git-send-email-rogerq@ti.com>
+References: <1390227091-4523-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linaro-kernel@lists.linaro.org, Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, linux-acpi@vger.kernel.org,
-        patches@linaro.org, Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org, Charles.Garcia-Tobin@arm.com
-Subject: Re: [PATCH 06/20] ARM64 / ACPI: Introduce some PCI functions when
- PCI is enabled
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <201401171504.24525.arnd@arndb.de> <52DCD961.70303@linaro.org> <4387274.ri38HmFxAV@wuerfel>
-In-Reply-To: <4387274.ri38HmFxAV@wuerfel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年01月20日 16:20, Arnd Bergmann wrote:
-> On Monday 20 January 2014 16:08:01 Hanjun Guo wrote:
->>>> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
->>>> index 3c8521d..1835b21 100644
->>>> --- a/drivers/acpi/plat/arm-core.c
->>>> +++ b/drivers/acpi/plat/arm-core.c
->>>> @@ -100,6 +100,25 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
->>>>   }
->>>>   EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
->>>>   
->>>> +int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
->>>> +{
->>>> +    return -1;
->>>> +}
->>>> +
->>>> +int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
->>>> +{
->>>> +    /* TBD */
->>>> +    return -EINVAL;
->>>> +}
->>>> +EXPORT_SYMBOL(acpi_register_ioapic);
->>>> +
->>>> +int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
->>>> +{
->>>> +    /* TBD */
->>>> +    return -EINVAL;
->>>> +}
->>>> +EXPORT_SYMBOL(acpi_unregister_ioapic);
->>>> +
->>> My feeling is that these are better handled in the ACPI code by not
->>> calling them on architectures that have no ISA or no IOAPIC support.
->>>
->>> We have configuration symbols for both, so you don't have to make
->>> it depend on CONFIG_ARM64 or CONFIG_X86.
->> Do you mean introduce a stub function when there is no ISA support?
-> Do you anticipate ISA devices on ARM64? I hope not ;-)
+The USB PHY gets its clock from AUXCLK3. Provide this
+information.
 
-me too :)
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap4-panda-common.dtsi | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
->
-> My guess is that whatever code calls this function should be disabled
-> in reduced hw mode.
+diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+index 88c6a05..50b72966 100644
+--- a/arch/arm/boot/dts/omap4-panda-common.dtsi
++++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+@@ -83,12 +83,8 @@
+ 		compatible = "usb-nop-xceiv";
+ 		reset-gpios = <&gpio2 30 GPIO_ACTIVE_LOW>;   /* gpio_62 */
+ 		vcc-supply = <&hsusb1_power>;
+-	/**
+-	 * FIXME:
+-	 * put the right clock phandle here when available
+-	 *	clocks = <&auxclk3>;
+-	 *	clock-names = "main_clk";
+-	 */
++		clocks = <&auxclk3_ck>;
++		clock-names = "main_clk";
+ 		clock-frequency = <19200000>;
+ 	};
+ 
+-- 
+1.8.3.2
 
-ok, that would be make sense, will update it in next version.
-
->
->> acpi_register_ioapic()/acpi_unregister_ioapic() will be used for IOAPIC
->> hotplug and GIC distributor is something like IOAPIC on x86, so I think
->> these two functions can be reserved for future use.
-> But GIC is not hotplugged, is it? It still sounds x86 specific to me.
-
-Well, if we want to do physical CPU hotplug on ARM/ARM64 (maybe years 
-later?),
-then GIC add/remove is needed because we have to remove GIC
-on the SoC too when we remove the physical CPU.
-
-Thanks
-Hanjun
