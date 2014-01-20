@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaATRrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 12:47:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48920 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaATRra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 12:47:30 -0500
-Message-ID: <52DD6101.4010708@zytor.com>
-Date: Mon, 20 Jan 2014 09:46:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752443AbaATRrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 12:47:48 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39402 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaATRrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 12:47:46 -0500
+Date: Mon, 20 Jan 2014 18:47:45 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [11/11] system 1: Saving energy using DVFS
+Message-ID: <20140120174745.GA25439@amd.pavel.ucw.cz>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+ <20140120164926.GB23051@amd.pavel.ucw.cz>
+ <20140120171010.GB29971@arm.com>
+ <20140120171752.GC29971@arm.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        linux-arch <linux-arch@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com> <20131228163308.GA1638@infradead.org>
-In-Reply-To: <20131228163308.GA1638@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120171752.GC29971@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2013 08:33 AM, Christoph Hellwig wrote:
-> On Fri, Dec 27, 2013 at 02:14:16PM -0800, H.J. Lu wrote:
->> X32 uses the same kernel system call interface as x86-64 for many
->> system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
->> x32.  Where long or unsigned long are used in struct types for such
->> system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
->> long for all ABIs other than x32.  I am submitting 8 patches to replace
->> long or unsigned long with __kernel_[u]long_t so that those struct types
->> can be used with x32 system calls.
+On Mon 2014-01-20 17:17:52, Catalin Marinas wrote:
+> On Mon, Jan 20, 2014 at 05:10:29PM +0000, Catalin Marinas wrote:
+> > On Mon, Jan 20, 2014 at 04:49:26PM +0000, Pavel Machek wrote:
+> > > > To save energy, the higher frequencies should be avoided and only used
+> > > > when the application performance requirements can not be satisfied
+> > > > otherwise (e.g. spread tasks across more cpus if possible).
+> > > 
+> > > I argue this is untrue for any task where user waits for its
+> > > completion with screen on. (And that's quite important subset).
+> > > 
+> > > Lets take Nokia n900 as an example. 
+> > > 
+> > > (source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
+> > > 
+> > > Sleeping CPU: 2mA
+> > > Screen on: 230mA
+> > > CPU loaded: 250mA
+> > > 
+> > > Now, lets believe your numbers and pretend system can operate at 33%
+> > > of speed with 11% power consumption.
+> > > 
+> > > Lets take task that takes 10 seconds on max frequency:
+> > > 
+> > >       ~ 10s * 470mA     	     	    = 4700mAs
+> > > 
+> > > You suggest running at 33% speed, instead; that means 30 seconds on
+> > > low requency.
+> > > 
+> > > CPU on low: 25mA (assumed).
+> > > 
+> > >      ~ 30s * 255mA			    = 7650mAs
+> > > 
+> > > Hmm. So race to idle is good thing on Intel machines, and it is good
+> > > thing on ARM design I have access to.
+> > 
+> > Race to idle doesn't mean that the screen goes off as well. Let's say
+> > the screen stays on for 1 min and the CPU needs to be running for 10s
+> > over this minute, in the first case you have:
+> > 
+> > 	10s & 250mA + 60s * 230mA = 16300mAs
+> > 
+> > in the second case you have:
+> > 
+> > 	30s * 25mA + 60s * 230mA = 14550mAs
+> > 
+> > That's a 1750mAs difference. There are of course other parts drawing
+> > current but simple things like the above really make a difference in the
+> > mobile space, both in terms of battery and thermal budget.
 > 
-> Independent on how this fixes things, how does the kernel_long_t name
-> here make any sense?
-> 
-> On x86-64 "kernel" long always is 64 bits wide.  The userspace ABI long
-> might be 32 or 64bits wide.
-> 
-> Currently kernel_long_t has almost no uses, so it might be a good time
-> to fix the name, define the rules for it, and last but not least
-> properly document the intent for thse types.
-> 
+> BTW, the proper way to calculate this is to use the energy rather than
+> current x time. This would be J = Ohm * A^2 * s = V^2 / Ohm * s (so the
+> impact of the current is even bigger).
 
-This comment by Christoph was literally the only feedback on this
-patchset.  The definition of __kernel_[u]long_t is "the size of 'long'
-for the native kernel for the ABI".  H.J.'s patchset only affects x86
-(specifically x86-64) since on all other platforms __kernel_[u]long_t is
-simply defined as long/unsigned long.
+You are claiming that energy is proportional to current squared?
 
-That being said, x32 is not the only ABI of this type.  In particular,
-if the MIPS N32 and ARM64 ILP32 maintainers have suggestions which would
-make this work more applicable to them, it would be highly useful to
-receive any such feedback.
+I stand by numbers. Energy is proportional to values I quoted,
+provided constant voltage.
 
-	-hpa
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
