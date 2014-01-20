@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaATIas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 03:30:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50448 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaATIap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 03:30:45 -0500
-Date: Mon, 20 Jan 2014 09:30:21 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20140120083021.GC30183@twins.programming.kicks-ass.net>
-References: <20140116145829.5e4fcab103b1c5c77501ee77@canb.auug.org.au>
- <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com>
+	id S1752327AbaATIhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 03:37:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaATIhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 03:37:02 -0500
+Date: Mon, 20 Jan 2014 09:38:36 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] nvme: Fix invalid call to irq_set_affinity_hint()
+Message-ID: <20140120083835.GA19068@dhcp-26-207.brq.redhat.com>
+References: <cover.1389904166.git.agordeev@redhat.com>
+ <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com>
+ <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
+ <alpine.LRH.2.03.1401171419370.25844@AMR>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJvTdKmdopjSopfHrZRKXJBKqjizrFHich+dQCd6Fq7C3bOogw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.LRH.2.03.1401171419370.25844@AMR>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 08:00:19PM -0500, Len Brown wrote:
-> On Wed, Jan 15, 2014 at 10:58 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi all,
-> >
-> > After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> > failed like this:
-> >
-> > arch/x86/kernel/process.c: In function 'mwait_idle':
-> > /scratch/sfr/next/arch/x86/kernel/process.c:434:3: error: implicit declaration of function '__monitor' [-Werror=implicit-function-declaration]
-> >    __monitor((void *)&current_thread_info()->flags, 0, 0);
-> >    ^
-> > arch/x86/kernel/process.c:437:4: error: implicit declaration of function '__sti_mwait' [-Werror=implicit-function-declaration]
-> >     __sti_mwait(0, 0);
-> >     ^
-> >
-> > Caused by commit 16824255394f ("x86, acpi, idle: Restructure the mwait
-> > idle routines") interacting with commit 7760518cce95 ("x86 idle: restore
-> > mwait_idle()") from the idle tree.
-> >
-> > I am not sure how to fix this so I just reverted the idle tree commit for
-> > now (since it reverted cleanly). Please let me know if there is a better
-> > solution.
+On Fri, Jan 17, 2014 at 03:01:10PM -0700, Keith Busch wrote:
+> >dev->entry[0].vector is initialized in nvme_dev_map(), and it's used
+> >for free_irq() above the area of your patch, so I don't think this is
+> >actually a bug, though it might be somewhat confusing.
 > 
-> IMO, a regression fix (restore mwait_idle()) is more important than a clean up
-> (restructure mwait routines), and the clean-up should take a back seat;
-> in -tip, in -next, upstream, and in -stable.
+> It is confusing, but there's a reason. :)
+> 
+> We send a single command using legacy irq to discover how many msix
+> vectors we want. The legacy entry needs to be set some time before calling
+> request_irq in nvme_configure_admin_queue, but also within nvme_dev_start
+> (for power-management). I don't think there's a place to set it that
+> won't look odd when looking at nvme_setup_io_queues. I settled on
+> 'nvme_dev_map' was because 'nvme_dev_unmap' invalidates the entries,
+> so this seemed to provide some amount of symmetry.
 
-It was part of that other regression fix, the 50+ watt thingy for your
-broken EX chips.
+I am sending v3 of the patch which concerns Bjorn's comment.
 
-It was also written much earlier and widely mailed and published before
-you did the core2 thing.
+I am also sending two follow-up patches an attempt to make nvme_dev_start()
+more readable and fix couple of (what I suspect are) issues.
 
-> Also, I'm wondering if that clean-up went too far -- as not all users of mwait
-> are necessarily under the same conditions...
+Thanks!
 
-Then make them so. The fact was that most of the mwait idle sites
-were bloody broken. And the single mwait_idle_with_hints() function
-presents a single nice function that does all the required magics.
-
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
