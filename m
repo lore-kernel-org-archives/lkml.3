@@ -1,139 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaATFqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 00:46:10 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:24934
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750728AbaATFqH (ORCPT
+	id S1752574AbaATFuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 00:50:23 -0500
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:36683
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750711AbaATFuU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 00:46:07 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097h186068hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h1155h)
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <jg1.han@samsung.com>
-CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <plagnioj@jcrosoft.com>,
-        <tomi.valkeinen@ti.com>
-Subject: [PATCH v2] backlight: turn backlight on/off when necessary
-Date: Mon, 20 Jan 2014 13:47:26 +0800
-Message-ID: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 20 Jan 2014 00:50:20 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pantelis Antoniou" <panto@antoniou-consulting.com>
+Subject: RE: [PATCH] of: fix of_update_property()
+Thread-Topic: [PATCH] of: fix of_update_property()
+Thread-Index: AQHPE0dClIfvd+hKkU21M4x9OCudQ5qI//2AgAP8bbA=
+Date: Mon, 20 Jan 2014 05:50:17 +0000
+Message-ID: <b61be84c13ed4056a62743e16beb70f2@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389933996-19306-1-git-send-email-Li.Xiubo@freescale.com>
+ <CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com>
+In-Reply-To: <CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 00979FCB3A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(24454002)(199002)(164054003)(189002)(377454003)(4396001)(87936001)(31966008)(80022001)(74316001)(47446002)(81342001)(74662001)(81686001)(76576001)(83072002)(74502001)(56816005)(90146001)(93516002)(74706001)(86362001)(575784001)(81542001)(77982001)(85852003)(74366001)(2656002)(69226001)(65816001)(85306002)(87266001)(74876001)(76796001)(1411001)(47736001)(19580395003)(66066001)(83322001)(76786001)(54356001)(46102001)(49866001)(79102001)(63696002)(19580405001)(53806001)(80976001)(51856001)(50986001)(54316002)(92566001)(59766001)(47976001)(76482001)(56776001)(33646001)(93136001)(81816001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't have to turn backlight on/off everytime a blanking
-or unblanking event comes because the backlight status may
-have already been what we want. Another thought is that one
-backlight device may be shared by multiple framebuffers. We
-don't hope blanking one of the framebuffers may turn the
-backlight off for all the other framebuffers, since they are
-likely being active to display something. This patch adds
-some logics to record each framebuffer's backlight usage to
-determine the backlight device use count and whether the
-backlight should be turned on or off. To be more specific,
-only one unblank operation on a certain blanked framebuffer
-may increase the backlight device's use count by one, while
-one blank operation on a certain unblanked framebuffer may
-decrease the use count by one, because the userspace is
-likely to unblank a unblanked framebuffer or blank a blanked
-framebuffer.
+> Subject: Re: [PATCH] of: fix of_update_property()
+> 
+> On Thu, Jan 16, 2014 at 10:46 PM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+> > The of_update_property() is intent to update a property in a node
+> 
+> s/intent/indended/
+> 
+> > and if the property does not exist, will add it to the node.
+> >
+> > The second search of the property is possibly won't be found, that
+> > maybe removed by other thread just before the second search begain,
+> > if so just retry it.
+> 
+> How did you find this problem? Actual use or some artificial stress test?
+>
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
-v1 can be found at https://lkml.org/lkml/2013/5/30/139
+Some artificial stress test at home.
 
-v1->v2:
-* Make the commit message be more specific about the condition
-  in which backlight device use count can be increased/decreased.
-* Correct the setting for bd->props.fb_blank.
-
- drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
- include/linux/backlight.h           |    6 ++++++
- 2 files changed, 27 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-index 5d05555..42044be 100644
---- a/drivers/video/backlight/backlight.c
-+++ b/drivers/video/backlight/backlight.c
-@@ -34,13 +34,15 @@ static const char *const backlight_types[] = {
- 			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
- /* This callback gets called when something important happens inside a
-  * framebuffer driver. We're looking if that important event is blanking,
-- * and if it is, we're switching backlight power as well ...
-+ * and if it is and necessary, we're switching backlight power as well ...
-  */
- static int fb_notifier_callback(struct notifier_block *self,
- 				unsigned long event, void *data)
- {
- 	struct backlight_device *bd;
- 	struct fb_event *evdata = data;
-+	int node = evdata->info->node;
-+	int fb_blank = 0;
  
- 	/* If we aren't interested in this event, skip it immediately ... */
- 	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
-@@ -51,12 +53,24 @@ static int fb_notifier_callback(struct notifier_block *self,
- 	if (bd->ops)
- 		if (!bd->ops->check_fb ||
- 		    bd->ops->check_fb(bd, evdata->info)) {
--			bd->props.fb_blank = *(int *)evdata->data;
--			if (bd->props.fb_blank == FB_BLANK_UNBLANK)
--				bd->props.state &= ~BL_CORE_FBBLANK;
--			else
--				bd->props.state |= BL_CORE_FBBLANK;
--			backlight_update_status(bd);
-+			fb_blank = *(int *)evdata->data;
-+			if (fb_blank == FB_BLANK_UNBLANK &&
-+			    !bd->fb_bl_on[node]) {
-+				bd->fb_bl_on[node] = true;
-+				if (!bd->use_count++) {
-+					bd->props.state &= ~BL_CORE_FBBLANK;
-+					bd->props.fb_blank = FB_BLANK_UNBLANK;
-+					backlight_update_status(bd);
-+				}
-+			} else if (fb_blank != FB_BLANK_UNBLANK &&
-+				   bd->fb_bl_on[node]) {
-+				bd->fb_bl_on[node] = false;
-+				if (!(--bd->use_count)) {
-+					bd->props.state |= BL_CORE_FBBLANK;
-+					bd->props.fb_blank = FB_BLANK_POWERDOWN;
-+					backlight_update_status(bd);
-+				}
-+			}
- 		}
- 	mutex_unlock(&bd->ops_lock);
- 	return 0;
-diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-index 5f9cd96..7264742 100644
---- a/include/linux/backlight.h
-+++ b/include/linux/backlight.h
-@@ -9,6 +9,7 @@
- #define _LINUX_BACKLIGHT_H
- 
- #include <linux/device.h>
-+#include <linux/fb.h>
- #include <linux/mutex.h>
- #include <linux/notifier.h>
- 
-@@ -104,6 +105,11 @@ struct backlight_device {
- 	struct list_head entry;
- 
- 	struct device dev;
-+
-+	/* Multiple framebuffers may share one backlight device */
-+	bool fb_bl_on[FB_MAX];
-+
-+	int use_count;
- };
- 
- static inline void backlight_update_status(struct backlight_device *bd)
--- 
-1.7.9.5
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> >  drivers/of/base.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index f807d0e..d0c53bc 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -1572,6 +1572,7 @@ int of_update_property(struct device_node *np, struct
+> property *newprop)
+> >         if (!newprop->name)
+> >                 return -EINVAL;
+> >
+> > +retry:
+> >         oldprop = of_find_property(np, newprop->name, NULL);
+> >         if (!oldprop)
+> >                 return of_add_property(np, newprop);
+> 
+> Isn't there also a race that if you do 2 updates for a non-existent
+> property and both threads try to add the property, the first one will
+> succeed and the 2nd will fail. The 2nd one needs to retry as well.
+> 
 
+Well, yes, that will happen.
 
+Maybe we could add one __of_add_property() without any locks, like
+__of_find_property(). And then in of_update_prperty() move the searching
+and adding operations to between lock and unlock, like:
+
+	raw_spin_lock_irqsave();
+	oldprop = __of_find_property();
+      	if (!oldprop) {
+              rc = __of_add_property(np, newprop);
+		 ...
+	}
+	...
+	replace the node...
+	...
+	raw_spin_unlock_irqrestore();
+
+> Also, couldn't the node itself be removed while trying to do the update?
+> 
+
+For this is between the lock operations. I think this doesn't matter here.
+
+> There seem to be multiple problems with this code, but doing multiple
+> simultaneous, conflicting updates seems like an unlikely case.
+> 
+
+Yes, but this will happen in theory. 
+
+Thanks,
+
+Best Regards,
+Xiubo
