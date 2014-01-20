@@ -1,323 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaATS7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 13:59:30 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:18956 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaATS72 (ORCPT
+	id S1752724AbaATS7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 13:59:50 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:65185 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaATS7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 13:59:28 -0500
-X-IronPort-AV: E=Sophos;i="4.95,691,1384300800"; 
-   d="scan'208";a="92533942"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH v3] xen/grant-table: Avoid m2p_override during mapping
-Date: Mon, 20 Jan 2014 18:58:08 +0000
-Message-ID: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 20 Jan 2014 13:59:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+In-Reply-To: <CANq1E4SHqy4Q3+iPZMoQjJnoNZTUw0YstLnsvto2E5GKv6XaSw@mail.gmail.com>
+References: <1389985971-541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4SHqy4Q3+iPZMoQjJnoNZTUw0YstLnsvto2E5GKv6XaSw@mail.gmail.com>
+Date: Mon, 20 Jan 2014 13:59:46 -0500
+Message-ID: <CAN+gG=G1Rn-pHea5E3Gq2p7a_wCZVOGDxRB9eAOk94t7iyG5QA@mail.gmail.com>
+Subject: Re: [PATCH v3] input/uinput: add UI_GET_SYSNAME ioctl to retrieve the
+ sysfs path
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
-for blkback and future netback patches it just cause a lock contention, as
-those pages never go to userspace. Therefore this series does the following:
-- the original functions were renamed to __gnttab_[un]map_refs, with a new
-  parameter m2p_override
-- based on m2p_override either they follow the original behaviour, or just set
-  the private flag and call set_phys_to_machine
-- gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
-  m2p_override false
-- a new function gnttab_[un]map_refs_userspace provides the old behaviour
+Hi David,
 
-v2:
-- move the storing of the old mfn in page->index to gnttab_map_refs
-- move the function header update to a separate patch
+thanks for the review
 
-v3:
-- a new approach to retain old behaviour where it needed
-- squash the patches into one
+On Sat, Jan 18, 2014 at 5:51 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Fri, Jan 17, 2014 at 8:12 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> Evemu [1] uses uinput to replay devices traces it has recorded. However,
+>> the way evemu uses uinput is slightly different from how uinput is
+>> supposed to be used.
+>> Evemu relies on libevdev, which creates the device node through uinput.
+>> It then injects events through the input device node directly (and it
+>> completely skips the uinput node).
+>>
+>> Currently, libevdev relies on an heuristic to guess which input node was
+>> created. The problem is that is heuristic is subjected to races between
+>> different uinput devices or even with physical devices. Having a way
+>> to retrieve the sysfs path allows us to find the event node without
+>> having to rely on this heuristic.
+>>
+>> [1] http://www.freedesktop.org/wiki/Evemu/
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>
+>> Ok, I am resurrecting this. The original patch was sent last July here:
+>> https://patchwork.kernel.org/patch/2827524/
+>>
+>> changes since v2:
+>> - the ioctl returns only the device name, thus I renamed the ioctl to UI_GET_SYSNAME
+>> - reordered uinput_str_to_user() arguments
+>> - be sure to terminate the user string we send by \0
+>> - abort if udev->state is not UIST_CREATED
+>> - dropped the patch 1/2 (adding resolution to uinput) because I think David has
+>>   already it in one of his queues (ABS2 IIRC)
+>>
+>> I also posted the corresponding libevdev here:
+>> http://lists.freedesktop.org/archives/input-tools/2014-January/000757.html
+>>
+>> Cheers,
+>> Benjamin
+>>
+>>  drivers/input/misc/uinput.c | 46 ++++++++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/uinput.h      |  2 ++
+>>  include/uapi/linux/uinput.h | 13 ++++++++++++-
+>>  3 files changed, 59 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+>> index 7728359..0203219 100644
+>> --- a/drivers/input/misc/uinput.c
+>> +++ b/drivers/input/misc/uinput.c
+>> @@ -20,6 +20,8 @@
+>>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+>>   *
+>>   * Changes/Revisions:
+>> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
+>> + *             - add UI_GET_SYSNAME ioctl
+>>   *     0.3     09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
+>>   *             - updated ff support for the changes in kernel interface
+>>   *             - added MODULE_VERSION
+>> @@ -670,6 +672,27 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
+>>         __ret;                                          \
+>>  })
+>>
+>> +static int uinput_str_to_user(void __user *dest, const char *str,
+>> +                             unsigned int maxlen)
+>> +{
+>> +       int len, ret;
+>> +
+>> +       if (!str)
+>> +               return -ENOENT;
+>> +
+>> +       len = strlen(str) + 1;
+>> +       if (len > maxlen)
+>> +               len = maxlen;
+>> +
+>> +       ret = copy_to_user(dest, str, len);
+>> +       if (ret)
+>> +               return -EFAULT;
+>> +
+>> +       /* force terminating '\0' */
+>> +       ret = copy_to_user(dest + len - 1, "\0", 1);
+>
+> You must make sure "maxlen != 0", otherwise you write beyond buffer
+> boundaries here. I'd say return -EINVAL in case maxlen == 0.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Suggested-by: David Vrabel <david.vrabel@citrix.com>
----
- drivers/block/xen-blkback/blkback.c |   15 +++----
- drivers/xen/gntdev.c                |   13 +++---
- drivers/xen/grant-table.c           |   81 +++++++++++++++++++++++++++++------
- include/xen/grant_table.h           |    8 +++-
- 4 files changed, 87 insertions(+), 30 deletions(-)
+oh, yes, you are right.
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 6620b73..875025f 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
- 
- 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
- 			!rb_next(&persistent_gnt->node)) {
--			ret = gnttab_unmap_refs(unmap, NULL, pages,
--				segs_to_unmap);
-+			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
- 			BUG_ON(ret);
- 			put_free_pages(blkif, pages, segs_to_unmap);
- 			segs_to_unmap = 0;
-@@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
- 		pages[segs_to_unmap] = persistent_gnt->page;
- 
- 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
--			ret = gnttab_unmap_refs(unmap, NULL, pages,
--				segs_to_unmap);
-+			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
- 			BUG_ON(ret);
- 			put_free_pages(blkif, pages, segs_to_unmap);
- 			segs_to_unmap = 0;
-@@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
- 		kfree(persistent_gnt);
- 	}
- 	if (segs_to_unmap > 0) {
--		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
-+		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
- 		BUG_ON(ret);
- 		put_free_pages(blkif, pages, segs_to_unmap);
- 	}
-@@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
- 				    GNTMAP_host_map, pages[i]->handle);
- 		pages[i]->handle = BLKBACK_INVALID_HANDLE;
- 		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
--			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
--			                        invcount);
-+			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
- 			BUG_ON(ret);
- 			put_free_pages(blkif, unmap_pages, invcount);
- 			invcount = 0;
- 		}
- 	}
- 	if (invcount) {
--		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
-+		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
- 		BUG_ON(ret);
- 		put_free_pages(blkif, unmap_pages, invcount);
- 	}
-@@ -740,7 +737,7 @@ again:
- 	}
- 
- 	if (segs_to_map) {
--		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
-+		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
- 		BUG_ON(ret);
- 	}
- 
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index e41c79c..e652c0e 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
- 	}
- 
- 	pr_debug("map %d+%d\n", map->index, map->count);
--	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
--			map->pages, map->count);
-+	err = gnttab_map_refs_userspace(map->map_ops,
-+					use_ptemod ? map->kmap_ops : NULL,
-+					map->pages,
-+					map->count);
- 	if (err)
- 		return err;
- 
-@@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
- 		}
- 	}
- 
--	err = gnttab_unmap_refs(map->unmap_ops + offset,
--			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
--			pages);
-+	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
-+					  use_ptemod ? map->kmap_ops + offset : NULL,
-+					  map->pages + offset,
-+					  pages);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index aa846a4..87ded60 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
- }
- EXPORT_SYMBOL_GPL(gnttab_batch_copy);
- 
--int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-+int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 		    struct gnttab_map_grant_ref *kmap_ops,
--		    struct page **pages, unsigned int count)
-+		    struct page **pages, unsigned int count,
-+		    bool m2p_override)
- {
- 	int i, ret;
- 	bool lazy = false;
- 	pte_t *pte;
- 	unsigned long mfn;
- 
-+	BUG_ON(kmap_ops && !m2p_override);
- 	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
- 	if (ret)
- 		return ret;
-@@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
- 					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
- 		}
--		return ret;
-+		return 0;
- 	}
- 
--	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-+	if (m2p_override &&
-+	    !in_interrupt() &&
-+	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
- 		arch_enter_lazy_mmu_mode();
- 		lazy = true;
- 	}
-@@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 		} else {
- 			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
- 		}
--		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
--				       &kmap_ops[i] : NULL);
-+		if (m2p_override)
-+			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-+					       &kmap_ops[i] : NULL);
-+		else {
-+			unsigned long pfn = page_to_pfn(pages[i]);
-+			WARN_ON(PagePrivate(pages[i]));
-+			SetPagePrivate(pages[i]);
-+			set_page_private(pages[i], mfn);
-+			pages[i]->index = pfn_to_mfn(pfn);
-+			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
-+				return -ENOMEM;
-+		}
- 		if (ret)
- 			goto out;
- 	}
-@@ -937,17 +951,33 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 	if (lazy)
- 		arch_leave_lazy_mmu_mode();
- 
--	return ret;
-+	return 0;
-+}
-+
-+int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-+		    struct page **pages, unsigned int count)
-+{
-+	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
- }
- EXPORT_SYMBOL_GPL(gnttab_map_refs);
- 
--int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-+int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
-+			      struct gnttab_map_grant_ref *kmap_ops,
-+			      struct page **pages, unsigned int count)
-+{
-+	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
-+}
-+EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
-+
-+int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 		      struct gnttab_map_grant_ref *kmap_ops,
--		      struct page **pages, unsigned int count)
-+		      struct page **pages, unsigned int count,
-+		      bool m2p_override)
- {
- 	int i, ret;
- 	bool lazy = false;
- 
-+	BUG_ON(kmap_ops && !m2p_override);
- 	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
- 	if (ret)
- 		return ret;
-@@ -958,17 +988,26 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
- 					INVALID_P2M_ENTRY);
- 		}
--		return ret;
-+		return 0;
- 	}
- 
--	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-+	if (m2p_override &&
-+	    !in_interrupt() &&
-+	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
- 		arch_enter_lazy_mmu_mode();
- 		lazy = true;
- 	}
- 
- 	for (i = 0; i < count; i++) {
--		ret = m2p_remove_override(pages[i], kmap_ops ?
--				       &kmap_ops[i] : NULL);
-+		if (m2p_override)
-+			ret = m2p_remove_override(pages[i], kmap_ops ?
-+						  &kmap_ops[i] : NULL);
-+		else {
-+			unsigned long pfn = page_to_pfn(pages[i]);
-+			WARN_ON(!PagePrivate(pages[i]));
-+			ClearPagePrivate(pages[i]);
-+			set_phys_to_machine(pfn, pages[i]->index);
-+		}
- 		if (ret)
- 			goto out;
- 	}
-@@ -977,10 +1016,24 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	if (lazy)
- 		arch_leave_lazy_mmu_mode();
- 
--	return ret;
-+	return 0;
-+}
-+
-+int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
-+		    struct page **pages, unsigned int count)
-+{
-+	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
- }
- EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
- 
-+int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
-+				struct gnttab_map_grant_ref *kmap_ops,
-+				struct page **pages, unsigned int count)
-+{
-+	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
-+}
-+EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
-+
- static unsigned nr_status_frames(unsigned nr_grant_frames)
- {
- 	BUG_ON(grefs_per_grant_frame == 0);
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 694dcaf..9a919b1 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
- 
- int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
--		    struct gnttab_map_grant_ref *kmap_ops,
- 		    struct page **pages, unsigned int count);
-+int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
-+			      struct gnttab_map_grant_ref *kmap_ops,
-+			      struct page **pages, unsigned int count);
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
--		      struct gnttab_map_grant_ref *kunmap_ops,
- 		      struct page **pages, unsigned int count);
-+int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
-+				struct gnttab_map_grant_ref *kunmap_ops,
-+				struct page **pages, unsigned int count);
- 
- /* Perform a batch of grant map/copy operations. Retry every batch slot
-  * for which the hypervisor returns GNTST_eagain. This is typically due
+>
+> btw., you can also use: put_user(0, (char*)dest + len - 1);
+
+k, will amend
+
+>
+>> +       return ret ? -EFAULT : len;
+>> +}
+>> +
+>>  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>>                                  unsigned long arg, void __user *p)
+>>  {
+>> @@ -679,6 +702,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>>         struct uinput_ff_erase  ff_erase;
+>>         struct uinput_request   *req;
+>>         char                    *phys;
+>> +       const char              *name;
+>> +       unsigned int            size;
+>>
+>>         retval = mutex_lock_interruptible(&udev->mutex);
+>>         if (retval)
+>> @@ -831,7 +856,26 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>>                         break;
+>>
+>>                 default:
+>> -                       retval = -EINVAL;
+>> +                       retval = -EAGAIN;
+>> +       }
+>> +
+>> +       if (retval == -EAGAIN) {
+>
+> Ehh, in case another ioctl returns -EAGAIN, we overwrite the error
+> with -EINVAL below in the "default:" clause. Maybe we should first
+> convert all the "break;" commands to "goto out;".
+
+yep, that was one of the thing which also made me some trouble by
+re-reading the patch after this amount of time.
+Either I can make a "goto out" patch before, or I can just add a bool
+probe_variable_length which would be set be the previous default case.
+The latter implies less changes, but might be more ugly than the previous.
+Any preferences?
+
+
+>
+> Patch looks good to me.
+
+Thanks!
+
+Cheers,
+Benjamin
+
+> Thanks
+> David
+>
+>> +               size = _IOC_SIZE(cmd);
+>> +
+>> +               /* Now check variable-length commands */
+>> +               switch (cmd & ~IOCSIZE_MASK) {
+>> +                       case UI_GET_SYSNAME(0):
+>> +                               if (udev->state != UIST_CREATED) {
+>> +                                       retval = -ENOENT;
+>> +                                       goto out;
+>> +                               }
+>> +                               name = dev_name(&udev->dev->dev);
+>> +                               retval = uinput_str_to_user(p, name, size);
+>> +                               break;
+>> +
+>> +                       default:
+>> +                               retval = -EINVAL;
+>> +               }
+>>         }
+>>
+>>   out:
+>> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+>> index 0a4487d..0994c0d 100644
+>> --- a/include/linux/uinput.h
+>> +++ b/include/linux/uinput.h
+>> @@ -20,6 +20,8 @@
+>>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+>>   *
+>>   * Changes/Revisions:
+>> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
+>> + *             - add UI_GET_SYSNAME ioctl
+>>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>>   *             - update ff support for the changes in kernel interface
+>>   *             - add UINPUT_VERSION
+>> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+>> index fe46431..0389b48 100644
+>> --- a/include/uapi/linux/uinput.h
+>> +++ b/include/uapi/linux/uinput.h
+>> @@ -20,6 +20,8 @@
+>>   * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+>>   *
+>>   * Changes/Revisions:
+>> + *     0.4     01/09/2014 (Benjamin Tissoires <benjamin.tissoires@redhat.com>)
+>> + *             - add UI_GET_SYSNAME ioctl
+>>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>>   *             - update ff support for the changes in kernel interface
+>>   *             - add UINPUT_VERSION
+>> @@ -35,7 +37,7 @@
+>>  #include <linux/types.h>
+>>  #include <linux/input.h>
+>>
+>> -#define UINPUT_VERSION         3
+>> +#define UINPUT_VERSION         4
+>>
+>>
+>>  struct uinput_ff_upload {
+>> @@ -73,6 +75,15 @@ struct uinput_ff_erase {
+>>  #define UI_BEGIN_FF_ERASE      _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
+>>  #define UI_END_FF_ERASE                _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
+>>
+>> +/**
+>> + * UI_GET_SYSNAME - get the sysfs name of the created uinput device
+>> + *
+>> + * @return the sysfs name of the created virtual input device.
+>> + * The complete sysfs path is then /sys/devices/virtual/input/--NAME--
+>> + * Usually, it is in the form "inputN"
+>> + */
+>> +#define UI_GET_SYSNAME(len)    _IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
+>> +
+>>  /*
+>>   * To write a force-feedback-capable driver, the upload_effect
+>>   * and erase_effect callbacks in input_dev must be implemented.
+>> --
+>> 1.8.3.1
+>>
