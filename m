@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaATOsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 09:48:21 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43514 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750807AbaATOsT (ORCPT
+	id S1753948AbaATOtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 09:49:18 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54269 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaATOtM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 09:48:19 -0500
-Date: Mon, 20 Jan 2014 14:48:16 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 5/5] efi: Split efi_enter_virtual_mode
-Message-ID: <20140120144816.GC684@console-pimps.org>
-References: <1390045698-16882-1-git-send-email-bp@alien8.de>
- <1390045698-16882-6-git-send-email-bp@alien8.de>
- <20140120134407.GB684@console-pimps.org>
- <20140120134625.GD3003@pd.tnic>
+	Mon, 20 Jan 2014 09:49:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120134625.GD3003@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2229282.4AAJ7iLdU7@phil>
+References: <201312201626.48119.heiko@sntech.de>
+	<2229282.4AAJ7iLdU7@phil>
+Date: Mon, 20 Jan 2014 08:49:11 -0600
+Message-ID: <CAL_JsqLwsJkCbu7rZDGTquryFzom4K4hg3GrczifbAV+pvpcaQ@mail.gmail.com>
+Subject: Re: [PATCH] dt-bindings: add rockchip vendor prefix
+From: Rob Herring <robherring2@gmail.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan, at 02:46:25PM, Borislav Petkov wrote:
-> On Mon, Jan 20, 2014 at 01:44:07PM +0000, Matt Fleming wrote:
-> > > +void __init kexec_enter_virtual_mode(void)
-> > > +{
-> > 
-> > Could this be static for now?
-> 
-> Didn't you wanna do arch/x86/platform/efi/kexec.c anyway?
+On Mon, Jan 20, 2014 at 8:23 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Freitag, 20. Dezember 2013, 16:26:47 schrieb Heiko Stübner:
+>> It seems I forgot to add the vendor prefix for rockchip to the vendor-prefix
+>> list. Therefore add it now.
+>>
+>> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+>
+> not sure, where this should go through
+> arm-soc? or is there a special dt-tree around?
 
-Yes, but the patches are easier to review if we make
-kexec_enter_virtual_mode() global when moving it into a new file.
+Sorry, missed this one. I'll apply for 3.14.
 
-Plus it makes this patch that little bit smaller because the
-modification to efi.h is unnecessary.
+Rob
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+>
+> Thanks
+> Heiko
+>
+>> ---
+>>  Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
+>> ca2c190..2dc3b75 100644
+>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> @@ -65,6 +65,7 @@ ralink      Mediatek/Ralink Technology Corp.
+>>  ramtron      Ramtron International
+>>  realtek Realtek Semiconductor Corp.
+>>  renesas      Renesas Electronics Corporation
+>> +rockchip     Fuzhou Rockchip Electronics Co., Ltd
+>>  samsung      Samsung Semiconductor
+>>  sbs  Smart Battery System
+>>  schindler    Schindler
+>
