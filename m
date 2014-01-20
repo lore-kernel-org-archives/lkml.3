@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaATToB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 14:44:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42808 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420AbaATTn5 (ORCPT
+	id S1751750AbaATTyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 14:54:22 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:52990 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaATTyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 14:43:57 -0500
-Date: Mon, 20 Jan 2014 19:43:50 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Bolle <pebolle@tiscali.nl>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Kumar Gala <galak@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc/kconfig: Remove TSI108_BRIDGE duplicates
-Message-ID: <20140120194344.GA5816@hercules>
+	Mon, 20 Jan 2014 14:54:20 -0500
+Date: Mon, 20 Jan 2014 11:54:16 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: davinci_nand: Remove unnecessary labels from error
+ path
+Message-ID: <20140120195416.GU8919@ld-irv-0074>
+References: <1389773306-7055-1-git-send-email-prabhakar.csengg@gmail.com>
+ <20140116213206.GG8919@ld-irv-0074>
+ <CA+V-a8u42eNcDoSr42Bq-3JJEdFMXjru-PDpmXqjZEzkoQ=efQ@mail.gmail.com>
+ <CA+V-a8sNSKX_W43G7A0zFKq1GX7k25XR2ZxVtxiQyAmLD5Rs4w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CA+V-a8sNSKX_W43G7A0zFKq1GX7k25XR2ZxVtxiQyAmLD5Rs4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MPC7448HPC2 and PPC_HOLLY config options contain TSI108_BRIDGE
-duplicates since commit:
+On Fri, Jan 17, 2014 at 01:20:36PM +0530, Prabhakar Lad wrote:
+> On Fri, Jan 17, 2014 at 10:46 AM, Prabhakar Lad
+> <prabhakar.csengg@gmail.com> wrote:
+> > On Fri, Jan 17, 2014 at 3:02 AM, Brian Norris
+> > <computersforpeace@gmail.com> wrote:
+> >> On Wed, Jan 15, 2014 at 01:38:26PM +0530, Prabhakar Lad wrote:
+> >>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> >>>
+> >>> This patch removes the unnecessary labels from
+> >>> the error path in probe function which did nothing
+> >>> than just returning error values, Thus simplifying code
+> >>> path and improved readability.
+> >>>
+> >>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> >>
+> >> This does not apply to my branch, since some OOM messages have been
+> >> dropped. Can you rebase on l2-mtd.git (or linux-next)?
+> >>
+> > OK I'll rebase it against linux-next and post a v2.
+> >
+> My Bad was too late, there is already a patch fixing the above issue
+> in linux-next
 
-commit 3490cba56f7f8a78ef4c94814c3181f09ce1e2ef
-Author: Jon Loeliger <jdl@jdl.com>
-Date:   Wed Jan 23 12:42:50 2008 -0600
+Ah, and my bad on remembering; I thought this looked familiar! :)
 
-    [POWERPC] Add initial iomega StorCenter board port.
+> please ignore this patch.
 
-This patch cleans these duplicates.
+Sure.
 
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/powerpc/platforms/embedded6xx/Kconfig | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/arch/powerpc/platforms/embedded6xx/Kconfig b/arch/powerpc/platforms/embedded6xx/Kconfig
-index 302ba43..59bd9cd 100644
---- a/arch/powerpc/platforms/embedded6xx/Kconfig
-+++ b/arch/powerpc/platforms/embedded6xx/Kconfig
-@@ -34,7 +34,6 @@ config MPC7448HPC2
- 	select TSI108_BRIDGE
- 	select DEFAULT_UIMAGE
- 	select PPC_UDBG_16550
--	select TSI108_BRIDGE
- 	help
- 	  Select MPC7448HPC2 if configuring for Freescale MPC7448HPC2 (Taiga)
- 	  platform
-@@ -44,7 +43,6 @@ config PPC_HOLLY
- 	depends on EMBEDDED6xx
- 	select TSI108_BRIDGE
- 	select PPC_UDBG_16550
--	select TSI108_BRIDGE
- 	help
- 	  Select PPC_HOLLY if configuring for an IBM 750GX/CL Eval
- 	  Board with TSI108/9 bridge (Hickory/Holly)
--- 
-1.8.3.2
-
-Cheers,
---
-Luis
+Thanks,
+Brian
