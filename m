@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaAUA74 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 19:59:56 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:46374 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaAUA7p (ORCPT
+	id S1753455AbaAUBUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 20:20:55 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:7527 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543AbaAUBUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 19:59:45 -0500
+	Mon, 20 Jan 2014 20:20:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AghrAJzK3VJ20iCRPGdsb2JhbABZgwuIRbQhgQ0XAwEBAQE4NYIlAQEBBCcRHh4EARAIAw4GBAkWBAsJAwIBAgEnChQGDQEFAgIXh2nEDBeOfweEOAEDhSufMYdNgVEp
+Message-ID: <52DDCB6B.7010602@internode.on.net>
+Date: Tue, 21 Jan 2014 11:50:43 +1030
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.2.0
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Jan 2014 16:59:23 -0800
-Message-ID: <CALCETrVT29DULWg16_oKpGgSSBwZh-yWtygV1oYjH5iQH5jGyg@mail.gmail.com>
-Subject: Dirty deleted files cause pointless I/O storms (unless truncated first)
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Takashi Iwai <tiwai@suse.de>
+CC: Anssi Hannula <anssi.hannula@iki.fi>,
+        ALSA devel <alsa-devel@alsa-project.org>, xorg-driver-ati@lists.x.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ALSA: hda - Fix possible races in HDMI driver - lockup on shutdown
+ when radeon.audio=1 after using audacity
+References: <52DB7878.8000004@internode.on.net> <s5hha8zox0j.wl%tiwai@suse.de>
+In-Reply-To: <s5hha8zox0j.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code below runs quickly for a few iterations, and then it slows
-down and the whole system becomes laggy for far too long.
-
-Removing the sync_file_range call results in no I/O being performed at
-all (which means that the kernel isn't totally screwing this up), and
-changing "4096" to SIZE causes lots of I/O but without
-the going-out-to-lunch bit (unsurprisingly).
-
-Surprisingly, uncommenting the ftruncate call seems to fix the
-problem.  This suggests that all the necessary infrastructure to avoid
-wasting time writing to deleted files is there but that it's not
-getting used.
 
 
-#define _GNU_SOURCE
-#include <sys/mman.h>
-#include <err.h>
-#include <fcntl.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
+Takashi Iwai wrote, on 20/01/14 19:22:
+> At Sun, 19 Jan 2014 17:32:16 +1030,
+> Arthur Marsh wrote:
+>>
+>> I have had reproducible lock-ups on shut-down (at the shutting down ALSA
+>> stage) of my AMD64 machine (Asus M3A78Pro motherboard, BIOS 1701
+>> 01/27/2011, CPU AMD Athlon(tm) II X4 640 Processor) running the 64 bit
+>> Linux kernel more recent than 3.12 when *both* radeon.audio=1 was set
+>> and I had been running audacity 2.0.5. (iommu=noaperture is also set).
+>>
+>> The problem was reproducible with the stock Debian kernel
+>> linux-image-3.13-rc6-amd64 version 3.13~rc6-1~exp1.
+>>
+>> The machine is using an ATI/AMD 3850HD video card with a DVI cable to a
+>> DVI input on my monitor, and the default audio device is the
+>> motherboard's on-board audio device:
+>>
+>> 00:14.2 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] SBx00
+>> Azalia (Intel HDA)
+>>
+>> 01:00.0 VGA compatible controller: Advanced Micro Devices, Inc.
+>> [AMD/ATI] RV670 [Radeon HD 3690/3850]
+>> 01:00.1 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] RV670/680
+>> HDMI Audio [Radeon HD 3690/3800 Series]
+>>
+>> $ git bisect bad
+>> cbbaa603a03cc46681e24d6b2804b62fde95a2af is the first bad commit
+>> commit cbbaa603a03cc46681e24d6b2804b62fde95a2af
+>> Author: Takashi Iwai <tiwai@suse.de>
+>> Date:   Thu Oct 17 18:03:24 2013 +0200
+>>
+>>       ALSA: hda - Fix possible races in HDMI driver
+>>
+>>       Some per_pin fields and ELD contents might be changed dynamically in
+>>       multiple ways where the concurrent accesses are still opened in the
+>>       current code.  This patch fixes such possible races by using eld->lock
+>>       in appropriate places.
+>>
+>>       Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
+>>       Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>
+>> :040000 040000 0c29281f82a3ebd9a704d481114f9cfcefea07c8
+>> d71fd101125cd29a628cb5e66c7ee4f56e28329b M      sound
+>>
+>> When running audacity from the command line there was the following output:
+>>
+>> ALSA lib pcm_dsnoop.c:618:(snd_pcm_dsnoop_open) unable to open slave
+>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
+>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.rear
+>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.center_lfe
+>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.side
+>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
+>> Expression 'stream->playback.pcm' failed in
+>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>> Expression 'stream->playback.pcm' failed in
+>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>> Expression 'stream->playback.pcm' failed in
+>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>>
+>> I am happy to supply further information or run further tests to help in
+>> isolating the problem and verifying a solution.
+>
+> Could you build the kernel with lockdep kconfig and see whether it
+> reports errors?
+>
+> Reverting the commit doesn't work cleanly.  Instead, you can try to
+> simply comment out all mutex_lock(&per_pin->lock) and
+> mutex_unlock(&per_pin->lock) calls in patch_hdmi.c to see whether it's
+> a mutex deadlock.
+>
+>
+> thanks,
+>
+> Takashi
+>
 
-#define SIZE (16 * 1048576)
+I rebuilt the kernel after commenting out all mutex_lock(&per_pin->lock) 
+and mutex_unlock(&per_pin->lock) calls in patch_hdmi.c, and the 
+resulting kernel shutdown without hanging.
 
-static void hammer(const char *name)
-{
-  int fd = open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
-  if (fd == -1)
-    err(1, "open");
+Regards,
 
-  fallocate(fd, 0, 0, SIZE);
-
-  void *addr = mmap(NULL, SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-  if (addr == MAP_FAILED)
-    err(1, "mmap");
-
-  memset(addr, 0, SIZE);
-
-  if (munmap(addr, SIZE) != 0)
-    err(1, "munmap");
-
-  if (sync_file_range(fd, 0, 4096,
-              SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
-              SYNC_FILE_RANGE_WAIT_AFTER) != 0)
-    err(1, "sync_file_range");
-
-  if (unlink(name) != 0)
-    err(1, "unlink");
-
-  //  if (ftruncate(fd, 0) != 0)
-  //    err(1, "ftruncate");
-
-  close(fd);
-}
-
-int main(int argc, char **argv)
-{
-  if (argc != 2) {
-    printf("Usage: hammer_and_delete FILENAME\n");
-    return 1;
-  }
-
-  while (true) {
-    hammer(argv[1]);
-    write(1, ".", 1);
-  }
-}
+Arthur.
