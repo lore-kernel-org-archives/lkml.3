@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaAUQs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:48:59 -0500
-Received: from sauhun.de ([89.238.76.85]:35239 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713AbaAUQs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:48:57 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH] i2c: rely on driver core when sanitizing devices
-Date: Tue, 21 Jan 2014 17:48:34 +0100
-Message-Id: <1390322914-14191-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.5.1
+	id S1754930AbaAUQvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:51:32 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58648 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaAUQv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 11:51:29 -0500
+Message-ID: <52DEA58A.9050406@linaro.org>
+Date: Tue, 21 Jan 2014 11:51:22 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 15/16] ARM: add uprobes support
+References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-16-git-send-email-dave.long@linaro.org> <1387564464.3404.106.camel@linaro1.home>
+In-Reply-To: <1387564464.3404.106.camel@linaro1.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0998d0631001 (device-core: Ensure drvdata = NULL when no driver
-is bound) modified the driver core to always clear .driver and .drvdata
-on remove or probe error. No need for the I2C core to do it.
+On 12/20/13 13:34, Jon Medhurst (Tixy) wrote:
+> On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
+>> From: "David A. Long" <dave.long@linaro.org>
+>>
+>> Using Rabin Vincent's ARM uprobes patches as a base, enable uprobes
+>> support on ARM.
+>>
+>> Caveats:
+>>
+>>   - Thumb is not supported
+>>   - XOL abort/trap handling is not implemented
+>
+> I shall repeat my comment from version one of the patch...
+>
+> What are the consequences of this, e.g. is it possible for a probe to
+> get stuck in an infinite loop of faulting? I hope there are no integrity
+> issues for the kernel itself.
+>
+> Would be good if someone familiar with uprobes working could answer
+> that.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/i2c/i2c-core.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+Testing shows it does indeed get stuck continuously trapping. The 
+process is killable.  Fortunately all the infrastructure is already 
+there for fixing this.  I've patched the code to detect the trap and 
+allow it to be processed, using the powerpc uprobes code as a model. 
+The changes required are fairly small and entirely in the 
+architecture-specific code.
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index d74c0b3..dd3a4db 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -256,10 +256,9 @@ static int i2c_device_probe(struct device *dev)
- 
- 	acpi_dev_pm_attach(&client->dev, true);
- 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
--	if (status) {
--		i2c_set_clientdata(client, NULL);
-+	if (status)
- 		acpi_dev_pm_detach(&client->dev, true);
--	}
-+
- 	return status;
- }
- 
-@@ -267,7 +266,7 @@ static int i2c_device_remove(struct device *dev)
- {
- 	struct i2c_client	*client = i2c_verify_client(dev);
- 	struct i2c_driver	*driver;
--	int			status;
-+	int status = 0;
- 
- 	if (!client || !dev->driver)
- 		return 0;
-@@ -276,12 +275,8 @@ static int i2c_device_remove(struct device *dev)
- 	if (driver->remove) {
- 		dev_dbg(dev, "remove\n");
- 		status = driver->remove(client);
--	} else {
--		dev->driver = NULL;
--		status = 0;
- 	}
--	if (status == 0)
--		i2c_set_clientdata(client, NULL);
-+
- 	acpi_dev_pm_detach(&client->dev, true);
- 	return status;
- }
--- 
-1.8.5.1
+As mentioned before, thumb support is a follow-on project.
+
+> I've a few other comments...
+
+[snip]
+
+>
+>
+>> +const union decode_item uprobes_probes_actions[] = {
+>> +	[PROBES_EMULATE_NONE] {.handler = probes_simulate_nop},
+>
+> There is a missing '=' in the line above. Interesting that GCC doesn't
+> complain (I tried compiling this patch and it didn't).
+>
+
+That is indeed odd.  I have fixed it (my code, not the compiler).
+
+[snip]
+
+>> +bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>> +{
+>> +	void *addr;
+>
+> 'addr' is not used so this line can be deleted
+>
+>> +	probes_opcode_t opcode;
+>> +
+>> +	if (!auprobe->simulate)
+>> +		return false;
+>> +
+>> +	addr = (void *) regs->ARM_pc;
+>
+> and so can this line ^^^
+
+Fixed.
+
+>
+>> +	opcode = __mem_to_opcode_arm(*(unsigned int *) auprobe->insn);
+>> +
+>> +	auprobe->asi.insn_singlestep(opcode, &auprobe->asi, regs);
+>> +
+>> +	return true;
+>> +}
+>> +
+>
+
+Fixed.
+
+> [rest of patch snipped]
+>
+
+
+-dl
 
