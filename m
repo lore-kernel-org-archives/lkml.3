@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaAUVVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:21:08 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:10085 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaAUVVF (ORCPT
+	id S1753600AbaAUVYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:24:04 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56127 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaAUVYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:21:05 -0500
-Message-ID: <1390338897.1792.467.camel@misato.fc.hp.com>
-Subject: Re: [Patch v1 1/3] ACPI: add callback prepare() into
- acpi_hotplug_handler
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@acpica.org
-Date: Tue, 21 Jan 2014 14:14:57 -0700
-In-Reply-To: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jan 2014 16:24:00 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>
+Subject: [PATCH 02/73] mm: replace module_init usages with subsys_initcall in nommu.c
+Date: Tue, 21 Jan 2014 16:22:05 -0500
+Message-ID: <1390339396-3479-3-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-01-18 at 10:48 +0800, Jiang Liu wrote:
-> Add callback prepare() into acpi_hotplug_handler, which will get called
-> at the very beginning of ACPI hotplug event handler. The ACPI core will
-> ignore the event if prepare() returns NOTIFY_STOP.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/acpi/scan.c     |    4 ++++
->  include/acpi/acpi_bus.h |    1 +
->  2 files changed, 5 insertions(+)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index fd39459..6b0f419 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -392,6 +392,10 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
->  	struct acpi_device *adev;
->  	acpi_status status;
->  
-> +	if (handler->prepare &&
-> +	    handler->prepare(handle, type, data) == NOTIFY_STOP)
-> +		return;
+Compiling some arm/m68k configs with "# CONFIG_MMU is not set" reveals
+two more instances of module_init being used for code that can't
+possibly be modular, as CONFIG_MMU is either on or off.
 
-The OS is responsible for calling _OST when it is implemented.  So you
-cannot just return here.  See acpi_hotplug_unsupported(handle, type)
-next line.  Also, please describe why prepare() needs to be added.
+We replace them with subsys_initcall as per what was done in other
+mmu-enabled code.
 
-Thanks,
--Toshi
+Note that direct use of __initcall is discouraged, vs.  one of the
+priority categorized subgroups.  As __initcall gets mapped onto
+device_initcall, our use of subsys_initcall (which makes sense for these
+files) will thus change this registration from level 6-device to level
+4-subsys (i.e.  slightly earlier).
 
+One might think that core_initcall (l2) or postcore_initcall (l3) would
+be more appropriate for anything in mm/ but if we look at the actual init
+functions themselves, we see they are just sysctl setup stuff, and
+hence the choice of subsys_initcall (l4) seems reasonable.  At the same
+time it minimizes the risk of changing the priority too drastically all
+at once.  We can adjust further in the future.
 
+Also, a couple instances of missing ";" at EOL are fixed.
 
-> +
->  	if (!handler->hotplug.enabled)
->  		return acpi_hotplug_unsupported(handle, type);
->  
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index ddabed1..09a73bd 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -113,6 +113,7 @@ static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
->  struct acpi_scan_handler {
->  	const struct acpi_device_id *ids;
->  	struct list_head list_node;
-> +	int (*prepare)(acpi_handle handle, u32 type, void *context);
->  	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
->  	void (*detach)(struct acpi_device *dev);
->  	struct acpi_hotplug_profile hotplug;
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ mm/nommu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 8740213..37b04f8 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -2144,7 +2144,7 @@ static int __meminit init_user_reserve(void)
+ 	sysctl_user_reserve_kbytes = min(free_kbytes / 32, 1UL << 17);
+ 	return 0;
+ }
+-module_init(init_user_reserve)
++subsys_initcall(init_user_reserve);
+ 
+ /*
+  * Initialise sysctl_admin_reserve_kbytes.
+@@ -2165,4 +2165,4 @@ static int __meminit init_admin_reserve(void)
+ 	sysctl_admin_reserve_kbytes = min(free_kbytes / 32, 1UL << 13);
+ 	return 0;
+ }
+-module_init(init_admin_reserve)
++subsys_initcall(init_admin_reserve);
+-- 
+1.8.4.1
 
