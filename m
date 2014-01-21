@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaAUOYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:24:43 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:56282 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaAUOYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:24:42 -0500
-Date: Tue, 21 Jan 2014 09:24:37 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Linux USB List <linux-usb@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stanislaw Wadas <s.wadas@samsung.com>,
-        Krzysztof Opasiak <k.opasiak@samsung.com>
-Subject: libusbg 0.1.0 (formerly libgadget)
-Message-ID: <20140121142437.GH31176@beef>
+	id S1754656AbaAUOfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:35:34 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:20982 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754274AbaAUOfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:35:31 -0500
+Message-ID: <52DE8592.9090807@siemens.com>
+Date: Tue, 21 Jan 2014 15:34:58 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
+References: <52DE6FCE.2050708@siemens.com> <20140121140113.GL30183@twins.programming.kicks-ass.net> <52DE8009.9010902@siemens.com>
+In-Reply-To: <52DE8009.9010902@siemens.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-libusbg 0.1.0 is released. libusbg is a library that provides a C API to
-the kernel USB gadget configfs API. It simplifies creation and
-management of USB gadget devices from C applications.
+On 2014-01-21 15:11, Jan Kiszka wrote:
+> On 2014-01-21 15:01, Peter Zijlstra wrote:
+>> On Tue, Jan 21, 2014 at 02:02:06PM +0100, Jan Kiszka wrote:
+>>> Hi all,
+>>>
+>>> while trying to plug a race in the CPU hotplug code on xAPIC systems, I
+>>> was analyzing IPI transmission patterns. The handlers in
+>>> arch/x86/include/asm/ipi.h first wait for ICR, then send. In contrast,
+>>> arch_irq_work_raise sends the self-IPI directly and then waits. This
+>>> looks inconsistent. Is it intended?
+>>>
+>>> BTW, the races are in wakeup_secondary_cpu_via_init and
+>>> wakeup_secondary_cpu_via_nmi (lacking IRQ disable around ICR accesses).
+>>> There we also send first, then wait for completion. But I guess that is
+>>> due to the code originally only being used during boot. Will send fixes
+>>> for those once the sync pattern is clear to me.
+>>
+>> Could be I had no clue what I was doing and copy/pasted the code until
+>> it compiled and ran.
+>>
+>> In fact, I've got no clue what an ICR is.
+> 
+> Old xAPIC requires you to only send IPIs, when the APIC signals it is
+> done with sending the previous one. Therefore we wait for availability
+> in the other IPI transmission services before writing to ICR.
+> 
+> OK, then I will write a separate patch for arch_irq_work_raise to switch
+> the ordering.
 
-Get it at:
+Hmm, missed that we do have synchronization already via
+apic->send_IPI_self -> default_send_IPI_self ->
+__default_send_IPI_shortcut. So the closing wait would only be relevant
+if we need to settle the APIC because we may have interrupted a
+wait_icr_idle + write_icr sequence. But shouldnt those sequences be
+atomic (except for the problematic wakeup_secondary path)?
 
-	git://github.com/libusbg/libusbg.git
+Still confused: What is the official locking model around wait_icr_idle,
+write(ICR), and also write(IRC2)? IRQ disable around ICR2+ICR accesses
+and preempt_disable around wait + write? That is also important to fix
+the SMP boot-up code properly.
 
-API docs at:
+Jan
 
-	http://libusbg.github.com/group__libusbg.html
-	http://libusbg.github.com/examples.html
-
-Changes since libgadget 0.0.1:
-
-	- libusbg now has a new name to avoid conflicts
-	  with an existing libgadget libary
-	- use the standard /sys/kernel/config mount path
-	  in examples
-	- a new project home on github
-
-Going forward we have a couple contributors with clean up and bug
-fixes that will be rolled into libusbg once comments are addressed.
-Support for FunctionFS (merged for 3.14) will also be added.
-
--Matt
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
