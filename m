@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaAUOBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:01:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56177 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498AbaAUOBf (ORCPT
+	id S1754695AbaAUOCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:02:33 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:8936 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754441AbaAUOCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:01:35 -0500
-Date: Tue, 21 Jan 2014 15:01:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
-Message-ID: <20140121140113.GL30183@twins.programming.kicks-ass.net>
-References: <52DE6FCE.2050708@siemens.com>
+	Tue, 21 Jan 2014 09:02:32 -0500
+Date: Tue, 21 Jan 2014 09:02:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v6 1/8] x86: allow to handle errors in text_poke
+ function family
+Message-ID: <20140121090229.5936c2ba@gandalf.local.home>
+In-Reply-To: <1390309237.14199.16.camel@pathway.suse.cz>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	<1386690140-19941-2-git-send-email-pmladek@suse.cz>
+	<20140114182029.27fa13f9@gandalf.local.home>
+	<1390309237.14199.16.camel@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DE6FCE.2050708@siemens.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 02:02:06PM +0100, Jan Kiszka wrote:
-> Hi all,
-> 
-> while trying to plug a race in the CPU hotplug code on xAPIC systems, I
-> was analyzing IPI transmission patterns. The handlers in
-> arch/x86/include/asm/ipi.h first wait for ICR, then send. In contrast,
-> arch_irq_work_raise sends the self-IPI directly and then waits. This
-> looks inconsistent. Is it intended?
-> 
-> BTW, the races are in wakeup_secondary_cpu_via_init and
-> wakeup_secondary_cpu_via_nmi (lacking IRQ disable around ICR accesses).
-> There we also send first, then wait for completion. But I guess that is
-> due to the code originally only being used during boot. Will send fixes
-> for those once the sync pattern is clear to me.
+On Tue, 21 Jan 2014 14:00:37 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-Could be I had no clue what I was doing and copy/pasted the code until
-it compiled and ran.
+> > > There are some situations where it is hard to recover from an error. Masami
+> > > Hiramatsu <masami.hiramatsu.pt@hitachi.com> suggested to create
+> > > text_poke*_or_die() variants for this purpose.
+> > 
+> > I don't like the "_or_die()". Although I don't care much about it, I'm
+> > thinking the x86 maintainers might not like it either.
+> > 
+> > What about just doing the test in the places that would call "or_die"?
+> > 
+> > 	ret = text_poke*();
+> > 	BUG_ON(ret);
+> 
+> Exactly this solution has been used in v5 of this patch set, see 
+> https://lkml.org/lkml/2013/12/3/258
+> 
+> Masami suggested to use the "or_die()" because BUG_ON() was used on most
+> locations, see https://lkml.org/lkml/2013/12/6/1107
 
-In fact, I've got no clue what an ICR is.
+If BUG_ON() is used in most locations, then we can make text_poke()
+default to bug, and the just have a text_poke_safe() function that does
+not bug. Or some similar name.
+
+The "_die" has a bad taste in several developers mouth ;-)
+
+-- Steve
