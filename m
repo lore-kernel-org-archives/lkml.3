@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaAUMfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:35:38 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62617 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477AbaAUMfe (ORCPT
+	id S1754597AbaAUMk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:40:56 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17504 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289AbaAUMkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:35:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
-Date: Tue, 21 Jan 2014 13:35:16 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-wireless" <linux-wireless@vger.kernel.org>,
-        "linux-sunxi" <linux-sunxi@googlegroups.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Chen-Yu Tsai" <wens@csie.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-References: <1389941251-32692-1-git-send-email-wens@csie.org> <CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com> <CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
-In-Reply-To: <CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
+	Tue, 21 Jan 2014 07:40:53 -0500
+Message-ID: <52DE6AA0.1000801@huawei.com>
+Date: Tue, 21 Jan 2014 20:40:00 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
+ info when OOM?
+References: <52DCFC33.80008@huawei.com> <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401211335.16885.arnd@arndb.de>
-X-Provags-ID: V02:K0:OdSMSZdbbIpyMDySnXJuaAFfqUIKKagXfEZyGQYpsO1
- ByTesvfOes0KyBLW4NCL7RmUaXyddVDn8iEGx7NphHOrfYNJB7
- crvOxBVBrSFP6Rbk0/xAG7zFXf6vo8vgZvuaGH3ZnnyYq4IsYX
- 5k1rA+8SGuPBq4++3wQk7/xv43hD2naLfQqU2ju2XRDvUVSbCo
- ASL5kc/7gScfabBLiiVPojPDl+dvFXqcFD/4EGkT3C+XUoHkZn
- 4Kb3UFH010Kujb6NosqMq+PGsjRZTi3/aDKlBNh1LDp+LvBdEt
- FvYsNBLVpnfr55lK4KtVZ5EW2ayxyZLjR1Gs+44zxXoRnyhWQH
- Tv69Y5f5ql55vKJdOqhE=
+X-Originating-IP: [10.177.24.155]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 January 2014, Linus Walleij wrote:
-> On Tue, Jan 21, 2014 at 4:11 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> > On Sat, Jan 18, 2014 at 8:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> >
-> > I agree that's how it should be be done with the current API if your
-> > driver can obtain GPIOs from both ACPI and DT. This is a potential
-> > issue, as drivers are not supposed to make assumptions about who is
-> > going to be their GPIO provider. Let's say you started a driver with
-> > only DT in mind, and used gpio_get(dev, con_id) to get your GPIOs. DT
-> > bindings are thus of the form "con_id-gpio = <phandle>", and set in
-> > stone. Then later, someone wants to use your driver with ACPI. How do
-> > you handle that gracefully?
+On 2014/1/21 13:34, David Rientjes wrote:
+
+> On Mon, 20 Jan 2014, Jianguo Wu wrote:
 > 
-> Short answer is you can't. You have to pour backward-compatibility
-> code into the driver first checking for that property and then falling
-> back to the new binding if it doesn't exist.
-
-With the ACPI named properties extension, it should be possible to have
-something akin to a "gpio-names" list that can be attached to an indexed
-array of gpio descriptors. I assume that Intel is going to need this
-for named irqs, clocks, regulators, dmas as well, so I think it will
-eventually get there. It's not something that can be done today though,
-or that is standardized in APCI-5.0.
-
-My guess is that named GPIOs are going to make more sense on x86 embedded
-than on arm64 server.
-
-> > I'm starting to wonder, now that ACPI is a first-class GPIO provider,
-> > whether we should not start to encourage the deprecation of the
-> > "con_id-gpio = <phandle>" binding form in DT and only use a single
-> > indexed GPIO property per device.
+>> When OOM happen, will dump buddy free areas info, hugetlb pages info,
+>> memory state of all eligible tasks, per-cpu memory info.
+>> But do not dump slab/vmalloc info, sometime, it's not enough to figure out the
+>> reason OOM happened.
+>>
+>> So, my questions are:
+>> 1. Should dump slab/vmalloc info when OOM happen? Though we can get these from proc file,
+>> but usually we do not monitor the logs and check proc file immediately when OOM happened.
+>>
 > 
-> You have a valid point.
 
-Independent of ACPI, I prefer indexed "gpios" properties over "con_id-gpio"
-properties anyway, because it's more consistent with some of the other
-subsystems. I don't have an opinion though on whether we should also
-allow a "gpios"/"gpio-names" pair, or whether we should keep the indexed
-"gpios" list for the anonymous case.
+Hi David,
+Thank you for your patience to answer!
 
-> > The con_id parameter would then only
-> > be used as a label, which would also have the nice side-effect that
-> > all GPIOs used for a given function will be reported under the same
-> > name no matter what the GPIO provider is.
+> The problem is that slabinfo becomes excessively verbose and dumping it 
+> all to the kernel log often times causes important messages to be lost.  
+> This is why we control things like the tasklist dump with a VM sysctl.  It 
+> would be possible to dump, say, the top ten slab caches with the highest 
+> memory usage, but it will only be helpful for slab leaks.  Typically there 
+> are better debugging tools available than analyzing the kernel log; if you 
+> see unusually high slab memory in the meminfo dump, you can enable it.
 > 
-> As discussed earlier in this thread I'm not sure the con_id is
-> suitable for labelling GPIOs. It'd be better to have a proper name
-> specified in DT/ACPI instead.
 
-+1
+But, when OOM has happened, we can only use kernel log, slab/vmalloc info from proc
+is stale. Maybe we can dump slab/vmalloc with a VM sysctl, and only top 10/20 entrys?
 
-> > From an aesthetic point of view, I definitely prefer using con_id to
-> > identify GPIOs instead of indexes, but I don't see how we can make it
-> > play nice with ACPI. Thoughts?
+Thanks.
+
+>> 2. /proc/$pid/smaps and pagecache info also helpful when OOM, should also be dumped?
+
+>>
 > 
-> Let's ask the DT maintainers...
+> Also very verbose and would cause important messages to be lost, we try to 
+> avoid spamming the kernel log with all of this information as much as 
+> possible.
 > 
-> I'm a bit sceptic to the whole ACPI-DT-API-should-be-unified
-> just-one-function-call business, as this was just a very simple example
-> of what can happen to something as simple as
-> devm_gpiod_get[_index]().
+>> 3. Without these info, usually how to figure out OOM reason?
+>>
+> 
+> Analyze the memory usage in the meminfo and determine what is unusually 
+> high; if it's mostly anonymous memory, you can usually correlate it back 
+> to a high rss for a process in the tasklist that you didn't suspect to be 
+> using that much memory, for example.
+> 
+> 
 
-I think a unified kernel API makes more sense for some subsystems than
-others, and it depends a bit on the rate of adoption of APCI for drivers
-that already have a DT binding (or vice versa, if that happens).
 
-GPIO might actually be in the first category since it's commonly used
-for off-chip components that will get shared across ARM and x86 (as
-well as everything else), while a common kernel API would be less
-important for things that are internal to an SoC where Intel is the
-only company needing ACPI support.
 
-	Arnd
