@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaAUXMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:12:47 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:46595 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969AbaAUXMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:12:43 -0500
-Message-ID: <1390345596.1792.468.camel@misato.fc.hp.com>
-Subject: Re: [Patch v1 1/3] ACPI: add callback prepare() into
- acpi_hotplug_handler
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <lenb@kernel.org>,
-        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@acpica.org
-Date: Tue, 21 Jan 2014 16:06:36 -0700
-In-Reply-To: <2201697.uqWgsYrLat@vostro.rjw.lan>
-References: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
-	 <1390338897.1792.467.camel@misato.fc.hp.com>
-	 <2201697.uqWgsYrLat@vostro.rjw.lan>
+	id S1754145AbaAUXUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:20:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4175 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698AbaAUXUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:20:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
+   d="scan'208";a="470397520"
+Message-ID: <1390346420.23634.5.camel@yhuang-dev>
+Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
+From: Huang Ying <ying.huang@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 22 Jan 2014 07:20:20 +0800
+In-Reply-To: <20140121145105.GE3694@twins.programming.kicks-ass.net>
+References: <52DE6FCE.2050708@siemens.com>
+	 <20140121140113.GL30183@twins.programming.kicks-ass.net>
+	 <20140121145105.GE3694@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 00:17 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, January 21, 2014 02:14:57 PM Toshi Kani wrote:
-> > On Sat, 2014-01-18 at 10:48 +0800, Jiang Liu wrote:
-> > > Add callback prepare() into acpi_hotplug_handler, which will get called
-> > > at the very beginning of ACPI hotplug event handler. The ACPI core will
-> > > ignore the event if prepare() returns NOTIFY_STOP.
+On Tue, 2014-01-21 at 15:51 +0100, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 03:01:13PM +0100, Peter Zijlstra wrote:
+> > On Tue, Jan 21, 2014 at 02:02:06PM +0100, Jan Kiszka wrote:
+> > > Hi all,
 > > > 
-> > > Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> > > ---
-> > >  drivers/acpi/scan.c     |    4 ++++
-> > >  include/acpi/acpi_bus.h |    1 +
-> > >  2 files changed, 5 insertions(+)
+> > > while trying to plug a race in the CPU hotplug code on xAPIC systems, I
+> > > was analyzing IPI transmission patterns. The handlers in
+> > > arch/x86/include/asm/ipi.h first wait for ICR, then send. In contrast,
+> > > arch_irq_work_raise sends the self-IPI directly and then waits. This
+> > > looks inconsistent. Is it intended?
 > > > 
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index fd39459..6b0f419 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -392,6 +392,10 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
-> > >  	struct acpi_device *adev;
-> > >  	acpi_status status;
-> > >  
-> > > +	if (handler->prepare &&
-> > > +	    handler->prepare(handle, type, data) == NOTIFY_STOP)
-> > > +		return;
+> > > BTW, the races are in wakeup_secondary_cpu_via_init and
+> > > wakeup_secondary_cpu_via_nmi (lacking IRQ disable around ICR accesses).
+> > > There we also send first, then wait for completion. But I guess that is
+> > > due to the code originally only being used during boot. Will send fixes
+> > > for those once the sync pattern is clear to me.
 > > 
-> > The OS is responsible for calling _OST when it is implemented.  So you
-> > cannot just return here.  See acpi_hotplug_unsupported(handle, type)
-> > next line.  Also, please describe why prepare() needs to be added.
+> > Could be I had no clue what I was doing and copy/pasted the code until
+> > it compiled and ran.
+> > 
+> > In fact, I've got no clue what an ICR is.
 > 
-> I don't think it's needed any more, please see:
+> I dug about a bit, I borrowed that code from:
 > 
-> http://marc.info/?l=linux-acpi&m=139001691317575&w=2
+> lkml.kernel.org/r/1277348698-17311-3-git-send-email-ying.huang@intel.com
+> 
+> Huang Ying, can you explain to Jan why you do the wait afterwards?
 
-Oh, I see.  Thanks!
--Toshi
+I borrow the code from the original MCE report event code.
+
+Andi, could you help us to explain it?
+
+Best Regards,
+Huang Ying
+
 
