@@ -1,139 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaAUKFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 05:05:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150AbaAUKFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 05:05:45 -0500
-Date: Tue, 21 Jan 2014 11:07:19 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [PATCH 2/2] nvme: Cleanup nvme_dev_start() and fix IRQ leak
-Message-ID: <20140121100719.GC8847@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com>
- <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
- <alpine.LRH.2.03.1401171419370.25844@AMR>
- <20140120083835.GA19068@dhcp-26-207.brq.redhat.com>
- <20140120084212.GC19068@dhcp-26-207.brq.redhat.com>
- <alpine.LRH.2.03.1401201541000.25844@AMR>
- <20140121100311.GA8847@dhcp-26-207.brq.redhat.com>
+	id S1754153AbaAUKIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 05:08:10 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46571 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871AbaAUKIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 05:08:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121100311.GA8847@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1390259843.2501.2.camel@leira.trondhjem.org>
+References: <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
+	<1390259843.2501.2.camel@leira.trondhjem.org>
+Date: Tue, 21 Jan 2014 18:08:05 +0800
+X-Google-Sender-Auth: G7RoRuXn2_guEaTJyN248h2LyQM
+Message-ID: <CALrKORrZ3Kcuqc1RajQKkZcot0yiswh4VR_WuXHqfRTjn9oGQQ@mail.gmail.com>
+Subject: Re: [PATCH] SUNRPC: Allow one callback request to be received from
+ two sk_buff
+From: shaobingqing <shaobingqing@bwstor.com.cn>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: bfields@redhat.com, davem@davemloft.net, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an attempt to make handling of admin queue in a
-single scope. This update also fixes a IRQ leak in case
-nvme_setup_io_queues() failed to allocate enough iomem
-and bailed out with -ENOMEM errno.
+2014/1/21 Trond Myklebust <trond.myklebust@primarydata.com>:
+> On Mon, 2014-01-20 at 14:59 +0800, shaobingqing wrote:
+>> In current code, there only one struct rpc_rqst is prealloced. If one
+>> callback request is received from two sk_buff, the xprt_alloc_bc_request
+>> would be execute two times with the same transport->xid. The first time
+>> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
+>> bit of transport->tcp_flags will not be cleared. The second time
+>> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
+>> pointer will be returned, then xprt_force_disconnect occur. I think one
+>> callback request can be allowed to be received from two sk_buff.
+>>
+>> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+>> ---
+>>  net/sunrpc/xprtsock.c |   11 +++++++++--
+>>  1 files changed, 9 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+>> index ee03d35..606950d 100644
+>> --- a/net/sunrpc/xprtsock.c
+>> +++ b/net/sunrpc/xprtsock.c
+>> @@ -1271,8 +1271,13 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>>       struct sock_xprt *transport =
+>>                               container_of(xprt, struct sock_xprt, xprt);
+>>       struct rpc_rqst *req;
+>> +     static struct rpc_rqst *req_partial;
+>> +
+>> +     if (req_partial == NULL)
+>> +             req = xprt_alloc_bc_request(xprt);
+>> +     else if (req_partial->rq_xid == transport->tcp_xid)
+>> +             req = req_partial;
+>
+> What happens here if req_partial->rq_xid != transport->tcp_xid? AFAICS,
+> req will be undefined. Either way, you cannot use a static variable for
+> storage here: that isn't re-entrant.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/block/nvme-core.c |   37 +++++++++++++++++++++----------------
- 1 files changed, 21 insertions(+), 16 deletions(-)
+Because metadata sever only have one slot for backchannel request,
+req_partial->rq_xid == transport->tcp_xid always happens, if the callback
+request just being splited in two sk_buffs. But req_partial->rq_xid !=
+transport->tcp_xid may also happens in some special cases, such as
+retransmission occurs?
+If one callback request is splited in two sk_buffs, xs_tcp_read_callback
+will be execute two times. The req_partial should be a static variable,
+because  the second execution of xs_tcp_read_callback should use
+the rpc_rqst allocated for the first execution, which saves information
+copies from the first sk_buff.
+I think perhaps the code should be modified like bellows:
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index c790679..010a789 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1414,6 +1414,7 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
- 	if (result)
- 		return result;
- 
-+	dev->entry[0].vector = dev->pci_dev->irq;
- 	result = queue_request_irq(dev, nvmeq, "nvme admin");
- 	if (result)
- 		return result;
-@@ -1424,6 +1425,12 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
- 	return result;
- }
- 
-+static void nvme_teardown_admin_queue(struct nvme_dev *dev)
-+{
-+	nvme_disable_queue(dev, 0);
-+	nvme_free_queue(dev->queues[0]);
-+}
-+
- struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
- 				unsigned long addr, unsigned length)
- {
-@@ -1869,17 +1876,10 @@ static size_t db_bar_size(struct nvme_dev *dev, unsigned nr_io_queues)
- 	return 4096 + ((nr_io_queues + 1) * 8 * dev->db_stride);
- }
- 
--static int nvme_setup_io_queues(struct nvme_dev *dev)
-+static int nvme_setup_io_queues(struct nvme_dev *dev, int nr_io_queues)
- {
- 	struct pci_dev *pdev = dev->pci_dev;
--	int result, cpu, i, vecs, nr_io_queues, size, q_depth;
--
--	nr_io_queues = num_online_cpus();
--	result = set_queue_count(dev, nr_io_queues);
--	if (result < 0)
--		return result;
--	if (result < nr_io_queues)
--		nr_io_queues = result;
-+	int result, cpu, i, vecs, size, q_depth;
- 
- 	size = db_bar_size(dev, nr_io_queues);
- 	if (size > 8192) {
-@@ -1896,9 +1896,6 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
- 		dev->queues[0]->q_db = dev->dbs;
- 	}
- 
--	/* Deregister the admin queue's interrupt */
--	free_irq(dev->entry[0].vector, dev->queues[0]);
--
- 	vecs = nr_io_queues;
- 	for (i = 0; i < vecs; i++)
- 		dev->entry[i].entry = i;
-@@ -2069,7 +2066,6 @@ static int nvme_dev_map(struct nvme_dev *dev)
- 	if (pci_enable_device_mem(pdev))
- 		return result;
- 
--	dev->entry[0].vector = pdev->irq;
- 	pci_set_master(pdev);
- 	bars = pci_select_bars(pdev, IORESOURCE_MEM);
- 	if (pci_request_selected_regions(pdev, bars, "nvme"))
-@@ -2402,11 +2398,20 @@ static int nvme_dev_start(struct nvme_dev *dev)
- 	list_add(&dev->node, &dev_list);
- 	spin_unlock(&dev_list_lock);
- 
--	result = nvme_setup_io_queues(dev);
--	if (result && result != -EBUSY)
-+	result = set_queue_count(dev, num_online_cpus());
-+	if (result == -EBUSY)
-+		return -EBUSY;
-+
-+	nvme_teardown_admin_queue(dev);
-+
-+	if (result)
- 		goto disable;
- 
--	return result;
-+	result = nvme_setup_io_queues(dev, result);
-+	if (result)
-+		goto disable;
-+
-+	return 0;
- 
-  disable:
- 	spin_lock(&dev_list_lock);
--- 
-1.7.7.6
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 606950d..02dbb82 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1273,10 +1273,14 @@ static inline int xs_tcp_read_callback(struct
+rpc_xprt *xprt,
+        struct rpc_rqst *req;
+        static struct rpc_rqst *req_partial;
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+-       if (req_partial == NULL)
++       if (req_partial == NULL) {
+                req = xprt_alloc_bc_request(xprt);
+-       else if (req_partial->rq_xid == transport->tcp_xid)
++       } else if (req_partial->rq_xid == transport->tcp_xid) {
+                req = req_partial;
++       } else {
++               xprt_free_bc_request(req_partial);
++               req = xprt_alloc_bc_request(xprt);
++       }
+
+        if (req == NULL) {
+                printk(KERN_WARNING "Callback slot table overflowed\n");
+@@ -1303,8 +1307,9 @@ static inline int xs_tcp_read_callback(struct
+rpc_xprt *xprt,
+                list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
+                spin_unlock(&bc_serv->sv_cb_lock);
+                wake_up(&bc_serv->sv_cb_waitq);
+-       } else
++       } else {
+                req_partial = req;
++       }
+
+        req->rq_private_buf.len = transport->tcp_copied;
+
+
+>
+>> -     req = xprt_alloc_bc_request(xprt);
+>>       if (req == NULL) {
+>>               printk(KERN_WARNING "Callback slot table overflowed\n");
+>>               xprt_force_disconnect(xprt);
+>> @@ -1285,6 +1290,7 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>>
+>>       if (!(transport->tcp_flags & TCP_RCV_COPY_DATA)) {
+>>               struct svc_serv *bc_serv = xprt->bc_serv;
+>> +             req_partial = NULL;
+>>
+>>               /*
+>>                * Add callback request to callback list.  The callback
+>> @@ -1297,7 +1303,8 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>>               list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
+>>               spin_unlock(&bc_serv->sv_cb_lock);
+>>               wake_up(&bc_serv->sv_cb_waitq);
+>> -     }
+>> +     } else
+>> +             req_partial = req;
+>>
+>>       req->rq_private_buf.len = transport->tcp_copied;
+>>
+>
+>
+> --
+> Trond Myklebust
+> Linux NFS client maintainer
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
