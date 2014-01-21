@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912AbaAUPKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:10:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37058 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754779AbaAUPKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:10:37 -0500
-Message-ID: <52DE8DDD.108@zytor.com>
-Date: Tue, 21 Jan 2014 07:10:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34.x longterm stable status
-References: <20130805193210.GA1824@blackmetal.musicnaut.iki.fi> <20130808040723.GG12411@windriver.com>
-In-Reply-To: <20130808040723.GG12411@windriver.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754858AbaAUPK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:10:26 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:59805 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438AbaAUPKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 10:10:20 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v2 2/5] spi: Clarify transfer_one() w.r.t. spi_finalize_current_transfer()
+Date: Tue, 21 Jan 2014 16:10:06 +0100
+Message-Id: <1390317009-8292-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
+References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 09:07 PM, Paul Gortmaker wrote:
->>
->> - Shouldn't the EOL status be mentioned in the www.kernel.org front page?
-> 
-> It will be marked EOL at kernel.org when it is EOL.  Those that care
-> about it being EOL would have seen the message about it becoming EOL in
-> the previous 2.6.34.x release annoucement.
-> 
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Maybe it is time to check in on this?
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v2: Rephrased
 
-I just noticed that this is now over a year since the last 2.6.34
-release, which lags the last 2.6.32 release by about five months.  I am
-asking because someone just queried me privately about the status of
-2.6.34.  I'm worrying if people think that security patches are still
-being backported if in fact they aren't.
+ include/linux/spi/spi.h |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-	-hpa
-
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 21a7251d85ee..ba69940a6515 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -282,10 +282,12 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
+  * @prepare_message: set up the controller to transfer a single message,
+  *                   for example doing DMA mapping.  Called from threaded
+  *                   context.
+- * @transfer_one: transfer a single spi_transfer. When the
+- *	          driver is finished with this transfer it must call
+- *	          spi_finalize_current_transfer() so the subsystem can issue
+- *                the next transfer
++ * @transfer_one: transfer a single spi_transfer.
++ *                  - return 0 if the transfer is finished,
++ *                  - return 1 if the transfer is still in progress. When
++ *                    the driver is finished with this transfer it must
++ *                    call spi_finalize_current_transfer() so the subsystem
++ *                    can issue the next transfer
+  * @unprepare_message: undo any work done by prepare_message().
+  * @cs_gpios: Array of GPIOs to use as chip select lines; one per CS
+  *	number. Any individual value may be -ENOENT for CS lines that
+-- 
+1.7.9.5
 
