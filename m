@@ -1,154 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaAUP5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:57:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47414 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265AbaAUP44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:56:56 -0500
-Date: Tue, 21 Jan 2014 15:56:52 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 5/6] numa,sched: normalize faults_from stats and weigh by
- CPU use
-Message-ID: <20140121155652.GL4963@suse.de>
-References: <1390245667-24193-1-git-send-email-riel@redhat.com>
- <1390245667-24193-6-git-send-email-riel@redhat.com>
+	id S1754970AbaAUP6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:58:35 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:14080 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836AbaAUP63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 10:58:29 -0500
+Message-ID: <52DE991F.1030900@hp.com>
+Date: Tue, 21 Jan 2014 10:58:23 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1390245667-24193-6-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, "" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 1/5] qrwlock: A queue read/write lock implementation
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com> <1389761047-47566-2-git-send-email-Waiman.Long@hp.com> <20140120152129.GH31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140120152129.GH31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 02:21:06PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> The tracepoint has made it abundantly clear that the naive
-> implementation of the faults_from code has issues.
-> 
-> Specifically, the garbage collector in some workloads will
-> access orders of magnitudes more memory than the threads
-> that do all the active work. This resulted in the node with
-> the garbage collector being marked the only active node in
-> the group.
-> 
+On 01/20/2014 10:21 AM, Peter Zijlstra wrote:
+> On Tue, Jan 14, 2014 at 11:44:03PM -0500, Waiman Long wrote:
+>> +#ifndef arch_mutex_cpu_relax
+>> +# define arch_mutex_cpu_relax() cpu_relax()
+>> +#endif
+> Include<linux/mutex.h>
+>
 
-Maybe I should have read this patch before getting into a twist about the
-earlier patches in the series and the treatment of active_mask :(. On the
-plus side, even without reading the code I can still see the motivation
-for this paragraph.
+Will do so.
 
-> This issue is avoided if we weigh the statistics by CPU use
-> of each task in the numa group, instead of by how many faults
-> each thread has occurred.
-> 
+>> +#ifndef smp_load_acquire
+>> +# ifdef CONFIG_X86
+>> +#   define smp_load_acquire(p)				\
+>> +	({						\
+>> +		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
+>> +		barrier();				\
+>> +		___p1;					\
+>> +	})
+>> +# else
+>> +#   define smp_load_acquire(p)				\
+>> +	({						\
+>> +		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
+>> +		smp_mb();				\
+>> +		___p1;					\
+>> +	})
+>> +# endif
+>> +#endif
+>> +
+>> +#ifndef smp_store_release
+>> +# ifdef CONFIG_X86
+>> +#   define smp_store_release(p, v)			\
+>> +	do {						\
+>> +		barrier();				\
+>> +		ACCESS_ONCE(*p) = v;			\
+>> +	} while (0)
+>> +# else
+>> +#   define smp_store_release(p, v)			\
+>> +	do {						\
+>> +		smp_mb();				\
+>> +		ACCESS_ONCE(*p) = v;			\
+>> +	} while (0)
+>> +# endif
+>> +#endif
+> Remove these.
 
-Bah, yes. Because in my earlier review I was worried about the faults
-being missed. If the faults stats are scaled by the CPU statistics then it
-is a very rough proxy measure for how heavily a particular node is being
-referenced by a process.
+Will do that.
 
-> To achieve this, we normalize the number of faults to the
-> fraction of faults that occurred on each node, and then
-> multiply that fraction by the fraction of CPU time the
-> task has used since the last time task_numa_placement was
-> invoked.
-> 
-> This way the nodes in the active node mask will be the ones
-> where the tasks from the numa group are most actively running,
-> and the influence of eg. the garbage collector and other
-> do-little threads is properly minimized.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  kernel/sched/fair.c | 21 +++++++++++++++++++--
->  1 file changed, 19 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index ea873b6..203877d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1426,6 +1426,8 @@ static void task_numa_placement(struct task_struct *p)
->  	int seq, nid, max_nid = -1, max_group_nid = -1;
->  	unsigned long max_faults = 0, max_group_faults = 0;
->  	unsigned long fault_types[2] = { 0, 0 };
-> +	unsigned long total_faults;
-> +	u64 runtime, period;
->  	spinlock_t *group_lock = NULL;
->  
->  	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-> @@ -1434,6 +1436,11 @@ static void task_numa_placement(struct task_struct *p)
->  	p->numa_scan_seq = seq;
->  	p->numa_scan_period_max = task_scan_max(p);
->  
-> +	total_faults = p->numa_faults_locality[0] +
-> +		       p->numa_faults_locality[1] + 1;
+>> +/*
+>> + * If an xadd (exchange-add) macro isn't available, simulate one with
+>> + * the atomic_add_return() function.
+>> + */
+>> +#ifdef xadd
+>> +# define qrw_xadd(rw, inc)	xadd(&(rw).rwc, inc)
+>> +#else
+>> +# define qrw_xadd(rw, inc)	(u32)(atomic_add_return(inc,&(rw).rwa) - inc)
+>> +#endif
+> Is GCC really so stupid that you cannot always use the
+> atomic_add_return()? The x86 atomic_add_return is i + xadd(), so you'll
+> end up with:
+>
+>   i + xadd() - i
+>
+> Surely it can just remove the two i terms?
 
-Depending on how you reacted to the review of other patches this may or
-may not have a helper now.
+I guess gcc should do the right thing. I will remove the macro.
 
-> +	runtime = p->se.avg.runnable_avg_sum;
-> +	period = p->se.avg.runnable_avg_period;
-> +
+>> +/**
+>> + * wait_in_queue - Add to queue and wait until it is at the head
+>> + * @lock: Pointer to queue rwlock structure
+>> + * @node: Node pointer to be added to the queue
+>> + */
+>> +static inline void wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
+>> +{
+>> +	struct qrwnode *prev;
+>> +
+>> +	node->next = NULL;
+>> +	node->wait = true;
+>> +	prev = xchg(&lock->waitq, node);
+>> +	if (prev) {
+>> +		prev->next = node;
+>> +		/*
+>> +		 * Wait until the waiting flag is off
+>> +		 */
+>> +		while (smp_load_acquire(&node->wait))
+>> +			arch_mutex_cpu_relax();
+>> +	}
+>> +}
+> Please rebase on top of the MCS lock patches such that this is gone.
 
-Ok, IIRC these stats are based a decaying average based on recent
-history so heavy activity followed by long periods of idle will not skew
-the stats.
+I would like to keep this as long as the MCS patches have not been 
+merged into tip. However, I will take that out if the MCS patches are in 
+when I need to revise the qrwlock patches.
 
->  	/* If the task is part of a group prevent parallel updates to group stats */
->  	if (p->numa_group) {
->  		group_lock = &p->numa_group->lock;
-> @@ -1446,7 +1453,7 @@ static void task_numa_placement(struct task_struct *p)
->  		int priv, i;
->  
->  		for (priv = 0; priv < 2; priv++) {
-> -			long diff, f_diff;
-> +			long diff, f_diff, f_weight;
->  
->  			i = task_faults_idx(nid, priv);
->  			diff = -p->numa_faults[i];
-> @@ -1458,8 +1465,18 @@ static void task_numa_placement(struct task_struct *p)
->  			fault_types[priv] += p->numa_faults_buffer[i];
->  			p->numa_faults_buffer[i] = 0;
->  
-> +			/*
-> +			 * Normalize the faults_from, so all tasks in a group
-> +			 * count according to CPU use, instead of by the raw
-> +			 * number of faults. Tasks with little runtime have
-> +			 * little over-all impact on throughput, and thus their
-> +			 * faults are less important.
-> +			 */
-> +			f_weight = (16384 * runtime *
-> +				   p->numa_faults_from_buffer[i]) /
-> +				   (total_faults * period + 1);
-
-Why 16384? It looks like a scaling factor to deal with integer approximations
-but I'm not 100% sure and I do not see how you arrived at that value.
-
->  			p->numa_faults_from[i] >>= 1;
-> -			p->numa_faults_from[i] += p->numa_faults_from_buffer[i];
-> +			p->numa_faults_from[i] += f_weight;
->  			p->numa_faults_from_buffer[i] = 0;
->  
-
-numa_faults_from needs a big comment that it's no longer about the
-number of faults in it. It's the sum of faults measured by the group
-weighted by the CPU
-
->  			faults += p->numa_faults[i];
-> -- 
-> 1.8.4.2
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+-Longman
