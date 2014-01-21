@@ -1,159 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaAUWXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:23:33 -0500
-Received: from mail.windriver.com ([147.11.1.11]:32795 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaAUWX2 (ORCPT
+	id S1753814AbaAUW0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:26:06 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33757 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaAUW0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:23:28 -0500
-Message-ID: <52DEF366.6030105@windriver.com>
-Date: Tue, 21 Jan 2014 17:23:34 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arch@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <kvm@vger.kernel.org>,
-        <kvm-ppc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 12/73] powerpc: kvm e500/44x is not modular, so don't
- use module_init
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-13-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1390339396-3479-13-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 21 Jan 2014 17:26:02 -0500
+Message-ID: <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 12/17] target/file: Add DIF protection init/format
+ support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>
+Date: Tue, 21 Jan 2014 14:28:08 -0800
+In-Reply-To: <52DBC592.6010405@dev.mellanox.co.il>
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
+	 <1390099480-29013-13-git-send-email-nab@daterainc.com>
+	 <52DBC592.6010405@dev.mellanox.co.il>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-21 04:22 PM, Paul Gortmaker wrote:
-> In powerpc, CONFIG_KVM is bool, and  so are these three subarch
-> options, for the 44x and e500 variants.  This means that any
-> module_exit() calls and functions used by them such as the
-> kvmppc_booke_exit() are dead code.  Here we remove them.
+On Sun, 2014-01-19 at 14:31 +0200, Sagi Grimberg wrote:
+> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds support for DIF protection init/format support into
+> > the FILEIO backend.
+> >
+> > It involves using a seperate $FILE.protection for storing PI that is
+> > opened via fd_init_prot() using the common pi_prot_type attribute.
+> > The actual formatting of the protection is done via fd_format_prot()
+> > using the common pi_prot_format attribute, that will populate the
+> > initial PI data based upon the currently configured pi_prot_type.
+> >
+> > Based on original FILEIO code from Sagi.
 > 
-> In addition, rather than use module_init, which is just
-> __initcall for non-modules, we update those as well.
+> Nice! see comments below...
 > 
-> Note that direct use of __initcall is discouraged, vs. one
-> of the priority categorized subgroups.  As __initcall gets
-> mapped onto device_initcall, our use of subsys_initcall (which
-> seems to make sense for netfilter code) will thus change this
+> > v1 changes:
+> >    - Fix sparse warnings in fd_init_format_buf (Fengguang)
+> >
+> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> > Cc: Christoph Hellwig <hch@lst.de>
+> > Cc: Hannes Reinecke <hare@suse.de>
+> > Cc: Sagi Grimberg <sagig@mellanox.com>
+> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > ---
+> >   drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
+> >   drivers/target/target_core_file.h |    4 ++
+> >   2 files changed, 141 insertions(+)
+> >
+> > diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+> > index 0e34cda..119d519 100644
+> > --- a/drivers/target/target_core_file.c
+> > +++ b/drivers/target/target_core_file.c
+> > @@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
+> >   		       dev->dev_attrib.block_size);
+> >   }
+> >   
+> > +static int fd_init_prot(struct se_device *dev)
+> > +{
+> > +	struct fd_dev *fd_dev = FD_DEV(dev);
+> > +	struct file *prot_file, *file = fd_dev->fd_file;
+> > +	struct inode *inode;
+> > +	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
+> > +	char buf[FD_MAX_DEV_PROT_NAME];
+> > +
+> > +	if (!file) {
+> > +		pr_err("Unable to locate fd_dev->fd_file\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	inode = file->f_mapping->host;
+> > +	if (S_ISBLK(inode->i_mode)) {
+> > +		pr_err("FILEIO Protection emulation only supported on"
+> > +		       " !S_ISBLK\n");
+> > +		return -ENOSYS;
+> > +	}
+> > +
+> > +	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
+> > +		flags &= ~O_DSYNC;
+> > +
+> > +	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
+> > +		 fd_dev->fd_dev_name);
+> > +
+> > +	prot_file = filp_open(buf, flags, 0600);
+> > +	if (IS_ERR(prot_file)) {
+> > +		pr_err("filp_open(%s) failed\n", buf);
+> > +		ret = PTR_ERR(prot_file);
+> > +		return ret;
+> > +	}
+> > +	fd_dev->fd_prot_file = prot_file;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
+> > +			       u32 unit_size, u32 *ref_tag, u16 app_tag,
+> > +			       bool inc_reftag)
+> > +{
+> > +	unsigned char *p = buf;
+> > +	int i;
+> > +
+> > +	for (i = 0; i < unit_size; i += dev->prot_length) {
+> > +		*((u16 *)&p[0]) = 0xffff;
+> > +		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
+> > +		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
+> > +
+> > +		if (inc_reftag)
+> > +			(*ref_tag)++;
+> > +
+> > +		p += dev->prot_length;
+> > +	}
+> > +}
+> > +
+> > +static int fd_format_prot(struct se_device *dev)
+> > +{
+> > +	struct fd_dev *fd_dev = FD_DEV(dev);
+> > +	struct file *prot_fd = fd_dev->fd_prot_file;
+> > +	sector_t prot_length, prot;
+> > +	unsigned char *buf;
+> > +	loff_t pos = 0;
+> > +	u32 ref_tag = 0;
+> > +	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
+> > +	int rc, ret = 0, size, len;
+> > +	bool inc_reftag = false;
+> > +
+> > +	if (!dev->dev_attrib.pi_prot_type) {
+> > +		pr_err("Unable to format_prot while pi_prot_type == 0\n");
+> > +		return -ENODEV;
+> > +	}
+> > +	if (!prot_fd) {
+> > +		pr_err("Unable to locate fd_dev->fd_prot_file\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	switch (dev->dev_attrib.pi_prot_type) {
+> redundant - see below.
+> > +	case TARGET_DIF_TYPE3_PROT:
+> > +		ref_tag = 0xffffffff;
+> > +		break;
+> > +	case TARGET_DIF_TYPE2_PROT:
+> > +	case TARGET_DIF_TYPE1_PROT:
+> > +		inc_reftag = true;
+> > +		break;
+> > +	default:
+> > +		break;
+> > +	}
+> > +
+> > +	buf = vzalloc(unit_size);
+> > +	if (!buf) {
+> > +		pr_err("Unable to allocate FILEIO prot buf\n");
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
+> > +	size = prot_length;
+> > +
+> > +	pr_debug("Using FILEIO prot_length: %llu\n",
+> > +		 (unsigned long long)prot_length);
+> > +
+> > +	for (prot = 0; prot < prot_length; prot += unit_size) {
+> > +
+> > +		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
+> > +				   inc_reftag);
+> 
+> I didn't send you my latest patches (my fault...).T10-PI format should 
+> only place
+> escape values throughout the protection file (fill it with 0xff). so I 
+> guess in this case
+> fd_init_formast_buf() boils down to memset(buf, 0xff, unit_size) once  
+> before the loop
+> and just loop until prot_length writing buf, no need to address 
+> apptag/reftag...
 
-I've fixed the above --  s/netfilter/PPC KVM/
+Yeah, was thinking about just formatting with escape values as mentioned
+above, but thought it might be useful to keep around for pre-populating
+values apptag + reftag values for testing purposes.
 
-The risks of recycling commit logs...
+--nab
 
-Paul.
---
-
-> registration from level 6-device to level 4-subsys (i.e. slightly
-> earlier).
-> 
-> However no impact of that small difference is expected,
-> since the arch independent kvm code doesn't trigger any init;
-> it is the arch initcalls here which actually call kvm_init.
-> 
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: kvm@vger.kernel.org
-> Cc: kvm-ppc@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  arch/powerpc/include/asm/kvm_ppc.h |  1 -
->  arch/powerpc/kvm/44x.c             | 10 +---------
->  arch/powerpc/kvm/booke.c           |  6 ------
->  arch/powerpc/kvm/e500.c            | 10 +---------
->  arch/powerpc/kvm/e500mc.c          | 10 +---------
->  5 files changed, 3 insertions(+), 34 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/kvm_ppc.h b/arch/powerpc/include/asm/kvm_ppc.h
-> index c8317fb..8466df5 100644
-> --- a/arch/powerpc/include/asm/kvm_ppc.h
-> +++ b/arch/powerpc/include/asm/kvm_ppc.h
-> @@ -109,7 +109,6 @@ extern void kvmppc_core_flush_tlb(struct kvm_vcpu *vcpu);
->  extern int kvmppc_core_check_requests(struct kvm_vcpu *vcpu);
->  
->  extern int kvmppc_booke_init(void);
-> -extern void kvmppc_booke_exit(void);
->  
->  extern void kvmppc_core_destroy_mmu(struct kvm_vcpu *vcpu);
->  extern int kvmppc_kvm_pv(struct kvm_vcpu *vcpu);
-> diff --git a/arch/powerpc/kvm/44x.c b/arch/powerpc/kvm/44x.c
-> index 93221e8..2129fc1 100644
-> --- a/arch/powerpc/kvm/44x.c
-> +++ b/arch/powerpc/kvm/44x.c
-> @@ -222,12 +222,4 @@ static int __init kvmppc_44x_init(void)
->  err_out:
->  	return r;
->  }
-> -
-> -static void __exit kvmppc_44x_exit(void)
-> -{
-> -	kvmppc_pr_ops = NULL;
-> -	kvmppc_booke_exit();
-> -}
-> -
-> -module_init(kvmppc_44x_init);
-> -module_exit(kvmppc_44x_exit);
-> +subsys_initcall(kvmppc_44x_init);
-> diff --git a/arch/powerpc/kvm/booke.c b/arch/powerpc/kvm/booke.c
-> index 0591e05..49dffa2 100644
-> --- a/arch/powerpc/kvm/booke.c
-> +++ b/arch/powerpc/kvm/booke.c
-> @@ -1995,9 +1995,3 @@ int __init kvmppc_booke_init(void)
->  #endif /* !BOOKE_HV */
->  	return 0;
->  }
-> -
-> -void __exit kvmppc_booke_exit(void)
-> -{
-> -	free_pages(kvmppc_booke_handlers, VCPU_SIZE_ORDER);
-> -	kvm_exit();
-> -}
-> diff --git a/arch/powerpc/kvm/e500.c b/arch/powerpc/kvm/e500.c
-> index 497b142..115ef12 100644
-> --- a/arch/powerpc/kvm/e500.c
-> +++ b/arch/powerpc/kvm/e500.c
-> @@ -564,12 +564,4 @@ static int __init kvmppc_e500_init(void)
->  err_out:
->  	return r;
->  }
-> -
-> -static void __exit kvmppc_e500_exit(void)
-> -{
-> -	kvmppc_pr_ops = NULL;
-> -	kvmppc_booke_exit();
-> -}
-> -
-> -module_init(kvmppc_e500_init);
-> -module_exit(kvmppc_e500_exit);
-> +subsys_initcall(kvmppc_e500_init);
-> diff --git a/arch/powerpc/kvm/e500mc.c b/arch/powerpc/kvm/e500mc.c
-> index 4132cd2..612c216 100644
-> --- a/arch/powerpc/kvm/e500mc.c
-> +++ b/arch/powerpc/kvm/e500mc.c
-> @@ -382,12 +382,4 @@ static int __init kvmppc_e500mc_init(void)
->  err_out:
->  	return r;
->  }
-> -
-> -static void __exit kvmppc_e500mc_exit(void)
-> -{
-> -	kvmppc_pr_ops = NULL;
-> -	kvmppc_booke_exit();
-> -}
-> -
-> -module_init(kvmppc_e500mc_init);
-> -module_exit(kvmppc_e500mc_exit);
-> +subsys_initcall(kvmppc_e500mc_init);
-> 
