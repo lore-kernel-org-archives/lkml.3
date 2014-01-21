@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaAUOV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:21:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35991 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361AbaAUOVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:21:23 -0500
-Message-ID: <52DE8231.6080408@zytor.com>
-Date: Tue, 21 Jan 2014 06:20:33 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754707AbaAUOYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:24:43 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:56282 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaAUOYm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:24:42 -0500
+Date: Tue, 21 Jan 2014 09:24:37 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Linux USB List <linux-usb@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stanislaw Wadas <s.wadas@samsung.com>,
+        Krzysztof Opasiak <k.opasiak@samsung.com>
+Subject: libusbg 0.1.0 (formerly libgadget)
+Message-ID: <20140121142437.GH31176@beef>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Cong Ding <dinggnu@gmail.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com> <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com> <52DDAD9D.9030504@zytor.com> <20140121090003.GO31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121090003.GO31570@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 01:00 AM, Peter Zijlstra wrote:
->>
->> So this is presumably something that needs to be fixed in perf?
-> 
-> Where do we learn about the offset from userspace?
-> 
+libusbg 0.1.0 is released. libusbg is a library that provides a C API to
+the kernel USB gadget configfs API. It simplifies creation and
+management of USB gadget devices from C applications.
 
-Now this is tricky... if this offset is too easy to get it completely
-defeats kASLR.  On the other hand, I presume that if we are exporting
-/proc/kcore we're not secure anyway.  Kees, I assume that in "secure"
-mode perf annotations simply wouldn't work anyway?
+Get it at:
 
-	-hpa
+	git://github.com/libusbg/libusbg.git
 
+API docs at:
+
+	http://libusbg.github.com/group__libusbg.html
+	http://libusbg.github.com/examples.html
+
+Changes since libgadget 0.0.1:
+
+	- libusbg now has a new name to avoid conflicts
+	  with an existing libgadget libary
+	- use the standard /sys/kernel/config mount path
+	  in examples
+	- a new project home on github
+
+Going forward we have a couple contributors with clean up and bug
+fixes that will be rolled into libusbg once comments are addressed.
+Support for FunctionFS (merged for 3.14) will also be added.
+
+-Matt
