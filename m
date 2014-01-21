@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaAULFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:05:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42064 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023AbaAULFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:05:20 -0500
-Date: Tue, 21 Jan 2014 11:05:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        Laura Abbott <lauraa@codeaurora.org>, riel@redhat.com,
-        aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Improve documentation of page_order v2
-Message-ID: <20140121110515.GA14687@suse.de>
-References: <520B0B75.4030708@huawei.com>
- <20130814085711.GK2296@suse.de>
- <20130814155205.GA2706@gmail.com>
- <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
- <20130814222241.GQ2296@suse.de>
- <20140117143221.GA24851@suse.de>
- <52D97C3E.2080709@codeaurora.org>
- <20140117195957.GG4963@suse.de>
+	id S1754464AbaAULNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:13:01 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54419 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754204AbaAULM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 06:12:59 -0500
+Date: Tue, 21 Jan 2014 11:08:26 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gang.chen@asianux.com" <gang.chen@asianux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
+Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
+ dependencies for XEN
+Message-ID: <20140121110826.GG30706@mudshark.cambridge.arm.com>
+References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20140109103004.GB11089@mudshark.cambridge.arm.com>
+ <201401091204.17932.arnd@arndb.de>
+ <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
+ <20140109184251.GL17838@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com>
+ <20140116193123.GB22105@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1401201523240.21510@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140117195957.GG4963@suse.de>
+In-Reply-To: <alpine.DEB.2.02.1401201523240.21510@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Developers occasionally try and optimise PFN scanners by using page_order
-but miss that in general it requires zone->lock. This has happened twice for
-compaction.c and rejected both times.  This patch clarifies the documentation
-of page_order and adds a note to compaction.c why page_order is not used.
+On Mon, Jan 20, 2014 at 03:32:48PM +0000, Stefano Stabellini wrote:
+> On Thu, 16 Jan 2014, Will Deacon wrote:
+> > For the xchg part, yes, that looks a lot better. I don't like the #undef
+> > CONFIG_CPU_V6 though, can that be rewritten to use __LINUX_ARM_ARCH__?
+> 
+> The problem is that the 1 and 2 byte parameter size cases in __cmpxchg
+> are ifdef'ed CONFIG_CPU_V6 but drivers/xen/grant-table.c needs them.
+> 
+> So we can either undef CONFIG_CPU_V6 in grant-table.c or call a
+> different function.
+> 
+> If I switch from ifdef CONFIG_CPU_V6 to if __LINUX_ARM_ARCH__ > 6 in
+> __cmpxchg, we still have the problem that if __LINUX_ARM_ARCH__ == 6,
+> grant-table.c doesn't compile.
+> 
+> Maybe the approach taken by the other patch for cmpxchg is better, see
+> below.
 
-[lauraa@codeaurora.org: Corrected a page_zone(page)->lock reference]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
----
- mm/compaction.c | 5 ++++-
- mm/internal.h   | 8 +++++---
- 2 files changed, 9 insertions(+), 4 deletions(-)
+Yes, I prefer this approach. Minor comment below.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index f58bcd0..f91d26b 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -522,7 +522,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		if (!isolation_suitable(cc, page))
- 			goto next_pageblock;
- 
--		/* Skip if free */
-+		/*
-+		 * Skip if free. page_order cannot be used without zone->lock
-+		 * as nothing prevents parallel allocations or buddy merging.
-+		 */
- 		if (PageBuddy(page))
- 			continue;
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index 684f7aa..09cd8be 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -144,9 +144,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- #endif
- 
- /*
-- * function for dealing with page's order in buddy system.
-- * zone->lock is already acquired when we use these.
-- * So, we don't need atomic page->flags operations here.
-+ * This functions returns the order of a free page in the buddy system. In
-+ * general, page_zone(page)->lock must be held by the caller to prevent the
-+ * page being allocated in parallel and returning garbage as the order. If the
-+ * caller does not hold page_zone(page)->lock, they must guarantee that the
-+ * page cannot be allocated or merged in parallel.
-  */
- static inline unsigned long page_order(struct page *page)
- {
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index c1f1a7e..ae54ae0 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1881,8 +1881,7 @@ config XEN_DOM0
+>  config XEN
+>  	bool "Xen guest support on ARM (EXPERIMENTAL)"
+>  	depends on ARM && AEABI && OF
+> -	depends on CPU_V7 && !CPU_V6
+> -	depends on !GENERIC_ATOMIC64
+> +	depends on CPU_V7
+>  	select ARM_PSCI
+>  	select SWIOTLB_XEN
+>  	help
+> diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
+> index df2fbba..cc8a4a2 100644
+> --- a/arch/arm/include/asm/cmpxchg.h
+> +++ b/arch/arm/include/asm/cmpxchg.h
+> @@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
+>   * cmpxchg only support 32-bits operands on ARMv6.
+>   */
+>  
+> +static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
+> +				      unsigned long new)
+> +{
+> +	unsigned long oldval, res;
+> +
+> +	do {
+> +		asm volatile("@ __cmpxchg1\n"
+> +		"	ldrexb	%1, [%2]\n"
+> +		"	mov	%0, #0\n"
+> +		"	teq	%1, %3\n"
+> +		"	strexbeq %0, %4, [%2]\n"
+> +			: "=&r" (res), "=&r" (oldval)
+> +			: "r" (ptr), "Ir" (old), "r" (new)
+> +			: "memory", "cc");
+> +	} while (res);
+> +
+> +	return oldval;
+> +}
+> +
+> +static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
+> +				      unsigned long new)
+> +{
+> +	unsigned long oldval, res;
+> +
+> +	do {
+> +		asm volatile("@ __cmpxchg1\n"
 
+Can you fix this comment while you're here please?
+
+Will
