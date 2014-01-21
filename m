@@ -1,101 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaAUUbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:31:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57736 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaAUUbo (ORCPT
+	id S1753031AbaAUUbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:31:53 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49935 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaAUUbu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:31:44 -0500
-Date: Tue, 21 Jan 2014 20:31:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140121203137.GY17314@sirena.org.uk>
-References: <20131125174037.GR14725@sirena.org.uk>
- <CA+55aFwPcr8TYpLUg5NP9x3RGCv4+U7vz-nNH6Br5ku3MDwaDw@mail.gmail.com>
- <20131126003919.GT14725@sirena.org.uk>
- <CA+55aFxX3odNLBt1L6iAPGybekioqaW3SREmXywd_jnz_tDBeQ@mail.gmail.com>
+	Tue, 21 Jan 2014 15:31:50 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f4rLERh+hIhvDLQR"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxX3odNLBt1L6iAPGybekioqaW3SREmXywd_jnz_tDBeQ@mail.gmail.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] regulator updates for v3.13-rc1
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAKfTPtDEKnM+er0NLxCKN4gK_KP3hnzPd13k7qqYtyWKCgdP4w@mail.gmail.com>
+References: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org>
+ <xm26d2jlkwn1.fsf@sword-of-the-dawn.mtv.corp.google.com> <CAKfTPtDEKnM+er0NLxCKN4gK_KP3hnzPd13k7qqYtyWKCgdP4w@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 21 Jan 2014 12:31:18 -0800
+Message-ID: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix sched_entity avg statistics update
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 21, 2014 at 12:00 PM, Vincent Guittot
+<vincent.guittot@linaro.org> wrote:
+>
+> Le 21 janv. 2014 19:39, <bsegall@google.com> a écrit :
+>
+>
+>>
+>> Vincent Guittot <vincent.guittot@linaro.org> writes:
+>>
+>> > With the current implementation, the load average statistics of a sched
+>> > entity
+>> > change according to other activity on the CPU even if this activity is
+>> > done
+>> > between the running window of the sched entity and have no influence on
+>> > the
+>> > running duration of the task.
+>> >
+>> > When a task wakes up on the same CPU, we currently update
+>> > last_runnable_update
+>> > with the return  of __synchronize_entity_decay without updating the
+>> > runnable_avg_sum and runnable_avg_period accordingly. In fact, we have
+>> > to sync
+>> > the load_contrib of the se with the rq's blocked_load_contrib before
+>> > removing
+>> > it from the latter (with __synchronize_entity_decay) but we must keep
+>> > last_runnable_update unchanged for updating runnable_avg_sum/period
+>> > during the
+>> > next update_entity_load_avg.
+>>
+>> ... Gah, that's correct, we had this right the first time. Could you do
+>> this as a full revert of 282cf499f03ec1754b6c8c945c9674b02631fb0f (ie
+>> remove the now inaccurate comment, or maybe replace it with a correct
+>> one).
+>
+> Ok i'm going to remove comment as well and replace it with a new description
+>
 
---f4rLERh+hIhvDLQR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think I need to go through and do a comments patch like we did with
+the wake-affine math; it's too easy to make a finicky mistake like
+this when not touching this path for a while.
 
-On Tue, Jan 21, 2014 at 11:16:57AM -0800, Linus Torvalds wrote:
-> On Mon, Nov 25, 2013 at 4:39 PM, Mark Brown <broonie@kernel.org> wrote:
+OK, so there are two numerical components we're juggling here:
 
-> > If you're OK with octopus merges for things like this I'll definitely
-> > take another look at using them, the enormous stack of merge commits
-> > always looks noisy to me in the logs and pull requests and for things
-> > like driver updates there's unlikely to be much doubt about which branch
-> > it was if there's a problem.
+1) The actual quotient for the current runnable average, stored as
+(runnable_avg_sum / runnable_avg period).  Last updated at
+last_runnable_update.
+2) The last time we computed the quotient in (1) and accumulated it in
+within cfs_rq->{runnable, blocked}_load_avg, this is stored in
+load_avg_contrib.  We track the passage of off-rq time and migrations
+against this value using decay_count.
+[ All of the values above are stored on se / se->avg ]
 
-> Christ. When you start doing octopus merges, you don't do it by half
-> measures, do you?
+When we are re-enqueuing something and we wish to remove its
+contribution from blocked_load_avg, we must update load_avg_contrib in
+(2) using the total time it spent off rq (using a jiffy rounded
+approximation in decay_count).  However, Alex's patch (which this
+reverts) also adjusted the quotient by modifying its last update time
+so as to make it look up-to-date, effectively skipping the most recent
+idle span.
 
-:)  It seems Takashi was right then.
+I think we could make the connection between (1) and (2) more explicit
+if we moved the subsequent "if (wakeup) logic" within the else.  We
+can then have a comment that refers to (1) and (2) explicitly, perhaps
+something like:
 
-> That kind of merge either needs to be split up, or gitk needs to be
-> made better about visualizing it, because it ends up being *so* wide
-> that the history is hard to read.
+Task re-woke on same cpu (or else migrate_task_rq_fair() would have
+made count negative).  Perform an approximate decay on
+load_avg_contrib to match blocked_load_avg, and compute a precise
+runnable_avg_sum quotient update that will be accumulated into
+runnable_load_avg below.
 
-> I think you'll find that having that many parents also breaks old
-> versions of git.
 
-> Anyway, I'd suggest you try to limit octopus merges to ~15 parents or
-> less to make the visualization tools not go crazy.  Maybe aim for just
-> 10 or so in most cases.
-
-Ah, I'd not noticed that one - I tend to find gitk output pretty hard to
-work with at the best of times once you hit lots of merges in a short
-time unless I limit it to particular subsets of code and once there's
-filtering it seems to cope well with both approaches (modulo the detail
-on the final merge commit).  Long lived branches that go from -rc1 to
-the next merge window aren't at all friendly to visualisation tools.
-
-I can easily limit it, anyway.  Or another option would be to have a
-branch which collects the merges incrementally rather than respining
-them all the time (but has no development itself) - I *think* that may
-be a bit more friendly to visualisation tools if done right but I seem
-to recall that such integration only branches were frowned upon?
-
---f4rLERh+hIhvDLQR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3tkmAAoJELSic+t+oim9DosP/0JfCrz3LfpRda+03CSpi+eZ
-wl5EGopYX0hgCEQlQ9s51GBnfMsxu7Jsf0CIzv71GW/G1dJIPhAyFChFtUWQ2cUA
-O3MGFndPf4p+vdbs6c7rFmDcqWLoWSE1bHAkIs1l4cdTuoa5Co/4dJzqMSm8p4Kn
-CFKgzg7KCxD+h4iPwBop+NmzWTGDE5+MTnfiJ8w9MjKPw9iht6uz9bXxBLHXBWv6
-6B1v+ngrCqG2ktSEtugoOGuj4gYbYhwXgwnnaLPhP7ysVTBS6Y3jSm2mrIyEvjeJ
-dZQ7QSXVrtTticyybYtg0sZKqwbMGGCJ0sQ+g5jM50XsapHfjhL4yPQ2rx15wND6
-ml9Hnja4yof1X3Qat7+B6vVkJrgTW442SYzq+kInW4qbiMxMz7MMYUZC/9xJeJvV
-FJClkbi6QInbORt3xUUSWGhgZNqA6ZWp5Caq3osRkoqkDYw4ge9WDRPYwvhknvOv
-wIEXfi15aiq+62ALxM5OblXn/jazyi9aQeUpEAQqQbezNw/QnvF9vgocIxhJ0qnX
-/JcruELujH7UGMI2sKDM281ZraQ3VAThPkwt1LEyfELmrtqUe2LA4BPNF7/wsI2g
-S5c5OrXws1ASk96i2LmO05+Tth/ikXBaeDUx2XXJrHHhnnbnkXNQLPFVFE863/n1
-MUVsPc+qu5phqORd+XYq
-=VVc+
------END PGP SIGNATURE-----
-
---f4rLERh+hIhvDLQR--
+>
+>> >
+>> > Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> > ---
+>> >  kernel/sched/fair.c |    3 +--
+>> >  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >
+>> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> > index e64b079..5b0ef90 100644
+>> > --- a/kernel/sched/fair.c
+>> > +++ b/kernel/sched/fair.c
+>> > @@ -2370,8 +2370,7 @@ static inline void enqueue_entity_load_avg(struct
+>> > cfs_rq *cfs_rq,
+>> >                * would have made count negative); we must be careful to
+>> > avoid
+>> >                * double-accounting blocked time after synchronizing
+>> > decays.
+>> >                */
+>> > -             se->avg.last_runnable_update +=
+>> > __synchronize_entity_decay(se)
+>> > -                                                     << 20;
+>> > +             __synchronize_entity_decay(se);
+>> >       }
+>> >
+>> >       /* migrated tasks did not contribute to our blocked load */
