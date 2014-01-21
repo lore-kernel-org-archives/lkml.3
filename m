@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaAUFey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:34:54 -0500
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:51237 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaAUFer (ORCPT
+	id S1752896AbaAUFfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:35:20 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64116 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaAUFfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:34:47 -0500
-Date: Mon, 20 Jan 2014 21:34:44 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jianguo Wu <wujianguo@huawei.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
- info when OOM?
-In-Reply-To: <52DCFC33.80008@huawei.com>
-Message-ID: <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com>
-References: <52DCFC33.80008@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Jan 2014 00:35:15 -0500
+From: Alex Shi <alex.shi@linaro.org>
+To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org, efault@gmx.de
+Cc: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Alex Shi <alex.shi@linaro.org>
+Subject: [RFC PATCH 1/2] sched/update_avg: avoid negative time
+Date: Tue, 21 Jan 2014 13:33:18 +0800
+Message-Id: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014, Jianguo Wu wrote:
+rq->avg_idle try to reflect the average idle time between the cpu idle
+and first wakeup. But in the function, it maybe get a negative value
+if old avg_idle is too small. Then this negative value will be double
+counted in next time calculation. Guess that is not the original purpose,
+so recalibrate it to zero.
 
-> When OOM happen, will dump buddy free areas info, hugetlb pages info,
-> memory state of all eligible tasks, per-cpu memory info.
-> But do not dump slab/vmalloc info, sometime, it's not enough to figure out the
-> reason OOM happened.
-> 
-> So, my questions are:
-> 1. Should dump slab/vmalloc info when OOM happen? Though we can get these from proc file,
-> but usually we do not monitor the logs and check proc file immediately when OOM happened.
-> 
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-The problem is that slabinfo becomes excessively verbose and dumping it 
-all to the kernel log often times causes important messages to be lost.  
-This is why we control things like the tasklist dump with a VM sysctl.  It 
-would be possible to dump, say, the top ten slab caches with the highest 
-memory usage, but it will only be helpful for slab leaks.  Typically there 
-are better debugging tools available than analyzing the kernel log; if you 
-see unusually high slab memory in the meminfo dump, you can enable it.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 30eb011..af9121c6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1358,6 +1358,9 @@ static void update_avg(u64 *avg, u64 sample)
+ {
+ 	s64 diff = sample - *avg;
+ 	*avg += diff >> 3;
++
++	if (*avg < 0)
++		*avg = 0;
+ }
+ #endif
+ 
+-- 
+1.8.1.2
 
-> 2. /proc/$pid/smaps and pagecache info also helpful when OOM, should also be dumped?
-> 
-
-Also very verbose and would cause important messages to be lost, we try to 
-avoid spamming the kernel log with all of this information as much as 
-possible.
-
-> 3. Without these info, usually how to figure out OOM reason?
-> 
-
-Analyze the memory usage in the meminfo and determine what is unusually 
-high; if it's mostly anonymous memory, you can usually correlate it back 
-to a high rss for a process in the tasklist that you didn't suspect to be 
-using that much memory, for example.
