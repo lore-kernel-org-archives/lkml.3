@@ -1,260 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaAUMVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:21:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43345 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274AbaAUMVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:21:35 -0500
-Date: Tue, 21 Jan 2014 12:21:30 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 2/6] numa,sched: track from which nodes NUMA faults are
- triggered
-Message-ID: <20140121122130.GG4963@suse.de>
-References: <1390245667-24193-1-git-send-email-riel@redhat.com>
- <1390245667-24193-3-git-send-email-riel@redhat.com>
+	id S1754615AbaAUMXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:23:05 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:58621 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274AbaAUMXC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 07:23:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1390245667-24193-3-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140121120440.GD14830@arm.com>
+References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
+	<20131228163308.GA1638@infradead.org>
+	<52DD6101.4010708@zytor.com>
+	<20140121120440.GD14830@arm.com>
+Date: Tue, 21 Jan 2014 04:22:59 -0800
+Message-ID: <CAMe9rOqL_TJW-XJz6e8_iewUypmsx8MXeaRfq-aATx3sFDBxcw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Will Deacon <Will.Deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 02:21:03PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> Track which nodes NUMA faults are triggered from, in other words
-> the CPUs on which the NUMA faults happened. This uses a similar
-> mechanism to what is used to track the memory involved in numa faults.
-> 
-> The next patches use this to build up a bitmap of which nodes a
-> workload is actively running on.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/linux/sched.h | 10 ++++++++--
->  kernel/sched/fair.c   | 30 +++++++++++++++++++++++-------
->  2 files changed, 31 insertions(+), 9 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 97efba4..a9f7f05 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1492,6 +1492,14 @@ struct task_struct {
->  	unsigned long *numa_faults_buffer;
->  
->  	/*
-> +	 * Track the nodes where faults are incurred. This is not very
-> +	 * interesting on a per-task basis, but it help with smarter
-> +	 * numa memory placement for groups of processes.
-> +	 */
-> +	unsigned long *numa_faults_from;
-> +	unsigned long *numa_faults_from_buffer;
-> +
+On Tue, Jan 21, 2014 at 4:04 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Mon, Jan 20, 2014 at 05:46:41PM +0000, H. Peter Anvin wrote:
+>> On 12/28/2013 08:33 AM, Christoph Hellwig wrote:
+>> > On Fri, Dec 27, 2013 at 02:14:16PM -0800, H.J. Lu wrote:
+>> >> X32 uses the same kernel system call interface as x86-64 for many
+>> >> system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
+>> >> x32.  Where long or unsigned long are used in struct types for such
+>> >> system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
+>> >> long for all ABIs other than x32.  I am submitting 8 patches to replace
+>> >> long or unsigned long with __kernel_[u]long_t so that those struct types
+>> >> can be used with x32 system calls.
+>
+> Does this mean that you are changing the x32 ABI (or it hasn't been
+> declared stable yet)?
 
-As an aside I wonder if we can derive any useful metric from this. One
-potential santiy check would be the number of nodes that a task is incurring
-faults on. It would be best if the highest number of faults were recorded
-on the node the task is currently running on. After that we either want
-to minimise the number of nodes trapping faults or interleave between
-all available nodes to avoid applying too much memory pressure on any
-one node. For interleaving to always be the best option we would have to
-assume that all nodes are equal distance but that would be a reasonable
-assumption to start with.
-
-> +	/*
->  	 * numa_faults_locality tracks if faults recorded during the last
->  	 * scan window were remote/local. The task scan period is adapted
->  	 * based on the locality of the faults with different weights
-> @@ -1594,8 +1602,6 @@ extern void task_numa_fault(int last_node, int node, int pages, int flags);
->  extern pid_t task_numa_group_id(struct task_struct *p);
->  extern void set_numabalancing_state(bool enabled);
->  extern void task_numa_free(struct task_struct *p);
-> -
-> -extern unsigned int sysctl_numa_balancing_migrate_deferred;
->  #else
->  static inline void task_numa_fault(int last_node, int node, int pages,
->  				   int flags)
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 41e2176..1945ddc 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -886,6 +886,7 @@ struct numa_group {
->  
->  	struct rcu_head rcu;
->  	unsigned long total_faults;
-> +	unsigned long *faults_from;
->  	unsigned long faults[0];
->  };
->  
-
-faults_from is not ambiguous but it does not tell us a lot of information
-either. If I am reading this right then fundamentally this patch means we
-are tracking two pieces of information
-
-1. The node the data resided on at the time of the hinting fault (numa_faults)
-2. The node the accessing task was residing on at the time of the fault (faults_from)
-
-We should be able to have names that reflect that. How about
-memory_faults_locality and cpu_faults_locality with a prepartion patch
-doing a simple rename for numa_faults and this patch adding
-cpu_faults_locality?
-
-It will be tough to be consistent about this but the clearer we are about
-making decisions based on task locationo vs data location the happier we
-will be in the long run.
-
-> @@ -1372,10 +1373,11 @@ static void task_numa_placement(struct task_struct *p)
->  		int priv, i;
->  
->  		for (priv = 0; priv < 2; priv++) {
-> -			long diff;
-> +			long diff, f_diff;
->  
->  			i = task_faults_idx(nid, priv);
->  			diff = -p->numa_faults[i];
-> +			f_diff = -p->numa_faults_from[i];
->  
->  			/* Decay existing window, copy faults since last scan */
->  			p->numa_faults[i] >>= 1;
-> @@ -1383,12 +1385,18 @@ static void task_numa_placement(struct task_struct *p)
->  			fault_types[priv] += p->numa_faults_buffer[i];
->  			p->numa_faults_buffer[i] = 0;
->  
-> +			p->numa_faults_from[i] >>= 1;
-> +			p->numa_faults_from[i] += p->numa_faults_from_buffer[i];
-> +			p->numa_faults_from_buffer[i] = 0;
-> +
->  			faults += p->numa_faults[i];
->  			diff += p->numa_faults[i];
-> +			f_diff += p->numa_faults_from[i];
->  			p->total_numa_faults += diff;
->  			if (p->numa_group) {
->  				/* safe because we can only change our own group */
->  				p->numa_group->faults[i] += diff;
-> +				p->numa_group->faults_from[i] += f_diff;
->  				p->numa_group->total_faults += diff;
->  				group_faults += p->numa_group->faults[i];
->  			}
-> @@ -1457,7 +1465,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
->  
->  	if (unlikely(!p->numa_group)) {
->  		unsigned int size = sizeof(struct numa_group) +
-> -				    2*nr_node_ids*sizeof(unsigned long);
-> +				    4*nr_node_ids*sizeof(unsigned long);
->  
-
-Should we convert that magic number to a define? NR_NUMA_HINT_FAULT_STATS?
-
->  		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
->  		if (!grp)
-> @@ -1467,8 +1475,10 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
->  		spin_lock_init(&grp->lock);
->  		INIT_LIST_HEAD(&grp->task_list);
->  		grp->gid = p->pid;
-> +		/* Second half of the array tracks where faults come from */
-> +		grp->faults_from = grp->faults + 2 * nr_node_ids;
->  
-
-We have accessors when we overload arrays like this such as task_faults_idx
-for example. We should have similar accessors for this in case those
-offsets very change.
-
-> -		for (i = 0; i < 2*nr_node_ids; i++)
-> +		for (i = 0; i < 4*nr_node_ids; i++)
->  			grp->faults[i] = p->numa_faults[i];
->  
-
-This is a little obscure now. Functionally it is copying both numa_faults and
-numa_faults_from but a casual reading of that will get confused. Minimally
-it needs a comment explaining what is being copied here. Also, why did we
-not use memcpy?
-
->  		grp->total_faults = p->total_numa_faults;
-> @@ -1526,7 +1536,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
->  
->  	double_lock(&my_grp->lock, &grp->lock);
->  
-> -	for (i = 0; i < 2*nr_node_ids; i++) {
-> +	for (i = 0; i < 4*nr_node_ids; i++) {
->  		my_grp->faults[i] -= p->numa_faults[i];
->  		grp->faults[i] += p->numa_faults[i];
->  	}
-
-The same obscure trick is used throughout and I'm not sure how
-maintainable that will be. Would it be better to be explicit about this?
-
-/* NUMA hinting faults may be either shared or private faults */
-#define NR_NUMA_HINT_FAULT_TYPES 2
-
-/* Track shared and private faults
-#define NR_NUMA_HINT_FAULT_STATS (NR_NUMA_HINT_FAULT_TYPES*2)
-
-> @@ -1558,7 +1568,7 @@ void task_numa_free(struct task_struct *p)
->  
->  	if (grp) {
->  		spin_lock(&grp->lock);
-> -		for (i = 0; i < 2*nr_node_ids; i++)
-> +		for (i = 0; i < 4*nr_node_ids; i++)
->  			grp->faults[i] -= p->numa_faults[i];
->  		grp->total_faults -= p->total_numa_faults;
->  
-> @@ -1571,6 +1581,8 @@ void task_numa_free(struct task_struct *p)
->  
->  	p->numa_faults = NULL;
->  	p->numa_faults_buffer = NULL;
-> +	p->numa_faults_from = NULL;
-> +	p->numa_faults_from_buffer = NULL;
->  	kfree(numa_faults);
->  }
->  
-> @@ -1581,6 +1593,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
->  {
->  	struct task_struct *p = current;
->  	bool migrated = flags & TNF_MIGRATED;
-> +	int this_node = task_node(current);
->  	int priv;
->  
->  	if (!numabalancing_enabled)
-> @@ -1596,7 +1609,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
->  
->  	/* Allocate buffer to track faults on a per-node basis */
->  	if (unlikely(!p->numa_faults)) {
-> -		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
-> +		int size = sizeof(*p->numa_faults) * 4 * nr_node_ids;
->  
->  		/* numa_faults and numa_faults_buffer share the allocation */
->  		p->numa_faults = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
-> @@ -1604,7 +1617,9 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
->  			return;
->  
->  		BUG_ON(p->numa_faults_buffer);
-> -		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
-> +		p->numa_faults_from = p->numa_faults + (2 * nr_node_ids);
-> +		p->numa_faults_buffer = p->numa_faults + (4 * nr_node_ids);
-> +		p->numa_faults_from_buffer = p->numa_faults + (6 * nr_node_ids);
->  		p->total_numa_faults = 0;
->  		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
->  	}
-> @@ -1634,6 +1649,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
->  		p->numa_pages_migrated += pages;
->  
->  	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
-> +	p->numa_faults_from_buffer[task_faults_idx(this_node, priv)] += pages;
->  	p->numa_faults_locality[!!(flags & TNF_FAULT_LOCAL)] += pages;
-
-this_node and node is similarly ambiguous in terms of name. Rename of
-data_node and cpu_node would have been clearer.
+We don't change x32 ABI.  Today kernel uabi header files are
+incompatible with x32 ABI in user space.  My patches fix them
+so that they can be used in user space.
 
 -- 
-Mel Gorman
-SUSE Labs
+H.J.
