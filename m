@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaAUUnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:43:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37244 "EHLO
+	id S1754177AbaAUUoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:44:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37258 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaAUUnR (ORCPT
+	with ESMTP id S1751590AbaAUUnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:43:17 -0500
+	Tue, 21 Jan 2014 15:43:21 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/8] perf session: Free cpu_map in perf_session__cpu_bitmap
-Date: Tue, 21 Jan 2014 17:42:58 -0300
-Message-Id: <1390336984-1553-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/8] perf evsel: Remove duplicate member zeroing after free
+Date: Tue, 21 Jan 2014 17:43:02 -0300
+Message-Id: <1390336984-1553-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1390336984-1553-1-git-send-email-acme@infradead.org>
 References: <1390336984-1553-1-git-send-email-acme@infradead.org>
@@ -29,60 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+From: Stephane Eranian <eranian@google.com>
 
-This method uses a temporary struct cpu_map to figure out the cpus
-present in the received cpu list in string form, but it failed to free
-it after returning. Fix it.
+No need to set evsel->fd to NULL after calling perf_evsel__free_fd(), as
+this method already does that.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1390217980-22424-3-git-send-email-stfomichev@yandex-team.ru
-[ Use goto + err = -1 to do the delete just once, in the normal exit path ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-wu6kul8fpapr8iyqm685ewtf@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/util/evsel.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7acc03e8f3b2..0b39a48e5110 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1573,7 +1573,7 @@ next:
- int perf_session__cpu_bitmap(struct perf_session *session,
- 			     const char *cpu_list, unsigned long *cpu_bitmap)
- {
--	int i;
-+	int i, err = -1;
- 	struct cpu_map *map;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 22e18a26b7e6..55407c594b87 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1081,7 +1081,6 @@ void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads)
  
- 	for (i = 0; i < PERF_TYPE_MAX; ++i) {
-@@ -1602,13 +1602,17 @@ int perf_session__cpu_bitmap(struct perf_session *session,
- 		if (cpu >= MAX_NR_CPUS) {
- 			pr_err("Requested CPU %d too large. "
- 			       "Consider raising MAX_NR_CPUS\n", cpu);
--			return -1;
-+			goto out_delete_map;
- 		}
- 
- 		set_bit(cpu, cpu_bitmap);
- 	}
- 
--	return 0;
-+	err = 0;
-+
-+out_delete_map:
-+	cpu_map__delete(map);
-+	return err;
+ 	perf_evsel__close_fd(evsel, ncpus, nthreads);
+ 	perf_evsel__free_fd(evsel);
+-	evsel->fd = NULL;
  }
  
- void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
+ static struct {
 -- 
 1.8.1.4
 
