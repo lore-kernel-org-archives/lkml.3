@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaAUCIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 21:08:06 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:48177 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaAUCH7 (ORCPT
+	id S1752831AbaAUCPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 21:15:23 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:40374 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaAUCPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 21:07:59 -0500
+	Mon, 20 Jan 2014 21:15:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140120154058.GA9436@localhost.localdomain>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
-	<CALZhoSRvhqJXU=z=h30SS6USjHFe3yKLsJN9WzQr6ch0sxoN-g@mail.gmail.com>
-	<CAKohpokbb3ko3sW4kuDKZSoY1qJ6apVVR3-jpv=7m5ZX__YP8Q@mail.gmail.com>
-	<20140120154058.GA9436@localhost.localdomain>
-Date: Tue, 21 Jan 2014 10:07:58 +0800
-Message-ID: <CALZhoSTzGH+mAB-Om=3dQTgQJriDmH+is_DEAzWNN7rRpzNFuQ@mail.gmail.com>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Tejun Heo <tj@kernel.org>
+Date: Tue, 21 Jan 2014 03:15:15 +0100
+Message-ID: <CAMeQTsZhBV=OtuktfS4Da5Sq+76J_oNsXd8AjeTJCqoPGxC3GA@mail.gmail.com>
+Subject: Backlight driver for MacBook Air 6,1 and 6,2
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mjg59@srcf.ucam.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 11:41 PM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Mon, Jan 20, 2014 at 08:30:10PM +0530, Viresh Kumar wrote:
->> On 20 January 2014 19:29, Lei Wen <adrian.wenl@gmail.com> wrote:
->> > Hi Viresh,
->>
->> Hi Lei,
->>
->> > I have one question regarding unbounded workqueue migration in your case.
->> > You use hotplug to migrate the unbounded work to other cpus, but its cpu mask
->> > would still be 0xf, since cannot be changed by cpuset.
->> >
->> > My question is how you could prevent this unbounded work migrate back
->> > to your isolated cpu?
->> > Seems to me there is no such mechanism in kernel, am I understand wrong?
->>
->> These workqueues are normally queued back from workqueue handler. And we
->> normally queue them on the local cpu, that's the default behavior of workqueue
->> subsystem. And so they land up on the same CPU again and again.
->
-> But for workqueues having a global affinity, I think they can be rescheduled later
-> on the old CPUs. Although I'm not sure about that, I'm Cc'ing Tejun.
+Hi Andrew and CCs
 
-Agree, since worker thread is made as enterring into all cpus, it
-cannot prevent scheduler
-do the migration.
+I've put together (rather quickly) a driver for directly handling the backlight
+driver chip (LM8550) on the 2013 MacBook Air. It is needed to work around a bug
+(likely in firmware) that occurs after suspend/resume. See:
 
-But here is one point, that I see Viresh alredy set up two cpuset with
-scheduler load balance
-disabled, so it should stop the task migration between those two groups? Since
-the sched_domain changed?
+https://bugs.freedesktop.org/show_bug.cgi?id=67454
 
-What is more, I also did  similiar test, and find when I set two such
-cpuset group,
-like core 0-2 to cpuset1, core 3 to cpuset2, while hotunplug the core3
-afterwise.
-I find the cpuset's cpus member becomes NULL even I hotplug the core3
-back again.
-So is it a bug?
+This seems to fall outside of what the i915 driver should handle and thus need a
+separate driver. It's available at: https://github.com/patjak/mba6x_bl
 
-Thanks,
-Lei
+The MacBook Air provides ACPI backlight methods but they also break after
+suspend. I'm planning to mainline this and have a few questions.
 
->
-> Also, one of the plan is to extend the sysfs interface of workqueues to override
-> their affinity. If any of you guys want to try something there, that would be welcome.
-> Also we want to work on the timer affinity. Perhaps we don't need a user interface
-> for that, or maybe something on top of full dynticks to outline that we want the unbound
-> timers to run on housekeeping CPUs only.
+1) I'm accessing the LP8550 on the SMBUS through ACPI methods. Should I access
+the SMBUS directly instead or is this ok? I probably need to look at locking
+around SMBUS accesses.
+
+2) Is DMI the proper way of probing? Currently I'm just checking if the chip is
+there and that it returns the proper contents in an identifier byte.
+
+3) I assume the backlight type should be BACKLIGHT_PLATFORM (currently
+BACKLIGHT_FIRMWARE) but do I also need to blacklist the ACPI backlight on these
+devices? How do I get the proper precedence over other backlight devices?
+
+Is there still time to get this into 3.14-rc1?
+
+Thanks
+Patrik
