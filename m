@@ -1,80 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaAUPzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:55:24 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:59196 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466AbaAUPzV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:55:21 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH] pinctrl: at91: use locked variant of irq_set_handler
-Date: Tue, 21 Jan 2014 16:55:18 +0100
-Message-ID: <1390319718-12285-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	id S1754895AbaAUP5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:57:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47414 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752265AbaAUP44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 10:56:56 -0500
+Date: Tue, 21 Jan 2014 15:56:52 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 5/6] numa,sched: normalize faults_from stats and weigh by
+ CPU use
+Message-ID: <20140121155652.GL4963@suse.de>
+References: <1390245667-24193-1-git-send-email-riel@redhat.com>
+ <1390245667-24193-6-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1390245667-24193-6-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting the gpio irq type, use the __irq_set_handler_locked()
-variant instead of the irq_set_handler() to prevent false
-spinlock recursion warning.
+On Mon, Jan 20, 2014 at 02:21:06PM -0500, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
+> 
+> The tracepoint has made it abundantly clear that the naive
+> implementation of the faults_from code has issues.
+> 
+> Specifically, the garbage collector in some workloads will
+> access orders of magnitudes more memory than the threads
+> that do all the active work. This resulted in the node with
+> the garbage collector being marked the only active node in
+> the group.
+> 
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: stable <stable@vger.kernel.org> # v3.12
----
- drivers/pinctrl/pinctrl-at91.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Maybe I should have read this patch before getting into a twist about the
+earlier patches in the series and the treatment of active_mask :(. On the
+plus side, even without reading the code I can still see the motivation
+for this paragraph.
 
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index a7549c4c83b4..7d7a21c20931 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1260,22 +1260,22 @@ static int alt_gpio_irq_type(struct irq_data *d, unsigned type)
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_RISING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
- 	case IRQ_TYPE_EDGE_FALLING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_LOW:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_HIGH:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
-@@ -1284,7 +1284,7 @@ static int alt_gpio_irq_type(struct irq_data *d, unsigned type)
- 		 * disable additional interrupt modes:
- 		 * fall back to default behavior
- 		 */
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_AIMDR);
- 		return 0;
- 	case IRQ_TYPE_NONE:
+> This issue is avoided if we weigh the statistics by CPU use
+> of each task in the numa group, instead of by how many faults
+> each thread has occurred.
+> 
+
+Bah, yes. Because in my earlier review I was worried about the faults
+being missed. If the faults stats are scaled by the CPU statistics then it
+is a very rough proxy measure for how heavily a particular node is being
+referenced by a process.
+
+> To achieve this, we normalize the number of faults to the
+> fraction of faults that occurred on each node, and then
+> multiply that fraction by the fraction of CPU time the
+> task has used since the last time task_numa_placement was
+> invoked.
+> 
+> This way the nodes in the active node mask will be the ones
+> where the tasks from the numa group are most actively running,
+> and the influence of eg. the garbage collector and other
+> do-little threads is properly minimized.
+> 
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Chegu Vinod <chegu_vinod@hp.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  kernel/sched/fair.c | 21 +++++++++++++++++++--
+>  1 file changed, 19 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index ea873b6..203877d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1426,6 +1426,8 @@ static void task_numa_placement(struct task_struct *p)
+>  	int seq, nid, max_nid = -1, max_group_nid = -1;
+>  	unsigned long max_faults = 0, max_group_faults = 0;
+>  	unsigned long fault_types[2] = { 0, 0 };
+> +	unsigned long total_faults;
+> +	u64 runtime, period;
+>  	spinlock_t *group_lock = NULL;
+>  
+>  	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+> @@ -1434,6 +1436,11 @@ static void task_numa_placement(struct task_struct *p)
+>  	p->numa_scan_seq = seq;
+>  	p->numa_scan_period_max = task_scan_max(p);
+>  
+> +	total_faults = p->numa_faults_locality[0] +
+> +		       p->numa_faults_locality[1] + 1;
+
+Depending on how you reacted to the review of other patches this may or
+may not have a helper now.
+
+> +	runtime = p->se.avg.runnable_avg_sum;
+> +	period = p->se.avg.runnable_avg_period;
+> +
+
+Ok, IIRC these stats are based a decaying average based on recent
+history so heavy activity followed by long periods of idle will not skew
+the stats.
+
+>  	/* If the task is part of a group prevent parallel updates to group stats */
+>  	if (p->numa_group) {
+>  		group_lock = &p->numa_group->lock;
+> @@ -1446,7 +1453,7 @@ static void task_numa_placement(struct task_struct *p)
+>  		int priv, i;
+>  
+>  		for (priv = 0; priv < 2; priv++) {
+> -			long diff, f_diff;
+> +			long diff, f_diff, f_weight;
+>  
+>  			i = task_faults_idx(nid, priv);
+>  			diff = -p->numa_faults[i];
+> @@ -1458,8 +1465,18 @@ static void task_numa_placement(struct task_struct *p)
+>  			fault_types[priv] += p->numa_faults_buffer[i];
+>  			p->numa_faults_buffer[i] = 0;
+>  
+> +			/*
+> +			 * Normalize the faults_from, so all tasks in a group
+> +			 * count according to CPU use, instead of by the raw
+> +			 * number of faults. Tasks with little runtime have
+> +			 * little over-all impact on throughput, and thus their
+> +			 * faults are less important.
+> +			 */
+> +			f_weight = (16384 * runtime *
+> +				   p->numa_faults_from_buffer[i]) /
+> +				   (total_faults * period + 1);
+
+Why 16384? It looks like a scaling factor to deal with integer approximations
+but I'm not 100% sure and I do not see how you arrived at that value.
+
+>  			p->numa_faults_from[i] >>= 1;
+> -			p->numa_faults_from[i] += p->numa_faults_from_buffer[i];
+> +			p->numa_faults_from[i] += f_weight;
+>  			p->numa_faults_from_buffer[i] = 0;
+>  
+
+numa_faults_from needs a big comment that it's no longer about the
+number of faults in it. It's the sum of faults measured by the group
+weighted by the CPU
+
+>  			faults += p->numa_faults[i];
+> -- 
+> 1.8.4.2
+> 
+
 -- 
-1.8.2.2
-
+Mel Gorman
+SUSE Labs
