@@ -1,105 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaAUSGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 13:06:15 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:64526 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971AbaAUSGM (ORCPT
+	id S1755247AbaAUSHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 13:07:47 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64709 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755030AbaAUSHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 13:06:12 -0500
+	Tue, 21 Jan 2014 13:07:45 -0500
+Date: Tue, 21 Jan 2014 18:07:11 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>
+Subject: Re: [PATCH v2 5/7] ARM: perf_event: Fully support Krait CPU PMU
+ events
+Message-ID: <20140121180711.GN30706@mudshark.cambridge.arm.com>
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+ <1389808535-23852-6-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20140121171053.GD20798@arm.com>
-References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
-	<1388165112-6545-7-git-send-email-hjl.tools@gmail.com>
-	<20140121171053.GD20798@arm.com>
-Date: Tue, 21 Jan 2014 10:06:11 -0800
-Message-ID: <CAMe9rOoKvJNkhHLwF+gfX1T8M=ekBvCJn7PJ61U9-_OvcB-tKQ@mail.gmail.com>
-Subject: Re: [PATCH 6/8] Use __kernel_ulong_t in x86 struct semid64_ds
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b2e3d000ef78d04f07eddcf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389808535-23852-6-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b2e3d000ef78d04f07eddcf
-Content-Type: text/plain; charset=ISO-8859-1
+Hi Stephen,
 
-On Tue, Jan 21, 2014 at 9:10 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Fri, Dec 27, 2013 at 05:25:10PM +0000, H.J. Lu wrote:
->> Both x32 and x86-64 use the same struct semid64_ds for system calls.
->> But x32 long is 32-bit. This patch replaces unsigned long with
->> __kernel_ulong_t in x86 struct semid64_ds.
->>
->> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
->> ---
->>  arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
->>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
->> index ee50c80..cc2d6a3 100644
->> --- a/arch/x86/include/uapi/asm/sembuf.h
->> +++ b/arch/x86/include/uapi/asm/sembuf.h
->> @@ -13,12 +13,12 @@
->>  struct semid64_ds {
->>       struct ipc64_perm sem_perm;     /* permissions .. see ipc.h */
->>       __kernel_time_t sem_otime;      /* last semop time */
->> -     unsigned long   __unused1;
->> +     __kernel_ulong_t __unused1;
->>       __kernel_time_t sem_ctime;      /* last change time */
->> -     unsigned long   __unused2;
->> -     unsigned long   sem_nsems;      /* no. of semaphores in array */
->> -     unsigned long   __unused3;
->> -     unsigned long   __unused4;
->> +     __kernel_ulong_t __unused2;
->> +     __kernel_ulong_t sem_nsems;     /* no. of semaphores in array */
->> +     __kernel_ulong_t __unused3;
->> +     __kernel_ulong_t __unused4;
->>  };
->
-> Since you are at this, could you please change the
-> include/uapi/asm-generic/sembuf.h structure as well?
->
+Thanks for the updates. A few more comments inline.
 
-I could, but my build doesn't use that header file.  I prefer not to
-change something I can't test.
+On Wed, Jan 15, 2014 at 05:55:33PM +0000, Stephen Boyd wrote:
+> Krait supports a set of performance monitor region event
+> selection registers (PMRESR) sitting behind a cp15 based
+> interface that extend the architected PMU events to include Krait
+> CPU and Venum VFP specific events. To use these events the user
+> is expected to program the region register (PMRESRn) with the
+> event code shifted into the group they care about and then point
+> the PMNx event at that region+group combo by writing a
+> PMRESRn_GROUPx event. Add support for this hardware.
+> 
+> Note: the raw event number is a pure software construct that
+> allows us to map the multi-dimensional number space of regions,
+> groups, and event codes into a flat event number space suitable
+> for use by the perf framework.
 
-I am enclosing a program to check kernel uabi header files
-against glibc header files.  You can try it on ILP32 ARM64.
+[...]
 
--- 
-H.J.
+> +static u32 krait_read_pmresrn(int n)
+> +{
+> +       u32 val;
+> +
+> +       switch (n) {
+> +       case 0:
+> +               asm volatile("mrc p15, 1, %0, c9, c15, 0" : "=r" (val));
+> +               break;
+> +       case 1:
+> +               asm volatile("mrc p15, 1, %0, c9, c15, 1" : "=r" (val));
+> +               break;
+> +       case 2:
+> +               asm volatile("mrc p15, 1, %0, c9, c15, 2" : "=r" (val));
+> +               break;
+> +       default:
+> +               BUG(); /* Should be validated in krait_pmu_get_event_idx() */
+> +       }
+> +
+> +       return val;
+> +}
+> +
+> +static void krait_write_pmresrn(int n, u32 val)
+> +{
+> +       switch (n) {
+> +       case 0:
+> +               asm volatile("mcr p15, 1, %0, c9, c15, 0" : : "r" (val));
+> +               break;
+> +       case 1:
+> +               asm volatile("mcr p15, 1, %0, c9, c15, 1" : : "r" (val));
+> +               break;
+> +       case 2:
+> +               asm volatile("mcr p15, 1, %0, c9, c15, 2" : : "r" (val));
+> +               break;
+> +       default:
+> +               BUG(); /* Should be validated in krait_pmu_get_event_idx() */
+> +       }
+> +}
 
---047d7b2e3d000ef78d04f07eddcf
-Content-Type: application/x-xz; name="uapi-header-check.tar.xz"
-Content-Disposition: attachment; filename="uapi-header-check.tar.xz"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqph3hv60
+Do you need isbs to ensure the pmresrn side-effects have happened, or are
+the registers self-synchronising? Similarly for your other IMP DEF
+registers.
 
-/Td6WFoAAATm1rRGAgAhARYAAAB0L+Wj4Cf/BOZdADgYS3Zs2QpOuJqzz6GzBKslePyepc2iB6gh
-axGgoHvhRRjELADnhpNcJ5pi35peiqkXz0/XYt3TNao4Mg3gIZxdDpiadj/OUgW/BIk/DGjl6Tal
-Xq/xMBAUAszFJfCG5PZSIjWl44ujil0KWbMWbMmUlPHJK2OEmBa1cdHjJJMhGcEeOhm/3ZnZtQb4
-HciX/Pm/wgjKx7CYDahSxnxmkHA0d7D99pzi9EfrgUmxgukyWG9RfNewmh/nWH261z6AbHmomysa
-k0CrqNaL1SPmfF2cFs6MixShVz4ilUfbXub296sxB8j/gOBJkyTS82PAy74F0ZBmYT8Q1WYRFn21
-eZ9hE/kpSXnmiiSKJ6VDCsYpQaVdqXhUY+4G2au89YlLtFRjZZIv9ph8tbasCENLGDl5Ditn+SzD
-Q4Vup+zOpc2p9rntKn/NOAaXqcFaPmAUOwx9YfOuGC5rN9g9ArJgzEyEBjZze8YU51pIWjddAhVr
-oi+Mr0HM3QOo+WRemt3p5BU9fXZh5oMzGhCY84H28vNfh+wk/iyIZjCKKtaM48Worcdsx35RrgGE
-rOr0aERUYthMdnR9RVajQNcu/KwsunH3Cst6wI1FpZqD4FUIt6KQb0o7Cza6JQkIoEcBzUNolrPZ
-nguBIhfvEIKsAuoadXb0N0ueai9vTQrops4o2+/h9Pk2vQAKyZOAI82Fl+ghpZgtXFMP3csslN6+
-pdaLCNEetfupsTyDEMHhKaI3i9RsEhhMHFspVayUs5+HTLKSC+bjI/XLipeITLNbOi28O3m5lfhq
-k66ekoADnIL5VEMM3yCYI2v+VRSvSsI5lTip1ncB0SH+7oEC3Ig+IokQvG2g0TF+dIfsfIXlq0u5
-nrx+k2kiGleGxYEeHzK0Ld7UBaeONbhbEnDJQhcD4oLJ5RKbBuwZCXFdw+wEhpAtcPP6hwIIrglj
-DrprbsCGwqYQTfejWo8DzrOVDZmLDup+pe+/mRFI681wWKnNzeTODg6p/rOEtWlT+WAzdotHHYbB
-PKz+nKKa8hIRkdmcbevYLQIn/LVcB8fLgsEQtVIq3EYIT59oOtbu/Cqvmx5av0QYMT666P6b1Map
-SnoQIPjdYaSvrjTOPsnvAkyUcfS0bpZl2ZxyizUn5BXdBIy62a4Gpt186wEgnZpuXXU2HPX23flL
-hA5fOQ1omkdT2QKd46W/3wb2fMZfnkxfiEFBF27V2DkUw1u97VLO6mmmdQuTj0y2akZiY3RjlrwI
-ccQXdxKsLkG1pLHP5KsnU5eHfLK4xZ45t1kD/cq4uqFyGTISslYJd/BHSF9uTvCXFSASAxPnBiHX
-4d308vMtB4GP+iXEL6OALUloHzrUTsRvvgTXPwsJmB6Fco1MCEuyyWLRAEvUeAUQ7T2xh5RcvXwx
-ZljZYGScHCnubyO8Kdk6zvelAb7i4QJvAaYWfOWwLV/+ElWEl2LAfusIVeXsQvEwHAs1DiJTbDB7
-V1O2/rTfvCtQcDbJ8yXxSry9XkJGmlIHiz2h8LNROU61iOgCFXeEILkpI9xr5ZgETdwlSNaWxL4T
-DHzrU8m+p77c/x7DkOAbK/K0vtFsV2nnUmtsYycLMU/NnSEfcebuxgZMBpEJoJl3gfu16vMraaHg
-mM15lELt+K4V1JIJSVLuoEUJ4mXPP6xpsNKERJw6AAAAAAOAcy+h+5LHAAGCCoBQAAAk4XhbscRn
-+wIAAAAABFla
---047d7b2e3d000ef78d04f07eddcf--
+> +static void krait_pre_vpmresr0(u32 *venum_orig_val, u32 *fp_orig_val)
+> +{
+> +       u32 venum_new_val;
+> +       u32 fp_new_val;
+> +
+> +       /* CPACR Enable CP10 and CP11 access */
+> +       *venum_orig_val = get_copro_access();
+> +       venum_new_val = *venum_orig_val | CPACC_SVC(10) | CPACC_SVC(11);
+> +       set_copro_access(venum_new_val);
+> +
+> +       /* Enable FPEXC */
+> +       *fp_orig_val = fmrx(FPEXC);
+> +       fp_new_val = *fp_orig_val | FPEXC_EN;
+> +       fmxr(FPEXC, fp_new_val);
+
+Messing around with the lot (especially with kernel-mode neon now in
+mainline) does scare me. I'd like some BUG_ON(preemptible()) and you could
+consider using kernel_neon_{begin,end} but they're a lot heavier than you
+need (due to non-lazy switching)
+
+Finally, I'd really like to see this get some test coverage, but I don't
+want to try running mainline on my phone :) Could you give your patches a
+spin with Vince's perf fuzzer please?
+
+  https://github.com/deater/perf_event_tests.git
+
+(then build the contents of the fuzzer directory and run it for as long as
+you can).
+
+Cheers,
+
+Will
