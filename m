@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaAUVeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:34:23 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57757 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602AbaAUVeT (ORCPT
+	id S1755497AbaAUVet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:34:49 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50756 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480AbaAUVZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:34:19 -0500
-Date: Tue, 21 Jan 2014 21:33:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org
-Message-ID: <20140121213359.GA17314@sirena.org.uk>
+	Tue, 21 Jan 2014 16:25:26 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 17/73] arm: fix implicit module.h use in mach-at91 gpio.h
+Date: Tue, 21 Jan 2014 16:22:20 -0500
+Message-ID: <1390339396-3479-18-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <1390339396-3479-68-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lJ4sC/874/3I/gBU"
-Content-Disposition: inline
-In-Reply-To: <1390339396-3479-68-git-send-email-paul.gortmaker@windriver.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 67/73] drivers/base: delete non-required instances of
- include <linux/init.h>
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We currently get __init_or_module from init.h (implicitly) but if
+we move that to module.h we will get failures like this:
 
---lJ4sC/874/3I/gBU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In file included from /home/paul/git/linux-head/arch/arm/include/asm/gpio.h:10:0,
+                 from include/linux/gpio.h:48,
+                 from include/linux/of_gpio.h:20,
+                 from drivers/input/touchscreen/ads7846.c:30:
+arch/arm/mach-at91/include/mach/gpio.h:191:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_GPIO_periph'
+arch/arm/mach-at91/include/mach/gpio.h:192:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_A_periph'
+arch/arm/mach-at91/include/mach/gpio.h:193:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_B_periph'
+arch/arm/mach-at91/include/mach/gpio.h:194:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_C_periph'
+arch/arm/mach-at91/include/mach/gpio.h:195:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_D_periph'
+arch/arm/mach-at91/include/mach/gpio.h:196:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_gpio_input'
+arch/arm/mach-at91/include/mach/gpio.h:197:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_gpio_output'
+arch/arm/mach-at91/include/mach/gpio.h:198:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_deglitch'
+arch/arm/mach-at91/include/mach/gpio.h:199:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_debounce'
+arch/arm/mach-at91/include/mach/gpio.h:200:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_multi_drive'
+arch/arm/mach-at91/include/mach/gpio.h:201:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_set_pulldown'
+arch/arm/mach-at91/include/mach/gpio.h:202:29: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'at91_disable_schmitt_trig'
+make[3]: *** [drivers/input/touchscreen/ads7846.o] Error 1
 
-On Tue, Jan 21, 2014 at 04:23:10PM -0500, Paul Gortmaker wrote:
-> None of these files are actually using any __init type directives
-> and hence don't need to include <linux/init.h>.  Most are just a
-> left over from __devinit and __cpuinit removal, or simply due to
-> code getting copied from one driver to the next.
+Fix it up in advance by including module.h explicitly.
 
-Acked-by: Mark Brown <broonie@linaro.org>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/arm/mach-at91/include/mach/gpio.h | 1 +
+ 1 file changed, 1 insertion(+)
 
---lJ4sC/874/3I/gBU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/mach-at91/include/mach/gpio.h b/arch/arm/mach-at91/include/mach/gpio.h
+index 5fc2377..78abd64 100644
+--- a/arch/arm/mach-at91/include/mach/gpio.h
++++ b/arch/arm/mach-at91/include/mach/gpio.h
+@@ -14,6 +14,7 @@
+ #define __ASM_ARCH_AT91RM9200_GPIO_H
+ 
+ #include <linux/kernel.h>
++#include <linux/module.h>	/* for __init_or_module */
+ #include <asm/irq.h>
+ 
+ #define MAX_GPIO_BANKS		5
+-- 
+1.8.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3ufEAAoJELSic+t+oim9EbUP/04oCqKsId3MbalwT055aJDW
-PMtVkQ5U76QjrGGRiNPuv4KSVr1pwNtNIK3ExIRinVtcfeIekzrnLfSJ+0WloLDb
-lCmZx4SwnrQP106qr255yjoL1veKCkjgdn7C01Wmv9MOSuwPFlqYsG2pSPQzIVsA
-nxmbhJpQ0GlmqIFCoZz+JCrlzodemqJ2j83iiObOWgPC76DPtpZegOQA+Bb+n84N
-TaDWJTaRN6wIyCSxQ8OnSqPvDF367hIkM8KiCu6pifNOOJZjZUNEmpHZSmEM3SUu
-Z97fFqDoUm9NE798ZKHzHgEpEufDMA8vIaEUS/BFbwkj2u3t+Iqf2JnE7OiPait2
-EpOG9TYFgwDQM1PNWQ6s0GH7tQg5DYPyXd4t7WgEXg1AnbmtLKHRa8TvMQy0cklW
-MNdSIB61wQJcjRAWg41+dsUoz6jokIQ8iJ2WqvfnBI/Yt/TIFjaHBOxBtNSL9Kl6
-q9kaOJfkQ6pD6B/FZmfulU6GU739sdRgVTXDuAKcJE1HQSwF+jdlGHlEeQEI4iuU
-txfsR6gbgIxr85Pu6wL+s2cMSskKDrJCc/BHWo2u2eM2JB1zMKbh8dj9ZFeO8Lcm
-VnySV6cvfBwXkR5pD+hJb61NvkGS3vDZRWqR8dP8Tadgru7xqNSOg3ex1ZFsCCAL
-Z0V+GL8LKsx21lVGHsYy
-=z0oX
------END PGP SIGNATURE-----
-
---lJ4sC/874/3I/gBU--
