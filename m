@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaAUSNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 13:13:32 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:42666 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843AbaAUSNa (ORCPT
+	id S1755336AbaAUSNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 13:13:41 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57664 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843AbaAUSNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 13:13:30 -0500
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 13:13:30 EST
+	Tue, 21 Jan 2014 13:13:35 -0500
+Date: Tue, 21 Jan 2014 18:13:30 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140121181330.GL17314@sirena.org.uk>
+References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
+ <1390317009-8292-3-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-From: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
-Date: Tue, 21 Jan 2014 16:06:05 -0200
-Message-ID: <CAMrG31x0H1OjtNfdcXq2EqZ20XPHCX8qvrQSSuMqR=hsttYmXQ@mail.gmail.com>
-Subject: kvm virtio ethernet ring on guest side over high throughput (packet
- per second)
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4pX28sySFCT/oEO"
+Content-Disposition: inline
+In-Reply-To: <1390317009-8292-3-git-send-email-geert@linux-m68k.org>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 3/5] spi: Correct set_cs() documentation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys, we had in the past when using physical servers, several
-throughput issues regarding the throughput of our APIS, in our case we
-measure this with packets per seconds, since we dont have that much
-bandwidth (Mb/s) since our apis respond lots of packets very small
-ones (maximum response of 3.5k and avg response of 1.5k), when we
-where using this physical servers, when we reach throughput capacity
-(due to clients tiemouts) we touched the ethernet ring configuration
-and we made the problem dissapear.
 
-Today with kvm and over 10k virtual instances, when we want to
-increase the throughput of KVM instances, we bumped with the fact that
-when using virtio on guests, we have a max configuration of the ring
-of 256 TX/RX, and from the host side the atached vnet has a txqueuelen
-of 500.
+--T4pX28sySFCT/oEO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What i want to know is, how can i tune the guest to support more
-packets per seccond if i know that's my bottleneck?
+On Tue, Jan 21, 2014 at 04:10:07PM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>=20
+> The documentation for spi_master.set_cs() says:
+>=20
+>     assert or deassert chip select, true to assert
 
-* does virtio exposes more packets to configure in the virtual ethernet's ring ?
-* does the use of vhost_net helps me with increasing packets per
-second and not only bandwidth?
+Applied, thanks.
 
-does anyone has to struggle with this before and knows where i can look into ?
-there's LOOOOOOOOOOOOOOOTS of information about networking performance
-tuning of kvm, but nothing related to increase throughput in pps
-capacity.
+--T4pX28sySFCT/oEO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This is a couple of configurations that we are having right now on the
-compute nodes:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-* 2x1Gb bonded interfaces (want to know the more than 20 models we are
-using, just ask for it)
-* Multi queue interfaces, pined via irq to different cores
-* Linux bridges,  no VLAN, no open-vswitch
-* ubuntu 12.04 kernel 3.2.0-[40-48]
+iQIcBAEBAgAGBQJS3rjHAAoJELSic+t+oim9gP4QAJ0UYRehilvm3LteGuGep6kF
+v4RNiYE2WguRXOc6WxtisLTOgOvtDbn4zW8MJAHZMizp22QLPQKFZSMcPktTxkhq
+c+B20mN0I8zZDz3g585jPxNbcZ1zjAnGazvRc86+JPPPYdIbLoTiWGW3GDYlSeZi
+9itLTUYI2mWfO/FKx6TBGW8SPksd79Ajh5ziFQyRaf3egA4znkmrAzLNmwuPCAgm
+wvLFc7/AwWWxLdpwHokQFgWebdIbHcuFd1bCbh8pDIBjOH7ZnxQjZCqXMhXat8Cb
+yaSaS+4V887+Sl1Uy0Euk05ugOCwLDrC+qPr3RV25ZRjZCP2Ii5m/rnNW8Cs6/PW
+LiWplPDomdZwpHQ4f0DhjOC4gr+RjFu46yXzBfHLRZQwfzfmfY+KYmYXnX2Y0DOp
+qGB2895NKdAWIz/eEFEOuMx+qopdMhQxj1B1nGGq72j51tATSGTl360b7Mi4CJKr
+zY6MEsLiiC7amoiQbt+enS+uYuPLeF3dteLm2rS3ew7LFP8Q7Gb/vkDixyBs3rFf
+yfSPIUqujMjso1XG9y+kc9N/5VJ4LHG/uxsezMol8uNRZdSre54EK1P2RC+MuAh0
+IA1JP10HoLnQ8iUKh8yS8mm01zNf1BiF4w9eb9o+WskwKbovIYz0X41LKsytFr9q
+D51FbS92nJ8lX/BKzQlY
+=D8s5
+-----END PGP SIGNATURE-----
 
-
-any help will be incredibly apreciated !!
-
-thank you.
+--T4pX28sySFCT/oEO--
