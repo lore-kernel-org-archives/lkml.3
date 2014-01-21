@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaAUTGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 14:06:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8831 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827AbaAUTGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 14:06:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="468546020"
-Date: Tue, 21 Jan 2014 12:06:20 -0700 (MST)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Alexander Gordeev <agordeev@redhat.com>
-cc: Keith Busch <keith.busch@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 2/2] nvme: Cleanup nvme_dev_start() and fix IRQ leak
-In-Reply-To: <20140121100719.GC8847@dhcp-26-207.brq.redhat.com>
-Message-ID: <alpine.LRH.2.03.1401211151110.25844@AMR>
-References: <cover.1389904166.git.agordeev@redhat.com> <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com> <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com> <alpine.LRH.2.03.1401171419370.25844@AMR>
- <20140120083835.GA19068@dhcp-26-207.brq.redhat.com> <20140120084212.GC19068@dhcp-26-207.brq.redhat.com> <alpine.LRH.2.03.1401201541000.25844@AMR> <20140121100311.GA8847@dhcp-26-207.brq.redhat.com> <20140121100719.GC8847@dhcp-26-207.brq.redhat.com>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753542AbaAUTGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 14:06:35 -0500
+Received: from alcazar.beanwood.com ([70.85.129.230]:37880 "EHLO
+	alcazar.beanwood.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaAUTG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 14:06:29 -0500
+X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 14:06:29 EST
+Date: Tue, 21 Jan 2014 10:57:35 -0800
+From: Andrew Ayer <agwa@andrewayer.name>
+To: Florian Weimer <fweimer@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vfs: Add fchmodat4 syscall: fchmodat with flag
+ argument
+Message-Id: <20140121105735.56cc4ec41a6f20719a70d19e@andrewayer.name>
+In-Reply-To: <52DE2208.9040908@redhat.com>
+References: <1326419626-22568-1-git-send-email-agwa@andrewayer.name>
+	<1326419626-22568-2-git-send-email-agwa@andrewayer.name>
+	<52DE2208.9040908@redhat.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jan 2014, Alexander Gordeev wrote:
-> This is an attempt to make handling of admin queue in a
-> single scope. This update also fixes a IRQ leak in case
-> nvme_setup_io_queues() failed to allocate enough iomem
-> and bailed out with -ENOMEM errno.
->
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
+On Tue, 21 Jan 2014 08:30:16 +0100
+Florian Weimer <fweimer@redhat.com> wrote:
 
-> +static void nvme_teardown_admin_queue(struct nvme_dev *dev)
-> +{
-> +	nvme_disable_queue(dev, 0);
-> +	nvme_free_queue(dev->queues[0]);
-> +}
+> On 01/13/2012 02:53 AM, Andrew Ayer wrote:
+> > This adds a 4 argument version of fchmodat (fchmodat4) that
+> > supports a flag argument, as specified by POSIX.  It supports
+> > the same two flags as fchownat: AT_SYMLINK_NOFOLLOW and AT_EMPTY_PATH.
+> 
+> I don't think it's possible to emulate AT_EMPTY_PATH in user space, so I 
+> wonder if this could be applied, and if not, why.  Thanks.
 
-> @@ -2402,11 +2398,20 @@ static int nvme_dev_start(struct nvme_dev *dev)
-> 	list_add(&dev->node, &dev_list);
-> 	spin_unlock(&dev_list_lock);
->
-> -	result = nvme_setup_io_queues(dev);
-> -	if (result && result != -EBUSY)
-> +	result = set_queue_count(dev, num_online_cpus());
-> +	if (result == -EBUSY)
-> +		return -EBUSY;
-> +
-> +	nvme_teardown_admin_queue(dev);
+The original patch no longer applies because there were some
+minor changes to fs/open.c.  I'll fix up the patch and send it in.
 
-Oh no! Your new teardown function is freeing the admin queue, but it
-would be used immediatly after that in nvme_setup_io_queues ...
+I too would very much like to see this applied, or to know why it can't
+be.
 
-> +
-> +	if (result)
-> 		goto disable;
-
-... but you'll never actually get to setup io queues because the 'result'
-here is non-zero if we were successful, and is the number of queues the
-controller can allocate. I think you meant to do this instead:
-
-+	if (result < 0)
-
->
-> -	return result;
-> +	result = nvme_setup_io_queues(dev, result);
-> +	if (result)
-> +		goto disable;
-> +
-> +	return 0;
-
+Thanks,
+Andrew
