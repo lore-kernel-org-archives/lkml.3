@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaAUOjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:39:45 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:43394 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaAUOjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:39:43 -0500
-Date: Tue, 21 Jan 2014 15:39:39 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Cong Ding <dinggnu@gmail.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140121143939.GA4643@gmail.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com>
- <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com>
- <52DDAD9D.9030504@zytor.com>
- <20140121090003.GO31570@twins.programming.kicks-ass.net>
- <52DE8231.6080408@zytor.com>
+	id S1754672AbaAUOtB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:49:01 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46872 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754438AbaAUOs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:48:58 -0500
+Date: Tue, 21 Jan 2014 08:47:25 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <george.cherian@ti.com>, <heikki.krogerus@linux.intel.com>,
+        <rogerq@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
+ returns -ENODEV/-ENXIO
+Message-ID: <20140121144725.GF30451@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
+ <1390299099-14764-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pyE8wggRBhVBcj8z"
 Content-Disposition: inline
-In-Reply-To: <52DE8231.6080408@zytor.com>
+In-Reply-To: <1390299099-14764-1-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--pyE8wggRBhVBcj8z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+On Tue, Jan 21, 2014 at 03:41:38PM +0530, Kishon Vijay Abraham I wrote:
+> Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs),
+> do not return from probe if the USB PHY library returns -ENODEV as that
 
-> On 01/21/2014 01:00 AM, Peter Zijlstra wrote:
-> >>
-> >> So this is presumably something that needs to be fixed in perf?
-> > 
-> > Where do we learn about the offset from userspace?
-> > 
-> 
-> Now this is tricky... if this offset is too easy to get it 
-> completely defeats kASLR.  On the other hand, I presume that if we 
-> are exporting /proc/kcore we're not secure anyway.  Kees, I assume 
-> that in "secure" mode perf annotations simply wouldn't work anyway?
+this isn't correct, they all have PHYs, some of them might not be
+controllable.
 
-So /proc/kcore is:
+> indicates the platform does not have PHY.
 
-  aldebaran:~> ls -l /proc/kcore 
-  -r-------- 1 root root 140737486266368 Jan 21 15:35 /proc/kcore
+not really, that indicates the current platform tried to grab a PHY and
+the PHY doesn't exist. If there's anybody with a non-controllable PHY
+and someone gives me a really good reason for not using the generic
+no-op PHY, then we should add a flag and we could:
 
-i.e. root only.
+	if (!likely(dwc->flags & DWC3_USB2PHY_DRIVER_NOT_NEEDED))
+		dwc3_grab_phys(dwc);
 
-The thing is, one of my first remarks on this whole KASLR series was 
-that tooling needs to work. I suggested that the kernel should only 
-expose non-randomized addresses and that all facilities need to 
-continue to 'just work' with those. That argument was ignored AFAICS 
-and the problem still isn't solved.
+But I really want to see the argument against using no-op. As far as I
+could see, everybody needs a PHY driver one way or another, some
+platforms just haven't sent any PHY driver upstream and have their own
+hacked up solution to avoid using the PHY layer.
 
-I'd argue that solving it in the kernel instead of making all tooling 
-variants aware of KASLR one by one is a far more intelligent and 
-efficient solution ...
+Your commit log really needs quite some extra work. What are you trying
+to achieve ? Is this related to AM437x which doesn't have a USB3 PHY due
+to the way the HW was wired up ? If so, please mention it. Explain how
+AM437x HW was wired up, why it lacks a USB3 PHY and why we should
+support it the way you want.
 
-Thanks,
+That sort of detail needs to be clear in the commit log, specially
+considering the peculiar nature of AM43xx which uses a USB3 IP in
+USB2-only mode, that needs to be documented in the commit log :-)
 
-	Ingo
+cheers
+
+--=20
+balbi
+
+--pyE8wggRBhVBcj8z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJS3oh9AAoJEIaOsuA1yqREkYAP/2VZ1tCp2VnzuTB+mNmb5Sm/
+Ss4045EJYGv0QhkGmDwnoUEZoZWFpyWo+4h8+J7BpReNuVnF4nqyKX7MvB7Ivd7d
+a8gAgebL26rpOfBTIlkdYduQxe/EM+95v+E9FQ/M0SKu36UwY93HEF8UnbjXHVsF
+2kAYRQMTVoHN6GxP6P4MCNGyojfYMA8uevv/SFr+zTIJTt4/PM17Qsuq1xSMtzRl
+YPzFDq1tNw+vXeF1IhpSjQ/UhIzOoG1D9Z88/e1CG1eosQQZWDTQDjYYTwhvMIyt
+PtAHqoEXop0xzQ0Kj6T+7BGwLhu5Zh7tl4vg5veQ7OZSFmpZOmXyNlZ7OeLNRU5h
+f+3Zj23x3JzDZb1KAxXXc8UYw5ITvF6x5zc82GFCQJgByO6u09vG7cAnKG+GrRiK
+hQJE5sAxczwXmEfPEOh+PAVU06ie1phF5kjqMdVuLV2uVNftMksaiyarLTixlbKd
+fryUujqB4oVD3/camDyq7K00zT+nVBE04hHdogtF6uw7GRaiy2eoLlPUSsdZp3V5
+Z6IywNb1daTncXcSPTzyZs/osy6hdJuabkuh89WIoBefI23RHnyi4keK+bvUePZs
+L6d0brIHl1zSOGJpx25SZIEEXeMr4rueXhqVG/CnbuE/zh77Pg4IAcMU/s6IDTzx
+M8yyG98HI/VHlcUF1O9e
+=CgjQ
+-----END PGP SIGNATURE-----
+
+--pyE8wggRBhVBcj8z--
