@@ -1,228 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632AbaAUM1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:27:33 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:53425 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448AbaAUM13 (ORCPT
+	id S1754587AbaAUMbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:31:25 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58457 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518AbaAUMbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:27:29 -0500
-X-IronPort-AV: E=Sophos;i="4.95,696,1384300800"; 
-   d="scan'208";a="92783655"
-Date: Tue, 21 Jan 2014 12:26:22 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v3] xen/grant-table: Avoid m2p_override during
- mapping
-In-Reply-To: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
-Message-ID: <alpine.DEB.2.02.1401211217510.21510@kaball.uk.xensource.com>
-References: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 21 Jan 2014 07:31:22 -0500
+Date: Tue, 21 Jan 2014 13:31:20 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [11/11] system 1: Saving energy using DVFS
+Message-ID: <20140121123120.GC11893@amd.pavel.ucw.cz>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+ <20140120163254.GA23051@amd.pavel.ucw.cz>
+ <20140121121429.GB19029@e103034-lin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121121429.GB19029@e103034-lin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014, Zoltan Kiss wrote:
-> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
-> for blkback and future netback patches it just cause a lock contention, as
-> those pages never go to userspace. Therefore this series does the following:
-> - the original functions were renamed to __gnttab_[un]map_refs, with a new
->   parameter m2p_override
-> - based on m2p_override either they follow the original behaviour, or just set
->   the private flag and call set_phys_to_machine
-> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
->   m2p_override false
-> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+Hi!
+
+> > > Performance is frequency (~instruction issue rate) and
+> > > energy/instruction is the energy cost of executing one (or a fixed
+> > > number of instructions) at that level of performance (frequency). For
+> > > this example, it costs 2.7x more energy per instruction to increase the
+> > > performance from 1.0 to 3.0 (3x). That is, the amount of work
+> > > (instructions) that can be done on one battery charge is reduced by 2.7x
+> > > (~63%) if you run as fast as possible (3.0) compared to running at
+> > > slowest frequency (1.0).
+> > 
+> > This very heavily depends on what you count to the total energy,
+> > right? And it is very hard to argue with you before you anonymized
+> > your numbers.
 > 
-> v2:
-> - move the storing of the old mfn in page->index to gnttab_map_refs
-> - move the function header update to a separate patch
+> Just to clarify, the numbers above are cpu only as already stated in the
+> linux-pm thread referenced in the cover letter. We do of course need to
+> consider the total energy (cpu, gpu and memory at least) when verifying
+> whether any optimization does save energy or not.
+
+Yes.
+
+> As already discussed, battery power is suitable for this purpose on end
+> product form factor systems. However, for development hardware that
+> might be quite different (extra onboard devices and such).
+
+Is the behavior of current production hardware significantly different
+from secret development boards you have? I don't think so. So can we
+get measurements on real production hardware?
+
+> > Anyway, you assuming modern system, low frequency should be cca
+> > 0.5GHz, with high cca 1.5GHz. Do you claim that operation on 1.5GHz
+> > takes 9x the power of 0.5GHz operation?
 > 
-> v3:
-> - a new approach to retain old behaviour where it needed
-> - squash the patches into one
+> On this particular platform, increasing the frequency by 3x increases
+> power by 8.1x.
+
+Lets call your plaform TopSecret.
+
+_CPU_ power. If your DRAM eats as much power as the CPU on that
+platform, and enters low-power mode when CPU does, race-to-idle is
+still a win.
+
+> > > To save energy, the higher frequencies should be avoided and only used
+> > > when the application performance requirements can not be satisfied
+> > > otherwise (e.g. spread tasks across more cpus if possible).
+> > 
+> > This is in very steep contrast with race-to-idle on the PCs.
 > 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Suggested-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->  drivers/block/xen-blkback/blkback.c |   15 +++----
->  drivers/xen/gntdev.c                |   13 +++---
->  drivers/xen/grant-table.c           |   81 +++++++++++++++++++++++++++++------
->  include/xen/grant_table.h           |    8 +++-
->  4 files changed, 87 insertions(+), 30 deletions(-)
+> I think Catalin already covered why race-to-idle isn't always the best
+> idea elsewhere in this thread. Basically, it is wasting a lot of energy
+> in use-cases like audio and video playback. I have provided descriptions
+> of these use-cases as part of this set of emails.
+
+That's the problem. He demonstrated that on platform TopSecret
+race-to-idle is not good idea, assuming CPU and display are the only
+parts eating power. But that's not true even on TopSecret platform.
+
+So, at the very least, we need to know ammount of power taken by CPU
+idle/active and DRAM idle/active.
+
+> > Can we talk specific machine, please? You are talking Android all the
+> > time, so pick one cellphone you care about, and provide real numbers...
 > 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index aa846a4..87ded60 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
->  }
->  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
->  
-> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  		    struct gnttab_map_grant_ref *kmap_ops,
-> -		    struct page **pages, unsigned int count)
-> +		    struct page **pages, unsigned int count,
-> +		    bool m2p_override)
->  {
->  	int i, ret;
->  	bool lazy = false;
->  	pte_t *pte;
->  	unsigned long mfn;
->  
-> +	BUG_ON(kmap_ops && !m2p_override);
->  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
->  	if (ret)
->  		return ret;
-> @@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
->  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
->  		}
-> -		return ret;
-> +		return 0;
->  	}
->  
-> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> +	if (m2p_override &&
-> +	    !in_interrupt() &&
-> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->  		arch_enter_lazy_mmu_mode();
->  		lazy = true;
->  	}
-> @@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  		} else {
->  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
->  		}
-> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-> -				       &kmap_ops[i] : NULL);
-> +		if (m2p_override)
-> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-> +					       &kmap_ops[i] : NULL);
-> +		else {
-> +			unsigned long pfn = page_to_pfn(pages[i]);
-> +			WARN_ON(PagePrivate(pages[i]));
-> +			SetPagePrivate(pages[i]);
-> +			set_page_private(pages[i], mfn);
-> +			pages[i]->index = pfn_to_mfn(pfn);
-> +			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
-> +				return -ENOMEM;
+> As Catalin already said, there is a number of reason why we can't share
+> absolute numbers publicly. I think the numbers I posted give a pretty
+> good picture of the trade-offs involved in frequency scaling on a modern
+> ARM Soc. 
 
-What happens if the page is PageHighMem?
-
-This looks like a subset of m2p_add_override, but it is missing some
-relevant bits, like the PageHighMem check, or the p2m(m2p(mfn)) == mfn
-check.  Maybe we can find a way to avoid duplicating the code.
-We could split m2p_add_override in two functions or add yet another
-parameter to it.
-
-
-> +		}
->  		if (ret)
->  			goto out;
->  	}
-> @@ -937,17 +951,33 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  	if (lazy)
->  		arch_leave_lazy_mmu_mode();
->  
-> -	return ret;
-> +	return 0;
-> +}
-> +
-> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> +		    struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
->  }
->  EXPORT_SYMBOL_GPL(gnttab_map_refs);
->  
-> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
-> +			      struct gnttab_map_grant_ref *kmap_ops,
-> +			      struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
-> +
-> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  		      struct gnttab_map_grant_ref *kmap_ops,
-> -		      struct page **pages, unsigned int count)
-> +		      struct page **pages, unsigned int count,
-> +		      bool m2p_override)
->  {
->  	int i, ret;
->  	bool lazy = false;
->  
-> +	BUG_ON(kmap_ops && !m2p_override);
->  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
->  	if (ret)
->  		return ret;
-> @@ -958,17 +988,26 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
->  					INVALID_P2M_ENTRY);
->  		}
-> -		return ret;
-> +		return 0;
->  	}
->  
-> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> +	if (m2p_override &&
-> +	    !in_interrupt() &&
-> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->  		arch_enter_lazy_mmu_mode();
->  		lazy = true;
->  	}
->  
->  	for (i = 0; i < count; i++) {
-> -		ret = m2p_remove_override(pages[i], kmap_ops ?
-> -				       &kmap_ops[i] : NULL);
-> +		if (m2p_override)
-> +			ret = m2p_remove_override(pages[i], kmap_ops ?
-> +						  &kmap_ops[i] : NULL);
-> +		else {
-> +			unsigned long pfn = page_to_pfn(pages[i]);
-> +			WARN_ON(!PagePrivate(pages[i]));
-> +			ClearPagePrivate(pages[i]);
-> +			set_phys_to_machine(pfn, pages[i]->index);
-
-same here: let's try to avoid code duplication
-
-
-> +		}
->  		if (ret)
->  			goto out;
->  	}
-> @@ -977,10 +1016,24 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  	if (lazy)
->  		arch_leave_lazy_mmu_mode();
->  
-> -	return ret;
-> +	return 0;
-> +}
-> +
-> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
-> +		    struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
->  }
->  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
->  
-> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
-> +				struct gnttab_map_grant_ref *kmap_ops,
-> +				struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
-> +
->  static unsigned nr_status_frames(unsigned nr_grant_frames)
->  {
->  	BUG_ON(grefs_per_grant_frame == 0);
+Unfortunately, as explained above, numbers for TopSecret are not
+useful. And that should be reason to re-do the measurements on some
+non-secret machine.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
