@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930AbaAUQvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:51:32 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:58648 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaAUQv3 (ORCPT
+	id S1755073AbaAUQ6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:58:40 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46441 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754438AbaAUQ6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:51:29 -0500
-Message-ID: <52DEA58A.9050406@linaro.org>
-Date: Tue, 21 Jan 2014 11:51:22 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 21 Jan 2014 11:58:36 -0500
+Date: Tue, 21 Jan 2014 16:58:03 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] Use __kernel_long_t in struct timex
+Message-ID: <20140121165803.GC20798@arm.com>
+References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
+ <1388165112-6545-2-git-send-email-hjl.tools@gmail.com>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 15/16] ARM: add uprobes support
-References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-16-git-send-email-dave.long@linaro.org> <1387564464.3404.106.camel@linaro1.home>
-In-Reply-To: <1387564464.3404.106.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388165112-6545-2-git-send-email-hjl.tools@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13 13:34, Jon Medhurst (Tixy) wrote:
-> On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> Using Rabin Vincent's ARM uprobes patches as a base, enable uprobes
->> support on ARM.
->>
->> Caveats:
->>
->>   - Thumb is not supported
->>   - XOL abort/trap handling is not implemented
->
-> I shall repeat my comment from version one of the patch...
->
-> What are the consequences of this, e.g. is it possible for a probe to
-> get stuck in an infinite loop of faulting? I hope there are no integrity
-> issues for the kernel itself.
->
-> Would be good if someone familiar with uprobes working could answer
-> that.
+On Fri, Dec 27, 2013 at 05:25:05PM +0000, H.J. Lu wrote:
+> X32 adjtimex system call is the same as x86-64 adjtimex system call,
+> which uses 64-bit integer for long in struct timex. But x32 long is
+> 32 bit.  This patch replaces long in struct timex with __kernel_long_t
+> if __BITS_PER_LONG == 64.
+> 
+> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
+> ---
+>  include/uapi/linux/timex.h | 46 ++++++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 38 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
+> index a7ea81f..98314e9 100644
+> --- a/include/uapi/linux/timex.h
+> +++ b/include/uapi/linux/timex.h
+> @@ -63,28 +63,58 @@
+>   */
+>  struct timex {
+>  	unsigned int modes;	/* mode selector */
+> +#if __BITS_PER_LONG == 64
+> +	__kernel_long_t offset;	/* time offset (usec) */
+> +	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
+> +	__kernel_long_t maxerror;/* maximum error (usec) */
+> +	__kernel_long_t esterror;/* estimated error (usec) */
+> +#else
+>  	long offset;		/* time offset (usec) */
+>  	long freq;		/* frequency offset (scaled ppm) */
+>  	long maxerror;		/* maximum error (usec) */
+>  	long esterror;		/* estimated error (usec) */
+> +#endif
 
-Testing shows it does indeed get stuck continuously trapping. The 
-process is killable.  Fortunately all the infrastructure is already 
-there for fixing this.  I've patched the code to detect the trap and 
-allow it to be processed, using the powerpc uprobes code as a model. 
-The changes required are fairly small and entirely in the 
-architecture-specific code.
+These changes should work on arm64 ILP32 as well.
 
-As mentioned before, thumb support is a follow-on project.
+>  	int status;		/* clock command/status */
+> +#if __BITS_PER_LONG == 64
+> +	__kernel_long_t constant;/* pll time constant */
+> +	__kernel_long_t precision;/* clock precision (usec) (read only) */
+> +	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
+> +				   * (read only)
+> +				   */
+> +#else
+>  	long constant;		/* pll time constant */
+>  	long precision;		/* clock precision (usec) (read only) */
+>  	long tolerance;		/* clock frequency tolerance (ppm)
+>  				 * (read only)
+>  				 */
+> +#endif
+>  	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
 
-> I've a few other comments...
+struct timeval is already defined in terms of __kernel_long_t, so no
+issues here either.
 
-[snip]
+BTW, could we not avoid the #if and always use __kernel_long_t? This
+wouldn't break the user ABI.
 
->
->
->> +const union decode_item uprobes_probes_actions[] = {
->> +	[PROBES_EMULATE_NONE] {.handler = probes_simulate_nop},
->
-> There is a missing '=' in the line above. Interesting that GCC doesn't
-> complain (I tried compiling this patch and it didn't).
->
-
-That is indeed odd.  I have fixed it (my code, not the compiler).
-
-[snip]
-
->> +bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
->> +{
->> +	void *addr;
->
-> 'addr' is not used so this line can be deleted
->
->> +	probes_opcode_t opcode;
->> +
->> +	if (!auprobe->simulate)
->> +		return false;
->> +
->> +	addr = (void *) regs->ARM_pc;
->
-> and so can this line ^^^
-
-Fixed.
-
->
->> +	opcode = __mem_to_opcode_arm(*(unsigned int *) auprobe->insn);
->> +
->> +	auprobe->asi.insn_singlestep(opcode, &auprobe->asi, regs);
->> +
->> +	return true;
->> +}
->> +
->
-
-Fixed.
-
-> [rest of patch snipped]
->
-
-
--dl
-
+-- 
+Catalin
