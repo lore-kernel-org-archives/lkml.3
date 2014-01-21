@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049AbaAUPpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:45:54 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:20318 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaAUPpu (ORCPT
+	id S1755081AbaAUPqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:46:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58640 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532AbaAUPqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:45:50 -0500
-Message-ID: <52DE9626.3030806@hp.com>
-Date: Tue, 21 Jan 2014 10:45:42 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 21 Jan 2014 10:46:34 -0500
+Date: Tue, 21 Jan 2014 16:46:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, rostedt@goodmis.org,
+        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com
+Subject: Re: [PATCH 01/13] sched: Add 3 new scheduler syscalls to support an
+ extended scheduling parameters ABI
+Message-ID: <20140121154603.GF3694@twins.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123352.692059839@infradead.org>
+ <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
+ <20140121153851.GZ31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, "" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v9 4/5] qrwlock: Use smp_store_release() in write_unlock()
-References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com> <1389761047-47566-5-git-send-email-Waiman.Long@hp.com> <20140120151855.GH30183@twins.programming.kicks-ass.net>
-In-Reply-To: <20140120151855.GH30183@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121153851.GZ31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 10:18 AM, Peter Zijlstra wrote:
-> On Tue, Jan 14, 2014 at 11:44:06PM -0500, Waiman Long wrote:
->> This patch modifies the queue_write_unlock() function to use the new
->> smp_store_release() function (currently in tip). It also removes the
->> temporary implementation of smp_load_acquire() and smp_store_release()
->> function in qrwlock.c.
->>
->> This patch will use atomic subtraction instead if the writer field is
->> not atomic.
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   include/asm-generic/qrwlock.h |   10 ++++++----
->>   kernel/locking/qrwlock.c      |   34 ----------------------------------
->>   2 files changed, 6 insertions(+), 38 deletions(-)
->>
->> diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
->> index 5abb6ca..68f488b 100644
->> --- a/include/asm-generic/qrwlock.h
->> +++ b/include/asm-generic/qrwlock.h
->> @@ -181,11 +181,13 @@ static inline void queue_read_unlock(struct qrwlock *lock)
->>   static inline void queue_write_unlock(struct qrwlock *lock)
->>   {
->>   	/*
->> -	 * Make sure that none of the critical section will be leaked out.
->> +	 * If the writer field is atomic, it can be cleared directly.
->> +	 * Otherwise, an atomic subtraction will be used to clear it.
->>   	 */
->> -	smp_mb__before_clear_bit();
->> -	ACCESS_ONCE(lock->cnts.writer) = 0;
->> -	smp_mb__after_clear_bit();
->> +	if (__native_word(lock->cnts.writer))
->> +		smp_store_release(&lock->cnts.writer, 0);
->> +	else
->> +		atomic_sub(_QW_LOCKED,&lock->cnts.rwa);
->>   }
-> If we're a writer, read-count must be zero. The only way for that not to
-> be zero is a concurrent read-(try)lock. If you move all the
-> read-(try)locks over to cmpxchg() you can avoid this afaict:
+On Tue, Jan 21, 2014 at 04:38:51PM +0100, Peter Zijlstra wrote:
+>     SCHED_DEADLINE: Sporadic task model deadline scheduling
+> 	SCHED_DEADLINE is an implementation of GEDF (Global Earliest
+> 	Deadline First) with additional CBS (Constant Bandwidth Server).
 
-That is not true. A reader may transiently set the reader count to a 
-non-zero value in the fast path. Also, a reader in interrupt context 
-will force a non-zero reader count to take the read lock as soon as the 
-writer is done.
+We might want to re-word that to:
 
->
-> static inline void queue_read_trylock(struct qrwlock *lock)
-> {
-> 	union qrwcnts cnts
->
-> 	cnts = ACCESS_ONCE(lock->cnts);
-> 	if (!cnts.writer) {
-> 		if (cmpxchg(&lock->cnts.rwc, cnts.rwc, cnts.rwc + _QR_BIAS) == cnts.rwc)
-> 			return 1;
-> 	}
->
-> 	return 0;
-> }
->
-> static inline void queue_read_lock(struct qrwlock *lock)
-> {
-> 	if (!queue_read_trylock(lock))
-> 		queue_read_lock_slowpath(); // XXX do not assume extra _QR_BIAS
-> }
->
-> At which point you have the guarantee that read-count == 0, and you can
-> write:
->
-> static inline void queue_write_unlock(struct qrwlock *lock)
-> {
-> 	smp_store_release(&lock->cnts.rwc, 0);
-> }
->
-> No?
->
+	SCHED_DEADLINE currently is an implementation of GEDF, however
+	any policy that correctly schedules the sporadic task model is
+	a valid implementation.
 
-The current code is optimized for the reader-heavy case. So I used xadd 
-for incrementing reader count to reduce the chance of retry due to 
-concurrent reader count updates. The downside is the need to back out if 
-a writer is here.
+To make sure we should not rely on the actual implementation; there's
+many possible algorithms to schedule the sporadic task model.
 
-I can change the logic to use only cmpxchg for readers, but I don't see 
-a compelling reason to do so.
-
--Longman
+> 	The CBS guarantees that tasks that over-run their specified
+> 	budget are throttled and do not affect the correct performance
+> 	of other SCHED_DEADLINE tasks.
+> 
+> 	SCHED_DEADLINE tasks will fail FORK(2) with -EAGAIN
+> 
+> 	Setting SCHED_DEADLINE can fail with -EINVAL when admission
+> 	control tests fail.
+> 
