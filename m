@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaAUJxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:53:04 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:33877 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751613AbaAUJxA convert rfc822-to-8bit (ORCPT
+	id S1754285AbaAUJ4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:56:07 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50443 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbaAUJ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:53:00 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
-CC: "'walt'" <w41ter@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Index: AQHPELhlWPjDYPI+s0G+DC1zL1oFlJqEeIcAgABE3oCABEGkcIAB9dCAgAKL5bCAAHTLAIABApzg
-Date: Tue, 21 Jan 2014 09:51:30 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
-References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com>
- <20140114172056.GB12126@xanatos> <52D5ABBD.7090202@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D45EDA3@AcuExch.aculab.com>
- <52DAE2BF.7020208@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D45FF6C@AcuExch.aculab.com>
- <20140120181442.GA5545@xanatos>
-In-Reply-To: <20140120181442.GA5545@xanatos>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 21 Jan 2014 04:56:00 -0500
+X-AuditID: cbfee690-b7f266d00000287c-c4-52de442fac64
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 2/2] f2fs: move a branch for code redability
+Date: Tue, 21 Jan 2014 18:54:34 +0900
+Message-id: <1390298075-21458-2-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+In-reply-to: <1390298075-21458-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1390298075-21458-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zI119l3tBBt1L5Cyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgypj6qoexYC9bRcvG
+	u2wNjMtYuxg5OSQETCTOHelig7DFJC7cWw9kc3EICSxjlHh17TkLTNGFq0vZIRLTGSVWnrsM
+	1i0k0MQk8bdBuYuRg4NNQFti834DkLCIALPEgqnnGUHqmQUmMEr8X/QebJCwgI3Exxf/wGwW
+	AVWJ/Qvfs4PYvALuEnt2HGeCWKYtse35REYQm1PAQ+LJoRVsELvcJda++8gCMlRC4DebRO/F
+	BkaIQQIS3yYfYgE5QkJAVmLTAWaIOZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kYlecWJucWle
+	ul5yfu4mRkjITtjBeO+A9SHGZKBxE5mlRJPzgSGfVxJvaGxmZGFqYmpsZG5pRpqwkjiv2qOk
+	ICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MqfEv3e9N3HEqz1DPr8326atPHeXCpSq7GLft
+	79yw5tr+iF8L69TS1x9fNSdrRYsq37GO1B1z0/+d+r2sbuN1h0lnDCrOlq+dxL3p9jqNl+vb
+	zjq8KTpx/uTqs+oS12OPsHrKxLarzPj3c97Lwv9nFkmeKhCSPNyrtb0jyfb/omt2hZ2ed7tf
+	L1BiKc5INNRiLipOBAChqwKfbwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQV19l3tBBgenS1tc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5gx9VUPY8FetoqWjXfZGhiXsXYxcnJICJhIXLi6lB3CFpO4cG89WxcjF4eQ
+	wHRGiZXnLoMVCQk0MUn8bVDuYuTgYBPQlti83wAkLCLALLFg6nlGkHpmgQmMEv8XvWcBSQgL
+	2Eh8fPEPzGYRUJXYv/A92AJeAXeJPTuOM0Es05bY9nwiI4jNKeAh8eTQCjaIXe4Sa999ZJnA
+	yLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBEPJPewbiqweIQowAHoxIPb8XGu0FC
+	rIllxZW5hxglOJiVRHiPOd4LEuJNSaysSi3Kjy8qzUktPsSYDHTVRGYp0eR8YLTmlcQbGpuY
+	GVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAPjyluNElNCvm8/HjxLevZ+
+	nuMnzNzEJrxLKPSQsm3YYh9nGfLsl6DNncMrKvkfLoxeH6BmUd/A9f1ccrFTzORpLmHljys0
+	OM0ON8ffFPwucjs/7vbjZrfzJ8vPPTtz00lsfvCdWONc+W2nJfbfW9wlUJu9wCvuv3mRZ3/U
+	c/1iBsFjvopFjTOVWIozEg21mIuKEwFKtcyjzAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sarah Sharp
-> On Mon, Jan 20, 2014 at 11:21:14AM +0000, David Laight wrote:
-...
-> > A guess...
-> >
-> > In queue_bulk_sg_tx() try calling xhci_v1_0_td_remainder() instead
-> > of xhci_td_remainder().
-> 
-> Why?  Walt has a 0.96 xHCI host controller, and the format for how to
-> calculate the TD remainder changed between the 0.96 and the 1.0 spec.
-> That's why we have xhci_v1_0_td_remainder() and xhci_td_remainder().
+This patch moves a function in f2fs_delete_entry for code readability.
 
-I just wonder how many of those differences are just differences in the
-specification, rather than differences in the hardware implementation.
-In some cases it might be that the old hardware just ignored the value.
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/dir.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-I know that the xhci hardware on my ivy bridge cpu does look at that
-value (at least checking for zero), since things failed in subtle ways
-when I got it wrong.
-
-In this case it was just something easy to change that might be worth
-trying.  I didn't necessarily expect it to make a positive difference.
-
-	David
-
-
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 1679e8b..2d5c657 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -552,12 +552,11 @@ void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
+ 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+ 	mark_inode_dirty(dir);
+ 
+-	if (inode && S_ISDIR(inode->i_mode)) {
+-		drop_nlink(dir);
+-		update_inode_page(dir);
+-	}
+-
+ 	if (inode) {
++		if (S_ISDIR(inode->i_mode)) {
++			drop_nlink(dir);
++			update_inode_page(dir);
++		}
+ 		inode->i_ctime = CURRENT_TIME;
+ 		drop_nlink(inode);
+ 		if (S_ISDIR(inode->i_mode)) {
+-- 
+1.8.4.474.g128a96c
 
