@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaAUVvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:51:40 -0500
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:39732 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754554AbaAUVve (ORCPT
+	id S1754494AbaAUVzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:55:14 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:45863 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862AbaAUVzJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:51:34 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3872:3874:5007:7652:8957:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rain28_d42cec951118
-X-Filterd-Recvd-Size: 1838
-Message-ID: <1390341089.31946.14.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Prefer ether_addr_copy to memcpy(foo, bar,
- ETH_ALEN)
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Jan 2014 13:51:29 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jan 2014 16:55:09 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH 60/73] drivers/bluetooth: delete non-required instances of include <linux/init.h>
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1390339396-3479-61-git-send-email-paul.gortmaker@windriver.com>
+Date: Tue, 21 Jan 2014 13:55:01 -0800
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8861C0F9-FF68-47B8-B9EB-E52BF6A72A6F@holtmann.org>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-61-git-send-email-paul.gortmaker@windriver.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ether_addr_copy was added for kernel version 3.14.
-It's slightly smaller/faster for some arches.
-Encourage its use.
+Hi Paul,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+> 
+> Cc: Marcel Holtmann <marcel@holtmann.org>
+> Cc: Gustavo Padovan <gustavo@padovan.org>
+> Cc: Johan Hedberg <johan.hedberg@gmail.com>
+> Cc: linux-bluetooth@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+> drivers/bluetooth/ath3k.c       | 1 -
+> drivers/bluetooth/bcm203x.c     | 1 -
+> drivers/bluetooth/bfusb.c       | 1 -
+> drivers/bluetooth/bluecard_cs.c | 1 -
+> drivers/bluetooth/bpa10x.c      | 1 -
+> drivers/bluetooth/bt3c_cs.c     | 1 -
+> drivers/bluetooth/btuart_cs.c   | 1 -
+> drivers/bluetooth/dtl1_cs.c     | 1 -
+> 8 files changed, 8 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index be53ba7..0ea2a1e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4096,6 +4096,16 @@ sub process {
- 			}
- 		}
- 
-+# Check for memcpy(foo, bar, ETH_ALEN) that could be ether_addr_copy(foo, bar)
-+		if ($^V && $^V ge 5.10.0 &&
-+		    $line =~ /^\+(?:.*?)\bmemcpy\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*ETH_ALEN\s*\)/s) {
-+			if (WARN("PREFER_ETHER_ADDR_COPY",
-+				 "Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)\n" . $herecurr) &&
-+			    $fix) {
-+				$fixed[$linenr - 1] =~ s/\bmemcpy\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*ETH_ALEN\s*\)/ether_addr_copy($2, $7)/;
-+			}
-+		}
-+
- # typecasts on min/max could be min_t/max_t
- 		if ($^V && $^V ge 5.10.0 &&
- 		    defined $stat &&
+I can take this single patch via bluetooth-next tree or if Linus for example wants to take the whole series, then that is fine with me as well.
 
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+
+Regards
+
+Marcel
 
