@@ -1,85 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaAUMm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:42:28 -0500
-Received: from 76-95-110-109.host.sevstar.net ([109.110.95.76]:1716 "EHLO
-	seaborn.com.ua" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750842AbaAUMm0 (ORCPT
+	id S1754651AbaAUMpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:45:08 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:57254 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537AbaAUMpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:42:26 -0500
-Date: Tue, 21 Jan 2014 14:42:18 +0200
-Message-ID: <1034605906-3628@seaborn.com.ua>
-MIME-Version: 1.0
-From: Mail Delivery Subsystem <postmaster@seaborn.com.ua>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?Q?=D0=92=D0=BE=D0=B7=D0=B2=D1=80=D0=B0=D1=89=D0=B5=D0=BD?=
-	=?utf-8?Q?=D0=BD=D0=BE=D0=B5_=D1=81=D0=BE=D0=BE=D0=B1=D1=89?=
-	=?utf-8?Q?=D0=B5=D0=BD=D0=B8=D0=B5_=D1=8D=D0=BB=D0=B5=D0=BA?=
-	=?utf-8?Q?=D1=82=D1=80=D0=BE=D0=BD=D0=BD=D0=BE=D0=B9_=D0=BF?=
-	=?utf-8?Q?=D0=BE=D1=87=D1=82=D1=8B=3A_=D0=9C=D0=BE=D0=B6=D0=B5?=
-	=?utf-8?Q?=D0=BC_=D1=81o=D0=B1=D1=80=D0=B0=D1=82=D1=8C_=D0=B4?=
-	=?utf-8?Q?=D0=BB=D1=8F_=D0=92ac_=D0=BAo=D0=BD=D1=82ak=D1=82?=
-	=?utf-8?Q?=D1=8B_=D1=82o=D0=BB=D1=8Cko_Ba=D1=88=D0=B8=D1=85=20?=
-	=?utf-8?Q?=D0=BF=D0=BE=D1=82e=D0=BD=D1=86=D0=B8a=D0=BB=D1=8C?=
-	=?utf-8?Q?=D0=BD=D1=8Bx_k=D0=BB=D0=B8e=D0=BD=D1=82o=D0=B2=20?=
-	=?utf-8?Q?=D0=BDeck=D0=BE=D0=BB=D1=8C=D0=BA=D0=BE_=D0=B4ec=D1=8F?=
-	=?utf-8?Q?=D1=82k=D0=BE=D0=B2_=D1=82=D1=8Bc=D1=8F=D1=87_=D0=B2?=
-	=?utf-8?Q?_=D1=82=D0=B5=D1=87e=D0=BD=D0=B8=D0=B5_=D1=81=D1=83?=
-	=?utf-8?Q?=D1=82=D0=BE=D0=BA_=D0=A2=D0=B5=D0=BB=D0=B5=D1=84?=
-	=?utf-8?Q?=D0=BE=D0=BD=3A_+79831292529?=
-Content-Type: multipart/report; report-type=delivery-status;
-	boundary="MIME-1034605906-41-delim"
+	Tue, 21 Jan 2014 07:45:05 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: mturquette@linaro.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, mark.rutland@arm.com,
+        tomasz.figa@gmail.com, adam.jaremko@gmail.com,
+        sylvester.nawrocki@gmail.com, Sudeep.Holla@arm.com,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v10] clk: add MOXA ART SoCs clock driver
+Date: Tue, 21 Jan 2014 13:44:21 +0100
+Message-Id: <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
+References: <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---MIME-1034605906-41-delim
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+MOXA ART SoCs allow to determine PLL output and APB frequencies
+by reading registers holding multiplier and divisor information.
 
+Add a clock driver for this SoC.
 
-Это информационное сообщение передано сервером seaborn.com.ua. 
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-Сервер не смог доставить сообщение электронной почты 
+Notes:
+    Thanks for the reply Sudeep, changes are in v10.
+    
+    Changes since v9:
+    
+    1. rebase drivers/clk/Makefile to next-20140121
+    2. remove unnecessary switch
+    3. use a more elaborate commit message
+    
+    Applies to next-20140121
 
-  Subject: Можем сoбрать для Вac кoнтakты тoльko Baш� ...
-  Date: Tue, 21 Jan 2014 12:04:24 +0200
+ .../bindings/clock/moxa,moxart-clock.txt           | 48 +++++++++++
+ drivers/clk/Makefile                               |  1 +
+ drivers/clk/clk-moxart.c                           | 99 ++++++++++++++++++++++
+ 3 files changed, 148 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+ create mode 100644 drivers/clk/clk-moxart.c
 
-
-
-по следующим адресам:
-
-  <linux-kernel@vger.kernel.org> (seaborn.com.ua: Message was manually deleted from the queue)
---MIME-1034605906-41-delim
-Content-Type: message/delivery-status
-
-Reporting-MTA: dns; seaborn.com.ua
-Arrival-Date: Tue, 21 Jan 2014 12:04:05 +0200
-
-Original-Recipient: linux-kernel@vger.kernel.org
-Final-Recipient: rfc822;linux-kernel@vger.kernel.org
-Action: failed
-Status: 5.3.0
-Diagnostic-Code: SMTP; Message was manually deleted from the queue
-
---MIME-1034605906-41-delim
-Content-Type: text/rfc822-headers
-
-Date: Tue, 21 Jan 2014 12:04:24 +0200
-X-Spam-Status: No, hits=0.0 required=5.0
-	tests=TOTAL_SCORE: 0.000
-X-Spam-Level: 
-Received: from ngs.ru ([192.168.1.1])
-	by seaborn.com.ua
-	for linux-kernel@vger.kernel.org;
-	Tue, 21 Jan 2014 12:04:05 +0200
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
-	charset="windows-1251"
-From: <linux-kernel@vger.kernel.org>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?0JzQvtC20LXQvCDRgW/QsdGA0LDRgtGMINC00LvRjyDQkmFjINC6b9C90YJha9GC0Ysg0YJv0LvRjGtvIEJh0YjQuNGFINC/0L7RgmXQvdGG0Lhh0LvRjNC90Yt4IGvQu9C4ZdC90YJv0LIg0L1lY2vQvtC70YzQutC+INC0ZWPRj9GCa9C+0LIg0YLRi2PRj9GHINCyINGC0LXRh2XQvdC40LUg0YHRg9GC0L7QuiDQotC10LvQtdGE0L7QvTogKzc5ODMxMjkyNTI5?=
-
---MIME-1034605906-41-delim--
-
+diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+new file mode 100644
+index 0000000..242e3fc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+@@ -0,0 +1,48 @@
++Device Tree Clock bindings for arch-moxart
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++MOXA ART SoCs allow to determine PLL output and APB frequencies
++by reading registers holding multiplier and divisor information.
++
++
++PLL:
++
++Required properties:
++- compatible : Must be "moxa,moxart-pll-clock"
++- #clock-cells : Should be 0
++- reg : Should contain registers location and length
++- clocks : Should contain phandle to parent clock
++
++Optional properties:
++- clock-output-names : Should contain clock name
++
++
++APB:
++
++Required properties:
++- compatible : Must be "moxa,moxart-apb-clock"
++- #clock-cells : Should be 0
++- reg : Should contain registers location and length
++- clocks : Should contain phandle to parent clock
++
++Optional properties:
++- clock-output-names : Should contain clock name
++
++
++For example:
++
++	clk_pll: clk_pll@98100000 {
++		compatible = "moxa,moxart-pll-clock";
++		#clock-cells = <0>;
++		reg = <0x98100000 0x34>;
++	};
++
++	clk_apb: clk_apb@98100000 {
++		compatible = "moxa,moxart-apb-clock";
++		#clock-cells = <0>;
++		reg = <0x98100000 0x34>;
++		clocks = <&clk_pll>;
++	};
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 58b2d72..24361bf 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+ obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
++obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+ obj-$(CONFIG_ARCH_HI3xxx)	+= hisilicon/
+diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+new file mode 100644
+index 0000000..7021748
+--- /dev/null
++++ b/drivers/clk/clk-moxart.c
+@@ -0,0 +1,99 @@
++/*
++ * MOXA ART SoCs clock driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/clkdev.h>
++
++void __init moxart_of_pll_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct clk *clk, *ref_clk;
++	unsigned long rate;
++	unsigned int mul;
++	const char *name = node->name;
++
++	of_property_read_string(node, "clock-output-names", &name);
++
++	base = of_iomap(node, 0);
++	if (!base) {
++		pr_err("%s: of_iomap failed\n", node->full_name);
++		return;
++	}
++
++	mul = readl(base + 0x30) >> 3 & 0x3f;
++	iounmap(base);
++
++	ref_clk = of_clk_get(node, 0);
++	if (IS_ERR(ref_clk)) {
++		pr_err("%s: of_clk_get failed\n", node->full_name);
++		return;
++	}
++
++	rate = mul * clk_get_rate(ref_clk);
++
++	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++	if (IS_ERR(clk)) {
++		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
++		return;
++	}
++
++	clk_register_clkdev(clk, NULL, name);
++	of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
++	       moxart_of_pll_clk_init);
++
++void __init moxart_of_apb_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct clk *clk, *pll_clk;
++	unsigned long rate;
++	unsigned int div, val;
++	unsigned int div_idx[] = { 2, 3, 4, 6, 8};
++	const char *name = node->name;
++
++	of_property_read_string(node, "clock-output-names", &name);
++
++	base = of_iomap(node, 0);
++	if (!base) {
++		pr_err("%s: of_iomap failed\n", node->full_name);
++		return;
++	}
++
++	val = readl(base + 0xc) >> 4 & 0x7;
++	iounmap(base);
++
++	if (val > 4)
++		val = 0;
++	div = div_idx[val];
++
++	pll_clk = of_clk_get(node, 0);
++	if (IS_ERR(pll_clk)) {
++		pr_err("%s: of_clk_get failed\n", node->full_name);
++		return;
++	}
++
++	rate = clk_get_rate(pll_clk) / (div * 2);
++
++	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++	if (IS_ERR(clk)) {
++		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
++		return;
++	}
++
++	clk_register_clkdev(clk, NULL, name);
++	of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++CLK_OF_DECLARE(moxart_apb_clock, "moxa,moxart-apb-clock",
++	       moxart_of_apb_clk_init);
+-- 
+1.8.2.1
 
