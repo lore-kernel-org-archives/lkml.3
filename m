@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaAUVYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:24:43 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56244 "EHLO
+	id S932240AbaAUVpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:45:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56280 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965AbaAUVYd (ORCPT
+	with ESMTP id S1754287AbaAUVYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:24:33 -0500
+	Tue, 21 Jan 2014 16:24:42 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH 13/73] powerpc: use subsys_initcall for Freescale Local Bus
-Date: Tue, 21 Jan 2014 16:22:16 -0500
-Message-ID: <1390339396-3479-14-git-send-email-paul.gortmaker@windriver.com>
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        <linux-ia64@vger.kernel.org>
+Subject: [PATCH 26/73] ia64: don't use module_init in non-modular sim/simscsi.c code
+Date: Tue, 21 Jan 2014 16:22:29 -0500
+Message-ID: <1390339396-3479-27-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -28,9 +25,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSL_SOC option is bool, and hence this code is either
-present or absent.  It will never be modular, so using
-module_init as an alias for __initcall is rather misleading.
+The simscsi.o is built for HP_SIMSCSI -- which is bool, and hence
+this code is either present or absent.  It will never be modular,
+so using module_init as an alias for __initcall can be somewhat
+misleading.
 
 Fix this up now, so that we can relocate module_init from
 init.h into module.h in the future.  If we don't do this, we'd
@@ -39,33 +37,41 @@ would be a worse thing.
 
 Note that direct use of __initcall is discouraged, vs. one
 of the priority categorized subgroups.  As __initcall gets
-mapped onto device_initcall, our use of subsys_initcall (which
-makes sense for bus code) will thus change this registration
-from level 6-device to level 4-subsys (i.e. slightly earlier).
-However no observable impact of that small difference has
-been observed during testing, or is expected.
+mapped onto device_initcall, our use of device_initcall
+directly in this change means that the runtime impact is
+zero -- it will remain at level 6 in initcall ordering.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Scott Wood <scottwood@freescale.com>
-Acked-by: Scott Wood <scottwood@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org
+And since it can't be modular, we remove all the __exitcall
+stuff related to module_exit() -- it is dead code that won't
+ever be executed.
+
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/powerpc/sysdev/fsl_lbc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/ia64/hp/sim/simscsi.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_lbc.c b/arch/powerpc/sysdev/fsl_lbc.c
-index d631022..38138cf 100644
---- a/arch/powerpc/sysdev/fsl_lbc.c
-+++ b/arch/powerpc/sysdev/fsl_lbc.c
-@@ -407,4 +407,4 @@ static int __init fsl_lbc_init(void)
- {
- 	return platform_driver_register(&fsl_lbc_ctrl_driver);
+diff --git a/arch/ia64/hp/sim/simscsi.c b/arch/ia64/hp/sim/simscsi.c
+index 3a428f1..085047f 100644
+--- a/arch/ia64/hp/sim/simscsi.c
++++ b/arch/ia64/hp/sim/simscsi.c
+@@ -368,13 +368,4 @@ simscsi_init(void)
+ 	scsi_host_put(host);
+ 	return error;
  }
--module_init(fsl_lbc_init);
-+subsys_initcall(fsl_lbc_init);
+-
+-static void __exit
+-simscsi_exit(void)
+-{
+-	scsi_remove_host(host);
+-	scsi_host_put(host);
+-}
+-
+-module_init(simscsi_init);
+-module_exit(simscsi_exit);
++device_initcall(simscsi_init);
 -- 
 1.8.4.1
 
