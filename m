@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaAUVTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:19:19 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62624 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaAUVTR (ORCPT
+	id S1753814AbaAUVVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:21:08 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:10085 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaAUVVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:19:17 -0500
-Date: Tue, 21 Jan 2014 13:18:42 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
- in mem_cgroup_iter
-In-Reply-To: <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
-Message-ID: <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
-References: <20140121083454.GA1894@dhcp22.suse.cz> <1390301143-9541-1-git-send-email-mhocko@suse.cz> <1390301143-9541-2-git-send-email-mhocko@suse.cz> <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Jan 2014 16:21:05 -0500
+Message-ID: <1390338897.1792.467.camel@misato.fc.hp.com>
+Subject: Re: [Patch v1 1/3] ACPI: add callback prepare() into
+ acpi_hotplug_handler
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@acpica.org
+Date: Tue, 21 Jan 2014 14:14:57 -0700
+In-Reply-To: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1390013297-23462-1-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jan 2014, Andrew Morton wrote:
-> On Tue, 21 Jan 2014 11:45:43 +0100 Michal Hocko <mhocko@suse.cz> wrote:
+On Sat, 2014-01-18 at 10:48 +0800, Jiang Liu wrote:
+> Add callback prepare() into acpi_hotplug_handler, which will get called
+> at the very beginning of ACPI hotplug event handler. The ACPI core will
+> ignore the event if prepare() returns NOTIFY_STOP.
 > 
-> > 19f39402864e (memcg: simplify mem_cgroup_iter) has reorganized
-> > mem_cgroup_iter code in order to simplify it. A part of that change was
-> > dropping an optimization which didn't call css_tryget on the root of
-> > the walked tree. The patch however didn't change the css_put part in
-> > mem_cgroup_iter which excludes root.
-> > This wasn't an issue at the time because __mem_cgroup_iter_next bailed
-> > out for root early without taking a reference as cgroup iterators
-> > (css_next_descendant_pre) didn't visit root themselves.
-> > 
-> > Nevertheless cgroup iterators have been reworked to visit root by
-> > bd8815a6d802 (cgroup: make css_for_each_descendant() and friends include
-> > the origin css in the iteration) when the root bypass have been dropped
-> > in __mem_cgroup_iter_next. This means that css_put is not called for
-> > root and so css along with mem_cgroup and other cgroup internal object
-> > tied by css lifetime are never freed.
-> > 
-> > Fix the issue by reintroducing root check in __mem_cgroup_iter_next
-> > and do not take css reference for it.
-> > 
-> > This reference counting magic protects us also from another issue, an
-> > endless loop reported by Hugh Dickins when reclaim races with root
-> > removal and css_tryget called by iterator internally would fail. There
-> > would be no other nodes to visit so __mem_cgroup_iter_next would return
-> > NULL and mem_cgroup_iter would interpret it as "start looping from root
-> > again" and so mem_cgroup_iter would loop forever internally.
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/acpi/scan.c     |    4 ++++
+>  include/acpi/acpi_bus.h |    1 +
+>  2 files changed, 5 insertions(+)
 > 
-> I grabbed these two patches but I will sit on them for a week or so,
-> pending review-n-test.
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index fd39459..6b0f419 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -392,6 +392,10 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+>  	struct acpi_device *adev;
+>  	acpi_status status;
+>  
+> +	if (handler->prepare &&
+> +	    handler->prepare(handle, type, data) == NOTIFY_STOP)
+> +		return;
 
-Thank you, yes, I'm about to give them more testing.
+The OS is responsible for calling _OST when it is implemented.  So you
+cannot just return here.  See acpi_hotplug_unsupported(handle, type)
+next line.  Also, please describe why prepare() needs to be added.
 
-> 
-> > Cc: stable@vger.kernel.org # mem_leak part 3.12+
-> 
-> What does this mean?
+Thanks,
+-Toshi
 
-It's certainly a confusing comment.
 
-I suggest just deleting the "mem_leak part ": Michal isn't referring to
-any two parts of the patch itself, but to parts of his commit comment;
-but it's still unclear what he's claiming.
 
-We do have a confusing situation.  The hang goes back to 3.10 but takes
-two different forms, because of intervening changes: in 3.10 and 3.11
-mem_cgroup_iter repeatedly returns root memcg to its caller, in 3.12 and
-3.13 mem_cgroup_iter repeatedly gets NULL memcg from mem_cgroup_iter_next
-and cannot return to its caller.
+> +
+>  	if (!handler->hotplug.enabled)
+>  		return acpi_hotplug_unsupported(handle, type);
+>  
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index ddabed1..09a73bd 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -113,6 +113,7 @@ static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
+>  struct acpi_scan_handler {
+>  	const struct acpi_device_id *ids;
+>  	struct list_head list_node;
+> +	int (*prepare)(acpi_handle handle, u32 type, void *context);
+>  	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
+>  	void (*detach)(struct acpi_device *dev);
+>  	struct acpi_hotplug_profile hotplug;
 
-Patch 1/2 is what's needed to fix 3.10 and 3.11 (and applies correctly
-to 3.11, but will have to be rediffed for 3.10 because of rearrangement
-in between).  Patch 2/2 is what's needed to fix 3.12 and 3.13 (but applies
-correctly to neither of them because it's diffed on top of my CSS_ONLINE
-fix).  Patch 1/2 is correct but unnecessary in 3.12 and 3.13: I'm unclear
-whether Michal is claiming that it would also fix the hang in 3.12 and
-3.13 if we didn't have 2/2: I doubt that, and haven't tested that.
 
-Given how Michal has diffed this patch on top of my CSS_ONLINE one
-(mm-memcg-iteration-skip-memcgs-not-yet-fully-initialized.patch),
-it would be helpful if you could mark that one also for stable 3.12+,
-to save us from having to rediff this one for stable.  We don't have
-a concrete example of a problem it solves in the vanilla kernel, but
-it makes more sense to include it than to exclude it.
-
-(You would be right to point out that the CSS_ONLINE one fixes
-something that goes back to 3.10: I'm saying 3.12+ because I'm not
-motivated to rediff it for 3.10 and 3.11 when there's nothing to
-go on top; but that's not a very good reason to lie - overrule me.)
-
-Hugh
