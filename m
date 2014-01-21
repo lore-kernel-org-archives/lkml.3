@@ -1,227 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750997AbaAUFvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:51:17 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:49971 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750740AbaAUFvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:51:06 -0500
-Date: Tue, 21 Jan 2014 00:50:17 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20140121055017.GT6963@cmpxchg.org>
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
- <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
- <20140117000517.GB18112@dastard>
- <20140120231737.GS6963@cmpxchg.org>
- <20140121030358.GN18112@dastard>
+	id S1752224AbaAUFxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:53:51 -0500
+Received: from mail-gg0-f176.google.com ([209.85.161.176]:37886 "EHLO
+	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaAUFxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 00:53:46 -0500
+Date: Mon, 20 Jan 2014 21:53:42 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Xishi Qiu <qiuxishi@huawei.com>
+cc: robin.yb@huawei.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] fs: don't write pages when receiving a pending SIGKILL
+ in __get_user_pages()
+In-Reply-To: <52D9D6F2.2030003@huawei.com>
+Message-ID: <alpine.DEB.2.02.1401202151500.21729@chino.kir.corp.google.com>
+References: <52D9D6F2.2030003@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121030358.GN18112@dastard>
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-2044261302-1390283624=:21729"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 02:03:58PM +1100, Dave Chinner wrote:
-> On Mon, Jan 20, 2014 at 06:17:37PM -0500, Johannes Weiner wrote:
-> > On Fri, Jan 17, 2014 at 11:05:17AM +1100, Dave Chinner wrote:
-> > > On Fri, Jan 10, 2014 at 01:10:43PM -0500, Johannes Weiner wrote:
-> > > > +	/* Only shadow entries in there, keep track of this node */
-> > > > +	if (!(node->count & RADIX_TREE_COUNT_MASK) &&
-> > > > +	    list_empty(&node->private_list)) {
-> > > > +		node->private_data = mapping;
-> > > > +		list_lru_add(&workingset_shadow_nodes, &node->private_list);
-> > > > +	}
-> > > 
-> > > You can't do this list_empty(&node->private_list) check safely
-> > > externally to the list_lru code - only time that entry can be
-> > > checked safely is under the LRU list locks. This is the reason that
-> > > list_lru_add/list_lru_del return a boolean to indicate is the object
-> > > was added/removed from the list - they do this list_empty() check
-> > > internally. i.e. the correct, safe way to do conditionally update
-> > > state iff the object was added to the LRU is:
-> > > 
-> > > 	if (!(node->count & RADIX_TREE_COUNT_MASK)) {
-> > > 		if (list_lru_add(&workingset_shadow_nodes, &node->private_list))
-> > > 			node->private_data = mapping;
-> > > 	}
-> > > 
-> > > > +	radix_tree_replace_slot(slot, page);
-> > > > +	mapping->nrpages++;
-> > > > +	if (node) {
-> > > > +		node->count++;
-> > > > +		/* Installed page, can't be shadow-only anymore */
-> > > > +		if (!list_empty(&node->private_list))
-> > > > +			list_lru_del(&workingset_shadow_nodes,
-> > > > +				     &node->private_list);
-> > > > +	}
-> > > 
-> > > Same issue here:
-> > > 
-> > > 	if (node) {
-> > > 		node->count++;
-> > > 		list_lru_del(&workingset_shadow_nodes, &node->private_list);
-> > > 	}
-> > 
-> > All modifications to node->private_list happen under
-> > mapping->tree_lock, and modifications of a neighboring link should not
-> > affect the outcome of the list_empty(), so I don't think the lru lock
-> > is necessary.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--531381512-2044261302-1390283624=:21729
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+
+On Sat, 18 Jan 2014, Xishi Qiu wrote:
+
+> In the process IO direction, dio_refill_pages will call get_user_pages_fast 
+> to map the page from user space. If ret is less than 0 and IO is write, the 
+> function will create a zero page to fill data. This may work for some file 
+> system, but in some device operate we prefer whole write or fail, not half 
+> data half zero, e.g. fs metadata, like inode, identy.
+
+So you're attemping to define a behavior for all users of direct IO for a 
+problem that is filesystem or backing device dependent?  Perhaps if you 
+elaborated on the problem that you're seeing then we could address it.
+
+> This happens often when kill a process which is doing direct IO. Consider 
+> the following cases, the process A is doing IO process, may enter __get_user_pages 
+> function, if other processes send process A SIG_KILL, A will enter the 
+> following branches 
+> 		/*
+> 		 * If we have a pending SIGKILL, don't keep faulting
+> 		 * pages and potentially allocating memory.
+> 		 */
+> 		if (unlikely(fatal_signal_pending(current)))
+> 			return i ? i : -ERESTARTSYS;
+> Return current pages. direct IO will write the pages, the subsequent pages 
+> which can’t get will use zero page instead. 
 > 
-> Can you please add that as a comment somewhere explaining why it is
-> safe to do this?
-
-Absolutely.
-
-> > > > +		case LRU_REMOVED_RETRY:
-> > > >  			if (--nlru->nr_items == 0)
-> > > >  				node_clear(nid, lru->active_nodes);
-> > > >  			WARN_ON_ONCE(nlru->nr_items < 0);
-> > > >  			isolated++;
-> > > > +			/*
-> > > > +			 * If the lru lock has been dropped, our list
-> > > > +			 * traversal is now invalid and so we have to
-> > > > +			 * restart from scratch.
-> > > > +			 */
-> > > > +			if (ret == LRU_REMOVED_RETRY)
-> > > > +				goto restart;
-> > > >  			break;
-> > > >  		case LRU_ROTATE:
-> > > >  			list_move_tail(item, &nlru->list);
-> > > 
-> > > I think that we need to assert that the list lru lock is correctly
-> > > held here on return with LRU_REMOVED_RETRY. i.e.
-> > > 
-> > > 		case LRU_REMOVED_RETRY:
-> > > 			assert_spin_locked(&nlru->lock);
-> > > 		case LRU_REMOVED:
-> > 
-> > Ah, good idea.  How about adding it to LRU_RETRY as well?
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> Signed-off-by: Bin Yang <robin.yb@huawei.com>
+> ---
+>  fs/direct-io.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> Yup, good idea.
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 0e04142..b74d565 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -174,6 +174,9 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+>  		&dio->pages[0]);		/* Put results here */
+>  
+>  	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
+> +		/* If task is killed, do not write anymore */
+> +		if (ret == -ERESTARTSYS)
+> +			goto out;
+>  		struct page *page = ZERO_PAGE(0);
+>  		/*
+>  		 * A memory fault, but the filesystem has some outstanding
 
-Ok, will do.
-
-> > > > +static struct shrinker workingset_shadow_shrinker = {
-> > > > +	.count_objects = count_shadow_nodes,
-> > > > +	.scan_objects = scan_shadow_nodes,
-> > > > +	.seeks = DEFAULT_SEEKS * 4,
-> > > > +	.flags = SHRINKER_NUMA_AWARE,
-> > > > +};
-> > > 
-> > > Can you add a comment explaining how you calculated the .seeks
-> > > value? It's important to document the weighings/importance
-> > > we give to slab reclaim so we can determine if it's actually
-> > > acheiving the desired balance under different loads...
-> > 
-> > This is not an exact science, to say the least.
-> 
-> I know, that's why I asked it be documented rather than be something
-> kept in your head.
-> 
-> > The shadow entries are mostly self-regulated, so I don't want the
-> > shrinker to interfere while the machine is just regularly trimming
-> > caches during normal operation.
-> > 
-> > It should only kick in when either a) reclaim is picking up and the
-> > scan-to-reclaim ratio increases due to mapped pages, dirty cache,
-> > swapping etc. or b) the number of objects compared to LRU pages
-> > becomes excessive.
-> > 
-> > I think that is what most shrinkers with an elevated seeks value want,
-> > but this translates very awkwardly (and not completely) to the current
-> > cost model, and we should probably rework that interface.
-> > 
-> > "Seeks" currently encodes 3 ratios:
-> > 
-> >   1. the cost of creating an object vs. a page
-> > 
-> >   2. the expected number of objects vs. pages
-> 
-> It doesn't encode that at all. If it did, then the default value
-> wouldn't be "2".
->
-> >   3. the cost of reclaiming an object vs. a page
-> 
-> Which, when you consider #3 in conjunction with #1, the actual
-> intended meaning of .seeks is "the cost of replacing this object in
-> the cache compared to the cost of replacing a page cache page."
-
-But what it actually seems to do is translate scan rate from LRU pages
-to scan rate in another object pool.  The actual replacement cost
-varies based on hotness of each set, an in-use object is more
-expensive to replace than a cold page and vice versa, the dentry and
-inode shrinkers reflect this by rotating hot objects and refusing to
-actually reclaim items while they are in active use.
-
-So I am having a hard time deriving a meaningful value out of this
-definition for my usecase because I want to push back objects based on
-reclaim efficiency (scan rate vs. reclaim rate).  The other shrinkers
-with non-standard seek settings reek of magic number as well, which
-suggests I am not alone with this.
-
-I wonder if we can come up with a better interface that allows both
-traditional cache shrinkers with their own aging, as well as object
-pools that want to push back based on reclaim efficiency.
-
-> > but they are not necessarily correlated.  How I would like to
-> > configure the shadow shrinker instead is:
-> > 
-> >   o scan objects when reclaim efficiency is down to 75%, because they
-> >     are more valuable than use-once cache but less than workingset
-> > 
-> >   o scan objects when the ratio between them and the number of pages
-> >     exceeds 1/32 (one shadow entry for each resident page, up to 64
-> >     entries per shrinkable object, assume 50% packing for robustness)
-> > 
-> >   o as the expected balance between objects and lru pages is 1:32,
-> >     reclaim one object for every 32 reclaimed LRU pages, instead of
-> >     assuming that number of scanned pages corresponds meaningfully to
-> >     number of objects to scan.
-> 
-> You're assuming that every radix tree node has a full population of
-> pages. This only occurs on sequential read and write workloads, and
-> so isn't going tobe true for things like mapped executables or any
-> semi-randomly accessed data set...
-
-No, I'm assuming 50% population on average for that reason.  I don't
-know how else I could assign a fixed value to a variable object.
-
-> > "4" just doesn't have the same ring to it.
-> 
-> Right, but you still haven't explained how you came to the value of
-> "4"....
-
-It's a complete magic number.  The tests I ran suggested lower numbers
-throw out shadow entries prematurely, whereas higher numbers thrash
-the working set while there are plenty radix tree nodes present.
-
-> > It would be great if we could eliminate the reclaim cost assumption by
-> > turning the nr_to_scan into a nr_to_reclaim, and then set the other
-> > two ratios independently.
-> 
-> That doesn't work for caches that are full of objects that can't (or
-> won't) be reclaimed immediately. The CPU cost of repeatedly scanning
-> to find N reclaimable objects when you have millions of objects in
-> the cache is prohibitive.
-
-That is true.
+We don't mix declarations and text, please try to compile your patches 
+before proposing them.
+--531381512-2044261302-1390283624=:21729--
