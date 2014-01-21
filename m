@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaAURNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 12:13:25 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:60572 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaAURNU (ORCPT
+	id S1755202AbaAURNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 12:13:09 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32910 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754788AbaAURNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 12:13:20 -0500
-Date: Tue, 21 Jan 2014 17:13:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 1/4 v3] mfd: tc3589x: Add device tree bindings
-Message-ID: <20140121171313.GC27111@lee--X1>
-References: <1384265558-10521-1-git-send-email-linus.walleij@linaro.org>
- <CACRpkdZoEwgRALT0R8vWB1aWxR_WCR2U0b1yF0Mr0qNm0LDGug@mail.gmail.com>
+	Tue, 21 Jan 2014 12:13:06 -0500
+Date: Tue, 21 Jan 2014 17:12:34 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] Use __kernel_long_t in struct timex
+Message-ID: <20140121171233.GE20798@arm.com>
+References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
+ <1388165112-6545-2-git-send-email-hjl.tools@gmail.com>
+ <20140121165803.GC20798@arm.com>
+ <52DEA84D.2090306@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZoEwgRALT0R8vWB1aWxR_WCR2U0b1yF0Mr0qNm0LDGug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52DEA84D.2090306@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This defines the device tree bindings for the Toshiba TC3589x
-> > series of multi-purpose expanders. Only the stuff I can test
-> > is defined: GPIO and keypad. Others may implement more
-> > subdevices further down the road.
-> >
-> > This is to complement
-> > commit a435ae1d51e2f18414f2a87219fdbe068231e692
-> > "mfd: Enable the tc3589x for Device Tree" which left off
-> > the definition of the device tree bindings.
-> >
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> > ---
-> > ChangeLog v2->v3:
-> > - Fix the keys/rows bindings to be u32 rather than
-> >   /bits/ 8, inconsistency noted by Mark Rutland.
-> > ChangeLog v1->v2:
-> > - Include a verbose example in the DT bindings.
-> > - Explain why this is a stand-alone bindings patch.
+On Tue, Jan 21, 2014 at 05:03:09PM +0000, H. Peter Anvin wrote:
+> On 01/21/2014 08:58 AM, Catalin Marinas wrote:
+> > BTW, could we not avoid the #if and always use __kernel_long_t? This
+> > wouldn't break the user ABI.
 > 
-> So will this since Nov 12 uncommented-upon patch be merged or
-> do you want me to do some change?
-> 
-> There was some back-and-forth regarding the (existing, already
-> in use) linux-specific input bindings but the only thing I can
-> see is some back and forth leaning toward just letting these
-> be used.
+> Ah yes, this is the wrong version of the patchset.  I already gave that
+> feedback and H.J. posted an update.  My bad.
 
-We still need a DT Ack.
-
-> I am happy to change this in whatever way but no directions
-> for two months....
-
-If it had slipped though the gaps, I'd probably suggest poking or
-re-sending before the middle of the merge-window though.
+Ah, I have to dig a newer version then.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Catalin
