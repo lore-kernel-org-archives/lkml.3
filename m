@@ -1,205 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaAUDHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 22:07:50 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:57041 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353AbaAUDHn (ORCPT
+	id S1753742AbaAUDLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 22:11:40 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:62145 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaAUDL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 22:07:43 -0500
+	Mon, 20 Jan 2014 22:11:27 -0500
 MIME-Version: 1.0
-Date: Tue, 21 Jan 2014 11:07:42 +0800
-Message-ID: <CAFLCcBqyhL=wfC4uJmpp9MkGExBuPJC4EqY2RHRngnEn_1ytSA@mail.gmail.com>
-Subject: Re: [PATCH v2] mm/zswap: Check all pool pages instead of one pool pages
-From: Cai Liu <liucai.lfn@gmail.com>
-To: Minchan Kim <minchan@kernel.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Bob Liu <bob.liu@oracle.com>
-Cc: Cai Liu <cai.liu@samsung.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Baidu Boy <Liucai.lfn@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CACRpkdZOD4zeA8T5kbJ4c5NsnuzHCg1mw8rRMYNT9c4R-Qnc6A@mail.gmail.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+ <1389941251-32692-5-git-send-email-wens@csie.org> <201401171747.46332.arnd@arndb.de>
+ <CAGb2v67UKiyfJbKZ_Frk3OwZupMPoA2Ck3Hj2zsRFXBQPztavg@mail.gmail.com> <CACRpkdZOD4zeA8T5kbJ4c5NsnuzHCg1mw8rRMYNT9c4R-Qnc6A@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 21 Jan 2014 12:11:06 +0900
+Message-ID: <CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
+Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree <devicetree@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your review.
-
-2014/1/21 Minchan Kim <minchan@kernel.org>:
-> Hello Cai,
+On Sat, Jan 18, 2014 at 8:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Jan 17, 2014 at 6:43 PM, Chen-Yu Tsai <wens@csie.org> wrote:
+>> On Sat, Jan 18, 2014 at 12:47 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 >
-> On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
->> zswap can support multiple swapfiles. So we need to check
->> all zbud pool pages in zswap.
+>>>> +- NAME_shutdown-gpios  : GPIO phandle to shutdown control
+>>>> +                         (phandle must be the second)
+>>>> +- NAME_reset-gpios     : GPIO phandle to reset control
+>>>> +
+>>>> +NAME must match the rfkill-name property. NAME_shutdown-gpios or
+>>>> +NAME_reset-gpios, or both, must be defined.
+>>>> +
+>>>
+>>> I don't understand this part. Why do you include the name in the
+>>> gpios property, rather than just hardcoding the property strings
+>>> to "shutdown-gpios" and "reset-gpios"?
 >>
->> Version 2:
->>   * add *total_zbud_pages* in zbud to record all the pages in pools
->>   * move the updating of pool pages statistics to
->>     alloc_zbud_page/free_zbud_page to hide the details
->>
->> Signed-off-by: Cai Liu <cai.liu@samsung.com>
->> ---
->>  include/linux/zbud.h |    2 +-
->>  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
->>  mm/zswap.c           |    4 ++--
->>  3 files changed, 35 insertions(+), 15 deletions(-)
->>
->> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
->> index 2571a5c..1dbc13e 100644
->> --- a/include/linux/zbud.h
->> +++ b/include/linux/zbud.h
->> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
->>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
->>  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
->>  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
->> -u64 zbud_get_pool_size(struct zbud_pool *pool);
->> +u64 zbud_get_pool_size(void);
->>
->>  #endif /* _ZBUD_H_ */
->> diff --git a/mm/zbud.c b/mm/zbud.c
->> index 9451361..711aaf4 100644
->> --- a/mm/zbud.c
->> +++ b/mm/zbud.c
->> @@ -52,6 +52,13 @@
->>  #include <linux/spinlock.h>
->>  #include <linux/zbud.h>
->>
->> +/*********************************
->> +* statistics
->> +**********************************/
->> +
->> +/* zbud pages in all pools */
->> +static u64 total_zbud_pages;
->> +
->>  /*****************
->>   * Structures
->>  *****************/
->> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
->>       return zhdr;
->>  }
->>
->> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
->> +{
->> +     struct page *page;
->> +
->> +     page = alloc_page(gfp);
->> +
->> +     if (page) {
->> +             pool->pages_nr++;
->> +             total_zbud_pages++;
+>> This quirk is a result of how gpiod_get_index implements device tree
+>> lookup.
 >
-> Who protect race?
-
-Yes, here the pool->pages_nr and also the total_zbud_pages are not protected.
-I will re-do it.
-
-I will change *total_zbud_pages* to atomic type.
-For *pool->pages_nr*, one way is to use pool->lock to protect. But I
-think it is too heavy.
-So does it ok to change pages_nr to atomic type too?
-
-
+> Why can't it just have a single property "gpios", where the first
+> element is the reset GPIO and the second is the shutdown GPIO?
 >
->> +     }
->> +
->> +     return page;
->> +}
->> +
->> +
->>  /* Resets the struct page fields and frees the page */
->> -static void free_zbud_page(struct zbud_header *zhdr)
->> +static void free_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
->>  {
->>       __free_page(virt_to_page(zhdr));
->> +
->> +     pool->pages_nr--;
->> +     total_zbud_pages--;
->>  }
->>
->>  /*
->> @@ -279,11 +304,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->>
->>       /* Couldn't find unbuddied zbud page, create new one */
->>       spin_unlock(&pool->lock);
->> -     page = alloc_page(gfp);
->> +     page = alloc_zbud_page(pool, gfp);
->>       if (!page)
->>               return -ENOMEM;
->>       spin_lock(&pool->lock);
->> -     pool->pages_nr++;
->>       zhdr = init_zbud_page(page);
->>       bud = FIRST;
->>
->> @@ -349,8 +373,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->>       if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
->>               /* zbud page is empty, free */
->>               list_del(&zhdr->lru);
->> -             free_zbud_page(zhdr);
->> -             pool->pages_nr--;
->> +             free_zbud_page(pool, zhdr);
->>       } else {
->>               /* Add to unbuddied list */
->>               freechunks = num_free_chunks(zhdr);
->> @@ -447,8 +470,7 @@ next:
->>                        * Both buddies are now free, free the zbud page and
->>                        * return success.
->>                        */
->> -                     free_zbud_page(zhdr);
->> -                     pool->pages_nr--;
->> +                     free_zbud_page(pool, zhdr);
->>                       spin_unlock(&pool->lock);
->>                       return 0;
->>               } else if (zhdr->first_chunks == 0 ||
->> @@ -496,14 +518,12 @@ void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
->>
->>  /**
->>   * zbud_get_pool_size() - gets the zbud pool size in pages
->> - * @pool:    pool whose size is being queried
->>   *
->> - * Returns: size in pages of the given pool.  The pool lock need not be
->> - * taken to access pages_nr.
->> + * Returns: size in pages of all the zbud pools.
->>   */
->> -u64 zbud_get_pool_size(struct zbud_pool *pool)
->> +u64 zbud_get_pool_size(void)
->>  {
->> -     return pool->pages_nr;
->> +     return total_zbud_pages;
->>  }
->>
->>  static int __init init_zbud(void)
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index 5a63f78..ef44d9d 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -291,7 +291,7 @@ static void zswap_free_entry(struct zswap_tree *tree,
->>       zbud_free(tree->pool, entry->handle);
->>       zswap_entry_cache_free(entry);
->>       atomic_dec(&zswap_stored_pages);
->> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
->> +     zswap_pool_pages = zbud_get_pool_size();
->>  }
->>
->>  /* caller must hold the tree lock */
->> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->>
->>       /* update stats */
->>       atomic_inc(&zswap_stored_pages);
->> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
->> +     zswap_pool_pages = zbud_get_pool_size();
->>
->>       return 0;
->>
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> rfkill-gpio does this:
 >
-> --
-> Kind regards,
-> Minchan Kim
+> gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+> gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
+>
+> The passed con ID name parameter is only there for the device
+> tree case it seems. (ACPI ignores it.) So what about you just
+> don't pass it at all and patch it to do like this instead:
+>
+> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 0);
+> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 1);
+>
+> Heikki, are you OK with this change?
+>
+> I think this is actually necessary if the ACPI and DT unification
+> pipe dream shall limp forward, we cannot have arguments passed
+> that have a semantic effect on DT but not on ACPI... Drivers
+> that are supposed to use both ACPI and DT will always
+> have to pass NULL as con ID.
+
+I agree that's how it should be be done with the current API if your
+driver can obtain GPIOs from both ACPI and DT. This is a potential
+issue, as drivers are not supposed to make assumptions about who is
+going to be their GPIO provider. Let's say you started a driver with
+only DT in mind, and used gpio_get(dev, con_id) to get your GPIOs. DT
+bindings are thus of the form "con_id-gpio = <phandle>", and set in
+stone. Then later, someone wants to use your driver with ACPI. How do
+you handle that gracefully?
+
+I'm starting to wonder, now that ACPI is a first-class GPIO provider,
+whether we should not start to encourage the deprecation of the
+"con_id-gpio = <phandle>" binding form in DT and only use a single
+indexed GPIO property per device. The con_id parameter would then only
+be used as a label, which would also have the nice side-effect that
+all GPIOs used for a given function will be reported under the same
+name no matter what the GPIO provider is.
+
+>From an aesthetic point of view, I definitely prefer using con_id to
+identify GPIOs instead of indexes, but I don't see how we can make it
+play nice with ACPI. Thoughts?
+
+Alex.
