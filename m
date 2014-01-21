@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaAUWWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:22:30 -0500
-Received: from mail-gg0-f176.google.com ([209.85.161.176]:46671 "EHLO
-	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274AbaAUWWZ (ORCPT
+	id S1754863AbaAUWWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:22:42 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:44382 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaAUWWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:22:25 -0500
-Date: Tue, 21 Jan 2014 14:22:21 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <dchinner@redhat.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 1/3] mm: vmscan: shrink_slab: rename max_pass ->
- freeable
-In-Reply-To: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
-Message-ID: <alpine.DEB.2.02.1401211420460.1666@chino.kir.corp.google.com>
-References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1552005430-1390342917=:1666"
-Content-ID: <alpine.DEB.2.02.1401211422020.1666@chino.kir.corp.google.com>
+	Tue, 21 Jan 2014 17:22:40 -0500
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: [PATCH 7/9] numa,sched: do statistics calculation using local variables only
+Date: Tue, 21 Jan 2014 17:20:09 -0500
+Message-Id: <1390342811-11769-8-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1390342811-11769-1-git-send-email-riel@redhat.com>
+References: <1390342811-11769-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Rik van Riel <riel@redhat.com>
 
---531381512-1552005430-1390342917=:1666
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.02.1401211422021.1666@chino.kir.corp.google.com>
+The current code in task_numa_placement calculates the difference
+between the old and the new value, but also temporarily stores half
+of the old value in the per-process variables.
 
-On Fri, 17 Jan 2014, Vladimir Davydov wrote:
+The NUMA balancing code looks at those per-process variables, and
+having other tasks temporarily see halved statistics could lead to
+unwanted numa migrations. This can be avoided by doing all the math
+in local variables.
 
-> The name `max_pass' is misleading, because this variable actually keeps
-> the estimate number of freeable objects, not the maximal number of
-> objects we can scan in this pass, which can be twice that. Rename it to
-> reflect its actual meaning.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Dave Chinner <dchinner@redhat.com>
-> Cc: Glauber Costa <glommer@gmail.com>
+This change also simplifies the code a little.
 
-This doesn't compile on linux-next:
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Chegu Vinod <chegu_vinod@hp.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-mm/vmscan.c: In function ‘shrink_slab_node’:
-mm/vmscan.c:300:23: error: ‘max_pass’ undeclared (first use in this function)
-mm/vmscan.c:300:23: note: each undeclared identifier is reported only once for each function it appears in
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bd2100c..f713f3a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1518,12 +1518,9 @@ static void task_numa_placement(struct task_struct *p)
+ 			long diff, f_diff, f_weight;
+ 
+ 			i = task_faults_idx(nid, priv);
+-			diff = -p->numa_faults_memory[i];
+-			f_diff = -p->numa_faults_cpu[i];
+ 
+ 			/* Decay existing window, copy faults since last scan */
+-			p->numa_faults_memory[i] >>= 1;
+-			p->numa_faults_memory[i] += p->numa_faults_buffer_memory[i];
++			diff = p->numa_faults_buffer_memory[i] - p->numa_faults_memory[i] / 2;
+ 			fault_types[priv] += p->numa_faults_buffer_memory[i];
+ 			p->numa_faults_buffer_memory[i] = 0;
+ 
+@@ -1537,13 +1534,12 @@ static void task_numa_placement(struct task_struct *p)
+ 			f_weight = (16384 * runtime *
+ 				   p->numa_faults_buffer_cpu[i]) /
+ 				   (total_faults * period + 1);
+-			p->numa_faults_cpu[i] >>= 1;
+-			p->numa_faults_cpu[i] += f_weight;
++			f_diff = f_weight - p->numa_faults_cpu[i] / 2;
+ 			p->numa_faults_buffer_cpu[i] = 0;
+ 
++			p->numa_faults_memory[i] += diff;
++			p->numa_faults_cpu[i] += f_diff;
+ 			faults += p->numa_faults_memory[i];
+-			diff += p->numa_faults_memory[i];
+-			f_diff += p->numa_faults_cpu[i];
+ 			p->total_numa_faults += diff;
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+-- 
+1.8.4.2
 
-because of b01fa2357bca ("mm: vmscan: shrink all slab objects if tight on 
-memory") from an author with a name remarkably similar to yours.  Could 
-you rebase this series on top of your previous work that is already in 
--mm?
---531381512-1552005430-1390342917=:1666--
