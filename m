@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaAUQBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:01:04 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:41651 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466AbaAUQBC (ORCPT
+	id S1754952AbaAUQDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:03:06 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43524 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754607AbaAUQDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:01:02 -0500
-Message-ID: <52DE99BA.1090204@hp.com>
-Date: Tue, 21 Jan 2014 11:00:58 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
+	Tue, 21 Jan 2014 11:03:03 -0500
+Date: Tue, 21 Jan 2014 11:02:55 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, "" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v9 2/5] qrwlock x86: Enable x86 to use queue read/write
- lock
-References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com> <1389761047-47566-3-git-send-email-Waiman.Long@hp.com> <20140120160806.GI30183@twins.programming.kicks-ass.net> <20140120111630.7ceb0aa5@gandalf.local.home>
-In-Reply-To: <20140120111630.7ceb0aa5@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com
+Subject: Re: [PATCH 01/13] sched: Add 3 new scheduler syscalls to support an
+ extended scheduling parameters ABI
+Message-ID: <20140121110255.7d9af63d@gandalf.local.home>
+In-Reply-To: <20140121154603.GF3694@twins.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+	<20131217123352.692059839@infradead.org>
+	<CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
+	<20140121153851.GZ31570@twins.programming.kicks-ass.net>
+	<20140121154603.GF3694@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 11:16 AM, Steven Rostedt wrote:
-> On Mon, 20 Jan 2014 17:08:06 +0100
-> Peter Zijlstra<peterz@infradead.org>  wrote:
->
->> On Tue, Jan 14, 2014 at 11:44:04PM -0500, Waiman Long wrote:
->>> This patch makes the necessary changes at the x86 architecture specific
->>> layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
->>> to replace the read/write lock by the queue read/write lock.
->>>
->>> It also enables the CONFIG_QUEUE_RWLOCK option by default for x86 which
->>> will force the use of queue read/write lock. That will greatly improve
->>> the fairness of read/write lock and eliminate live-lock situation
->>> where one task may not get the lock for an indefinite period of time.
->>>
->>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->>> Reviewed-by: Paul E. McKenney<paulmck@linux.vnet.ibm.com>
->>> ---
->>>   arch/x86/Kconfig                      |    1 +
->>>   arch/x86/include/asm/spinlock.h       |    2 ++
->>>   arch/x86/include/asm/spinlock_types.h |    4 ++++
->>>   3 files changed, 7 insertions(+), 0 deletions(-)
->> This patch doesn't have nearly enough -, you should rip out all traces
->> of the old rwlock. There's no point in having it configurable, either
->> qrwlock is good or not.
-> Although having something that switches back to the old method gives
-> more users the way to compare. Especially to catch any regressions.
->
-> Make one release with it configurable, then drop it.
->
-> -- Steve
+On Tue, 21 Jan 2014 16:46:03 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Yes, I agree that it will be more prudent to leave the original rwlock 
-implementation there for one or two release cycles before getting rid of 
-them entirely.
+> On Tue, Jan 21, 2014 at 04:38:51PM +0100, Peter Zijlstra wrote:
+> >     SCHED_DEADLINE: Sporadic task model deadline scheduling
+> > 	SCHED_DEADLINE is an implementation of GEDF (Global Earliest
+> > 	Deadline First) with additional CBS (Constant Bandwidth Server).
+> 
+> We might want to re-word that to:
+> 
+> 	SCHED_DEADLINE currently is an implementation of GEDF, however
+> 	any policy that correctly schedules the sporadic task model is
+> 	a valid implementation.
+> 
+> To make sure we should not rely on the actual implementation; there's
+> many possible algorithms to schedule the sporadic task model.
 
--Longman
+Probably should post some links to GEDF documentation too?
+
+-- Steve
+
+> 
+> > 	The CBS guarantees that tasks that over-run their specified
+> > 	budget are throttled and do not affect the correct performance
+> > 	of other SCHED_DEADLINE tasks.
+> > 
+> > 	SCHED_DEADLINE tasks will fail FORK(2) with -EAGAIN
+> > 
+> > 	Setting SCHED_DEADLINE can fail with -EINVAL when admission
+> > 	control tests fail.
+> > 
+
