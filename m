@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaAUUgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:36:43 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42116 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaAUUgk (ORCPT
+	id S1753220AbaAUUiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:38:07 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:42496 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaAUUiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:36:40 -0500
-Date: Tue, 21 Jan 2014 20:36:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] MFD pull-request for v3.14
-Message-ID: <20140121203634.GG27111@lee--X1>
-References: <20140121172405.GF27111@lee--X1>
- <CA+55aFx+1W-0Eae7EcRh-AksfVKcOVBV3dWE+=DVGPDgaNCusQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFx+1W-0Eae7EcRh-AksfVKcOVBV3dWE+=DVGPDgaNCusQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Jan 2014 15:38:01 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Liqin <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Score: Remove "select HAVE_GENERIC_HARDIRQS" again
+Date: Tue, 21 Jan 2014 21:37:52 +0100
+Message-Id: <1390336672-21921-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Please find the following v3.14 pull-request for the MFD Subsystem.
-> 
-> Hmm. The tag is signed, but you have a marked lack of signatures on
-> your key. Would you mind trying to correct that?
+Commit 5fbbf8a1a93452b26e7791cf32cefce62b0a480b ("Score: The commit is for
+compiling successfully.") re-introduced "select HAVE_GENERIC_HARDIRQS" in
+v3.12-rc4, which had just been removed in v3.12-rc1 by commit
+0244ad004a54e39308d495fee0a2e637f8b5c317 ("Remove GENERIC_HARDIRQ config
+option").
 
-Yes, no problem.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/score/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-> I've pulled, since hopefully linaro.org is well-maintained and you
-> have a lot of existing commits, but in general I dislike pulling
-> things from new people with badly connected gpg signatures, and I
-> think this is the first time I've pulled from you directly..
-
-I will have the issue corrected by the next merge-window.
-
-Thanks for pulling.
-
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index 305f7ee1f382..c75d06aa27c3 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -2,7 +2,6 @@ menu "Machine selection"
+ 
+ config SCORE
+        def_bool y
+-       select HAVE_GENERIC_HARDIRQS
+        select GENERIC_IRQ_SHOW
+        select GENERIC_IOMAP
+        select GENERIC_ATOMIC64
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
