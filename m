@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaAUSLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 13:11:42 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:57104 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017AbaAUSLk convert rfc822-to-8bit (ORCPT
+	id S1755268AbaAUSML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 13:12:11 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57657 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900AbaAUSMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 13:11:40 -0500
+	Tue, 21 Jan 2014 13:12:09 -0500
+Date: Tue, 21 Jan 2014 18:12:02 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140121181202.GJ17314@sirena.org.uk>
+References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY8Dk=i1-=rKU6gTM+3YHQ286r1u4z2WhLDQtcqLpyM2Q@mail.gmail.com>
-References: <CACRpkdY8Dk=i1-=rKU6gTM+3YHQ286r1u4z2WhLDQtcqLpyM2Q@mail.gmail.com>
-Date: Tue, 21 Jan 2014 10:11:39 -0800
-X-Google-Sender-Auth: Pmq4v9Zc_HeXJ7QHSqdOaHwXuQs
-Message-ID: <CA+55aFzpF87hNgpFDsqLXYyiuTADe1xB2KUhOVd=atYASOLNFw@mail.gmail.com>
-Subject: Re: [GIT PULL] GPIO bulk changes for v3.14
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <poeschel@lemonage.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xpAEiv7IYLnw+pq/"
+Content-Disposition: inline
+In-Reply-To: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/5] spi: Spelling s/finised/finished/
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 12:36 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
->
-> here is the big GPIO pull request for the v3.14 series.
 
-Ugh. It does not compile for me. The problem seems to be that the
-gpio-mcp23s08.c driver only compiles in OF environments, but isn't
-properly restricted to them:
+--xpAEiv7IYLnw+pq/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  drivers/gpio/gpio-mcp23s08.c: In function ‘mcp23s08_irq_setup’:
-  drivers/gpio/gpio-mcp23s08.c:482:46: error: ‘struct gpio_chip’ has
-no member named ‘of_node’
-    mcp->irq_domain = irq_domain_add_linear(chip->of_node, chip->ngpio,
+On Tue, Jan 21, 2014 at 04:10:05PM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-and similar other errors.
+Applied, thanks.
 
-Introduced by commit 4e47f91bf741 ("gpio: mcp23s08: Add irq
-functionality for i2c chips") as far as I can tell.
+--xpAEiv7IYLnw+pq/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->  It's big this time but has been brewing in linux-next for
-> some time and it's all good stuff IMO
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-The fact that it doesn't even compile makes me doubt your statement
-that it has been in linux-next. It doesn't even pass a basic
-allmodconfig build.
+iQIcBAEBAgAGBQJS3rhuAAoJELSic+t+oim9fboQAJvbx55pwcBzBvJcKkNtcZqB
+TnSp6v5JpSvdoZfwiXKNxkL8CxQwmDIYkb2UZtoDikuljqYccqROMR/+Ab3PKHhI
+1gLi1frcHMKSQ3tnvUrxxSl7Nyh4m1TFw48gyP3uK5Ur1ByYXA3xLm0yZN3kExGU
+qvhm9Iagy/tZROzBCpMIGQUswLoYBaoWkpmGOjxe3hvRc6Zi36hQpaay0ApWte1f
+VDRGuTwE/lXwrG+EHqZCkNBBU1ghJsPpwoOUzbpaEPGGhxNH0ifqzpdcBnHu2bau
+z/goXRSDqD2LxAY5jrV/QGWM2xd6pFj+S1c8p6gH1hMifhv0SxhSAWB7Fol3y0ol
+q52x7DCIIT0zC4dMgieXnBVoWtbN10/wqaylxkA1j+4e1IB/Ll0K301iJo9oMJTz
+ZnLZQOTumfPJeRhtnadtgQpafLb9W5UqSXJKy4BZXzcnmYBLaZi6Hd/DHmYg3L1Z
+LJCxDHzcsixijenQx6h3SmnaghK5WuGDH7KKLIupIbiwwaSLzPJYxlkJ8mCjZpV9
+T9looz7bPjvpw/gPPnjP4l04DnE2d8R5OHxki57M6F3jQLRIQRgHJaM4l8MTc35E
+KkZnGIPxJd7l7EpJulAGvRZ+69pPSDQzB6aJW4IRY85i7m8C4aTyTP8HjLJIHQ0p
+Bg164UcsFtIeNsjgrg/Z
+=SMMR
+-----END PGP SIGNATURE-----
 
-I see that you tried to fix it in commit 01d7004181c8 ("gpio:
-mcp23s08: depend on OF_GPIO") but screwed up the order of operations.
-
-I fixed it up properly in the merge, but please try to figure out how
-the hell this passed through the cracks.
-
-             Linus
+--xpAEiv7IYLnw+pq/--
