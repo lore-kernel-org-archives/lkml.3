@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaAUUCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:02:48 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:62930 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaAUUCn (ORCPT
+	id S1753419AbaAUUDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:03:43 -0500
+Received: from mail-gg0-f179.google.com ([209.85.161.179]:44491 "EHLO
+	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaAUUDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:02:43 -0500
+	Tue, 21 Jan 2014 15:03:41 -0500
+From: bsegall@google.com
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, daniel.lezcano@linaro.org,
+        pjt@google.com
+Subject: Re: [PATCH 8/9] sched/fair: Optimize cgroup pick_next_task_fair
+References: <20140121111754.580142558@infradead.org>
+	<20140121112258.708117448@infradead.org>
+	<xm2661pdkuiw.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<20140121193759.GR11314@laptop.programming.kicks-ass.net>
+Date: Tue, 21 Jan 2014 12:03:38 -0800
+In-Reply-To: <20140121193759.GR11314@laptop.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Tue, 21 Jan 2014 20:37:59 +0100")
+Message-ID: <xm261u01kspx.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Date: Tue, 21 Jan 2014 15:02:43 -0500
-X-Google-Sender-Auth: g0niCmgL8RN4JlfPwlvV19zC9s8
-Message-ID: <CA+5PVA7LcDe5Y2RePTFbLdSHd85WhHcHHnFw2mBycfFRJ2m-FQ@mail.gmail.com>
-Subject: Weird plugin paths in perf and perf.so binaries with 3.14 merge window
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Peter Zijlstra <peterz@infradead.org> writes:
 
-I went to build Linux v3.13-737-g7fe67a1 in Fedora this morning and it
-resulted in RPM complaining that the perf and perf.so binaries had
-strings in them that matched the RPM_BUILD_ROOT string.  That fails
-the RPM build.
+> On Tue, Jan 21, 2014 at 11:24:39AM -0800, bsegall@google.com wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>
+>> > +#ifdef CONFIG_FAIR_GROUP_SCHED
+>> > +	/*
+>> > +	 * If we haven't yet done put_prev_entity and the selected task is
+>> > +	 * a different task than we started out with, try and touch the least
+>> > +	 * amount of cfs_rq trees.
+>> > +	 */
+>> > +	if (prev) {
+>> > +		if (prev != p) {
+>> > +			pse = &prev->se;
+>> > +
+>> > +			while (!(cfs_rq = is_same_group(se, pse))) {
+>> > +				int se_depth = se->depth;
+>> > +				int pse_depth = pse->depth;
+>> > +
+>> > +				if (se_depth <= pse_depth) {
+>> > +					put_prev_entity(cfs_rq_of(pse), pse);
+>> > +					pse = parent_entity(pse);
+>> > +				}
+>> > +				if (se_depth >= pse_depth) {
+>> > +					set_next_entity(cfs_rq_of(se), se);
+>> > +					se = parent_entity(se);
+>> > +				}
+>> > +			}
+>> >  
+>> > +			put_prev_entity(cfs_rq, pse);
+>> > +			set_next_entity(cfs_rq, se);
+>> > +		}
+>
+> (A)
+>
+>> > +		/*
+>> > +		 * In case the common cfs_rq got throttled, just give up and
+>> > +		 * put the stack and retry.
+>> > +		 */
+>> > +		if (unlikely(check_cfs_rq_runtime(cfs_rq))) {
+>> > +			put_prev_task_fair(rq, p);
+>> > +			prev = NULL;
+>> > +			goto again;
+>> > +		}
+>> 
+>> This double-calls put_prev_entity on any non-common cfs_rqs and ses,
+>> which means double __enqueue_entity, among other things. Just doing the
+>> put_prev loop from se->parent should fix that.
+>
+> I'm not seeing that, so at point (A) we've completely switched over from
+> @prev to @p, we've put all pse until the common parent and set all se
+> back to @p.
+>
+> So if we then do: put_prev_task_fair(rq, p), we simply undo all the
+> set_next_entity(se) we just did, and continue from the common parent
+> upwards.
+>
+>> However, any sort of abort means that we may have already done
+>> set_next_entity on some children, which even with the changes to
+>> pick_next_entity will cause problems, up to and including double
+>> __dequeue_entity I think.
+>
+> But the abort is only done after we've completely set up @p as the
+> current task.
+>
+> Yes, completely tearing it down again is probably a waste, but given
+> that bandwidth enforcement should be rare and I didn't want to
+> complicate things even further for rare cases.
 
-Looking over the logs, I see that the traceevent plugins are getting a
-rather weird -DPLUGIN_DIR define passed to them.  E.g.:
 
-gcc -c -g -Wall   -I. -I
-/home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/../../include
- '-DPLUGIN_DIR="/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64//usr//usr/lib64/traceevent/plugins"'
- -D_GNU_SOURCE -std=gnu99 -fPIC
-/home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/parse-filter.c
--o parse-filter.o
+Ah, I missed that this was p, not prev. That makes a lot more sense, and
+I agree that this should be fine.
 
-We're building perf like so:
+>
+>> Also, this way we never do check_cfs_rq_runtime on any parents of the
+>> common cfs_rq, which could even have been the reason for the resched to
+>> begin with. I'm not sure if there would be any problem doing it on the
+>> way down or not, I don't see any problems at a glance.
+>
+> Oh, so we allow a parent to have less runtime than the sum of all its
+> children?
 
-make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
-HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
-prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
-all
+Yeah, the check is currently max(children) <= parent, and unthrottled
+children are also allowed.
 
-and installing it via:
+>
+> Indeed, in that case we can miss something... we could try to call
+> check_cfs_rq_runtime() from the initial top-down selection loop? When
+> true, just put the entire stack and don't pretend to be smart?
 
-make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
-HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
-prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
-install-bin
-
-make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
-HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
-prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
-install-python_ext
-
-This has worked for all the builds up until this point.
-
-Somehow the perf and perf.so binaries are getting the string being
-passed via -DPLUGIN_DIR into them, likely through the libtraceevent.a
-link.  I'm pretty sure that (1) the string being passed is totally
-broken and should be "/usr/lib64/traceevent/plugins" and (2) that I
-haven't come close to deciphering how to fix this.
-
-So, could you please look this over and see where the define is
-getting messed up?
-
-josh
+Yeah, I think that should work. I wasn't sure if there could be a
+problem of doing throttle_cfs_rq(parent); throttle_cfs_rq(child);, but
+thinking about, that has to be ok, because schedule can do that if
+deactivate throttled the parent, schedule calls update_rq_clock, and
+then put_prev throttled the child.
