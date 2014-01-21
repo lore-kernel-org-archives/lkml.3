@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaAULSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:18:16 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:60477 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099AbaAULSN (ORCPT
+	id S1754547AbaAULT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:19:57 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15190 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754122AbaAULTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:18:13 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] media: i2c: mt9p031: Check return value of clk_prepare_enable/clk_set_rate
-Date: Tue, 21 Jan 2014 12:18:58 +0100
-Message-ID: <4346570.zM53heUM7x@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1390281657-7185-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1390281657-7185-1-git-send-email-prabhakar.csengg@gmail.com>
+	Tue, 21 Jan 2014 06:19:54 -0500
+Date: Tue, 21 Jan 2014 11:19:20 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [11/11] system 1: Saving energy using DVFS
+Message-ID: <20140121111920.GB14830@arm.com>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
+ <20140120164926.GB23051@amd.pavel.ucw.cz>
+ <20140120171010.GB29971@arm.com>
+ <20140120171752.GC29971@arm.com>
+ <20140120174745.GA25439@amd.pavel.ucw.cz>
+ <20140120180322.GI29971@arm.com>
+ <20140120191546.GA26780@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120191546.GA26780@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Mon, Jan 20, 2014 at 07:15:46PM +0000, Pavel Machek wrote:
+> On Mon 2014-01-20 18:03:22, Catalin Marinas wrote:
+> > On Mon, Jan 20, 2014 at 05:47:45PM +0000, Pavel Machek wrote:
+> > > On Mon 2014-01-20 17:17:52, Catalin Marinas wrote:
+> > > > On Mon, Jan 20, 2014 at 05:10:29PM +0000, Catalin Marinas wrote:
+> > > > > On Mon, Jan 20, 2014 at 04:49:26PM +0000, Pavel Machek wrote:
+> > > > > > > To save energy, the higher frequencies should be avoided and only used
+> > > > > > > when the application performance requirements can not be satisfied
+> > > > > > > otherwise (e.g. spread tasks across more cpus if possible).
+> > > > > > 
+> > > > > > I argue this is untrue for any task where user waits for its
+> > > > > > completion with screen on. (And that's quite important subset).
+> > > > > > 
+> > > > > > Lets take Nokia n900 as an example. 
+> > > > > > 
+> > > > > > (source http://wiki.maemo.org/N900_Hardware_Power_Consumption)
+> > > > > > 
+> > > > > > Sleeping CPU: 2mA
+> > > > > > Screen on: 230mA
+> > > > > > CPU loaded: 250mA
+> > > > > > 
+> > > > > > Now, lets believe your numbers and pretend system can operate at 33%
+> > > > > > of speed with 11% power consumption.
+> > > > > > 
+> > > > > > Lets take task that takes 10 seconds on max frequency:
+> > > > > > 
+> > > > > >       ~ 10s * 470mA     	     	    = 4700mAs
+> > > > > > 
+> > > > > > You suggest running at 33% speed, instead; that means 30 seconds on
+> > > > > > low requency.
+> > > > > > 
+> > > > > > CPU on low: 25mA (assumed).
+> > > > > > 
+> > > > > >      ~ 30s * 255mA			    = 7650mAs
+> > > > > > 
+> > > > > > Hmm. So race to idle is good thing on Intel machines, and it is good
+> > > > > > thing on ARM design I have access to.
+> > > > > 
+> > > > > Race to idle doesn't mean that the screen goes off as well. Let's say
+> > > > > the screen stays on for 1 min and the CPU needs to be running for 10s
+> > > > > over this minute, in the first case you have:
+> > > > > 
+> > > > > 	10s & 250mA + 60s * 230mA = 16300mAs
+> > > > > 
+> > > > > in the second case you have:
+> > > > > 
+> > > > > 	30s * 25mA + 60s * 230mA = 14550mAs
+> > > > > 
+> > > > > That's a 1750mAs difference. There are of course other parts drawing
+> > > > > current but simple things like the above really make a difference in the
+> > > > > mobile space, both in terms of battery and thermal budget.
+> > > > 
+> > > > BTW, the proper way to calculate this is to use the energy rather than
+> > > > current x time. This would be J = Ohm * A^2 * s = V^2 / Ohm * s (so the
+> > > > impact of the current is even bigger).
+> > > 
+> > > You are claiming that energy is proportional to current squared?
+> > > 
+> > > I stand by numbers. Energy is proportional to values I quoted,
+> > > provided constant voltage.
+> > 
+> > The big advantage of frequency scaling is that you can scale down the
+> > voltage, making the power proportional to the voltage squared (or
+> > current squared for a constant resistance).
+> 
+> I was talking battery voltage; so multiple my numbers by 3.6V and
+> you'll get Joules.
 
-Thank you for the patch.
+That's where we were talking about different things. What I was
+referring to was the actual current used by the CPU which is different
+from the one drawn from battery for that CPU (because of voltage
+translation). But with a low-loss voltage regulator, we could pretend
+that the corresponding power used by the CPU is the same at the battery
+level.
 
-On Tuesday 21 January 2014 10:50:57 Prabhakar Lad wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> clk_set_rate(), clk_prepare_enable() functions can fail, so check the return
-> values to avoid surprises.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Can you point out problem with my numbers or not?
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+I agree with your equivalent battery current for the CPU (minor thing, I
+get about 12% power consumption at 33% performance from Morten's
+numbers, irrelevant).
 
-and applied to my tree.
-
-> ---
->  Changes for v2:
->  1: Called regulator_bulk_disable() in the error path
-> 
->  drivers/media/i2c/mt9p031.c |   15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-> index e5ddf47..05278f5 100644
-> --- a/drivers/media/i2c/mt9p031.c
-> +++ b/drivers/media/i2c/mt9p031.c
-> @@ -222,12 +222,15 @@ static int mt9p031_clk_setup(struct mt9p031 *mt9p031)
-> 
->  	struct i2c_client *client = v4l2_get_subdevdata(&mt9p031->subdev);
->  	struct mt9p031_platform_data *pdata = mt9p031->pdata;
-> +	int ret;
-> 
->  	mt9p031->clk = devm_clk_get(&client->dev, NULL);
->  	if (IS_ERR(mt9p031->clk))
->  		return PTR_ERR(mt9p031->clk);
-> 
-> -	clk_set_rate(mt9p031->clk, pdata->ext_freq);
-> +	ret = clk_set_rate(mt9p031->clk, pdata->ext_freq);
-> +	if (ret < 0)
-> +		return ret;
-> 
->  	mt9p031->pll.ext_clock = pdata->ext_freq;
->  	mt9p031->pll.pix_clock = pdata->target_freq;
-> @@ -286,8 +289,14 @@ static int mt9p031_power_on(struct mt9p031 *mt9p031)
->  		return ret;
-> 
->  	/* Emable clock */
-> -	if (mt9p031->clk)
-> -		clk_prepare_enable(mt9p031->clk);
-> +	if (mt9p031->clk) {
-> +		ret = clk_prepare_enable(mt9p031->clk);
-> +		if (ret) {
-> +			regulator_bulk_disable(ARRAY_SIZE(mt9p031->regulators),
-> +					       mt9p031->regulators);
-> +			return ret;
-> +		}
-> +	}
-> 
->  	/* Now RESET_BAR must be high */
->  	if (gpio_is_valid(mt9p031->reset)) {
+The other thing I didn't agree with was the screen on vs race to idle
+but I'll follow up separately.
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Catalin
