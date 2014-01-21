@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaAUIuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 03:50:23 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:63641 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbaAUIuV (ORCPT
+	id S1753996AbaAUIwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 03:52:21 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54041 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943AbaAUIwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 03:50:21 -0500
-Date: Tue, 21 Jan 2014 11:47:21 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/3] zram: introduce zram compressor operations struct
-Message-ID: <20140121084721.GA2115@swordfish>
-References: <1389956657-5486-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389956657-5486-3-git-send-email-sergey.senozhatsky@gmail.com>
- <20140120051233.GC8155@bbox>
- <20140120100348.GB2178@swordfish>
- <20140121000945.GG28712@bbox>
+	Tue, 21 Jan 2014 03:52:20 -0500
+Message-ID: <52DE353B.7030200@linaro.org>
+Date: Tue, 21 Jan 2014 16:52:11 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121000945.GG28712@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: paulmck@linux.vnet.ibm.com
+CC: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [discussion] simpler load balance in scheduler
+References: <52A95588.5040905@linaro.org> <52AADCEB.50105@linaro.org> <20131217163232.GI5919@linux.vnet.ibm.com> <52CAB344.9050208@linaro.org> <20140120030453.GO10038@linux.vnet.ibm.com>
+In-Reply-To: <20140120030453.GO10038@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/21/14 09:09), Minchan Kim wrote:
-> On Mon, Jan 20, 2014 at 01:03:48PM +0300, Sergey Senozhatsky wrote:
-> > On (01/20/14 14:12), Minchan Kim wrote:
-> > > Hello Sergey,
-> > > 
-> > > I reviewed this patchset and I suggest somethings.
-> > > Please have a look and feedback to me. :)
-> > > 
-> > > 1. Let's define new file zram_comp.c
-> > > 2. zram_comp includes following field
-> > >    .create
-> > >    .compress
-> > >    .decompress.
-> > >    .destroy
-> > >    .name
-> > > 
-> > 
-> > alternatively, we can use crypto api, the same way as zswap does (that
-> > will require handling of cpu hotplug).
-> > 
-> > 	-ss
+On 01/20/2014 11:04 AM, Paul E. McKenney wrote:
+> On Mon, Jan 06, 2014 at 09:44:36PM +0800, Alex Shi wrote:
+>> On 12/18/2013 12:32 AM, Paul E. McKenney wrote:
+>>> On Fri, Dec 13, 2013 at 06:09:47PM +0800, Alex Shi wrote:
 > 
-> I really doubt what's the benefit from crypto API for zram.
-> It's maybe since I'm not familiar with it so I should ask a silly
-> question.
+> [ . . . ]
 > 
-> 1. What's the runtime overhead for using such frontend?
+>>> 3.	Allow the exported values to become inaccurate, and resample
+>>> 	the actual values remotely if extrapolated values indicate
+>>> 	that action is warranted.
+>>
+>> It is a very heuristic idea! Could you give a bit more hints/clues to
+>> get remote cpu load by extrapolated value? I know RCU use this way
+>> wonderfully. but still no much idea to get live cpu load...
 > 
->    As you know, zram is in-memory block device so I don't want to
->    add unnecessary overhead to optimize.
+> Well, as long as the CPU continues doing the same thing, for example,
+> being idle or running a user-mode task, the extrapolation should be
+> exact, right?  The load value was X the last time the CPU changed state,
+> and T time has passed since then, so you can calculated it exactly.
+
+It's a good idea that I never thought before. Thanks a lot!
 > 
-> 2. What's the memory footprint for using such frontend?
+> The exact method for detecting inaccuracies depends on how and where
+> you are calculating the load values.  If you are calculating them on
+> each state change (as is done for some values for NO_HZ_FULL), then you
+> simply need sufficient synchronization for geting a consistent snapshot
+> of several values.  One easy way to do this is via a per-CPU seqlock.
+> The state-change code write-acquires the seqlock, while those doing
+> extrapolation read-acquire it and retry if changes occur.  This can have
+> problems if too many values are required and if changes occur too fast,
+> but such problems can be addressed should they occur.
+
+I thought about the seqlock, but it is clearly not scalable.
+Anyway, load balance don't be very accurate, so maybe atomic operate for
+exported per cpu load in balance is acceptable.
 > 
->    As you know, zram is very popular for small-memory embedded device
->    so I don't want to consume more runtime memory and static memory
->    due to CONFIG_CRYPTO friend.
+> Does that help?
+
+Yes, very helpful!  :)
+> 
+> 							Thanx, Paul
+> 
+>>> There are probably other approaches.  I am being quite general here
+>>> because I don't have the full picture of the scheduler statistics
+>>> in my head.  It is likely possible to obtain a much better approach
+>>> by considering the scheduler's specifics.
+>>>
+>>>>> BTW, to reduce unnecessary remote info fetching, we can use current
+>>>>> idle_cpus_mask in nohz, we just skip the idle cpu in this cpumask simply.
+>>
+>> [..]
+>>>
+>>> 							Thanx, Paul
+>>>
+>>>>> 4, From power saving POV, top-down give the whole system cpu topology
+>>>>> info directly. So beside the CS reducing, it can reduce the idle cpu
+>>>>> interfere by a transition task. and let idle cpu sleep better.
+>>
+>> -- 
+>> Thanks
+>>     Alex
+>>
 > 
 
-schematically:
 
-char *compressor = "lzo"; /* or supplied by user via COMPRESSOR_store() */
-
-if (crypto_has_comp(compressor, 0, 0)) {
-	tfms = alloc_percpu(struct crypto_comp *);
-	tfm = crypto_alloc_comp(compressor, 0, 0);
-	*per_cpu_ptr(tfms, cpu) = tfm;
-}
-
-	ret = crypto_comp_compress(tfm, src, slen, dst, dlen);
-and
-	ret = crypto_comp_decompress(tfm, src, slen, dst, dlen);
-
-
-memory overhead looks like a bunch of structures (transformation
-contexts -- tfm). they touch tfm within compress/decompress, so crypto
-users usually allocate per cpu tfm or somehow protect parallel tfm
-usage, which is a big disadvantage to my opinion. otoh, crypto provides
-HC compressors (LZ4HC at the moment).
-
-my choice is to use raw compressor (as I did in initial patchset).
-
-	-ss
-
-> 3. Is it a flexible to alloc/handle multiple compressor buffer for
->    the our purpose? zswap and zcache have been used it with per-cpu
->    buffer but it would a problem for write scalabitliy if we uses zlib
->    which takes long time to compress.
->    When I read code, maybe we can allocate multiple buffers through
->    cryptop_alloc_compo several time but it would cause 1) and 2) problem
->    again.
->    
-> So, what's the attractive point for using crypto?
-> One of thing I could imagine is that it could make zram H/W compressor
-> but I don't have heard about it so if we don't have any special reason,
-> I'd like to go with raw compressor so we can get a *base* number. Then,
-> if we really need crypto API, we can change it easily and benchmark.
-> Finally, we could get a comparision number in future and it would make
-> the decision easily.
-> 
-> Thanks.
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+-- 
+Thanks
+    Alex
