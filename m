@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaAUGQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 01:16:45 -0500
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:60347 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaAUGQh (ORCPT
+	id S1752635AbaAUGZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 01:25:50 -0500
+Received: from 12.mo5.mail-out.ovh.net ([46.105.39.65]:33985 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750853AbaAUGZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 01:16:37 -0500
-Date: Mon, 20 Jan 2014 22:16:33 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-cc: akpm@linux-foundation.org, hannes@cmpxchg.org, liuj97@gmail.com,
-        santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
-        iamjoonsoo.kim@lge.com, robin.m.holt@gmail.com,
-        tangchen@cn.fujitsu.com, yinghai@kernel.org, linux-mm@kvack.org,
+	Tue, 21 Jan 2014 01:25:41 -0500
+X-Greylist: delayed 1799 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 01:25:41 EST
+Date: Tue, 21 Jan 2014 06:49:32 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: Felipe Balbi <balbi@ti.com>, nicolas.ferre@atmel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 1/3] mm/nobootmem: Fix unused variable
-In-Reply-To: <1390217559-14691-2-git-send-email-phacht@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1401202214540.21729@chino.kir.corp.google.com>
-References: <1390217559-14691-1-git-send-email-phacht@linux.vnet.ibm.com> <1390217559-14691-2-git-send-email-phacht@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH 1/2] USB: at91: fix the number of endpoint parameter
+Message-ID: <20140121054932.GO9558@ns203013.ovh.net>
+References: <1389927565-22477-1-git-send-email-voice.shen@atmel.com>
+ <20140118052059.GL9558@ns203013.ovh.net>
+ <52DC9A66.6080009@atmel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DC9A66.6080009@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 734649689321876275
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014, Philipp Hachtmann wrote:
+On 11:39 Mon 20 Jan     , Bo Shen wrote:
+> Hi J,
+> 
+> On 01/18/2014 01:20 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >On 10:59 Fri 17 Jan     , Bo Shen wrote:
+> >>In sama5d3 SoC, there are 16 endpoints. As the USBA_NR_ENDPOINTS
+> >>is only 7. So, fix it for sama5d3 SoC using the udc->num_ep.
+> >>
+> >>Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> >>---
+> >>
+> >>  drivers/usb/gadget/atmel_usba_udc.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >>diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+> >>index 2cb52e0..7e67a81 100644
+> >>--- a/drivers/usb/gadget/atmel_usba_udc.c
+> >>+++ b/drivers/usb/gadget/atmel_usba_udc.c
+> >>@@ -1670,7 +1670,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
+> >>  	if (ep_status) {
+> >>  		int i;
+> >>
+> >>-		for (i = 0; i < USBA_NR_ENDPOINTS; i++)
+> >>+		for (i = 0; i < udc->num_ep; i++)
+> >
+> >no the limit need to specified in the driver as a checkpoint by the compatible
+> >or platform driver id
+> 
+> You mean, we should not trust the data passed from dt node or
+> platform data? Or do you think we should do double confirm?
 
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index e2906a5..0215c77 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -116,23 +116,29 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
->  static unsigned long __init free_low_memory_core_early(void)
->  {
->  	unsigned long count = 0;
-> -	phys_addr_t start, end, size;
-> +	phys_addr_t start, end;
->  	u64 i;
->  
-> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-> +	phys_addr_t size;
-> +#endif
-> +
->  	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
->  		count += __free_memory_core(start, end);
->  
->  #ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-> -
-> -	/* Free memblock.reserved array if it was allocated */
-> -	size = get_allocated_memblock_reserved_regions_info(&start);
-> -	if (size)
-> -		count += __free_memory_core(start, start + size);
-> -
-> -	/* Free memblock.memory array if it was allocated */
-> -	size = get_allocated_memblock_memory_regions_info(&start);
-> -	if (size)
-> -		count += __free_memory_core(start, start + size);
-> +	{
-> +		phys_addr_t size;
+no base on the driver name or the compatible you will known the MAX EP
 
-I think you may have misunderstood Andrew's suggestion: "size" here is 
-overloading the "size" you have already declared for this configuration.
+not based on the dt ep description
 
-Not sure why you don't just do a one line patch:
+as we do on pinctrl-at91
 
--	phys_addr_t size;
-+	phys_addr_t size __maybe_unused;
-
-to fix it.
-
-> +		/* Free memblock.reserved array if it was allocated */
-> +		size = get_allocated_memblock_reserved_regions_info(&start);
-> +		if (size)
-> +			count += __free_memory_core(start, start + size);
-> +		
-> +		/* Free memblock.memory array if it was allocated */
-> +		size = get_allocated_memblock_memory_regions_info(&start);
-> +		if (size)
-> +			count += __free_memory_core(start, start + size);
-> +	}
->  #endif
->  
->  	return count;
+Best Regards,
+J.
+> >>  			if (ep_status & (1 << i)) {
+> >>  				if (ep_is_control(&udc->usba_ep[i]))
+> >>  					usba_control_irq(udc, &udc->usba_ep[i]);
+> >>--
+> >>1.8.5.2
+> >>
+> 
+> Best Regards,
+> Bo Shen
