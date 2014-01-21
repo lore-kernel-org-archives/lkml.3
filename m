@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaAUJ26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:28:58 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:47236 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaAUJ2x (ORCPT
+	id S1754064AbaAUJbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:31:12 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:43436 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaAUJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:28:53 -0500
-Message-ID: <52DE3DD4.5090506@linaro.org>
-Date: Tue, 21 Jan 2014 10:28:52 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 21 Jan 2014 04:31:08 -0500
+Date: Tue, 21 Jan 2014 04:31:03 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] workqueue changes for v3.14-rc1
+Message-ID: <20140121093103.GA6928@htj.dyndns.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
-Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
-References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net> <52D94B95.2060704@linaro.org> <20140117153323.GM11314@laptop.programming.kicks-ass.net> <52DE32BB.4010006@linaro.org> <20140121090609.GP31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121090609.GP31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 10:06 AM, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 09:41:31AM +0100, Daniel Lezcano wrote:
->> On 01/17/2014 04:33 PM, Peter Zijlstra wrote:
->>> On Fri, Jan 17, 2014 at 04:26:13PM +0100, Daniel Lezcano wrote:
->>>>
->>>> Ah, ok. Let me try it.
->>>>
->>>
->>> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
->>>
->>> has a queue that applies to tip/master.
->>>
->>> The patches as on lkml need a little help in applying.
->>>
->>> They've not been near a compiler yet though :/
->>
->> Hi Peter,
->>
->> do you want me to resend the full serie with your patchset included ?
->
-> Nah, I'll send it out, I wanted PJT or Ben to look over one more patch I
-> did, meant to do that yesterday but you know how those things go :-)
+Hello, Linus.
 
-Yeah :)
+Just one patch to add destroy_work_on_stack() annotations to help
+debugobj debugging.  The change is almost trivial but unfortunately
+causes the following merge conflict.
 
-Thanks !
+  long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+  {
+	  struct work_for_cpu wfc = { .fn = fn, .arg = arg };
 
-   -- Daniel
+	  INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
+	  schedule_work_on(cpu, &wfc.work);
+  <<<<<<< HEAD
+	  flush_work(&wfc.work);
+  =======
 
+	  /*
+	   * The work item is on-stack and can't lead to deadlock through
+	   * flushing.  Use __flush_work() to avoid spurious lockdep warnings
+	   * when work_on_cpu()s are nested.
+	   */
+	  __flush_work(&wfc.work);
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+	  destroy_work_on_stack(&wfc.work);
+  >>>>>>> 440a11360326044a9addf1c652a0364aad0be90c
+	  return wfc.ret;
+  }
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+The conflict is between the following two commits.
 
+* master	12997d1a999c ("Revert "workqueue: allow work_on_cpu() to be called recursively"")
+* wq/for-3.14	440a11360326 ("workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()")
+
+The former updated work_on_cpu() to drop __flush_work() change to
+allow recursive work_on_cpu() usage which no longer was necessary
+after PCI update.  The latter added destroy_work_on_stack() call to
+the function thus causing context conflict.  It can be easily resolved
+by adding destroy_work_on_stack() to the version in master.
+
+  long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+  {
+	  struct work_for_cpu wfc = { .fn = fn, .arg = arg };
+
+	  INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
+	  schedule_work_on(cpu, &wfc.work);
+	  flush_work(&wfc.work);
+	  destroy_work_on_stack(&wfc.work);
+	  return wfc.ret;
+  }
+
+The merge is also available in the test-merge-3.14 branch of wq tree.
+
+The changes are available in the following git branch.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.14
+
+for you to fetch changes up to 440a11360326044a9addf1c652a0364aad0be90c:
+
+  workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK() (2014-01-11 22:26:33 -0500)
+
+Thanks.
+----------------------------------------------------------------
+Chuansheng Liu (1):
+      workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()
+
+ kernel/workqueue.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 987293d..00df112 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4776,6 +4776,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
+ 
+ 		/* wait for per-cpu unbinding to finish */
+ 		flush_work(&unbind_work);
++		destroy_work_on_stack(&unbind_work);
+ 		break;
+ 	}
+ 	return NOTIFY_OK;
+@@ -4822,6 +4823,7 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+ 	 */
+ 	__flush_work(&wfc.work);
+ 
++	destroy_work_on_stack(&wfc.work);
+ 	return wfc.ret;
+ }
+ EXPORT_SYMBOL_GPL(work_on_cpu);
