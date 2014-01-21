@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535AbaAUXhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:37:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:56694 "EHLO mga09.intel.com"
+	id S1754062AbaAUXgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:36:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56634 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111AbaAUXg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:36:26 -0500
+	id S1753506AbaAUXgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:36:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="470404423"
-Subject: [PATCH v9 6/6] MCS Lock: Allow architecture specific asm files to
- be used for contended case
+   d="scan'208";a="442569375"
+Subject: [PATCH v9 2/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -39,8 +39,8 @@ Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
 In-Reply-To: <cover.1390320729.git.tim.c.chen@linux.intel.com>
 References: <cover.1390320729.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Jan 2014 15:36:22 -0800
-Message-ID: <1390347382.3138.67.camel@schen9-DESK>
+Date: Tue, 21 Jan 2014 15:36:00 -0800
+Message-ID: <1390347360.3138.63.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -48,424 +48,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+We will need the MCS lock code for doing optimistic spinning for rwsem
+and queued rwlock.  Extracting the MCS code from mutex.c and put into
+its own file allow us to reuse this code easily.
 
-This patch allows each architecture to add its specific assembly optimized
-arch_mcs_spin_lock_contended and arch_mcs_spinlock_uncontended for
-MCS lock and unlock functions.
+We also inline mcs_spin_lock and mcs_spin_unlock functions
+for better efficiency.
 
+Note that using the smp_load_acquire/smp_store_release pair used in
+mcs_lock and mcs_unlock is not sufficient to form a full memory barrier
+across cpus for many architectures (except x86).  For applications that
+absolutely need a full barrier across multiple cpus with mcs_unlock and
+mcs_lock pair, smp_mb__after_unlock_lock() should be used after mcs_lock.
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- arch/alpha/include/asm/Kbuild      |  1 +
- arch/arc/include/asm/Kbuild        |  1 +
- arch/arm/include/asm/Kbuild        |  1 +
- arch/arm64/include/asm/Kbuild      |  1 +
- arch/avr32/include/asm/Kbuild      |  1 +
- arch/blackfin/include/asm/Kbuild   |  1 +
- arch/c6x/include/asm/Kbuild        |  1 +
- arch/cris/include/asm/Kbuild       |  1 +
- arch/frv/include/asm/Kbuild        |  1 +
- arch/hexagon/include/asm/Kbuild    |  1 +
- arch/ia64/include/asm/Kbuild       |  1 +
- arch/m32r/include/asm/Kbuild       |  1 +
- arch/m68k/include/asm/Kbuild       |  1 +
- arch/metag/include/asm/Kbuild      |  1 +
- arch/microblaze/include/asm/Kbuild |  1 +
- arch/mips/include/asm/Kbuild       |  1 +
- arch/mn10300/include/asm/Kbuild    |  1 +
- arch/openrisc/include/asm/Kbuild   |  1 +
- arch/parisc/include/asm/Kbuild     |  1 +
- arch/powerpc/include/asm/Kbuild    |  4 +++-
- arch/s390/include/asm/Kbuild       |  1 +
- arch/score/include/asm/Kbuild      |  1 +
- arch/sh/include/asm/Kbuild         |  1 +
- arch/sparc/include/asm/Kbuild      |  1 +
- arch/tile/include/asm/Kbuild       |  1 +
- arch/um/include/asm/Kbuild         |  1 +
- arch/unicore32/include/asm/Kbuild  |  1 +
- arch/x86/include/asm/Kbuild        |  1 +
- arch/xtensa/include/asm/Kbuild     |  1 +
- include/asm-generic/mcs_spinlock.h | 13 +++++++++++++
- include/linux/mcs_spinlock.h       |  2 ++
- 31 files changed, 46 insertions(+), 1 deletion(-)
- create mode 100644 include/asm-generic/mcs_spinlock.h
+ include/linux/mcs_spinlock.h | 77 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mutex.h        |  5 +--
+ kernel/locking/mutex.c       | 68 ++++----------------------------------
+ 3 files changed, 87 insertions(+), 63 deletions(-)
+ create mode 100644 include/linux/mcs_spinlock.h
 
-diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-index 532356b..a8a45e1 100644
---- a/arch/alpha/include/asm/Kbuild
-+++ b/arch/alpha/include/asm/Kbuild
-@@ -2,5 +2,6 @@
- 
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index 4348dbc..58fe4b5 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -21,6 +21,7 @@ generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += param.h
-diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
-index 8f37076..3df7d62 100644
---- a/arch/arm/include/asm/Kbuild
-+++ b/arch/arm/include/asm/Kbuild
-@@ -13,6 +13,7 @@ generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += msgbuf.h
- generic-y += param.h
- generic-y += parport.h
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index a14534d..3b99d2b 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -22,6 +22,7 @@ generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += mutex.h
-diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
-index d831429..29cb2c6 100644
---- a/arch/avr32/include/asm/Kbuild
-+++ b/arch/avr32/include/asm/Kbuild
-@@ -10,6 +10,7 @@ generic-y += futex.h
- generic-y += irq_regs.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += param.h
- generic-y += percpu.h
- generic-y += preempt.h
-diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
-index 37b9282..ebaccbb 100644
---- a/arch/blackfin/include/asm/Kbuild
-+++ b/arch/blackfin/include/asm/Kbuild
-@@ -19,6 +19,7 @@ generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += mutex.h
-diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
-index 4b3f516..d09762e 100644
---- a/arch/c6x/include/asm/Kbuild
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -24,6 +24,7 @@ generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += local.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += mmu.h
- generic-y += mmu_context.h
-diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-index 85c090d..d8e20e9 100644
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -8,6 +8,7 @@ generic-y += clkdev.h
- generic-y += exec.h
- generic-y += kvm_para.h
- generic-y += linkage.h
-+generic-y += mcs_spinlock.h
- generic-y += module.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
-index 695246e..5e1442b 100644
---- a/arch/frv/include/asm/Kbuild
-+++ b/arch/frv/include/asm/Kbuild
-@@ -1,5 +1,6 @@
- 
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-index 17f3996..55888ca 100644
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -26,6 +26,7 @@ generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += pci.h
-diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
-index 6f1de3b..cf1f005 100644
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -2,6 +2,7 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += kvm_para.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
- generic-y += vtime.h
-diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-index 5cfbdd4..e26e8dd 100644
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- 
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += mcs_spinlock.h
- generic-y += module.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
-index c690a6f..d9b0785 100644
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -15,6 +15,7 @@ generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += mutex.h
- generic-y += percpu.h
-diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
-index 3fc4a2e..eb6d376 100644
---- a/arch/metag/include/asm/Kbuild
-+++ b/arch/metag/include/asm/Kbuild
-@@ -23,6 +23,7 @@ generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += param.h
-diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
-index 88968fa..3088588 100644
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@ -2,6 +2,7 @@
- generic-y += barrier.h
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += syscalls.h
- generic-y += trace_clock.h
-diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
-index ef38961..8aa9b1b 100644
---- a/arch/mips/include/asm/Kbuild
-+++ b/arch/mips/include/asm/Kbuild
-@@ -3,6 +3,7 @@ generic-y += cputime.h
- generic-y += current.h
- generic-y += emergency-restart.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mutex.h
- generic-y += parport.h
- generic-y += percpu.h
-diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
-index 6fb781f..97abbe7 100644
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@ -2,5 +2,6 @@
- generic-y += barrier.h
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-index 32b5562..6bf2601 100644
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -34,6 +34,7 @@ generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += kvm_para.h
- generic-y += local.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += module.h
- generic-y += msgbuf.h
-diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
-index bb0d9ebb..fa6065d 100644
---- a/arch/parisc/include/asm/Kbuild
-+++ b/arch/parisc/include/asm/Kbuild
-@@ -12,6 +12,7 @@ generic-y += kdebug.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mutex.h
- generic-y += param.h
- generic-y += percpu.h
-diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
-index 8b19a80..24027ce 100644
---- a/arch/powerpc/include/asm/Kbuild
-+++ b/arch/powerpc/include/asm/Kbuild
-@@ -1,6 +1,8 @@
- 
-+generic-y += +=
- generic-y += clkdev.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += rwsem.h
- generic-y += trace_clock.h
--generic-y += vtime.h
-+generic-y += vtime.hgeneric-y
-diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
-index 6bd5f27..52bb0ba 100644
---- a/arch/s390/include/asm/Kbuild
-+++ b/arch/s390/include/asm/Kbuild
-@@ -1,5 +1,6 @@
- 
-
- generic-y += clkdev.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
-diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
-index 064b55f..fc22db4 100644
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@ -3,6 +3,7 @@ header-y +=
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += mcs_spinlock.h
- generic-y += preempt.h
- generic-y += trace_clock.h
- generic-y += xor.h
-diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
-index 8856e73..d5baf96 100644
---- a/arch/sh/include/asm/Kbuild
-+++ b/arch/sh/include/asm/Kbuild
-@@ -14,6 +14,7 @@ generic-y += irq_regs.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += param.h
-diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
-index 3e78fda..793dbb0 100644
---- a/arch/sparc/include/asm/Kbuild
-+++ b/arch/sparc/include/asm/Kbuild
-@@ -10,6 +10,7 @@ generic-y += irq_regs.h
- generic-y += linkage.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += module.h
- generic-y += mutex.h
- generic-y += preempt.h
-diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-index 948549c..f5433e0 100644
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -18,6 +18,7 @@ generic-y += ipcbuf.h
- generic-y += irq_regs.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += param.h
-diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
-index 1cfae1f..82aed2d 100644
---- a/arch/um/include/asm/Kbuild
-+++ b/arch/um/include/asm/Kbuild
-@@ -13,6 +13,7 @@ generic-y += hw_irq.h
- generic-y += io.h
- generic-y += irq_regs.h
- generic-y += kdebug.h
-+generic-y += mcs_spinlock.h
- generic-y += mutex.h
- generic-y += param.h
- generic-y += pci.h
-diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
-index a61f73a..9de88a5 100644
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -24,6 +24,7 @@ generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += local.h
-+generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += module.h
- generic-y += msgbuf.h
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index 7f66985..a8fee07 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
- genhdr-y += unistd_x32.h
- 
- generic-y += clkdev.h
-+generic-y += mcs_spinlock.h
-diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
-index 68da9d4..1c8455c 100644
---- a/arch/xtensa/include/asm/Kbuild
-+++ b/arch/xtensa/include/asm/Kbuild
-@@ -18,6 +18,7 @@ generic-y += kvm_para.h
- generic-y += linkage.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mcs_spinlock.h
- generic-y += percpu.h
- generic-y += preempt.h
- generic-y += resource.h
-diff --git a/include/asm-generic/mcs_spinlock.h b/include/asm-generic/mcs_spinlock.h
+diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
 new file mode 100644
-index 0000000..10cd4ff
+index 0000000..9578ef8
 --- /dev/null
-+++ b/include/asm-generic/mcs_spinlock.h
-@@ -0,0 +1,13 @@
-+#ifndef __ASM_MCS_SPINLOCK_H
-+#define __ASM_MCS_SPINLOCK_H
++++ b/include/linux/mcs_spinlock.h
+@@ -0,0 +1,77 @@
++/*
++ * MCS lock defines
++ *
++ * This file contains the main data structure and API definitions of MCS lock.
++ *
++ * The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spin-lock
++ * with the desirable properties of being fair, and with each cpu trying
++ * to acquire the lock spinning on a local variable.
++ * It avoids expensive cache bouncings that common test-and-set spin-lock
++ * implementations incur.
++ */
++#ifndef __LINUX_MCS_SPINLOCK_H
++#define __LINUX_MCS_SPINLOCK_H
++
++struct mcs_spinlock {
++	struct mcs_spinlock *next;
++	int locked; /* 1 if lock acquired */
++};
 +
 +/*
-+ * Architectures can define their own:
-+ *
-+ *   arch_mcs_spin_lock_contended(l)
-+ *   arch_mcs_spin_unlock_contended(l)
-+ *
-+ * See kernel/locking/mcs_spinlock.c.
++ * Note: the smp_load_acquire/smp_store_release pair is not
++ * sufficient to form a full memory barrier across
++ * cpus for many architectures (except x86) for mcs_unlock and mcs_lock.
++ * For applications that need a full barrier across multiple cpus
++ * with mcs_unlock and mcs_lock pair, smp_mb__after_unlock_lock() should be
++ * used after mcs_lock.
 + */
++static inline
++void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
++{
++	struct mcs_spinlock *prev;
 +
-+#endif /* __ASM_MCS_SPINLOCK_H */
-diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index e9a4d74..f2a5c63 100644
---- a/include/linux/mcs_spinlock.h
-+++ b/include/linux/mcs_spinlock.h
-@@ -12,6 +12,8 @@
- #ifndef __LINUX_MCS_SPINLOCK_H
- #define __LINUX_MCS_SPINLOCK_H
++	/* Init node */
++	node->locked = 0;
++	node->next   = NULL;
++
++	prev = xchg(lock, node);
++	if (likely(prev == NULL)) {
++		/* Lock acquired */
++		node->locked = 1;
++		return;
++	}
++	ACCESS_ONCE(prev->next) = node;
++	/*
++	 * Wait until the lock holder passes the lock down.
++	 * Using smp_load_acquire() provides a memory barrier that
++	 * ensures subsequent operations happen after the lock is acquired.
++	 */
++	while (!(smp_load_acquire(&node->locked)))
++		arch_mutex_cpu_relax();
++}
++
++static inline
++void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
++{
++	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
++
++	if (likely(!next)) {
++		/*
++		 * Release the lock by setting it to NULL
++		 */
++		if (cmpxchg(lock, node, NULL) == node)
++			return;
++		/* Wait until the next pointer is set */
++		while (!(next = ACCESS_ONCE(node->next)))
++			arch_mutex_cpu_relax();
++	}
++	/*
++	 * Pass lock to next waiter.
++	 * smp_store_release() provides a memory barrier to ensure
++	 * all operations in the critical section has been completed
++	 * before unlocking.
++	 */
++	smp_store_release(&next->locked, 1);
++}
++
++#endif /* __LINUX_MCS_SPINLOCK_H */
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index d318193..c482e1d 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -46,6 +46,7 @@
+  * - detects multi-task circular deadlocks and prints out all affected
+  *   locks and tasks (and only those tasks)
+  */
++struct mcs_spinlock;
+ struct mutex {
+ 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
+ 	atomic_t		count;
+@@ -55,7 +56,7 @@ struct mutex {
+ 	struct task_struct	*owner;
+ #endif
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	void			*spin_mlock;	/* Spinner MCS lock */
++	struct mcs_spinlock	*mcs_lock;	/* Spinner MCS lock */
+ #endif
+ #ifdef CONFIG_DEBUG_MUTEXES
+ 	const char 		*name;
+@@ -179,4 +180,4 @@ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+ # define arch_mutex_cpu_relax() cpu_relax()
+ #endif
  
-+#include <asm/mcs_spinlock.h>
-+
- struct mcs_spinlock {
- 	struct mcs_spinlock *next;
- 	int locked; /* 1 if lock acquired */
+-#endif
++#endif /* __LINUX_MUTEX_H */
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index fbbd2ed..45fe1b5 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -25,6 +25,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/debug_locks.h>
++#include <linux/mcs_spinlock.h>
+ 
+ /*
+  * In the DEBUG case we are using the "NULL fastpath" for mutexes,
+@@ -52,7 +53,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+ 	INIT_LIST_HEAD(&lock->wait_list);
+ 	mutex_clear_owner(lock);
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	lock->spin_mlock = NULL;
++	lock->mcs_lock = NULL;
+ #endif
+ 
+ 	debug_mutex_init(lock, name, key);
+@@ -111,62 +112,7 @@ EXPORT_SYMBOL(mutex_lock);
+  * more or less simultaneously, the spinners need to acquire a MCS lock
+  * first before spinning on the owner field.
+  *
+- * We don't inline mspin_lock() so that perf can correctly account for the
+- * time spent in this lock function.
+  */
+-struct mspin_node {
+-	struct mspin_node *next ;
+-	int		  locked;	/* 1 if lock acquired */
+-};
+-#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
+-
+-static noinline
+-void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
+-{
+-	struct mspin_node *prev;
+-
+-	/* Init node */
+-	node->locked = 0;
+-	node->next   = NULL;
+-
+-	prev = xchg(lock, node);
+-	if (likely(prev == NULL)) {
+-		/* Lock acquired */
+-		node->locked = 1;
+-		return;
+-	}
+-	ACCESS_ONCE(prev->next) = node;
+-	/*
+-	 * Wait until the lock holder passes the lock down.
+-	 * Using smp_load_acquire() provides a memory barrier that
+-	 * ensures subsequent operations happen after the lock is acquired.
+-	 */
+-	while (!(smp_load_acquire(&node->locked)))
+-		arch_mutex_cpu_relax();
+-}
+-
+-static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+-{
+-	struct mspin_node *next = ACCESS_ONCE(node->next);
+-
+-	if (likely(!next)) {
+-		/*
+-		 * Release the lock by setting it to NULL
+-		 */
+-		if (cmpxchg(lock, node, NULL) == node)
+-			return;
+-		/* Wait until the next pointer is set */
+-		while (!(next = ACCESS_ONCE(node->next)))
+-			arch_mutex_cpu_relax();
+-	}
+-	/*
+-	 * Pass lock to next waiter.
+-	 * smp_store_release() provides a memory barrier to ensure
+-	 * all operations in the critical section has been completed
+-	 * before unlocking.
+-	 */
+-	smp_store_release(&next->locked, 1);
+-}
+ 
+ /*
+  * Mutex spinning code migrated from kernel/sched/core.c
+@@ -456,7 +402,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 
+ 	for (;;) {
+ 		struct task_struct *owner;
+-		struct mspin_node  node;
++		struct mcs_spinlock  node;
+ 
+ 		if (use_ww_ctx && ww_ctx->acquired > 0) {
+ 			struct ww_mutex *ww;
+@@ -478,10 +424,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * If there's an owner, wait for it to either
+ 		 * release the lock or go to sleep.
+ 		 */
+-		mspin_lock(MLOCK(lock), &node);
++		mcs_spin_lock(&lock->mcs_lock, &node);
+ 		owner = ACCESS_ONCE(lock->owner);
+ 		if (owner && !mutex_spin_on_owner(lock, owner)) {
+-			mspin_unlock(MLOCK(lock), &node);
++			mcs_spin_unlock(&lock->mcs_lock, &node);
+ 			goto slowpath;
+ 		}
+ 
+@@ -496,11 +442,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 			}
+ 
+ 			mutex_set_owner(lock);
+-			mspin_unlock(MLOCK(lock), &node);
++			mcs_spin_unlock(&lock->mcs_lock, &node);
+ 			preempt_enable();
+ 			return 0;
+ 		}
+-		mspin_unlock(MLOCK(lock), &node);
++		mcs_spin_unlock(&lock->mcs_lock, &node);
+ 
+ 		/*
+ 		 * When there's no owner, we might have preempted between the
 -- 
 1.7.11.7
+
 
 
