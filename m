@@ -1,706 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaAUXhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:37:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14570 "EHLO mga02.intel.com"
+	id S1754707AbaAUXiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:38:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46744 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749AbaAUXgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:36:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="470404369"
-Subject: [PATCH v9 5/6] MCS Lock: Order the header files in Kbuild of each
- architecture in alphabetical order
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <cover.1390320729.git.tim.c.chen@linux.intel.com>
-References: <cover.1390320729.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Jan 2014 15:36:16 -0800
-Message-ID: <1390347376.3138.66.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754648AbaAUXiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:38:11 -0500
+Date: Tue, 21 Jan 2014 18:37:42 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 3/5] audit: store audit_pid as a struct pid pointer
+Message-ID: <20140121233742.GC1981@madcap2.tricolour.ca>
+References: <cover.1387834776.git.rgb@redhat.com>
+ <12b8a0d4d2817557eab7a84da3558388a5e5afcf.1387834776.git.rgb@redhat.com>
+ <20131230175103.GC2457@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131230175103.GC2457@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+On 13/12/30, Oleg Nesterov wrote:
+> On 12/23, Richard Guy Briggs wrote:
+> >
+> > - PID will be reported in the relevant querying PID namespace.
+> >
+> > - Refuse to change the current audit_pid if the new value does not
+> >   point to an existing process.
+> >
+> > - Refuse to set the current audit_pid if the new value is not its own PID
+> >   (unless it is being unset).
+> 
+> I started to read the changelog only after I failed to understand the
+> patch. And it looks confusing too.
+> 
+> "Refuse to set the current audit_pid if the new value is not its own PID",
+> OK, but if the new value is the caller's pid then it should obviously
+> point to the existing process, current?
 
-We perform a clean up of the Kbuid files in each architecture.
-We order the files in each Kbuild in alphabetical order
-by running the below script on each Kbuild file:
+Yes, but it may be lying, which helps nobody.  The value should either
+be its own pid, or zero.
 
-gawk '/^generic-y/ {
-        i = 3;
-        do {
-                for (; i<=NF; i++) {
-                        if ($i == "\\") {
-                                getline;
-                                i=1;
-                                continue;
-                        }
-                        if ($i != "")
-                                hdr[$i] = $i;
-                }
-                break;
-        } while (1);
-        next;
-}
-END {
-        n = asort(hdr);
-        for (i=1; i<=n; i++)
-                print "generic-y += " hdr[i];
-}'
+> > - Convert audit_pid into the initial pid namespace for reports
+> 
+> I can't apply this patch (and the previous one) due to multiple rejects,
+> I guess it depends on other changes?
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- arch/alpha/include/asm/Kbuild      |  4 ++--
- arch/arc/include/asm/Kbuild        |  6 +++---
- arch/arm/include/asm/Kbuild        |  2 +-
- arch/arm64/include/asm/Kbuild      |  4 ++--
- arch/avr32/include/asm/Kbuild      | 38 +++++++++++++++++++-------------------
- arch/blackfin/include/asm/Kbuild   |  4 ++--
- arch/c6x/include/asm/Kbuild        |  2 +-
- arch/cris/include/asm/Kbuild       |  2 +-
- arch/frv/include/asm/Kbuild        |  2 +-
- arch/hexagon/include/asm/Kbuild    |  6 +++---
- arch/ia64/include/asm/Kbuild       |  4 ++--
- arch/m32r/include/asm/Kbuild       |  2 +-
- arch/m68k/include/asm/Kbuild       |  4 ++--
- arch/metag/include/asm/Kbuild      |  2 +-
- arch/microblaze/include/asm/Kbuild |  4 ++--
- arch/mips/include/asm/Kbuild       |  2 +-
- arch/mn10300/include/asm/Kbuild    |  2 +-
- arch/openrisc/include/asm/Kbuild   |  8 ++++----
- arch/parisc/include/asm/Kbuild     | 26 +++++++++++++++++++++-----
- arch/powerpc/include/asm/Kbuild    |  4 ++--
- arch/s390/include/asm/Kbuild       |  2 +-
- arch/score/include/asm/Kbuild      |  2 +-
- arch/sh/include/asm/Kbuild         |  6 +++---
- arch/sparc/include/asm/Kbuild      |  8 ++++----
- arch/tile/include/asm/Kbuild       |  2 +-
- arch/um/include/asm/Kbuild         | 29 ++++++++++++++++++++++++-----
- arch/unicore32/include/asm/Kbuild  |  2 +-
- arch/xtensa/include/asm/Kbuild     |  2 +-
- 28 files changed, 108 insertions(+), 73 deletions(-)
+It depends on other patches in my for-next tree, but not necessarily
+functionally.
 
-diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-index f01fb50..532356b 100644
---- a/arch/alpha/include/asm/Kbuild
-+++ b/arch/alpha/include/asm/Kbuild
-@@ -1,6 +1,6 @@
- 
--generic-y += clkdev.h
- 
-+generic-y += clkdev.h
- generic-y += exec.h
--generic-y += trace_clock.h
- generic-y += preempt.h
-+generic-y += trace_clock.h
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index 9ae21c1..4348dbc 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -1,15 +1,15 @@
- generic-y += auxvec.h
- generic-y += barrier.h
--generic-y += bugs.h
- generic-y += bitsperlong.h
-+generic-y += bugs.h
- generic-y += clkdev.h
- generic-y += cputime.h
- generic-y += device.h
- generic-y += div64.h
- generic-y += emergency-restart.h
- generic-y += errno.h
--generic-y += fcntl.h
- generic-y += fb.h
-+generic-y += fcntl.h
- generic-y += ftrace.h
- generic-y += hardirq.h
- generic-y += hw_irq.h
-@@ -29,6 +29,7 @@ generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sembuf.h
-@@ -47,4 +48,3 @@ generic-y += ucontext.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
-index c38b58c..8f37076 100644
---- a/arch/arm/include/asm/Kbuild
-+++ b/arch/arm/include/asm/Kbuild
-@@ -17,6 +17,7 @@ generic-y += msgbuf.h
- generic-y += param.h
- generic-y += parport.h
- generic-y += poll.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += sections.h
- generic-y += segment.h
-@@ -33,4 +34,3 @@ generic-y += termios.h
- generic-y += timex.h
- generic-y += trace_clock.h
- generic-y += unaligned.h
--generic-y += preempt.h
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 519f89f..a14534d 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -29,6 +29,7 @@ generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-@@ -39,8 +40,8 @@ generic-y += shmbuf.h
- generic-y += sizes.h
- generic-y += socket.h
- generic-y += sockios.h
--generic-y += switch_to.h
- generic-y += swab.h
-+generic-y += switch_to.h
- generic-y += termbits.h
- generic-y += termios.h
- generic-y += topology.h
-@@ -50,4 +51,3 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
-index 658001b..d831429 100644
---- a/arch/avr32/include/asm/Kbuild
-+++ b/arch/avr32/include/asm/Kbuild
-@@ -1,20 +1,20 @@
- 
--generic-y	+= clkdev.h
--generic-y       += cputime.h
--generic-y       += delay.h
--generic-y       += device.h
--generic-y       += div64.h
--generic-y       += emergency-restart.h
--generic-y	+= exec.h
--generic-y       += futex.h
--generic-y	+= preempt.h
--generic-y       += irq_regs.h
--generic-y	+= param.h
--generic-y       += local.h
--generic-y       += local64.h
--generic-y       += percpu.h
--generic-y       += scatterlist.h
--generic-y       += sections.h
--generic-y       += topology.h
--generic-y	+= trace_clock.h
--generic-y       += xor.h
-+generic-y += clkdev.h
-+generic-y += cputime.h
-+generic-y += delay.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += emergency-restart.h
-+generic-y += exec.h
-+generic-y += futex.h
-+generic-y += irq_regs.h
-+generic-y += local.h
-+generic-y += local64.h
-+generic-y += param.h
-+generic-y += percpu.h
-+generic-y += preempt.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += topology.h
-+generic-y += trace_clock.h
-+generic-y += xor.h
-diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
-index f2b4347..37b9282 100644
---- a/arch/blackfin/include/asm/Kbuild
-+++ b/arch/blackfin/include/asm/Kbuild
-@@ -17,14 +17,15 @@ generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += kvm_para.h
--generic-y += local64.h
- generic-y += local.h
-+generic-y += local64.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += param.h
- generic-y += percpu.h
- generic-y += pgalloc.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sembuf.h
-@@ -44,4 +45,3 @@ generic-y += ucontext.h
- generic-y += unaligned.h
- generic-y += user.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
-index fc0b3c3..4b3f516 100644
---- a/arch/c6x/include/asm/Kbuild
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -34,6 +34,7 @@ generic-y += percpu.h
- generic-y += pgalloc.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += segment.h
-@@ -56,4 +57,3 @@ generic-y += ucontext.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-index 199b1a9..85c090d 100644
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -9,7 +9,7 @@ generic-y += exec.h
- generic-y += kvm_para.h
- generic-y += linkage.h
- generic-y += module.h
-+generic-y += preempt.h
- generic-y += trace_clock.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
-index 74742dc..695246e 100644
---- a/arch/frv/include/asm/Kbuild
-+++ b/arch/frv/include/asm/Kbuild
-@@ -1,5 +1,5 @@
- 
- generic-y += clkdev.h
- generic-y += exec.h
--generic-y += trace_clock.h
- generic-y += preempt.h
-+generic-y += trace_clock.h
-diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-index ada843c..17f3996 100644
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -24,14 +24,15 @@ generic-y += ipcbuf.h
- generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
--generic-y += local64.h
- generic-y += local.h
-+generic-y += local64.h
- generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += rwsem.h
- generic-y += scatterlist.h
-@@ -44,8 +45,8 @@ generic-y += siginfo.h
- generic-y += sizes.h
- generic-y += socket.h
- generic-y += sockios.h
--generic-y += statfs.h
- generic-y += stat.h
-+generic-y += statfs.h
- generic-y += termbits.h
- generic-y += termios.h
- generic-y += topology.h
-@@ -54,4 +55,3 @@ generic-y += types.h
- generic-y += ucontext.h
- generic-y += unaligned.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
-index f93ee08..6f1de3b 100644
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -2,6 +2,6 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += kvm_para.h
--generic-y += trace_clock.h
- generic-y += preempt.h
--generic-y += vtime.h
-\ No newline at end of file
-+generic-y += trace_clock.h
-+generic-y += vtime.h
-diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-index 2b58c5f..5cfbdd4 100644
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -2,5 +2,5 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += module.h
--generic-y += trace_clock.h
- generic-y += preempt.h
-+generic-y += trace_clock.h
-diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
-index a5d27f2..c690a6f 100644
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -13,11 +13,12 @@ generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
- generic-y += kvm_para.h
--generic-y += local64.h
- generic-y += local.h
-+generic-y += local64.h
- generic-y += mman.h
- generic-y += mutex.h
- generic-y += percpu.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-@@ -31,4 +32,3 @@ generic-y += trace_clock.h
- generic-y += types.h
- generic-y += word-at-a-time.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
-index 84d0c1d..3fc4a2e 100644
---- a/arch/metag/include/asm/Kbuild
-+++ b/arch/metag/include/asm/Kbuild
-@@ -30,6 +30,7 @@ generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += scatterlist.h
- generic-y += sections.h
- generic-y += sembuf.h
-@@ -52,4 +53,3 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
-index a824265..88968fa 100644
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@ -2,6 +2,6 @@
- generic-y += barrier.h
- generic-y += clkdev.h
- generic-y += exec.h
--generic-y += trace_clock.h
--generic-y += syscalls.h
- generic-y += preempt.h
-+generic-y += syscalls.h
-+generic-y += trace_clock.h
-diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
-index 1acbb8b..ef38961 100644
---- a/arch/mips/include/asm/Kbuild
-+++ b/arch/mips/include/asm/Kbuild
-@@ -6,11 +6,11 @@ generic-y += local64.h
- generic-y += mutex.h
- generic-y += parport.h
- generic-y += percpu.h
-+generic-y += preempt.h
- generic-y += scatterlist.h
- generic-y += sections.h
- generic-y += segment.h
- generic-y += serial.h
- generic-y += trace_clock.h
--generic-y += preempt.h
- generic-y += ucontext.h
- generic-y += xor.h
-diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
-index 032143e..6fb781f 100644
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@ -2,5 +2,5 @@
- generic-y += barrier.h
- generic-y += clkdev.h
- generic-y += exec.h
--generic-y += trace_clock.h
- generic-y += preempt.h
-+generic-y += trace_clock.h
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-index da1951a..32b5562 100644
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -10,8 +10,8 @@ generic-y += bugs.h
- generic-y += cacheflush.h
- generic-y += checksum.h
- generic-y += clkdev.h
--generic-y += cmpxchg.h
- generic-y += cmpxchg-local.h
-+generic-y += cmpxchg.h
- generic-y += cputime.h
- generic-y += current.h
- generic-y += device.h
-@@ -41,6 +41,7 @@ generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-@@ -53,11 +54,11 @@ generic-y += siginfo.h
- generic-y += signal.h
- generic-y += socket.h
- generic-y += sockios.h
--generic-y += statfs.h
- generic-y += stat.h
-+generic-y += statfs.h
- generic-y += string.h
--generic-y += switch_to.h
- generic-y += swab.h
-+generic-y += switch_to.h
- generic-y += termbits.h
- generic-y += termios.h
- generic-y += topology.h
-@@ -68,4 +69,3 @@ generic-y += user.h
- generic-y += vga.h
- generic-y += word-at-a-time.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
-index 34b0be4..bb0d9ebb 100644
---- a/arch/parisc/include/asm/Kbuild
-+++ b/arch/parisc/include/asm/Kbuild
-@@ -1,8 +1,24 @@
- 
-+generic-y += auxvec.h
- generic-y += barrier.h
--generic-y += word-at-a-time.h auxvec.h user.h cputime.h emergency-restart.h \
--	  segment.h topology.h vga.h device.h percpu.h hw_irq.h mutex.h \
--	  div64.h irq_regs.h kdebug.h kvm_para.h local64.h local.h param.h \
--	  poll.h xor.h clkdev.h exec.h
--generic-y += trace_clock.h
-+generic-y += clkdev.h
-+generic-y += cputime.h
-+generic-y += device.h
-+generic-y += emergency-restart.h
-+generic-y += exec.h
-+generic-y += hw_irq.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kvm_para.h
-+generic-y += local.h
-+generic-y += local64.h
-+generic-y += mutex.h
-+generic-y += param.h
-+generic-y += percpu.h
- generic-y += preempt.h
-+generic-y += topology.h
-+generic-y += trace_clock.h
-+generic-y += user.h
-+generic-y += vga.h
-+generic-y += word-at-a-time.h
-+generic-y += xor.h
-diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
-index d8f9d2f..8b19a80 100644
---- a/arch/powerpc/include/asm/Kbuild
-+++ b/arch/powerpc/include/asm/Kbuild
-@@ -1,6 +1,6 @@
- 
- generic-y += clkdev.h
-+generic-y += preempt.h
- generic-y += rwsem.h
- generic-y += trace_clock.h
--generic-y += preempt.h
--generic-y += vtime.h
-\ No newline at end of file
-+generic-y += vtime.h
-diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
-index 7a5288f..6bd5f27 100644
---- a/arch/s390/include/asm/Kbuild
-+++ b/arch/s390/include/asm/Kbuild
-@@ -1,5 +1,5 @@
- 
+> In any case, this patch looks wrong.
+> 
+> > @@ -412,9 +412,11 @@ static void kauditd_send_skb(struct sk_buff *skb)
+> >  		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
+> >  		if (audit_pid) {
+> >  			pr_err("audit: *NO* daemon at audit_pid=%d\n",
+> > -				audit_pid);
+> > +				pid_nr(audit_pid));
+> >  			audit_log_lost("auditd disappeared\n");
+> > -			audit_pid = 0;
+> > +			put_pid(audit_pid);
+> 
+> But this can actually free this pid. Why it is safe to use it elsewhere?
+> 
+> > +			audit_pid = NULL;
+> 
+> This also means that every "if (audit_pid)" is racy.
 
- generic-y += clkdev.h
--generic-y += trace_clock.h
- generic-y += preempt.h
-+generic-y += trace_clock.h
-diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
-index fe7471e..064b55f 100644
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@ -3,6 +3,6 @@ header-y +=
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += preempt.h
- generic-y += trace_clock.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
-index 231efbb..8856e73 100644
---- a/arch/sh/include/asm/Kbuild
-+++ b/arch/sh/include/asm/Kbuild
-@@ -14,12 +14,13 @@ generic-y += irq_regs.h
- generic-y += kvm_para.h
- generic-y += local.h
- generic-y += local64.h
-+generic-y += mman.h
-+generic-y += msgbuf.h
- generic-y += param.h
- generic-y += parport.h
- generic-y += percpu.h
- generic-y += poll.h
--generic-y += mman.h
--generic-y += msgbuf.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sembuf.h
-@@ -34,4 +35,3 @@ generic-y += termios.h
- generic-y += trace_clock.h
- generic-y += ucontext.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
-index bf39066..3e78fda 100644
---- a/arch/sparc/include/asm/Kbuild
-+++ b/arch/sparc/include/asm/Kbuild
-@@ -6,14 +6,14 @@ generic-y += cputime.h
- generic-y += div64.h
- generic-y += emergency-restart.h
- generic-y += exec.h
--generic-y += linkage.h
--generic-y += local64.h
--generic-y += mutex.h
- generic-y += irq_regs.h
-+generic-y += linkage.h
- generic-y += local.h
-+generic-y += local64.h
- generic-y += module.h
-+generic-y += mutex.h
-+generic-y += preempt.h
- generic-y += serial.h
- generic-y += trace_clock.h
- generic-y += types.h
- generic-y += word-at-a-time.h
--generic-y += preempt.h
-diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-index 22f3bd1..948549c 100644
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -24,6 +24,7 @@ generic-y += param.h
- generic-y += parport.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sembuf.h
-@@ -38,4 +39,3 @@ generic-y += termios.h
- generic-y += trace_clock.h
- generic-y += types.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
-index fdde187..1cfae1f 100644
---- a/arch/um/include/asm/Kbuild
-+++ b/arch/um/include/asm/Kbuild
-@@ -1,6 +1,25 @@
--generic-y += bug.h cputime.h device.h emergency-restart.h futex.h hardirq.h
--generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
--generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
--generic-y += switch_to.h clkdev.h
--generic-y += trace_clock.h
-+generic-y += bug.h
-+generic-y += clkdev.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += delay.h
-+generic-y += device.h
-+generic-y += emergency-restart.h
-+generic-y += exec.h
-+generic-y += ftrace.h
-+generic-y += futex.h
-+generic-y += hardirq.h
-+generic-y += hw_irq.h
-+generic-y += io.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += mutex.h
-+generic-y += param.h
-+generic-y += pci.h
-+generic-y += percpu.h
- generic-y += preempt.h
-+generic-y += sections.h
-+generic-y += switch_to.h
-+generic-y += topology.h
-+generic-y += trace_clock.h
-+generic-y += xor.h
-diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
-index 00045cb..a61f73a 100644
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -32,6 +32,7 @@ generic-y += parport.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-@@ -60,4 +61,3 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
--generic-y += preempt.h
-diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
-index 228d6ae..68da9d4 100644
---- a/arch/xtensa/include/asm/Kbuild
-+++ b/arch/xtensa/include/asm/Kbuild
-@@ -19,6 +19,7 @@ generic-y += linkage.h
- generic-y += local.h
- generic-y += local64.h
- generic-y += percpu.h
-+generic-y += preempt.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-@@ -28,4 +29,3 @@ generic-y += termios.h
- generic-y += topology.h
- generic-y += trace_clock.h
- generic-y += xor.h
--generic-y += preempt.h
--- 
-1.7.11.7
+Ok, so I really need something like:
 
+ 		if (audit_pid) {
+			struct pid *temp_pid = audit_pid;
+ 			pr_err("*NO* daemon at audit_pid=%d\n", pid_nr(audit_pid));
+ 			audit_log_lost("auditd disappeared\n");
+			audit_pid = NULL;
+			smp_mb();
+			put_pid(temp_pid);
+			audit_sock = NULL;
+		}
 
+Do I actually need the memory barrier there?  Is that the right one to
+use?
 
+> > @@ -814,12 +816,26 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+> >  				return err;
+> >  		}
+> >  		if (s.mask & AUDIT_STATUS_PID) {
+> > -			int new_pid = s.pid;
+> > -
+> > -			if ((!new_pid) && (task_tgid_vnr(current) != audit_pid))
+> > +			struct pid *new_pid = find_get_pid(s.pid);
+> > +			if (s.pid && !new_pid)
+> > +				return -ESRCH;
+> 
+> can't understand... find_get_pid(s.pid) is pointless if s.pid == 0 ?
+
+"can't understand"?  I hope you mean "don't understand".  ;-)
+
+> 			struct pid *new_pid = NULL;
+> 
+> 			if (new_pid) {
+
+I think you mean "if (s.pid) {".
+
+> 				new_pid = find_get_pid(s.pid);
+> 				if (!new_pid)
+> 					return -ESRCH;
+> 			}
+> 
+> looks more understandable.
+
+Agreed.
+
+> > +			/* check that non-zero pid it is trying to set is its
+> > +			 * own*/
+> > +			if (s.pid && (s.pid != task_pid_vnr(current)))
+> 
+> again, this looks a bit confusing and suboptimal. Imho it would be better
+> to add
+> 
+> 			if (new_pid != task_tgid(current))
+
+It is not so obvious to me, because this code had been dealing with
+pid_t rather than struct pid*, but I agree it may be more optimal.
+
+> into the "if (s.pid)" above. Hmm, actually task_pid_vnr() above looks
+> simply wrong, we need tgid or I am totally confused.
+
+The use of task_tgid_vnr() in isolation in commit 34eab0a7 was an error,
+I believe, and should have been task_pid_vnr() unless new_pid was then
+converted to the thread group leader before being assigned to audit_pid.
+I believe auditd only ever registers from the thread group leader, but I
+will have to check that assumption with Steve and Eric.  If not, I may
+have to change it to reference the tgid, making this code a bit more
+complex since it would need to convert from pid_t to struct pid*, then
+find the tgid.
+
+I'd need to replace:
+	new_pid = find_get_pid(s.pid);
+
+with:
+	rcu_read_lock();
+	new_pid = get_pid(task_tgid(find_task_by_vpid(s.pid)))
+	rcu_read_unlock();
+
+or it might be nicer to define:
+	struct pid *audit_find_get_tgid(pid_t vnr) {
+		rcu_read_lock();
+		new_pid = get_pid(task_tgid(find_task_by_vpid(vnr)));
+		rcu_read_unlock();
+	}
+
+or better yet in kernel/pid.c:
+	struct pid *find_get_tgid(pid_t vnr) {
+		rcu_read_lock();
+		new_pid = get_pid(task_tgid(find_task_by_vpid(vnr)));
+		rcu_read_unlock();
+	}
+
+Do you have another reason to believe we need task_tgid_vnr()?
+
+Part of the answer is in 582edda5, but if my assumption above is
+correct, we don't need it here.
+
+> OTOH, if we require s.pid == task_pid_vnr(current), then why do we need
+> find_pid() at all?
+
+Because userspace may be trying to set it to zero on shutdown, but I
+suppose we could special-case zero.
+
+> > +				return -EPERM;
+> 
+> this lacks put_pid(new_pid).
+
+Thanks.
+
+> > +			/* check that it isn't orphaning another process */
+> > +			if ((!new_pid) &&
+> > +			    (task_tgid_vnr(current) != pid_vnr(audit_pid)))
+> >  				return -EACCES;
+> 
+> and this can go into the "else" branch.
+
+Yup.
+
+> And I can't understand the "it isn't orphaning another process" logic...
+
+There was a potential race condition that if a second auditd started up
+while there was still one running, when the first eventually shut down,
+it would try to set the audit_pid to zero to indicate it was going away
+and orphan the newer auditd from kaudit.
+
+If we check that the pid of the auditd trying to set it to zero was the
+same as the pid recorded in kaudit, we can safely assume it is the
+newest and safely set audit_pid to zero.
+
+A newer auditd can orphan a previous auditd, but this isn't really
+avoidable since it may be awol and need replacing anyways.
+
+> OK, what if s.pid == 0 and audit_pid == NULL, should we fail in this case?
+
+It doesn't really matter since auditd isn't likely to try this
+combinaiton and it won't matter if it fails.
+
+> And I do not see how this matches "Refuse to set the current audit_pid
+> if the new value is not its own PID" from the changelog.
+> 
+> > +
+> >  			audit_pid = new_pid;
+> 
+> Another leak, it seems.
+
+Oops, thanks.
+
+> > @@ -1331,7 +1347,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+> >  		return NULL;
+> >
+> >  	if (gfp_mask & __GFP_WAIT) {
+> > -		if (audit_pid && audit_pid == current->pid)
+> > +		if (pid_nr(audit_pid) == task_pid_nr(current))
+> 
+> So is this audit_pid tid or tgid? Its usage looks totally confusing.
+
+pid, as noted above, but could be changed to tgid.
+
+> Anyway,
+> 
+> 		if (audit_pid == task_pid(current))
+> 
+> (or probably task_tgid) looks much better.
+
+Fair enough, compare struct pid* rather than the original pid_t.
+
+> > +		//if (pid_task(audit_pid, PIDTYPE_PID) == current)
+> 
+> in this case you need to update Documentation/CodingStyle ;)
+
+Heh...  trust the SCM...  and that was comparing task_structs rather
+than pid_t or struct pid*.  Still getting comfortable with struct pid*.
+
+> Oleg.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
