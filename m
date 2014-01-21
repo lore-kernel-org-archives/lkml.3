@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaAUWHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:07:11 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:47461 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaAUWHI (ORCPT
+	id S1753893AbaAUWHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:07:39 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44830 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744AbaAUWHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:07:08 -0500
-Message-ID: <52DEEF88.8090709@gmail.com>
-Date: Tue, 21 Jan 2014 14:07:04 -0800
-From: walt <w41ter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com> <20140114172056.GB12126@xanatos> <52D5ABBD.7090202@gmail.com> <063D6719AE5E284EB5DD2968C1650D6D45EDA3@AcuExch.aculab.com> <52DAE2BF.7020208@gmail.com> <063D6719AE5E284EB5DD2968C1650D6D45FF6C@AcuExch.aculab.com> <20140120181442.GA5545@xanatos> <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 Jan 2014 17:07:32 -0500
+Message-ID: <1390342178.5567.770.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
+ accept task state bitmask
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>
+Date: Tue, 21 Jan 2014 14:09:38 -0800
+In-Reply-To: <20140120113415.GE30183@twins.programming.kicks-ass.net>
+References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
+	 <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
+	 <20140120113415.GE30183@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 01:51 AM, David Laight wrote:
-> From: Sarah Sharp
->> On Mon, Jan 20, 2014 at 11:21:14AM +0000, David Laight wrote:
-> ...
->>> A guess...
->>>
->>> In queue_bulk_sg_tx() try calling xhci_v1_0_td_remainder() instead
->>> of xhci_td_remainder().
->>
->> Why?  Walt has a 0.96 xHCI host controller, and the format for how to
->> calculate the TD remainder changed between the 0.96 and the 1.0 spec.
->> That's why we have xhci_v1_0_td_remainder() and xhci_td_remainder().
+On Mon, 2014-01-20 at 12:34 +0100, Peter Zijlstra wrote:
+> On Mon, Jan 20, 2014 at 03:44:44AM +0000, Nicholas A. Bellinger wrote:
+> > From: Kent Overstreet <kmo@daterainc.com>
+> > 
+> > This patch changes percpu_ida_alloc() + callers to accept task state
+> > bitmask for prepare_to_wait() for code like target/iscsi that needs
+> > it for interruptible sleep, that is provided in a subsequent patch.
+> > 
+> > It now expects TASK_UNINTERRUPTIBLE when the caller is able to sleep
+> > waiting for a new tag, or TASK_RUNNING when the caller cannot sleep,
+> > and is forced to return a negative value when no tags are available.
+> > 
+> > v2 changes:
+> >   - Include blk-mq + tcm_fc + vhost/scsi + target/iscsi changes
+> >   - Drop signal_pending_state() call
 > 
-> I just wonder how many of those differences are just differences in the
-> specification, rather than differences in the hardware implementation.
-> In some cases it might be that the old hardware just ignored the value.
+> Urgh, you made me look at percpu_ida... steal_tags() does a
+> for_each_cpus() with IRQs disabled. This mean you'll disable IRQs for
+> multiple ticks on SGI class hardware. That is a _very_ long time indeed.
 > 
-> I know that the xhci hardware on my ivy bridge cpu does look at that
-> value (at least checking for zero), since things failed in subtle ways
-> when I got it wrong.
-> 
-> In this case it was just something easy to change that might be worth
-> trying.  I didn't necessarily expect it to make a positive difference.
 
-David, I tried the one-liner below, which changed nothing AFAICS, but
-then I'm not sure it's the change you intended:
+So given the performance penalties involved in the steal tag slow path,
+consumers should typically be pre-allocating a larger number of
+percpu_ida tags than necessary to (ideally) avoid this logic completely.
 
---- xhci-ring.c.orig	2014-01-21 13:28:36.396278813 -0800
-+++ xhci-ring.c	2014-01-21 13:35:11.410312814 -0800
-@@ -3335,7 +3335,7 @@
- 		}
- 
- 		/* Set the TRB length, TD size, and interrupter fields. */
--		if (xhci->hci_version < 0x100) {
-+		if (xhci->hci_version > 0x100) {
- 			remainder = xhci_td_remainder(
- 					urb->transfer_buffer_length -
- 					running_total);
+> Then there's alloc_global_tags() vs alloc_local_tags(), one gets an
+> actual tag, while the other only moves tags about -- semantic mismatch.
+> 
+
+How about just in-lining alloc_global_tags() into percpu_ida_alloc()..?
+
+> I do not get the comment near prepare to wait -- why does it matter if
+> percpu_ida_free() flips a cpus_have_tags bit?
+> 
+
+Mmm, not sure on that one.
+
+> Given I don't understand this comment, its hard for me to properly
+> review the proposed patch series.
+> 
+
+Kent..?
+
+--nab
 
