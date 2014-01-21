@@ -1,54 +1,924 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228AbaAUVhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:37:54 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:37013 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956AbaAUVhq (ORCPT
+	id S1755561AbaAUViX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:38:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56439 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671AbaAUVZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:37:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1390339396-3479-74-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 21 Jan 2014 16:25:11 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>, <linux-ide@vger.kernel.org>
+Subject: [PATCH 48/73] drivers/ata: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:22:51 -0500
+Message-ID: <1390339396-3479-49-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-	<1390339396-3479-74-git-send-email-paul.gortmaker@windriver.com>
-Date: Tue, 21 Jan 2014 22:37:45 +0100
-X-Google-Sender-Auth: fWuTRAh4kpD8LQ45TBFWJWkRA1k
-Message-ID: <CAMuHMdX+H-jqmpUt+E6_-pSnFFboS0FPNai+0oBQpJz9qOzJYQ@mail.gmail.com>
-Subject: Re: [PATCH 73/73] include: remove needless instances of <linux/init.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:23 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> diff --git a/include/linux/zorro.h b/include/linux/zorro.h
-> index 63fbba0..529604b 100644
-> --- a/include/linux/zorro.h
-> +++ b/include/linux/zorro.h
-> @@ -15,7 +15,6 @@
->  #include <uapi/linux/zorro.h>
->
->  #include <linux/device.h>
-> -#include <linux/init.h>
->  #include <linux/ioport.h>
->  #include <linux/mod_devicetable.h>
+None of these files are actually using any __init type directives
+and hence don't need to include <linux/init.h>.  Most are just a
+left over from __devinit and __cpuinit removal, or simply due to
+code getting copied from one driver to the next.
 
-There's an __initdata below in that file:
+Cc: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/ata/acard-ahci.c        | 1 -
+ drivers/ata/ahci.c              | 1 -
+ drivers/ata/ahci_platform.c     | 1 -
+ drivers/ata/ata_generic.c       | 1 -
+ drivers/ata/libahci.c           | 1 -
+ drivers/ata/pata_acpi.c         | 1 -
+ drivers/ata/pata_amd.c          | 1 -
+ drivers/ata/pata_artop.c        | 1 -
+ drivers/ata/pata_at91.c         | 1 -
+ drivers/ata/pata_atiixp.c       | 1 -
+ drivers/ata/pata_atp867x.c      | 1 -
+ drivers/ata/pata_cmd640.c       | 1 -
+ drivers/ata/pata_cmd64x.c       | 1 -
+ drivers/ata/pata_cs5520.c       | 1 -
+ drivers/ata/pata_cs5530.c       | 1 -
+ drivers/ata/pata_cs5535.c       | 1 -
+ drivers/ata/pata_cs5536.c       | 1 -
+ drivers/ata/pata_cypress.c      | 1 -
+ drivers/ata/pata_efar.c         | 1 -
+ drivers/ata/pata_ep93xx.c       | 1 -
+ drivers/ata/pata_hpt366.c       | 1 -
+ drivers/ata/pata_hpt37x.c       | 1 -
+ drivers/ata/pata_hpt3x2n.c      | 1 -
+ drivers/ata/pata_hpt3x3.c       | 1 -
+ drivers/ata/pata_imx.c          | 1 -
+ drivers/ata/pata_it8213.c       | 1 -
+ drivers/ata/pata_it821x.c       | 1 -
+ drivers/ata/pata_jmicron.c      | 1 -
+ drivers/ata/pata_marvell.c      | 1 -
+ drivers/ata/pata_mpiix.c        | 1 -
+ drivers/ata/pata_netcell.c      | 1 -
+ drivers/ata/pata_ninja32.c      | 1 -
+ drivers/ata/pata_ns87410.c      | 1 -
+ drivers/ata/pata_ns87415.c      | 1 -
+ drivers/ata/pata_oldpiix.c      | 1 -
+ drivers/ata/pata_opti.c         | 1 -
+ drivers/ata/pata_optidma.c      | 1 -
+ drivers/ata/pata_pcmcia.c       | 1 -
+ drivers/ata/pata_pdc2027x.c     | 1 -
+ drivers/ata/pata_pdc202xx_old.c | 1 -
+ drivers/ata/pata_piccolo.c      | 1 -
+ drivers/ata/pata_platform.c     | 1 -
+ drivers/ata/pata_pxa.c          | 1 -
+ drivers/ata/pata_radisys.c      | 1 -
+ drivers/ata/pata_rdc.c          | 1 -
+ drivers/ata/pata_rz1000.c       | 1 -
+ drivers/ata/pata_sc1200.c       | 1 -
+ drivers/ata/pata_scc.c          | 1 -
+ drivers/ata/pata_sch.c          | 1 -
+ drivers/ata/pata_serverworks.c  | 1 -
+ drivers/ata/pata_sil680.c       | 1 -
+ drivers/ata/pata_sis.c          | 1 -
+ drivers/ata/pata_sl82c105.c     | 1 -
+ drivers/ata/pata_triflex.c      | 1 -
+ drivers/ata/pata_via.c          | 1 -
+ drivers/ata/pdc_adma.c          | 1 -
+ drivers/ata/sata_dwc_460ex.c    | 1 -
+ drivers/ata/sata_highbank.c     | 1 -
+ drivers/ata/sata_nv.c           | 1 -
+ drivers/ata/sata_promise.c      | 1 -
+ drivers/ata/sata_qstor.c        | 1 -
+ drivers/ata/sata_sil.c          | 1 -
+ drivers/ata/sata_sis.c          | 1 -
+ drivers/ata/sata_svw.c          | 1 -
+ drivers/ata/sata_sx4.c          | 1 -
+ drivers/ata/sata_uli.c          | 1 -
+ drivers/ata/sata_via.c          | 1 -
+ drivers/ata/sata_vsc.c          | 1 -
+ 68 files changed, 68 deletions(-)
 
-extern struct zorro_dev_init zorro_autocon_init[ZORRO_NUM_AUTO] __initdata;
+diff --git a/drivers/ata/acard-ahci.c b/drivers/ata/acard-ahci.c
+index fd665d9..b51605a 100644
+--- a/drivers/ata/acard-ahci.c
++++ b/drivers/ata/acard-ahci.c
+@@ -36,7 +36,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index dc2756f..b6a49ce 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -35,7 +35,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 4b231ba..9302d81 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -17,7 +17,6 @@
+ #include <linux/gfp.h>
+ #include <linux/module.h>
+ #include <linux/pm.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/ata/ata_generic.c b/drivers/ata/ata_generic.c
+index 7d19665..9498a7d 100644
+--- a/drivers/ata/ata_generic.c
++++ b/drivers/ata/ata_generic.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 36605ab..cba1b48 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -35,7 +35,6 @@
+ #include <linux/kernel.h>
+ #include <linux/gfp.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/pata_acpi.c b/drivers/ata/pata_acpi.c
+index 62c9ac8..5108b87 100644
+--- a/drivers/ata/pata_acpi.c
++++ b/drivers/ata/pata_acpi.c
+@@ -7,7 +7,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_amd.c b/drivers/ata/pata_amd.c
+index d23e2b3..1206fa6 100644
+--- a/drivers/ata/pata_amd.c
++++ b/drivers/ata/pata_amd.c
+@@ -17,7 +17,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_artop.c b/drivers/ata/pata_artop.c
+index 1581dee..3aa4e65 100644
+--- a/drivers/ata/pata_artop.c
++++ b/drivers/ata/pata_artop.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+index d63ee8f..e9c8727 100644
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -18,7 +18,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/gfp.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_atiixp.c b/drivers/ata/pata_atiixp.c
+index 24e5105..30fa4ca 100644
+--- a/drivers/ata/pata_atiixp.c
++++ b/drivers/ata/pata_atiixp.c
+@@ -15,7 +15,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_atp867x.c b/drivers/ata/pata_atp867x.c
+index 2ca5026..7e73a0f 100644
+--- a/drivers/ata/pata_atp867x.c
++++ b/drivers/ata/pata_atp867x.c
+@@ -29,7 +29,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_cmd640.c b/drivers/ata/pata_cmd640.c
+index 8fb69e5..57f1be6 100644
+--- a/drivers/ata/pata_cmd640.c
++++ b/drivers/ata/pata_cmd640.c
+@@ -15,7 +15,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/gfp.h>
+diff --git a/drivers/ata/pata_cmd64x.c b/drivers/ata/pata_cmd64x.c
+index 1275a8d..6bca350 100644
+--- a/drivers/ata/pata_cmd64x.c
++++ b/drivers/ata/pata_cmd64x.c
+@@ -26,7 +26,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_cs5520.c b/drivers/ata/pata_cs5520.c
+index f10baab..bcde4b7 100644
+--- a/drivers/ata/pata_cs5520.c
++++ b/drivers/ata/pata_cs5520.c
+@@ -34,7 +34,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_cs5530.c b/drivers/ata/pata_cs5530.c
+index f07f229..8afe854 100644
+--- a/drivers/ata/pata_cs5530.c
++++ b/drivers/ata/pata_cs5530.c
+@@ -26,7 +26,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_cs5535.c b/drivers/ata/pata_cs5535.c
+index 997e16a..2c0986f 100644
+--- a/drivers/ata/pata_cs5535.c
++++ b/drivers/ata/pata_cs5535.c
+@@ -31,7 +31,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_cs5536.c b/drivers/ata/pata_cs5536.c
+index 0448860..32ddcae 100644
+--- a/drivers/ata/pata_cs5536.c
++++ b/drivers/ata/pata_cs5536.c
+@@ -33,7 +33,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/libata.h>
+diff --git a/drivers/ata/pata_cypress.c b/drivers/ata/pata_cypress.c
+index 810bc99..3435bd6 100644
+--- a/drivers/ata/pata_cypress.c
++++ b/drivers/ata/pata_cypress.c
+@@ -11,7 +11,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_efar.c b/drivers/ata/pata_efar.c
+index 3c12fd7..f440892 100644
+--- a/drivers/ata/pata_efar.c
++++ b/drivers/ata/pata_efar.c
+@@ -14,7 +14,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_ep93xx.c b/drivers/ata/pata_ep93xx.c
+index 980b88e..cad9d45 100644
+--- a/drivers/ata/pata_ep93xx.c
++++ b/drivers/ata/pata_ep93xx.c
+@@ -34,7 +34,6 @@
+ #include <linux/err.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <scsi/scsi_host.h>
+ #include <linux/ata.h>
+diff --git a/drivers/ata/pata_hpt366.c b/drivers/ata/pata_hpt366.c
+index 35b5213..8e76f79 100644
+--- a/drivers/ata/pata_hpt366.c
++++ b/drivers/ata/pata_hpt366.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_hpt37x.c b/drivers/ata/pata_hpt37x.c
+index a9d74ef..3ba843f 100644
+--- a/drivers/ata/pata_hpt37x.c
++++ b/drivers/ata/pata_hpt37x.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_hpt3x2n.c b/drivers/ata/pata_hpt3x2n.c
+index 4be0398..b93c0f0 100644
+--- a/drivers/ata/pata_hpt3x2n.c
++++ b/drivers/ata/pata_hpt3x2n.c
+@@ -20,7 +20,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_hpt3x3.c b/drivers/ata/pata_hpt3x3.c
+index 85cf286..255c5aa 100644
+--- a/drivers/ata/pata_hpt3x3.c
++++ b/drivers/ata/pata_hpt3x3.c
+@@ -16,7 +16,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_imx.c b/drivers/ata/pata_imx.c
+index 26386f0..97417d5 100644
+--- a/drivers/ata/pata_imx.c
++++ b/drivers/ata/pata_imx.c
+@@ -15,7 +15,6 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <scsi/scsi_host.h>
+ #include <linux/ata.h>
+diff --git a/drivers/ata/pata_it8213.c b/drivers/ata/pata_it8213.c
+index 2a8dd95..81369d1 100644
+--- a/drivers/ata/pata_it8213.c
++++ b/drivers/ata/pata_it8213.c
+@@ -10,7 +10,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_it821x.c b/drivers/ata/pata_it821x.c
+index 581e04d..dc3d787 100644
+--- a/drivers/ata/pata_it821x.c
++++ b/drivers/ata/pata_it821x.c
+@@ -72,7 +72,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+diff --git a/drivers/ata/pata_jmicron.c b/drivers/ata/pata_jmicron.c
+index 76e739b0..b1cfa02 100644
+--- a/drivers/ata/pata_jmicron.c
++++ b/drivers/ata/pata_jmicron.c
+@@ -10,7 +10,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
+index a4f5e78..6bad3df 100644
+--- a/drivers/ata/pata_marvell.c
++++ b/drivers/ata/pata_marvell.c
+@@ -11,7 +11,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_mpiix.c b/drivers/ata/pata_mpiix.c
+index 1f5f28b..f39a537 100644
+--- a/drivers/ata/pata_mpiix.c
++++ b/drivers/ata/pata_mpiix.c
+@@ -28,7 +28,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_netcell.c b/drivers/ata/pata_netcell.c
+index ad1a0fe..e3b9709 100644
+--- a/drivers/ata/pata_netcell.c
++++ b/drivers/ata/pata_netcell.c
+@@ -7,7 +7,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_ninja32.c b/drivers/ata/pata_ninja32.c
+index 9513e07..56201a6 100644
+--- a/drivers/ata/pata_ninja32.c
++++ b/drivers/ata/pata_ninja32.c
+@@ -37,7 +37,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_ns87410.c b/drivers/ata/pata_ns87410.c
+index 0c424da..6154c3e 100644
+--- a/drivers/ata/pata_ns87410.c
++++ b/drivers/ata/pata_ns87410.c
+@@ -20,7 +20,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_ns87415.c b/drivers/ata/pata_ns87415.c
+index 16dc3a6..d44df7c 100644
+--- a/drivers/ata/pata_ns87415.c
++++ b/drivers/ata/pata_ns87415.c
+@@ -25,7 +25,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_oldpiix.c b/drivers/ata/pata_oldpiix.c
+index d77b2e1..319b644 100644
+--- a/drivers/ata/pata_oldpiix.c
++++ b/drivers/ata/pata_oldpiix.c
+@@ -16,7 +16,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_opti.c b/drivers/ata/pata_opti.c
+index 4ea70cd..fb042e0 100644
+--- a/drivers/ata/pata_opti.c
++++ b/drivers/ata/pata_opti.c
+@@ -26,7 +26,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_optidma.c b/drivers/ata/pata_optidma.c
+index 78ede3f..bb71ea2 100644
+--- a/drivers/ata/pata_optidma.c
++++ b/drivers/ata/pata_optidma.c
+@@ -25,7 +25,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_pcmcia.c b/drivers/ata/pata_pcmcia.c
+index 40254f4..bcc4b96 100644
+--- a/drivers/ata/pata_pcmcia.c
++++ b/drivers/ata/pata_pcmcia.c
+@@ -26,7 +26,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+diff --git a/drivers/ata/pata_pdc2027x.c b/drivers/ata/pata_pdc2027x.c
+index 9d874c8..1151f23 100644
+--- a/drivers/ata/pata_pdc2027x.c
++++ b/drivers/ata/pata_pdc2027x.c
+@@ -25,7 +25,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_pdc202xx_old.c b/drivers/ata/pata_pdc202xx_old.c
+index c34fc50..defa050 100644
+--- a/drivers/ata/pata_pdc202xx_old.c
++++ b/drivers/ata/pata_pdc202xx_old.c
+@@ -15,7 +15,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_piccolo.c b/drivers/ata/pata_piccolo.c
+index 2beb6b5..0b46be1 100644
+--- a/drivers/ata/pata_piccolo.c
++++ b/drivers/ata/pata_piccolo.c
+@@ -18,7 +18,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_platform.c b/drivers/ata/pata_platform.c
+index 0279488..a5579b5 100644
+--- a/drivers/ata/pata_platform.c
++++ b/drivers/ata/pata_platform.c
+@@ -13,7 +13,6 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <scsi/scsi_host.h>
+ #include <linux/ata.h>
+diff --git a/drivers/ata/pata_pxa.c b/drivers/ata/pata_pxa.c
+index a6f05ac..73259bf 100644
+--- a/drivers/ata/pata_pxa.c
++++ b/drivers/ata/pata_pxa.c
+@@ -20,7 +20,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/ata.h>
+ #include <linux/libata.h>
+diff --git a/drivers/ata/pata_radisys.c b/drivers/ata/pata_radisys.c
+index f582ba1..be3f102 100644
+--- a/drivers/ata/pata_radisys.c
++++ b/drivers/ata/pata_radisys.c
+@@ -15,7 +15,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_rdc.c b/drivers/ata/pata_rdc.c
+index 79a970f..521b213 100644
+--- a/drivers/ata/pata_rdc.c
++++ b/drivers/ata/pata_rdc.c
+@@ -24,7 +24,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_rz1000.c b/drivers/ata/pata_rz1000.c
+index 040b093..caedc90 100644
+--- a/drivers/ata/pata_rz1000.c
++++ b/drivers/ata/pata_rz1000.c
+@@ -14,7 +14,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_sc1200.c b/drivers/ata/pata_sc1200.c
+index ce2f828..96a232f 100644
+--- a/drivers/ata/pata_sc1200.c
++++ b/drivers/ata/pata_sc1200.c
+@@ -32,7 +32,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_scc.c b/drivers/ata/pata_scc.c
+index f35f15f..f1f5b5a 100644
+--- a/drivers/ata/pata_scc.c
++++ b/drivers/ata/pata_scc.c
+@@ -35,7 +35,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_sch.c b/drivers/ata/pata_sch.c
+index d3830c4..5a1cde0 100644
+--- a/drivers/ata/pata_sch.c
++++ b/drivers/ata/pata_sch.c
+@@ -27,7 +27,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_serverworks.c b/drivers/ata/pata_serverworks.c
+index 96c6a79..e27f31f 100644
+--- a/drivers/ata/pata_serverworks.c
++++ b/drivers/ata/pata_serverworks.c
+@@ -34,7 +34,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_sil680.c b/drivers/ata/pata_sil680.c
+index c4b0b07..73fe362 100644
+--- a/drivers/ata/pata_sil680.c
++++ b/drivers/ata/pata_sil680.c
+@@ -25,7 +25,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
+index 1e83636..78d913a 100644
+--- a/drivers/ata/pata_sis.c
++++ b/drivers/ata/pata_sis.c
+@@ -26,7 +26,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/pata_sl82c105.c b/drivers/ata/pata_sl82c105.c
+index 6816911..900f0e4 100644
+--- a/drivers/ata/pata_sl82c105.c
++++ b/drivers/ata/pata_sl82c105.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_triflex.c b/drivers/ata/pata_triflex.c
+index 94473da..7bc78e2 100644
+--- a/drivers/ata/pata_triflex.c
++++ b/drivers/ata/pata_triflex.c
+@@ -36,7 +36,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+diff --git a/drivers/ata/pata_via.c b/drivers/ata/pata_via.c
+index c3ab9a6..f6c9632 100644
+--- a/drivers/ata/pata_via.c
++++ b/drivers/ata/pata_via.c
+@@ -55,7 +55,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/gfp.h>
+diff --git a/drivers/ata/pdc_adma.c b/drivers/ata/pdc_adma.c
+index 8ea6e6a..f10631b 100644
+--- a/drivers/ata/pdc_adma.c
++++ b/drivers/ata/pdc_adma.c
+@@ -36,7 +36,6 @@
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+index 523524b..73510d0 100644
+--- a/drivers/ata/sata_dwc_460ex.c
++++ b/drivers/ata/sata_dwc_460ex.c
+@@ -29,7 +29,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index ea3b3dc..39814bb 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/gfp.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+diff --git a/drivers/ata/sata_nv.c b/drivers/ata/sata_nv.c
+index d74def8..ba5f271 100644
+--- a/drivers/ata/sata_nv.c
++++ b/drivers/ata/sata_nv.c
+@@ -40,7 +40,6 @@
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_promise.c b/drivers/ata/sata_promise.c
+index 97f4acb..3638887 100644
+--- a/drivers/ata/sata_promise.c
++++ b/drivers/ata/sata_promise.c
+@@ -35,7 +35,6 @@
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_qstor.c b/drivers/ata/sata_qstor.c
+index 3b0dd57..9a6bd4c 100644
+--- a/drivers/ata/sata_qstor.c
++++ b/drivers/ata/sata_qstor.c
+@@ -31,7 +31,6 @@
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_sil.c b/drivers/ata/sata_sil.c
+index d67fc35..e476e7b 100644
+--- a/drivers/ata/sata_sil.c
++++ b/drivers/ata/sata_sil.c
+@@ -37,7 +37,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_sis.c b/drivers/ata/sata_sis.c
+index 1ad2f62..b513428 100644
+--- a/drivers/ata/sata_sis.c
++++ b/drivers/ata/sata_sis.c
+@@ -33,7 +33,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_svw.c b/drivers/ata/sata_svw.c
+index dc4f701..c630fa8 100644
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -39,7 +39,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_sx4.c b/drivers/ata/sata_sx4.c
+index 9947010..6cd0312 100644
+--- a/drivers/ata/sata_sx4.c
++++ b/drivers/ata/sata_sx4.c
+@@ -82,7 +82,6 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_uli.c b/drivers/ata/sata_uli.c
+index 6d64891..08f98c3 100644
+--- a/drivers/ata/sata_uli.c
++++ b/drivers/ata/sata_uli.c
+@@ -28,7 +28,6 @@
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/ata/sata_via.c b/drivers/ata/sata_via.c
+index 87f056e..f72e842 100644
+--- a/drivers/ata/sata_via.c
++++ b/drivers/ata/sata_via.c
+@@ -36,7 +36,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/ata/sata_vsc.c b/drivers/ata/sata_vsc.c
+index 44f304b..29e847a 100644
+--- a/drivers/ata/sata_vsc.c
++++ b/drivers/ata/sata_vsc.c
+@@ -37,7 +37,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+-- 
+1.8.4.1
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
