@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961AbaAUO4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:56:33 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:55089 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912AbaAUO4S (ORCPT
+	id S1754846AbaAUO4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:56:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:55718 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754827AbaAUO4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:56:18 -0500
-Date: Tue, 21 Jan 2014 15:56:15 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Cong Ding <dinggnu@gmail.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140121145615.GA4697@gmail.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com>
- <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com>
- <52DDAD9D.9030504@zytor.com>
- <20140121090003.GO31570@twins.programming.kicks-ass.net>
- <52DE8231.6080408@zytor.com>
- <20140121143939.GA4643@gmail.com>
- <52DE8989.1010208@zytor.com>
+	Tue, 21 Jan 2014 09:56:05 -0500
+Date: Tue, 21 Jan 2014 09:55:59 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+Message-ID: <20140121095559.67b86d9c@gandalf.local.home>
+In-Reply-To: <20140120114606.GA31570@twins.programming.kicks-ass.net>
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com>
+	<20140120112442.GA8907@austad.us>
+	<20140120114606.GA31570@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DE8989.1010208@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 20 Jan 2014 12:46:06 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> > The thing is, one of my first remarks on this whole KASLR series 
-> > was that tooling needs to work. I suggested that the kernel should 
-> > only expose non-randomized addresses and that all facilities need 
-> > to continue to 'just work' with those. That argument was ignored 
-> > AFAICS and the problem still isn't solved.
+> > activates - released?
 > > 
-> > I'd argue that solving it in the kernel instead of making all 
-> > tooling variants aware of KASLR one by one is a far more 
-> > intelligent and efficient solution ...
+> > Since real-time papers from different rt-campus around the academia insist 
+> > on using *slightly* different terminology, perhaps add a short dictionary 
+> > for some of the more common terms?
 > 
-> Not ignored, but found not to really work all that well (we had that 
-> discussion in the context of relocated kernels, too.)  The problem 
-> you end up with is that as soon as you run into situations where you 
-> have to deal with pointers during debugging, be it using kgdb, stack 
-> dumps or whatever, all the work that you have done in the kernel to 
-> try to hide relocation from the debug infrastructure all of a sudden 
-> becomes a huge liability, and ends up backfiring in a horrific way.
+> Oh gawd, they really don't conform with their definitions? I'd not
+> noticed that.
+> 
+> > D: relative deadline, typically N ms after release
+> 
+> You failed to define release :-) Its the 'wakeup' event, right? Where
+> the activation would be the moment we actually schedule the
+> job/instance?
 
-The thing is, that 'huge liability' is now pushed into tooling, which 
-isn't in any better position to judge a piece of data in a backtrace 
-than the kernel - in fact it's in an arguably worse position, as it 
-does not generate that data.
+It took me about 20 seconds to figure out what a "release" was too. ;-)
 
-kgdb is an entirely different animal, I'm talking about the 99% 
-usecase: code profiling and tooling interpreting code addresses that 
-come from the kernel.
-
-Thanks,
-
-	Ingo
+-- Steve
