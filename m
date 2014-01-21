@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095AbaAUV0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:26:11 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56659 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183AbaAUV0G (ORCPT
+	id S1754535AbaAUV1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:27:43 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50848 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168AbaAUV0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:26:06 -0500
+	Tue, 21 Jan 2014 16:26:04 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: [PATCH 43/73] scsi: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:22:46 -0500
-Message-ID: <1390339396-3479-44-git-send-email-paul.gortmaker@windriver.com>
+        Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <khali@linux-fr.org>,
+        <linux-i2c@vger.kernel.org>
+Subject: [PATCH 51/73] drivers/i2c: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:22:54 -0500
+Message-ID: <1390339396-3479-52-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,415 +30,572 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: linux-i2c@vger.kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/aacraid/aachba.c               | 1 -
- drivers/scsi/aacraid/commctrl.c             | 1 -
- drivers/scsi/aacraid/comminit.c             | 1 -
- drivers/scsi/aacraid/commsup.c              | 1 -
- drivers/scsi/aacraid/dpcsup.c               | 1 -
- drivers/scsi/aacraid/rx.c                   | 1 -
- drivers/scsi/aacraid/sa.c                   | 1 -
- drivers/scsi/aacraid/src.c                  | 1 -
- drivers/scsi/arcmsr/arcmsr_attr.c           | 1 -
- drivers/scsi/arm/msgqueue.c                 | 1 -
- drivers/scsi/arm/queue.c                    | 1 -
- drivers/scsi/bnx2fc/bnx2fc.h                | 1 -
- drivers/scsi/csiostor/csio_attr.c           | 1 -
- drivers/scsi/fdomain.c                      | 1 -
- drivers/scsi/fnic/fnic_scsi.c               | 1 -
- drivers/scsi/hosts.c                        | 1 -
- drivers/scsi/mpt2sas/mpt2sas_base.c         | 1 -
- drivers/scsi/mpt2sas/mpt2sas_config.c       | 1 -
- drivers/scsi/mpt2sas/mpt2sas_ctl.c          | 1 -
- drivers/scsi/mpt2sas/mpt2sas_transport.c    | 1 -
- drivers/scsi/mpt3sas/mpt3sas_base.c         | 1 -
- drivers/scsi/mpt3sas/mpt3sas_config.c       | 1 -
- drivers/scsi/mpt3sas/mpt3sas_ctl.c          | 1 -
- drivers/scsi/mpt3sas/mpt3sas_transport.c    | 1 -
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c | 1 -
- drivers/scsi/qla2xxx/qla_def.h              | 1 -
- drivers/scsi/qla4xxx/ql4_def.h              | 1 -
- drivers/scsi/scsi_scan.c                    | 1 -
- drivers/scsi/scsi_sysfs.c                   | 1 -
- drivers/scsi/ufs/ufshcd.h                   | 1 -
- drivers/scsi/wd33c93.c                      | 1 -
- 31 files changed, 31 deletions(-)
+ drivers/i2c/algos/i2c-algo-bit.c           | 1 -
+ drivers/i2c/algos/i2c-algo-pca.c           | 1 -
+ drivers/i2c/algos/i2c-algo-pcf.c           | 1 -
+ drivers/i2c/busses/i2c-ali1535.c           | 1 -
+ drivers/i2c/busses/i2c-ali1563.c           | 1 -
+ drivers/i2c/busses/i2c-ali15x3.c           | 1 -
+ drivers/i2c/busses/i2c-amd756.c            | 1 -
+ drivers/i2c/busses/i2c-amd8111.c           | 1 -
+ drivers/i2c/busses/i2c-au1550.c            | 1 -
+ drivers/i2c/busses/i2c-cbus-gpio.c         | 1 -
+ drivers/i2c/busses/i2c-cpm.c               | 1 -
+ drivers/i2c/busses/i2c-eg20t.c             | 1 -
+ drivers/i2c/busses/i2c-exynos5.c           | 1 -
+ drivers/i2c/busses/i2c-highlander.c        | 1 -
+ drivers/i2c/busses/i2c-hydra.c             | 1 -
+ drivers/i2c/busses/i2c-ibm_iic.c           | 1 -
+ drivers/i2c/busses/i2c-iop3xx.c            | 1 -
+ drivers/i2c/busses/i2c-isch.c              | 1 -
+ drivers/i2c/busses/i2c-ismt.c              | 1 -
+ drivers/i2c/busses/i2c-mpc.c               | 1 -
+ drivers/i2c/busses/i2c-nforce2.c           | 1 -
+ drivers/i2c/busses/i2c-ocores.c            | 1 -
+ drivers/i2c/busses/i2c-octeon.c            | 1 -
+ drivers/i2c/busses/i2c-pca-platform.c      | 1 -
+ drivers/i2c/busses/i2c-piix4.c             | 1 -
+ drivers/i2c/busses/i2c-pmcmsp.c            | 1 -
+ drivers/i2c/busses/i2c-powermac.c          | 1 -
+ drivers/i2c/busses/i2c-puv3.c              | 1 -
+ drivers/i2c/busses/i2c-rcar.c              | 1 -
+ drivers/i2c/busses/i2c-scmi.c              | 1 -
+ drivers/i2c/busses/i2c-sh7760.c            | 1 -
+ drivers/i2c/busses/i2c-simtec.c            | 1 -
+ drivers/i2c/busses/i2c-sis630.c            | 1 -
+ drivers/i2c/busses/i2c-sis96x.c            | 1 -
+ drivers/i2c/busses/i2c-via.c               | 1 -
+ drivers/i2c/busses/i2c-xiic.c              | 1 -
+ drivers/i2c/busses/i2c-xlr.c               | 1 -
+ drivers/i2c/busses/scx200_i2c.c            | 1 -
+ drivers/i2c/muxes/i2c-arb-gpio-challenge.c | 1 -
+ drivers/i2c/muxes/i2c-mux-gpio.c           | 1 -
+ drivers/i2c/muxes/i2c-mux-pca9541.c        | 1 -
+ drivers/i2c/muxes/i2c-mux-pca954x.c        | 1 -
+ drivers/i2c/muxes/i2c-mux-pinctrl.c        | 1 -
+ 43 files changed, 43 deletions(-)
 
-diff --git a/drivers/scsi/aacraid/aachba.c b/drivers/scsi/aacraid/aachba.c
-index 681434e..c0e8b9e 100644
---- a/drivers/scsi/aacraid/aachba.c
-+++ b/drivers/scsi/aacraid/aachba.c
+diff --git a/drivers/i2c/algos/i2c-algo-bit.c b/drivers/i2c/algos/i2c-algo-bit.c
+index fad22b0..8c29f36 100644
+--- a/drivers/i2c/algos/i2c-algo-bit.c
++++ b/drivers/i2c/algos/i2c-algo-bit.c
 @@ -25,7 +25,6 @@
-  */
- 
  #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
-index fbcd48d..abb98dc5 100644
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -30,7 +30,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/aacraid/comminit.c b/drivers/scsi/aacraid/comminit.c
-index 177b094..bbe5077 100644
---- a/drivers/scsi/aacraid/comminit.c
-+++ b/drivers/scsi/aacraid/comminit.c
-@@ -31,7 +31,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/aacraid/commsup.c b/drivers/scsi/aacraid/commsup.c
-index cab190a..e8ed86f 100644
---- a/drivers/scsi/aacraid/commsup.c
-+++ b/drivers/scsi/aacraid/commsup.c
-@@ -31,7 +31,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/sched.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/aacraid/dpcsup.c b/drivers/scsi/aacraid/dpcsup.c
-index d81b281..130939c 100644
---- a/drivers/scsi/aacraid/dpcsup.c
-+++ b/drivers/scsi/aacraid/dpcsup.c
-@@ -31,7 +31,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/spinlock.h>
- #include <linux/slab.h>
-diff --git a/drivers/scsi/aacraid/rx.c b/drivers/scsi/aacraid/rx.c
-index dada38a..bdda9e8 100644
---- a/drivers/scsi/aacraid/rx.c
-+++ b/drivers/scsi/aacraid/rx.c
-@@ -30,7 +30,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/aacraid/sa.c b/drivers/scsi/aacraid/sa.c
-index 2244f31..585a855 100644
---- a/drivers/scsi/aacraid/sa.c
-+++ b/drivers/scsi/aacraid/sa.c
-@@ -30,7 +30,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
-index 7e17107..7afb2b0 100644
---- a/drivers/scsi/aacraid/src.c
-+++ b/drivers/scsi/aacraid/src.c
-@@ -30,7 +30,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/pci.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
-index acdae33..f3978f8 100644
---- a/drivers/scsi/arcmsr/arcmsr_attr.c
-+++ b/drivers/scsi/arcmsr/arcmsr_attr.c
-@@ -46,7 +46,6 @@
- */
  #include <linux/module.h>
- #include <linux/kernel.h>
+ #include <linux/delay.h>
 -#include <linux/init.h>
  #include <linux/errno.h>
+ #include <linux/sched.h>
+ #include <linux/i2c.h>
+diff --git a/drivers/i2c/algos/i2c-algo-pca.c b/drivers/i2c/algos/i2c-algo-pca.c
+index f892a42..8b10f88 100644
+--- a/drivers/i2c/algos/i2c-algo-pca.c
++++ b/drivers/i2c/algos/i2c-algo-pca.c
+@@ -24,7 +24,6 @@
+ #include <linux/moduleparam.h>
  #include <linux/delay.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/arm/msgqueue.c b/drivers/scsi/arm/msgqueue.c
-index 7c95c75..bcae7f0 100644
---- a/drivers/scsi/arm/msgqueue.c
-+++ b/drivers/scsi/arm/msgqueue.c
-@@ -12,7 +12,6 @@
+ #include <linux/jiffies.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-pca.h>
+diff --git a/drivers/i2c/algos/i2c-algo-pcf.c b/drivers/i2c/algos/i2c-algo-pcf.c
+index 5c23795..3437009 100644
+--- a/drivers/i2c/algos/i2c-algo-pcf.c
++++ b/drivers/i2c/algos/i2c-algo-pcf.c
+@@ -30,7 +30,6 @@
+ #include <linux/kernel.h>
  #include <linux/module.h>
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-pcf.h>
+diff --git a/drivers/i2c/busses/i2c-ali1535.c b/drivers/i2c/busses/i2c-ali1535.c
+index 3f49181..7d60d3a 100644
+--- a/drivers/i2c/busses/i2c-ali1535.c
++++ b/drivers/i2c/busses/i2c-ali1535.c
+@@ -58,7 +58,6 @@
+ #include <linux/delay.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+ 
+diff --git a/drivers/i2c/busses/i2c-ali1563.c b/drivers/i2c/busses/i2c-ali1563.c
+index 84ccd94..4611e47 100644
+--- a/drivers/i2c/busses/i2c-ali1563.c
++++ b/drivers/i2c/busses/i2c-ali1563.c
+@@ -20,7 +20,6 @@
+ #include <linux/delay.h>
+ #include <linux/i2c.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/acpi.h>
+ 
+ #define ALI1563_MAX_TIMEOUT	500
+diff --git a/drivers/i2c/busses/i2c-ali15x3.c b/drivers/i2c/busses/i2c-ali15x3.c
+index 26bcc61..4823206 100644
+--- a/drivers/i2c/busses/i2c-ali15x3.c
++++ b/drivers/i2c/busses/i2c-ali15x3.c
+@@ -65,7 +65,6 @@
+ #include <linux/ioport.h>
+ #include <linux/delay.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+ 
+diff --git a/drivers/i2c/busses/i2c-amd756.c b/drivers/i2c/busses/i2c-amd756.c
+index e13e2aa..819d3c1 100644
+--- a/drivers/i2c/busses/i2c-amd756.c
++++ b/drivers/i2c/busses/i2c-amd756.c
+@@ -41,7 +41,6 @@
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+ 
+diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
+index a44e6e7..f3d4d79 100644
+--- a/drivers/i2c/busses/i2c-amd8111.c
++++ b/drivers/i2c/busses/i2c-amd8111.c
+@@ -13,7 +13,6 @@
  #include <linux/kernel.h>
  #include <linux/stddef.h>
+ #include <linux/ioport.h>
 -#include <linux/init.h>
- 
- #include "msgqueue.h"
- 
-diff --git a/drivers/scsi/arm/queue.c b/drivers/scsi/arm/queue.c
-index cb11cce..7ee1090 100644
---- a/drivers/scsi/arm/queue.c
-+++ b/drivers/scsi/arm/queue.c
-@@ -21,7 +21,6 @@
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/list.h>
--#include <linux/init.h>
- 
- #include "../scsi.h"
- 
-diff --git a/drivers/scsi/bnx2fc/bnx2fc.h b/drivers/scsi/bnx2fc/bnx2fc.h
-index 1ebf3fb..b753030 100644
---- a/drivers/scsi/bnx2fc/bnx2fc.h
-+++ b/drivers/scsi/bnx2fc/bnx2fc.h
-@@ -30,7 +30,6 @@
- #include <linux/timer.h>
- #include <linux/errno.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/dma-mapping.h>
- #include <linux/workqueue.h>
- #include <linux/mutex.h>
-diff --git a/drivers/scsi/csiostor/csio_attr.c b/drivers/scsi/csiostor/csio_attr.c
-index 065a87a..0a50452 100644
---- a/drivers/scsi/csiostor/csio_attr.c
-+++ b/drivers/scsi/csiostor/csio_attr.c
-@@ -36,7 +36,6 @@
- #include <linux/string.h>
+ #include <linux/i2c.h>
  #include <linux/delay.h>
+ #include <linux/acpi.h>
+diff --git a/drivers/i2c/busses/i2c-au1550.c b/drivers/i2c/busses/i2c-au1550.c
+index b5b8923..8762458 100644
+--- a/drivers/i2c/busses/i2c-au1550.c
++++ b/drivers/i2c/busses/i2c-au1550.c
+@@ -31,7 +31,6 @@
+ #include <linux/kernel.h>
  #include <linux/module.h>
+ #include <linux/platform_device.h>
 -#include <linux/init.h>
- #include <linux/pci.h>
- #include <linux/mm.h>
- #include <linux/jiffies.h>
-diff --git a/drivers/scsi/fdomain.c b/drivers/scsi/fdomain.c
-index fff6829..2b45368 100644
---- a/drivers/scsi/fdomain.c
-+++ b/drivers/scsi/fdomain.c
-@@ -267,7 +267,6 @@
-  **************************************************************************/
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+diff --git a/drivers/i2c/busses/i2c-cbus-gpio.c b/drivers/i2c/busses/i2c-cbus-gpio.c
+index ce7ffba..bdf040f 100644
+--- a/drivers/i2c/busses/i2c-cbus-gpio.c
++++ b/drivers/i2c/busses/i2c-cbus-gpio.c
+@@ -19,7 +19,6 @@
+ #include <linux/io.h>
+ #include <linux/i2c.h>
+ #include <linux/gpio.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
+index 3e5ea2c..be7f0a2 100644
+--- a/drivers/i2c/busses/i2c-cpm.c
++++ b/drivers/i2c/busses/i2c-cpm.c
+@@ -33,7 +33,6 @@
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/errno.h>
+ #include <linux/stddef.h>
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index ff15ae9..e08e458 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -18,7 +18,6 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+ #include <linux/fs.h>
+diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+index 044f85b..9fd711c 100644
+--- a/drivers/i2c/busses/i2c-exynos5.c
++++ b/drivers/i2c/busses/i2c-exynos5.c
+@@ -12,7 +12,6 @@
+ #include <linux/module.h>
  
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/time.h>
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+diff --git a/drivers/i2c/busses/i2c-highlander.c b/drivers/i2c/busses/i2c-highlander.c
+index 436b0f2..512fcfa 100644
+--- a/drivers/i2c/busses/i2c-highlander.c
++++ b/drivers/i2c/busses/i2c-highlander.c
+@@ -12,7 +12,6 @@
+  * of this archive for more details.
+  */
  #include <linux/module.h>
 -#include <linux/init.h>
  #include <linux/interrupt.h>
- #include <linux/blkdev.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index 0521436..697ba76 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -17,7 +17,6 @@
-  */
- #include <linux/mempool.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/workqueue.h>
- #include <linux/pci.h>
- #include <linux/scatterlist.h>
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index f28ea07..fb7be2b 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -28,7 +28,6 @@
- #include <linux/kthread.h>
- #include <linux/string.h>
- #include <linux/mm.h>
--#include <linux/init.h>
- #include <linux/completion.h>
- #include <linux/transport_class.h>
+ #include <linux/i2c.h>
  #include <linux/platform_device.h>
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index bde63f7..ab8c981 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -45,7 +45,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
-index 0c47425..2fb88e9 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_config.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
-@@ -43,7 +43,6 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/blkdev.h>
- #include <linux/sched.h>
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index b7f887c..3b06d45 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -45,7 +45,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index 410f4a3..3c6c23a 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -43,7 +43,6 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/sched.h>
- #include <linux/workqueue.h>
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index 0cf4f70..6f2a90c 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -45,7 +45,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_config.c b/drivers/scsi/mpt3sas/mpt3sas_config.c
-index 936ec03..e1712a6 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_config.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_config.c
-@@ -43,7 +43,6 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/blkdev.h>
- #include <linux/sched.h>
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_ctl.c b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-index 9b89de1..9b2b4b4 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-@@ -45,7 +45,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-index 65170cb..ab69795 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -43,7 +43,6 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/sched.h>
- #include <linux/workqueue.h>
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-index f6533ab..1560a53 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-@@ -45,7 +45,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-diff --git a/drivers/scsi/qla2xxx/qla_def.h b/drivers/scsi/qla2xxx/qla_def.h
-index e1fe95e..79bee11 100644
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -8,7 +8,6 @@
- #define __QLA_DEF_H
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/module.h>
- #include <linux/list.h>
-diff --git a/drivers/scsi/qla4xxx/ql4_def.h b/drivers/scsi/qla4xxx/ql4_def.h
-index aa67bb9..2c1d8db 100644
---- a/drivers/scsi/qla4xxx/ql4_def.h
-+++ b/drivers/scsi/qla4xxx/ql4_def.h
-@@ -9,7 +9,6 @@
- #define __QL4_DEF_H
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/module.h>
- #include <linux/list.h>
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 307a811..7b02567 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
+diff --git a/drivers/i2c/busses/i2c-hydra.c b/drivers/i2c/busses/i2c-hydra.c
+index 79c3d90..e248257 100644
+--- a/drivers/i2c/busses/i2c-hydra.c
++++ b/drivers/i2c/busses/i2c-hydra.c
 @@ -27,7 +27,6 @@
- 
- #include <linux/module.h>
- #include <linux/moduleparam.h>
+ #include <linux/types.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
 -#include <linux/init.h>
- #include <linux/blkdev.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 9117d0b..3fb9557 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -8,7 +8,6 @@
+ #include <linux/io.h>
+ #include <asm/hydra.h>
  
- #include <linux/module.h>
+diff --git a/drivers/i2c/busses/i2c-ibm_iic.c b/drivers/i2c/busses/i2c-ibm_iic.c
+index f744410..274312c 100644
+--- a/drivers/i2c/busses/i2c-ibm_iic.c
++++ b/drivers/i2c/busses/i2c-ibm_iic.c
+@@ -36,7 +36,6 @@
+ #include <linux/ioport.h>
+ #include <linux/delay.h>
  #include <linux/slab.h>
 -#include <linux/init.h>
- #include <linux/blkdev.h>
- #include <linux/device.h>
- #include <linux/pm_runtime.h>
-diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
-index 577679a..c63f717 100644
---- a/drivers/scsi/ufs/ufshcd.h
-+++ b/drivers/scsi/ufs/ufshcd.h
-@@ -38,7 +38,6 @@
+ #include <linux/interrupt.h>
+ #include <asm/irq.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/busses/i2c-iop3xx.c b/drivers/i2c/busses/i2c-iop3xx.c
+index dd24aa0..3d16c2f 100644
+--- a/drivers/i2c/busses/i2c-iop3xx.c
++++ b/drivers/i2c/busses/i2c-iop3xx.c
+@@ -34,7 +34,6 @@
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
+diff --git a/drivers/i2c/busses/i2c-isch.c b/drivers/i2c/busses/i2c-isch.c
+index af21304..cf99dbf 100644
+--- a/drivers/i2c/busses/i2c-isch.c
++++ b/drivers/i2c/busses/i2c-isch.c
+@@ -33,7 +33,6 @@
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/acpi.h>
+ 
+diff --git a/drivers/i2c/busses/i2c-ismt.c b/drivers/i2c/busses/i2c-ismt.c
+index bb132ea..8ce4f51 100644
+--- a/drivers/i2c/busses/i2c-ismt.c
++++ b/drivers/i2c/busses/i2c-ismt.c
+@@ -62,7 +62,6 @@
+  */
  
  #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/pci.h>
  #include <linux/kernel.h>
+ #include <linux/stddef.h>
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index b6a741c..f539163 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -16,7 +16,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+-#include <linux/init.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index ac88f40..0038c45 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -51,7 +51,6 @@
+ #include <linux/kernel.h>
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+ #include <linux/dmi.h>
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index c61f37a..80e06fa 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -15,7 +15,6 @@
+ #include <linux/err.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
+diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+index b929ba2..81042b0 100644
+--- a/drivers/i2c/busses/i2c-octeon.c
++++ b/drivers/i2c/busses/i2c-octeon.c
+@@ -18,7 +18,6 @@
+ #include <linux/delay.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+diff --git a/drivers/i2c/busses/i2c-pca-platform.c b/drivers/i2c/busses/i2c-pca-platform.c
+index 39e2755..845f125 100644
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -12,7 +12,6 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/jiffies.h>
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index a028617..66eaed9 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -38,7 +38,6 @@
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/dmi.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/busses/i2c-pmcmsp.c b/drivers/i2c/busses/i2c-pmcmsp.c
+index f6389e2..8564768 100644
+--- a/drivers/i2c/busses/i2c-pmcmsp.c
++++ b/drivers/i2c/busses/i2c-pmcmsp.c
+@@ -26,7 +26,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/i2c/busses/i2c-powermac.c b/drivers/i2c/busses/i2c-powermac.c
+index 8c87f4a..01e9677 100644
+--- a/drivers/i2c/busses/i2c-powermac.c
++++ b/drivers/i2c/busses/i2c-powermac.c
+@@ -24,7 +24,6 @@
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/i2c/busses/i2c-puv3.c b/drivers/i2c/busses/i2c-puv3.c
+index ac80199..c83fc3c 100644
+--- a/drivers/i2c/busses/i2c-puv3.c
++++ b/drivers/i2c/busses/i2c-puv3.c
+@@ -17,7 +17,6 @@
+ #include <linux/types.h>
+ #include <linux/delay.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 2c2fd7c..4f5be21 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -26,7 +26,6 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
 -#include <linux/init.h>
  #include <linux/interrupt.h>
  #include <linux/io.h>
- #include <linux/delay.h>
-diff --git a/drivers/scsi/wd33c93.c b/drivers/scsi/wd33c93.c
-index 41883a8..3585315 100644
---- a/drivers/scsi/wd33c93.c
-+++ b/drivers/scsi/wd33c93.c
-@@ -80,7 +80,6 @@
+ #include <linux/i2c.h>
+diff --git a/drivers/i2c/busses/i2c-scmi.c b/drivers/i2c/busses/i2c-scmi.c
+index 5992355..dfc98df 100644
+--- a/drivers/i2c/busses/i2c-scmi.c
++++ b/drivers/i2c/busses/i2c-scmi.c
+@@ -12,7 +12,6 @@
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
+ #include <linux/stddef.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/acpi.h>
  
- #include <linux/string.h>
+diff --git a/drivers/i2c/busses/i2c-sh7760.c b/drivers/i2c/busses/i2c-sh7760.c
+index 5e8f136..d76f3d9 100644
+--- a/drivers/i2c/busses/i2c-sh7760.c
++++ b/drivers/i2c/busses/i2c-sh7760.c
+@@ -11,7 +11,6 @@
  #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/i2c.h>
 -#include <linux/init.h>
  #include <linux/interrupt.h>
- #include <linux/blkdev.h>
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/i2c/busses/i2c-simtec.c b/drivers/i2c/busses/i2c-simtec.c
+index 4fc87e7..294c80f 100644
+--- a/drivers/i2c/busses/i2c-simtec.c
++++ b/drivers/i2c/busses/i2c-simtec.c
+@@ -20,7 +20,6 @@
  
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+diff --git a/drivers/i2c/busses/i2c-sis630.c b/drivers/i2c/busses/i2c-sis630.c
+index 36a9556..19b8505 100644
+--- a/drivers/i2c/busses/i2c-sis630.c
++++ b/drivers/i2c/busses/i2c-sis630.c
+@@ -45,7 +45,6 @@
+ #include <linux/delay.h>
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/busses/i2c-sis96x.c b/drivers/i2c/busses/i2c-sis96x.c
+index b9faf9b..f8aa0c2 100644
+--- a/drivers/i2c/busses/i2c-sis96x.c
++++ b/drivers/i2c/busses/i2c-sis96x.c
+@@ -36,7 +36,6 @@
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
+-#include <linux/init.h>
+ #include <linux/acpi.h>
+ #include <linux/io.h>
+ 
+diff --git a/drivers/i2c/busses/i2c-via.c b/drivers/i2c/busses/i2c-via.c
+index be66251..49d7f14 100644
+--- a/drivers/i2c/busses/i2c-via.c
++++ b/drivers/i2c/busses/i2c-via.c
+@@ -22,7 +22,6 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index 6f9918f..2810750 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -30,7 +30,6 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/err.h>
+ #include <linux/delay.h>
+diff --git a/drivers/i2c/busses/i2c-xlr.c b/drivers/i2c/busses/i2c-xlr.c
+index 7945b05..17f7352 100644
+--- a/drivers/i2c/busses/i2c-xlr.c
++++ b/drivers/i2c/busses/i2c-xlr.c
+@@ -11,7 +11,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+diff --git a/drivers/i2c/busses/scx200_i2c.c b/drivers/i2c/busses/scx200_i2c.c
+index ae1258b..8eadf0f4 100644
+--- a/drivers/i2c/busses/scx200_i2c.c
++++ b/drivers/i2c/busses/scx200_i2c.c
+@@ -26,7 +26,6 @@
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
+ #include <linux/io.h>
+diff --git a/drivers/i2c/muxes/i2c-arb-gpio-challenge.c b/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
+index c58e093..69afffa 100644
+--- a/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
++++ b/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
+@@ -19,7 +19,6 @@
+ #include <linux/kernel.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+index 8a8c56f..d8989c8 100644
+--- a/drivers/i2c/muxes/i2c-mux-gpio.c
++++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+@@ -12,7 +12,6 @@
+ #include <linux/i2c-mux.h>
+ #include <linux/i2c-mux-gpio.h>
+ #include <linux/platform_device.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
+diff --git a/drivers/i2c/muxes/i2c-mux-pca9541.c b/drivers/i2c/muxes/i2c-mux-pca9541.c
+index c4f08ad..cb77277 100644
+--- a/drivers/i2c/muxes/i2c-mux-pca9541.c
++++ b/drivers/i2c/muxes/i2c-mux-pca9541.c
+@@ -17,7 +17,6 @@
+  */
+ 
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/jiffies.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
+index e835304..c5ac5f8 100644
+--- a/drivers/i2c/muxes/i2c-mux-pca954x.c
++++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
+@@ -40,7 +40,6 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
+ #include <linux/i2c/pca954x.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/of_gpio.h>
+ #include <linux/slab.h>
+diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+index d7978dc..4ff0ef3 100644
+--- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
++++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+@@ -18,7 +18,6 @@
+ 
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/pinctrl/consumer.h>
+ #include <linux/i2c-mux-pinctrl.h>
 -- 
 1.8.4.1
 
