@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaAUV3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:29:18 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:50835 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049AbaAUVZx (ORCPT
+	id S1755395AbaAUVau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:30:50 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56614 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016AbaAUVZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:25:53 -0500
+	Tue, 21 Jan 2014 16:25:51 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Mark Brown <broonie@kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: [PATCH 67/73] drivers/base: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:23:10 -0500
-Message-ID: <1390339396-3479-68-git-send-email-paul.gortmaker@windriver.com>
+        Vinod Koul <vinod.koul@intel.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, <dmaengine@vger.kernel.org>
+Subject: [PATCH 70/73] drivers/dma: delete non-required instances of <linux/init.h>
+Date: Tue, 21 Jan 2014 16:23:13 -0500
+Message-ID: <1390339396-3479-71-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -32,145 +30,233 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: linux-pm@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: dmaengine@vger.kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/base/attribute_container.c   | 1 -
- drivers/base/power/clock_ops.c       | 1 -
- drivers/base/power/common.c          | 1 -
- drivers/base/power/domain.c          | 1 -
- drivers/base/power/domain_governor.c | 1 -
- drivers/base/power/opp.c             | 1 -
- drivers/base/regmap/regmap-i2c.c     | 1 -
- drivers/base/regmap/regmap-mmio.c    | 1 -
- drivers/base/regmap/regmap-spi.c     | 1 -
- drivers/base/topology.c              | 1 -
- 10 files changed, 10 deletions(-)
+ drivers/dma/bcm2835-dma.c     | 1 -
+ drivers/dma/dma-jz4740.c      | 1 -
+ drivers/dma/dw/core.c         | 1 -
+ drivers/dma/ioat/dma.c        | 1 -
+ drivers/dma/ioat/dma.h        | 1 -
+ drivers/dma/ioat/dma_v2.c     | 1 -
+ drivers/dma/iop-adma.c        | 1 -
+ drivers/dma/k3dma.c           | 1 -
+ drivers/dma/mmp_pdma.c        | 1 -
+ drivers/dma/mmp_tdma.c        | 1 -
+ drivers/dma/omap-dma.c        | 1 -
+ drivers/dma/pch_dma.c         | 1 -
+ drivers/dma/pl330.c           | 1 -
+ drivers/dma/sh/rcar-hpbdma.c  | 1 -
+ drivers/dma/sh/sudmac.c       | 1 -
+ drivers/dma/tegra20-apb-dma.c | 1 -
+ drivers/dma/timb_dma.c        | 1 -
+ 17 files changed, 17 deletions(-)
 
-diff --git a/drivers/base/attribute_container.c b/drivers/base/attribute_container.c
-index ecc1929..b84ca8f 100644
---- a/drivers/base/attribute_container.c
-+++ b/drivers/base/attribute_container.c
-@@ -12,7 +12,6 @@
-  */
- 
- #include <linux/attribute_container.h>
--#include <linux/init.h>
- #include <linux/device.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index e870bbe..b99e6c0 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -6,7 +6,6 @@
-  * This file is released under the GPLv2.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/device.h>
- #include <linux/io.h>
-diff --git a/drivers/base/power/common.c b/drivers/base/power/common.c
-index 5da9140..df2e5ee 100644
---- a/drivers/base/power/common.c
-+++ b/drivers/base/power/common.c
-@@ -6,7 +6,6 @@
-  * This file is released under the GPLv2.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/device.h>
- #include <linux/export.h>
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index bfb8955..921b192 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -6,7 +6,6 @@
-  * This file is released under the GPLv2.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/io.h>
- #include <linux/pm_runtime.h>
-diff --git a/drivers/base/power/domain_governor.c b/drivers/base/power/domain_governor.c
-index 28dee30..a089e3b 100644
---- a/drivers/base/power/domain_governor.c
-+++ b/drivers/base/power/domain_governor.c
-@@ -6,7 +6,6 @@
-  * This file is released under the GPLv2.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/pm_domain.h>
- #include <linux/pm_qos.h>
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index fa41874..2553867 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -14,7 +14,6 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
+diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
+index a036021..124f5cf 100644
+--- a/drivers/dma/bcm2835-dma.c
++++ b/drivers/dma/bcm2835-dma.c
+@@ -32,7 +32,6 @@
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
  #include <linux/err.h>
 -#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/list.h>
+ #include <linux/module.h>
+diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
+index 94c380f..3e49f2c 100644
+--- a/drivers/dma/dma-jz4740.c
++++ b/drivers/dma/dma-jz4740.c
+@@ -16,7 +16,6 @@
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 13ac3f2..7109375 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -17,7 +17,6 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/dmapool.h>
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/mm.h>
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 8752918..45554f9 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -25,7 +25,6 @@
+  * copy operations.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
  #include <linux/slab.h>
- #include <linux/cpufreq.h>
+ #include <linux/pci.h>
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 11fb877..6a8f169 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -24,7 +24,6 @@
+ #include <linux/dmaengine.h>
+ #include "hw.h"
+ #include "registers.h"
+-#include <linux/init.h>
+ #include <linux/dmapool.h>
+ #include <linux/cache.h>
+ #include <linux/pci_ids.h>
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index 5d3affe..659e535 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -25,7 +25,6 @@
+  * does asynchronous data movement and checksumming operations.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/pci.h>
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index c56137b..8d69f6c 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -22,7 +22,6 @@
+  * on the Intel Xscale(R) family of I/O Processors (IOP 32x, 33x, 134x)
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/dma-mapping.h>
+diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
+index a1f911a..1004819 100644
+--- a/drivers/dma/k3dma.c
++++ b/drivers/dma/k3dma.c
+@@ -9,7 +9,6 @@
+ #include <linux/sched.h>
  #include <linux/device.h>
-diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
-index fa6bf52..ebd1895 100644
---- a/drivers/base/regmap/regmap-i2c.c
-+++ b/drivers/base/regmap/regmap-i2c.c
-@@ -13,7 +13,6 @@
- #include <linux/regmap.h>
- #include <linux/i2c.h>
+ #include <linux/dmaengine.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c1b7c3a..32e58ee 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -8,7 +8,6 @@
+ 
+ #include <linux/err.h>
  #include <linux/module.h>
 -#include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/interrupt.h>
+ #include <linux/dma-mapping.h>
+diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+index 33f96aa..dba6189 100644
+--- a/drivers/dma/mmp_tdma.c
++++ b/drivers/dma/mmp_tdma.c
+@@ -11,7 +11,6 @@
  
- static int regmap_i2c_write(void *context, const void *data, size_t count)
- {
-diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index 81f9775..4410cb2 100644
---- a/drivers/base/regmap/regmap-mmio.c
-+++ b/drivers/base/regmap/regmap-mmio.c
+ #include <linux/err.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/interrupt.h>
+ #include <linux/dma-mapping.h>
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 362e7c4..f16e718 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -8,7 +8,6 @@
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/list.h>
+ #include <linux/module.h>
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 61fdc54..83344cf 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -19,7 +19,6 @@
+ 
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+-#include <linux/init.h>
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 73fa9b7..32abac3 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -13,7 +13,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/io.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/string.h>
+diff --git a/drivers/dma/sh/rcar-hpbdma.c b/drivers/dma/sh/rcar-hpbdma.c
+index 3083d90..8a7b9ba 100644
+--- a/drivers/dma/sh/rcar-hpbdma.c
++++ b/drivers/dma/sh/rcar-hpbdma.c
 @@ -18,7 +18,6 @@
  
- #include <linux/clk.h>
+ #include <linux/dmaengine.h>
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/platform_data/dma-rcar-hpbdma.h>
+diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
+index c7e9cdf..5c35337 100644
+--- a/drivers/dma/sh/sudmac.c
++++ b/drivers/dma/sh/sudmac.c
+@@ -14,7 +14,6 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 03ad64e..ff269dd 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -22,7 +22,6 @@
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
  #include <linux/err.h>
 -#include <linux/init.h>
+ #include <linux/interrupt.h>
  #include <linux/io.h>
- #include <linux/module.h>
- #include <linux/regmap.h>
-diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
-index 37f12ae..0eb3097 100644
---- a/drivers/base/regmap/regmap-spi.c
-+++ b/drivers/base/regmap/regmap-spi.c
-@@ -12,7 +12,6 @@
- 
- #include <linux/regmap.h>
- #include <linux/spi/spi.h>
--#include <linux/init.h>
- #include <linux/module.h>
- 
- #include "internal.h"
-diff --git a/drivers/base/topology.c b/drivers/base/topology.c
-index 94ffee3..ad9d177 100644
---- a/drivers/base/topology.c
-+++ b/drivers/base/topology.c
-@@ -23,7 +23,6 @@
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  */
--#include <linux/init.h>
  #include <linux/mm.h>
- #include <linux/cpu.h>
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index 4506a7b..3ef05d6 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -22,7 +22,6 @@
+ 
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
  #include <linux/module.h>
 -- 
 1.8.4.1
