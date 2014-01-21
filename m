@@ -1,197 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaAUCbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 21:31:33 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60586 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750AbaAUCbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 21:31:25 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-ac-52dddbfbc10e
-Date: Tue, 21 Jan 2014 11:32:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Cai Liu <cai.liu@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Seth Jennings'" <sjenning@linux.vnet.ibm.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>, "'Linux-MM'" <linux-mm@kvack.org>,
-        "'Linux-Kernel'" <linux-kernel@vger.kernel.org>, liucai.lfn@gmail.com
-Subject: Re: [PATCH v2]  mm/zswap: Check all pool pages instead of one pool
- pages
-Message-ID: <20140121023233.GI28712@bbox>
-References: <000701cf15b4$6822c740$386855c0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000701cf15b4$6822c740$386855c0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1753150AbaAUCnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 21:43:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:43953 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329AbaAUCnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 21:43:33 -0500
+Date: Tue, 21 Jan 2014 13:43:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the sound-asoc tree with the  tree
+Message-Id: <20140121134326.5b0d0d08c8b718e6fa635be6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__21_Jan_2014_13_43_26_+1100_Q85K2_XDFeuyGZP9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Cai,
+--Signature=_Tue__21_Jan_2014_13_43_26_+1100_Q85K2_XDFeuyGZP9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
-> zswap can support multiple swapfiles. So we need to check
-> all zbud pool pages in zswap.
-> 
-> Version 2:
->   * add *total_zbud_pages* in zbud to record all the pages in pools
->   * move the updating of pool pages statistics to
->     alloc_zbud_page/free_zbud_page to hide the details
-> 
-> Signed-off-by: Cai Liu <cai.liu@samsung.com>
-> ---
->  include/linux/zbud.h |    2 +-
->  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
->  mm/zswap.c           |    4 ++--
->  3 files changed, 35 insertions(+), 15 deletions(-)
-> 
-> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
-> index 2571a5c..1dbc13e 100644
-> --- a/include/linux/zbud.h
-> +++ b/include/linux/zbud.h
-> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
->  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
->  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
->  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
-> -u64 zbud_get_pool_size(struct zbud_pool *pool);
-> +u64 zbud_get_pool_size(void);
->  
->  #endif /* _ZBUD_H_ */
-> diff --git a/mm/zbud.c b/mm/zbud.c
-> index 9451361..711aaf4 100644
-> --- a/mm/zbud.c
-> +++ b/mm/zbud.c
-> @@ -52,6 +52,13 @@
->  #include <linux/spinlock.h>
->  #include <linux/zbud.h>
->  
-> +/*********************************
-> +* statistics
-> +**********************************/
-> +
-> +/* zbud pages in all pools */
-> +static u64 total_zbud_pages;
-> +
->  /*****************
->   * Structures
->  *****************/
-> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
->  	return zhdr;
->  }
->  
-> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
-> +{
-> +	struct page *page;
-> +
-> +	page = alloc_page(gfp);
-> +
-> +	if (page) {
-> +		pool->pages_nr++;
-> +		total_zbud_pages++;
+Hi all,
 
-Who protect race?
+Today's linux-next merge of the sound-asoc tree got a conflict in
+sound/soc/soc-compress.c between commit 2a99ef0fdb35 ("ASoC: compress:
+Add suport for DPCM into compressed audio") from the sound tree and
+commit 76063d340520 ("ASoC: compress: Add suport for DPCM into compressed
+audio") from the sound-asoc tree.
 
-> +	}
-> +
-> +	return page;
-> +}
-> +
-> +
->  /* Resets the struct page fields and frees the page */
-> -static void free_zbud_page(struct zbud_header *zhdr)
-> +static void free_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
->  {
->  	__free_page(virt_to_page(zhdr));
-> +
-> +	pool->pages_nr--;
-> +	total_zbud_pages--;
->  }
->  
->  /*
-> @@ -279,11 +304,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  
->  	/* Couldn't find unbuddied zbud page, create new one */
->  	spin_unlock(&pool->lock);
-> -	page = alloc_page(gfp);
-> +	page = alloc_zbud_page(pool, gfp);
->  	if (!page)
->  		return -ENOMEM;
->  	spin_lock(&pool->lock);
-> -	pool->pages_nr++;
->  	zhdr = init_zbud_page(page);
->  	bud = FIRST;
->  
-> @@ -349,8 +373,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->  	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
->  		/* zbud page is empty, free */
->  		list_del(&zhdr->lru);
-> -		free_zbud_page(zhdr);
-> -		pool->pages_nr--;
-> +		free_zbud_page(pool, zhdr);
->  	} else {
->  		/* Add to unbuddied list */
->  		freechunks = num_free_chunks(zhdr);
-> @@ -447,8 +470,7 @@ next:
->  			 * Both buddies are now free, free the zbud page and
->  			 * return success.
->  			 */
-> -			free_zbud_page(zhdr);
-> -			pool->pages_nr--;
-> +			free_zbud_page(pool, zhdr);
->  			spin_unlock(&pool->lock);
->  			return 0;
->  		} else if (zhdr->first_chunks == 0 ||
-> @@ -496,14 +518,12 @@ void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
->  
->  /**
->   * zbud_get_pool_size() - gets the zbud pool size in pages
-> - * @pool:	pool whose size is being queried
->   *
-> - * Returns: size in pages of the given pool.  The pool lock need not be
-> - * taken to access pages_nr.
-> + * Returns: size in pages of all the zbud pools.
->   */
-> -u64 zbud_get_pool_size(struct zbud_pool *pool)
-> +u64 zbud_get_pool_size(void)
->  {
-> -	return pool->pages_nr;
-> +	return total_zbud_pages;
->  }
->  
->  static int __init init_zbud(void)
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index 5a63f78..ef44d9d 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -291,7 +291,7 @@ static void zswap_free_entry(struct zswap_tree *tree,
->  	zbud_free(tree->pool, entry->handle);
->  	zswap_entry_cache_free(entry);
->  	atomic_dec(&zswap_stored_pages);
-> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> +	zswap_pool_pages = zbud_get_pool_size();
->  }
->  
->  /* caller must hold the tree lock */
-> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  
->  	/* update stats */
->  	atomic_inc(&zswap_stored_pages);
-> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> +	zswap_pool_pages = zbud_get_pool_size();
->  
->  	return 0;
->  
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The sound tree version had a later Author date, so I just used that
+version - let me know if something else should be done.  Otherwise, the
+sound-asoc tree needs to be cleaned up as this is the only change left in
+it (relative to the sound tree).
 
--- 
-Kind regards,
-Minchan Kim
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__21_Jan_2014_13_43_26_+1100_Q85K2_XDFeuyGZP9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS3d7SAAoJEMDTa8Ir7ZwV880QAI7ka0Oaina1DmZROk2i6f/J
+yYlU4kxl4CSAfeeClnO+0ou6L+T6ZgUNuenoSd7oNu0BP5VGsdShaNCY0g5BoirO
+FdQtMYpOWXp1lorQqHmjlfdRSJSqLvGJKbNAsJ8uN16JEUbygYplJ6rXNxMf7Ok7
+azYf+xdjwquMJZ5m3IF+/Y5+b0CycSmQE8HllGBwzlCgKFwCe5gb8BF1Z1ImsDX/
+7T85Mo5EEkyecnxMiKEDrC0V0/+o8/vAV1RH7AIhbBo6QM2O3lWBHM1Ew1CjPDMC
+/+tnfa+Cz97jADXfC3C60OUY4jTbVtIy+mq1QoXQXEboGRtmnkqc27WGwG4Matv9
+BmnP+Ns5AcqKysrFwRFHTXhhfPga+IvFqvCHsHYr/74snFpWucBWkGS2n0vbdX8C
+aV6+C3Ck6oUYPHd6aLeV49+D4+kgcF7eOalTOfr1AyTkVJcO+rJSP+N9m7n67cTe
+Os1bz8M4crnu+CG/+GiA5D2E8+9L4kNa58MNZu3+ruC4SyrkiEcRrJvCWsEYnzYT
+87p+ZGUEVNYODmojQ3izKO0z8VcsBuhr4EAh7sXp5f1Z89rEfMUU+sszDcAhlUsM
+NFiw4kKkkPf+/yA3ZYOtlpdWg5hCh7ydAdZFHDjWccgywkAfkhYw5cBLAq84kQIP
+jS7woVvwIupA5bW0EPbE
+=tEZO
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Jan_2014_13_43_26_+1100_Q85K2_XDFeuyGZP9--
