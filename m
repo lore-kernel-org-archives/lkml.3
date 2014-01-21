@@ -1,114 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaAUN4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:56:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55883 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441AbaAUN4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:56:38 -0500
-Date: Tue, 21 Jan 2014 14:55:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
-        rob@landley.net
-Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
-Message-ID: <20140121135559.GK30183@twins.programming.kicks-ass.net>
-References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com>
- <20140120112442.GA8907@austad.us>
- <52DD1377.5090201@gmail.com>
- <20140120131616.GB8907@austad.us>
- <52DD2711.9080504@unitn.it>
- <20140121102016.GA12002@austad.us>
- <52DE5B7F.8020900@unitn.it>
- <20140121123334.GJ30183@twins.programming.kicks-ass.net>
- <52DE6D21.1080602@unitn.it>
+	id S1754750AbaAUN44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:56:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35723 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753817AbaAUN4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 08:56:51 -0500
+Message-ID: <52DE7C49.90503@zytor.com>
+Date: Tue, 21 Jan 2014 05:55:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DE6D21.1080602@unitn.it>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Cong Ding <dinggnu@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com> <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com> <20140121102700.GB2981@gmail.com>
+In-Reply-To: <20140121102700.GB2981@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 01:50:41PM +0100, Luca Abeni wrote:
-> On 01/21/2014 01:33 PM, Peter Zijlstra wrote:
-
-> >>- During the execution of a job, the task might invoke a blocking system call,
-> >>   and block... When it wakes up, it is still in the same job (decoding the same
-> >>   video frame), and not in a different one.
-> >>This is (IMHO) where all the confusion comes from.
-> >
-> >I would strongly urge you not to use that as an example, because its
-> >dead wrong design. An RT thread (be it RR,FIFO or DL) should _NEVER_ do
-> >blocking IO.
-> Well, but it does happen in reality :)
-
-Yeah, I know, my point was more about not encouraging people to do this
-by explicitly mentioning it.
-
-> On the other hand, I agree with you that a hard real-time task should be designed
-> not to do things like this. But SCHED_DEADLINE is flexible enough to be used on
-> many different kinds of tasks (hard real-time, soft real-time, etc...).
-
-At which point I feel obliged to mention the work Jim did on statistical
-bounded tardiness and a potential future option:
-SCHED_FLAG_DL_AVG_RUNTIME, where we would allow tasks to somewhat exceed
-their runtime budget provided that they meet their budget on average.
-
-A possible implementation could be to track the unused budget of
-previous instances and keep a decaying sum (such that we're guaranteed
-this unused budget < 2*runtime). And then allow runtime overruns upto
-this limit.
-
-Another possibly extension; one proposed by Ingo; is to demote tasks to
-SCHED_OTHER once they exceed their budget instead of the full block they
-get now -- we could possibly call this SCHED_FLAG_DL_CBS_SOFT or such.
-
-And of course SCHED_FLAG_DL_CBS_SIGNAL, where the task gets a signal
-delivered if it exceeded the runtime -- I think some of the earlier
-patches had things like this, no?
-
-> >On the other subject; I wouldn't actually mind if it grew into a proper
-> >(academic or not) summary of deadline scheduling theory and how it
-> >applies.
-> >
-> >Sure, refer to actual papers for all the proofs and such, but it would
-> >be very good to go over all the bits and pieces that make up the system.
-> >
-> >So cover the periodic, sporadic and aperiodic model like henr_k
-> >suggested, please do cover the job/instance idiom as it is used all over
-> >the place.
-> Ok... My point was that it would be better (IMHO) to first explain how
-> sched_deadline works (and no notion of job/instance, etc is needed for this),
-> and then explain how this applies to the real-time task model (and here, of
-> course all the formal notation can be introduced).
+On 01/21/2014 02:27 AM, Ingo Molnar wrote:
 > 
-> Do you think this can be reasonable?
+> Hm, live annotation of the kernel image is a relatively new perf 
+> feature, and KASLR predated that (by years) - which would at least in 
+> part explain why it went unnoticed. (Although it does not excuse the 
+> lack of testing.)
+> 
 
-Sure, I think that's reasonable.
+kASLR is new, but on 32 bits we have relocated the kernel for a long
+time.  kASLR is the first use case of relocating the 64-bit kernel, though.
 
-> >Then also treat schedulability tests and their ramification, explain
-> >what laxity is, what tardiness is, that GEDF doesn't have 0 tardiness
-> >but does have bounded tardiness.
-> >
-> >Maybe even mention the actual bounds -- but refer to papers for their
-> >proofs.
-> >
-> >Mention CBS and the ramification etc..
-> Ok.
-> I guess some of these details can be added incrementally, with additional
-> patches?
+	-hpa
 
-Oh sure, all of this will always be a work in progress anyway ;-)
