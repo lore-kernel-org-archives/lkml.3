@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaAUJbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:31:12 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:43436 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaAUJbI (ORCPT
+	id S1753948AbaAUJfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:35:17 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:37455 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911AbaAUJfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:31:08 -0500
-Date: Tue, 21 Jan 2014 04:31:03 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] workqueue changes for v3.14-rc1
-Message-ID: <20140121093103.GA6928@htj.dyndns.org>
+	Tue, 21 Jan 2014 04:35:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+	<1389941251-32692-5-git-send-email-wens@csie.org>
+	<201401171747.46332.arnd@arndb.de>
+	<CAGb2v67UKiyfJbKZ_Frk3OwZupMPoA2Ck3Hj2zsRFXBQPztavg@mail.gmail.com>
+	<CACRpkdZOD4zeA8T5kbJ4c5NsnuzHCg1mw8rRMYNT9c4R-Qnc6A@mail.gmail.com>
+	<CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
+Date: Tue, 21 Jan 2014 10:35:10 +0100
+Message-ID: <CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
+Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, Jan 21, 2014 at 4:11 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Sat, Jan 18, 2014 at 8:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-Just one patch to add destroy_work_on_stack() annotations to help
-debugobj debugging.  The change is almost trivial but unfortunately
-causes the following merge conflict.
+>> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 0);
+>> gpio = devm_gpiod_get_index(&pdev->dev, NULL, 1);
+>>
+>> Heikki, are you OK with this change?
+>>
+>> I think this is actually necessary if the ACPI and DT unification
+>> pipe dream shall limp forward, we cannot have arguments passed
+>> that have a semantic effect on DT but not on ACPI... Drivers
+>> that are supposed to use both ACPI and DT will always
+>> have to pass NULL as con ID.
+>
+> I agree that's how it should be be done with the current API if your
+> driver can obtain GPIOs from both ACPI and DT. This is a potential
+> issue, as drivers are not supposed to make assumptions about who is
+> going to be their GPIO provider. Let's say you started a driver with
+> only DT in mind, and used gpio_get(dev, con_id) to get your GPIOs. DT
+> bindings are thus of the form "con_id-gpio = <phandle>", and set in
+> stone. Then later, someone wants to use your driver with ACPI. How do
+> you handle that gracefully?
 
-  long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
-  {
-	  struct work_for_cpu wfc = { .fn = fn, .arg = arg };
+Short answer is you can't. You have to pour backward-compatibility
+code into the driver first checking for that property and then falling
+back to the new binding if it doesn't exist.
 
-	  INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-	  schedule_work_on(cpu, &wfc.work);
-  <<<<<<< HEAD
-	  flush_work(&wfc.work);
-  =======
+> I'm starting to wonder, now that ACPI is a first-class GPIO provider,
+> whether we should not start to encourage the deprecation of the
+> "con_id-gpio = <phandle>" binding form in DT and only use a single
+> indexed GPIO property per device.
 
-	  /*
-	   * The work item is on-stack and can't lead to deadlock through
-	   * flushing.  Use __flush_work() to avoid spurious lockdep warnings
-	   * when work_on_cpu()s are nested.
-	   */
-	  __flush_work(&wfc.work);
+You have a valid point.
 
-	  destroy_work_on_stack(&wfc.work);
-  >>>>>>> 440a11360326044a9addf1c652a0364aad0be90c
-	  return wfc.ret;
-  }
+> The con_id parameter would then only
+> be used as a label, which would also have the nice side-effect that
+> all GPIOs used for a given function will be reported under the same
+> name no matter what the GPIO provider is.
 
-The conflict is between the following two commits.
+As discussed earlier in this thread I'm not sure the con_id is
+suitable for labelling GPIOs. It'd be better to have a proper name
+specified in DT/ACPI instead.
 
-* master	12997d1a999c ("Revert "workqueue: allow work_on_cpu() to be called recursively"")
-* wq/for-3.14	440a11360326 ("workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()")
+> From an aesthetic point of view, I definitely prefer using con_id to
+> identify GPIOs instead of indexes, but I don't see how we can make it
+> play nice with ACPI. Thoughts?
 
-The former updated work_on_cpu() to drop __flush_work() change to
-allow recursive work_on_cpu() usage which no longer was necessary
-after PCI update.  The latter added destroy_work_on_stack() call to
-the function thus causing context conflict.  It can be easily resolved
-by adding destroy_work_on_stack() to the version in master.
+Let's ask the DT maintainers...
 
-  long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
-  {
-	  struct work_for_cpu wfc = { .fn = fn, .arg = arg };
+I'm a bit sceptic to the whole ACPI-DT-API-should-be-unified
+just-one-function-call business, as this was just a very simple example
+of what can happen to something as simple as
+devm_gpiod_get[_index]().
 
-	  INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-	  schedule_work_on(cpu, &wfc.work);
-	  flush_work(&wfc.work);
-	  destroy_work_on_stack(&wfc.work);
-	  return wfc.ret;
-  }
-
-The merge is also available in the test-merge-3.14 branch of wq tree.
-
-The changes are available in the following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.14
-
-for you to fetch changes up to 440a11360326044a9addf1c652a0364aad0be90c:
-
-  workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK() (2014-01-11 22:26:33 -0500)
-
-Thanks.
-----------------------------------------------------------------
-Chuansheng Liu (1):
-      workqueue: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()
-
- kernel/workqueue.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 987293d..00df112 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4776,6 +4776,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
- 
- 		/* wait for per-cpu unbinding to finish */
- 		flush_work(&unbind_work);
-+		destroy_work_on_stack(&unbind_work);
- 		break;
- 	}
- 	return NOTIFY_OK;
-@@ -4822,6 +4823,7 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
- 	 */
- 	__flush_work(&wfc.work);
- 
-+	destroy_work_on_stack(&wfc.work);
- 	return wfc.ret;
- }
- EXPORT_SYMBOL_GPL(work_on_cpu);
+Yours,
+Linus Walleij
