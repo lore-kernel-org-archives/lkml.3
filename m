@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaAUUlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:41:47 -0500
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:59986 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaAUUlq (ORCPT
+	id S1753793AbaAUUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:43:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37260 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506AbaAUUnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:41:46 -0500
-Date: Tue, 21 Jan 2014 12:41:41 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jianguo Wu <wujianguo@huawei.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
- info when OOM?
-In-Reply-To: <52DE6AA0.1000801@huawei.com>
-Message-ID: <alpine.DEB.2.02.1401211236520.10355@chino.kir.corp.google.com>
-References: <52DCFC33.80008@huawei.com> <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com> <52DE6AA0.1000801@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Jan 2014 15:43:21 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-xtensa@linux-xtensa.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/8] perf tools: Add support for the xtensa architecture
+Date: Tue, 21 Jan 2014 17:42:59 -0300
+Message-Id: <1390336984-1553-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1390336984-1553-1-git-send-email-acme@infradead.org>
+References: <1390336984-1553-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jan 2014, Jianguo Wu wrote:
+From: Baruch Siach <baruch@tkos.co.il>
 
-> > The problem is that slabinfo becomes excessively verbose and dumping it 
-> > all to the kernel log often times causes important messages to be lost.  
-> > This is why we control things like the tasklist dump with a VM sysctl.  It 
-> > would be possible to dump, say, the top ten slab caches with the highest 
-> > memory usage, but it will only be helpful for slab leaks.  Typically there 
-> > are better debugging tools available than analyzing the kernel log; if you 
-> > see unusually high slab memory in the meminfo dump, you can enable it.
-> > 
-> 
-> But, when OOM has happened, we can only use kernel log, slab/vmalloc info from proc
-> is stale. Maybe we can dump slab/vmalloc with a VM sysctl, and only top 10/20 entrys?
-> 
+Tested using kernel tracepoints on a QEMU simulated environment.
 
-You could, but it's a tradeoff between how much to dump to a general 
-resource such as the kernel log and how many sysctls we add that control 
-every possible thing.  Slab leaks would definitely be a minority of oom 
-conditions and you should normally be able to reproduce them by running 
-the same workload; just use slabtop(1) or manually inspect /proc/slabinfo 
-while such a workload is running for indicators.  I don't think we want to 
-add the information by default, though, nor do we want to add sysctls to 
-control the behavior (you'd still need to reproduce the issue after 
-enabling it).
+Kernel support for perf depends on the patch "xtensa: enable
+HAVE_PERF_EVENTS", which is scheduled for v3.14.
 
-We are currently discussing userspace oom handlers, though, that would 
-allow you to run a process that would be notified and allowed to allocate 
-a small amount of memory on oom conditions.  It would then be trivial to 
-dump any information you feel pertinent in userspace prior to killing 
-something.  I like to inspect heap profiles for memory hogs while 
-debugging our malloc() issues, for example, and you could look more 
-closely at kernel memory.
+Hardware performance counters are not supported under xtensa yet.
 
-I'll cc you on future discussions of that feature.
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-xtensa@linux-xtensa.org
+Link: http://lkml.kernel.org/r/aafcdb22f04e2d3188d2938528939481be56b649.1389608855.git.baruch@tkos.co.il
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/perf.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 3c2f213e979d..7daa806d9050 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -132,6 +132,13 @@
+ #define CPUINFO_PROC	"CPU"
+ #endif
+ 
++#ifdef __xtensa__
++#define mb()		asm volatile("memw" ::: "memory")
++#define wmb()		asm volatile("memw" ::: "memory")
++#define rmb()		asm volatile("" ::: "memory")
++#define CPUINFO_PROC	"core ID"
++#endif
++
+ #define barrier() asm volatile ("" ::: "memory")
+ 
+ #ifndef cpu_relax
+-- 
+1.8.1.4
+
