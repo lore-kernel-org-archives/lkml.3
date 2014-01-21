@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaAUVSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:18:30 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46432 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaAUVS2 (ORCPT
+	id S1753079AbaAUVTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:19:19 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:62624 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaAUVTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:18:28 -0500
-Date: Tue, 21 Jan 2014 13:18:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rob Schroer <sulamiification@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hid/wacom: fixed coding style issues
-Message-ID: <20140121211823.GD29615@core.coreip.homeip.net>
-References: <20140121195153.GA4198@fedora.fritz.box>
- <20140121200645.GC29615@core.coreip.homeip.net>
- <20140121202944.GA4554@fedora.fritz.box>
+	Tue, 21 Jan 2014 16:19:17 -0500
+Date: Tue, 21 Jan 2014 13:18:42 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
+ in mem_cgroup_iter
+In-Reply-To: <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
+Message-ID: <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
+References: <20140121083454.GA1894@dhcp22.suse.cz> <1390301143-9541-1-git-send-email-mhocko@suse.cz> <1390301143-9541-2-git-send-email-mhocko@suse.cz> <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121202944.GA4554@fedora.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 09:29:44PM +0100, Rob Schroer wrote:
-> On Tue, Jan 21, 2014 at 12:06:45PM -0800, Dmitry Torokhov wrote:
-> > On Tue, Jan 21, 2014 at 08:51:53PM +0100, Robin Schroer wrote:
-> > > Fixed some coding style issues regarding spaces before semicolons and
-> > > closing parenthesis.
-> > > 
-> > > Signed-off-by: Robin Schroer <sulamiification@gmail.com>
-> > > ---
-> > >  drivers/hid/hid-wacom.c | 8 ++++----
-> > >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-> > > index 60c75dc..ebcca0d 100644
-> > > --- a/drivers/hid/hid-wacom.c
-> > > +++ b/drivers/hid/hid-wacom.c
-> > > @@ -77,8 +77,8 @@ static void wacom_scramble(__u8 *image)
-> > >  	__u16 mask;
-> > >  	__u16 s1;
-> > >  	__u16 s2;
-> > > -	__u16 r1 ;
-> > > -	__u16 r2 ;
-> > > +	__u16 r1;
-> > > +	__u16 r2;
-> > >  	__u16 r;
-> > >  	__u8 buf[256];
-> > >  	int i, w, x, y, z;
-> > > @@ -336,7 +336,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
-> > >  
-> > >  	switch (hdev->product) {
-> > >  	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
-> > > -		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
-> > > +		rep_data[0] = 0x03; rep_data[1] = 0x00;
-> > >  		limit = 3;
-> > >  		do {
-> > >  			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-> > > @@ -404,7 +404,7 @@ static ssize_t wacom_store_speed(struct device *dev,
-> > >  	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> > >  	int new_speed;
-> > >  
-> > > -	if (sscanf(buf, "%1d", &new_speed ) != 1)
-> > > +	if (sscanf(buf, "%1d", &new_speed) != 1)
-> > >  		return -EINVAL;
-> > 
-> > Why doesn't it use kstrtoXXX()?
-> > 
-> > Thanks.
-> > 
+On Tue, 21 Jan 2014, Andrew Morton wrote:
+> On Tue, 21 Jan 2014 11:45:43 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> As far as I can see, kstrtoXXX() might be an alternative, but I was just
-> fixing coding style issues, no need to break anything IMO.
+> > 19f39402864e (memcg: simplify mem_cgroup_iter) has reorganized
+> > mem_cgroup_iter code in order to simplify it. A part of that change was
+> > dropping an optimization which didn't call css_tryget on the root of
+> > the walked tree. The patch however didn't change the css_put part in
+> > mem_cgroup_iter which excludes root.
+> > This wasn't an issue at the time because __mem_cgroup_iter_next bailed
+> > out for root early without taking a reference as cgroup iterators
+> > (css_next_descendant_pre) didn't visit root themselves.
+> > 
+> > Nevertheless cgroup iterators have been reworked to visit root by
+> > bd8815a6d802 (cgroup: make css_for_each_descendant() and friends include
+> > the origin css in the iteration) when the root bypass have been dropped
+> > in __mem_cgroup_iter_next. This means that css_put is not called for
+> > root and so css along with mem_cgroup and other cgroup internal object
+> > tied by css lifetime are never freed.
+> > 
+> > Fix the issue by reintroducing root check in __mem_cgroup_iter_next
+> > and do not take css reference for it.
+> > 
+> > This reference counting magic protects us also from another issue, an
+> > endless loop reported by Hugh Dickins when reclaim races with root
+> > removal and css_tryget called by iterator internally would fail. There
+> > would be no other nodes to visit so __mem_cgroup_iter_next would return
+> > NULL and mem_cgroup_iter would interpret it as "start looping from root
+> > again" and so mem_cgroup_iter would loop forever internally.
+> 
+> I grabbed these two patches but I will sit on them for a week or so,
+> pending review-n-test.
 
-You could do the breaking in a follow up patch ;)
+Thank you, yes, I'm about to give them more testing.
 
-Thanks.
+> 
+> > Cc: stable@vger.kernel.org # mem_leak part 3.12+
+> 
+> What does this mean?
 
--- 
-Dmitry
+It's certainly a confusing comment.
+
+I suggest just deleting the "mem_leak part ": Michal isn't referring to
+any two parts of the patch itself, but to parts of his commit comment;
+but it's still unclear what he's claiming.
+
+We do have a confusing situation.  The hang goes back to 3.10 but takes
+two different forms, because of intervening changes: in 3.10 and 3.11
+mem_cgroup_iter repeatedly returns root memcg to its caller, in 3.12 and
+3.13 mem_cgroup_iter repeatedly gets NULL memcg from mem_cgroup_iter_next
+and cannot return to its caller.
+
+Patch 1/2 is what's needed to fix 3.10 and 3.11 (and applies correctly
+to 3.11, but will have to be rediffed for 3.10 because of rearrangement
+in between).  Patch 2/2 is what's needed to fix 3.12 and 3.13 (but applies
+correctly to neither of them because it's diffed on top of my CSS_ONLINE
+fix).  Patch 1/2 is correct but unnecessary in 3.12 and 3.13: I'm unclear
+whether Michal is claiming that it would also fix the hang in 3.12 and
+3.13 if we didn't have 2/2: I doubt that, and haven't tested that.
+
+Given how Michal has diffed this patch on top of my CSS_ONLINE one
+(mm-memcg-iteration-skip-memcgs-not-yet-fully-initialized.patch),
+it would be helpful if you could mark that one also for stable 3.12+,
+to save us from having to rediff this one for stable.  We don't have
+a concrete example of a problem it solves in the vanilla kernel, but
+it makes more sense to include it than to exclude it.
+
+(You would be right to point out that the CSS_ONLINE one fixes
+something that goes back to 3.10: I'm saying 3.12+ because I'm not
+motivated to rediff it for 3.10 and 3.11 when there's nothing to
+go on top; but that's not a very good reason to lie - overrule me.)
+
+Hugh
