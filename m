@@ -1,132 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaAUMOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:14:32 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27757 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754476AbaAUMO3 (ORCPT
+	id S1754554AbaAUMUP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:20:15 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56396 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274AbaAUMUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:14:29 -0500
-Date: Tue, 21 Jan 2014 12:14:29 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
+	Tue, 21 Jan 2014 07:20:12 -0500
+Date: Tue, 21 Jan 2014 13:20:10 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
         "mingo@kernel.org" <mingo@kernel.org>,
         "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
         "markgross@thegnar.org" <markgross@thegnar.org>,
         "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140121121429.GB19029@e103034-lin>
+Message-ID: <20140121122010.GB11893@amd.pavel.ucw.cz>
 References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
  <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
- <20140120163254.GA23051@amd.pavel.ucw.cz>
+ <20140120164926.GB23051@amd.pavel.ucw.cz>
+ <20140120171010.GB29971@arm.com>
+ <20140120181208.GC25439@amd.pavel.ucw.cz>
+ <20140121114225.GC14830@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140120163254.GA23051@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140121114225.GC14830@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-On Mon, Jan 20, 2014 at 04:32:54PM +0000, Pavel Machek wrote:
-> On Tue 2014-01-07 16:19:47, Morten Rasmussen wrote:
-> > Most modern systems use DVFS to save power by slowing down computation
-> > throughput when less performance is necessary. The power/performance
-> > relation is platform specific. Some platforms may have better energy
-> > savings (energy per instruction) than others at low frequencies.
+> > > That's a 1750mAs difference. There are of course other parts drawing
+> > > current but simple things like the above really make a difference in the
+> > > mobile space, both in terms of battery and thermal budget.
 > > 
-> > To have something to relate to, here is an anonymized example based on
-> > a modern ARM platform:
+> > Aha, I noticed the values are now the other way around. [And notice
+> > that if user _does_ lock/turn off the screen after the operation,
+> > difference between power consumptions is factor of two. People do turn
+> > off screens before putting phone back in pocket.]
 > 
-> And here is anonymized example I pulled out of my hat:
+> It depends on the use-case, that's why the problem is so complicated.
+> Race-to-idle may work well if just checking bus timetables but not if
+> you are watching video or listening to music (the latter with screen
+> off).
+
+Exactly, it is complex. That's why it is important to get real
+numbers, please.
+
+And yes, if your _system_ has low power consumption in
+active-at-low-frequency mode, race-to-idle may not be a win for you.
+
+> > You are right that as long as user does _not_ wait for the computation
+> > result, running at low frequency might make sense. That may be true on
+> > cellphone so fast that all the actions are "instant". I have yet to
+> > see such cellphone. That probably means that staying on low frequency
+> > normally and going to high after cpu is busy for 100msec or so is
+> > right thing: if cpu is busy for 100msec, it probably means user is
+> > waiting for the result.
 > 
-> Ammount of anonymization       	 Usefulness of information      	 
-> 0.0	   			 1.0
-> 0.5				 0.05
-> 1.0				 0.0
-> 
-> Come on, you can surely do better than "trust me, it is modern". Now
-> we can't verify those numbers. And they don't make sense.
-> 
-> > Performance	Energy/instruction
-> > 1.0		1.0
-> > 1.3		1.6
-> > 1.7		1.8
-> > 2.0		1.9
-> > 2.3		2.1
-> > 2.7		2.4
-> > 3.0		2.7
+> I'm talking about use-cases where a task (or multiple threads) are
+> running and only loading the CPU partially (audio or video playback).
+> Here you have an average number of instructions to execute per decoded
+> frame in a certain time. Once the frame is decoded, the CPU can go idle,
+> so you can choose whether to race to idle or run at lower frequency (and
+> lower energy per the same number of frame decoding instructions) with
+> less idle time. There are modern platforms where the latter behaviour is
+> more efficient.
+
+So, my Thinkpad X60 is not such platform. Early Athlon64 notebooks
+_were_ such platforms. Can you provide example modern platform you are
+talking about?
+
+> I would really like race to idle to be true for all cases, it would
+> simplify the kernel and we could just remove cpufreq, always running the
+> CPUs at max frequency. But so far I don't see Intel ignoring this
+> problem either, they keep developing a pstate driver which changes the
+> P-states based on average CPU load.
+
+Race-to-idle is win on all modern x86 systems, because they have high
+power consumption even on low non-idle frequency, due to leakage. We
+still keep P-states for cooling, for completeness and for older
+systems.
+
+> > But it depends on the numbers you did not tell us. I'm pretty sure
+> > N900 does _not_ have 11% power consuption at 33% performance; I just
+> > assumed so for sake of argument.
 > > 
-> > Performance is frequency (~instruction issue rate) and
-> > energy/instruction is the energy cost of executing one (or a fixed
-> > number of instructions) at that level of performance (frequency). For
-> > this example, it costs 2.7x more energy per instruction to increase the
-> > performance from 1.0 to 3.0 (3x). That is, the amount of work
-> > (instructions) that can be done on one battery charge is reduced by 2.7x
-> > (~63%) if you run as fast as possible (3.0) compared to running at
-> > slowest frequency (1.0).
+> > So, really, details are needed.
 > 
-> This very heavily depends on what you count to the total energy,
-> right? And it is very hard to argue with you before you anonymized
-> your numbers.
+> If that's the only issue to be addressed, I'm happy to ignore the
+> frequency scaling initially and focus on idle. But since people still do
+> frequency scaling and this would interfere with the scheduler, we have
 
-Just to clarify, the numbers above are cpu only as already stated in the
-linux-pm thread referenced in the cover letter. We do of course need to
-consider the total energy (cpu, gpu and memory at least) when verifying
-whether any optimization does save energy or not.
-
-As already discussed, battery power is suitable for this purpose on end
-product form factor systems. However, for development hardware that
-might be quite different (extra onboard devices and such).
-
-> 
-> Anyway, you assuming modern system, low frequency should be cca
-> 0.5GHz, with high cca 1.5GHz. Do you claim that operation on 1.5GHz
-> takes 9x the power of 0.5GHz operation?
-
-On this particular platform, increasing the frequency by 3x increases
-power by 8.1x.
-
-> 
-> Do you count DRAM to the power consumption?
-
-As said above, the numbers are cpu only.
-
-> 
-> > To save energy, the higher frequencies should be avoided and only used
-> > when the application performance requirements can not be satisfied
-> > otherwise (e.g. spread tasks across more cpus if possible).
-> 
-> This is in very steep contrast with race-to-idle on the PCs.
-
-I think Catalin already covered why race-to-idle isn't always the best
-idea elsewhere in this thread. Basically, it is wasting a lot of energy
-in use-cases like audio and video playback. I have provided descriptions
-of these use-cases as part of this set of emails.
-
-> 
-> > When considering the total system power it may save energy in some
-> > scenarios by running the cpu faster to allow other power hungry parts of
-> > the system to be shut down faster. However, this is highly platform and
-> > application dependent.
-> 
-> Aha. Devil is in the details. "I pulled random numbers out of the hat,
-> and they are wrong, but they are wrong in platform specific way. And I
-> anonymized them for you so that you can't verify them".
-> 
-> Can we talk specific machine, please? You are talking Android all the
-> time, so pick one cellphone you care about, and provide real numbers...
-
-As Catalin already said, there is a number of reason why we can't share
-absolute numbers publicly. I think the numbers I posted give a pretty
-good picture of the trade-offs involved in frequency scaling on a modern
-ARM Soc. This posting was meant to a be a start of a discussion and I'm
-hoping add more information (in anonymized form) in the future.
-
-Morten
+I guess there are modern platforms and workloads where frequency
+scaling makes sense. You only need to find one, and provide numbers
+for it. Please.
+       	   	     	     	      	      	      	      Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
