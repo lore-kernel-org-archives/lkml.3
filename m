@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaAUJ0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:26:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58700 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbaAUJ0h (ORCPT
+	id S1754106AbaAUJ26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:28:58 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:47236 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900AbaAUJ2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:26:37 -0500
-Date: Tue, 21 Jan 2014 09:25:31 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-Message-ID: <20140121092531.350ab714@alan.etchedpixels.co.uk>
-In-Reply-To: <20140121003856.GP15937@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
-	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
-	<20140120100530.GY15937@n2100.arm.linux.org.uk>
-	<20140120211601.GB634@kroah.com>
-	<20140120213206.GJ15937@n2100.arm.linux.org.uk>
-	<20140120231141.GA2355@kroah.com>
-	<20140120231603.GL15937@n2100.arm.linux.org.uk>
-	<20140120235128.GA5012@kroah.com>
-	<20140121000706.GN15937@n2100.arm.linux.org.uk>
-	<20140121002623.GA6173@kroah.com>
-	<20140121003856.GP15937@n2100.arm.linux.org.uk>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jan 2014 04:28:53 -0500
+Message-ID: <52DE3DD4.5090506@linaro.org>
+Date: Tue, 21 Jan 2014 10:28:52 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
+Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
+References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net> <52D94B95.2060704@linaro.org> <20140117153323.GM11314@laptop.programming.kicks-ass.net> <52DE32BB.4010006@linaro.org> <20140121090609.GP31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140121090609.GP31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > So, let's go back to your original worry, what are you concerned about?
-> > A device being removed while probe() is called?
-> 
-> My concern is that we're turning something which should be simple into
-> something unnecessarily complex.  By that, I mean something along the
-> lines of:
+On 01/21/2014 10:06 AM, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 09:41:31AM +0100, Daniel Lezcano wrote:
+>> On 01/17/2014 04:33 PM, Peter Zijlstra wrote:
+>>> On Fri, Jan 17, 2014 at 04:26:13PM +0100, Daniel Lezcano wrote:
+>>>>
+>>>> Ah, ok. Let me try it.
+>>>>
+>>>
+>>> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+>>>
+>>> has a queue that applies to tip/master.
+>>>
+>>> The patches as on lkml need a little help in applying.
+>>>
+>>> They've not been near a compiler yet though :/
+>>
+>> Hi Peter,
+>>
+>> do you want me to resend the full serie with your patchset included ?
+>
+> Nah, I'll send it out, I wanted PJT or Ben to look over one more patch I
+> did, meant to do that yesterday but you know how those things go :-)
 
-Or in fact more complex in other cases because your remove may well be
-refcounted so the stuff may not be going away in the foo_remove() path.
+Yeah :)
 
-> 
-> static DEFINE_MUTEX(foo_mutex);
-> static unsigned foo_devices;
-> 
-> static int foo_probe(struct platform_device *pdev)
-> {
-> 	int ret;
-> 
-> 	mutex_lock(&foo_mutex);
-> 	if (foo_devices++ == 0)
-> 		uart_register_driver(&driver);
-> 
-> 	ret = foo_really_probe_device(pdev);
+Thanks !
 
-We have atomic_inc_and_test and atomic_dec_and_test so it's
-fractionally less ugly.
+   -- Daniel
 
-> in every single serial driver we have...  Wouldn't it just be better to
-> fix the major/minor number problem rather than have to add all that code
-> repetitively to all those drivers?
 
-Quite.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Although for some drivers I suspect what is actually missing when built
-in is
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-module_init() {
-	if (not_the_right_platform())
-		return -ENOGOOD;
-}
-
- 
-Going dynamic is the right fix though. Changing how the driver
-registration work is a different (and quite independent) problem.
-
-Alan
