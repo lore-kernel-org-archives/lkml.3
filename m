@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaAUQqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:46:20 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:46736 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466AbaAUQqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:46:18 -0500
-Message-ID: <52DEA455.7000208@gmail.com>
-Date: Tue, 21 Jan 2014 17:46:13 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755112AbaAUQqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:46:46 -0500
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:27964
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754466AbaAUQqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 11:46:44 -0500
+From: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+Thread-Topic: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+Thread-Index: AQHPE8PTIncnrSWF6UCKArN35cmjQpqOykAQgABpmwCAADNxYA==
+Date: Tue, 21 Jan 2014 16:46:22 +0000
+Message-ID: <6435bb49d4714b24baaf707e76559a55@BN1PR03MB266.namprd03.prod.outlook.com>
+References: <20140117203126.11429.25235.stgit@gimli.home>
+	 <4b9118cb4cc744bdb2e9c25fa32d6950@BL2PR03MB259.namprd03.prod.outlook.com>
+ <1390311348.8705.265.camel@bling.home>
+In-Reply-To: <1390311348.8705.265.camel@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-forefront-prvs: 0098BA6C6C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(377424004)(189002)(199002)(13464003)(24454002)(377454003)(164054003)(51704005)(83322001)(86362001)(19580405001)(33646001)(50986001)(51856001)(66066001)(74876001)(74706001)(47976001)(4396001)(47736001)(49866001)(85852003)(83072002)(65816001)(46102001)(54356001)(80022001)(19580395003)(53806001)(81686001)(74316001)(92566001)(93136001)(93516002)(90146001)(74366001)(80976001)(2656002)(76482001)(56816005)(87936001)(74662001)(74502001)(85306002)(47446002)(81342001)(77096001)(81542001)(81816001)(79102001)(63696002)(87266001)(31966008)(76576001)(54316002)(77982001)(59766001)(56776001)(76796001)(76786001)(69226001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB473;H:BN1PR03MB266.namprd03.prod.outlook.com;CLIP:192.88.169.1;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com
-Subject: Re: [PATCH 01/13] sched: Add 3 new scheduler syscalls to support
- an extended scheduling parameters ABI
-References: <20131217122720.950475833@infradead.org> <20131217123352.692059839@infradead.org> <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com> <20140121153851.GZ31570@twins.programming.kicks-ass.net> <20140121154603.GF3694@twins.programming.kicks-ass.net> <20140121110255.7d9af63d@gandalf.local.home> <20140121160647.GD31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121160647.GD31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0LGkn89011306
 
-On 01/21/2014 05:06 PM, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 11:02:55AM -0500, Steven Rostedt wrote:
->> On Tue, 21 Jan 2014 16:46:03 +0100
->> Peter Zijlstra <peterz@infradead.org> wrote:
->>
->>> On Tue, Jan 21, 2014 at 04:38:51PM +0100, Peter Zijlstra wrote:
->>>>     SCHED_DEADLINE: Sporadic task model deadline scheduling
->>>> 	SCHED_DEADLINE is an implementation of GEDF (Global Earliest
->>>> 	Deadline First) with additional CBS (Constant Bandwidth Server).
->>>
->>> We might want to re-word that to:
->>>
->>> 	SCHED_DEADLINE currently is an implementation of GEDF, however
->>> 	any policy that correctly schedules the sporadic task model is
->>> 	a valid implementation.
->>>
->>> To make sure we should not rely on the actual implementation; there's
->>> many possible algorithms to schedule the sporadic task model.
->>
->> Probably should post some links to GEDF documentation too?
+
+
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Tuesday, January 21, 2014 7:06 PM
+> To: Bhushan Bharat-R65777
+> Cc: Sethi Varun-B16395; iommu@lists.linux-foundation.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
 > 
-> At best I think we can do something like:
+> On Tue, 2014-01-21 at 07:27 +0000, Bharat.Bhushan@freescale.com wrote:
+> > > +	domain->domain = iommu_domain_alloc(domain->bus);
+> > > +	if (!domain->domain) {
+> > > +		ret = -EIO;
+> > > +		goto out_free;
+> > > +	}
+> > > +
+> > > +	ret = iommu_attach_group(domain->domain, iommu_group);
+> > > +	if (ret)
+> > > +		goto out_domain;
+> > > +
+> > > +	INIT_LIST_HEAD(&domain->group_list);
+> > > +	list_add(&group->next, &domain->group_list);
+> > > +
+> > > +	if (!allow_unsafe_interrupts &&
+> > > +	    !iommu_domain_has_cap(domain->domain, IOMMU_CAP_INTR_REMAP)) {
+> > > +		pr_warn("%s: No interrupt remapping support.  Use the module
+> > > +param
+> > > \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this
+> > > platform\n",
+> > > +		       __func__);
+> > > +		ret = -EPERM;
+> > > +		goto out_detach;
+> > > +	}
+> > > +
+> > > +	if (iommu_domain_has_cap(domain->domain, IOMMU_CAP_CACHE_COHERENCY))
+> > > +		domain->prot |= IOMMU_CACHE;
+> > > +
+> > > +	/* Try to match an existing compatible domain. */
+> > > +	list_for_each_entry(d, &iommu->domain_list, next) {
+> > > +		if (d->bus == domain->bus && d->prot == domain->prot) {
+> >
+> > Are not we talking about allowing a domain to support different bus type if
+> domain/iommu-group properties matches.
 > 
-> SEE ALSO
-> 	Documentation/scheduler/sched_deadline.txt in the Linux kernel
-> 	source tree (since kernel 3.14).
+> This is where I was suggesting to Varun that we could test iommu_ops instead of
+> bus_type.
 > 
-> Possibly also an ISBN for a good scheduling theory book (if there exists
-> such a thing), but I would have to rely on others to provide such as my
-> shelfs are devoid of such material.
+> > > +			iommu_detach_group(domain->domain, iommu_group);
+> > > +			if (!iommu_attach_group(d->domain, iommu_group)) {
+> > > +				list_add(&group->next, &d->group_list);
+> > > +				iommu_domain_free(domain->domain);
+> > > +				kfree(domain);
+> > > +				mutex_unlock(&iommu->lock);
+> > > +				return 0;
+> > > +			}
+> > > +
+> > > +			ret = iommu_attach_group(domain->domain, iommu_group);
+> > > +			if (ret)
+> > > +				goto out_domain;
+> > > +		}
+> > > +	}
+> > > +
+> > > +	/* replay mappings on new domains */
+> > > +	ret = vfio_iommu_replay(iommu, domain);
+> >
+> > IIUC; We created a new domain because an already existing domain does
+> > not have same attribute; say domain->prot; But in vfio_iommu_replay() we pick
+> up any domain, first domain, and create mapping accordingly.
+> > Should not we use attributes of this domain otherwise we may get "reserved bit
+> faults"?
+> 
+> We use an existing domain to get the iova to physical mappings, should those not
+> be consistent regardless of the domain we pick?  We're not using any of the low
+> level attributes that could cause something like a reserved bit fault.  Thanks,
+
+You are right, we use dma->addr etc from any domain and but uses "prot" from the domain passed to replay function().
+So effectively the only difference (from dma mapping perspective) between domains in a container is "prot"
+
+Thanks
+-Bharat
+> 
+> Alex
+> 
 > 
 
-Well, picking just one is not that easy, I'd say (among many others):
-
- - Handbook of Scheduling: Algorithms, Models, and Performance Analysis
-   by Joseph Y-T. Leung, James H. Anderson - ISBN-10: 1584883979
-   (especially cap. 30);
- - Hard Real-Time Computing Systems by Giorgio C. Buttazzo
-   ISBN 978-1-4614-0675-4 (even if it is more about UP);
- - A survey of hard real-time scheduling for multiprocessor systems
-   by RI Davis, A Burns - ACM Computing Surveys (CSUR), 2011
-   (available at http://www-users.cs.york.ac.uk/~robdavis/papers/MPSurveyv5.0.pdf);
-
-Probably last one is better (as is freely downloadable). We should add
-something in the documentation too.
-
-Thanks,
-
-- Juri
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
