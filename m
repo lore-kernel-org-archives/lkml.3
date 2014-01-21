@@ -1,100 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaAUKEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 05:04:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871AbaAUKEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 05:04:35 -0500
-Date: Tue, 21 Jan 2014 11:06:12 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [PATCH 1/2] Revert "NVMe: Disable admin queue on init failure"
-Message-ID: <20140121100611.GB8847@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com>
- <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
- <alpine.LRH.2.03.1401171419370.25844@AMR>
- <20140120083835.GA19068@dhcp-26-207.brq.redhat.com>
- <20140120084212.GC19068@dhcp-26-207.brq.redhat.com>
- <alpine.LRH.2.03.1401201541000.25844@AMR>
- <20140121100311.GA8847@dhcp-26-207.brq.redhat.com>
+	id S1754311AbaAUKFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 05:05:05 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:41700 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281AbaAUKFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 05:05:03 -0500
+Date: Tue, 21 Jan 2014 05:04:56 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] cgroup changes for v3.14-rc1
+Message-ID: <20140121100456.GC6928@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140121100311.GA8847@dhcp-26-207.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit c5dc9192d52a4a3a479f701e97386347d454af84.
----
- drivers/block/nvme-core.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+Hello, Linus.
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index b59a93a..c790679 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1151,11 +1151,11 @@ static void nvme_free_queue(struct nvme_queue *nvmeq)
- 	kfree(nvmeq);
- }
- 
--static void nvme_free_queues(struct nvme_dev *dev, int lowest)
-+static void nvme_free_queues(struct nvme_dev *dev)
- {
- 	int i;
- 
--	for (i = dev->queue_count - 1; i >= lowest; i--) {
-+	for (i = dev->queue_count - 1; i >= 0; i--) {
- 		nvme_free_queue(dev->queues[i]);
- 		dev->queue_count--;
- 		dev->queues[i] = NULL;
-@@ -1989,7 +1989,7 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
- 	return 0;
- 
-  free_queues:
--	nvme_free_queues(dev, 1);
-+	nvme_free_queues(dev);
- 	return result;
- }
- 
-@@ -2409,7 +2409,6 @@ static int nvme_dev_start(struct nvme_dev *dev)
- 	return result;
- 
-  disable:
--	nvme_disable_queue(dev, 0);
- 	spin_lock(&dev_list_lock);
- 	list_del_init(&dev->node);
- 	spin_unlock(&dev_list_lock);
-@@ -2541,7 +2540,7 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-  shutdown:
- 	nvme_dev_shutdown(dev);
-  release_pools:
--	nvme_free_queues(dev, 0);
-+	nvme_free_queues(dev);
- 	nvme_release_prp_pools(dev);
-  release:
- 	nvme_release_instance(dev);
-@@ -2565,7 +2564,7 @@ static void nvme_remove(struct pci_dev *pdev)
- 	misc_deregister(&dev->miscdev);
- 	nvme_dev_remove(dev);
- 	nvme_dev_shutdown(dev);
--	nvme_free_queues(dev, 0);
-+	nvme_free_queues(dev);
- 	nvme_release_instance(dev);
- 	nvme_release_prp_pools(dev);
- 	kref_put(&dev->kref, nvme_free_dev);
--- 
-1.7.7.6
+The bulk of changes are cleanups and preparations for the upcoming
+kernfs conversion.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+* cgroup_event mechanism which is and will be used only by memcg is
+  moved to memcg.
+
+* pidlist handling is updated so that it can be served by seq_file.
+  Also, the list is not sorted if sane_behavior.  cgroup documentation
+  explicitly states that the file is not sorted but it has been for
+  quite some time.
+
+* All cgroup file handling now happens on top of seq_file.  This is to
+  prepare for kernfs conversion.  In addition, all operations are
+  restructured so that they map 1-1 to kernfs operations.
+
+* Other cleanups and low-pri fixes.
+
+The following changes since commit 266ccd505e8acb98717819cef9d91d66c7b237cc:
+
+  cgroup: fix cgroup_create() error handling path (2013-12-06 15:08:50 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.14
+
+for you to fetch changes up to dd4b0a4676907481256d16d5de0851b315a6f22c:
+
+  cgroup: trivial style updates (2014-01-18 08:56:11 -0500)
+
+Thanks.
+----------------------------------------------------------------
+Hugh Dickins (1):
+      cgroup: remove stray references to css_id
+
+Masanari Iida (1):
+      doc: cgroups: Fix typo in doc/cgroups
+
+SeongJae Park (1):
+      cgroup: trivial style updates
+
+Tejun Heo (38):
+      cgroup, memcg: move cgroup_event implementation to memcg
+      memcg: cgroup_write_event_control() now knows @css is for memcg
+      cgroup, memcg: move cgroup->event_list[_lock] and event callbacks into memcg
+      memcg: remove cgroup_event->cft
+      memcg: make cgroup_event deal with mem_cgroup instead of cgroup_subsys_state
+      memcg: rename cgroup_event to mem_cgroup_event
+      cgroup: unexport cgroup_css() and remove __file_cft()
+      cgroup: Merge branch 'memcg_event' into for-3.14
+      cgroup: Merge branch 'for-3.13-fixes' into for-3.14
+      cgroup: don't skip seq_open on write only opens on pidlist files
+      cgroup: remove cftype->release()
+      cgroup: implement delayed destruction for cgroup_pidlist
+      cgroup: introduce struct cgroup_pidlist_open_file
+      cgroup: refactor cgroup_pidlist_find()
+      cgroup: remove cgroup_pidlist->rwsem
+      cgroup: load and release pidlists from seq_file start and stop respectively
+      cgroup: remove cgroup_pidlist->use_count
+      cgroup: don't guarantee cgroup.procs is sorted if sane_behavior
+      cgroup, sched: convert away from cftype->read_map()
+      cpuset: convert away from cftype->read()
+      memcg: convert away from cftype->read() and ->read_map()
+      netprio_cgroup: convert away from cftype->read_map()
+      hugetlb_cgroup: convert away from cftype->read()
+      cgroup: remove cftype->read(), ->read_map() and ->write()
+      cgroup: unify cgroup_write_X64() and cgroup_write_string()
+      cgroup: unify read path so that seq_file is always used
+      cgroup: generalize cgroup_pidlist_open_file
+      cgroup: attach cgroup_open_file to all cgroup files
+      cgroup: replace cftype->read_seq_string() with cftype->seq_show()
+      cgroup: unify pidlist and other file handling
+      Merge branch 'for-3.13-fixes' into for-3.14
+      cgroup: css iterations and css_from_dir() are safe under cgroup_mutex
+      cgroup: make for_each_subsys() useable under cgroup_root_mutex
+      cgroup: reorder operations in cgroup_create()
+      cgroup: combine css handling loops in cgroup_create()
+      cgroup: factor out cgroup_subsys_state creation into create_css()
+      cgroup: implement for_each_css()
+      cgroup: remove for_each_root_subsys()
+
+Vladimir Davydov (1):
+      cgroup: fix fail path in cgroup_load_subsys()
+
+Wei Yongjun (1):
+      cgroup: fix missing unlock on error in cgroup_load_subsys()
+
+ Documentation/cgroups/cgroups.txt          |   20 -
+ Documentation/cgroups/memory.txt           |    4 +-
+ Documentation/cgroups/resource_counter.txt |    4 +-
+ block/blk-throttle.c                       |   35 +-
+ block/cfq-iosched.c                        |  131 ++-
+ drivers/md/bcache/request.c                |    1 -
+ include/linux/cgroup.h                     |  112 +--
+ include/linux/vmpressure.h                 |    8 +-
+ init/Kconfig                               |    3 +-
+ kernel/cgroup.c                            | 1202 +++++++++++-----------------
+ kernel/cgroup_freezer.c                    |    7 +-
+ kernel/cpuset.c                            |   71 +-
+ kernel/sched/core.c                        |   13 +-
+ kernel/sched/cpuacct.c                     |   18 +-
+ mm/hugetlb_cgroup.c                        |   22 +-
+ mm/memcontrol.c                            |  426 ++++++++--
+ mm/page_cgroup.c                           |    2 +-
+ mm/vmpressure.c                            |   26 +-
+ net/core/netprio_cgroup.c                  |    8 +-
+ security/device_cgroup.c                   |    7 +-
+ 20 files changed, 1022 insertions(+), 1098 deletions(-)
+
+--
+tejun
