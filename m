@@ -1,23 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952AbaAUWKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:10:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44990 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaAUWKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:10:39 -0500
-Date: Tue, 21 Jan 2014 14:10:37 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Subject: Re: 3.13: BUG: unable to handle kernel paging request at
- 00000000b4343e88
-Message-Id: <20140121141037.f76dba61212c5597ff733207@linux-foundation.org>
-In-Reply-To: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee>
-References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1753993AbaAUWLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:11:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25596 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187AbaAUWLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 17:11:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
+   d="scan'208";a="470359288"
+Date: Tue, 21 Jan 2014 14:10:42 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 1/3] pm/qos: allow state control of qos class
+Message-ID: <20140121141042.63cb5040@ultegra>
+In-Reply-To: <4530703.p5VZzXUXfQ@vostro.rjw.lan>
+References: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	<52952E90.4000604@intel.com>
+	<4530703.p5VZzXUXfQ@vostro.rjw.lan>
+Organization: OTC
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,74 +35,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jan 2014 12:34:24 +0200 (EET) Meelis Roos <mroos@linux.ee> wrote:
+On Thu, 16 Jan 2014 02:17:01 +0100
+"Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
 
-> My HP DL585 G1 gets a the following BUG on module load with 3.13. Have 
-> not noticed it with any earlier kernel, including 3.13-rc8.
+> On Wednesday, November 27, 2013 12:28:16 AM Rafael J. Wysocki wrote:
+> > On 11/27/2013 12:20 AM, Jacob Pan wrote:
+> > > When power capping or thermal control is needed, CPU QOS latency
+> > > cannot be satisfied. This patch adds a state variable to indicate
+> > > whether a QOS class (including all constraint requests) should be
+> > > ignored.
+> > >
+> > > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > 
+> > Honestly, I don't like this.  I know the motivation and what you're 
+> > trying to achieve, but I don't like the approach.
+> > 
+> > I need to think a bit more about that.
 > 
-> BUG: unable to handle kernel paging request at 00000000b4343e88
+> So the reason I don't like this patch is mainly because it affects
+> all of the users of struct pm_qos_constraints and
+> pm_qos_read_value(), which include device PM QoS among other things,
+> but it only really needs to affect PM_QOS_CPU_DMA_LATENCY.
 > 
-> This is somewhat reproducible - on second boot, it was ordered 
-> differently with respect to other boot messages. Second dmesg is also 
-> below.
+> I would add a special routine, say pm_qos_cpu_dma_latency(), for
+> reading the current effective PM_QOS_CPU_DMA_LATENCY constraint and
+> checking whether or not it should be ignored.  Then, I'd make cpuidle
+> use that.
+> 
+Agreed, it was a little too broad. I will send an updated patch soon.
 
-It looks like gcov exploded when running a module's constructors or
-init function, but I'm unable to work out which module it was :(
+Alternatively, can we add a special check for ignored system wide QOS
+class in:
+int pm_qos_request(int pm_qos_class)
 
-> ...
->
-> [    2.606767] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-> [    2.617386] input: PC Speaker as /devices/platform/pcspkr/input/input3
-> [    2.634146] BUG: unable to handle kernel paging request at 00000000b4343e88
-> [    2.634499] IP: [<ffffffff8109e31b>] wake_up_process+0xb/0x50
-> [    2.634766] PGD 0 
-> [    2.635009] Oops: 0000 [#1] SMP 
-> [    2.635210] Floppy drive(s): fd0 is 1.44M
-> [    2.635718] Modules linked in: floppy(+) edac_core(+) pcspkr k8temp(+) ehci_hcd tg3(+) ptp usbcore pps_core libphy hpwdt hpilo usb_common i2c_amd756 i2c_core pata_amd amd_rng libata ioapic evdev shpchp
-> [    2.636037] CPU: 2 PID: 368 Comm: modprobe Not tainted 3.13.0 #45
-> [    2.636037] Hardware name: HP ProLiant DL585 G1, BIOS A01 02/14/2007
-> [    2.636037] task: ffff8803f981c400 ti: ffff8803f98be000 task.ti: ffff8803f98be000
-> [    2.636037] RIP: 0010:[<ffffffff8109e31b>]  [<ffffffff8109e31b>] wake_up_process+0xb/0x50
-> [    2.636037] RSP: 0018:ffff8803f98bfd78  EFLAGS: 00010206
-> [    2.636037] RAX: ffffffff81ba70c0 RBX: 00000000b4343e88 RCX: 00000000000010cd
-> [    2.636037] RDX: ffffffff81ac40a8 RSI: 00000000000149a0 RDI: 00000000b4343e88
-> [    2.636037] RBP: ffffffffa0231958 R08: 00000000000149a0 R09: ffff8802fbc149a0
-> [    2.636037] R10: ffffea0007e73980 R11: ffff8800b8803b00 R12: ffffffffa0231940
-> [    2.636037] R13: ffff8803f98bfe78 R14: 0000000000000000 R15: 0000000000000000
-> [    2.636037] FS:  00007f375b73a700(0000) GS:ffff8802fbc00000(0000) knlGS:0000000000000000
-> [    2.636037] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    2.636037] CR2: 00000000b4343e88 CR3: 00000000bc337000 CR4: 00000000000007e0
-> [    2.636037] Stack:
-> [    2.636037]  ffffffff81ac40a0 ffffffff81607663 ffffffffa0230400 ffffffff8160772b
-> [    2.636037]  0000000000000000 ffffffff81110ac5 0000000000000004 ffffffff810f7b2b
-> [    2.636037]  ffffffff810f4000 0000000000000000 0000000000000000 ffffffff00000003
-> [    2.636037] Call Trace:
-> [    2.636037]  [<ffffffff81607663>] ? __mutex_unlock_slowpath+0x53/0x80
-> [    2.636037]  [<ffffffff8160772b>] ? mutex_unlock+0x2b/0x40
-> [    2.636037]  [<ffffffff81110ac5>] ? __gcov_init+0x65/0xb0
-> [    2.636037]  [<ffffffff810f7b2b>] ? load_module+0x223b/0x2710
-> [    2.636037]  [<ffffffff810f4000>] ? get_modinfo.isra.35+0x110/0x110
-> [    2.636037]  [<ffffffff8160a0f2>] ? page_fault+0x22/0x30
-> [    2.636037]  [<ffffffff810f80ee>] ? SyS_init_module+0xee/0x140
-> [    2.636037]  [<ffffffff816131a1>] ? tracesys+0xd4/0xd9
-> [    2.649431] tg3 0000:02:06.0 eth0: Tigon3 [partno(349321-001) rev 2100] (PCIX:100MHz:64-bit) MAC address 00:13:21:07:9c:e3
-> [    2.649435] tg3 0000:02:06.0 eth0: attached PHY is 5704 (10/100/1000Base-T Ethernet) (WireSpeed[1], EEE[0])
-> [    2.649438] tg3 0000:02:06.0 eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[1] TSOcap[0]
-> [    2.649441] tg3 0000:02:06.0 eth0: dma_rwctrl[769f4000] dma_mask[64-bit]
-> [    2.636037] Code: 48 83 ec 08 31 d2 48 ff 05 13 58 da 00 e8 ae fb ff ff 48 ff 05 0f 58 da 00 48 83 c4 08 c3 66 90 48 ff 05 a9 54 da 00 53 48 89 fb <48> 8b 07 a8 0c 75 18 48 89 df 31 d2 be 03 00 00 00 e8 7f fb ff 
-> [    2.651880] FDC 0 is a National Semiconductor PC87306
-> [    2.650994] RIP  [<ffffffff8109e31b>] wake_up_process+0xb/0x50
-> [    2.650994]  RSP <ffff8803f98bfd78>
-> [    2.650994] CR2: 00000000b4343e88
-> [    2.653524] ---[ end trace 1c83e7195a307878 ]---
-> [    2.705936] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
->
-> ...
->
+i.e.
+diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+index 8dff9b4..9342da4 100644
+--- a/kernel/power/qos.c
++++ b/kernel/power/qos.c
+@@ -286,10 +286,28 @@ bool pm_qos_update_flags(struct pm_qos_flags *pqf,
+  */
+ int pm_qos_request(int pm_qos_class)
+ {
+-       return pm_qos_read_value(pm_qos_array[pm_qos_class]->constraints);
++       struct pm_qos_constraints *c;
++
++       c = pm_qos_array[pm_qos_class]->constraints;
++       if (c->state == PM_QOS_CONSTRAINT_IGNORED)
++               return PM_QOS_DEFAULT_VALUE;
++       return pm_qos_read_value(c);
 
-Maybe it's tg3.
 
-Could you add `ignore_loglevel' to the kernel boot parameters?  That
-should make all pr_debug()s come out and they include the module's
-name.
+Then we don't have to add a special routine just for CPU_DMA_LATENCY
+class. It does not affect other system wide QOS classes unless the
+state is set to be ignored.
 
+
+> Thanks!
+> 
+> > > ---
+> > >   include/linux/pm_qos.h | 10 +++++++++-
+> > >   kernel/power/qos.c     | 24 ++++++++++++++++++++++++
+> > >   2 files changed, 33 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> > > index 5a95013..648b50b 100644
+> > > --- a/include/linux/pm_qos.h
+> > > +++ b/include/linux/pm_qos.h
+> > > @@ -10,7 +10,7 @@
+> > >   #include <linux/device.h>
+> > >   #include <linux/workqueue.h>
+> > >   
+> > > -enum {
+> > > +enum pm_qos_class {
+> > >   	PM_QOS_RESERVED = 0,
+> > >   	PM_QOS_CPU_DMA_LATENCY,
+> > >   	PM_QOS_NETWORK_LATENCY,
+> > > @@ -20,6 +20,11 @@ enum {
+> > >   	PM_QOS_NUM_CLASSES,
+> > >   };
+> > >   
+> > > +enum pm_qos_state {
+> > > +	PM_QOS_CONSTRAINT_AVAILABLE,
+> > > +	PM_QOS_CONSTRAINT_IGNORED,
+> > > +};
+> > > +
+> > >   enum pm_qos_flags_status {
+> > >   	PM_QOS_FLAGS_UNDEFINED = -1,
+> > >   	PM_QOS_FLAGS_NONE,
+> > > @@ -77,6 +82,7 @@ struct pm_qos_constraints {
+> > >   	struct plist_head list;
+> > >   	s32 target_value;	/* Do not change to 64 bit */
+> > >   	s32 default_value;
+> > > +	enum pm_qos_state state;
+> > >   	enum pm_qos_type type;
+> > >   	struct blocking_notifier_head *notifiers;
+> > >   };
+> > > @@ -123,6 +129,8 @@ int pm_qos_add_notifier(int pm_qos_class,
+> > > struct notifier_block *notifier); int pm_qos_remove_notifier(int
+> > > pm_qos_class, struct notifier_block *notifier); int
+> > > pm_qos_request_active(struct pm_qos_request *req); s32
+> > > pm_qos_read_value(struct pm_qos_constraints *c); +void
+> > > pm_qos_set_constraint_class_state(enum pm_qos_class class,
+> > > +				enum pm_qos_state state);
+> > >   
+> > >   #ifdef CONFIG_PM
+> > >   enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev,
+> > > s32 mask); diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> > > index 8dff9b4..cf475b0 100644
+> > > --- a/kernel/power/qos.c
+> > > +++ b/kernel/power/qos.c
+> > > @@ -146,6 +146,11 @@ static inline int pm_qos_get_value(struct
+> > > pm_qos_constraints *c) 
+> > >   s32 pm_qos_read_value(struct pm_qos_constraints *c)
+> > >   {
+> > > +	/* return invalid default value if constraints cannot be
+> > > met, e.g.
+> > > +	 * during idle injection.
+> > > +	 */
+> > > +	if (c->state == PM_QOS_CONSTRAINT_IGNORED)
+> > > +		return PM_QOS_DEFAULT_VALUE;
+> > >   	return c->target_value;
+> > >   }
+> > >   
+> > > @@ -353,6 +358,25 @@ void pm_qos_add_request(struct
+> > > pm_qos_request *req, }
+> > >   EXPORT_SYMBOL_GPL(pm_qos_add_request);
+> > >   
+> > > +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
+> > > +				enum pm_qos_state state)
+> > > +{
+> > > +	struct pm_qos_constraints *c =
+> > > pm_qos_array[class]->constraints;
+> > > +	unsigned long curr_value;
+> > > +
+> > > +	if (c->state == state)
+> > > +		return;
+> > > +	curr_value = (state == PM_QOS_CONSTRAINT_IGNORED) ?
+> > > +		PM_QOS_DEFAULT_VALUE : c->target_value;
+> > > +	c->state = state;
+> > > +
+> > > +	/* notify existing QOS requests change */
+> > > +	blocking_notifier_call_chain(c->notifiers,
+> > > +				curr_value,
+> > > +				NULL);
+> > > +}
+> > > +EXPORT_SYMBOL_GPL(pm_qos_set_constraint_class_state);
+> > > +
+> > >   /**
+> > >    * pm_qos_update_request - modifies an existing qos request
+> > >    * @req : handle to list element holding a pm_qos request to use
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pm"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+[Jacob Pan]
