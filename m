@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaAUUoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:44:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37262 "EHLO
+	id S1753489AbaAUUnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:43:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37244 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599AbaAUUnX (ORCPT
+	with ESMTP id S1751590AbaAUUnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:43:23 -0500
+	Tue, 21 Jan 2014 15:43:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/8] perf stat: fix NULL pointer reference bug with event unit
-Date: Tue, 21 Jan 2014 17:43:00 -0300
-Message-Id: <1390336984-1553-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/8] perf session: Free cpu_map in perf_session__cpu_bitmap
+Date: Tue, 21 Jan 2014 17:42:58 -0300
+Message-Id: <1390336984-1553-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1390336984-1553-1-git-send-email-acme@infradead.org>
 References: <1390336984-1553-1-git-send-email-acme@infradead.org>
@@ -25,117 +29,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-This patch fixes a problem with the handling of the newly introduced
-optional event unit. The following cmdline caused a segfault:
+This method uses a temporary struct cpu_map to figure out the cpus
+present in the received cpu list in string form, but it failed to free
+it after returning. Fix it.
 
- $ perf stat -e cpu/event-0x3c/ ls
-
-This patch fixes the problem with the default setting for alias->unit
-which was eventually causing the segfault.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389972846-6566-2-git-send-email-eranian@google.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1390217980-22424-3-git-send-email-stfomichev@yandex-team.ru
+[ Use goto + err = -1 to do the delete just once, in the normal exit path ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |  2 +-
- tools/perf/util/pmu.c          | 24 ++++++++++++++++++++----
- tools/perf/util/pmu.h          |  2 +-
- 3 files changed, 22 insertions(+), 6 deletions(-)
+ tools/perf/util/session.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index a7f1b6a91fdd..d248fca6d7ed 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -635,7 +635,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	struct perf_event_attr attr;
- 	struct perf_pmu *pmu;
- 	struct perf_evsel *evsel;
--	char *unit;
-+	const char *unit;
- 	double scale;
- 
- 	pmu = perf_pmu__find(name);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index d9cab4d27192..b752ecb40d86 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -105,7 +105,7 @@ static int perf_pmu__parse_scale(struct perf_pmu_alias *alias, char *dir, char *
- 	char scale[128];
- 	int fd, ret = -1;
- 	char path[PATH_MAX];
--	char *lc;
-+	const char *lc;
- 
- 	snprintf(path, PATH_MAX, "%s/%s.scale", dir, name);
- 
-@@ -609,7 +609,7 @@ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
- 
- 
- static int check_unit_scale(struct perf_pmu_alias *alias,
--			    char **unit, double *scale)
-+			    const char **unit, double *scale)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 7acc03e8f3b2..0b39a48e5110 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1573,7 +1573,7 @@ next:
+ int perf_session__cpu_bitmap(struct perf_session *session,
+ 			     const char *cpu_list, unsigned long *cpu_bitmap)
  {
- 	/*
- 	 * Only one term in event definition can
-@@ -634,14 +634,18 @@ static int check_unit_scale(struct perf_pmu_alias *alias,
-  * defined for the alias
-  */
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
--			  char **unit, double *scale)
-+			  const char **unit, double *scale)
- {
- 	struct parse_events_term *term, *h;
- 	struct perf_pmu_alias *alias;
- 	int ret;
+-	int i;
++	int i, err = -1;
+ 	struct cpu_map *map;
  
-+	/*
-+	 * Mark unit and scale as not set
-+	 * (different from default values, see below)
-+	 */
- 	*unit   = NULL;
--	*scale  = 0;
-+	*scale  = 0.0;
+ 	for (i = 0; i < PERF_TYPE_MAX; ++i) {
+@@ -1602,13 +1602,17 @@ int perf_session__cpu_bitmap(struct perf_session *session,
+ 		if (cpu >= MAX_NR_CPUS) {
+ 			pr_err("Requested CPU %d too large. "
+ 			       "Consider raising MAX_NR_CPUS\n", cpu);
+-			return -1;
++			goto out_delete_map;
+ 		}
  
- 	list_for_each_entry_safe(term, h, head_terms, list) {
- 		alias = pmu_find_alias(pmu, term);
-@@ -658,6 +662,18 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 		list_del(&term->list);
- 		free(term);
+ 		set_bit(cpu, cpu_bitmap);
  	}
+ 
+-	return 0;
++	err = 0;
 +
-+	/*
-+	 * if no unit or scale foundin aliases, then
-+	 * set defaults as for evsel
-+	 * unit cannot left to NULL
-+	 */
-+	if (*unit == NULL)
-+		*unit   = "";
-+
-+	if (*scale == 0.0)
-+		*scale  = 1.0;
-+
- 	return 0;
++out_delete_map:
++	cpu_map__delete(map);
++	return err;
  }
  
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 9183380e2038..8b64125a9281 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -29,7 +29,7 @@ int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
- 			   struct list_head *head_terms);
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
--			  char **unit, double *scale);
-+			  const char **unit, double *scale);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
- 				  struct list_head *head_terms);
- int perf_pmu_wrap(void);
+ void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
 -- 
 1.8.1.4
 
