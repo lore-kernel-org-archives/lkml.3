@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaAUORX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:17:23 -0500
-Received: from mail.SerNet.de ([193.175.80.2]:59283 "EHLO mail.SerNet.de"
+	id S1754716AbaAUOSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:18:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35956 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaAUORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:17:21 -0500
-Date: Tue, 21 Jan 2014 15:17:08 +0100
-Date: Tue, 21 Jan 2014 15:17:08 +0100
-From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
-Reply-To: Volker.Lendecke@SerNet.DE
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
- <E1W5A0e-000MT9-A1@intern.SerNet.DE>
- <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
- <E1W5C8U-000ozD-Ku@intern.SerNet.DE>
- <CAKywueQng9=u1YYwkYGCunWW8RBhARhJjEhBcoA6CKF6TrKSBg@mail.gmail.com>
+	id S1754274AbaAUOSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:18:44 -0500
+Message-ID: <52DE8189.9030805@zytor.com>
+Date: Tue, 21 Jan 2014 06:17:45 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKywueQng9=u1YYwkYGCunWW8RBhARhJjEhBcoA6CKF6TrKSBg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Message-Id: <E1W5c8k-0036ba-7A@intern.SerNet.DE>
-Organization: SerNet GmbH, Goettingen, Germany
+To: Ingo Molnar <mingo@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Cong Ding <dinggnu@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com> <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com> <20140121102700.GB2981@gmail.com> <52DE7C49.90503@zytor.com> <20140121140311.GB4537@gmail.com> <52DE7EBD.1000908@zytor.com> <20140121141419.GB4559@gmail.com>
+In-Reply-To: <20140121141419.GB4559@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 05:31:39PM +0400, Pavel Shilovsky wrote:
-> It's not possible with the current API to do it through open syscall.
-> Another possibility is to look at /proc/locks. But I think we really
-> need O_DELETE flag that will force a file to be removed on close - we
-> will be able to do O_DENYDELETE checks atomically.
+On 01/21/2014 06:14 AM, Ingo Molnar wrote:
+> 
+> Ah, I didn't mean to suggest that it's an old upstream feature: what I 
+> mean is that the KASLR patch is pretty old, and it has been deployed 
+> by the Chromium guys for quite some time, and by others?
+> 
+> It was just never combined with perf live annotation which is a recent 
+> perf feature.
+> 
 
-I don't depend on this at open time. I can do it later with
-some syscall, that's fine. I just want to find a way to do
-it correctly. The problem is -- you can't "try" an unlink.
-So we have to probe whether we can unlink. And opening for
-O_DENYDELETE by no means says we *will* unlink. We just have
-to keep the option to do it exclusively.
+Ah, right.  Parallel convergence.
 
-With best regards,
+> Anyway ... I suspect it's the fixing of the bug that matters most, not 
+> its genealogy ;)
 
-Volker
+Indeed.
 
--- 
-SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
-phone: +49-551-370000-0, fax: +49-551-370000-9
-AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
-http://www.sernet.de, mailto:kontakt@sernet.de
+	-hpa
+
+
