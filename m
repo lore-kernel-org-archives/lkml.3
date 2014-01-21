@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaAUBYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 20:24:37 -0500
+	id S1754446AbaAUBYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 20:24:51 -0500
 Received: from mga09.intel.com ([134.134.136.24]:10318 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565AbaAUBYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 20:24:24 -0500
+	id S1751380AbaAUBYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jan 2014 20:24:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,693,1384329600"; 
-   d="scan'208";a="441988410"
-Subject: [PATCH v8 1/6] MCS Lock: Barrier corrections
+   d="scan'208";a="441988535"
+Subject: [PATCH v8 5/6] MCS Lock: allow architectures to hook in to
+ contended
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -38,8 +39,8 @@ Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
 In-Reply-To: <cover.1390239879.git.tim.c.chen@linux.intel.com>
 References: <cover.1390239879.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Jan 2014 17:24:20 -0800
-Message-ID: <1390267460.3138.35.camel@schen9-DESK>
+Date: Mon, 20 Jan 2014 17:24:35 -0800
+Message-ID: <1390267475.3138.39.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -47,56 +48,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Waiman Long <Waiman.Long@hp.com>
+From: Will Deacon <will.deacon@arm.com>
 
-This patch corrects the way memory barriers are used in the MCS lock
-with smp_load_acquire and smp_store_release fucnction.
-It removes ones that are not needed.
+When contended, architectures may be able to reduce the polling overhead
+in ways which aren't expressible using a simple relax() primitive.
 
-Suggested-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
+This patch allows architectures to hook into the mcs_{lock,unlock}
+functions for the contended cases only.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- kernel/locking/mutex.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ kernel/locking/mcs_spinlock.c | 42 ++++++++++++++++++++++++++++--------------
+ 1 file changed, 28 insertions(+), 14 deletions(-)
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 4dd6e4c..fbbd2ed 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -136,9 +136,12 @@ void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
+diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+index c3ee9cf..e12ed32 100644
+--- a/kernel/locking/mcs_spinlock.c
++++ b/kernel/locking/mcs_spinlock.c
+@@ -16,6 +16,28 @@
+ #include <linux/mutex.h>
+ #include <linux/export.h>
+ 
++#ifndef arch_mcs_spin_lock_contended
++/*
++ * Using smp_load_acquire() provides a memory barrier that ensures
++ * subsequent operations happen after the lock is acquired.
++ */
++#define arch_mcs_spin_lock_contended(l)					\
++do {									\
++	while (!(smp_load_acquire(l)))					\
++		arch_mutex_cpu_relax();					\
++} while (0)
++#endif
++
++#ifndef arch_mcs_spin_unlock_contended
++/*
++ * smp_store_release() provides a memory barrier to ensure all
++ * operations in the critical section has been completed before
++ * unlocking.
++ */
++#define arch_mcs_spin_unlock_contended(l)				\
++	smp_store_release((l), 1)
++#endif
++
+ /*
+  * Note: the smp_load_acquire/smp_store_release pair is not
+  * sufficient to form a full memory barrier across
+@@ -50,13 +72,9 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
  		return;
  	}
  	ACCESS_ONCE(prev->next) = node;
--	smp_wmb();
--	/* Wait until the lock holder passes the lock down */
--	while (!ACCESS_ONCE(node->locked))
-+	/*
-+	 * Wait until the lock holder passes the lock down.
-+	 * Using smp_load_acquire() provides a memory barrier that
-+	 * ensures subsequent operations happen after the lock is acquired.
-+	 */
-+	while (!(smp_load_acquire(&node->locked)))
- 		arch_mutex_cpu_relax();
+-	/*
+-	 * Wait until the lock holder passes the lock down.
+-	 * Using smp_load_acquire() provides a memory barrier that
+-	 * ensures subsequent operations happen after the lock is acquired.
+-	 */
+-	while (!(smp_load_acquire(&node->locked)))
+-		arch_mutex_cpu_relax();
++
++	/* Wait until the lock holder passes the lock down. */
++	arch_mcs_spin_lock_contended(&node->locked);
  }
+ EXPORT_SYMBOL_GPL(mcs_spin_lock);
  
-@@ -156,8 +159,13 @@ static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+@@ -78,12 +96,8 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
  		while (!(next = ACCESS_ONCE(node->next)))
  			arch_mutex_cpu_relax();
  	}
--	ACCESS_ONCE(next->locked) = 1;
--	smp_wmb();
-+	/*
-+	 * Pass lock to next waiter.
-+	 * smp_store_release() provides a memory barrier to ensure
-+	 * all operations in the critical section has been completed
-+	 * before unlocking.
-+	 */
-+	smp_store_release(&next->locked, 1);
+-	/*
+-	 * Pass lock to next waiter.
+-	 * smp_store_release() provides a memory barrier to ensure
+-	 * all operations in the critical section has been completed
+-	 * before unlocking.
+-	 */
+-	smp_store_release(&next->locked, 1);
++
++	/* Pass lock to next waiter. */
++	arch_mcs_spin_unlock_contended(&next->locked);
  }
- 
- /*
+ EXPORT_SYMBOL_GPL(mcs_spin_unlock);
 -- 
 1.7.11.7
 
