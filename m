@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaAUF7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:59:54 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61343 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaAUF7p (ORCPT
+	id S1751773AbaAUGDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 01:03:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38271 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaAUGDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:59:45 -0500
-Message-ID: <52DE0CB7.3040803@linaro.org>
-Date: Tue, 21 Jan 2014 13:59:19 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 21 Jan 2014 01:03:47 -0500
+Date: Mon, 20 Jan 2014 22:04:28 -0800
+From: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20140121060428.GA19037@kroah.com>
+References: <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
+ <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
+ <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org>
+ <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com>
+ <20140110221432.GD6963@cmpxchg.org>
+ <alpine.DEB.2.02.1401121404530.20999@chino.kir.corp.google.com>
+ <20140115143449.GN8782@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1401151319580.10727@chino.kir.corp.google.com>
+ <20140116093220.GC28157@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1401202155410.21729@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org, efault@gmx.de
-CC: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Alex Shi <alex.shi@linaro.org>
-Subject: Re: [RFC PATCH 1/2] sched/update_avg: avoid negative time
-References: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>
-In-Reply-To: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401202155410.21729@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 01:33 PM, Alex Shi wrote:
-> rq->avg_idle try to reflect the average idle time between the cpu idle
-> and first wakeup. But in the function, it maybe get a negative value
-> if old avg_idle is too small. Then this negative value will be double
-> counted in next time calculation. Guess that is not the original purpose,
-> so recalibrate it to zero.
+On Mon, Jan 20, 2014 at 09:58:28PM -0800, David Rientjes wrote:
+> The patches getting proposed through -mm for stable boggles my mind
+> sometimes.
 
-Forget this patch, the avg_idle is impossible to get negative.
-Sorry for noise!
+Do you have any objections to patches that I have taken for -stable?  If
+so, please let me know.
 
+thanks,
 
--- 
-Thanks
-    Alex
+greg k-h
