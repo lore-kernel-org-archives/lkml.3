@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaAUN4F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:56:05 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:53243 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441AbaAUN4C (ORCPT
+	id S1754682AbaAUN4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:56:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55883 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441AbaAUN4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:56:02 -0500
-Date: Tue, 21 Jan 2014 10:55:52 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Gaurav Jain <gjain@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-Message-ID: <20140121135552.GD18027@ghostprotocols.net>
-References: <20140116143749.GA21526@ghostprotocols.net>
- <CEFDA8E4.2D359%gjain@fb.com>
- <87sisn6ojf.fsf@sejong.aot.lge.com>
- <20140117143404.GB3207@ghostprotocols.net>
- <87iotd7ucn.fsf@sejong.aot.lge.com>
+	Tue, 21 Jan 2014 08:56:38 -0500
+Date: Tue, 21 Jan 2014 14:55:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+Message-ID: <20140121135559.GK30183@twins.programming.kicks-ass.net>
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com>
+ <20140120112442.GA8907@austad.us>
+ <52DD1377.5090201@gmail.com>
+ <20140120131616.GB8907@austad.us>
+ <52DD2711.9080504@unitn.it>
+ <20140121102016.GA12002@austad.us>
+ <52DE5B7F.8020900@unitn.it>
+ <20140121123334.GJ30183@twins.programming.kicks-ass.net>
+ <52DE6D21.1080602@unitn.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87iotd7ucn.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52DE6D21.1080602@unitn.it>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 21, 2014 at 02:54:32PM +0900, Namhyung Kim escreveu:
-> On Fri, 17 Jan 2014 11:34:04 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Jan 17, 2014 at 04:44:04PM +0900, Namhyung Kim escreveu:
-> >> On Thu, 16 Jan 2014 20:23:27 +0000, Gaurav Jain wrote:
-> >> > Does perf support data mappings from perf map files?
+On Tue, Jan 21, 2014 at 01:50:41PM +0100, Luca Abeni wrote:
+> On 01/21/2014 01:33 PM, Peter Zijlstra wrote:
 
-> >> IIUC there's no difference between function and data mapping.  So
-
-> > Do the /tmp/perf mapping has any per entry indication on the type of
-> > symbol it is (data, text) like ELF and kallsyms symtabs have?
-
-> Quoting Documentation/jit-interface.txt:
- 
->   Each line has the following format, fields separated with spaces:
- 
->   START SIZE symbolname
-
-> > It is possible for a function and a variable to have the same virt
-> > addrin some arches (SPARC, iirc), that is why we have different MAP_
-> > types (FUNCTION, VARIABLE)
- 
-> Hmm.. didn't know that, interesting..
-
-> > So a 'struct map' for a data mmap should point to a different 'dso'
-> > of the JIT /tmp/perf-... style if those maps don't have per entry
-> > indication of text/data.
- 
-> Yes, but there's no way to do it currently.
-
-Why not? Its just a matter of having a /tmp/perf-...-data file that has
-the same structure as the current files for text mmaps :-)
-
-It would then be used as the map->dso for resolving data addresses.
- 
-> >> only function symbols in function mappings and variables in data
-> >> mapping based on the address it accesses.
-
-> > Well, the lookup should figure out if the IP refers to TEXT or DATA and
-> > use MAP__{FUNCTION, VARIABLE} accordingly when asking for symbol
-> > resolution.
-
-> Right.  But in this case we cannot determine whether a symbol in the
-> /tmp/perf-... file is a function or variable.
-
-That is why we would then need to have separate /tmp/perf-... files,
-disambiguated by an extension, one for text addresses, another for data
-ones.
-
-Or change the format to match /proc/kallsyms, which probably is what we
-should've done from day one...
-
-Detecting the format change would be trivial, as we would find 3 tokens
-in the new format, instead of the current 2.
- 
-> >> What I wasn't sure is whether JIT program also produces some dynamic data.
-> >> And I think only perf mem command cares about data mappings, no?
-
-> > Well, I think it would be great to do that kind of data resolution for
-> > JITs the same way it is interesting to do for ELF ones :-)
+> >>- During the execution of a job, the task might invoke a blocking system call,
+> >>   and block... When it wakes up, it is still in the same job (decoding the same
+> >>   video frame), and not in a different one.
+> >>This is (IMHO) where all the confusion comes from.
 > >
-> > I need to stare harder at that patch, but with the above in mind, do we
-> > really have to check if the map is MAP__FUNCTION as IIRC this patch
-> > does?
+> >I would strongly urge you not to use that as an example, because its
+> >dead wrong design. An RT thread (be it RR,FIFO or DL) should _NEVER_ do
+> >blocking IO.
+> Well, but it does happen in reality :)
+
+Yeah, I know, my point was more about not encouraging people to do this
+by explicitly mentioning it.
+
+> On the other hand, I agree with you that a hard real-time task should be designed
+> not to do things like this. But SCHED_DEADLINE is flexible enough to be used on
+> many different kinds of tasks (hard real-time, soft real-time, etc...).
+
+At which point I feel obliged to mention the work Jim did on statistical
+bounded tardiness and a potential future option:
+SCHED_FLAG_DL_AVG_RUNTIME, where we would allow tasks to somewhat exceed
+their runtime budget provided that they meet their budget on average.
+
+A possible implementation could be to track the unused budget of
+previous instances and keep a decaying sum (such that we're guaranteed
+this unused budget < 2*runtime). And then allow runtime overruns upto
+this limit.
+
+Another possibly extension; one proposed by Ingo; is to demote tasks to
+SCHED_OTHER once they exceed their budget instead of the full block they
+get now -- we could possibly call this SCHED_FLAG_DL_CBS_SOFT or such.
+
+And of course SCHED_FLAG_DL_CBS_SIGNAL, where the task gets a signal
+delivered if it exceeded the runtime -- I think some of the earlier
+patches had things like this, no?
+
+> >On the other subject; I wouldn't actually mind if it grew into a proper
+> >(academic or not) summary of deadline scheduling theory and how it
+> >applies.
+> >
+> >Sure, refer to actual papers for all the proofs and such, but it would
+> >be very good to go over all the bits and pieces that make up the system.
+> >
+> >So cover the periodic, sporadic and aperiodic model like henr_k
+> >suggested, please do cover the job/instance idiom as it is used all over
+> >the place.
+> Ok... My point was that it would be better (IMHO) to first explain how
+> sched_deadline works (and no notion of job/instance, etc is needed for this),
+> and then explain how this applies to the real-time task model (and here, of
+> course all the formal notation can be introduced).
 > 
-> Not sure.  For a JIT case, I guess the mapping is always executable and
-> we don't support data mapping yet, so it seems okay for now.
+> Do you think this can be reasonable?
 
-Ok, agreed, applying the patch, thanks,
+Sure, I think that's reasonable.
 
-- Arnaldo
+> >Then also treat schedulability tests and their ramification, explain
+> >what laxity is, what tardiness is, that GEDF doesn't have 0 tardiness
+> >but does have bounded tardiness.
+> >
+> >Maybe even mention the actual bounds -- but refer to papers for their
+> >proofs.
+> >
+> >Mention CBS and the ramification etc..
+> Ok.
+> I guess some of these details can be added incrementally, with additional
+> patches?
+
+Oh sure, all of this will always be a work in progress anyway ;-)
