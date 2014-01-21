@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553AbaAUDjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 22:39:13 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:50571 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaAUDjF (ORCPT
+	id S1753749AbaAUDlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 22:41:02 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64054 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387AbaAUDky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 22:39:05 -0500
-Message-ID: <52DDEBB6.8040908@linaro.org>
-Date: Tue, 21 Jan 2014 11:38:30 +0800
+	Mon, 20 Jan 2014 22:40:54 -0500
+Message-ID: <52DDEC3B.1000208@linaro.org>
+Date: Tue, 21 Jan 2014 11:40:43 +0800
 From: Hanjun Guo <hanjun.guo@linaro.org>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Sudeep Holla <Sudeep.Holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Mark Rutland <mark.rutland@arm.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linaro-kernel@lists.linaro.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Jon Masters <jonathan@jonmasters.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH 1/3] ACPI / idle: Move idle_boot_override out of the arch
- directory
-References: <1389924207-7360-1-git-send-email-hanjun.guo@linaro.org> <5375666.26CZK1LlZA@vostro.rjw.lan> <52DD2DE9.9060202@linaro.org> <1945528.uEVBjXteWy@vostro.rjw.lan>
-In-Reply-To: <1945528.uEVBjXteWy@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        Rob Herring <robh@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linaro-acpi@lists.linaro.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        patches@linaro.org, Olof Johansson <olof@lixom.net>,
+        Charles.Garcia-Tobin@arm.com, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 06/20] ARM64 / ACPI: Introduce some PCI functions when
+ PCI is enabled
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <4387274.ri38HmFxAV@wuerfel> <52DD2F23.2010109@linaro.org> <201401201939.53035.arnd@arndb.de>
+In-Reply-To: <201401201939.53035.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-1-21 7:34, Rafael J. Wysocki wrote:
-> On Monday, January 20, 2014 10:08:41 PM Hanjun Guo wrote:
->> On 2014年01月18日 21:47, Rafael J. Wysocki wrote:
->>> On Saturday, January 18, 2014 11:52:18 AM Hanjun Guo wrote:
->>>> On 2014-1-18 11:45, Hanjun Guo wrote:
->>>>> On 2014-1-17 20:06, Sudeep Holla wrote:
->>>>>> On 17/01/14 02:03, Hanjun Guo wrote:
->>>>>>> Move idle_boot_override out of the arch directory to be a single enum
->>>>>>> including both platforms values, this will make it rather easier to
->>>>>>> avoid ifdefs around which definitions are for which processor in
->>>>>>> generally used ACPI code.
->>>>>>>
->>>>>>> IDLE_FORCE_MWAIT for IA64 is not used anywhere, so romove it.
->>>>>>>
->>>>>>> No functional change in this patch.
->>>>>>>
->>>>>>> Suggested-by: Alan <gnomes@lxorguk.ukuu.org.uk>
->>>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>>>>> ---
->>>> [...]
->>>>>>> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
->>>>>>> index 03e235ad..e324561 100644
->>>>>>> --- a/include/linux/cpu.h
->>>>>>> +++ b/include/linux/cpu.h
->>>>>>> @@ -220,6 +220,14 @@ void cpu_idle(void);
->>>>>>>   
->>>>>>>   void cpu_idle_poll_ctrl(bool enable);
->>>>>>>   
->>>>>>> +enum idle_boot_override {
->>>>>>> +	IDLE_NO_OVERRIDE = 0,
->>>>>>> +	IDLE_HALT,
->>>>>>> +	IDLE_NOMWAIT,
->>>>>>> +	IDLE_POLL,
->>>>>>> +	IDLE_POWERSAVE_OFF
->>>>>>> +};
->>>>>>> +
->>>>>> I do understand the idea behind this change, but IMO HALT and MWAIT are x86
->>>>>> specific and may not make sense for other architectures.
->>>>> yes, this is the strange part, the value is arch-dependent.
->>>>>
->>>>>> It will also require every architecture using ACPI to export
->>>>>> boot_option_idle_override which may not be really required.
->>>>> so, how about forget this patch and move boot_option_idle_override
->>>>> related code into arch directory such as arch/x86/acpi/boot.c for
->>>>> x86?
->>>> The general idea is that we can move all the arch-dependent codes
->>>> in ACPI driver to arch directory, then make codes in drivers/acpi/
->>>> arch independent.
->>> Well, MWAIT is arch-dependent, so I'm not sure how IDLE_NOMWAIT fits into
->>> include/linux/cpu.h?
+On 2014-1-21 2:39, Arnd Bergmann wrote:
+> On Monday 20 January 2014, Hanjun Guo wrote:
+>>>> acpi_register_ioapic()/acpi_unregister_ioapic() will be used for IOAPIC
+>>>> hotplug and GIC distributor is something like IOAPIC on x86, so I think
+>>>> these two functions can be reserved for future use.
+>>> But GIC is not hotplugged, is it? It still sounds x86 specific to me.
 >>
->> So you will not happy with this patch and should find another solution?
+>> Well, if we want to do physical CPU hotplug on ARM/ARM64 (maybe years 
+>> later?),
+>> then GIC add/remove is needed because we have to remove GIC
+>> on the SoC too when we remove the physical CPU.
 > 
-> No, I'm not happy with it.
-> 
-> If you want to move that to an arch-agnostic header, the symbol names cannot
-> be arch-dependent any more.
+> In general, I recommend not planning for the future in kernel code when you
+> don't know what is going to happen. It's always easy enough to change
+> things once you get there, as long as no stable ABI is involved.
 
-Ok, will find another solution for that, thanks for your comments :)
+Ok, I agree with you.
+
+> 
+> I just looked at the caller of these functions, and found a self-contained
+> PCI driver in drivers/pci/ioapic.c, which uses two sepate PCI classes for
+> ioapic and ioxapic. I think it's a safe assumption to say that even if we
+> get ARM CPU+GIC hotplug, that would not use the same ioapic driver. This
+> driver is currently marked X86-only, and that should probably stay this way,
+> so you won't need the hooks.
+
+Will find a suitable way to fix that in next version, thanks for you comments :)
 
 Hanjun
 
