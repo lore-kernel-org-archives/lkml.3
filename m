@@ -1,192 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaAUCzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 21:55:44 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:42819 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaAUCzh (ORCPT
+	id S1753220AbaAUDEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 22:04:43 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:32714 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751859AbaAUDEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 21:55:37 -0500
+	Mon, 20 Jan 2014 22:04:32 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj4IAFjj3VJ5LKVw/2dsb2JhbABZgwuDObNchVKBDhd0giUBAQEDAQ4ZExwPFAULCAMOCgklDwUlAyETh30HxBUXFo5pB4Q4BIxghxqEJ4dEilWDQSg
+Date: Tue, 21 Jan 2014 14:03:58 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20140121030358.GN18112@dastard>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+ <20140117000517.GB18112@dastard>
+ <20140120231737.GS6963@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaRQRD85-0wUmip=j1SHzti6Nb69JEUXznYTkrxGvky=A@mail.gmail.com>
-References: <20140117184731.GE15937@n2100.arm.linux.org.uk>
- <52D98712.3070103@wwwdotorg.org> <20140117202405.GF15937@n2100.arm.linux.org.uk>
- <52D995C4.80104@wwwdotorg.org> <20140117205346.GH15937@n2100.arm.linux.org.uk>
- <CACRpkdaRQRD85-0wUmip=j1SHzti6Nb69JEUXznYTkrxGvky=A@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 21 Jan 2014 11:55:16 +0900
-Message-ID: <CAAVeFuJhYv_vKqgyyaw7LOzRvErjf4u=5jJCvpoEgA0ZsMj-1Q@mail.gmail.com>
-Subject: Re: More GPIO madness on iMX6 - and the crappy ARM port of Linux
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120231737.GS6963@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 18, 2014 at 7:43 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Jan 17, 2014 at 9:53 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Fri, Jan 17, 2014 at 01:42:44PM -0700, Stephen Warren wrote:
->
->>> I believe you want gpio_get_value() to return either the driven or
->>> actual pin value where it can on the current HW, but just e.g. hard-code
->>> 0 on other HW. That would introduce a core feature that works some
->>> places but not others, and hence make drivers that relied on the feature
->>> less portable between HW with different actual features.
->>
->> I can buy that argument, but there's an issue which stands squarely in
->> its way, and that is open-drain GPIOs.
->>
->> These are modelled just as any other GPIO, mainly so that both
->> gpio_set_value(gpio, 1) and gpio_direction_input(gpio) both result in
->> the signal being high.  The only combination which results in the
->> signal being driven low is outputting zero - and the state of the signal
->> can aways be read back.
->>
->> The problem here is that such gpios are implemented in things like the
->> I2C driver such that they're _always_ outputs, and gpio_set_value() is
->> used to pull the signal down.  gpio_get_value() is used to read its
->> current state.
->>
->> So, if we say that gpio_get_value() is undefined, we force such
->> subsystems to always jump through the non-open-drain paths (using
->> gpio_direction_input() to set the line high and
->> gpio_direction_output(gpio, 0) to drive it low.)
->
-> Incidentally that is what gpiolib is doing internally in
-> gpiod_direction_output().
->
-> You're absolutely right that it makes no sense to have open
-> drain (or open source) unless the signal can be read back from
-> the hardware.
->
-> I'm thinking something like if the driver manages to obtain a
-> GPIO with
->
-> gpio_request_one(gpio, GPIOF_OPEN_DRAIN |
->                      GPIOF_OUT_INIT_HIGH);
->
-> As the I2C core does, and then when that call succeeds, it can
-> expect that whatever comes back from gpio_get_value() is
-> always what is actually on the line. If the driver cannot determine
-> this it should not have allowed that flag to succeed in the first
-> place, so this might be something we want to enforce.
->
-> There are two white spots on the map here:
->
-> 1. Today this OPEN_DRAIN flag is not even passed down to
-> the driver so how could it say anything about it :-( it's a pure gpiolib
-> internal flag. We don't know if the hardware can actually even
-> do open drain, we just assume it can.
->
-> What it should really do - in the best of worlds - is to check if
-> it can cross-reference the GPIO line to a pin in the pin control
-> subsystem, and if that is possible, then ask the pin if it
-> is supporting open drain and set it. It currently has no such
-> cross-calls, it is just assumed that the configuration is consistent,
-> and the actual pin is set up as open drain. But it would make
-> sense to add more cross-calls here, since GPIO is accepting
-> these flags (OPEN_DRAIN/OPEN_SOURCE).
+On Mon, Jan 20, 2014 at 06:17:37PM -0500, Johannes Weiner wrote:
+> On Fri, Jan 17, 2014 at 11:05:17AM +1100, Dave Chinner wrote:
+> > On Fri, Jan 10, 2014 at 01:10:43PM -0500, Johannes Weiner wrote:
+> > > +	/* Only shadow entries in there, keep track of this node */
+> > > +	if (!(node->count & RADIX_TREE_COUNT_MASK) &&
+> > > +	    list_empty(&node->private_list)) {
+> > > +		node->private_data = mapping;
+> > > +		list_lru_add(&workingset_shadow_nodes, &node->private_list);
+> > > +	}
+> > 
+> > You can't do this list_empty(&node->private_list) check safely
+> > externally to the list_lru code - only time that entry can be
+> > checked safely is under the LRU list locks. This is the reason that
+> > list_lru_add/list_lru_del return a boolean to indicate is the object
+> > was added/removed from the list - they do this list_empty() check
+> > internally. i.e. the correct, safe way to do conditionally update
+> > state iff the object was added to the LRU is:
+> > 
+> > 	if (!(node->count & RADIX_TREE_COUNT_MASK)) {
+> > 		if (list_lru_add(&workingset_shadow_nodes, &node->private_list))
+> > 			node->private_data = mapping;
+> > 	}
+> > 
+> > > +	radix_tree_replace_slot(slot, page);
+> > > +	mapping->nrpages++;
+> > > +	if (node) {
+> > > +		node->count++;
+> > > +		/* Installed page, can't be shadow-only anymore */
+> > > +		if (!list_empty(&node->private_list))
+> > > +			list_lru_del(&workingset_shadow_nodes,
+> > > +				     &node->private_list);
+> > > +	}
+> > 
+> > Same issue here:
+> > 
+> > 	if (node) {
+> > 		node->count++;
+> > 		list_lru_del(&workingset_shadow_nodes, &node->private_list);
+> > 	}
+> 
+> All modifications to node->private_list happen under
+> mapping->tree_lock, and modifications of a neighboring link should not
+> affect the outcome of the list_empty(), so I don't think the lru lock
+> is necessary.
 
-This would definitely work in the case of pinctrl-backed GPIOs, but
-would not cover all GPIO chips. If we want to cover all cases we
-should give drivers a way to way to report or enforce this capability,
-and make the pinctrl cross-reference one of its implementations where
-it can be done.
+Can you please add that as a comment somewhere explaining why it is
+safe to do this?
 
->
-> Like:
-> int pinctrl_gpio_set_flags(unsigned gpio, unsigned long flags);
->
-> Where the pinctrl subsystem would attempt to cross reference
-> and set the flag, and the pin controller backend will then have
-> the option to return an error code.
->
-> We could atleast support that for the select pin controllers
-> that use generic pin config. i.MX is another story, but I'm open
-> to compromises.
->
-> 2. In the new descriptor API this open drain setting would
-> be set from the lookup table and be a property on the line,
-> meaning this flag is not requested explicitly by the consumer,
-> and the consumer needs to inspect the obtained descriptor
-> to figure out if it is set to open drain.
->
-> Alexandre: do you have plans for how to handle a dynamic
-> consumer passing flags to its gpio request in the gpiod API?
+> > > +		case LRU_REMOVED_RETRY:
+> > >  			if (--nlru->nr_items == 0)
+> > >  				node_clear(nid, lru->active_nodes);
+> > >  			WARN_ON_ONCE(nlru->nr_items < 0);
+> > >  			isolated++;
+> > > +			/*
+> > > +			 * If the lru lock has been dropped, our list
+> > > +			 * traversal is now invalid and so we have to
+> > > +			 * restart from scratch.
+> > > +			 */
+> > > +			if (ret == LRU_REMOVED_RETRY)
+> > > +				goto restart;
+> > >  			break;
+> > >  		case LRU_ROTATE:
+> > >  			list_move_tail(item, &nlru->list);
+> > 
+> > I think that we need to assert that the list lru lock is correctly
+> > held here on return with LRU_REMOVED_RETRY. i.e.
+> > 
+> > 		case LRU_REMOVED_RETRY:
+> > 			assert_spin_locked(&nlru->lock);
+> > 		case LRU_REMOVED:
+> 
+> Ah, good idea.  How about adding it to LRU_RETRY as well?
 
-Do you mean like passing OPEN_DRAIN or OPEN_SOURCE flags to
-gpiod_get(), similarly to what is done for e.g. gpio_request_one()?
+Yup, good idea.
 
-In the case of the gpiod API I would rather see these flags defined in
-the GPIO mapping if possible. For platform data it is already possible
-to specify open drain/open source, for DT this is trivial to add. ACPI
-would be more of a problem here, but I'm not sure whether the problem
-is relevant for ACPI GPIOs.
+> > > +static struct shrinker workingset_shadow_shrinker = {
+> > > +	.count_objects = count_shadow_nodes,
+> > > +	.scan_objects = scan_shadow_nodes,
+> > > +	.seeks = DEFAULT_SEEKS * 4,
+> > > +	.flags = SHRINKER_NUMA_AWARE,
+> > > +};
+> > 
+> > Can you add a comment explaining how you calculated the .seeks
+> > value? It's important to document the weighings/importance
+> > we give to slab reclaim so we can determine if it's actually
+> > acheiving the desired balance under different loads...
+> 
+> This is not an exact science, to say the least.
 
-So the way I see it coming into shape would be something like:
+I know, that's why I asked it be documented rather than be something
+kept in your head.
 
-1) GPIO drivers' request() function get an extra flags argument that
-is passed by the GPIO core with the flags of the mapping. There we can
-define all the range of properties that gpio_request_one() supported.
-The driver's request() will fail it if cannot satisfy these
-properties. That's where the pinctrl cross-reference would take place.
+> The shadow entries are mostly self-regulated, so I don't want the
+> shrinker to interfere while the machine is just regularly trimming
+> caches during normal operation.
+> 
+> It should only kick in when either a) reclaim is picking up and the
+> scan-to-reclaim ratio increases due to mapped pages, dirty cache,
+> swapping etc. or b) the number of objects compared to LRU pages
+> becomes excessive.
+> 
+> I think that is what most shrinkers with an elevated seeks value want,
+> but this translates very awkwardly (and not completely) to the current
+> cost model, and we should probably rework that interface.
+> 
+> "Seeks" currently encodes 3 ratios:
+> 
+>   1. the cost of creating an object vs. a page
+> 
+>   2. the expected number of objects vs. pages
 
-2) All properties accepted by gpio_request_one() can also be passed
-through GPIO mappings. That is, probably platform_data and DT. I don't
-know if we ever get to use open drain GPIOs provided by ACPI, if we do
-then this might be a problem.
+It doesn't encode that at all. If it did, then the default value
+wouldn't be "2".
 
-This does not address the initial problem, which is the uncertainty of
-values returned by input GPIOs. For this either we enforce some more
-strict rules, or we provide a function to allow drivers to check how
-the value is reported, which is what you proposed below:
+>   3. the cost of reclaiming an object vs. a page
 
-> I noticed that API missing now, there is exactly one user in the
-> entire kernel, in drivers/i2c/i2c-core.c but a very important one.
->
-> I guess to switch the I2C core over to descriptors I could
-> think of an API like this:
->
-> int gpiod_get_flags(const struct gpio_desc *desc);
->
-> If the OPEN_DRAIN flag is set on that descriptor we should
-> always be able to read the input. But as this is not really what the
-> I2C core wants to know (it really would prefer not to bother with
-> such GPIO flag details) so is it better if we add a special call to
-> figure out if the input can be read? Like:
->
-> bool gpiod_input_always_valid(const struct gpio_desc *desc);
->
-> And leave it up to the core to look at flags, driver characteristics
-> etc and determine whether the input can be trusted?
+Which, when you consider #3 in conjunction with #1, the actual
+intended meaning of .seeks is "the cost of replacing this object in
+the cache compared to the cost of replacing a page cache page."
 
-I am personally a little bit scared by the number of exported
-functions in the GPIO framework. It is a pretty large number for
-something that is supposed to be simple, so I'd like to avoid adding
-more. :) How about the following:
+> but they are not necessarily correlated.  How I would like to
+> configure the shadow shrinker instead is:
+> 
+>   o scan objects when reclaim efficiency is down to 75%, because they
+>     are more valuable than use-once cache but less than workingset
+> 
+>   o scan objects when the ratio between them and the number of pages
+>     exceeds 1/32 (one shadow entry for each resident page, up to 64
+>     entries per shrinkable object, assume 50% packing for robustness)
+> 
+>   o as the expected balance between objects and lru pages is 1:32,
+>     reclaim one object for every 32 reclaimed LRU pages, instead of
+>     assuming that number of scanned pages corresponds meaningfully to
+>     number of objects to scan.
 
-1) GPIOs configured as output without the open drain or open source
-flag either return -EINVAL on gpiod_get_value(), or a cached value
-tracked by gpiolib for consistency (probably the latter).
-2) GPIOs configured as open drain or open source report the actual
-value read on the pin, like i2c-core needs. This requires that, for
-each GPIO that can be set open drain or open source,
-gpiod_input_always_valid() == true.
+You're assuming that every radix tree node has a full population of
+pages. This only occurs on sequential read and write workloads, and
+so isn't going tobe true for things like mapped executables or any
+semi-randomly accessed data set...
 
-This is probably naive and needs to be refined, but I wonder if we
-could not come with a relatively simple behavior that would lift
-ambiguities without complexifying the API. Whatever we come with, we
-will also need to think about how we can make the change without
-breaking too many users.
+> "4" just doesn't have the same ring to it.
 
-Alex.
+Right, but you still haven't explained how you came to the value of
+"4"....
+
+> It would be great if we could eliminate the reclaim cost assumption by
+> turning the nr_to_scan into a nr_to_reclaim, and then set the other
+> two ratios independently.
+
+That doesn't work for caches that are full of objects that can't (or
+won't) be reclaimed immediately. The CPU cost of repeatedly scanning
+to find N reclaimable objects when you have millions of objects in
+the cache is prohibitive.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
