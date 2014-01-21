@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaAUVoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:44:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:60278 "EHLO
+	id S932210AbaAUVot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:44:49 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56297 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181AbaAUVoV (ORCPT
+	with ESMTP id S1754340AbaAUVYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:44:21 -0500
-Message-ID: <52DEEA45.7090503@windriver.com>
-Date: Tue, 21 Jan 2014 16:44:37 -0500
+	Tue, 21 Jan 2014 16:24:45 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, <linux-alpha@vger.kernel.org>
+Subject: [PATCH 22/73] alpha: don't use module_init for non-modular core code
+Date: Tue, 21 Jan 2014 16:22:25 -0500
+Message-ID: <1390339396-3479-23-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 73/73] include: remove needless instances of <linux/init.h>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>	<1390339396-3479-74-git-send-email-paul.gortmaker@windriver.com> <CAMuHMdX+H-jqmpUt+E6_-pSnFFboS0FPNai+0oBQpJz9qOzJYQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdX+H-jqmpUt+E6_-pSnFFboS0FPNai+0oBQpJz9qOzJYQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-21 04:37 PM, Geert Uytterhoeven wrote:
-> On Tue, Jan 21, 2014 at 10:23 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> diff --git a/include/linux/zorro.h b/include/linux/zorro.h
->> index 63fbba0..529604b 100644
->> --- a/include/linux/zorro.h
->> +++ b/include/linux/zorro.h
->> @@ -15,7 +15,6 @@
->>  #include <uapi/linux/zorro.h>
->>
->>  #include <linux/device.h>
->> -#include <linux/init.h>
->>  #include <linux/ioport.h>
->>  #include <linux/mod_devicetable.h>
-> 
-> There's an __initdata below in that file:
-> 
-> extern struct zorro_dev_init zorro_autocon_init[ZORRO_NUM_AUTO] __initdata;
+The srm console is always built in.  It will never be modular,
+so using module_init as an alias for __initcall is rather
+misleading.
 
-Aha, that was from a relatively recent commit; I'd done the original
-version of this series last year on a tree that didn't have that.
-Thanks for spotting it ; appreciate that -- will fix and push.
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-Paul.
---
+Direct use of __initcall is discouraged, vs prioritized ones.
+Use of device_initcall is consistent with what __initcall
+maps onto, and hence does not change the init order, making the
+impact of this change zero.   Should someone with real hardware
+for boot testing want to change it later to arch_initcall or
+console_initcall, they can do that at a later date.
 
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: linux-alpha@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/alpha/kernel/srmcons.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
+index 6f01d9a..72b5951 100644
+--- a/arch/alpha/kernel/srmcons.c
++++ b/arch/alpha/kernel/srmcons.c
+@@ -237,8 +237,7 @@ srmcons_init(void)
+ 
+ 	return -ENODEV;
+ }
+-
+-module_init(srmcons_init);
++device_initcall(srmcons_init);
+ 
+ 
+ /*
+-- 
+1.8.4.1
+
