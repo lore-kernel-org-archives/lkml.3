@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaAUQQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:16:09 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:10480 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaAUQQH (ORCPT
+	id S1754909AbaAUQWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:22:17 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47809 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaAUQWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:16:07 -0500
-Message-ID: <52DE9D43.1020305@hp.com>
-Date: Tue, 21 Jan 2014 11:16:03 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Turner <mattst88@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-References: <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com> <20140116103659.GO7572@laptop.programming.kicks-ass.net> <20140118100105.GV10038@linux.vnet.ibm.com> <20140118113406.GY30183@twins.programming.kicks-ass.net> <20140118122548.GX10038@linux.vnet.ibm.com> <20140118124136.GZ30183@twins.programming.kicks-ass.net> <20140118212227.GA10038@linux.vnet.ibm.com> <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com> <20140119080405.GB10038@linux.vnet.ibm.com> <52DE8BEE.4040303@hp.com> <20140121154113.GB31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121154113.GB31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jan 2014 11:22:15 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org, mingo@redhat.com,
+        peterz@infradead.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] sched: Fix warning on make htmldocs caused by wait.h
+Date: Wed, 22 Jan 2014 01:22:06 +0900
+Message-Id: <1390321326-23120-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.9.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 10:41 AM, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 10:02:06AM -0500, Waiman Long wrote:
->> My latest v9 series of qrwlock patch will automatically adapt to the lack of
->> atomic byte access by using an atomic integer instruction instead. So the
->> new series should work for pre-EV56 Alpha, it is just a bit less efficient
->> in this case.
-> See my other email; I don't think you can do that without also changing
-> the implementation of the queue_read_{try}lock() functions.
->
-> Without those changes you can have transient values in your 'read-count'
-> part of the word and a full word write will wreck things.
+Missing "@" in include/linux/wait.h cause "make htmldocs" failed
+with following warning messages.
 
-I don't see any problem with my current logic. If a writer has the write 
-lock, the writer byte has to have a value of 0xff. So atomically 
-subtracting 0xff from it will guarantee that the writer byte will become 
-zero, which is the same as assigning a zero value to that byte. The only 
-difference is that an atomic subtract instruction will need to be used 
-instead of a simple byte assignment.
+Warning(/home/iida/Repo/linux-next//include/linux/wait.h:304):
+No description found for parameter 'cmd1'
+Warning(/home/iida/Repo/linux-next//include/linux/wait.h:304):
+No description found for parameter 'cmd2'
 
-Please let me know if there is any flaw in my logic.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ include/linux/wait.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
--Longman
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index eaa00b1..559044c 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -286,8 +286,8 @@ do {									\
+  * wait_event_cmd - sleep until a condition gets true
+  * @wq: the waitqueue to wait on
+  * @condition: a C expression for the event to wait for
+- * cmd1: the command will be executed before sleep
+- * cmd2: the command will be executed after sleep
++ * @cmd1: the command will be executed before sleep
++ * @cmd2: the command will be executed after sleep
+  *
+  * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
+  * @condition evaluates to true. The @condition is checked each time
+-- 
+1.9.rc0
+
