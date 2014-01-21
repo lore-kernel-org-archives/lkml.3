@@ -1,196 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaAUW0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:26:06 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33757 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353AbaAUW0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:26:02 -0500
-Message-ID: <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH-v2 12/17] target/file: Add DIF protection init/format
- support
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@kernel.org>
-Date: Tue, 21 Jan 2014 14:28:08 -0800
-In-Reply-To: <52DBC592.6010405@dev.mellanox.co.il>
-References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
-	 <1390099480-29013-13-git-send-email-nab@daterainc.com>
-	 <52DBC592.6010405@dev.mellanox.co.il>
+	id S1754313AbaAUW0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:26:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14530 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754062AbaAUW0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 17:26:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
+   d="scan'208";a="470370972"
+Subject: Re: [PATCH v8 6/6] MCS Lock: Allow architecture specific asm files
+ to be used for contended case
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <20140121102000.GT31570@twins.programming.kicks-ass.net>
+References: <cover.1390239879.git.tim.c.chen@linux.intel.com>
+	 <1390267479.3138.40.camel@schen9-DESK>
+	 <20140121102000.GT31570@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+Date: Tue, 21 Jan 2014 14:25:25 -0800
+Message-ID: <1390343125.3138.60.camel@schen9-DESK>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-19 at 14:31 +0200, Sagi Grimberg wrote:
-> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >
-> > This patch adds support for DIF protection init/format support into
-> > the FILEIO backend.
-> >
-> > It involves using a seperate $FILE.protection for storing PI that is
-> > opened via fd_init_prot() using the common pi_prot_type attribute.
-> > The actual formatting of the protection is done via fd_format_prot()
-> > using the common pi_prot_format attribute, that will populate the
-> > initial PI data based upon the currently configured pi_prot_type.
-> >
-> > Based on original FILEIO code from Sagi.
+On Tue, 2014-01-21 at 11:20 +0100, Peter Zijlstra wrote:
+> On Mon, Jan 20, 2014 at 05:24:39PM -0800, Tim Chen wrote:
+> > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> > index f01fb50..14cbbbc 100644
+> > --- a/arch/alpha/include/asm/Kbuild
+> > +++ b/arch/alpha/include/asm/Kbuild
+> > @@ -4,3 +4,4 @@ generic-y += clkdev.h
+> >  generic-y += exec.h
+> >  generic-y += trace_clock.h
+> >  generic-y += preempt.h
+> > +generic-y += mcs_spinlock.h
 > 
-> Nice! see comments below...
+> m < p
 > 
-> > v1 changes:
-> >    - Fix sparse warnings in fd_init_format_buf (Fengguang)
-> >
-> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> > Cc: Christoph Hellwig <hch@lst.de>
-> > Cc: Hannes Reinecke <hare@suse.de>
-> > Cc: Sagi Grimberg <sagig@mellanox.com>
-> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> > ---
-> >   drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
-> >   drivers/target/target_core_file.h |    4 ++
-> >   2 files changed, 141 insertions(+)
-> >
-> > diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-> > index 0e34cda..119d519 100644
-> > --- a/drivers/target/target_core_file.c
-> > +++ b/drivers/target/target_core_file.c
-> > @@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
-> >   		       dev->dev_attrib.block_size);
-> >   }
-> >   
-> > +static int fd_init_prot(struct se_device *dev)
-> > +{
-> > +	struct fd_dev *fd_dev = FD_DEV(dev);
-> > +	struct file *prot_file, *file = fd_dev->fd_file;
-> > +	struct inode *inode;
-> > +	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
-> > +	char buf[FD_MAX_DEV_PROT_NAME];
-> > +
-> > +	if (!file) {
-> > +		pr_err("Unable to locate fd_dev->fd_file\n");
-> > +		return -ENODEV;
-> > +	}
-> > +
-> > +	inode = file->f_mapping->host;
-> > +	if (S_ISBLK(inode->i_mode)) {
-> > +		pr_err("FILEIO Protection emulation only supported on"
-> > +		       " !S_ISBLK\n");
-> > +		return -ENOSYS;
-> > +	}
-> > +
-> > +	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
-> > +		flags &= ~O_DSYNC;
-> > +
-> > +	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
-> > +		 fd_dev->fd_dev_name);
-> > +
-> > +	prot_file = filp_open(buf, flags, 0600);
-> > +	if (IS_ERR(prot_file)) {
-> > +		pr_err("filp_open(%s) failed\n", buf);
-> > +		ret = PTR_ERR(prot_file);
-> > +		return ret;
-> > +	}
-> > +	fd_dev->fd_prot_file = prot_file;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
-> > +			       u32 unit_size, u32 *ref_tag, u16 app_tag,
-> > +			       bool inc_reftag)
-> > +{
-> > +	unsigned char *p = buf;
-> > +	int i;
-> > +
-> > +	for (i = 0; i < unit_size; i += dev->prot_length) {
-> > +		*((u16 *)&p[0]) = 0xffff;
-> > +		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
-> > +		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
-> > +
-> > +		if (inc_reftag)
-> > +			(*ref_tag)++;
-> > +
-> > +		p += dev->prot_length;
-> > +	}
-> > +}
-> > +
-> > +static int fd_format_prot(struct se_device *dev)
-> > +{
-> > +	struct fd_dev *fd_dev = FD_DEV(dev);
-> > +	struct file *prot_fd = fd_dev->fd_prot_file;
-> > +	sector_t prot_length, prot;
-> > +	unsigned char *buf;
-> > +	loff_t pos = 0;
-> > +	u32 ref_tag = 0;
-> > +	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
-> > +	int rc, ret = 0, size, len;
-> > +	bool inc_reftag = false;
-> > +
-> > +	if (!dev->dev_attrib.pi_prot_type) {
-> > +		pr_err("Unable to format_prot while pi_prot_type == 0\n");
-> > +		return -ENODEV;
-> > +	}
-> > +	if (!prot_fd) {
-> > +		pr_err("Unable to locate fd_dev->fd_prot_file\n");
-> > +		return -ENODEV;
-> > +	}
-> > +
-> > +	switch (dev->dev_attrib.pi_prot_type) {
-> redundant - see below.
-> > +	case TARGET_DIF_TYPE3_PROT:
-> > +		ref_tag = 0xffffffff;
-> > +		break;
-> > +	case TARGET_DIF_TYPE2_PROT:
-> > +	case TARGET_DIF_TYPE1_PROT:
-> > +		inc_reftag = true;
-> > +		break;
-> > +	default:
-> > +		break;
-> > +	}
-> > +
-> > +	buf = vzalloc(unit_size);
-> > +	if (!buf) {
-> > +		pr_err("Unable to allocate FILEIO prot buf\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
-> > +	size = prot_length;
-> > +
-> > +	pr_debug("Using FILEIO prot_length: %llu\n",
-> > +		 (unsigned long long)prot_length);
-> > +
-> > +	for (prot = 0; prot < prot_length; prot += unit_size) {
-> > +
-> > +		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
-> > +				   inc_reftag);
-> 
-> I didn't send you my latest patches (my fault...).T10-PI format should 
-> only place
-> escape values throughout the protection file (fill it with 0xff). so I 
-> guess in this case
-> fd_init_formast_buf() boils down to memset(buf, 0xff, unit_size) once  
-> before the loop
-> and just loop until prot_length writing buf, no need to address 
-> apptag/reftag...
+> > --- a/arch/ia64/include/asm/Kbuild
+> > +++ b/arch/ia64/include/asm/Kbuild
+> > @@ -4,4 +4,4 @@ generic-y += exec.h
+> >  generic-y += kvm_para.h
+> >  generic-y += trace_clock.h
+> >  generic-y += preempt.h
+> > -generic-y += vtime.h
+> > \ No newline at end of file
 
-Yeah, was thinking about just formatting with escape values as mentioned
-above, but thought it might be useful to keep around for pre-populating
-values apptag + reftag values for testing purposes.
+The no newline compliant apparently caused by
+existing Kbuild file.
 
---nab
+Tim
+
+> > +generic-y += vtime.hgeneric-y += mcs_spinlock.h
+> 
+> EOL fail
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
