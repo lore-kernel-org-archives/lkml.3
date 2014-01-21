@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491AbaAUWAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:00:11 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:32976 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297AbaAUWAC (ORCPT
+	id S1753296AbaAUWHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:07:11 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47461 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaAUWHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:00:02 -0500
+	Tue, 21 Jan 2014 17:07:08 -0500
+Message-ID: <52DEEF88.8090709@gmail.com>
+Date: Tue, 21 Jan 2014 14:07:04 -0800
+From: walt <w41ter@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
-References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
-	<CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
-	<52CD1C68.4050406@mellanox.com>
-	<1389645171.5567.459.camel@haakon3.risingtidesystems.com>
-	<1389820541.5567.543.camel@haakon3.risingtidesystems.com>
-	<CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
-	<1389906852.5567.668.camel@haakon3.risingtidesystems.com>
-	<CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
-	<1390102949.5567.749.camel@haakon3.risingtidesystems.com>
-	<52DBB4F1.4020400@mellanox.com>
-	<CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
-Date: Wed, 22 Jan 2014 00:00:01 +0200
-Message-ID: <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
-Subject: Re: linux rdma 3.14 merge plans
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+To: David Laight <David.Laight@ACULAB.COM>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hefty Sean <sean.hefty@intel.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst [NEW HARDWARE]
+References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com> <20140114172056.GB12126@xanatos> <52D5ABBD.7090202@gmail.com> <063D6719AE5E284EB5DD2968C1650D6D45EDA3@AcuExch.aculab.com> <52DAE2BF.7020208@gmail.com> <063D6719AE5E284EB5DD2968C1650D6D45FF6C@AcuExch.aculab.com> <20140120181442.GA5545@xanatos> <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014, Or Gerlitz <or.gerlitz@gmail.com> wrote:
-> On Sun, Jan 19, 2014, sagi grimberg <sagig@mellanox.com> wrote:
->> Thanks Nic,  let me elaborate on this,
-[...]
->> Hope this helps,
+On 01/21/2014 01:51 AM, David Laight wrote:
+> From: Sarah Sharp
+>> On Mon, Jan 20, 2014 at 11:21:14AM +0000, David Laight wrote:
+> ...
+>>> A guess...
+>>>
+>>> In queue_bulk_sg_tx() try calling xhci_v1_0_td_remainder() instead
+>>> of xhci_td_remainder().
+>>
+>> Why?  Walt has a 0.96 xHCI host controller, and the format for how to
+>> calculate the TD remainder changed between the 0.96 and the 1.0 spec.
+>> That's why we have xhci_v1_0_td_remainder() and xhci_td_remainder().
+> 
+> I just wonder how many of those differences are just differences in the
+> specification, rather than differences in the hardware implementation.
+> In some cases it might be that the old hardware just ignored the value.
+> 
+> I know that the xhci hardware on my ivy bridge cpu does look at that
+> value (at least checking for zero), since things failed in subtle ways
+> when I got it wrong.
+> 
+> In this case it was just something easy to change that might be worth
+> trying.  I didn't necessarily expect it to make a positive difference.
 
-> Hi Roland, with Nic's && Sagi's answers @ hand, were your questions resolved?
+David, I tried the one-liner below, which changed nothing AFAICS, but
+then I'm not sure it's the change you intended:
 
-Roland, ping! the signature patches were posted > three months ago. We
-deserve a response from the maintainer that goes beyond "I need to
-think on that".
+--- xhci-ring.c.orig	2014-01-21 13:28:36.396278813 -0800
++++ xhci-ring.c	2014-01-21 13:35:11.410312814 -0800
+@@ -3335,7 +3335,7 @@
+ 		}
+ 
+ 		/* Set the TRB length, TD size, and interrupter fields. */
+-		if (xhci->hci_version < 0x100) {
++		if (xhci->hci_version > 0x100) {
+ 			remainder = xhci_td_remainder(
+ 					urb->transfer_buffer_length -
+ 					running_total);
 
-Responsiveness was stated by Linus to be the #1 requirement from
-kernel maintainers.
-
-Or.
