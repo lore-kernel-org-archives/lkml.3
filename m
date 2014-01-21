@@ -1,52 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaAUMXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:23:05 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:58621 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaAUMXC (ORCPT
+	id S1754632AbaAUM1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:27:33 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:53425 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448AbaAUM13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:23:02 -0500
+	Tue, 21 Jan 2014 07:27:29 -0500
+X-IronPort-AV: E=Sophos;i="4.95,696,1384300800"; 
+   d="scan'208";a="92783655"
+Date: Tue, 21 Jan 2014 12:26:22 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v3] xen/grant-table: Avoid m2p_override during
+ mapping
+In-Reply-To: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
+Message-ID: <alpine.DEB.2.02.1401211217510.21510@kaball.uk.xensource.com>
+References: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140121120440.GD14830@arm.com>
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
-	<20131228163308.GA1638@infradead.org>
-	<52DD6101.4010708@zytor.com>
-	<20140121120440.GD14830@arm.com>
-Date: Tue, 21 Jan 2014 04:22:59 -0800
-Message-ID: <CAMe9rOqL_TJW-XJz6e8_iewUypmsx8MXeaRfq-aATx3sFDBxcw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Will Deacon <Will.Deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 4:04 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Mon, Jan 20, 2014 at 05:46:41PM +0000, H. Peter Anvin wrote:
->> On 12/28/2013 08:33 AM, Christoph Hellwig wrote:
->> > On Fri, Dec 27, 2013 at 02:14:16PM -0800, H.J. Lu wrote:
->> >> X32 uses the same kernel system call interface as x86-64 for many
->> >> system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
->> >> x32.  Where long or unsigned long are used in struct types for such
->> >> system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
->> >> long for all ABIs other than x32.  I am submitting 8 patches to replace
->> >> long or unsigned long with __kernel_[u]long_t so that those struct types
->> >> can be used with x32 system calls.
->
-> Does this mean that you are changing the x32 ABI (or it hasn't been
-> declared stable yet)?
+On Mon, 20 Jan 2014, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> 
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
+> 
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Suggested-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |   15 +++----
+>  drivers/xen/gntdev.c                |   13 +++---
+>  drivers/xen/grant-table.c           |   81 +++++++++++++++++++++++++++++------
+>  include/xen/grant_table.h           |    8 +++-
+>  4 files changed, 87 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index aa846a4..87ded60 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+>  
+> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		    struct gnttab_map_grant_ref *kmap_ops,
+> -		    struct page **pages, unsigned int count)
+> +		    struct page **pages, unsigned int count,
+> +		    bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  	pte_t *pte;
+>  	unsigned long mfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+>  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+> @@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		} else {
+>  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		if (m2p_override)
+> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> +					       &kmap_ops[i] : NULL);
+> +		else {
+> +			unsigned long pfn = page_to_pfn(pages[i]);
+> +			WARN_ON(PagePrivate(pages[i]));
+> +			SetPagePrivate(pages[i]);
+> +			set_page_private(pages[i], mfn);
+> +			pages[i]->index = pfn_to_mfn(pfn);
+> +			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> +				return -ENOMEM;
 
-We don't change x32 ABI.  Today kernel uabi header files are
-incompatible with x32 ABI in user space.  My patches fix them
-so that they can be used in user space.
+What happens if the page is PageHighMem?
 
--- 
-H.J.
+This looks like a subset of m2p_add_override, but it is missing some
+relevant bits, like the PageHighMem check, or the p2m(m2p(mfn)) == mfn
+check.  Maybe we can find a way to avoid duplicating the code.
+We could split m2p_add_override in two functions or add yet another
+parameter to it.
+
+
+> +		}
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -937,17 +951,33 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  	if (lazy)
+>  		arch_leave_lazy_mmu_mode();
+>  
+> -	return ret;
+> +	return 0;
+> +}
+> +
+> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_map_refs);
+>  
+> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
+> +
+> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct gnttab_map_grant_ref *kmap_ops,
+> -		      struct page **pages, unsigned int count)
+> +		      struct page **pages, unsigned int count,
+> +		      bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -958,17 +988,26 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+>  					INVALID_P2M_ENTRY);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+>  
+>  	for (i = 0; i < count; i++) {
+> -		ret = m2p_remove_override(pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		if (m2p_override)
+> +			ret = m2p_remove_override(pages[i], kmap_ops ?
+> +						  &kmap_ops[i] : NULL);
+> +		else {
+> +			unsigned long pfn = page_to_pfn(pages[i]);
+> +			WARN_ON(!PagePrivate(pages[i]));
+> +			ClearPagePrivate(pages[i]);
+> +			set_phys_to_machine(pfn, pages[i]->index);
+
+same here: let's try to avoid code duplication
+
+
+> +		}
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -977,10 +1016,24 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  	if (lazy)
+>  		arch_leave_lazy_mmu_mode();
+>  
+> -	return ret;
+> +	return 0;
+> +}
+> +
+> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+>  
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
+> +				struct gnttab_map_grant_ref *kmap_ops,
+> +				struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
+> +
+>  static unsigned nr_status_frames(unsigned nr_grant_frames)
+>  {
+>  	BUG_ON(grefs_per_grant_frame == 0);
