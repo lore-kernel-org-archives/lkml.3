@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbaAUKUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 05:20:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49016 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946AbaAUKUd (ORCPT
+	id S1754516AbaAUKVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 05:21:20 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:36353 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754295AbaAUKVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 05:20:33 -0500
-Date: Tue, 21 Jan 2014 11:20:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v8 6/6] MCS Lock: Allow architecture specific asm files
- to be used for contended case
-Message-ID: <20140121102000.GT31570@twins.programming.kicks-ass.net>
-References: <cover.1390239879.git.tim.c.chen@linux.intel.com>
- <1390267479.3138.40.camel@schen9-DESK>
+	Tue, 21 Jan 2014 05:21:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390267479.3138.40.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389972737.7619.14.camel@smile>
+References: <1389894803-4147-1-git-send-email-sthokal@xilinx.com>
+	<1389972737.7619.14.camel@smile>
+Date: Tue, 21 Jan 2014 15:51:15 +0530
+X-Google-Sender-Auth: SAUzewmZUA-lT0n_z36U1LlRfMM
+Message-ID: <CA+mB=1Lb9cXUwxKG5ZqmDVtFgMgyGBP+G6mugxU-zjFs87_pew@mail.gmail.com>
+Subject: Re: [PATCH] Add Xilinx AXI Video DMA Engine driver
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
+        vinod.koul@intel.com, michal.simek@xilinx.com,
+        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 05:24:39PM -0800, Tim Chen wrote:
-> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-> index f01fb50..14cbbbc 100644
-> --- a/arch/alpha/include/asm/Kbuild
-> +++ b/arch/alpha/include/asm/Kbuild
-> @@ -4,3 +4,4 @@ generic-y += clkdev.h
->  generic-y += exec.h
->  generic-y += trace_clock.h
->  generic-y += preempt.h
-> +generic-y += mcs_spinlock.h
+Hi Andy,
 
-m < p
+On Fri, Jan 17, 2014 at 9:02 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Thu, 2014-01-16 at 23:23 +0530, Srikanth Thokala wrote:
+>> Hi,
+>>
+>> This is the driver for Xilinx AXI Video Direct Memory Access Engine.
+>> It is a soft IP core, which provides high-bandwidth direct memory
+>> access between memory and AXI4-Stream video type target peripherals
+>> including peripherals which support AXI4-Stream Video Protocol. The
+>> core provides efficient two dimensional DMA operations with independent
+>> asynchronous read and write channel operation.
+>>
+>> For more information on the IP, please refer to
+>> http://www.xilinx.com/support/documentation/ip_documentation/axi_vdma/v6_1/pg020_axi_vdma.pdf
+>>
+>> This patch also provides a test client, which assumes read and write channels
+>> of the core are configured in a back-to-back connection.  It transfers
+>> data on the write channel, read and verify the data on the read channel.
+>>
+>>  drivers/dma/xilinx/xilinx_vdma_test.c              |  629 ++++++++
+>
+> What about to modify dmatest.c accordingly to your needs?
+> I see no much sense to have another copy of that in the tree.
 
-> --- a/arch/ia64/include/asm/Kbuild
-> +++ b/arch/ia64/include/asm/Kbuild
-> @@ -4,4 +4,4 @@ generic-y += exec.h
->  generic-y += kvm_para.h
->  generic-y += trace_clock.h
->  generic-y += preempt.h
-> -generic-y += vtime.h
-> \ No newline at end of file
-> +generic-y += vtime.hgeneric-y += mcs_spinlock.h
+I agree with you, we thought it will be good to provide a simple test
+case for our driver,
+I will drop off this test client from my v2 patch set.
 
-EOL fail
+Thanks
+Srikanth
+
+>
+> --
+> Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Intel Finland Oy
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
