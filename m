@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaAUKSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 05:18:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbaAUKS2 (ORCPT
+	id S1754422AbaAUKSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 05:18:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9934 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754306AbaAUKSv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 05:18:28 -0500
-Date: Tue, 21 Jan 2014 11:17:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v8 3/6] MCS Lock: optimizations and extra comments
-Message-ID: <20140121101742.GR31570@twins.programming.kicks-ass.net>
-References: <cover.1390239879.git.tim.c.chen@linux.intel.com>
- <1390267468.3138.37.camel@schen9-DESK>
+	Tue, 21 Jan 2014 05:18:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,695,1384329600"; 
+   d="scan'208";a="470014614"
+From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "Baldysiak, Pawel" <pawel.baldysiak@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] isci: correct erroneous for_each_isci_host macro
+Thread-Topic: [PATCH] isci: correct erroneous for_each_isci_host macro
+Thread-Index: AQHPFgBpfdVg5rps3EGDEt1EqmZ69JqN7hEAgAED04A=
+Date: Tue, 21 Jan 2014 10:18:18 +0000
+Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6A45DE@IRSMSX105.ger.corp.intel.com>
+References: <20140120165450.15332.39118.stgit@gklab-154-244.igk.intel.com>
+ <CAA9_cmcXNC0WJ-4RgabLPtGU5=UGKZnVvpQneFaPmvqTRZZEfw@mail.gmail.com>
+In-Reply-To: <CAA9_cmcXNC0WJ-4RgabLPtGU5=UGKZnVvpQneFaPmvqTRZZEfw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390267468.3138.37.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 05:24:28PM -0800, Tim Chen wrote:
-> @@ -41,8 +47,11 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
->  
->  	prev = xchg(lock, node);
->  	if (likely(prev == NULL)) {
-> -		/* Lock acquired */
-> -		node->locked = 1;
-> +		/* Lock acquired, don't need to set node->locked to 1
-> +		 * as lock owner and other contenders won't check this value.
-> +		 * If a debug mode is needed to audit lock status, then
-> +		 * set node->locked value here.
-> +		 */
+On Monday, January 20, 2014 7:26 PM Dan Williams <dan.j.williams@intel.com> wrote:
+> On Mon, Jan 20, 2014 at 8:54 AM, Lukasz Dorau <lukasz.dorau@intel.com> wrote:
+> > In the first place, the loop 'for' in the macro 'for_each_isci_host'
+> > (drivers/scsi/isci/host.h:314) is incorrect, because it accesses
+> > the 3rd element of 2 element array. After the 2nd iteration it executes
+> > the instruction:
+> >         ihost = to_pci_info(pdev)->hosts[2]
+> > (while the size of the 'hosts' array equals 2) and reads an
+> > out of range element.
+> >
+> > In the second place, because of the following GCC v4.8 bug:
+> > http://marc.info/?l=linux-kernel&m=138998871911336&w=2
+> > this loop is incorrectly compiled by GCC v4.8.
+> > As a result, on platforms with two SCU controllers,
+> > the loop at drivers/scsi/isci/init.c:717 is executed
+> > more times than it can be (for i=0,1 and 2).
+> > It causes the following oops after 'rmmod isci':
+> >
+> 
+> Surprised those bugs lasted this long... some comments below.
+> 
+> > BUG: unable to handle kernel NULL pointer dereference at (null)
+> > IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
+> > Oops: 0000 [#1] SMP
+> > RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
+> > Call Trace:
+> >   [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
+> >   [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
+> >   [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
+> >   [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
+> >   [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
+> >   [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
+> >   [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
+> >   [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
+> >   [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
+> >   [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
+> >   [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
+> >   [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
+> >   [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
+> >   [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
+> >   [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
+> >   [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+> >
+> > The loop has been corrected.
+> > This patch fixes the above oops.
+> >
+> > Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+> > Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
+> > Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
+> > Cc: Dan Williams <dan.j.williams@intel.com>
+> > Cc: Dave Jiang <dave.jiang@intel.com>
+> > Cc: <stable@vger.kernel.org>
+> > ---
+> >  drivers/scsi/isci/host.h |    6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
+> > index 4911310..95adf31 100644
+> > --- a/drivers/scsi/isci/host.h
+> > +++ b/drivers/scsi/isci/host.h
+> > @@ -311,9 +311,9 @@ static inline struct Scsi_Host *to_shost(struct isci_host
+> *ihost)
+> >  }
+> >
+> >  #define for_each_isci_host(id, ihost, pdev) \
+> > -       for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+> > -            id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+> > -            ihost = to_pci_info(pdev)->hosts[++id])
+> > +       for (id = 0, ihost = to_pci_info(pdev)->hosts[0]; \
+> 
+> No need to initialize ihost here since we assign and check it later.
+> 
+> > +            (id < ARRAY_SIZE(to_pci_info(pdev)->hosts)) && \
+> 
+> Just use SCI_MAX_CONTROLLERS here.
+> 
+> > +            (ihost = to_pci_info(pdev)->hosts[id]); id++)
+> 
+> --
 
-Fail in comment style.
+Thanks, Dan.
+I will submit the second version of the patch.
 
->  		return;
->  	}
->  	ACCESS_ONCE(prev->next) = node;
+Lukasz
+
