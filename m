@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaAUVYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:24:39 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56249 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179AbaAUVYe (ORCPT
+	id S932259AbaAUVqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:46:19 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:63781 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932245AbaAUVqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:24:34 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arch@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH 15/73] powerpc: don't use module_init in non-modular 83xx suspend code
-Date: Tue, 21 Jan 2014 16:22:18 -0500
-Message-ID: <1390339396-3479-16-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 21 Jan 2014 16:46:14 -0500
+From: bsegall@google.com
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, daniel.lezcano@linaro.org,
+        pjt@google.com
+Subject: Re: [PATCH 6/9] sched: Push put_prev_task() into pick_next_task()
+References: <20140121111754.580142558@infradead.org>
+	<20140121112258.586781016@infradead.org>
+Date: Tue, 21 Jan 2014 13:46:11 -0800
+In-Reply-To: <20140121112258.586781016@infradead.org> (Peter Zijlstra's
+	message of "Tue, 21 Jan 2014 12:18:00 +0100")
+Message-ID: <xm26sishj9ek.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The suspend.o is built for SUSPEND -- which is bool, and hence
-this code is either present or absent.  It will never be modular,
-so using module_init as an alias for __initcall can be somewhat
-misleading.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Fix this up now, so that we can relocate module_init from
-init.h into module.h in the future.  If we don't do this, we'd
-have to add module.h to obviously non-modular code, and that
-would be a worse thing.
-
-Note that direct use of __initcall is discouraged, vs. one
-of the priority categorized subgroups.  As __initcall gets
-mapped onto device_initcall, our use of device_initcall
-directly in this change means that the runtime impact is
-zero -- it will remain at level 6 in initcall ordering.
-
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/powerpc/platforms/83xx/suspend.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/platforms/83xx/suspend.c b/arch/powerpc/platforms/83xx/suspend.c
-index 4b4c081..e9f07c6 100644
---- a/arch/powerpc/platforms/83xx/suspend.c
-+++ b/arch/powerpc/platforms/83xx/suspend.c
-@@ -446,5 +446,4 @@ static int pmc_init(void)
- {
- 	return platform_driver_register(&pmc_driver);
- }
--
--module_init(pmc_init);
-+device_initcall(pmc_init);
--- 
-1.8.4.1
-
+> In order to avoid having to do put/set on a whole cgroup hierarchy
+> when we context switch, push the put into pick_next_task() so that
+> both operations are in the same function. Further changes then allow
+> us to possibly optimize away redundant work.
+>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1328936700.2476.17.camel@laptop
+> --- a/kernel/sched/idle_task.c
+> +++ b/kernel/sched/idle_task.c
+> @@ -23,8 +23,12 @@ static void check_preempt_curr_idle(stru
+>  	resched_task(rq->idle);
+>  }
+>  
+> -static struct task_struct *pick_next_task_idle(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_idle(struct rq *rq, struct task_struct *prev)
+>  {
+> +	if (prev)
+> +		prev->sched_class->put_prev_task(rq, prev);
+> +
+>  	schedstat_inc(rq, sched_goidle);
+>  #ifdef CONFIG_SMP
+>  	idle_enter_fair(rq);
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1310,15 +1310,7 @@ static struct task_struct *_pick_next_ta
+>  {
+>  	struct sched_rt_entity *rt_se;
+>  	struct task_struct *p;
+> -	struct rt_rq *rt_rq;
+> -
+> -	rt_rq = &rq->rt;
+> -
+> -	if (!rt_rq->rt_nr_running)
+> -		return NULL;
+> -
+> -	if (rt_rq_throttled(rt_rq))
+> -		return NULL;
+> +	struct rt_rq *rt_rq  = &rq->rt;
+>  
+>  	do {
+>  		rt_se = pick_next_rt_entity(rq, rt_rq);
+> @@ -1332,9 +1324,22 @@ static struct task_struct *_pick_next_ta
+>  	return p;
+>  }
+>  
+> -static struct task_struct *pick_next_task_rt(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+>  {
+> -	struct task_struct *p = _pick_next_task_rt(rq);
+> +	struct task_struct *p;
+> +	struct rt_rq *rt_rq = &rq->rt;
+> +
+> +	if (!rt_rq->rt_nr_running)
+> +		return NULL;
+> +
+> +	if (rt_rq_throttled(rt_rq))
+> +		return NULL;
+> +
+> +	if (prev)
+> +		prev->sched_class->put_prev_task(rq, prev);
+> +
+> +	p = _pick_next_task_rt(rq);
+>  
+>  	/* The running task is never eligible for pushing */
+>  	if (p)
+p is now always non-NULL, so this branch can now go (and it is important
+that we can't fail after doing put).
