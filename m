@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaAUNcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:32:53 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:47001 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaAUNcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:32:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdZW-Nay-wOywq4SG1bwQf_+J4tqYuS=tQmzTHOtBskGVw@mail.gmail.com>
-References: <1384270261-15889-1-git-send-email-linus.walleij@linaro.org>
-	<20131126023431.GC31517@core.coreip.homeip.net>
-	<CACRpkdZW-Nay-wOywq4SG1bwQf_+J4tqYuS=tQmzTHOtBskGVw@mail.gmail.com>
-Date: Tue, 21 Jan 2014 14:32:50 +0100
-Message-ID: <CACRpkdab32Cfj73D5zyVLDr9JTsQ2xxS3kDKjTBi4f+vLtZMAw@mail.gmail.com>
-Subject: Re: [PATCH 4/5 v3] input: tc3589x-keypad: support probing from device tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754645AbaAUNfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:35:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750935AbaAUNfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 08:35:51 -0500
+Message-ID: <1390311348.8705.265.camel@bling.home>
+Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
+Cc: Varun Sethi <Varun.Sethi@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Jan 2014 06:35:48 -0700
+In-Reply-To: <4b9118cb4cc744bdb2e9c25fa32d6950@BL2PR03MB259.namprd03.prod.outlook.com>
+References: <20140117203126.11429.25235.stgit@gimli.home>
+	 <4b9118cb4cc744bdb2e9c25fa32d6950@BL2PR03MB259.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 2:28 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Nov 26, 2013 at 3:34 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> On Tue, Nov 12, 2013 at 04:31:01PM +0100, Linus Walleij wrote:
->>>       irq = platform_get_irq(pdev, 0);
->>> --
->>
->> Don't you also want to add MODULE_DEVICE_TABLE entry?
->
-> Probably, but that'd be a separate subject though, I think?
-> I'll make a patch for this so you get something you can
-> actually merge.
+On Tue, 2014-01-21 at 07:27 +0000, Bharat.Bhushan@freescale.com wrote:
+> > +	domain->domain = iommu_domain_alloc(domain->bus);
+> > +	if (!domain->domain) {
+> > +		ret = -EIO;
+> > +		goto out_free;
+> > +	}
+> > +
+> > +	ret = iommu_attach_group(domain->domain, iommu_group);
+> > +	if (ret)
+> > +		goto out_domain;
+> > +
+> > +	INIT_LIST_HEAD(&domain->group_list);
+> > +	list_add(&group->next, &domain->group_list);
+> > +
+> > +	if (!allow_unsafe_interrupts &&
+> > +	    !iommu_domain_has_cap(domain->domain, IOMMU_CAP_INTR_REMAP)) {
+> > +		pr_warn("%s: No interrupt remapping support.  Use the module param
+> > \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
+> > +		       __func__);
+> > +		ret = -EPERM;
+> > +		goto out_detach;
+> > +	}
+> > +
+> > +	if (iommu_domain_has_cap(domain->domain, IOMMU_CAP_CACHE_COHERENCY))
+> > +		domain->prot |= IOMMU_CACHE;
+> > +
+> > +	/* Try to match an existing compatible domain. */
+> > +	list_for_each_entry(d, &iommu->domain_list, next) {
+> > +		if (d->bus == domain->bus && d->prot == domain->prot) {
+> 
+> Are not we talking about allowing a domain to support different bus type if domain/iommu-group properties matches.
 
-No, wait, this driver only matches on driver name, it has no
-match table of any kind. This is typical for MFD-spun cells
-if they don't need additional info from the compat match.
-I think it only needs the MODULE_ALIAS() it already
-has.
+This is where I was suggesting to Varun that we could test iommu_ops
+instead of bus_type.
 
-Yours,
-Linus Walleij
+> > +			iommu_detach_group(domain->domain, iommu_group);
+> > +			if (!iommu_attach_group(d->domain, iommu_group)) {
+> > +				list_add(&group->next, &d->group_list);
+> > +				iommu_domain_free(domain->domain);
+> > +				kfree(domain);
+> > +				mutex_unlock(&iommu->lock);
+> > +				return 0;
+> > +			}
+> > +
+> > +			ret = iommu_attach_group(domain->domain, iommu_group);
+> > +			if (ret)
+> > +				goto out_domain;
+> > +		}
+> > +	}
+> > +
+> > +	/* replay mappings on new domains */
+> > +	ret = vfio_iommu_replay(iommu, domain);
+> 
+> IIUC; We created a new domain because an already existing domain does not have same attribute; say domain->prot;
+> But in vfio_iommu_replay() we pick up any domain, first domain, and create mapping accordingly.
+> Should not we use attributes of this domain otherwise we may get "reserved bit faults"? 
+
+We use an existing domain to get the iova to physical mappings, should
+those not be consistent regardless of the domain we pick?  We're not
+using any of the low level attributes that could cause something like a
+reserved bit fault.  Thanks,
+
+Alex
+
