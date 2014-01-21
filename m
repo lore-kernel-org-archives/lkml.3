@@ -1,103 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaAUNuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:50:21 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:47796 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658AbaAUNuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:50:14 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 3/3] scripts/dtc: Add a script to update to mainline dtc source
-Date: Tue, 21 Jan 2014 13:50:01 +0000
-Message-Id: <1390312201-22754-4-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390312201-22754-1-git-send-email-grant.likely@linaro.org>
-References: <1390312201-22754-1-git-send-email-grant.likely@linaro.org>
+	id S1754701AbaAUNu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:50:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44800 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754606AbaAUNuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 08:50:17 -0500
+Subject: Re: [PATCH v6 3/8] x86: add generic function to modify more calls
+ using int3 framework
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+In-Reply-To: <20140114193338.4375f205@gandalf.local.home>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	 <1386690140-19941-4-git-send-email-pmladek@suse.cz>
+	 <20140114193338.4375f205@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Jan 2014 14:50:15 +0100
+Message-ID: <1390312215.14199.60.camel@pathway.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A very simple script that automates pulling in a newer version of DTC.
-Not particularly robust, but a whole lot better than doing it by hand
-every time.
+On Tue, 2014-01-14 at 19:33 -0500, Steven Rostedt wrote:
+> On Tue, 10 Dec 2013 16:42:15 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
+> 
+> > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> > index 6436beec7b0c..8e57ac03a0e8 100644
+> > --- a/arch/x86/kernel/alternative.c
+> > +++ b/arch/x86/kernel/alternative.c
+> > @@ -621,14 +625,23 @@ int poke_int3_handler(struct pt_regs *regs)
+> >  	if (likely(!bp_patching_in_progress))
+> >  		return 0;
+> >  
+> > -	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
+> > +	if (user_mode_vm(regs))
+> >  		return 0;
+> >  
+> > -	/* set up the specified breakpoint handler */
+> > -	regs->ip = (unsigned long) bp_int3_handler;
+> > +	/* Check if address is handled by text_poke_bp */
+> > +	if (bp_int3_handler && regs->ip == (unsigned long)bp_int3_addr) {
+> > +		regs->ip = (unsigned long)bp_int3_handler;
+> > +		return 1;
+> > +	}
+> >  
+> > -	return 1;
+> > +	/* Check if address is handled by text_poke_bp_list */
+> > +	if (bp_int3_is_handled && bp_int3_is_handled(regs->ip)) {
+> > +		/* just skip the instruction */
+> > +		regs->ip += bp_int3_len - 1;
+> > +		return 1;
+> > +	}
+> >  
+> > +	return 0;
+> >  }
+> >  
+> >  /**
+> > @@ -655,11 +668,13 @@ int poke_int3_handler(struct pt_regs *regs)
+> >   */
+> >  int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> >  {
+> > -	unsigned char int3 = 0xcc;
+> > -	int ret = 0;
+> > +	int ret;
+> >  
+> > +	bp_int3 = 0xcc;
+> 
+> We could remove this as it should be constant.
+> 
+> >  	bp_int3_handler = handler;
+> > -	bp_int3_addr = (u8 *)addr + sizeof(int3);
+> > +	bp_int3_addr = (u8 *)addr + sizeof(bp_int3);
+> > +	bp_int3_len = len;
+> > +	bp_int3_is_handled = NULL;
+> >  	bp_patching_in_progress = true;
+> >  	/*
+> >  	 * Corresponding read barrier in int3 notifier for
+> > @@ -668,20 +683,20 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> >  	 */
+> >  	smp_wmb();
+> >  
+> > -	ret = text_poke(addr, &int3, sizeof(int3));
+> > +	ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
+> >  	if (unlikely(ret))
+> >  		goto fail;
+> >  
+> >  	run_sync();
+> >  
+> > -	if (len - sizeof(int3) > 0) {
+> > +	if (len - sizeof(bp_int3) > 0) {
+> >  		/*
+> >  		 * Patch all but the first byte. We do not know how to recover
+> >  		 * from an error at this stage.
+> >  		 */
+> > -		text_poke_or_die((char *)addr + sizeof(int3),
+> > -				 (const char *) opcode + sizeof(int3),
+> > -				 len - sizeof(int3));
+> > +		text_poke_or_die((char *)addr + sizeof(bp_int3),
+> > +				 (const char *) opcode + sizeof(bp_int3),
+> > +				 len - sizeof(bp_int3));
+> >  		/*
+> >  		 * According to Intel, this core syncing is very likely
+> >  		 * not necessary and we'd be safe even without it. But
+> > @@ -691,7 +706,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> >  	}
+> >  
+> >  	/* Patch the first byte. We do not know how to recover from an error. */
+> > -	text_poke_or_die(addr, opcode, sizeof(int3));
+> > +	text_poke_or_die(addr, opcode, sizeof(bp_int3));
+> >  
+> >  	run_sync();
+> 
+> Shouldn't we be setting the bp_int3_handler back to NULL here?
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
----
- scripts/dtc/update-dtc-source.sh | 54 ++++++++++++++++++++++++++++++++++++++++
- scripts/dtc/version_gen.h        |  2 +-
- 2 files changed, 55 insertions(+), 1 deletion(-)
- create mode 100755 scripts/dtc/update-dtc-source.sh
+It might be cleaner but it is not really needed. "poke_int3_handler()"
+checks "bp_int3_handler" only when "bp_patching_in_progress" is enabled.
+The "in_progress" variable is disabled right after the above mentioned
+"run_sync()", so we are on the safe side.
 
-diff --git a/scripts/dtc/update-dtc-source.sh b/scripts/dtc/update-dtc-source.sh
-new file mode 100755
-index 000000000000..feb01ef26be4
---- /dev/null
-+++ b/scripts/dtc/update-dtc-source.sh
-@@ -0,0 +1,54 @@
-+#!/bin/sh
-+# Simple script to update the version of DTC carried by the Linux kernel
-+#
-+# This script assumes that the dtc and the linux git trees are in the
-+# same directory. After building dtc in the dtc directory, it copies the
-+# source files and generated source files into the scripts/dtc directory
-+# in the kernel and creates a git commit updating them to the new
-+# version.
-+#
-+# Usage: from the top level Linux source tree, run:
-+# $ ./scripts/dtc/update-dtc-source.sh
-+#
-+# The script will change into the dtc tree, build and test dtc, copy the
-+# relevant files into the kernel tree and create a git commit. The commit
-+# message will need to be modified to reflect the version of DTC being
-+# imported
-+#
-+# TODO:
-+# This script is pretty basic, but it is seldom used so a few manual tasks
-+# aren't a big deal. If anyone is interested in making it more robust, the
-+# the following would be nice:
-+# * Actually fail to complete if any testcase fails.
-+#   - The dtc "make check" target needs to return a failure
-+# * Extract the version number from the dtc repo for the commit message
-+# * Build dtc in the kernel tree
-+# * run 'make check" on dtc built from the kernel tree
-+
-+set -ev
-+
-+DTC_UPSTREAM_PATH=`pwd`/../dtc
-+DTC_LINUX_PATH=`pwd`/scripts/dtc
-+
-+DTC_SOURCE="checks.c data.c dtc.c dtc.h flattree.c fstree.c livetree.c srcpos.c \
-+		srcpos.h treesource.c util.c util.h version_gen.h Makefile.dtc \
-+		dtc-lexer.l dtc-parser.y"
-+DTC_GENERATED="dtc-lexer.lex.c dtc-parser.tab.c dtc-parser.tab.h"
-+
-+# Build DTC
-+cd $DTC_UPSTREAM_PATH
-+make clean
-+make check
-+
-+# Copy the files into the Linux tree
-+cd $DTC_LINUX_PATH
-+for f in $DTC_SOURCE; do
-+	cp ${DTC_UPSTREAM_PATH}/${f} ${f}
-+	git add ${f}
-+done
-+for f in $DTC_GENERATED; do
-+	cp ${DTC_UPSTREAM_PATH}/$f ${f}_shipped
-+	git add ${f}_shipped
-+done
-+
-+git commit -e -v -m "scripts/dtc: Update to upstream version [CHANGEME]"
-diff --git a/scripts/dtc/version_gen.h b/scripts/dtc/version_gen.h
-index e0b82fe8e7de..54d4e904433a 100644
---- a/scripts/dtc/version_gen.h
-+++ b/scripts/dtc/version_gen.h
-@@ -1 +1 @@
--#define DTC_VERSION "DTC 1.4.0"
-+#define DTC_VERSION "DTC 1.4.0-dirty"
--- 
-1.8.3.2
+Note that the original "text_poke_bp()" implementation disabled only the
+"in_progress" variable at the end as well.
+
+
+> > +static int add_iter_breakpoint(struct text_poke_bp_iter *iterator,
+> > +				       void *iter)
+> > +{
+> > +	void *addr;
+> > +	const void *old_opcode;
+> > +	int ret = 0;
+> > +
+> > +	/* nope if the code is not defined */
+> 
+> The above comment does not make sense.
+
+It is here to handle the situation when "ftrace_test_record(rec,
+enable)" returns FTRACE_UPDATE_IGNORE. In this case, even the original
+implementation does not add the breakpoint.
+
+I did not want to confuse the universal implementation with extra flags.
+Instead, I passed NULL "old_code" pointer when the patching was not
+needed for this particular address.
+
+I agree that it might be a bit confusing. The question is whether it is
+enough to improve documentation or rather use an extra flag or so.
+
+I am going to improve the comments unless you say otherwise.
+
+> 
+> > +	old_opcode = iterator->get_old_opcode(iter);
+> > +	if (!old_opcode)
+> > +		return 0;
+> > +
+> > +	addr = iterator->get_addr(iter);
+> > +	ret = text_poke_check(addr, old_opcode, bp_int3_len);
+> > +
+> > +	if (likely(!ret))
+> > +		/* write the breakpoint */
+> 
+> Comment is redundant and can be removed.
+> 
+> > +		ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int update_iter_code(struct text_poke_bp_iter *iterator,
+> > +				   void *iter)
+> > +{
+> > +	void *addr;
+> > +	const void *opcode;
+> > +
+> > +	/* nope if the code is not defined */
+> 
+> Still does not make sense :-)
+
+It is the same reason/trick that is used in "add_iter_breakpoint()".
+NULL code pointer means that we actually do not want to patch this
+particular address.
+
+The rest of your comments is clear. I am updating the patch set. Thanks
+a lot for feedback.
+
+
+Best Regards,
+Petr
 
