@@ -1,104 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaAUPp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:45:27 -0500
-Received: from flusers.ccur.com ([173.221.59.2]:50203 "EHLO gamx.iccur.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754134AbaAUPp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:45:26 -0500
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 10:45:25 EST
-Date: Tue, 21 Jan 2014 10:40:03 -0500
-From: Joe Korty <joe.korty@ccur.com>
-To: Muli Baron <muli.baron@gmail.com>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.12.6-rt9
-Message-ID: <20140121154003.GA10999@tsunami.ccur.com>
-Reply-To: Joe Korty <joe.korty@ccur.com>
-References: <20131223225017.GA8623@linutronix.de>
- <1387900067.5490.33.camel@marge.simpson.net>
- <20140117170052.GF5785@linutronix.de>
- <1390014929.5444.38.camel@marge.simpson.net>
- <20140120211736.0c97418a@gandalf.local.home>
- <52DE160E.7080504@gmail.com>
+	id S1755049AbaAUPpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:45:54 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:20318 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaAUPpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 10:45:50 -0500
+Message-ID: <52DE9626.3030806@hp.com>
+Date: Tue, 21 Jan 2014 10:45:42 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DE160E.7080504@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, "" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 4/5] qrwlock: Use smp_store_release() in write_unlock()
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com> <1389761047-47566-5-git-send-email-Waiman.Long@hp.com> <20140120151855.GH30183@twins.programming.kicks-ass.net>
+In-Reply-To: <20140120151855.GH30183@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 01:39:10AM -0500, Muli Baron wrote:
-> On 21/1/2014 04:17, Steven Rostedt wrote:
-> > On Sat, 18 Jan 2014 04:15:29 +0100
-> > Mike Galbraith <bitbucket@online.de> wrote:
-> >
-> >
-> >>> So you also have the timers-do-not-raise-softirq-unconditionally.patch?
-> >>
-> >
-> > People have been complaining that the latest 3.12-rt does not boot on
-> > intel i7 boxes. And by reverting this patch, it boots fine.
-> >
-> > I happen to have a i7 box to test on, and sure enough, the latest
-> > 3.12-rt locks up on boot and reverting the
-> > timers-do-not-raise-softirq-unconditionally.patch, it boots fine.
-> >
-> > Looking into it, I made this small update, and the box boots. Seems
-> > checking "active_timers" is not enough to skip raising softirqs. I
-> > haven't looked at why yet, but I would like others to test this patch
-> > too.
-> >
-> > I'll leave why this lets i7 boxes boot as an exercise for Thomas ;-)
-> >
-> > -- Steve
-> >
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> >
-> > diff --git a/kernel/timer.c b/kernel/timer.c
-> > index 46467be..8212c10 100644
-> > --- a/kernel/timer.c
-> > +++ b/kernel/timer.c
-> > @@ -1464,13 +1464,11 @@ void run_local_timers(void)
-> >   		raise_softirq(TIMER_SOFTIRQ);
-> >   		return;
-> >   	}
-> > -	if (!base->active_timers)
-> > -		goto out;
-> >
-> >   	/* Check whether the next pending timer has expired */
-> >   	if (time_before_eq(base->next_timer, jiffies))
-> >   		raise_softirq(TIMER_SOFTIRQ);
-> > -out:
-> > +
-> >   	rt_spin_unlock_after_trylock_in_irq(&base->lock);
-> >
-> >   }
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
-> While this might fix booting on i7 machines it kinds of defeats the 
-> original purpose of this patch, which was to let NO_HZ_FULL work 
-> properly with threaded interrupts. With the active_timers check removed 
-> the timer interrupt keeps firing even though there is only one task 
-> running on a specific processor, since it can't shut down the tick 
-> because the ksoftirqd thread keeps getting scheduled (see the previous 
-> thread "CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo" for the full 
-> discussion).
-> 
-> -- Muli
+On 01/20/2014 10:18 AM, Peter Zijlstra wrote:
+> On Tue, Jan 14, 2014 at 11:44:06PM -0500, Waiman Long wrote:
+>> This patch modifies the queue_write_unlock() function to use the new
+>> smp_store_release() function (currently in tip). It also removes the
+>> temporary implementation of smp_load_acquire() and smp_store_release()
+>> function in qrwlock.c.
+>>
+>> This patch will use atomic subtraction instead if the writer field is
+>> not atomic.
+>>
+>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>> ---
+>>   include/asm-generic/qrwlock.h |   10 ++++++----
+>>   kernel/locking/qrwlock.c      |   34 ----------------------------------
+>>   2 files changed, 6 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
+>> index 5abb6ca..68f488b 100644
+>> --- a/include/asm-generic/qrwlock.h
+>> +++ b/include/asm-generic/qrwlock.h
+>> @@ -181,11 +181,13 @@ static inline void queue_read_unlock(struct qrwlock *lock)
+>>   static inline void queue_write_unlock(struct qrwlock *lock)
+>>   {
+>>   	/*
+>> -	 * Make sure that none of the critical section will be leaked out.
+>> +	 * If the writer field is atomic, it can be cleared directly.
+>> +	 * Otherwise, an atomic subtraction will be used to clear it.
+>>   	 */
+>> -	smp_mb__before_clear_bit();
+>> -	ACCESS_ONCE(lock->cnts.writer) = 0;
+>> -	smp_mb__after_clear_bit();
+>> +	if (__native_word(lock->cnts.writer))
+>> +		smp_store_release(&lock->cnts.writer, 0);
+>> +	else
+>> +		atomic_sub(_QW_LOCKED,&lock->cnts.rwa);
+>>   }
+> If we're a writer, read-count must be zero. The only way for that not to
+> be zero is a concurrent read-(try)lock. If you move all the
+> read-(try)locks over to cmpxchg() you can avoid this afaict:
 
+That is not true. A reader may transiently set the reader count to a 
+non-zero value in the fast path. Also, a reader in interrupt context 
+will force a non-zero reader count to take the read lock as soon as the 
+writer is done.
 
-Would something like this work?  This would get us past boot, which has
-always been this strange, half initialized thing one has to tiptoe around.
+>
+> static inline void queue_read_trylock(struct qrwlock *lock)
+> {
+> 	union qrwcnts cnts
+>
+> 	cnts = ACCESS_ONCE(lock->cnts);
+> 	if (!cnts.writer) {
+> 		if (cmpxchg(&lock->cnts.rwc, cnts.rwc, cnts.rwc + _QR_BIAS) == cnts.rwc)
+> 			return 1;
+> 	}
+>
+> 	return 0;
+> }
+>
+> static inline void queue_read_lock(struct qrwlock *lock)
+> {
+> 	if (!queue_read_trylock(lock))
+> 		queue_read_lock_slowpath(); // XXX do not assume extra _QR_BIAS
+> }
+>
+> At which point you have the guarantee that read-count == 0, and you can
+> write:
+>
+> static inline void queue_write_unlock(struct qrwlock *lock)
+> {
+> 	smp_store_release(&lock->cnts.rwc, 0);
+> }
+>
+> No?
+>
 
--	if (!base->active_timers)
-+	if (!base->active_timers && system_state == SYSTEM_RUNNING)
+The current code is optimized for the reader-heavy case. So I used xadd 
+for incrementing reader count to reduce the chance of retry due to 
+concurrent reader count updates. The downside is the need to back out if 
+a writer is here.
 
-Joe
+I can change the logic to use only cmpxchg for readers, but I don't see 
+a compelling reason to do so.
 
+-Longman
