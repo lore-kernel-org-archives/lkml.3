@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaAUJsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:48:23 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:48546 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaAUJsT (ORCPT
+	id S1754233AbaAUJsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:48:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47785 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbaAUJst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:48:19 -0500
-Date: Tue, 21 Jan 2014 04:48:14 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
-Subject: [GIT PULL] percpu changes for v3.14-rc1
-Message-ID: <20140121094814.GB6928@htj.dyndns.org>
+	Tue, 21 Jan 2014 04:48:49 -0500
+Date: Tue, 21 Jan 2014 10:47:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH v7 6/6] MCS Lock: add Kconfig entries to allow
+ arch-specific hooks
+Message-ID: <20140121094756.GQ31570@twins.programming.kicks-ass.net>
+References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
+ <1389917316.3138.16.camel@schen9-DESK>
+ <20140120123030.GE31570@twins.programming.kicks-ass.net>
+ <1390260717.3138.33.camel@schen9-DESK>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1390260717.3138.33.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Mon, Jan 20, 2014 at 03:31:57PM -0800, Tim Chen wrote:
+> On Mon, 2014-01-20 at 13:30 +0100, Peter Zijlstra wrote:
 
-Two trivial changes - addition of WARN_ONCE() in lib/percpu-refcount.c
-and use of VMALLOC_TOTAL instead of END - START in percpu.c.
+> > Then again, people seem to whinge if you don't keep these Kbuild files
+> > sorted, but manually sorting 29 files is just not something I like to
+> > do.
 
-I messed up the for-3.14 branch (committed stuff to for-next) and had
-to rebuild for-3.14 by cherry-picking; however, the result is the same
-as published to the next tree through for-next.
+> Can you clarify what exactly needs to be sorted?  The Kbuild files
+> spit out by git diff appears to be sorted already.
 
-The changes are available in the following git branch
+> > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> > index f01fb505ad52..14cbbbcec01f 100644
+> > --- a/arch/alpha/include/asm/Kbuild
+> > +++ b/arch/alpha/include/asm/Kbuild
+> > @@ -4,3 +4,4 @@ generic-y += clkdev.h
+> >  generic-y += exec.h
+> >  generic-y += trace_clock.h
+> >  generic-y += preempt.h
+> > +generic-y += mcs_spinlock.h
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git 
+Last time I checked the Alphabet m came before p.
 
-for you to fetch changes up to 8a0921712ec6d00754b5d7afea78137772efee0a:
+I generated this patch using:
 
-  percpu: use VMALLOC_TOTAL instead of VMALLOC_END - VMALLOC_START (2014-01-21 04:41:26 -0500)
+for i in arch/*/include/asm/Kbuild
+do
+	echo "generic-y += mcs_spinlock.h" >> $i
+done
 
-Thanks.
-----------------------------------------------------------------
-Kent Overstreet (1):
-      percpu-refcount: Add a WARN() for ref going negative
-
-Laura Abbott (1):
-      percpu: use VMALLOC_TOTAL instead of VMALLOC_END - VMALLOC_START
-
- lib/percpu-refcount.c | 3 +++
- mm/percpu.c           | 4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-index 1a53d49..963b703 100644
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -120,6 +120,9 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
- 
- 	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
- 
-+	WARN_ONCE(atomic_read(&ref->count) <= 0, "percpu ref <= 0 (%i)",
-+		  atomic_read(&ref->count));
-+
- 	/* @ref is viewed as dead on all CPUs, send out kill confirmation */
- 	if (ref->confirm_kill)
- 		ref->confirm_kill(ref);
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 0d10def..afbf352 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1686,10 +1686,10 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 	max_distance += ai->unit_size;
- 
- 	/* warn if maximum distance is further than 75% of vmalloc space */
--	if (max_distance > (VMALLOC_END - VMALLOC_START) * 3 / 4) {
-+	if (max_distance > VMALLOC_TOTAL * 3 / 4) {
- 		pr_warning("PERCPU: max_distance=0x%zx too large for vmalloc "
- 			   "space 0x%lx\n", max_distance,
--			   (unsigned long)(VMALLOC_END - VMALLOC_START));
-+			   VMALLOC_TOTAL);
- #ifdef CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK
- 		/* and fail if we have fallback */
- 		rc = -EINVAL;
+Which simply appends the new header. However people want these generic-y
+thingies sorted by header name. Hence the gawk script I sent which does
+just that.
