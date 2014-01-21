@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaAUMbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:31:25 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58457 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518AbaAUMbW (ORCPT
+	id S1754609AbaAUMeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:34:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53371 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477AbaAUMeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:31:22 -0500
-Date: Tue, 21 Jan 2014 13:31:20 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140121123120.GC11893@amd.pavel.ucw.cz>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
- <20140120163254.GA23051@amd.pavel.ucw.cz>
- <20140121121429.GB19029@e103034-lin>
+	Tue, 21 Jan 2014 07:34:22 -0500
+Date: Tue, 21 Jan 2014 13:33:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+Message-ID: <20140121123334.GJ30183@twins.programming.kicks-ass.net>
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com>
+ <20140120112442.GA8907@austad.us>
+ <52DD1377.5090201@gmail.com>
+ <20140120131616.GB8907@austad.us>
+ <52DD2711.9080504@unitn.it>
+ <20140121102016.GA12002@austad.us>
+ <52DE5B7F.8020900@unitn.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140121121429.GB19029@e103034-lin>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52DE5B7F.8020900@unitn.it>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Jan 21, 2014 at 12:35:27PM +0100, Luca Abeni wrote:
+> >In a system, we typically look at a set of tasks. In Linux-kernel
+> >terminology, a particular task is normally a thread. When a thread is
+> >ready to run, we say that a *job* of that task is running.
+> This would be true in the original Liu&Layland model (where a task blocks
+> only when a job finishes), but I do not think it is correct in a real system...
+> For example: (notice: this discussion might be slightly off-topic, and I do not
+> think this should go in the document... I am writing just to clarify my point
+> of view)
+> - Let's consider a (over simplified) video decoder as an example of task
+> - The task periodically read a video frame (from disk or network), decodes it,
+>   and displays it
+> - So, each job starts when the frame is read, and finishes when the frame is
+>   displayed. And jobs are (in this case) activated periodically
+> - During the execution of a job, the task might invoke a blocking system call,
+>   and block... When it wakes up, it is still in the same job (decoding the same
+>   video frame), and not in a different one.
+> This is (IMHO) where all the confusion comes from.
 
-> > > Performance is frequency (~instruction issue rate) and
-> > > energy/instruction is the energy cost of executing one (or a fixed
-> > > number of instructions) at that level of performance (frequency). For
-> > > this example, it costs 2.7x more energy per instruction to increase the
-> > > performance from 1.0 to 3.0 (3x). That is, the amount of work
-> > > (instructions) that can be done on one battery charge is reduced by 2.7x
-> > > (~63%) if you run as fast as possible (3.0) compared to running at
-> > > slowest frequency (1.0).
-> > 
-> > This very heavily depends on what you count to the total energy,
-> > right? And it is very hard to argue with you before you anonymized
-> > your numbers.
-> 
-> Just to clarify, the numbers above are cpu only as already stated in the
-> linux-pm thread referenced in the cover letter. We do of course need to
-> consider the total energy (cpu, gpu and memory at least) when verifying
-> whether any optimization does save energy or not.
+I would strongly urge you not to use that as an example, because its
+dead wrong design. An RT thread (be it RR,FIFO or DL) should _NEVER_ do
+blocking IO.
 
-Yes.
+Have !RT tasks read the stuff from disk into a buffer, then let the RT
+task read data from the buffer and flip frames and such.
 
-> As already discussed, battery power is suitable for this purpose on end
-> product form factor systems. However, for development hardware that
-> might be quite different (extra onboard devices and such).
+If you want to mention blocking, then please use the most common one:
+blocking on a (hopefully PI) mutex.
 
-Is the behavior of current production hardware significantly different
-from secret development boards you have? I don't think so. So can we
-get measurements on real production hardware?
 
-> > Anyway, you assuming modern system, low frequency should be cca
-> > 0.5GHz, with high cca 1.5GHz. Do you claim that operation on 1.5GHz
-> > takes 9x the power of 0.5GHz operation?
-> 
-> On this particular platform, increasing the frequency by 3x increases
-> power by 8.1x.
 
-Lets call your plaform TopSecret.
+On the other subject; I wouldn't actually mind if it grew into a proper
+(academic or not) summary of deadline scheduling theory and how it
+applies.
 
-_CPU_ power. If your DRAM eats as much power as the CPU on that
-platform, and enters low-power mode when CPU does, race-to-idle is
-still a win.
+Sure, refer to actual papers for all the proofs and such, but it would
+be very good to go over all the bits and pieces that make up the system.
 
-> > > To save energy, the higher frequencies should be avoided and only used
-> > > when the application performance requirements can not be satisfied
-> > > otherwise (e.g. spread tasks across more cpus if possible).
-> > 
-> > This is in very steep contrast with race-to-idle on the PCs.
-> 
-> I think Catalin already covered why race-to-idle isn't always the best
-> idea elsewhere in this thread. Basically, it is wasting a lot of energy
-> in use-cases like audio and video playback. I have provided descriptions
-> of these use-cases as part of this set of emails.
+So cover the periodic, sporadic and aperiodic model like henr_k
+suggested, please do cover the job/instance idiom as it is used all over
+the place.
 
-That's the problem. He demonstrated that on platform TopSecret
-race-to-idle is not good idea, assuming CPU and display are the only
-parts eating power. But that's not true even on TopSecret platform.
+Then also treat schedulability tests and their ramification, explain
+what laxity is, what tardiness is, that GEDF doesn't have 0 tardiness
+but does have bounded tardiness.
 
-So, at the very least, we need to know ammount of power taken by CPU
-idle/active and DRAM idle/active.
+Maybe even mention the actual bounds -- but refer to papers for their
+proofs.
 
-> > Can we talk specific machine, please? You are talking Android all the
-> > time, so pick one cellphone you care about, and provide real numbers...
-> 
-> As Catalin already said, there is a number of reason why we can't share
-> absolute numbers publicly. I think the numbers I posted give a pretty
-> good picture of the trade-offs involved in frequency scaling on a modern
-> ARM Soc. 
+Mention CBS and the ramification etc..
 
-Unfortunately, as explained above, numbers for TopSecret are not
-useful. And that should be reason to re-do the measurements on some
-non-secret machine.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Yes this is all a bit much, but I feel it is important, after all how
+can you properly use something you don't understand? (and yes I know its
+a very popular thing to not want to understand how things work but still
+use them :-/).
+
+I mean, I'm the kind of idiot that actually goes out and read a bunch of
+papers, but many people simply cannot read those things, or are not
+given the time to, even if they wanted and could (arguably they have
+bigger problems).
+
+so think of this as the idiot guide to deadline scheduling :-)
