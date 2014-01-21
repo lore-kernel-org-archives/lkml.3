@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaAUUGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:06:53 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63787 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665AbaAUUGt (ORCPT
+	id S1753954AbaAUUHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:07:04 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34257 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaAUUG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:06:49 -0500
-Date: Tue, 21 Jan 2014 12:06:45 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Robin Schroer <sulamiification@gmail.com>
-Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hid/wacom: fixed coding style issues
-Message-ID: <20140121200645.GC29615@core.coreip.homeip.net>
-References: <20140121195153.GA4198@fedora.fritz.box>
+	Tue, 21 Jan 2014 15:06:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121195153.GA4198@fedora.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140121182130.GM17314@sirena.org.uk>
+References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
+	<1390317009-8292-4-git-send-email-geert@linux-m68k.org>
+	<20140121182130.GM17314@sirena.org.uk>
+Date: Tue, 21 Jan 2014 21:06:57 +0100
+X-Google-Sender-Auth: S3_AUxsDXZn9ck76JssNKp-I3so
+Message-ID: <CAMuHMdWW1EsHe0u0o8XZuG4AzPKRqKL7ET5Ac2NkbeLRfW_foQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] spi: Check that Quad/Dual is half duplex
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 08:51:53PM +0100, Robin Schroer wrote:
-> Fixed some coding style issues regarding spaces before semicolons and
-> closing parenthesis.
-> 
-> Signed-off-by: Robin Schroer <sulamiification@gmail.com>
-> ---
->  drivers/hid/hid-wacom.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-> index 60c75dc..ebcca0d 100644
-> --- a/drivers/hid/hid-wacom.c
-> +++ b/drivers/hid/hid-wacom.c
-> @@ -77,8 +77,8 @@ static void wacom_scramble(__u8 *image)
->  	__u16 mask;
->  	__u16 s1;
->  	__u16 s2;
-> -	__u16 r1 ;
-> -	__u16 r2 ;
-> +	__u16 r1;
-> +	__u16 r2;
->  	__u16 r;
->  	__u8 buf[256];
->  	int i, w, x, y, z;
-> @@ -336,7 +336,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
->  
->  	switch (hdev->product) {
->  	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
-> -		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
-> +		rep_data[0] = 0x03; rep_data[1] = 0x00;
->  		limit = 3;
->  		do {
->  			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-> @@ -404,7 +404,7 @@ static ssize_t wacom_store_speed(struct device *dev,
->  	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
->  	int new_speed;
->  
-> -	if (sscanf(buf, "%1d", &new_speed ) != 1)
-> +	if (sscanf(buf, "%1d", &new_speed) != 1)
->  		return -EINVAL;
+On Tue, Jan 21, 2014 at 7:21 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Jan 21, 2014 at 04:10:08PM +0100, Geert Uytterhoeven wrote:
+>> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>> Quad and Dual SPI Transfers use all available data lines (incl. MOSI/MISO),
+>> hence they must be half duplex. Add a check that verify that.
+>
+> This is surprising to me - I had expected that there would be extra
+> signals that would be used for these modes, not that the opposite
+> direction data line would be one of the ones being reused.  On the other
+> hand if this is what all the flash chips do then it would seem
+> reasonable that controllers do the same.  Can you clarify please?
 
-Why doesn't it use kstrtoXXX()?
+Dual SPI works by aggregating the MOSI and MISO lines for 2-bit
+unidirectional transfers.
+Quad SPI aggregates MOSI, MISO, and 2 additional lines for 4-bit
+unidirectional transfers.
 
-Thanks.
+Hence Dual SPI uses the traditional 4-wire wiring, while Quad SPI uses
+6-wire.
 
->  
->  	if (new_speed == 0 || new_speed == 1) {
-> -- 
-> 1.8.4.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+SPI FLASH chips handle it this way, and the Renesas QSPI controller
+in the r8a7790/7791 SoCs, too.
 
--- 
-Dmitry
+Typically the first transfer in a message is a Single Transfer (e.g. read data
+command), while subsequent transfers can be Dual or Quad Transfers (e.g.
+the actual data read from the FLASH).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
