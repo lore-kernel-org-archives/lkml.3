@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaAUOQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:16:29 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:55715 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817AbaAUOQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:16:24 -0500
-Date: Tue, 21 Jan 2014 15:16:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@kernel.org>, Gaurav Jain <gjain@fb.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-Message-ID: <20140121141621.GC4559@gmail.com>
-References: <20140116143749.GA21526@ghostprotocols.net>
- <CEFDA8E4.2D359%gjain@fb.com>
- <87sisn6ojf.fsf@sejong.aot.lge.com>
- <20140117143404.GB3207@ghostprotocols.net>
- <87iotd7ucn.fsf@sejong.aot.lge.com>
- <20140121135552.GD18027@ghostprotocols.net>
+	id S932086AbaAUORX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:17:23 -0500
+Received: from mail.SerNet.de ([193.175.80.2]:59283 "EHLO mail.SerNet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754472AbaAUORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:17:21 -0500
+Date: Tue, 21 Jan 2014 15:17:08 +0100
+Date: Tue, 21 Jan 2014 15:17:08 +0100
+From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Reply-To: Volker.Lendecke@SerNet.DE
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+ <E1W5A0e-000MT9-A1@intern.SerNet.DE>
+ <CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
+ <E1W5C8U-000ozD-Ku@intern.SerNet.DE>
+ <CAKywueQng9=u1YYwkYGCunWW8RBhARhJjEhBcoA6CKF6TrKSBg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140121135552.GD18027@ghostprotocols.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKywueQng9=u1YYwkYGCunWW8RBhARhJjEhBcoA6CKF6TrKSBg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <E1W5c8k-0036ba-7A@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 21, 2014 at 05:31:39PM +0400, Pavel Shilovsky wrote:
+> It's not possible with the current API to do it through open syscall.
+> Another possibility is to look at /proc/locks. But I think we really
+> need O_DELETE flag that will force a file to be removed on close - we
+> will be able to do O_DENYDELETE checks atomically.
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+I don't depend on this at open time. I can do it later with
+some syscall, that's fine. I just want to find a way to do
+it correctly. The problem is -- you can't "try" an unlink.
+So we have to probe whether we can unlink. And opening for
+O_DENYDELETE by no means says we *will* unlink. We just have
+to keep the option to do it exclusively.
 
-> > Right.  But in this case we cannot determine whether a symbol in 
-> > the /tmp/perf-... file is a function or variable.
-> 
-> That is why we would then need to have separate /tmp/perf-... files, 
-> disambiguated by an extension, one for text addresses, another for 
-> data ones.
-> 
-> Or change the format to match /proc/kallsyms, which probably is what 
-> we should've done from day one...
+With best regards,
 
-Yeah. Using the same format would be lovely. The parser could try to 
-detect the new one and could fall back to the old format?
+Volker
 
-> Detecting the format change would be trivial, as we would find 3 
-> tokens in the new format, instead of the current 2.
-
-Yeah!
-
-Thanks,
-
-	Ingo
+-- 
+SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
+phone: +49-551-370000-0, fax: +49-551-370000-9
+AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
+http://www.sernet.de, mailto:kontakt@sernet.de
