@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaAUKLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 05:11:45 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7016 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaAUKKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 05:10:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 21 Jan 2014 02:10:00 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Olof Johansson <olof@lixom.net>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 3/5] ARM: firmware: enable Trusted Foundations by default
-Date: Tue, 21 Jan 2014 19:10:14 +0900
-Message-ID: <1390299016-14105-4-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390299016-14105-1-git-send-email-acourbot@nvidia.com>
-References: <1390299016-14105-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	id S1754486AbaAUKMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 05:12:22 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59911 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754117AbaAUKMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 05:12:20 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <george.cherian@ti.com>, <heikki.krogerus@linux.intel.com>,
+        <rogerq@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+CC: <kishon@ti.com>
+Subject: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library returns -ENODEV/-ENXIO
+Date: Tue, 21 Jan 2014 15:41:38 +0530
+Message-ID: <1390299099-14764-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1385373690-12170-1-git-send-email-kishon@ti.com>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed previously (https://lkml.org/lkml/2013/11/26/289), enable
-Trusted Foundation support by default since it already depends on a
-supporting architecture being selected.
+Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs),
+do not return from probe if the USB PHY library returns -ENODEV as that
+indicates the platform does not have PHY.
 
-Doing so allows us to remove it from tegra_defconfig.
-
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/configs/tegra_defconfig | 1 -
- arch/arm/firmware/Kconfig        | 1 +
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc3/core.c |   34 ++++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 5fdc9a09d339..e38653876541 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -33,7 +33,6 @@ CONFIG_PCI=y
- CONFIG_PCI_MSI=y
- CONFIG_PCI_TEGRA=y
- CONFIG_PCIEPORTBUS=y
--CONFIG_TRUSTED_FOUNDATIONS=y
- CONFIG_SMP=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
-diff --git a/arch/arm/firmware/Kconfig b/arch/arm/firmware/Kconfig
-index bb126594995e..ad396af68e47 100644
---- a/arch/arm/firmware/Kconfig
-+++ b/arch/arm/firmware/Kconfig
-@@ -11,6 +11,7 @@ menu "Firmware options"
- config TRUSTED_FOUNDATIONS
- 	bool "Trusted Foundations secure monitor support"
- 	depends on ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
-+	default y
- 	help
- 	  Some devices (including most Tegra-based consumer devices on the
- 	  market) are booted with the Trusted Foundations secure monitor
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index a49217a..e009d4e 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -411,32 +411,26 @@ static int dwc3_probe(struct platform_device *pdev)
+ 
+ 	if (IS_ERR(dwc->usb2_phy)) {
+ 		ret = PTR_ERR(dwc->usb2_phy);
+-
+-		/*
+-		 * if -ENXIO is returned, it means PHY layer wasn't
+-		 * enabled, so it makes no sense to return -EPROBE_DEFER
+-		 * in that case, since no PHY driver will ever probe.
+-		 */
+-		if (ret == -ENXIO)
++		if (ret == -ENXIO || ret == -ENODEV) {
++			dwc->usb2_phy = NULL;
++		} else if (ret == -EPROBE_DEFER) {
+ 			return ret;
+-
+-		dev_err(dev, "no usb2 phy configured\n");
+-		return -EPROBE_DEFER;
++		} else {
++			dev_err(dev, "no usb2 phy configured\n");
++			return ret;
++		}
+ 	}
+ 
+ 	if (IS_ERR(dwc->usb3_phy)) {
+ 		ret = PTR_ERR(dwc->usb3_phy);
+-
+-		/*
+-		 * if -ENXIO is returned, it means PHY layer wasn't
+-		 * enabled, so it makes no sense to return -EPROBE_DEFER
+-		 * in that case, since no PHY driver will ever probe.
+-		 */
+-		if (ret == -ENXIO)
++		if (ret == -ENXIO || ret == -ENODEV) {
++			dwc->usb3_phy = NULL;
++		} else if (ret == -EPROBE_DEFER) {
+ 			return ret;
+-
+-		dev_err(dev, "no usb3 phy configured\n");
+-		return -EPROBE_DEFER;
++		} else {
++			dev_err(dev, "no usb3 phy configured\n");
++			return ret;
++		}
+ 	}
+ 
+ 	dwc->xhci_resources[0].start = res->start;
 -- 
-1.8.5.3
+1.7.10.4
 
