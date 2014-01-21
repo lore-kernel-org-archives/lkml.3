@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183AbaAURTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 12:19:12 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:36903 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096AbaAURTI (ORCPT
+	id S1754526AbaAURXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 12:23:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43217 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836AbaAURXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 12:19:08 -0500
-Date: Tue, 21 Jan 2014 17:19:01 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: bcousson@baylibre.com, tony@atomide.com, balbi@ti.com, arnd@arndb.de,
-        sre@debian.org, mark.rutland@arm.com, m.paolino@virtualopensystems.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/10] USB Host support for OMAP5 uEVM (for 3.14)
-Message-ID: <20140121171901.GE27111@lee--X1>
-References: <1390227091-4523-1-git-send-email-rogerq@ti.com>
+	Tue, 21 Jan 2014 12:23:32 -0500
+Date: Tue, 21 Jan 2014 09:24:14 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>
+Subject: Re: [PATCH] serial: samsung: move clock deactivation below uart
+ registration
+Message-ID: <20140121172414.GB19595@kroah.com>
+References: <201312050054.39327.heiko@sntech.de>
+ <2813762.7GxfVBIcrq@phil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1390227091-4523-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2813762.7GxfVBIcrq@phil>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patchset brings up USB Host ports and Ethernet port on
-> the OMAP5 uEVM board.
+On Tue, Jan 21, 2014 at 03:26:42PM +0100, Heiko Stübner wrote:
+> Hi Greg,
+> 
+> just wanted to ask about the state of this patch. I can see it in your branch 
+> named "fixes" [0] but it seems it hasn't made its way into the kernel neither 
+> during the 3.13-rcs or with your 3.14-pull [1].
+> 
+> 
+> Thanks
+> Heiko
+> 
+> 
+> [0] https://git.kernel.org/cgit/linux/kernel/git/gregkh/tty.git/log/?h=fixes
+> [1] 
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=bcee63488ece9a0fca8be19951428a7b41001e66
 
-I'd keep hold of this and send it out again when the merge-window is
-closed.
+Ah crap, I missed this, sorry, I'll get it to Linus in time for
+3.14-final, sorry about that.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+greg k-h
