@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaAUAYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 19:24:40 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:33301 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829AbaAUAYd (ORCPT
+	id S1754130AbaAUAZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 19:25:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36764 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755371AbaAUAZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 19:24:33 -0500
-X-IronPort-AV: E=Sophos;i="4.95,693,1384300800"; 
-   d="scan'208";a="92642001"
-Message-ID: <52DDBE3D.4060406@citrix.com>
-Date: Tue, 21 Jan 2014 00:24:29 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 20 Jan 2014 19:25:36 -0500
+Date: Mon, 20 Jan 2014 16:26:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+Message-ID: <20140121002623.GA6173@kroah.com>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+ <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+ <20140120100530.GY15937@n2100.arm.linux.org.uk>
+ <20140120211601.GB634@kroah.com>
+ <20140120213206.GJ15937@n2100.arm.linux.org.uk>
+ <20140120231141.GA2355@kroah.com>
+ <20140120231603.GL15937@n2100.arm.linux.org.uk>
+ <20140120235128.GA5012@kroah.com>
+ <20140121000706.GN15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 8/9] xen-netback: Timeout packets in RX path
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com> <1390253069-25507-9-git-send-email-zoltan.kiss@citrix.com> <20140120220348.GA5058@zion.uk.xensource.com>
-In-Reply-To: <20140120220348.GA5058@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.68.14.33]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121000706.GN15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/01/14 22:03, Wei Liu wrote:
-> On Mon, Jan 20, 2014 at 09:24:28PM +0000, Zoltan Kiss wrote:
->> @@ -557,12 +577,25 @@ void xenvif_disconnect(struct xenvif *vif)
->>   void xenvif_free(struct xenvif *vif)
->>   {
->>   	int i, unmap_timeout = 0;
->> +	/* Here we want to avoid timeout messages if an skb can be legitimatly
->> +	 * stucked somewhere else. Realisticly this could be an another vif's
->> +	 * internal or QDisc queue. That another vif also has this
->> +	 * rx_drain_timeout_msecs timeout, but the timer only ditches the
->> +	 * internal queue. After that, the QDisc queue can put in worst case
->> +	 * XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS skbs into that another vif's
->> +	 * internal queue, so we need several rounds of such timeouts until we
->> +	 * can be sure that no another vif should have skb's from us. We are
->> +	 * not sending more skb's, so newly stucked packets are not interesting
->> +	 * for us here.
->> +	 */
-> You beat me to this. Was about to reply to your other email. :-)
->
-> It's also worth mentioning that DIV_ROUND_UP part is merely estimation,
-> as you cannot possible know the maximum / miminum queue length of all
-> other vifs (as they can be changed during runtime). In practice most
-> users will stick with the default, but some advanced users might want to
-> tune this value for individual vif (whether that's a good idea or not is
-> another topic).
->
-> So, in order to convince myself this is safe. I also did some analysis
-> on the impact of having queue length other than default value.  If
-> queue_len < XENVIF_QUEUE_LENGTH, that means you can queue less packets
-> in qdisc than default and drain it faster than calculated, which is
-> safe. On the other hand if queue_len > XENVIF_QUEUE_LENGTH, it means
-> actually you need more time than calculated. I'm in two minded here. The
-> default value seems sensible to me but I'm still a bit worried about the
-> queue_len > XENVIF_QUEUE_LENGTH case.
->
-> An idea is to book-keep maximum tx queue len among all vifs and use that
-> to calculate worst scenario.
-I don't think it should be that perfect. This is just a best effort 
-estimation, if someone changes the vif queue length and see this message 
-because of that, nothing very drastic will happen. It is just a rate 
-limited warning message. Well, it is marked as error, because it is a 
-serious condition.
-And also, the odds of seeing this message unnecessarily are quite low. 
-With default settings (256 slots, max 17 per skb, 32 queue length, 10 
-secs queue drain timeout) this delay is 20 seconds. You can raise the 
-queue length to 64 before getting warning (see netif_napi_add), so it 
-would go up to 40 seconds, but anyway, if your vif is sitting on a 
-packet more than 20 seconds, you deserve this message :)
+On Tue, Jan 21, 2014 at 12:07:06AM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 20, 2014 at 03:51:28PM -0800, Greg KH wrote:
+> > On Mon, Jan 20, 2014 at 11:16:03PM +0000, Russell King - ARM Linux wrote:
+> > > I don't believe the driver model has any locking to prevent a drivers
+> > > ->probe function running concurrently with it's ->remove function for
+> > > two (or more) devices.
+> > 
+> > The bus prevents this from happening.
+> > 
+> > > The locking against this is done on a per-device basis, not a per-driver
+> > > basis.
+> > 
+> > No, on a per-bus basis.
+> 
+> I don't see it.
+> 
+> Let's start from driver_register().
 
-Zoli
+Which happens from module probing, which is single-threaded, right?
+
+Or from module_init callbacks, which is single-threaded.
+
+Normally, busses never add devices (which is what drivers bind to),
+except in a single-at-a-time fashion, unless they really know what they
+are doing (i.e. PCI had multi-threaded device probing for a while, don't
+remember if it still does...)
+
+
+> This takes no locks and calls bus_add_driver().
+> This also takes no locks and calls driver_attach().
+> This walks the list of devices calling __driver_attach() for each.
+> __driver_attach() tries to match the device against the driver,
+> locks the parent device if one exists, and the device which is about
+> to be probed.  It then calls driver_probe_device().
+> driver_probe_device() inserts a runtime barrier and calls really_probe().
+> really_probe() ultimately calls either the bus ->probe method or the
+> driver ->probe method.
+> 
+> At no point in that sequence do I see anything which does any locking
+> on a per-driver basis.  Let's look at device_add().
+> 
+> device_add() calls bus_probe_device(), which then calls device_attach().
+> device_attach() takes the device's lock, and walks the list of drivers
+> calling __device_attach() on each driver.  This then calls down into
+> driver_probe_device(), and the path is the same as the above.
+> 
+> I don't see any per-driver locking here either.
+> 
+> I've checked the klist stuff, don't see anything there.  Ditto for
+> bus_for_each_drv().
+> 
+> If you think there's a per-driver lock that's held over probes or removes,
+> please point it out.  I'm fairly certain that there isn't, because we have
+> to be able to deal with recursive probes (yes, we've had to deal with
+> those in the past.)
+
+Hm, you are right, I think that's why we had to remove the locks.  The
+klist stuff handles us getting the needed locks for managing our
+internal lists of devices and drivers, and those should be fine.
+
+So, let's go back to your original worry, what are you concerned about?
+A device being removed while probe() is called?
+
+thanks,
+
+greg k-h
