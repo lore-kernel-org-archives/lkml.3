@@ -1,250 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaAUV2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:28:06 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56638 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834AbaAUV0A (ORCPT
+	id S1755290AbaAUV2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:28:24 -0500
+Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:33805 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754196AbaAUVZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:26:00 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arch@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Airlie <airlied@linux.ie>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Kukjin Kim <kgene.kim@samsung.com>, Corey Minyard <minyard@acm.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Subject: [PATCH 56/73] drivers/char: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:22:59 -0500
-Message-ID: <1390339396-3479-57-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 21 Jan 2014 16:25:58 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3870:3873:4321:5007:7652:8531:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fold77_50ee5ed12db40
+X-Filterd-Recvd-Size: 1597
+Message-ID: <1390339554.31946.6.camel@joe-AO722>
+Subject: Re: [PATCH] drivers/hid/wacom: fixed coding style issues
+From: Joe Perches <joe@perches.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Rob Schroer <sulamiification@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 21 Jan 2014 13:25:54 -0800
+In-Reply-To: <20140121211823.GD29615@core.coreip.homeip.net>
+References: <20140121195153.GA4198@fedora.fritz.box>
+	 <20140121200645.GC29615@core.coreip.homeip.net>
+	 <20140121202944.GA4554@fedora.fritz.box>
+	 <20140121211823.GD29615@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-None of these files are actually using any __init type directives
-and hence don't need to include <linux/init.h>.  Most are just a
-left over from __devinit and __cpuinit removal, or simply due to
-code getting copied from one driver to the next.
+On Tue, 2014-01-21 at 13:18 -0800, Dmitry Torokhov wrote:
+> On Tue, Jan 21, 2014 at 09:29:44PM +0100, Rob Schroer wrote:
+> > As far as I can see, kstrtoXXX() might be an alternative, but I was just
+> > fixing coding style issues, no need to break anything IMO.
+> 
+> You could do the breaking in a follow up patch ;)
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Corey Minyard <minyard@acm.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>
-Cc: Marcel Selhorst <tpmdd@selhorst.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/char/agp/frontend.c          | 1 -
- drivers/char/agp/generic.c           | 1 -
- drivers/char/agp/intel-gtt.c         | 1 -
- drivers/char/agp/sgi-agp.c           | 1 -
- drivers/char/hw_random/bcm2835-rng.c | 1 -
- drivers/char/hw_random/core.c        | 1 -
- drivers/char/hw_random/exynos-rng.c  | 1 -
- drivers/char/hw_random/n2-drv.c      | 1 -
- drivers/char/hw_random/nomadik-rng.c | 1 -
- drivers/char/hw_random/octeon-rng.c  | 1 -
- drivers/char/ipmi/ipmi_si_intf.c     | 1 -
- drivers/char/mwave/3780i.c           | 1 -
- drivers/char/tile-srom.c             | 1 -
- drivers/char/tpm/tpm_i2c_infineon.c  | 1 -
- drivers/char/tpm/tpm_i2c_stm_st33.c  | 1 -
- 15 files changed, 15 deletions(-)
+Yes please.
 
-diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
-index 1b19239..8121b4c 100644
---- a/drivers/char/agp/frontend.c
-+++ b/drivers/char/agp/frontend.c
-@@ -31,7 +31,6 @@
- #include <linux/module.h>
- #include <linux/mman.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/miscdevice.h>
- #include <linux/agp_backend.h>
- #include <linux/agpgart.h>
-diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
-index f39437a..0fbccce 100644
---- a/drivers/char/agp/generic.c
-+++ b/drivers/char/agp/generic.c
-@@ -29,7 +29,6 @@
-  */
- #include <linux/module.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/pagemap.h>
- #include <linux/miscdevice.h>
- #include <linux/pm.h>
-diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index 5c85350..9a024f8 100644
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -17,7 +17,6 @@
- 
- #include <linux/module.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/pagemap.h>
- #include <linux/agp_backend.h>
-diff --git a/drivers/char/agp/sgi-agp.c b/drivers/char/agp/sgi-agp.c
-index 05b8d02..3051c73 100644
---- a/drivers/char/agp/sgi-agp.c
-+++ b/drivers/char/agp/sgi-agp.c
-@@ -15,7 +15,6 @@
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/agp_backend.h>
- #include <asm/sn/addrs.h>
- #include <asm/sn/io.h>
-diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
-index 43577ca..8c3b255 100644
---- a/drivers/char/hw_random/bcm2835-rng.c
-+++ b/drivers/char/hw_random/bcm2835-rng.c
-@@ -8,7 +8,6 @@
-  */
- 
- #include <linux/hw_random.h>
--#include <linux/init.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index a0f7724..b9495a8 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -37,7 +37,6 @@
- #include <linux/kernel.h>
- #include <linux/fs.h>
- #include <linux/sched.h>
--#include <linux/init.h>
- #include <linux/miscdevice.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-diff --git a/drivers/char/hw_random/exynos-rng.c b/drivers/char/hw_random/exynos-rng.c
-index 402ccfb..9f8277c 100644
---- a/drivers/char/hw_random/exynos-rng.c
-+++ b/drivers/char/hw_random/exynos-rng.c
-@@ -22,7 +22,6 @@
- #include <linux/hw_random.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/clk.h>
-diff --git a/drivers/char/hw_random/n2-drv.c b/drivers/char/hw_random/n2-drv.c
-index f9beed5..432232e 100644
---- a/drivers/char/hw_random/n2-drv.c
-+++ b/drivers/char/hw_random/n2-drv.c
-@@ -7,7 +7,6 @@
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include <linux/preempt.h>
-diff --git a/drivers/char/hw_random/nomadik-rng.c b/drivers/char/hw_random/nomadik-rng.c
-index 232b87f..00e9d2d 100644
---- a/drivers/char/hw_random/nomadik-rng.c
-+++ b/drivers/char/hw_random/nomadik-rng.c
-@@ -10,7 +10,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/device.h>
- #include <linux/amba/bus.h>
- #include <linux/hw_random.h>
-diff --git a/drivers/char/hw_random/octeon-rng.c b/drivers/char/hw_random/octeon-rng.c
-index f2885db..b5cc342 100644
---- a/drivers/char/hw_random/octeon-rng.c
-+++ b/drivers/char/hw_random/octeon-rng.c
-@@ -10,7 +10,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/device.h>
- #include <linux/hw_random.h>
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 15e4a60..4a2d7c6 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -61,7 +61,6 @@
- #include <linux/ipmi_smi.h>
- #include <asm/io.h>
- #include "ipmi_si_sm.h"
--#include <linux/init.h>
- #include <linux/dmi.h>
- #include <linux/string.h>
- #include <linux/ctype.h>
-diff --git a/drivers/char/mwave/3780i.c b/drivers/char/mwave/3780i.c
-index 881c9e5..2874004 100644
---- a/drivers/char/mwave/3780i.c
-+++ b/drivers/char/mwave/3780i.c
-@@ -50,7 +50,6 @@
- #include <linux/unistd.h>
- #include <linux/delay.h>
- #include <linux/ioport.h>
--#include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/sched.h>	/* cond_resched() */
- 
-diff --git a/drivers/char/tile-srom.c b/drivers/char/tile-srom.c
-index 0e506ba..bd37747 100644
---- a/drivers/char/tile-srom.c
-+++ b/drivers/char/tile-srom.c
-@@ -20,7 +20,6 @@
- 
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--#include <linux/init.h>
- #include <linux/kernel.h>	/* printk() */
- #include <linux/slab.h>		/* kmalloc() */
- #include <linux/fs.h>		/* everything... */
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index 52b9b2b..472af4b 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -21,7 +21,6 @@
-  *
-  *
-  */
--#include <linux/init.h>
- #include <linux/i2c.h>
- #include <linux/module.h>
- #include <linux/wait.h>
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 5b0dd8e..3b7bf21 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -38,7 +38,6 @@
- #include <linux/miscdevice.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- #include <linux/wait.h>
- #include <linux/string.h>
- #include <linux/interrupt.h>
--- 
-1.8.4.1
+Include the breaking of multiple statements
+into multiple lines too please like
+
+from:
+	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+		rep_data[0] = 0x03; rep_data[1] = 0x00;
+
+to:
+	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+		rep_data[0] = 0x03;
+		rep_data[1] = 0x00;
+
 
