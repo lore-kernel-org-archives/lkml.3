@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbaAUNbn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:31:43 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:45797 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935AbaAUNbk (ORCPT
+	id S1754678AbaAUNcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:32:53 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:47001 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288AbaAUNcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:31:40 -0500
+	Tue, 21 Jan 2014 08:32:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <E1W5C8U-000ozD-Ku@intern.SerNet.DE>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-	<E1W5A0e-000MT9-A1@intern.SerNet.DE>
-	<CAKywueQwfFASPpevO8Z-_xwZqRjkzfkOceQJDya8D7FDW+UmMg@mail.gmail.com>
-	<E1W5C8U-000ozD-Ku@intern.SerNet.DE>
-Date: Tue, 21 Jan 2014 17:31:39 +0400
-X-Google-Sender-Auth: 1L469h3OMhmuJyU8sfdV7qVdAYE
-Message-ID: <CAKywueQng9=u1YYwkYGCunWW8RBhARhJjEhBcoA6CKF6TrKSBg@mail.gmail.com>
-Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "Volker.Lendecke@SerNet.DE" <Volker.Lendecke@sernet.de>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
+In-Reply-To: <CACRpkdZW-Nay-wOywq4SG1bwQf_+J4tqYuS=tQmzTHOtBskGVw@mail.gmail.com>
+References: <1384270261-15889-1-git-send-email-linus.walleij@linaro.org>
+	<20131126023431.GC31517@core.coreip.homeip.net>
+	<CACRpkdZW-Nay-wOywq4SG1bwQf_+J4tqYuS=tQmzTHOtBskGVw@mail.gmail.com>
+Date: Tue, 21 Jan 2014 14:32:50 +0100
+Message-ID: <CACRpkdab32Cfj73D5zyVLDr9JTsQ2xxS3kDKjTBi4f+vLtZMAw@mail.gmail.com>
+Subject: Re: [PATCH 4/5 v3] input: tc3589x-keypad: support probing from device tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/20 Volker Lendecke <Volker.Lendecke@sernet.de>:
->> You can try to use O_PATH flag. It doesn't give you a delete access
->> but should be ok because further deleting will be done without file
->> descriptor -- through unlink syscall.
+On Tue, Jan 21, 2014 at 2:28 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Nov 26, 2013 at 3:34 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> On Tue, Nov 12, 2013 at 04:31:01PM +0100, Linus Walleij wrote:
+>>>       irq = platform_get_irq(pdev, 0);
+>>> --
+>>
+>> Don't you also want to add MODULE_DEVICE_TABLE entry?
 >
-> Ok, I did not know about O_PATH. Thanks for that!
->
-> So I do an open with O_PATH. How do I then make sure that
-> nobody else has a O_DENYDELETE set without doing the unlink
-> itself?
+> Probably, but that'd be a separate subject though, I think?
+> I'll make a patch for this so you get something you can
+> actually merge.
 
-It's not possible with the current API to do it through open syscall.
-Another possibility is to look at /proc/locks. But I think we really
-need O_DELETE flag that will force a file to be removed on close - we
-will be able to do O_DENYDELETE checks atomically.
+No, wait, this driver only matches on driver name, it has no
+match table of any kind. This is typical for MFD-spun cells
+if they don't need additional info from the compat match.
+I think it only needs the MODULE_ALIAS() it already
+has.
 
--- 
-Best regards,
-Pavel Shilovsky.
+Yours,
+Linus Walleij
