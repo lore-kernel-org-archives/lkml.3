@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaAUAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 19:39:09 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43344 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754146AbaAUAjF (ORCPT
+	id S1754197AbaAUAmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 19:42:36 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:59209 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaAUAm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 19:39:05 -0500
-Date: Tue, 21 Jan 2014 00:38:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
-	device probe
-Message-ID: <20140121003856.GP15937@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <20140120211601.GB634@kroah.com> <20140120213206.GJ15937@n2100.arm.linux.org.uk> <20140120231141.GA2355@kroah.com> <20140120231603.GL15937@n2100.arm.linux.org.uk> <20140120235128.GA5012@kroah.com> <20140121000706.GN15937@n2100.arm.linux.org.uk> <20140121002623.GA6173@kroah.com>
+	Mon, 20 Jan 2014 19:42:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121002623.GA6173@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+Date: Mon, 20 Jan 2014 18:42:06 -0600
+Message-ID: <CA+BWVUTkaUt8Ys_40r7zFV_wBtY7iWTTmUUL+bHj=e3NwAtgNg@mail.gmail.com>
+Subject: [PATCH] Add HID's to hid-microsoft driver of Surface Type/Touch Cover
+ 2 to fix bug
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 04:26:23PM -0800, Greg KH wrote:
-> On Tue, Jan 21, 2014 at 12:07:06AM +0000, Russell King - ARM Linux wrote:
-> > On Mon, Jan 20, 2014 at 03:51:28PM -0800, Greg KH wrote:
-> > > On Mon, Jan 20, 2014 at 11:16:03PM +0000, Russell King - ARM Linux wrote:
-> > > > I don't believe the driver model has any locking to prevent a drivers
-> > > > ->probe function running concurrently with it's ->remove function for
-> > > > two (or more) devices.
-> > > 
-> > > The bus prevents this from happening.
-> > > 
-> > > > The locking against this is done on a per-device basis, not a per-driver
-> > > > basis.
-> > > 
-> > > No, on a per-bus basis.
-> > 
-> > I don't see it.
-> > 
-> > Let's start from driver_register().
-> 
-> Which happens from module probing, which is single-threaded, right?
+The below patch fixes a bug 64811
+(https://bugzilla.kernel.org/show_bug.cgi?id=64811) of the Microsoft
+Surface Type/Touch cover 2 devices being detected as a multitouch
+device.
+The fix adds the HID of the two devices to hid-microsoft driver. This
+ensures that hid-input will eventually be used for the device and not
+hid-multitouch.
 
-Yes, to _some_ extent - the driver is added to the bus list of drivers
-before existing drivers are probed, so it's always worth bearing in
-mind that if a new device comes along, it's possible for that device
-to be offered to even a driver which hasn't finished returning from
-its module_init().
+>From 866c814f3f6740a5a79858fdf8bf5bbcdc3b57f8 Mon Sep 17 00:00:00 2001
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+Date: Mon, 20 Jan 2014 16:24:49 -0600
+Subject: [PATCH 1/2] Added in ID's for Surface Type/Touch cover 2 to the
+ hid-microsoft driver
 
-> > If you think there's a per-driver lock that's held over probes or removes,
-> > please point it out.  I'm fairly certain that there isn't, because we have
-> > to be able to deal with recursive probes (yes, we've had to deal with
-> > those in the past.)
-> 
-> Hm, you are right, I think that's why we had to remove the locks.  The
-> klist stuff handles us getting the needed locks for managing our
-> internal lists of devices and drivers, and those should be fine.
-> 
-> So, let's go back to your original worry, what are you concerned about?
-> A device being removed while probe() is called?
+---
+ drivers/hid/hid-ids.h       | 4 +++-
+ drivers/hid/hid-microsoft.c | 4 ++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-My concern is that we're turning something which should be simple into
-something unnecessarily complex.  By that, I mean something along the
-lines of:
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index f9304cb..b523a8b 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -611,7 +611,9 @@
+ #define USB_DEVICE_ID_MS_PRESENTER_8K_USB    0x0713
+ #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K    0x0730
+ #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500    0x076c
+-
++#define USB_DEVICE_ID_MS_TOUCH_COVER_2 0x07a7
++#define USB_DEVICE_ID_MS_TYPE_COVER_2  0x07a9
++
+ #define USB_VENDOR_ID_MOJO        0x8282
+ #define USB_DEVICE_ID_RETRO_ADAPTER    0x3201
 
-static DEFINE_MUTEX(foo_mutex);
-static unsigned foo_devices;
+diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+index 551795b..2599de8 100644
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -207,6 +207,10 @@ static const struct hid_device_id ms_devices[] = {
+         .driver_data = MS_NOGET },
+     { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT,
+USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
+         .driver_data = MS_DUPLICATE_USAGES },
++    { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_2),
++        .driver_data = 0 },
++    { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TOUCH_COVER_2),
++        .driver_data = 0 },
 
-static int foo_probe(struct platform_device *pdev)
-{
-	int ret;
-
-	mutex_lock(&foo_mutex);
-	if (foo_devices++ == 0)
-		uart_register_driver(&driver);
-
-	ret = foo_really_probe_device(pdev);
-	if (ret) {
-		if (--foo_devices == 0)
-			uart_unregister_driver(&driver);
-	}
-	mutex_unlock(&foo_mutex);
-
-	return ret;
-}
-
-static int foo_remove(struct platform_device *pdev)
-{
-	mutex_lock(&foo_mutex);
-	foo_really_remove(pdev);
-	if (--foo_devices == 0)
-		uart_unregister_driver(&driver);
-	mutex_unlock(&foo_mutex);
-
-	return 0;
-}
-
-in every single serial driver we have...  Wouldn't it just be better to
-fix the major/minor number problem rather than have to add all that code
-repetitively to all those drivers?
-
+     { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT,
+USB_DEVICE_ID_MS_PRESENTER_8K_BT),
+         .driver_data = MS_PRESENTER },
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.8.4.2
