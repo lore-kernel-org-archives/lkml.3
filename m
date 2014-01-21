@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaAULWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:22:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54556 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754042AbaAULWa (ORCPT
+	id S1754350AbaAUL31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:29:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51866 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023AbaAUL3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:22:30 -0500
-Date: Tue, 21 Jan 2014 11:21:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: libunwind-devel <libunwind-devel@nongnu.org>, Jiri Olsa <jolsa@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/3] Add support for dwarf compat mode unwinding
-Message-ID: <20140121112155.GI30706@mudshark.cambridge.arm.com>
-References: <1390252922-25889-1-git-send-email-jean.pihet@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390252922-25889-1-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Jan 2014 06:29:23 -0500
+Message-Id: <20140121111754.580142558@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 21 Jan 2014 12:17:54 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
+        bsegall@google.com, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/9] Various sched patches
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 09:21:59PM +0000, Jean Pihet wrote:
-> In the case of unwinding the debug info from a binary that has a different
-> address size than the current native platform, it is needed to record
-> it in the address space struct, in order to correctly parse the debug
-> info later. This mode is known as compat mode.
+Hi,
 
-Terminology issues here.... compat mode isn't really that well defined, but
-typically involves a different kernel ABI. That doesn't necessarily affect
-the address size.
+A set of recent patches by Daniel reminded me of a series I did a while back.
+So here's a combined set.
 
-> This is the case when e.g. profiling an ARMv7 binary that runs on an
-> ARMv8 (aka AARCH64) platform.
+Paul, Ben, could you guys have a careful look at the one optimizing
+pick_next_task_fair() (patch 8)? That patch is somewhat big and scary,
+although it does appear to do what it says.
 
-ARMv8 != AArch64
+I've not yet tested the bandwidth aspect at all.
 
-Will
