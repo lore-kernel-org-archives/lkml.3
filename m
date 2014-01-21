@@ -1,86 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaAUV4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:56:31 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57770 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaAUV42 (ORCPT
+	id S1754154AbaAUV6D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:58:03 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40970 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750862AbaAUV6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:56:28 -0500
-Date: Tue, 21 Jan 2014 21:56:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140121215624.GC17314@sirena.org.uk>
-References: <1389900750-27625-1-git-send-email-nm@ti.com>
- <20140121185553.GW17314@sirena.org.uk>
- <52DED341.3030503@ti.com>
+	Tue, 21 Jan 2014 16:58:01 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhprAIfs3lJ20iCRPGdsb2JhbABagwuIRbQ7gRUXAwEBAQE4NYIlAQEBBCcRHh4EARAIAw4DAwECAQkWBAsJAwIBAgEnCgwIBg0BBQICF4dpwn8XjhtkB4Q4AQOFK58xh02BUSmBLA
+Message-ID: <52DEED63.2010401@internode.on.net>
+Date: Wed, 22 Jan 2014 08:27:55 +1030
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jhHWkMHPE1TKsc4d"
-Content-Disposition: inline
-In-Reply-To: <52DED341.3030503@ti.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ti-abb: Add support for interleaved LDO
- registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Anssi Hannula <anssi.hannula@iki.fi>,
+        ALSA devel <alsa-devel@alsa-project.org>, xorg-driver-ati@lists.x.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ALSA: hda - Fix possible races in HDMI driver - lockup on shutdown
+ when radeon.audio=1 after using audacity
+References: <52DB7878.8000004@internode.on.net>	<s5hha8zox0j.wl%tiwai@suse.de>	<52DDCB6B.7010602@internode.on.net> <s5hk3dt8u4q.wl%tiwai@suse.de>
+In-Reply-To: <s5hk3dt8u4q.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jhHWkMHPE1TKsc4d
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 21, 2014 at 02:06:25PM -0600, Nishanth Menon wrote:
+Takashi Iwai wrote, on 21/01/14 21:43:
+> At Tue, 21 Jan 2014 11:50:43 +1030,
+> Arthur Marsh wrote:
+>>
+>>
+>>
+>> Takashi Iwai wrote, on 20/01/14 19:22:
+>>> At Sun, 19 Jan 2014 17:32:16 +1030,
+>>> Arthur Marsh wrote:
+>>>>
+>>>> I have had reproducible lock-ups on shut-down (at the shutting down ALSA
+>>>> stage) of my AMD64 machine (Asus M3A78Pro motherboard, BIOS 1701
+>>>> 01/27/2011, CPU AMD Athlon(tm) II X4 640 Processor) running the 64 bit
+>>>> Linux kernel more recent than 3.12 when *both* radeon.audio=1 was set
+>>>> and I had been running audacity 2.0.5. (iommu=noaperture is also set).
+>>>>
+>>>> The problem was reproducible with the stock Debian kernel
+>>>> linux-image-3.13-rc6-amd64 version 3.13~rc6-1~exp1.
+>>>>
+>>>> The machine is using an ATI/AMD 3850HD video card with a DVI cable to a
+>>>> DVI input on my monitor, and the default audio device is the
+>>>> motherboard's on-board audio device:
+>>>>
+>>>> 00:14.2 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] SBx00
+>>>> Azalia (Intel HDA)
+>>>>
+>>>> 01:00.0 VGA compatible controller: Advanced Micro Devices, Inc.
+>>>> [AMD/ATI] RV670 [Radeon HD 3690/3850]
+>>>> 01:00.1 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] RV670/680
+>>>> HDMI Audio [Radeon HD 3690/3800 Series]
+>>>>
+>>>> $ git bisect bad
+>>>> cbbaa603a03cc46681e24d6b2804b62fde95a2af is the first bad commit
+>>>> commit cbbaa603a03cc46681e24d6b2804b62fde95a2af
+>>>> Author: Takashi Iwai <tiwai@suse.de>
+>>>> Date:   Thu Oct 17 18:03:24 2013 +0200
+>>>>
+>>>>        ALSA: hda - Fix possible races in HDMI driver
+>>>>
+>>>>        Some per_pin fields and ELD contents might be changed dynamically in
+>>>>        multiple ways where the concurrent accesses are still opened in the
+>>>>        current code.  This patch fixes such possible races by using eld->lock
+>>>>        in appropriate places.
+>>>>
+>>>>        Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
+>>>>        Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>>>
+>>>> :040000 040000 0c29281f82a3ebd9a704d481114f9cfcefea07c8
+>>>> d71fd101125cd29a628cb5e66c7ee4f56e28329b M      sound
+>>>>
+>>>> When running audacity from the command line there was the following output:
+>>>>
+>>>> ALSA lib pcm_dsnoop.c:618:(snd_pcm_dsnoop_open) unable to open slave
+>>>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
+>>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.rear
+>>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.center_lfe
+>>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.side
+>>>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
+>>>> Expression 'stream->playback.pcm' failed in
+>>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>>>> Expression 'stream->playback.pcm' failed in
+>>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>>>> Expression 'stream->playback.pcm' failed in
+>>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
+>>>>
+>>>> I am happy to supply further information or run further tests to help in
+>>>> isolating the problem and verifying a solution.
+>>>
+>>> Could you build the kernel with lockdep kconfig and see whether it
+>>> reports errors?
+>>>
+>>> Reverting the commit doesn't work cleanly.  Instead, you can try to
+>>> simply comment out all mutex_lock(&per_pin->lock) and
+>>> mutex_unlock(&per_pin->lock) calls in patch_hdmi.c to see whether it's
+>>> a mutex deadlock.
+>>>
+>>>
+>>> thanks,
+>>>
+>>> Takashi
+>>>
+>>
+>> I rebuilt the kernel after commenting out all mutex_lock(&per_pin->lock)
+>> and mutex_unlock(&per_pin->lock) calls in patch_hdmi.c, and the
+>> resulting kernel shutdown without hanging.
+>
+> Thanks.  Could you try the patch below?  It's already queued for
+> 3.14.  If this patch really fixes the issue, I'm going to send it to
+> stable 3.13.x.
+>
+>
+> Takashi
+>
+> -- 8< --
+> From: David Henningsson <david.henningsson@canonical.com>
+> Subject: [PATCH] ALSA: hda - Explicitly keep codec powered up in
+>   hdmi_present_sense
+>
+> This should help us avoid the following mutex deadlock:
+>
+> [] mutex_lock+0x2a/0x50
+> [] hdmi_present_sense+0x53/0x3a0 [snd_hda_codec_hdmi]
+> [] generic_hdmi_resume+0x5a/0x70 [snd_hda_codec_hdmi]
+> [] hda_call_codec_resume+0xec/0x1d0 [snd_hda_codec]
+> [] snd_hda_power_save+0x1e4/0x280 [snd_hda_codec]
+> [] codec_exec_verb+0x5f/0x290 [snd_hda_codec]
+> [] snd_hda_codec_read+0x5b/0x90 [snd_hda_codec]
+> [] snd_hdmi_get_eld_size+0x1e/0x20 [snd_hda_codec_hdmi]
+> [] snd_hdmi_get_eld+0x2c/0xd0 [snd_hda_codec_hdmi]
+> [] hdmi_present_sense+0x9a/0x3a0 [snd_hda_codec_hdmi]
+> [] hdmi_repoll_eld+0x34/0x50 [snd_hda_codec_hdmi]
+>
+> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>   sound/pci/hda/patch_hdmi.c | 6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+> index f5060fc7c303..977db17db26c 100644
+> --- a/sound/pci/hda/patch_hdmi.c
+> +++ b/sound/pci/hda/patch_hdmi.c
+> @@ -1496,11 +1496,14 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+>   	 * specification worked this way. Hence, we just ignore the data in
+>   	 * the unsolicited response to avoid custom WARs.
+>   	 */
+> -	int present = snd_hda_pin_sense(codec, pin_nid);
+> +	int present;
+>   	bool update_eld = false;
+>   	bool eld_changed = false;
+>   	bool ret;
+>
+> +	snd_hda_power_up(codec);
+> +	present = snd_hda_pin_sense(codec, pin_nid);
+> +
+>   	mutex_lock(&per_pin->lock);
+>   	pin_eld->monitor_present = !!(present & AC_PINSENSE_PRESENCE);
+>   	if (pin_eld->monitor_present)
+> @@ -1573,6 +1576,7 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+>   		jack->block_report = !ret;
+>
+>   	mutex_unlock(&per_pin->lock);
+> +	snd_hda_power_down(codec);
+>   	return ret;
+>   }
+>
+>
 
-> Without this change, on DRA7 I get:
-> [    0.579500] abb_mpu: 1060 <--> 1210 mV
-> [    0.580321] abb_ivahd: 1055 <--> 1250 mV
-> [    0.580583] ti_abb 4ae07e20.regulator-abb-dspeve: can't request
-> region for resource [mem 0x4ae07e20-0x4ae07e2f]
-> [    0.580610] ti_abb: probe of 4ae07e20.regulator-abb-dspeve failed
-> with error -16
-> [    0.581216] abb_gpu: 1090 <--> 1280 mV
+The patch worked thanks.
 
-OK, that's not to do with nocache, that's to do with duplicate
-request_mem_region() calls.  Of course the trick here is that if the
-other thing that requests the memory region doesn't do it then we have a
-problem. =20
+I had to revert this patch to update the kernel to the current Linus' 
+git head.
 
-I really can't help thinking that a system controller node as the parent
-is going to make things happier for devices that share this register
-bank.  I guess it might be possible to also do it with single register
-memory regions but I'd not be surprised if that wasn't possible and it
-doesn't seem as idiomatic.
+Regards,
 
---jhHWkMHPE1TKsc4d
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3u0EAAoJELSic+t+oim9x8YP/RTvB7giqkmD++TcNU5hFrxJ
-hauwcIAC4HftGGR39Is/raPZOBa63ltvyhV83QGoOm156Yttr5hHaiZAVj9k3HTf
-GiJHnCQ0DWcYY70mDNP1PmSoT+PmlgXGLHDQ77yubWsiBw75Ql+CHz7USlWQxQe5
-vW1EchHe26JllsSVok4XsUxjEufj2s5RSigWLJ09GiMTDFQTQdsZugrbVc3rBsSi
-YS8Xdh+Qkg4AGzWsn9TroV4zIs2/gf2uUMCLon8Sc0R9OBpu+6PuGI1BCUDxgKAV
-wrogSPMiw2zljq5B8kyCh4jujFANSgUiSaiJv57c9dlJ25geHYzWjXW/7MRP3XJy
-nwRRNMHXHn2I6r0OcBl3Vz2DRCH3//++wdcmFTaCYGIrnNI9qwB02gJkmxnKac6g
-v2jru8m3ns4kUqo5QA8h/g8YjRURDoLlwVcm/qts5BsetDoTKsBgKF7D2xti8l++
-tuYb/19rsl0Ntlb7ulGC0fM19ZgWH1hh2udrT6hE1Wfd/K4QLX6SKaq4rcy53Bib
-HAzeaP6kp088sifGm2puSVPI73yR73NIFJuwhbAMpgmB65T087PKJDa2vsaBXevf
-CmGDkE2MTithXanFxL/raesN5wj1hadfo9Cj5IhM15sZT1RT43yVojvklWlYaX/c
-pKoUsrONAer4f4dH1HID
-=QAu5
------END PGP SIGNATURE-----
-
---jhHWkMHPE1TKsc4d--
+Arthur.
