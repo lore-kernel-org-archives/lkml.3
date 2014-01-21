@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaAUIwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 03:52:21 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54041 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaAUIwU (ORCPT
+	id S1753941AbaAUI5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 03:57:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5651 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943AbaAUI5b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 03:52:20 -0500
-Message-ID: <52DE353B.7030200@linaro.org>
-Date: Tue, 21 Jan 2014 16:52:11 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
+	Tue, 21 Jan 2014 03:57:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,695,1384329600"; 
+   d="scan'208";a="468235532"
+From: "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [discussion] simpler load balance in scheduler
-References: <52A95588.5040905@linaro.org> <52AADCEB.50105@linaro.org> <20131217163232.GI5919@linux.vnet.ibm.com> <52CAB344.9050208@linaro.org> <20140120030453.GO10038@linux.vnet.ibm.com>
-In-Reply-To: <20140120030453.GO10038@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: RE: [PATCH 0/5] Enabling the asynchronous threads for other phases
+Thread-Topic: [PATCH 0/5] Enabling the asynchronous threads for other phases
+Thread-Index: AQHPFb0YwCGp7bd/kE6h+p2RfRZt+5qO4d5g
+Date: Tue, 21 Jan 2014 08:57:27 +0000
+Message-ID: <630F9443351D2B4BB7EC6BAE6B6B08342549C6AB@SHSMSX104.ccr.corp.intel.com>
+References: <y> <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
+In-Reply-To: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2014 11:04 AM, Paul E. McKenney wrote:
-> On Mon, Jan 06, 2014 at 09:44:36PM +0800, Alex Shi wrote:
->> On 12/18/2013 12:32 AM, Paul E. McKenney wrote:
->>> On Fri, Dec 13, 2013 at 06:09:47PM +0800, Alex Shi wrote:
-> 
-> [ . . . ]
-> 
->>> 3.	Allow the exported values to become inaccurate, and resample
->>> 	the actual values remotely if extrapolated values indicate
->>> 	that action is warranted.
->>
->> It is a very heuristic idea! Could you give a bit more hints/clues to
->> get remote cpu load by extrapolated value? I know RCU use this way
->> wonderfully. but still no much idea to get live cpu load...
-> 
-> Well, as long as the CPU continues doing the same thing, for example,
-> being idle or running a user-mode task, the extrapolation should be
-> exact, right?  The load value was X the last time the CPU changed state,
-> and T time has passed since then, so you can calculated it exactly.
-
-It's a good idea that I never thought before. Thanks a lot!
-> 
-> The exact method for detecting inaccuracies depends on how and where
-> you are calculating the load values.  If you are calculating them on
-> each state change (as is done for some values for NO_HZ_FULL), then you
-> simply need sufficient synchronization for geting a consistent snapshot
-> of several values.  One easy way to do this is via a per-CPU seqlock.
-> The state-change code write-acquires the seqlock, while those doing
-> extrapolation read-acquire it and retry if changes occur.  This can have
-> problems if too many values are required and if changes occur too fast,
-> but such problems can be addressed should they occur.
-
-I thought about the seqlock, but it is clearly not scalable.
-Anyway, load balance don't be very accurate, so maybe atomic operate for
-exported per cpu load in balance is acceptable.
-> 
-> Does that help?
-
-Yes, very helpful!  :)
-> 
-> 							Thanx, Paul
-> 
->>> There are probably other approaches.  I am being quite general here
->>> because I don't have the full picture of the scheduler statistics
->>> in my head.  It is likely possible to obtain a much better approach
->>> by considering the scheduler's specifics.
->>>
->>>>> BTW, to reduce unnecessary remote info fetching, we can use current
->>>>> idle_cpus_mask in nohz, we just skip the idle cpu in this cpumask simply.
->>
->> [..]
->>>
->>> 							Thanx, Paul
->>>
->>>>> 4, From power saving POV, top-down give the whole system cpu topology
->>>>> info directly. So beside the CS reducing, it can reduce the idle cpu
->>>>> interfere by a transition task. and let idle cpu sleep better.
->>
->> -- 
->> Thanks
->>     Alex
->>
-> 
 
 
--- 
-Thanks
-    Alex
+> -----Original Message-----
+> From: Liu, Chuansheng
+> Sent: Monday, January 20, 2014 4:45 PM
+> To: rjw@rjwysocki.net; gregkh@linuxfoundation.org; pavel@ucw.cz; Brown, Len
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Chuansheng;
+> Li, Zhuangzhi
+> Subject: [PATCH 0/5] Enabling the asynchronous threads for other phases
+> 
+> Hello,
+> 
+> This patch series are for enabling the asynchronous threads for the phases
+> resume_noirq, resume_early, suspend_noirq and suspend_late.
+> 
+> Just like commit 5af84b82701a and 97df8c12995, with async threads it will
+> reduce the system suspending and resuming time significantly.
+> 
+> With these patches, in my test platform, it saved 80% time in resume_noirq
+> phase.
+> 
+> Has done the suspend-resume stress test for a long time, please help to
+> review.
+> 
+> Best Regards,
+> 
+> [PATCH 1/5] PM: Adding two flags for async suspend_noirq and
+> [PATCH 2/5] PM: Enabling the asynchronous threads for resume_noirq
+> [PATCH 3/5] PM: Enabling the asyncronous threads for resume_early
+> [PATCH 4/5] PM: Enabling the asyncronous threads for suspend_noirq
+> [PATCH 5/5] PM: Enabling the asyncronous threads for suspend_late
+
+After applied the above five patches, there was no issue observed during 1000 cycles suspend/resume stress test on Baytrail platform.
+Tested-by: lizhuangzhi <zhuangzhi.li@intel.com>
+> 
+>  drivers/base/power/main.c |  240
+> ++++++++++++++++++++++++++++++++++++---------
+>  include/linux/pm.h        |    2 +
+>  2 files changed, 197 insertions(+), 45 deletions(-)
+
