@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaAUJpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:45:55 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43601 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753973AbaAUJpv (ORCPT
+	id S1754114AbaAUJsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:48:23 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:48546 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbaAUJsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:45:51 -0500
-Date: Tue, 21 Jan 2014 09:45:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
-	device probe
-Message-ID: <20140121094529.GQ15937@n2100.arm.linux.org.uk>
-References: <20140120100530.GY15937@n2100.arm.linux.org.uk> <20140120211601.GB634@kroah.com> <20140120213206.GJ15937@n2100.arm.linux.org.uk> <20140120231141.GA2355@kroah.com> <20140120231603.GL15937@n2100.arm.linux.org.uk> <20140120235128.GA5012@kroah.com> <20140121000706.GN15937@n2100.arm.linux.org.uk> <20140121002623.GA6173@kroah.com> <20140121003856.GP15937@n2100.arm.linux.org.uk> <20140121092531.350ab714@alan.etchedpixels.co.uk>
+	Tue, 21 Jan 2014 04:48:19 -0500
+Date: Tue, 21 Jan 2014 04:48:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: [GIT PULL] percpu changes for v3.14-rc1
+Message-ID: <20140121094814.GB6928@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140121092531.350ab714@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 09:25:31AM +0000, One Thousand Gnomes wrote:
-> > static DEFINE_MUTEX(foo_mutex);
-> > static unsigned foo_devices;
-> > 
-> > static int foo_probe(struct platform_device *pdev)
-> > {
-> > 	int ret;
-> > 
-> > 	mutex_lock(&foo_mutex);
-> > 	if (foo_devices++ == 0)
-> > 		uart_register_driver(&driver);
-> > 
-> > 	ret = foo_really_probe_device(pdev);
-> 
-> We have atomic_inc_and_test and atomic_dec_and_test so it's
-> fractionally less ugly.
+Hello, Linus.
 
-How do atomics help here?  If we do this as:
+Two trivial changes - addition of WARN_ONCE() in lib/percpu-refcount.c
+and use of VMALLOC_TOTAL instead of END - START in percpu.c.
 
-	if (atomic_inc_and_test(&foo_atomic))
-		uart_register_driver(&driver);
+I messed up the for-3.14 branch (committed stuff to for-next) and had
+to rebuild for-3.14 by cherry-picking; however, the result is the same
+as published to the next tree through for-next.
 
-Then let's think about what can happen:
+The changes are available in the following git branch
 
-	CPU0				CPU1
-	foo_probe
-	atomic_inc_and_test() == true
-		uart_register_driver
-					foo_probe
-					atomic_inc_and_test()
-					really_probe_foo()
-						*bang*
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git 
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+for you to fetch changes up to 8a0921712ec6d00754b5d7afea78137772efee0a:
+
+  percpu: use VMALLOC_TOTAL instead of VMALLOC_END - VMALLOC_START (2014-01-21 04:41:26 -0500)
+
+Thanks.
+----------------------------------------------------------------
+Kent Overstreet (1):
+      percpu-refcount: Add a WARN() for ref going negative
+
+Laura Abbott (1):
+      percpu: use VMALLOC_TOTAL instead of VMALLOC_END - VMALLOC_START
+
+ lib/percpu-refcount.c | 3 +++
+ mm/percpu.c           | 4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+index 1a53d49..963b703 100644
+--- a/lib/percpu-refcount.c
++++ b/lib/percpu-refcount.c
+@@ -120,6 +120,9 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+ 
+ 	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
+ 
++	WARN_ONCE(atomic_read(&ref->count) <= 0, "percpu ref <= 0 (%i)",
++		  atomic_read(&ref->count));
++
+ 	/* @ref is viewed as dead on all CPUs, send out kill confirmation */
+ 	if (ref->confirm_kill)
+ 		ref->confirm_kill(ref);
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 0d10def..afbf352 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1686,10 +1686,10 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 	max_distance += ai->unit_size;
+ 
+ 	/* warn if maximum distance is further than 75% of vmalloc space */
+-	if (max_distance > (VMALLOC_END - VMALLOC_START) * 3 / 4) {
++	if (max_distance > VMALLOC_TOTAL * 3 / 4) {
+ 		pr_warning("PERCPU: max_distance=0x%zx too large for vmalloc "
+ 			   "space 0x%lx\n", max_distance,
+-			   (unsigned long)(VMALLOC_END - VMALLOC_START));
++			   VMALLOC_TOTAL);
+ #ifdef CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK
+ 		/* and fail if we have fallback */
+ 		rc = -EINVAL;
