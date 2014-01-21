@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaAUJsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 04:48:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47785 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaAUJst (ORCPT
+	id S1754269AbaAUJtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 04:49:14 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43613 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754246AbaAUJtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 04:48:49 -0500
-Date: Tue, 21 Jan 2014 10:47:56 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v7 6/6] MCS Lock: add Kconfig entries to allow
- arch-specific hooks
-Message-ID: <20140121094756.GQ31570@twins.programming.kicks-ass.net>
-References: <cover.1389890175.git.tim.c.chen@linux.intel.com>
- <1389917316.3138.16.camel@schen9-DESK>
- <20140120123030.GE31570@twins.programming.kicks-ass.net>
- <1390260717.3138.33.camel@schen9-DESK>
+	Tue, 21 Jan 2014 04:49:10 -0500
+Date: Tue, 21 Jan 2014 09:49:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mark Brown <broonie@kernel.org>, Tushar Behera <tushar.behera@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+	device probe
+Message-ID: <20140121094902.GR15937@n2100.arm.linux.org.uk>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com> <20140120214305.54f65ffa@www.etchedpixels.co.uk> <20140120231457.GZ17314@sirena.org.uk> <20140120234734.11b78578@www.etchedpixels.co.uk> <20140121001657.GO15937@n2100.arm.linux.org.uk> <20140121090340.6e067d2d@www.etchedpixels.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390260717.3138.33.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140121090340.6e067d2d@www.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 03:31:57PM -0800, Tim Chen wrote:
-> On Mon, 2014-01-20 at 13:30 +0100, Peter Zijlstra wrote:
+On Tue, Jan 21, 2014 at 09:03:40AM +0000, Alan Cox wrote:
+> On Tue, 21 Jan 2014 00:16:57 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> [I did post a reply to this while on my phone but it got rejected]
+> 
+> > On Mon, Jan 20, 2014 at 11:47:34PM +0000, Alan Cox wrote:
+> > > But yes I agree about the idiom, but a definite NAK to any attempts to
+> > > plaster over this grand screwup by crapping in the tty core. Your turd,
+> > > deal with it locally in the ARM code if you can't apply common sense and
+> > > just go dynamic.
+> > 
+> > I believe at the time there was no one maintaining the device list to
+> > _do_ that allocation - AMBA PL011 came along in 2005 after (I believe)
+> > hpa stopped looking after that list.
+> 
+> git log Documentation/devices.txt
 
-> > Then again, people seem to whinge if you don't keep these Kbuild files
-> > sorted, but manually sorting 29 files is just not something I like to
-> > do.
+Hmm.  Given that git history starts at 2.6.12-rc2, and this was introduced
+in 2.5 kernels, there's no point me looking, because I know the history
+I have access to does not go back to that time.
 
-> Can you clarify what exactly needs to be sorted?  The Kbuild files
-> spit out by git diff appears to be sorted already.
+And I know for certain that the devices list *did* fall out of maintainership
+for a while.
 
-> > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-> > index f01fb505ad52..14cbbbcec01f 100644
-> > --- a/arch/alpha/include/asm/Kbuild
-> > +++ b/arch/alpha/include/asm/Kbuild
-> > @@ -4,3 +4,4 @@ generic-y += clkdev.h
-> >  generic-y += exec.h
-> >  generic-y += trace_clock.h
-> >  generic-y += preempt.h
-> > +generic-y += mcs_spinlock.h
-
-Last time I checked the Alphabet m came before p.
-
-I generated this patch using:
-
-for i in arch/*/include/asm/Kbuild
-do
-	echo "generic-y += mcs_spinlock.h" >> $i
-done
-
-Which simply appends the new header. However people want these generic-y
-thingies sorted by header name. Hence the gawk script I sent which does
-just that.
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
