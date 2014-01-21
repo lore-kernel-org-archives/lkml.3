@@ -1,121 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaAULaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:30:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51869 "EHLO
+	id S1754581AbaAUL3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:29:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51881 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099AbaAUL3Y (ORCPT
+	with ESMTP id S1754234AbaAUL30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:29:24 -0500
-Message-Id: <20140121112258.410353740@infradead.org>
+	Tue, 21 Jan 2014 06:29:26 -0500
+Message-Id: <20140121112258.708117448@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 21 Jan 2014 12:17:57 +0100
+Date: Tue, 21 Jan 2014 12:18:02 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
         bsegall@google.com, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3/9] sched: Move idle_stamp up to the core
+Subject: [PATCH 8/9] sched/fair: Optimize cgroup pick_next_task_fair
 References: <20140121111754.580142558@infradead.org>
-Content-Disposition: inline; filename=daniel_lezcano-3_sched-move_idle_stamp_up_to_the_core.patch
+Content-Disposition: inline; filename=peter_zijlstra-sched-optimize_cgroup_pick_next_task_fair_4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
+Since commit 2f36825b1 ("sched: Next buddy hint on sleep and preempt
+path") it is likely we pick a new task from the same cgroup, doing a put
+and then set on all intermediate entities is a waste of time, so try to
+avoid this.
 
-The idle_balance modifies the idle_stamp field of the rq, making this
-information to be shared across core.c and fair.c. As we can know if the
-cpu is going to idle or not with the previous patch, let's encapsulate the
-idle_stamp information in core.c by moving it up to the caller. The
-idle_balance function returns true in case a balancing occured and the cpu
-won't be idle, false if no balance happened and the cpu is going idle.
+XXX please review carefully; its quite horrid.
 
-Cc: alex.shi@linaro.org
-Cc: peterz@infradead.org
-Cc: mingo@kernel.org
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+That said, simple hackbench runs in a 3 deep cgroup show a consistent
+performance increase (small, but consistent).
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389949444-14821-3-git-send-email-daniel.lezcano@linaro.org
+Link: http://lkml.kernel.org/r/1328936700.2476.17.camel@laptop
 ---
- kernel/sched/core.c  |    2 +-
- kernel/sched/fair.c  |   14 ++++++--------
- kernel/sched/sched.h |    2 +-
- 3 files changed, 8 insertions(+), 10 deletions(-)
-
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2680,7 +2680,7 @@ static void __sched __schedule(void)
- 	pre_schedule(rq, prev);
- 
- 	if (unlikely(!rq->nr_running))
--		idle_balance(rq);
-+		rq->idle_stamp = idle_balance(rq) ? 0 : rq_clock(rq);
- 
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
+ kernel/sched/fair.c |  140 +++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 111 insertions(+), 29 deletions(-)
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -6359,7 +6359,7 @@ static int load_balance(int this_cpu, st
-  * idle_balance is called by schedule() if this_cpu is about to become
-  * idle. Attempts to pull tasks from other CPUs.
+@@ -2738,15 +2738,46 @@ wakeup_preempt_entity(struct sched_entit
   */
--void idle_balance(struct rq *this_rq)
-+int idle_balance(struct rq *this_rq)
+ static struct sched_entity *pick_next_entity(struct cfs_rq *cfs_rq)
  {
- 	struct sched_domain *sd;
- 	int pulled_task = 0;
-@@ -6367,10 +6367,8 @@ void idle_balance(struct rq *this_rq)
- 	u64 curr_cost = 0;
- 	int this_cpu = this_rq->cpu;
- 
--	this_rq->idle_stamp = rq_clock(this_rq);
--
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
--		return;
-+		return 0;
+-	struct sched_entity *se = __pick_first_entity(cfs_rq);
+-	struct sched_entity *left = se;
++	struct sched_entity *left = __pick_first_entity(cfs_rq);
++	struct sched_entity *se, *curr = cfs_rq->curr;
++
++	/*
++	 * Since its possible we got here without doing put_prev_entity() we
++	 * also have to consider cfs_rq->curr. If it was set, and is still a
++	 * runnable entity, update_curr() will update its vruntime, otherwise
++	 * forget we've ever seen it.
++	 */
++	if (curr) {
++		if (curr->on_rq)
++			update_curr(cfs_rq);
++		else
++			curr = NULL;
++	}
++
++	/*
++	 * If curr is set we have to see if its left of the leftmost entity
++	 * still in the tree, provided there was anything in the tree at all.
++	 */
++	if (!left || (curr && entity_before(curr, left)))
++		left = curr;
++
++	se = left; /* ideally we run the leftmost entity */
  
  	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-@@ -6408,10 +6406,8 @@ void idle_balance(struct rq *this_rq)
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
--			this_rq->idle_stamp = 0;
-+		if (pulled_task)
- 			break;
--		}
- 	}
- 	rcu_read_unlock();
- 
-@@ -6422,7 +6418,7 @@ void idle_balance(struct rq *this_rq)
- 	 * A task could have be enqueued in the meantime
+ 	 * Avoid running the skip buddy, if running something else can
+ 	 * be done without getting too unfair.
  	 */
- 	if (this_rq->nr_running && !pulled_task)
--		return;
-+		return 1;
- 
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
-@@ -6434,6 +6430,8 @@ void idle_balance(struct rq *this_rq)
- 
- 	if (curr_cost > this_rq->max_idle_balance_cost)
- 		this_rq->max_idle_balance_cost = curr_cost;
+ 	if (cfs_rq->skip == se) {
+-		struct sched_entity *second = __pick_next_entity(se);
++		struct sched_entity *second;
 +
-+	return pulled_task;
++		if (se == curr) {
++			second = __pick_first_entity(cfs_rq);
++		} else {
++			second = __pick_next_entity(se);
++			if (!second || (curr && entity_before(curr, second)))
++				second = curr;
++		}
++
+ 		if (second && wakeup_preempt_entity(second, left) < 1)
+ 			se = second;
+ 	}
+@@ -2768,7 +2799,7 @@ static struct sched_entity *pick_next_en
+ 	return se;
+ }
+ 
+-static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq);
++static bool check_cfs_rq_runtime(struct cfs_rq *cfs_rq);
+ 
+ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+ {
+@@ -3423,22 +3454,23 @@ static void check_enqueue_throttle(struc
+ }
+ 
+ /* conditionally throttle active cfs_rq's from put_prev_entity() */
+-static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
++static bool check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ {
+ 	if (!cfs_bandwidth_used())
+-		return;
++		return false;
+ 
+ 	if (likely(!cfs_rq->runtime_enabled || cfs_rq->runtime_remaining > 0))
+-		return;
++		return false;
+ 
+ 	/*
+ 	 * it's possible for a throttled entity to be forced into a running
+ 	 * state (e.g. set_curr_task), in this case we're finished.
+ 	 */
+ 	if (cfs_rq_throttled(cfs_rq))
+-		return;
++		return true;
+ 
+ 	throttle_cfs_rq(cfs_rq);
++	return true;
+ }
+ 
+ static enum hrtimer_restart sched_cfs_slack_timer(struct hrtimer *timer)
+@@ -3548,7 +3580,7 @@ static inline u64 cfs_rq_clock_task(stru
+ }
+ 
+ static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq, u64 delta_exec) {}
+-static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
++static bool check_cfs_rq_runtime(struct cfs_rq *cfs_rq) { return false; }
+ static void check_enqueue_throttle(struct cfs_rq *cfs_rq) {}
+ static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
+ 
+@@ -4484,44 +4516,94 @@ static void check_preempt_wakeup(struct
+ 		set_last_buddy(se);
+ }
+ 
++/*
++ * Account for a descheduled task:
++ */
++static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
++{
++	struct sched_entity *se = &prev->se;
++	struct cfs_rq *cfs_rq;
++
++	for_each_sched_entity(se) {
++		cfs_rq = cfs_rq_of(se);
++		put_prev_entity(cfs_rq, se);
++	}
++}
++
+ static struct task_struct *
+ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+ {
++	struct sched_entity *se, __maybe_unused *pse;
+ 	struct task_struct *p;
+-	struct cfs_rq *cfs_rq = &rq->cfs;
+-	struct sched_entity *se;
++	struct cfs_rq *cfs_rq;
++
++again: __maybe_unused
++	cfs_rq = &rq->cfs;
++
++	if (prev) {
++		if (!IS_ENABLED(CONFIG_FAIR_GROUP_SCHED) ||
++		    (prev->sched_class != &fair_sched_class)) {
++			prev->sched_class->put_prev_task(rq, prev);
++			prev = NULL;
++		}
++	}
+ 
+ 	if (!cfs_rq->nr_running)
+ 		return NULL;
+ 
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
+-
+ 	do {
+ 		se = pick_next_entity(cfs_rq);
+-		set_next_entity(cfs_rq, se);
++		if (!prev)
++			set_next_entity(cfs_rq, se);
+ 		cfs_rq = group_cfs_rq(se);
+ 	} while (cfs_rq);
+ 
+ 	p = task_of(se);
+-	if (hrtick_enabled(rq))
+-		hrtick_start_fair(rq, p);
+ 
+-	return p;
+-}
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	/*
++	 * If we haven't yet done put_prev_entity and the selected task is
++	 * a different task than we started out with, try and touch the least
++	 * amount of cfs_rq trees.
++	 */
++	if (prev) {
++		if (prev != p) {
++			pse = &prev->se;
++
++			while (!(cfs_rq = is_same_group(se, pse))) {
++				int se_depth = se->depth;
++				int pse_depth = pse->depth;
++
++				if (se_depth <= pse_depth) {
++					put_prev_entity(cfs_rq_of(pse), pse);
++					pse = parent_entity(pse);
++				}
++				if (se_depth >= pse_depth) {
++					set_next_entity(cfs_rq_of(se), se);
++					se = parent_entity(se);
++				}
++			}
+ 
+-/*
+- * Account for a descheduled task:
+- */
+-static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
+-{
+-	struct sched_entity *se = &prev->se;
+-	struct cfs_rq *cfs_rq;
++			put_prev_entity(cfs_rq, pse);
++			set_next_entity(cfs_rq, se);
++		}
+ 
+-	for_each_sched_entity(se) {
+-		cfs_rq = cfs_rq_of(se);
+-		put_prev_entity(cfs_rq, se);
++		/*
++		 * In case the common cfs_rq got throttled, just give up and
++		 * put the stack and retry.
++		 */
++		if (unlikely(check_cfs_rq_runtime(cfs_rq))) {
++			put_prev_task_fair(rq, p);
++			prev = NULL;
++			goto again;
++		}
+ 	}
++#endif
++
++	if (hrtick_enabled(rq))
++		hrtick_start_fair(rq, p);
++
++	return p;
  }
  
  /*
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1176,7 +1176,7 @@ extern const struct sched_class idle_sch
- extern void update_group_power(struct sched_domain *sd, int cpu);
- 
- extern void trigger_load_balance(struct rq *rq);
--extern void idle_balance(struct rq *this_rq);
-+extern int idle_balance(struct rq *this_rq);
- 
- extern void idle_enter_fair(struct rq *this_rq);
- extern void idle_exit_fair(struct rq *this_rq);
 
 
