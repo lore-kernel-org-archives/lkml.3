@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146AbaAUPkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 10:40:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58307 "EHLO
+	id S1754886AbaAUPln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 10:41:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58363 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaAUPkh (ORCPT
+	with ESMTP id S1752265AbaAUPlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 10:40:37 -0500
-Date: Tue, 21 Jan 2014 16:39:58 +0100
+	Tue, 21 Jan 2014 10:41:40 -0500
+Date: Tue, 21 Jan 2014 16:41:13 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger
- than long as atomic in x86
-Message-ID: <20140121153958.GA31570@twins.programming.kicks-ass.net>
-References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
- <1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
- <20140120150316.GG30183@twins.programming.kicks-ass.net>
- <52DE9410.6090500@hp.com>
+Cc: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140121154113.GB31570@twins.programming.kicks-ass.net>
+References: <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com>
+ <20140116103659.GO7572@laptop.programming.kicks-ass.net>
+ <20140118100105.GV10038@linux.vnet.ibm.com>
+ <20140118113406.GY30183@twins.programming.kicks-ass.net>
+ <20140118122548.GX10038@linux.vnet.ibm.com>
+ <20140118124136.GZ30183@twins.programming.kicks-ass.net>
+ <20140118212227.GA10038@linux.vnet.ibm.com>
+ <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com>
+ <20140119080405.GB10038@linux.vnet.ibm.com>
+ <52DE8BEE.4040303@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52DE9410.6090500@hp.com>
+In-Reply-To: <52DE8BEE.4040303@hp.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:36:48AM -0500, Waiman Long wrote:
-> On 01/20/2014 10:03 AM, Peter Zijlstra wrote:
-> >On Tue, Jan 14, 2014 at 11:44:05PM -0500, Waiman Long wrote:
-> >>The generic __native_word() macro defined in include/linux/compiler.h
-> >>only allows "int" and "long" data types to be treated as native and
-> >>atomic. The x86 architecture, however, allow the use of char and short
-> >>data types as atomic as well.
-> >>
-> >>This patch extends the data type allowed in the __native_word() macro to
-> >>allow the use of char and short.
-> >>
-> >>Signed-off-by: Waiman Long<Waiman.Long@hp.com>
-> >>---
-> >>  arch/x86/include/asm/barrier.h |    8 ++++++++
-> >>  1 files changed, 8 insertions(+), 0 deletions(-)
-> >>
-> >>diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
-> >>index 04a4890..4d3e30a 100644
-> >>--- a/arch/x86/include/asm/barrier.h
-> >>+++ b/arch/x86/include/asm/barrier.h
-> >>@@ -24,6 +24,14 @@
-> >>  #define wmb()	asm volatile("sfence" ::: "memory")
-> >>  #endif
-> >>
-> >>+/*
-> >>+ * All data types<= long are atomic in x86
-> >>+ */
-> >>+#ifdef __native_word
-> >>+#undef __native_word
-> >>+#endif
-> >>+#define __native_word(t)	(sizeof(t)<= sizeof(long))
-> >Yeah, not going to happen.
-> 
-> Does explicit list of acceptable sizes work for you?
-> 
-> #define __native_word(t) (sizeof(t) == sizeof(char) || sizeof(t) ==
-> sizeof(short) || sizeof(t) == sizeof(int ) ||
->                  sizeof(t) == sizeof(long))
+On Tue, Jan 21, 2014 at 10:02:06AM -0500, Waiman Long wrote:
+> My latest v9 series of qrwlock patch will automatically adapt to the lack of
+> atomic byte access by using an atomic integer instruction instead. So the
+> new series should work for pre-EV56 Alpha, it is just a bit less efficient
+> in this case.
 
-No, generic primitives should not have arch specific behaviour.
+See my other email; I don't think you can do that without also changing
+the implementation of the queue_read_{try}lock() functions.
+
+Without those changes you can have transient values in your 'read-count'
+part of the word and a full word write will wreck things.
