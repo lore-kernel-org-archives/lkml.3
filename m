@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaAUUGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:06:48 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:47265 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665AbaAUUGk (ORCPT
+	id S1753881AbaAUUGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:06:53 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63787 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665AbaAUUGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:06:40 -0500
+	Tue, 21 Jan 2014 15:06:49 -0500
+Date: Tue, 21 Jan 2014 12:06:45 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Robin Schroer <sulamiification@gmail.com>
+Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/hid/wacom: fixed coding style issues
+Message-ID: <20140121200645.GC29615@core.coreip.homeip.net>
+References: <20140121195153.GA4198@fedora.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <xm26d2jlkwn1.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org> <xm26d2jlkwn1.fsf@sword-of-the-dawn.mtv.corp.google.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 21 Jan 2014 21:06:19 +0100
-Message-ID: <CAKfTPtBnY_ERdPKbvFeS5V3siFCsV1DeFC=wPThUDnKJq5M_Ng@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix sched_entity avg statistics update
-To: Benjamin Segall <bsegall@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121195153.GA4198@fedora.fritz.box>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 January 2014 19:38,  <bsegall@google.com> wrote:
-> Vincent Guittot <vincent.guittot@linaro.org> writes:
->
->> With the current implementation, the load average statistics of a sched entity
->> change according to other activity on the CPU even if this activity is done
->> between the running window of the sched entity and have no influence on the
->> running duration of the task.
->>
->> When a task wakes up on the same CPU, we currently update last_runnable_update
->> with the return  of __synchronize_entity_decay without updating the
->> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
->> the load_contrib of the se with the rq's blocked_load_contrib before removing
->> it from the latter (with __synchronize_entity_decay) but we must keep
->> last_runnable_update unchanged for updating runnable_avg_sum/period during the
->> next update_entity_load_avg.
->
-> ... Gah, that's correct, we had this right the first time. Could you do
-> this as a full revert of 282cf499f03ec1754b6c8c945c9674b02631fb0f (ie
-> remove the now inaccurate comment, or maybe replace it with a correct one).
+On Tue, Jan 21, 2014 at 08:51:53PM +0100, Robin Schroer wrote:
+> Fixed some coding style issues regarding spaces before semicolons and
+> closing parenthesis.
+> 
+> Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+> ---
+>  drivers/hid/hid-wacom.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+> index 60c75dc..ebcca0d 100644
+> --- a/drivers/hid/hid-wacom.c
+> +++ b/drivers/hid/hid-wacom.c
+> @@ -77,8 +77,8 @@ static void wacom_scramble(__u8 *image)
+>  	__u16 mask;
+>  	__u16 s1;
+>  	__u16 s2;
+> -	__u16 r1 ;
+> -	__u16 r2 ;
+> +	__u16 r1;
+> +	__u16 r2;
+>  	__u16 r;
+>  	__u8 buf[256];
+>  	int i, w, x, y, z;
+> @@ -336,7 +336,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
+>  
+>  	switch (hdev->product) {
+>  	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+> -		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
+> +		rep_data[0] = 0x03; rep_data[1] = 0x00;
+>  		limit = 3;
+>  		do {
+>  			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+> @@ -404,7 +404,7 @@ static ssize_t wacom_store_speed(struct device *dev,
+>  	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+>  	int new_speed;
+>  
+> -	if (sscanf(buf, "%1d", &new_speed ) != 1)
+> +	if (sscanf(buf, "%1d", &new_speed) != 1)
+>  		return -EINVAL;
 
-Ok i'm going to remove comment as well and replace it with a new description
+Why doesn't it use kstrtoXXX()?
 
-Vincent
+Thanks.
 
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  kernel/sched/fair.c |    3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index e64b079..5b0ef90 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -2370,8 +2370,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->>                * would have made count negative); we must be careful to avoid
->>                * double-accounting blocked time after synchronizing decays.
->>                */
->> -             se->avg.last_runnable_update += __synchronize_entity_decay(se)
->> -                                                     << 20;
->> +             __synchronize_entity_decay(se);
->>       }
->>
->>       /* migrated tasks did not contribute to our blocked load */
+>  
+>  	if (new_speed == 0 || new_speed == 1) {
+> -- 
+> 1.8.4.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Dmitry
