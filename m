@@ -1,1014 +1,791 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaAUHpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 02:45:21 -0500
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:24004
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750934AbaAUHpP convert rfc822-to-8bit (ORCPT
+	id S1751599AbaAUHqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 02:46:19 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:45950 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaAUHqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 02:45:15 -0500
-X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 02:45:14 EST
-From: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-Thread-Topic: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-Thread-Index: AQHPE8PTIncnrSWF6UCKArN35cmjQpqOykAQ
-Date: Tue, 21 Jan 2014 07:27:15 +0000
-Message-ID: <4b9118cb4cc744bdb2e9c25fa32d6950@BL2PR03MB259.namprd03.prod.outlook.com>
-References: <20140117203126.11429.25235.stgit@gimli.home>
-In-Reply-To: <20140117203126.11429.25235.stgit@gimli.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-forefront-prvs: 0098BA6C6C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(13464003)(51704005)(199002)(377454003)(189002)(164054003)(50986001)(46102001)(79102001)(54316002)(49866001)(65816001)(51856001)(93136001)(76796001)(47736001)(80976001)(77096001)(19580395003)(53806001)(54356001)(92566001)(33646001)(81816001)(56776001)(59766001)(77982001)(83322001)(81686001)(15975445006)(76786001)(87936001)(87266001)(74876001)(4396001)(31966008)(47446002)(85306002)(74706001)(76482001)(76576001)(66066001)(2656002)(69226001)(19580405001)(81342001)(47976001)(63696002)(74316001)(74662001)(81542001)(80022001)(74502001)(90146001)(56816005)(86362001)(93516002)(83072002)(74366001)(85852003)(24736002)(569005);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB259.namprd03.prod.outlook.com;CLIP:192.88.169.1;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jan 2014 02:46:10 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1390225363-24210-1-git-send-email-gautam.vivek@samsung.com>
+References: <1386151747-3209-2-git-send-email-gautam.vivek@samsung.com>
+	<1390225363-24210-1-git-send-email-gautam.vivek@samsung.com>
+Date: Tue, 21 Jan 2014 13:16:08 +0530
+Message-ID: <CAFp+6iF_P8=ec3rHHqF-QSE6oMt39Do8h+Hjn63Pe8+xcVCm5g@mail.gmail.com>
+Subject: Re: [PATCH v3] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>, Felipe Balbi <balbi@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, kishon <kishon@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Julius Werner <jwerner@chromium.org>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 20, 2014 at 7:12 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+> The new driver uses the generic PHY framework and will interact
+> with DWC3 controller present on Exynos5 series of SoCs.
+> Thereby, removing old phy-samsung-usb3 driver and related code
+> used untill now which was based on usb/phy framework.
+>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 
+Sorry, forgot to add a Reviewed-by tag from Felipe. :-(
+Will update in the next version of patch after getting a feedback on this patch.
 
-> -----Original Message-----
-> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> bounces@lists.linux-foundation.org] On Behalf Of Alex Williamson
-> Sent: Saturday, January 18, 2014 2:06 AM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-> 
-> RFC: This is not complete but I want to share with Varun the
-> dirrection I'm thinking about.  In particular, I'm really not
-> sure if we want to introduce a "v2" interface version with
-> slightly different unmap semantics.  QEMU doesn't care about
-> the difference, but other users might.  Be warned, I'm not even
-> sure if this code works at the moment.  Thanks,
-> 
-> Alex
-> 
-> 
-> We currently have a problem that we cannot support advanced features
-> of an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee
-> that those features will be supported by all of the hardware units
-> involved with the domain over its lifetime.  For instance, the Intel
-> VT-d architecture does not require that all DRHDs support snoop
-> control.  If we create a domain based on a device behind a DRHD that
-> does support snoop control and enable SNP support via the IOMMU_CACHE
-> mapping option, we cannot then add a device behind a DRHD which does
-> not support snoop control or we'll get reserved bit faults from the
-> SNP bit in the pagetables.  To add to the complexity, we can't know
-> the properties of a domain until a device is attached.
-> 
-> We could pass this problem off to userspace and require that a
-> separate vfio container be used, but we don't know how to handle page
-> accounting in that case.  How do we know that a page pinned in one
-> container is the same page as a different container and avoid double
-> billing the user for the page.
-> 
-> The solution is therefore to support multiple IOMMU domains per
-> container.  In the majority of cases, only one domain will be required
-> since hardware is typically consistent within a system.  However, this
-> provides us the ability to validate compatibility of domains and
-> support mixed environments where page table flags can be different
-> between domains.
-> 
-> To do this, our DMA tracking needs to change.  We currently try to
-> coalesce user mappings into as few tracking entries as possible.  The
-> problem then becomes that we lose granularity of user mappings.  We've
-> never guaranteed that a user is able to unmap at a finer granularity
-> than the original mapping, but we must honor the granularity of the
-> original mapping.  This coalescing code is therefore removed, allowing
-> only unmaps covering complete maps.  The change in accounting is
-> fairly small here, a typical QEMU VM will start out with roughly a
-> dozen entries, so it's arguable if this coalescing was ever needed.
-> 
-> We also move IOMMU domain creation to the point where a group is
-> attached to the container.  An interesting side-effect of this is that
-> we now have access to the device at the time of domain creation and
-> can probe the devices within the group to determine the bus_type.
-> This finally makes vfio_iommu_type1 completely device/bus agnostic.
-> In fact, each IOMMU domain can host devices on different buses managed
-> by different physical IOMMUs, and present a single DMA mapping
-> interface to the user.  When a new domain is created, mappings are
-> replayed to bring the IOMMU pagetables up to the state of the current
-> container.  And of course, DMA mapping and unmapping automatically
-> traverse all of the configured IOMMU domains.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 > ---
-> 
->  drivers/vfio/vfio_iommu_type1.c |  631 ++++++++++++++++++++-------------------
->  include/uapi/linux/vfio.h       |    1
->  2 files changed, 329 insertions(+), 303 deletions(-)
-> 
-> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-> index 4fb7a8f..983aae5 100644
-> --- a/drivers/vfio/vfio_iommu_type1.c
-> +++ b/drivers/vfio/vfio_iommu_type1.c
-> @@ -30,7 +30,6 @@
->  #include <linux/iommu.h>
->  #include <linux/module.h>
->  #include <linux/mm.h>
-> -#include <linux/pci.h>		/* pci_bus_type */
->  #include <linux/rbtree.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> @@ -55,11 +54,18 @@ MODULE_PARM_DESC(disable_hugepages,
->  		 "Disable VFIO IOMMU support for IOMMU hugepages.");
-> 
->  struct vfio_iommu {
-> -	struct iommu_domain	*domain;
-> +	struct list_head	domain_list;
->  	struct mutex		lock;
->  	struct rb_root		dma_list;
-> +	bool v2;
+>
+> Changes from v2:
+> 1) Added support for multiple PHYs (UTMI+ and PIPE3) and
+>    related changes in the driver structuring.
+> 2) Added a xlate function to get the required phy out of
+>    number of PHYs in mutiple PHY scenerio.
+> 3) Changed the names of few structures and variables to
+>    have a clearer meaning.
+> 4) Added 'usb3phy_config' structure to take care of mutiple
+>    phys for a SoC having 'exynos5_usb3phy_drv_data' driver data.
+> 5) Not deleting support for old driver 'phy-samsung-usb3' until
+>    required support for generic phy is added to DWC3.
+>
+>  .../devicetree/bindings/phy/samsung-phy.txt        |   49 ++
+>  drivers/phy/Kconfig                                |    8 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/phy-exynos5-usb3.c                     |  621 ++++++++++++++++++++
+>  4 files changed, 679 insertions(+)
+>  create mode 100644 drivers/phy/phy-exynos5-usb3.c
+>
+> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> index c0fccaa..57079f8 100644
+> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> @@ -20,3 +20,52 @@ Required properties:
+>  - compatible : should be "samsung,exynos5250-dp-video-phy";
+>  - reg : offset and length of the Display Port PHY register set;
+>  - #phy-cells : from the generic PHY bindings, must be 0;
+> +
+> +Samsung Exynos5 SoC series USB 3.0 PHY controller
+> +--------------------------------------------------
+> +
+> +Required properties:
+> +- compatible : Should be set to one of the following supported values:
+> +       - "samsung,exynos5250-usb3phy" - for exynos5250 SoC,
+> +       - "samsung,exynos5420-usb3phy" - for exynos5420 SoC.
+> +- reg : Register offset and length of USB 3.0 PHY register set;
+> +- clocks: Clock IDs array as required by the controller
+> +- clock-names: names of clocks correseponding to IDs in the clock property;
+> +       Required clocks:
+> +       - phy: main PHY clock (same as USB 3.0 controller IP clock),
+> +               used for register access.
+> +       - usb3phy_refclk: PHY's reference clock (usually crystal clock),
+> +               associated by phy name, used to determine bit values for
+> +               clock settings register.
+> +       Additional clock required for Exynos5420:
+> +       - usb30_sclk_100m: Additional special clock used for PHY operation
+> +                          depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+> +       control pmu registers for power isolation.
+> +- #phy-cells : from the generic PHY bindings, must be 1;
+> +
+> +For "samsung,exynos5250-usb3phy" and "samsung,exynos5420-usb3phy" compatible
+> +PHYs, the second cell in the PHY specifier identifies the PHY id, which is
+> +interpreted as follows:
+> +  0 - UTMI+ type phy,
+> +  1 - PIPE3 type phy,
+> +
+> +Example:
+> +       usb3_phy: usbphy@12100000 {
+> +               compatible = "samsung,exynos5250-usb3phy";
+> +               reg = <0x12100000 0x100>;
+> +               clocks = <&clock 286>, <&clock 1>;
+> +               clock-names = "phy", "usb3phy_refclk";
+> +               samsung,syscon-phandle = <&pmu_syscon>;
+> +               #phy-cells = <1>;
+> +       };
+> +
+> +- aliases: For SoCs like Exynos5420 having multiple USB PHY controllers,
+> +          'usb3_phy' nodes should have numbered alias in the aliases node,
+> +          in the form of usb3phyN, N = 0, 1... (depending on number of
+> +          controllers).
+> +Example:
+> +       aliases {
+> +               usb3phy0 = &usb3_phy0;
+> +               usb3phy1 = &usb3_phy1;
+> +       };
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 330ef2d..32f9f38 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -51,4 +51,12 @@ config PHY_EXYNOS_DP_VIDEO
+>         help
+>           Support for Display Port PHY found on Samsung EXYNOS SoCs.
+>
+> +config PHY_EXYNOS5_USB3
+> +       tristate "Exynos5 SoC series USB 3.0 PHY driver"
+> +       depends on ARCH_EXYNOS5
+> +       select GENERIC_PHY
+> +       select MFD_SYSCON
+> +       help
+> +         Enable USB 3.0 PHY support for Exynos 5 SoC series
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index d0caae9..9c06a61 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -7,3 +7,4 @@ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)       += phy-exynos-dp-video.o
+>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)    += phy-exynos-mipi-video.o
+>  obj-$(CONFIG_OMAP_USB2)                        += phy-omap-usb2.o
+>  obj-$(CONFIG_TWL4030_USB)              += phy-twl4030-usb.o
+> +obj-$(CONFIG_PHY_EXYNOS5_USB3)         += phy-exynos5-usb3.o
+> diff --git a/drivers/phy/phy-exynos5-usb3.c b/drivers/phy/phy-exynos5-usb3.c
+> new file mode 100644
+> index 0000000..24efed0
+> --- /dev/null
+> +++ b/drivers/phy/phy-exynos5-usb3.c
+> @@ -0,0 +1,621 @@
+> +/*
+> + * Samsung EXYNOS5 SoC series USB 3.0 PHY driver
+> + *
+> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+> + * Author: Vivek Gautam <gautam.vivek@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mutex.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+> +
+> +/* Exynos USB PHY registers */
+> +#define EXYNOS5_FSEL_9MHZ6             0x0
+> +#define EXYNOS5_FSEL_10MHZ             0x1
+> +#define EXYNOS5_FSEL_12MHZ             0x2
+> +#define EXYNOS5_FSEL_19MHZ2            0x3
+> +#define EXYNOS5_FSEL_20MHZ             0x4
+> +#define EXYNOS5_FSEL_24MHZ             0x5
+> +#define EXYNOS5_FSEL_50MHZ             0x7
+> +
+> +/* EXYNOS5: USB 3.0 DRD PHY registers */
+> +#define EXYNOS5_DRD_LINKSYSTEM                 (0x04)
+> +
+> +#define LINKSYSTEM_FLADJ_MASK                  (0x3f << 1)
+> +#define LINKSYSTEM_FLADJ(_x)                   ((_x) << 1)
+> +#define LINKSYSTEM_XHCI_VERSION_CONTROL                (0x1 << 27)
+> +
+> +#define EXYNOS5_DRD_PHYUTMI                    (0x08)
+> +
+> +#define PHYUTMI_OTGDISABLE                     (0x1 << 6)
+> +#define PHYUTMI_FORCESUSPEND                   (0x1 << 1)
+> +#define PHYUTMI_FORCESLEEP                     (0x1 << 0)
+> +
+> +#define EXYNOS5_DRD_PHYPIPE                    (0x0c)
+> +
+> +#define EXYNOS5_DRD_PHYCLKRST                  (0x10)
+> +
+> +#define PHYCLKRST_EN_UTMISUSPEND               (0x1 << 31)
+> +
+> +#define PHYCLKRST_SSC_REFCLKSEL_MASK           (0xff << 23)
+> +#define PHYCLKRST_SSC_REFCLKSEL(_x)            ((_x) << 23)
+> +
+> +#define PHYCLKRST_SSC_RANGE_MASK               (0x03 << 21)
+> +#define PHYCLKRST_SSC_RANGE(_x)                        ((_x) << 21)
+> +
+> +#define PHYCLKRST_SSC_EN                       (0x1 << 20)
+> +#define PHYCLKRST_REF_SSP_EN                   (0x1 << 19)
+> +#define PHYCLKRST_REF_CLKDIV2                  (0x1 << 18)
+> +
+> +#define PHYCLKRST_MPLL_MULTIPLIER_MASK         (0x7f << 11)
+> +#define PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF   (0x19 << 11)
+> +#define PHYCLKRST_MPLL_MULTIPLIER_50M_REF      (0x32 << 11)
+> +#define PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF    (0x68 << 11)
+> +#define PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF    (0x7d << 11)
+> +#define PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF (0x02 << 11)
+> +
+> +#define PHYCLKRST_FSEL_MASK                    (0x3f << 5)
+> +#define PHYCLKRST_FSEL(_x)                     ((_x) << 5)
+> +#define PHYCLKRST_FSEL_PAD_100MHZ              (0x27 << 5)
+> +#define PHYCLKRST_FSEL_PAD_24MHZ               (0x2a << 5)
+> +#define PHYCLKRST_FSEL_PAD_20MHZ               (0x31 << 5)
+> +#define PHYCLKRST_FSEL_PAD_19_2MHZ             (0x38 << 5)
+> +
+> +#define PHYCLKRST_RETENABLEN                   (0x1 << 4)
+> +
+> +#define PHYCLKRST_REFCLKSEL_MASK               (0x03 << 2)
+> +#define PHYCLKRST_REFCLKSEL_PAD_REFCLK         (0x2 << 2)
+> +#define PHYCLKRST_REFCLKSEL_EXT_REFCLK         (0x3 << 2)
+> +
+> +#define PHYCLKRST_PORTRESET                    (0x1 << 1)
+> +#define PHYCLKRST_COMMONONN                    (0x1 << 0)
+> +
+> +#define EXYNOS5_DRD_PHYREG0                    (0x14)
+> +#define EXYNOS5_DRD_PHYREG1                    (0x18)
+> +
+> +#define EXYNOS5_DRD_PHYPARAM0                  (0x1c)
+> +
+> +#define PHYPARAM0_REF_USE_PAD                  (0x1 << 31)
+> +#define PHYPARAM0_REF_LOSLEVEL_MASK            (0x1f << 26)
+> +#define PHYPARAM0_REF_LOSLEVEL                 (0x9 << 26)
+> +
+> +#define EXYNOS5_DRD_PHYPARAM1                  (0x20)
+> +
+> +#define PHYPARAM1_PCS_TXDEEMPH_MASK            (0x1f << 0)
+> +#define PHYPARAM1_PCS_TXDEEMPH                 (0x1c)
+> +
+> +#define EXYNOS5_DRD_PHYTERM                    (0x24)
+> +
+> +#define EXYNOS5_DRD_PHYTEST                    (0x28)
+> +
+> +#define PHYTEST_POWERDOWN_SSP                  (0x1 << 3)
+> +#define PHYTEST_POWERDOWN_HSP                  (0x1 << 2)
+> +
+> +#define EXYNOS5_DRD_PHYADP                     (0x2c)
+> +
+> +#define EXYNOS5_DRD_PHYBATCHG                  (0x30)
+> +
+> +#define PHYBATCHG_UTMI_CLKSEL                  (0x1 << 2)
+> +
+> +#define EXYNOS5_DRD_PHYRESUME                  (0x34)
+> +#define EXYNOS5_DRD_LINKPORT                   (0x44)
+> +
+> +/* Power isolation defined in power management unit */
+> +#define EXYNOS5_USB3DRD_PHY_PMU_REG_OFFSET     (0x704)
+> +#define EXYNOS5_USB3DRD_PMU_ISOL               (1 << 0)
+> +
+> +#define KHZ    1000
+> +#define MHZ    (KHZ * KHZ)
+> +
+> +enum exynos5_usb3phy_id {
+> +       EXYNOS5_USB3PHY_UTMI,
+> +       EXYNOS5_USB3PHY_PIPE3,
+> +       EXYNOS5_USB3PHYS_NUM,
 > +};
 > +
-> +struct vfio_domain {
-> +	struct iommu_domain	*domain;
-> +	struct bus_type		*bus;
-> +	struct list_head	next;
->  	struct list_head	group_list;
-> -	bool			cache;
-> +	int			prot;		/* IOMMU_CACHE */
->  };
-> 
->  struct vfio_dma {
-> @@ -99,7 +105,7 @@ static struct vfio_dma *vfio_find_dma(struct vfio_iommu
-> *iommu,
->  	return NULL;
->  }
-> 
-> -static void vfio_insert_dma(struct vfio_iommu *iommu, struct vfio_dma *new)
-> +static void vfio_link_dma(struct vfio_iommu *iommu, struct vfio_dma *new)
->  {
->  	struct rb_node **link = &iommu->dma_list.rb_node, *parent = NULL;
->  	struct vfio_dma *dma;
-> @@ -118,7 +124,7 @@ static void vfio_insert_dma(struct vfio_iommu *iommu, struct
-> vfio_dma *new)
->  	rb_insert_color(&new->node, &iommu->dma_list);
->  }
-> 
-> -static void vfio_remove_dma(struct vfio_iommu *iommu, struct vfio_dma *old)
-> +static void vfio_unlink_dma(struct vfio_iommu *iommu, struct vfio_dma *old)
->  {
->  	rb_erase(&old->node, &iommu->dma_list);
->  }
-> @@ -322,32 +328,39 @@ static long vfio_unpin_pages(unsigned long pfn, long
-> npage,
->  	return unlocked;
->  }
-> 
-> -static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma *dma,
-> -			    dma_addr_t iova, size_t *size)
-> +static void vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma *dma)
->  {
-> -	dma_addr_t start = iova, end = iova + *size;
-> +	dma_addr_t iova = dma->iova, end = dma->iova + dma->size;
-> +	struct vfio_domain *domain, *d;
->  	long unlocked = 0;
-> 
-> +	if (!dma->size)
-> +		return;
-> +	/*
-> +	 * We use the IOMMU to track the physical addresses, otherwise we'd
-> +	 * need a much more complicated tracking system.  Unfortunately that
-> +	 * means we need to use one of the iommu domains to figure out the
-> +	 * pfns to unpin.  The rest need to be unmapped in advance so we have
-> +	 * no iommu translations remaining when the pages are unpinned.
-> +	 */
-> +	domain = d = list_first_entry(&iommu->domain_list,
-> +				      struct vfio_domain, next);
+> +struct usb3phy_config {
+> +       u32 id;
+> +       u32 reg_pmu_offset;
+> +       void (*phy_isol)(struct phy *phy, u32 on);
+> +};
 > +
-> +	list_for_each_entry_continue(d, &iommu->domain_list, next)
-> +		iommu_unmap(d->domain, dma->iova, dma->size);
+> +struct exynos5_usb3phy_drv_data {
+> +       bool has_usb30_sclk;
+> +       bool has_multi_controller;
+> +       const struct usb3phy_config *phy_cfg;
+> +};
 > +
->  	while (iova < end) {
->  		size_t unmapped;
->  		phys_addr_t phys;
-> 
-> -		/*
-> -		 * We use the IOMMU to track the physical address.  This
-> -		 * saves us from having a lot more entries in our mapping
-> -		 * tree.  The downside is that we don't track the size
-> -		 * used to do the mapping.  We request unmap of a single
-> -		 * page, but expect IOMMUs that support large pages to
-> -		 * unmap a larger chunk.
-> -		 */
-> -		phys = iommu_iova_to_phys(iommu->domain, iova);
-> +		phys = iommu_iova_to_phys(domain->domain, iova);
->  		if (WARN_ON(!phys)) {
->  			iova += PAGE_SIZE;
->  			continue;
->  		}
-> 
-> -		unmapped = iommu_unmap(iommu->domain, iova, PAGE_SIZE);
-> -		if (!unmapped)
-> +		unmapped = iommu_unmap(domain->domain, iova, PAGE_SIZE);
-> +		if (WARN_ON(!unmapped))
->  			break;
-> 
->  		unlocked += vfio_unpin_pages(phys >> PAGE_SHIFT,
-> @@ -357,119 +370,26 @@ static int vfio_unmap_unpin(struct vfio_iommu *iommu,
-> struct vfio_dma *dma,
->  	}
-> 
->  	vfio_lock_acct(-unlocked);
-> -
-> -	*size = iova - start;
-> -
-> -	return 0;
->  }
-> 
-> -static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
-> -				   size_t *size, struct vfio_dma *dma)
-> +static void vfio_remove_dma(struct vfio_iommu *iommu, struct vfio_dma *dma)
->  {
-> -	size_t offset, overlap, tmp;
-> -	struct vfio_dma *split;
-> -	int ret;
-> -
-> -	if (!*size)
-> -		return 0;
-> -
-> -	/*
-> -	 * Existing dma region is completely covered, unmap all.  This is
-> -	 * the likely case since userspace tends to map and unmap buffers
-> -	 * in one shot rather than multiple mappings within a buffer.
-> -	 */
-> -	if (likely(start <= dma->iova &&
-> -		   start + *size >= dma->iova + dma->size)) {
-> -		*size = dma->size;
-> -		ret = vfio_unmap_unpin(iommu, dma, dma->iova, size);
-> -		if (ret)
-> -			return ret;
-> -
-> -		/*
-> -		 * Did we remove more than we have?  Should never happen
-> -		 * since a vfio_dma is contiguous in iova and vaddr.
-> -		 */
-> -		WARN_ON(*size != dma->size);
-> -
-> -		vfio_remove_dma(iommu, dma);
-> -		kfree(dma);
-> -		return 0;
-> -	}
-> -
-> -	/* Overlap low address of existing range */
-> -	if (start <= dma->iova) {
-> -		overlap = start + *size - dma->iova;
-> -		ret = vfio_unmap_unpin(iommu, dma, dma->iova, &overlap);
-> -		if (ret)
-> -			return ret;
-> -
-> -		vfio_remove_dma(iommu, dma);
-> -
-> -		/*
-> -		 * Check, we may have removed to whole vfio_dma.  If not
-> -		 * fixup and re-insert.
-> -		 */
-> -		if (overlap < dma->size) {
-> -			dma->iova += overlap;
-> -			dma->vaddr += overlap;
-> -			dma->size -= overlap;
-> -			vfio_insert_dma(iommu, dma);
-> -		} else
-> -			kfree(dma);
-> -
-> -		*size = overlap;
-> -		return 0;
-> -	}
-> -
-> -	/* Overlap high address of existing range */
-> -	if (start + *size >= dma->iova + dma->size) {
-> -		offset = start - dma->iova;
-> -		overlap = dma->size - offset;
-> -
-> -		ret = vfio_unmap_unpin(iommu, dma, start, &overlap);
-> -		if (ret)
-> -			return ret;
-> -
-> -		dma->size -= overlap;
-> -		*size = overlap;
-> -		return 0;
-> -	}
-> -
-> -	/* Split existing */
-> -
-> -	/*
-> -	 * Allocate our tracking structure early even though it may not
-> -	 * be used.  An Allocation failure later loses track of pages and
-> -	 * is more difficult to unwind.
-> -	 */
-> -	split = kzalloc(sizeof(*split), GFP_KERNEL);
-> -	if (!split)
-> -		return -ENOMEM;
-> -
-> -	offset = start - dma->iova;
-> -
-> -	ret = vfio_unmap_unpin(iommu, dma, start, size);
-> -	if (ret || !*size) {
-> -		kfree(split);
-> -		return ret;
-> -	}
-> -
-> -	tmp = dma->size;
-> +	vfio_unmap_unpin(iommu, dma);
-> +	vfio_unlink_dma(iommu, dma);
-> +	kfree(dma);
-> +}
-> 
-> -	/* Resize the lower vfio_dma in place, before the below insert */
-> -	dma->size = offset;
-> +static unsigned long vfio_pgsize_bitmap(struct vfio_iommu *iommu)
+> +/**
+> + * struct exynos5_usb3phy_driver - driver data for USB 3.0 PHY
+> + * @dev: pointer to device instance of this platform device
+> + * @reg_phy: usb phy controller register memory base
+> + * @clk: phy clock for register access
+> + * @usb30_sclk: additional special clock for phy operations
+> + * @drv_data: pointer to SoC level driver data structure
+> + * @phys[]: array for 'EXYNOS5_USB3PHYS_NUM' number of PHY
+> + *         instances each with its 'phy' and 'phy_cfg'.
+> + * @extrefclk: frequency select settings when using 'separate
+> + *            reference clocks' for SS and HS operations
+> + * @rate: rate of reference clock to PHY block
+> + * @channel: number of PHY channels present in SoC
+> + */
+> +struct exynos5_usb3phy_driver {
+> +       struct device *dev;
+> +       void __iomem *reg_phy;
+> +       struct clk *clk;
+> +       struct clk *usb30_sclk;
+> +       const struct exynos5_usb3phy_drv_data *drv_data;
+> +       struct phy_usb_instance {
+> +               struct phy *phy;
+> +               u32 index;
+> +               struct regmap *reg_isol;
+> +               const struct usb3phy_config *phy_cfg;
+> +       } phys[EXYNOS5_USB3PHYS_NUM];
+> +       u32 extrefclk;
+> +       unsigned long rate;
+> +       u32 channel;
+> +};
+> +
+> +#define to_usb3phy_driver(inst) \
+> +       container_of((inst), struct exynos5_usb3phy_driver, \
+> +                    phys[(inst)->index]);
+> +
+> +/*
+> + * exynos5_rate_to_clk() converts the supplied clock rate to the value that
+> + * can be written to the phy register.
+> + */
+> +static u32 exynos5_rate_to_clk(unsigned long rate)
 > +{
-> +	struct vfio_domain *domain;
-> +	unsigned long bitmap = PAGE_MASK;
-> 
-> -	/* Insert new for remainder, assuming it didn't all get unmapped */
-> -	if (likely(offset + *size < tmp)) {
-> -		split->size = tmp - offset - *size;
-> -		split->iova = dma->iova + offset + *size;
-> -		split->vaddr = dma->vaddr + offset + *size;
-> -		split->prot = dma->prot;
-> -		vfio_insert_dma(iommu, split);
-> -	} else
-> -		kfree(split);
-> +	mutex_lock(&iommu->lock);
-> +	list_for_each_entry(domain, &iommu->domain_list, next)
-> +		bitmap &= domain->domain->ops->pgsize_bitmap;
-> +	mutex_unlock(&iommu->lock);
-> 
-> -	return 0;
-> +	return bitmap;
->  }
-> 
->  static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
-> @@ -477,10 +397,10 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
->  {
->  	uint64_t mask;
->  	struct vfio_dma *dma;
-> -	size_t unmapped = 0, size;
-> +	size_t unmapped = 0;
->  	int ret = 0;
-> 
-> -	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
-> +	mask = ((uint64_t)1 << __ffs(vfio_pgsize_bitmap(iommu))) - 1;
-> 
->  	if (unmap->iova & mask)
->  		return -EINVAL;
-> @@ -491,20 +411,61 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
-> 
->  	mutex_lock(&iommu->lock);
-> 
-> +	/*
-> +	 * vfio-iommu-type1 (v1) - User mappings were coalesced together to
-> +	 * avoid tracking individual mappings.  This means that the granularity
-> +	 * of the original mapping was lost and the user was allowed to attempt
-> +	 * to unmap any range.  Depending on the contiguousness of physical
-> +	 * memory and page sizes supported by the IOMMU, arbitrary unmaps may
-> +	 * or may not have worked.  We only guaranteed unmap granularity
-> +	 * matching the original mapping; even though it was untracked here,
-> +	 * the original mappings are reflected in IOMMU mappings.  This
-> +	 * resulted in a couple unusual behaviors.  First, if a range is not
-> +	 * able to be unmapped, ex. a set of 4k pages that was mapped as a
-> +	 * 2M hugepage into the IOMMU, the unmap ioctl returns success but with
-> +	 * a zero sized unmap.  Also, if an unmap request overlaps the first
-> +	 * address of a hugepage, the IOMMU will unmap the entire hugepage.
-> +	 * This also returns success and the returned unmap size reflects the
-> +	 * actual size unmapped.
-> +	 *
-> +	 * We attempt to maintain compatibility with this interface, but we
-> +	 * take control out of the hands of the IOMMU.  An unmap request offset
-> +	 * from the beginning of the original mapping will return success with
-> +	 * zero sized unmap.  An unmap request covering the first iova of
-> +	 * mapping will unmap the entire range.
-> +	 *
-> +	 * The v2 version of this interface intends to be more deterministic.
-> +	 * Unmap requests must fully cover previous mappings.  Multiple
-> +	 * mappings may still be unmaped by specifying large ranges, but there
-> +	 * must not be any previous mappings bisected by the range.  An error
-> +	 * will be returned if these conditions are not met.  The v2 interface
-> +	 * will only return success and a size of zero if there were no
-> +	 * mappings within the range.
-> +	 */
-> +	if (iommu->v2 ) {
-> +		dma = vfio_find_dma(iommu, unmap->iova, 0);
-> +		if (dma && dma->iova != unmap->iova) {
-> +			ret = -EINVAL;
-> +			goto unlock;
-> +		}
-> +		dma = vfio_find_dma(iommu, unmap->iova + unmap->size - 1, 0);
-> +		if (dma && dma->iova + dma->size != unmap->iova + unmap->size) {
-> +			ret = -EINVAL;
-> +			goto unlock;
-> +		}
-> +	}
+> +       unsigned int clksel;
 > +
->  	while ((dma = vfio_find_dma(iommu, unmap->iova, unmap->size))) {
-> -		size = unmap->size;
-> -		ret = vfio_remove_dma_overlap(iommu, unmap->iova, &size, dma);
-> -		if (ret || !size)
-> +		if (!iommu->v2 && unmap->iova > dma->iova)
->  			break;
-> -		unmapped += size;
-> +		unmapped += dma->size;
-> +		vfio_remove_dma(iommu, dma);
->  	}
-> 
-> +unlock:
->  	mutex_unlock(&iommu->lock);
-> 
-> -	/*
-> -	 * We may unmap more than requested, update the unmap struct so
-> -	 * userspace can know.
-> -	 */
-> +	/* Report how much was unmapped */
->  	unmap->size = unmapped;
-> 
->  	return ret;
-> @@ -516,22 +477,47 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
->   * soon, so this is just a temporary workaround to break mappings down into
->   * PAGE_SIZE.  Better to map smaller pages than nothing.
->   */
-> -static int map_try_harder(struct vfio_iommu *iommu, dma_addr_t iova,
-> +static int map_try_harder(struct vfio_domain *domain, dma_addr_t iova,
->  			  unsigned long pfn, long npage, int prot)
->  {
->  	long i;
->  	int ret;
-> 
->  	for (i = 0; i < npage; i++, pfn++, iova += PAGE_SIZE) {
-> -		ret = iommu_map(iommu->domain, iova,
-> +		ret = iommu_map(domain->domain, iova,
->  				(phys_addr_t)pfn << PAGE_SHIFT,
-> -				PAGE_SIZE, prot);
-> +				PAGE_SIZE, prot | domain->prot);
->  		if (ret)
->  			break;
->  	}
-> 
->  	for (; i < npage && i > 0; i--, iova -= PAGE_SIZE)
-> -		iommu_unmap(iommu->domain, iova, PAGE_SIZE);
-> +		iommu_unmap(domain->domain, iova, PAGE_SIZE);
+> +       /* EXYNOS5_FSEL_MASK */
 > +
-> +	return ret;
+> +       switch (rate) {
+> +       case 9600 * KHZ:
+> +               clksel = EXYNOS5_FSEL_9MHZ6;
+> +               break;
+> +       case 10 * MHZ:
+> +               clksel = EXYNOS5_FSEL_10MHZ;
+> +               break;
+> +       case 12 * MHZ:
+> +               clksel = EXYNOS5_FSEL_12MHZ;
+> +               break;
+> +       case 19200 * KHZ:
+> +               clksel = EXYNOS5_FSEL_19MHZ2;
+> +               break;
+> +       case 20 * MHZ:
+> +               clksel = EXYNOS5_FSEL_20MHZ;
+> +               break;
+> +       case 24 * MHZ:
+> +               clksel = EXYNOS5_FSEL_24MHZ;
+> +               break;
+> +       case 50 * MHZ:
+> +               clksel = EXYNOS5_FSEL_50MHZ;
+> +               break;
+> +       default:
+> +               clksel = -EINVAL;
+> +       }
+> +
+> +       return clksel;
 > +}
 > +
-> +static int vfio_iommu_map(struct vfio_iommu *iommu, dma_addr_t iova,
-> +			  unsigned long pfn, long npage, int prot)
+> +static void exynos5_usb3phy_isol(struct phy *phy, unsigned int on)
 > +{
-> +	struct vfio_domain *d;
-> +	int ret;
+> +       u32 pmu_offset;
+> +       struct phy_usb_instance *inst = phy_get_drvdata(phy);
+> +       struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
 > +
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		ret = iommu_map(d->domain, iova, (phys_addr_t)pfn << PAGE_SHIFT,
-> +				npage << PAGE_SHIFT, prot | d->prot);
-> +		if (ret) {
-> +			if (ret != -EBUSY ||
-> +			    map_try_harder(d, iova, pfn, npage, prot))
-> +				goto unwind;
-> +		}
-> +	}
+> +       pmu_offset = inst->phy_cfg->reg_pmu_offset;
+> +       if (!inst->reg_isol)
+> +               return;
 > +
-> +	return 0;
+> +       switch (drv->channel) {
+> +       case 1:
+> +               /* Channel 1 is at 0x708 offset */
+> +               pmu_offset += sizeof(&pmu_offset);
+> +               break;
+> +       case 0:
+> +       default:
+> +               /* Channel 0 is at 0x704 offset */
+> +               break;
+> +       }
 > +
-> +unwind:
-> +	list_for_each_entry_continue_reverse(d, &iommu->domain_list, next)
-> +		iommu_unmap(d->domain, iova, npage << PAGE_SHIFT);
-> 
->  	return ret;
->  }
-> @@ -545,12 +531,12 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  	long npage;
->  	int ret = 0, prot = 0;
->  	uint64_t mask;
-> -	struct vfio_dma *dma = NULL;
-> +	struct vfio_dma *dma;
->  	unsigned long pfn;
-> 
->  	end = map->iova + map->size;
-> 
-> -	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
-> +	mask = ((uint64_t)1 << __ffs(vfio_pgsize_bitmap(iommu))) - 1;
-> 
->  	/* READ/WRITE from device perspective */
->  	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE)
-> @@ -561,9 +547,6 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  	if (!prot)
->  		return -EINVAL; /* No READ/WRITE? */
-> 
-> -	if (iommu->cache)
-> -		prot |= IOMMU_CACHE;
-> -
->  	if (vaddr & mask)
->  		return -EINVAL;
->  	if (map->iova & mask)
-> @@ -588,180 +571,249 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  		return -EEXIST;
->  	}
-> 
-> -	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
-> -		long i;
-> +	dma = kzalloc(sizeof(*dma), GFP_KERNEL);
-> +	if (!dma) {
-> +		mutex_unlock(&iommu->lock);
-> +		return -ENOMEM;
-> +	}
-> 
-> +	dma->iova = map->iova;
-> +	dma->vaddr = map->vaddr;
-> +	dma->prot = prot;
-> +
-> +	/* Insert zero-sized and grow as we map chunks of it */
-> +	vfio_link_dma(iommu, dma);
-> +
-> +	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
->  		/* Pin a contiguous chunk of memory */
->  		npage = vfio_pin_pages(vaddr, (end - iova) >> PAGE_SHIFT,
->  				       prot, &pfn);
->  		if (npage <= 0) {
->  			WARN_ON(!npage);
->  			ret = (int)npage;
-> -			goto out;
-> -		}
-> -
-> -		/* Verify pages are not already mapped */
-> -		for (i = 0; i < npage; i++) {
-> -			if (iommu_iova_to_phys(iommu->domain,
-> -					       iova + (i << PAGE_SHIFT))) {
-> -				ret = -EBUSY;
-> -				goto out_unpin;
-> -			}
-> +			break;
->  		}
-> 
-> -		ret = iommu_map(iommu->domain, iova,
-> -				(phys_addr_t)pfn << PAGE_SHIFT,
-> -				npage << PAGE_SHIFT, prot);
-> +		/* Map it! */
-> +		ret = vfio_iommu_map(iommu, iova, pfn, npage, prot);
->  		if (ret) {
-> -			if (ret != -EBUSY ||
-> -			    map_try_harder(iommu, iova, pfn, npage, prot)) {
-> -				goto out_unpin;
-> -			}
-> +			vfio_unpin_pages(pfn, npage, prot, true);
-> +			break;
->  		}
-> 
->  		size = npage << PAGE_SHIFT;
-> +		dma->size += size;
-> +	}
-> 
-> -		/*
-> -		 * Check if we abut a region below - nothing below 0.
-> -		 * This is the most likely case when mapping chunks of
-> -		 * physically contiguous regions within a virtual address
-> -		 * range.  Update the abutting entry in place since iova
-> -		 * doesn't change.
-> -		 */
-> -		if (likely(iova)) {
-> -			struct vfio_dma *tmp;
-> -			tmp = vfio_find_dma(iommu, iova - 1, 1);
-> -			if (tmp && tmp->prot == prot &&
-> -			    tmp->vaddr + tmp->size == vaddr) {
-> -				tmp->size += size;
-> -				iova = tmp->iova;
-> -				size = tmp->size;
-> -				vaddr = tmp->vaddr;
-> -				dma = tmp;
-> -			}
-> -		}
-> +	if (ret)
-> +		vfio_remove_dma(iommu, dma);
-> 
-> -		/*
-> -		 * Check if we abut a region above - nothing above ~0 + 1.
-> -		 * If we abut above and below, remove and free.  If only
-> -		 * abut above, remove, modify, reinsert.
-> -		 */
-> -		if (likely(iova + size)) {
-> -			struct vfio_dma *tmp;
-> -			tmp = vfio_find_dma(iommu, iova + size, 1);
-> -			if (tmp && tmp->prot == prot &&
-> -			    tmp->vaddr == vaddr + size) {
-> -				vfio_remove_dma(iommu, tmp);
-> -				if (dma) {
-> -					dma->size += tmp->size;
-> -					kfree(tmp);
-> -				} else {
-> -					size += tmp->size;
-> -					tmp->size = size;
-> -					tmp->iova = iova;
-> -					tmp->vaddr = vaddr;
-> -					vfio_insert_dma(iommu, tmp);
-> -					dma = tmp;
-> -				}
-> -			}
-> -		}
-> +	mutex_unlock(&iommu->lock);
-> +	return ret;
+> +       regmap_update_bits(inst->reg_isol, pmu_offset,
+> +                          EXYNOS5_USB3DRD_PMU_ISOL, ~on);
 > +}
 > +
-> +static int vfio_bus_type(struct device *dev, void *data)
+> +/*
+> + * Sets the phy clk as EXTREFCLK (XXTI) which is internal clock from clock core.
+> + */
+> +static u32 exynos5_usb3phy_set_refclk(struct exynos5_usb3phy_driver *drv)
 > +{
-> +	struct vfio_domain *domain = data;
+> +       u32 reg;
 > +
-> +	if (domain->bus && domain->bus != dev->bus)
-> +		return -EINVAL;
+> +       reg = PHYCLKRST_REFCLKSEL_EXT_REFCLK |
+> +             PHYCLKRST_FSEL(drv->extrefclk);
 > +
-> +	domain->bus = dev->bus;
+> +       switch (drv->extrefclk) {
+> +       case EXYNOS5_FSEL_50MHZ:
+> +               reg |= (PHYCLKRST_MPLL_MULTIPLIER_50M_REF |
+> +                       PHYCLKRST_SSC_REFCLKSEL(0x00));
+> +               break;
+> +       case EXYNOS5_FSEL_24MHZ:
+> +               reg |= (PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF |
+> +                       PHYCLKRST_SSC_REFCLKSEL(0x88));
+> +               break;
+> +       case EXYNOS5_FSEL_20MHZ:
+> +               reg |= (PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF |
+> +                       PHYCLKRST_SSC_REFCLKSEL(0x00));
+> +               break;
+> +       case EXYNOS5_FSEL_19MHZ2:
+> +               reg |= (PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF |
+> +                       PHYCLKRST_SSC_REFCLKSEL(0x88));
+> +               break;
+> +       default:
+> +               dev_dbg(drv->dev, "unsupported ref clk\n");
+> +               break;
+> +       }
 > +
-> +	return 0;
+> +       return reg;
 > +}
 > +
-> +static int vfio_iommu_replay(struct vfio_iommu *iommu,
-> +			     struct vfio_domain *domain)
+> +static int exynos5_usb3phy_init(struct phy *phy)
 > +{
-> +	struct vfio_domain *d;
-> +	struct rb_node *n;
-> +	int ret;
+> +       int ret;
+> +       u32 phyparam0;
+> +       u32 phyparam1;
+> +       u32 linksystem;
+> +       u32 phybatchg;
+> +       u32 phytest;
+> +       u32 phyclkrst;
+> +       struct phy_usb_instance *inst = phy_get_drvdata(phy);
+> +       struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
 > +
-> +	/* Arbitrarily pick the first domain in the list for lookups */
-> +	d = list_first_entry(&iommu->domain_list, struct vfio_domain, next);
-> +	n = rb_first(&iommu->dma_list);
+> +       ret = clk_prepare_enable(drv->clk);
+> +       if (ret)
+> +               return ret;
 > +
-> +	/* If there's not a domain, there better not be any mappings */
-> +	if (WARN_ON(n && !d))
-> +		return -EINVAL;
+> +       drv->extrefclk = exynos5_rate_to_clk(drv->rate);
+> +       if (drv->extrefclk == -EINVAL) {
+> +               dev_err(drv->dev, "Clock rate (%ld) not supported\n",
+> +                                               drv->rate);
+> +               return -EINVAL;
+> +       }
 > +
-> +	for (; n; n = rb_next(n)) {
-> +		struct vfio_dma *dma;
-> +		dma_addr_t iova;
+> +       /* Reset USB 3.0 PHY */
+> +       writel(0x0, drv->reg_phy + EXYNOS5_DRD_PHYREG0);
 > +
-> +		dma = rb_entry(n, struct vfio_dma, node);
-> +		iova = dma->iova;
-> 
-> -		if (!dma) {
-> -			dma = kzalloc(sizeof(*dma), GFP_KERNEL);
-> -			if (!dma) {
-> -				iommu_unmap(iommu->domain, iova, size);
-> -				ret = -ENOMEM;
-> -				goto out_unpin;
-> +		while (iova < dma->iova + dma->size) {
-> +			phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
-> +			size_t size;
+> +       phyparam0 = readl(drv->reg_phy + EXYNOS5_DRD_PHYPARAM0);
+> +       /* Select PHY CLK source */
+> +       phyparam0 &= ~PHYPARAM0_REF_USE_PAD;
+> +       /* Set Loss-of-Signal Detector sensitivity */
+> +       phyparam0 &= ~PHYPARAM0_REF_LOSLEVEL_MASK;
+> +       phyparam0 |= PHYPARAM0_REF_LOSLEVEL;
+> +       writel(phyparam0, drv->reg_phy + EXYNOS5_DRD_PHYPARAM0);
 > +
-> +			if (WARN_ON(!phys)) {
-> +				iova += PAGE_SIZE;
-> +				continue;
->  			}
-> 
-> -			dma->size = size;
-> -			dma->iova = iova;
-> -			dma->vaddr = vaddr;
-> -			dma->prot = prot;
-> -			vfio_insert_dma(iommu, dma);
-> -		}
-> -	}
-> +			size = PAGE_SIZE;
-> 
-> -	WARN_ON(ret);
-> -	mutex_unlock(&iommu->lock);
-> -	return ret;
-> +			while (iova + size < dma->iova + dma->size &&
-> +			       phys + size == iommu_iova_to_phys(d->domain,
-> +								 iova + size))
-> +				size += PAGE_SIZE;
-> 
-> -out_unpin:
-> -	vfio_unpin_pages(pfn, npage, prot, true);
-> +			ret = iommu_map(domain->domain, iova, phys,
-> +					size, dma->prot | domain->prot);
-> +			if (ret)
-> +				return ret;
-> 
-> -out:
-> -	iova = map->iova;
-> -	size = map->size;
-> -	while ((dma = vfio_find_dma(iommu, iova, size))) {
-> -		int r = vfio_remove_dma_overlap(iommu, iova,
-> -						&size, dma);
-> -		if (WARN_ON(r || !size))
-> -			break;
-> +			iova += size;
-> +		}
->  	}
-> 
-> -	mutex_unlock(&iommu->lock);
-> -	return ret;
-> +	return 0;
->  }
-> 
->  static int vfio_iommu_type1_attach_group(void *iommu_data,
->  					 struct iommu_group *iommu_group)
->  {
->  	struct vfio_iommu *iommu = iommu_data;
-> -	struct vfio_group *group, *tmp;
-> +	struct vfio_group *group, *g;
-> +	struct vfio_domain *domain, *d;
->  	int ret;
-> 
-> -	group = kzalloc(sizeof(*group), GFP_KERNEL);
-> -	if (!group)
-> -		return -ENOMEM;
-> -
->  	mutex_lock(&iommu->lock);
-> 
-> -	list_for_each_entry(tmp, &iommu->group_list, next) {
-> -		if (tmp->iommu_group == iommu_group) {
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		list_for_each_entry(g, &d->group_list, next) {
-> +			if (g->iommu_group != iommu_group)
-> +				continue;
+> +       writel(0x0, drv->reg_phy + EXYNOS5_DRD_PHYRESUME);
 > +
->  			mutex_unlock(&iommu->lock);
-> -			kfree(group);
->  			return -EINVAL;
->  		}
->  	}
-> 
-> -	/*
-> -	 * TODO: Domain have capabilities that might change as we add
-> -	 * groups (see iommu->cache, currently never set).  Check for
-> -	 * them and potentially disallow groups to be attached when it
-> -	 * would change capabilities (ugh).
-> -	 */
-> -	ret = iommu_attach_group(iommu->domain, iommu_group);
-> -	if (ret) {
-> -		mutex_unlock(&iommu->lock);
-> -		kfree(group);
-> -		return ret;
-> +	group = kzalloc(sizeof(*group), GFP_KERNEL);
-> +	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
-> +	if (!group || !domain) {
-> +		ret = -ENOMEM;
-> +		goto out_free;
->  	}
-> 
->  	group->iommu_group = iommu_group;
-> -	list_add(&group->next, &iommu->group_list);
+> +       /*
+> +        * Setting the Frame length Adj value[6:1] to default 0x20
+> +        * See xHCI 1.0 spec, 5.2.4
+> +        */
+> +       linksystem = LINKSYSTEM_XHCI_VERSION_CONTROL |
+> +                    LINKSYSTEM_FLADJ(0x20);
+> +       writel(linksystem, drv->reg_phy + EXYNOS5_DRD_LINKSYSTEM);
 > +
-> +	/* Determine bus_type in order to allocate a domain */
-> +	ret = iommu_group_for_each_dev(iommu_group, domain, vfio_bus_type);
-> +	if (ret)
-> +		goto out_free;
+> +       phyparam1 = readl(drv->reg_phy + EXYNOS5_DRD_PHYPARAM1);
+> +       /* Set Tx De-Emphasis level */
+> +       phyparam1 &= ~PHYPARAM1_PCS_TXDEEMPH_MASK;
+> +       phyparam1 |= PHYPARAM1_PCS_TXDEEMPH;
+> +       writel(phyparam1, drv->reg_phy + EXYNOS5_DRD_PHYPARAM1);
 > +
-> +	domain->domain = iommu_domain_alloc(domain->bus);
-> +	if (!domain->domain) {
-> +		ret = -EIO;
-> +		goto out_free;
-> +	}
+> +       phybatchg = readl(drv->reg_phy + EXYNOS5_DRD_PHYBATCHG);
+> +       phybatchg |= PHYBATCHG_UTMI_CLKSEL;
+> +       writel(phybatchg, drv->reg_phy + EXYNOS5_DRD_PHYBATCHG);
 > +
-> +	ret = iommu_attach_group(domain->domain, iommu_group);
-> +	if (ret)
-> +		goto out_domain;
+> +       /* PHYTEST POWERDOWN Control */
+> +       phytest = readl(drv->reg_phy + EXYNOS5_DRD_PHYTEST);
+> +       phytest &= ~(PHYTEST_POWERDOWN_SSP |
+> +                    PHYTEST_POWERDOWN_HSP);
+> +       writel(phytest, drv->reg_phy + EXYNOS5_DRD_PHYTEST);
 > +
-> +	INIT_LIST_HEAD(&domain->group_list);
-> +	list_add(&group->next, &domain->group_list);
+> +       /* UTMI Power Control */
+> +       writel(PHYUTMI_OTGDISABLE, drv->reg_phy + EXYNOS5_DRD_PHYUTMI);
 > +
-> +	if (!allow_unsafe_interrupts &&
-> +	    !iommu_domain_has_cap(domain->domain, IOMMU_CAP_INTR_REMAP)) {
-> +		pr_warn("%s: No interrupt remapping support.  Use the module param
-> \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
-> +		       __func__);
-> +		ret = -EPERM;
-> +		goto out_detach;
-> +	}
+> +       phyclkrst = exynos5_usb3phy_set_refclk(drv);
 > +
-> +	if (iommu_domain_has_cap(domain->domain, IOMMU_CAP_CACHE_COHERENCY))
-> +		domain->prot |= IOMMU_CACHE;
+> +       phyclkrst |= PHYCLKRST_PORTRESET |
+> +                    /* Digital power supply in normal operating mode */
+> +                    PHYCLKRST_RETENABLEN |
+> +                    /* Enable ref clock for SS function */
+> +                    PHYCLKRST_REF_SSP_EN |
+> +                    /* Enable spread spectrum */
+> +                    PHYCLKRST_SSC_EN |
+> +                    /* Power down HS Bias and PLL blocks in suspend mode */
+> +                    PHYCLKRST_COMMONONN;
 > +
-> +	/* Try to match an existing compatible domain. */
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		if (d->bus == domain->bus && d->prot == domain->prot) {
-
-Are not we talking about allowing a domain to support different bus type if domain/iommu-group properties matches.
-
-> +			iommu_detach_group(domain->domain, iommu_group);
-> +			if (!iommu_attach_group(d->domain, iommu_group)) {
-> +				list_add(&group->next, &d->group_list);
-> +				iommu_domain_free(domain->domain);
-> +				kfree(domain);
-> +				mutex_unlock(&iommu->lock);
-> +				return 0;
-> +			}
+> +       writel(phyclkrst, drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
 > +
-> +			ret = iommu_attach_group(domain->domain, iommu_group);
-> +			if (ret)
-> +				goto out_domain;
-> +		}
-> +	}
+> +       udelay(10);
 > +
-> +	/* replay mappings on new domains */
-> +	ret = vfio_iommu_replay(iommu, domain);
-
-IIUC; We created a new domain because an already existing domain does not have same attribute; say domain->prot;
-But in vfio_iommu_replay() we pick up any domain, first domain, and create mapping accordingly.
-Should not we use attributes of this domain otherwise we may get "reserved bit faults"? 
-
-Thanks
--Bharat
-
-> +	if (ret)
-> +		goto out_detach;
+> +       phyclkrst &= ~PHYCLKRST_PORTRESET;
+> +       writel(phyclkrst, drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
 > +
-> +	list_add(&domain->next, &iommu->domain_list);
-> 
->  	mutex_unlock(&iommu->lock);
-> 
->  	return 0;
+> +       clk_disable_unprepare(drv->clk);
 > +
-> +out_detach:
-> +	iommu_detach_group(domain->domain, iommu_group);
-> +out_domain:
-> +	iommu_domain_free(domain->domain);
-> +out_free:
-> +	kfree(domain);
-> +	kfree(group);
-> +	mutex_unlock(&iommu->lock);
-> +	return ret;
+> +       return 0;
 > +}
 > +
-> +static void vfio_iommu_unmap_unpin_all(struct vfio_iommu *iommu)
+> +static int exynos5_usb3phy_exit(struct phy *phy)
 > +{
-> +	struct rb_node *node;
+> +       int ret;
+> +       u32 phyutmi;
+> +       u32 phyclkrst;
+> +       u32 phytest;
+> +       struct phy_usb_instance *inst = phy_get_drvdata(phy);
+> +       struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
 > +
-> +	while ((node = rb_first(&iommu->dma_list)))
-> +		vfio_remove_dma(iommu, rb_entry(node, struct vfio_dma, node));
->  }
-> 
->  static void vfio_iommu_type1_detach_group(void *iommu_data,
->  					  struct iommu_group *iommu_group)
->  {
->  	struct vfio_iommu *iommu = iommu_data;
-> +	struct vfio_domain *domain;
->  	struct vfio_group *group;
-> 
->  	mutex_lock(&iommu->lock);
-> 
-> -	list_for_each_entry(group, &iommu->group_list, next) {
-> -		if (group->iommu_group == iommu_group) {
-> -			iommu_detach_group(iommu->domain, iommu_group);
-> +	list_for_each_entry(domain, &iommu->domain_list, next) {
-> +		list_for_each_entry(group, &domain->group_list, next) {
-> +			if (group->iommu_group != iommu_group)
-> +				continue;
+> +       ret = clk_prepare_enable(drv->clk);
+> +       if (ret)
+> +               return ret;
 > +
-> +			iommu_detach_group(domain->domain, iommu_group);
->  			list_del(&group->next);
->  			kfree(group);
-> -			break;
-> +			/*
-> +			 * Group ownership provides privilege, if the group
-> +			 * list is empty, the domain goes away.  If it's the
-> +			 * last domain, then all the mappings go away too.
-> +			 */
-> +			if (list_empty(&domain->group_list)) {
-> +				if (list_is_singular(&iommu->domain_list))
-> +					vfio_iommu_unmap_unpin_all(iommu);
-> +				iommu_domain_free(domain->domain);
-> +				list_del(&domain->next);
-> +				kfree(domain);
-> +			}
-> +			goto done;
->  		}
->  	}
-> 
-> +done:
->  	mutex_unlock(&iommu->lock);
->  }
-> 
-> @@ -769,40 +821,17 @@ static void *vfio_iommu_type1_open(unsigned long arg)
->  {
->  	struct vfio_iommu *iommu;
-> 
-> -	if (arg != VFIO_TYPE1_IOMMU)
-> +	if (arg != VFIO_TYPE1_IOMMU || arg != VFIO_TYPE1v2_IOMMU)
->  		return ERR_PTR(-EINVAL);
-> 
->  	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
->  	if (!iommu)
->  		return ERR_PTR(-ENOMEM);
-> 
-> -	INIT_LIST_HEAD(&iommu->group_list);
-> +	INIT_LIST_HEAD(&iommu->domain_list);
->  	iommu->dma_list = RB_ROOT;
->  	mutex_init(&iommu->lock);
-> -
-> -	/*
-> -	 * Wish we didn't have to know about bus_type here.
-> -	 */
-> -	iommu->domain = iommu_domain_alloc(&pci_bus_type);
-> -	if (!iommu->domain) {
-> -		kfree(iommu);
-> -		return ERR_PTR(-EIO);
-> -	}
-> -
-> -	/*
-> -	 * Wish we could specify required capabilities rather than create
-> -	 * a domain, see what comes out and hope it doesn't change along
-> -	 * the way.  Fortunately we know interrupt remapping is global for
-> -	 * our iommus.
-> -	 */
-> -	if (!allow_unsafe_interrupts &&
-> -	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
-> -		pr_warn("%s: No interrupt remapping support.  Use the module param
-> \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
-> -		       __func__);
-> -		iommu_domain_free(iommu->domain);
-> -		kfree(iommu);
-> -		return ERR_PTR(-EPERM);
-> -	}
-> +	iommu->v2 = (arg == VFIO_TYPE1v2_IOMMU);
-> 
->  	return iommu;
->  }
-> @@ -810,25 +839,24 @@ static void *vfio_iommu_type1_open(unsigned long arg)
->  static void vfio_iommu_type1_release(void *iommu_data)
->  {
->  	struct vfio_iommu *iommu = iommu_data;
-> +	struct vfio_domain *domain, *domain_tmp;
->  	struct vfio_group *group, *group_tmp;
-> -	struct rb_node *node;
-> 
-> -	list_for_each_entry_safe(group, group_tmp, &iommu->group_list, next) {
-> -		iommu_detach_group(iommu->domain, group->iommu_group);
-> -		list_del(&group->next);
-> -		kfree(group);
-> -	}
-> +	vfio_iommu_unmap_unpin_all(iommu);
-> 
-> -	while ((node = rb_first(&iommu->dma_list))) {
-> -		struct vfio_dma *dma = rb_entry(node, struct vfio_dma, node);
-> -		size_t size = dma->size;
-> -		vfio_remove_dma_overlap(iommu, dma->iova, &size, dma);
-> -		if (WARN_ON(!size))
-> -			break;
-> +	list_for_each_entry_safe(domain, domain_tmp,
-> +				 &iommu->domain_list, next) {
-> +		list_for_each_entry_safe(group, group_tmp,
-> +					 &domain->group_list, next) {
-> +			iommu_detach_group(domain->domain, group->iommu_group);
-> +			list_del(&group->next);
-> +			kfree(group);
-> +		}
-> +		iommu_domain_free(domain->domain);
-> +		list_del(&domain->next);
-> +		kfree(domain);
->  	}
-> 
-> -	iommu_domain_free(iommu->domain);
-> -	iommu->domain = NULL;
->  	kfree(iommu);
->  }
-> 
-> @@ -858,7 +886,7 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
-> 
->  		info.flags = 0;
-> 
-> -		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
-> +		info.iova_pgsizes = vfio_pgsize_bitmap(iommu);
-> 
->  		return copy_to_user((void __user *)arg, &info, minsz);
-> 
-> @@ -911,9 +939,6 @@ static const struct vfio_iommu_driver_ops
-> vfio_iommu_driver_ops_type1 = {
-> 
->  static int __init vfio_iommu_type1_init(void)
->  {
-> -	if (!iommu_present(&pci_bus_type))
-> -		return -ENODEV;
-> -
->  	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_type1);
->  }
-> 
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 0fd47f5..460fdf2 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -23,6 +23,7 @@
-> 
->  #define VFIO_TYPE1_IOMMU		1
->  #define VFIO_SPAPR_TCE_IOMMU		2
-> +#define VFIO_TYPE1v2_IOMMU		3
-> 
->  /*
->   * The IOCTL interface is designed for extensibility by embedding the
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
-> 
+> +       phyutmi = PHYUTMI_OTGDISABLE |
+> +                 PHYUTMI_FORCESUSPEND |
+> +                 PHYUTMI_FORCESLEEP;
+> +       writel(phyutmi, drv->reg_phy + EXYNOS5_DRD_PHYUTMI);
+> +
+> +       /* Resetting the PHYCLKRST enable bits to reduce leakage current */
+> +       phyclkrst = readl(drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
+> +       phyclkrst &= ~(PHYCLKRST_REF_SSP_EN |
+> +                      PHYCLKRST_SSC_EN |
+> +                      PHYCLKRST_COMMONONN);
+> +       writel(phyclkrst, drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
+> +
+> +       /* Control PHYTEST to remove leakage current */
+> +       phytest = readl(drv->reg_phy + EXYNOS5_DRD_PHYTEST);
+> +       phytest |= PHYTEST_POWERDOWN_SSP |
+> +                  PHYTEST_POWERDOWN_HSP;
+> +       writel(phytest, drv->reg_phy + EXYNOS5_DRD_PHYTEST);
+> +
+> +       clk_disable_unprepare(drv->clk);
+> +
+> +       return 0;
+> +}
+> +
+> +static int exynos5_usb3phy_power_on(struct phy *phy)
+> +{
+> +       struct phy_usb_instance *inst = phy_get_drvdata(phy);
+> +       struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
+> +
+> +       dev_dbg(drv->dev, "Request to power_on usb3drd phy\n");
+> +
+> +       if (!IS_ERR(drv->usb30_sclk))
+> +               clk_prepare_enable(drv->usb30_sclk);
+> +
+> +       /* Power-on PHY*/
+> +       inst->phy_cfg->phy_isol(phy, 0);
+> +
+> +       return 0;
+> +}
+> +
+> +static int exynos5_usb3phy_power_off(struct phy *phy)
+> +{
+> +       struct phy_usb_instance *inst = phy_get_drvdata(phy);
+> +       struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
+> +
+> +       dev_dbg(drv->dev, "Request to power_off usb3drd phy\n");
+> +
+> +       /* Power-off the PHY */
+> +       inst->phy_cfg->phy_isol(phy, 1);
+> +
+> +       if (!IS_ERR(drv->usb30_sclk))
+> +               clk_disable_unprepare(drv->usb30_sclk);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct phy *exynos5_usb3phy_xlate(struct device *dev,
+> +                                       struct of_phandle_args *args)
+> +{
+> +       struct exynos5_usb3phy_driver *drv = dev_get_drvdata(dev);
+> +
+> +       if (WARN_ON(args->args[0] > EXYNOS5_USB3PHYS_NUM))
+> +               return ERR_PTR(-ENODEV);
+> +
+> +       return drv->phys[args->args[0]].phy;
+> +}
+> +
+> +static struct phy_ops exynos5_usb3phy_ops = {
+> +       .init           = exynos5_usb3phy_init,
+> +       .exit           = exynos5_usb3phy_exit,
+> +       .power_on       = exynos5_usb3phy_power_on,
+> +       .power_off      = exynos5_usb3phy_power_off,
+> +       .owner          = THIS_MODULE,
+> +};
+> +
+> +const struct usb3phy_config exynos5_usb3phy_cfg[] = {
+> +       {
+> +               .id             = EXYNOS5_USB3PHY_UTMI,
+> +               .reg_pmu_offset = EXYNOS5_USB3DRD_PHY_PMU_REG_OFFSET,
+> +               .phy_isol       = exynos5_usb3phy_isol,
+> +       },
+> +       {
+> +               .id             = EXYNOS5_USB3PHY_PIPE3,
+> +               .reg_pmu_offset = EXYNOS5_USB3DRD_PHY_PMU_REG_OFFSET,
+> +               .phy_isol       = exynos5_usb3phy_isol,
+> +       },
+> +       {},
+> +};
+> +
+> +const struct exynos5_usb3phy_drv_data exynos5420_usb3phy = {
+> +       .has_usb30_sclk         = true,
+> +       .has_multi_controller   = true,
+> +       .phy_cfg                = exynos5_usb3phy_cfg,
+> +};
+> +
+> +const struct exynos5_usb3phy_drv_data exynos5250_usb3phy = {
+> +       .has_usb30_sclk         = false,
+> +       .has_multi_controller   = false,
+> +       .phy_cfg                = exynos5_usb3phy_cfg,
+> +};
+> +
+> +static const struct of_device_id exynos5_usb3phy_of_match[] = {
+> +       {
+> +               .compatible = "samsung,exynos5250-usb3phy",
+> +               .data = &exynos5250_usb3phy
+> +       }, {
+> +               .compatible = "samsung,exynos5420-usb3phy",
+> +               .data = &exynos5420_usb3phy
+> +       },
+> +       { },
+> +};
+> +
+> +static int exynos5_usb3phy_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct device_node *node = dev->of_node;
+> +       struct exynos5_usb3phy_driver *drv;
+> +       struct phy_provider *phy_provider;
+> +       struct resource *res;
+> +       struct clk *clk;
+> +       const struct of_device_id *match;
+> +       const struct exynos5_usb3phy_drv_data *drv_data;
+> +       struct regmap *reg_isol;
+> +       int i;
+> +
+> +       /*
+> +        * Exynos systems are completely DT enabled,
+> +        * so lets not have any platform data support for this driver.
+> +        */
+> +       if (!node) {
+> +               dev_err(dev, "no device node found\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       match = of_match_node(exynos5_usb3phy_of_match, pdev->dev.of_node);
+> +       if (!match) {
+> +               dev_err(dev, "of_match_node() failed\n");
+> +               return -EINVAL;
+> +       }
+> +       drv_data = match->data;
+> +
+> +       drv = devm_kzalloc(dev, sizeof(*drv), GFP_KERNEL);
+> +       if (!drv) {
+> +               dev_err(dev, "Failed to allocate memory\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       dev_set_drvdata(dev, drv);
+> +       drv->dev = dev;
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       drv->reg_phy = devm_ioremap_resource(dev, res);
+> +       if (IS_ERR(drv->reg_phy)) {
+> +               dev_err(dev, "Failed to map register memory (phy)\n");
+> +               return PTR_ERR(drv->reg_phy);
+> +       }
+> +
+> +       drv->drv_data = drv_data;
+> +
+> +       /*
+> +        * Exynos5420 SoC has multiple channels for USB 3.0 PHY, with
+> +        * each having separate power control registers.
+> +        * 'drv->channel' facilitates to set such registers.
+> +        */
+> +       if (drv->drv_data->has_multi_controller) {
+> +               drv->channel = of_alias_get_id(node, "usb3phy");
+> +               if (drv->channel < 0) {
+> +                       dev_err(dev, "Invalid usb3drd phy node\n");
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+> +       drv->clk = devm_clk_get(dev, "phy");
+> +       if (IS_ERR(drv->clk)) {
+> +               dev_err(dev, "Failed to get clock of phy controller\n");
+> +               return PTR_ERR(drv->clk);
+> +       }
+> +
+> +       /*
+> +        * Exysno5420 SoC has an additional special clock, used for
+> +        * for USB 3.0 PHY operation, this clock goes to the PHY block
+> +        * as a reference clock to clock generation block of the controller,
+> +        * named as 'USB30_SCLK_100M'.
+> +        */
+> +       if (drv_data->has_usb30_sclk) {
+> +               drv->usb30_sclk = devm_clk_get(dev, "usb30_sclk_100m");
+> +               if (IS_ERR(drv->usb30_sclk)) {
+> +                       dev_err(dev, "Failed to get phy reference clock\n");
+> +                       return PTR_ERR(drv->usb30_sclk);
+> +               }
+> +       }
+> +
+> +       clk = clk_get(dev, "usb3phy_refclk");
+> +       if (IS_ERR(clk)) {
+> +               dev_err(dev, "Failed to get reference clock of usb3drd phy\n");
+> +               return PTR_ERR(clk);
+> +       }
+> +       drv->rate = clk_get_rate(clk);
+> +       clk_put(clk);
+> +
+> +       dev_dbg(dev, "Creating usb3drd phy\n");
+> +
+> +       reg_isol = syscon_regmap_lookup_by_phandle(dev->of_node,
+> +                                                  "samsung,syscon-phandle");
+> +       if (IS_ERR(reg_isol)) {
+> +               dev_err(dev, "Failed to map register memory (isolation)\n");
+> +               return PTR_ERR(reg_isol);
+> +       }
+> +
+> +       for (i = 0; i < EXYNOS5_USB3PHYS_NUM; i++) {
+> +               struct phy *phy = devm_phy_create(dev, &exynos5_usb3phy_ops,
+> +                                                 NULL);
+> +               if (IS_ERR(phy)) {
+> +                       dev_err(dev, "Failed to create usb3drd phy\n");
+> +                       return PTR_ERR(phy);
+> +               }
+> +
+> +               drv->phys[i].phy = phy;
+> +               drv->phys[i].index = i;
+> +               drv->phys[i].reg_isol = reg_isol;
+> +               drv->phys[i].phy_cfg = &drv_data->phy_cfg[i];
+> +               phy_set_drvdata(phy, &drv->phys[i]);
+> +       }
+> +
+> +       phy_provider = devm_of_phy_provider_register(dev,
+> +                                                    exynos5_usb3phy_xlate);
+> +       if (IS_ERR(phy_provider)) {
+> +               dev_err(drv->dev, "Failed to register phy provider\n");
+> +               return PTR_ERR(phy_provider);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver exynos5_usb3phy_driver = {
+> +       .probe  = exynos5_usb3phy_probe,
+> +       .driver = {
+> +               .of_match_table = exynos5_usb3phy_of_match,
+> +               .name           = "exynos5-usb3phy",
+> +               .owner          = THIS_MODULE,
+> +       }
+> +};
+> +
+> +module_platform_driver(exynos5_usb3phy_driver);
+> +MODULE_DESCRIPTION("Samsung EXYNOS5 series SoC USB 3.0 PHY driver");
+> +MODULE_AUTHOR("Vivek Gautam <gautam.vivek@samsung.com>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:exynos5-usb3phy");
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
