@@ -1,230 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaAUL35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:29:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51882 "EHLO
+	id S932075AbaAULaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:30:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51869 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265AbaAUL30 (ORCPT
+	with ESMTP id S1754099AbaAUL3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:29:26 -0500
-Message-Id: <20140121112258.586781016@infradead.org>
+	Tue, 21 Jan 2014 06:29:24 -0500
+Message-Id: <20140121112258.410353740@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 21 Jan 2014 12:18:00 +0100
+Date: Tue, 21 Jan 2014 12:17:57 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
         bsegall@google.com, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 6/9] sched: Push put_prev_task() into pick_next_task()
+Subject: [PATCH 3/9] sched: Move idle_stamp up to the core
 References: <20140121111754.580142558@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-sched-optimize_cgroup_pick_next_task_fair_2.patch
+Content-Disposition: inline; filename=daniel_lezcano-3_sched-move_idle_stamp_up_to_the_core.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to avoid having to do put/set on a whole cgroup hierarchy
-when we context switch, push the put into pick_next_task() so that
-both operations are in the same function. Further changes then allow
-us to possibly optimize away redundant work.
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
+The idle_balance modifies the idle_stamp field of the rq, making this
+information to be shared across core.c and fair.c. As we can know if the
+cpu is going to idle or not with the previous patch, let's encapsulate the
+idle_stamp information in core.c by moving it up to the caller. The
+idle_balance function returns true in case a balancing occured and the cpu
+won't be idle, false if no balance happened and the cpu is going idle.
+
+Cc: alex.shi@linaro.org
+Cc: peterz@infradead.org
+Cc: mingo@kernel.org
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1328936700.2476.17.camel@laptop
+Link: http://lkml.kernel.org/r/1389949444-14821-3-git-send-email-daniel.lezcano@linaro.org
 ---
- kernel/sched/core.c      |   21 ++++++++-------------
- kernel/sched/deadline.c  |    2 +-
- kernel/sched/fair.c      |    6 +++++-
- kernel/sched/idle_task.c |    6 +++++-
- kernel/sched/rt.c        |   27 ++++++++++++++++-----------
- kernel/sched/sched.h     |    8 +++++++-
- kernel/sched/stop_task.c |    5 ++++-
- 7 files changed, 46 insertions(+), 29 deletions(-)
+ kernel/sched/core.c  |    2 +-
+ kernel/sched/fair.c  |   14 ++++++--------
+ kernel/sched/sched.h |    2 +-
+ 3 files changed, 8 insertions(+), 10 deletions(-)
 
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2554,18 +2554,11 @@ static inline void schedule_debug(struct
- 	schedstat_inc(this_rq(), sched_count);
- }
+@@ -2680,7 +2680,7 @@ static void __sched __schedule(void)
+ 	pre_schedule(rq, prev);
  
--static void put_prev_task(struct rq *rq, struct task_struct *prev)
--{
--	if (prev->on_rq || rq->skip_clock_update < 0)
--		update_rq_clock(rq);
--	prev->sched_class->put_prev_task(rq, prev);
--}
--
- /*
-  * Pick up the highest-prio task:
-  */
- static inline struct task_struct *
--pick_next_task(struct rq *rq)
-+pick_next_task(struct rq *rq, struct task_struct *prev)
- {
- 	const struct sched_class *class;
- 	struct task_struct *p;
-@@ -2575,13 +2568,13 @@ pick_next_task(struct rq *rq)
- 	 * the fair class we can call that function directly:
- 	 */
- 	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
--		p = fair_sched_class.pick_next_task(rq);
-+		p = fair_sched_class.pick_next_task(rq, prev);
- 		if (likely(p))
- 			return p;
- 	}
- 
- 	for_each_class(class) {
--		p = class->pick_next_task(rq);
-+		p = class->pick_next_task(rq, prev);
- 		if (p)
- 			return p;
- 	}
-@@ -2682,8 +2675,10 @@ static void __sched __schedule(void)
  	if (unlikely(!rq->nr_running))
- 		rq->idle_stamp = idle_balance(rq) ? 0 : rq_clock(rq);
+-		idle_balance(rq);
++		rq->idle_stamp = idle_balance(rq) ? 0 : rq_clock(rq);
  
--	put_prev_task(rq, prev);
--	next = pick_next_task(rq);
-+	if (prev->on_rq || rq->skip_clock_update < 0)
-+		update_rq_clock(rq);
-+
-+	next = pick_next_task(rq, prev);
- 	clear_tsk_need_resched(prev);
- 	clear_preempt_need_resched();
- 	rq->skip_clock_update = 0;
-@@ -4725,7 +4720,7 @@ static void migrate_tasks(unsigned int d
- 		if (rq->nr_running == 1)
- 			break;
- 
--		next = pick_next_task(rq);
-+		next = pick_next_task(rq, NULL);
- 		BUG_ON(!next);
- 		next->sched_class->put_prev_task(rq, next);
- 
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -989,7 +989,7 @@ static struct sched_dl_entity *pick_next
- 	return rb_entry(left, struct sched_dl_entity, rb_node);
- }
- 
--struct task_struct *pick_next_task_dl(struct rq *rq)
-+struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- {
- 	struct sched_dl_entity *dl_se;
- 	struct task_struct *p;
+ 	put_prev_task(rq, prev);
+ 	next = pick_next_task(rq);
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4484,7 +4484,8 @@ static void check_preempt_wakeup(struct
- 		set_last_buddy(se);
+@@ -6359,7 +6359,7 @@ static int load_balance(int this_cpu, st
+  * idle_balance is called by schedule() if this_cpu is about to become
+  * idle. Attempts to pull tasks from other CPUs.
+  */
+-void idle_balance(struct rq *this_rq)
++int idle_balance(struct rq *this_rq)
+ {
+ 	struct sched_domain *sd;
+ 	int pulled_task = 0;
+@@ -6367,10 +6367,8 @@ void idle_balance(struct rq *this_rq)
+ 	u64 curr_cost = 0;
+ 	int this_cpu = this_rq->cpu;
+ 
+-	this_rq->idle_stamp = rq_clock(this_rq);
+-
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+-		return;
++		return 0;
+ 
+ 	/*
+ 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
+@@ -6408,10 +6406,8 @@ void idle_balance(struct rq *this_rq)
+ 		interval = msecs_to_jiffies(sd->balance_interval);
+ 		if (time_after(next_balance, sd->last_balance + interval))
+ 			next_balance = sd->last_balance + interval;
+-		if (pulled_task) {
+-			this_rq->idle_stamp = 0;
++		if (pulled_task)
+ 			break;
+-		}
+ 	}
+ 	rcu_read_unlock();
+ 
+@@ -6422,7 +6418,7 @@ void idle_balance(struct rq *this_rq)
+ 	 * A task could have be enqueued in the meantime
+ 	 */
+ 	if (this_rq->nr_running && !pulled_task)
+-		return;
++		return 1;
+ 
+ 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+ 		/*
+@@ -6434,6 +6430,8 @@ void idle_balance(struct rq *this_rq)
+ 
+ 	if (curr_cost > this_rq->max_idle_balance_cost)
+ 		this_rq->max_idle_balance_cost = curr_cost;
++
++	return pulled_task;
  }
  
--static struct task_struct *pick_next_task_fair(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- {
- 	struct task_struct *p;
- 	struct cfs_rq *cfs_rq = &rq->cfs;
-@@ -4493,6 +4494,9 @@ static struct task_struct *pick_next_tas
- 	if (!cfs_rq->nr_running)
- 		return NULL;
- 
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
- 	do {
- 		se = pick_next_entity(cfs_rq);
- 		set_next_entity(cfs_rq, se);
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -23,8 +23,12 @@ static void check_preempt_curr_idle(stru
- 	resched_task(rq->idle);
- }
- 
--static struct task_struct *pick_next_task_idle(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
- 	schedstat_inc(rq, sched_goidle);
- #ifdef CONFIG_SMP
- 	idle_enter_fair(rq);
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1310,15 +1310,7 @@ static struct task_struct *_pick_next_ta
- {
- 	struct sched_rt_entity *rt_se;
- 	struct task_struct *p;
--	struct rt_rq *rt_rq;
--
--	rt_rq = &rq->rt;
--
--	if (!rt_rq->rt_nr_running)
--		return NULL;
--
--	if (rt_rq_throttled(rt_rq))
--		return NULL;
-+	struct rt_rq *rt_rq  = &rq->rt;
- 
- 	do {
- 		rt_se = pick_next_rt_entity(rq, rt_rq);
-@@ -1332,9 +1324,22 @@ static struct task_struct *_pick_next_ta
- 	return p;
- }
- 
--static struct task_struct *pick_next_task_rt(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- {
--	struct task_struct *p = _pick_next_task_rt(rq);
-+	struct task_struct *p;
-+	struct rt_rq *rt_rq = &rq->rt;
-+
-+	if (!rt_rq->rt_nr_running)
-+		return NULL;
-+
-+	if (rt_rq_throttled(rt_rq))
-+		return NULL;
-+
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
-+	p = _pick_next_task_rt(rq);
- 
- 	/* The running task is never eligible for pushing */
- 	if (p)
+ /*
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -1123,7 +1123,13 @@ struct sched_class {
+@@ -1176,7 +1176,7 @@ extern const struct sched_class idle_sch
+ extern void update_group_power(struct sched_domain *sd, int cpu);
  
- 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+ extern void trigger_load_balance(struct rq *rq);
+-extern void idle_balance(struct rq *this_rq);
++extern int idle_balance(struct rq *this_rq);
  
--	struct task_struct * (*pick_next_task) (struct rq *rq);
-+	/*
-+	 * It is the responsibility of the pick_next_task() method that will
-+	 * return the next task to call put_prev_task() on the @prev task or
-+	 * something equivalent.
-+	 */
-+	struct task_struct * (*pick_next_task) (struct rq *rq,
-+						struct task_struct *prev);
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
- 
- #ifdef CONFIG_SMP
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -23,11 +23,14 @@ check_preempt_curr_stop(struct rq *rq, s
- 	/* we're never preempted */
- }
- 
--static struct task_struct *pick_next_task_stop(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_stop(struct rq *rq, struct task_struct *prev)
- {
- 	struct task_struct *stop = rq->stop;
- 
- 	if (stop && stop->on_rq) {
-+		if (prev)
-+			prev->sched_class->put_prev_task(rq, prev);
- 		stop->se.exec_start = rq_clock_task(rq);
- 		return stop;
- 	}
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
 
 
