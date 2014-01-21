@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaAULw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 06:52:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42803 "EHLO mx2.suse.de"
+	id S1754522AbaAUL7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 06:59:35 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41452 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754134AbaAULw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 06:52:27 -0500
-Date: Tue, 21 Jan 2014 11:52:23 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 1/6] numa,sched,mm: remove p->numa_migrate_deferred
-Message-ID: <20140121115223.GF4963@suse.de>
-References: <1390245667-24193-1-git-send-email-riel@redhat.com>
- <1390245667-24193-2-git-send-email-riel@redhat.com>
+	id S1754244AbaAUL7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 06:59:30 -0500
+Message-ID: <52DE6114.20601@ti.com>
+Date: Tue, 21 Jan 2014 13:59:16 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1390245667-24193-2-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hans de Goede <hdegoede@redhat.com>, <tj@kernel.org>, <kishon@ti.com>
+CC: <sergei.shtylyov@cogentembedded.com>, <b.zolnierkie@samsung.com>,
+        <arnd@arndb.de>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 0/4] ata: ahci_platform: Add PHY support and OMAP support
+References: <1390228888-5537-1-git-send-email-rogerq@ti.com> <52DD5368.5020301@redhat.com> <52DE3132.3000007@ti.com>
+In-Reply-To: <52DE3132.3000007@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 02:21:02PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
+On 01/21/2014 10:34 AM, Roger Quadros wrote:
+> On 01/20/2014 06:48 PM, Hans de Goede wrote:
+>> Hi,
+>>
+>> On 01/20/2014 03:41 PM, Roger Quadros wrote:
+>>> Hi,
+>>>
+>>> Some platforms have a PHY hooked up to the SATA controller.
+>>> The PHY needs to be initialized and powered up for SATA to work.
+>>> We do that using the Generic PHY framework in PATCH 3.
+>>>
+>>> In order to support SATA on the OMAP platforms we need to runtime
+>>> resume the device before use. PATCH 4 takes care of that.
+>>
+>> Thanks for keeping me in the loop on this. I'm afraid this conflicts
+>> quite a bit with my recent ahci_platform.c work, not a big problem
+>> really, the series can go in either way.
+>>
+>> Your phy support will slot nicely into the new ahci_platform_get_resources
+>> and ahci_platform_enable_resources functions my refactoring introduces,
+>> looking at it from this pov it might be better / easier to rebase your series
+>> on top of the v4 of my series I've just send.
+>>
+>> Which brings me to one comment about your series why are you not doing phy_exit
+>> and phy_init on suspend resp. resume ? The phy can use quite a bit of power,
+>> if the phy init / exit end up in ahci_platform_enable_resources /
+>> ahci_platform_disable_resources, this will happen automatically for better or
+>> worse. So it would be good to test if this would work or not ...
 > 
-> Excessive migration of pages can hurt the performance of workloads
-> that span multiple NUMA nodes.  However, it turns out that the
-> p->numa_migrate_deferred knob is a really big hammer, which does
-> reduce migration rates, but does not actually help performance.
+> Right. Bartlomiej had pointed this out earlier, but I just wasn't very sure about it.
 > 
-> Now that the second stage of the automatic numa balancing code
-> has stabilized, it is time to replace the simplistic migration
-> deferral code with something smarter.
+> Is it sufficient to just call phy_power_off() in suspend and phy_power_on() in resume?
+> Or do we call phy_exit() and phy_init() respectively as well.
 > 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Kishon, any suggestions?
 
-When I added a tracepoint to track deferred migration I was surprised how
-often it triggered for some workloads. I agree that we want to do something
-better because it was a crutch albeit a necessary one at the time.
+OK. Answering my own question.
 
-Note that the knob was not about performance as such, it was about avoiding
-worst-case behaviour. We should keep an eye out for bugs that look like
-excessive migration on workloads that are not converging.  Reintroducing this
-hammer would be a last resort for working around the problem.
+On OMAP platform we power down the phy in phy_power_off() and idle the DPLL in phy_exit(),
+so my guess is both should be called in suspend() to save the most power.
 
-Finally, the sysctl is documented in Documentation/sysctl/kernel.txt and
-this patch should also remove it.
-
-Functionally, the patch looks fine and it's time to reinvestigate if
-it's necessary so assuming the documentation gets removed;
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+cheers,
+-roger
