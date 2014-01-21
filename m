@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaAUA4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 19:56:30 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:50270 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaAUA4X (ORCPT
+	id S1754146AbaAUA74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 19:59:56 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:46374 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaAUA7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 19:56:23 -0500
-Date: Tue, 21 Jan 2014 09:56:17 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk, linux-sh@vger.kernel.org,
-        Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [V2] MAINTAINERS: Add dts files for r8 series to SHMOBILE
-Message-ID: <20140121005617.GC31997@verge.net.au>
-References: <1390234232-943-1-git-send-email-ben.dooks@codethink.co.uk>
+	Mon, 20 Jan 2014 19:59:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390234232-943-1-git-send-email-ben.dooks@codethink.co.uk>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Jan 2014 16:59:23 -0800
+Message-ID: <CALCETrVT29DULWg16_oKpGgSSBwZh-yWtygV1oYjH5iQH5jGyg@mail.gmail.com>
+Subject: Dirty deleted files cause pointless I/O storms (unless truncated first)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+The code below runs quickly for a few iterations, and then it slows
+down and the whole system becomes laggy for far too long.
 
-thanks for your work on this.
+Removing the sync_file_range call results in no I/O being performed at
+all (which means that the kernel isn't totally screwing this up), and
+changing "4096" to SIZE causes lots of I/O but without
+the going-out-to-lunch bit (unsurprisingly).
 
-On Mon, Jan 20, 2014 at 04:10:32PM +0000, Ben Dooks wrote:
-> Add a number of files to the list of files covered by SHMOBILE
-> so any changes to these can be reported with get_maintailers.pl
-> for the current SHMOILE architectures.
+Surprisingly, uncommenting the ftruncate call seems to fix the
+problem.  This suggests that all the necessary infrastructure to avoid
+wasting time writing to deleted files is there but that it's not
+getting used.
 
-I'm fine with you only addressing r8 and r7 SoCs, I am happy
-to make an incremental patch to cover the stragglers (sh7*, emev2).
-And I would be even happier if this patch didn't suffer excessive
-bike-shedding.  But I think there are some minor inconsistencies in this
-patch.
 
-Firstly, I think the subject should probably mention r7 and defconfigs.
+#define _GNU_SOURCE
+#include <sys/mman.h>
+#include <err.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
-> 
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> ---
-> v2:
->   - add defconfigs and r7 configurations
->   - fix path to dt-bindings
-> 
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-sh@vger.kernel.org
-> ---
->  MAINTAINERS | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 6c20792..f74d830 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1239,7 +1239,14 @@ Q:	http://patchwork.kernel.org/project/linux-sh/list/
->  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git next
->  S:	Supported
->  F:	arch/arm/mach-shmobile/
-> +F:	arch/arm/boot/dts/r8*
-> +F:	arch/arm/boot/dts/r7*
-> +F:	arch/arm/configs/bockw_defconfig
-> +F:	arch/arm/configs/genmai_defconfig
-> +F:	arch/arm/configs/lager_defconfig
-> +F:	arch/arm/configs/marzen_defconfig
+#define SIZE (16 * 1048576)
 
-I believe you should ad the following as they are for boards
-that use SoCs whose name matches r8*.
+static void hammer(const char *name)
+{
+  int fd = open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+  if (fd == -1)
+    err(1, "open");
 
-arch/arm/configs/armadillo800eva_defconfig
-arch/arm/configs/ape6evm_defconfig
-arch/arm/configs/koelsch_defconfig
+  fallocate(fd, 0, 0, SIZE);
 
->  F:	drivers/sh/
-> +F:	include/dt-bindings/clock/r8a*
->  
->  ARM/SOCFPGA ARCHITECTURE
->  M:	Dinh Nguyen <dinguyen@altera.com>
-> -- 
-> 1.8.5.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+  void *addr = mmap(NULL, SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  if (addr == MAP_FAILED)
+    err(1, "mmap");
+
+  memset(addr, 0, SIZE);
+
+  if (munmap(addr, SIZE) != 0)
+    err(1, "munmap");
+
+  if (sync_file_range(fd, 0, 4096,
+              SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
+              SYNC_FILE_RANGE_WAIT_AFTER) != 0)
+    err(1, "sync_file_range");
+
+  if (unlink(name) != 0)
+    err(1, "unlink");
+
+  //  if (ftruncate(fd, 0) != 0)
+  //    err(1, "ftruncate");
+
+  close(fd);
+}
+
+int main(int argc, char **argv)
+{
+  if (argc != 2) {
+    printf("Usage: hammer_and_delete FILENAME\n");
+    return 1;
+  }
+
+  while (true) {
+    hammer(argv[1]);
+    write(1, ".", 1);
+  }
+}
