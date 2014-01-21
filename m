@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231AbaAURYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 12:24:39 -0500
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:44465 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755209AbaAURYf (ORCPT
+	id S1755240AbaAUR0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 12:26:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27166 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754903AbaAUR0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 12:24:35 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4362:4552:5007:6117:7652:7875:7903:8957:9010:9389:10004:10400:10848:11232:11658:11914:12048:12114:12296:12517:12519:12679:12740:13161:13229:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck
-X-HE-Tag: humor31_a5166c9b4c4b
-X-Filterd-Recvd-Size: 3119
-Message-ID: <1390325069.2472.78.camel@joe-AO722>
-Subject: Re: [tip:core/urgent] MAINTAINERS: Restore "L:
- linux-kernel@vger.kernel.org" entries
-From: Joe Perches <joe@perches.com>
-To: mingo@kernel.org, hpa@zytor.com, alan@linux.intel.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Date: Tue, 21 Jan 2014 09:24:29 -0800
-In-Reply-To: <tip-62f45f9a202c318fd5fb43cd40ef687b7dd2825f@git.kernel.org>
-References: <tip-62f45f9a202c318fd5fb43cd40ef687b7dd2825f@git.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jan 2014 12:26:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,696,1384329600"; 
+   d="scan'208";a="470221248"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: RE: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Topic: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Index: AQHPFsZ9cSEdDcojn0qQbo2p9gU0u5qPbggA
+Date: Tue, 21 Jan 2014 17:26:32 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350149E05A@SHSMSX101.ccr.corp.intel.com>
+References: <1386394315-48984-1-git-send-email-jinsong.liu@intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com>
+ <52A83606.40908@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC829233501421D73@SHSMSX101.ccr.corp.intel.com>
+ <52A98548.9010008@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC829233501422743@SHSMSX101.ccr.corp.intel.com>
+ <52DD3427.9020502@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC82923350149CB2D@SHSMSX101.ccr.corp.intel.com>
+ <52DEA14E.2030602@redhat.com>
+In-Reply-To: <52DEA14E.2030602@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-21 at 07:49 -0800, tip-bot for Ingo Molnar wrote:
-
-> MAINTAINERS: Restore "L: linux-kernel@vger.kernel.org" entries
+Paolo Bonzini wrote:
+> Il 21/01/2014 16:25, Liu, Jinsong ha scritto:
+>> Hmm? I remember I have sent out the rebased patches v3 last month
+>> If you didn't receive them I'm OK to rebase and resend them. BTW,
+>> what's the review remarks? I remember you commented that the patches
+>> are fine. Any misunderstanding please point out to me.
 > 
-> A couple of years ago all the "L: lkml" email list entries in
-> MAINTAINERS were removed and replaced with a 'the rest' entry
-> at the end of the file - under the theory that this is unnecessary
-> duplication and that people would find it intuitive:
-
-You are politicking with the commentary.
-Intuition had nothing to do with the removal,
-
-The idea was to avoid having an L: lkml line for
-each of more than 1200 sections so people wouldn't
-think that any section that didn't have an lkml
-entry shouldn't need to have lkml on the cc list
-for a patch.
-
-Also, SubmittingPatches had and still has:
-
-	6) Select your CC (e-mail carbon copy) list.
-
-	Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
-
-Arguably, that same info should be added to the
-MAINTAINERS header instead of each section.
-
->   b5472cddbe2c MAINTAINERS: remove L: linux-kernel@vger.kernel.org from all but "THE REST"
+> You sent v3 of QEMU, but not of KVM.  I don't see any mail from you
+> after December 12th on kvm@vger.kernel.org.
 > 
-> So it turns out that it's all but intuitive, not all people
-> use scripts/get_maintainer.pl to extract maintainer contact info,
-> some people read the MAINTAINERS file and see the lack of 'L:' entries
-> of various lkml-only subsystems and are sending patches to the
-> maintainers only, without Cc:-ing lkml.  They arguably have a point.
+> I can see my comment that the patches were fine (apart from needing a
+> rebase), but the threading was wrong and I cannot find anymore _which_
+> patches they were.  I did find a comment that BNDCFGS must be added to
+> msrs_to_save, but I don't know if that was v1 or v2 because you didn't
+> add the version number when sending v2.
+> 
+> Paolo
 
-shrug,  I think it would be better if people
-used get_maintainer more often.
+So I don't need resend qemu patches, just rebase and resend KVM MPX patches, is that right?
 
-MAINTAINERS already says:
-
-	PLEASE CC: the maintainers and mailing lists that are generated
-	by scripts/get_maintainer.pl.
-
-Maybe duplicating the SubmittingPatches block into
-the MAINTAINERS intro is good enough.
-
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -4655,6 +4657,7 @@ F:	net/irda/
->  IRQ SUBSYSTEM
->  M:	Thomas Gleixner <tglx@linutronix.de>
->  S:	Maintained
-> +L:	linux-kernel@vger.kernel.org
-
-If this is done, can you please standardize on
-placing the L: line immediately after the M: line
-and before the S: line as was done for all the
-other added lines.
-
-Thanks.
-
+Thanks,
+Jinsong
