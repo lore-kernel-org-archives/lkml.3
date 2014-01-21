@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaAUVPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:15:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12127 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690AbaAUVPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:15:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="470332464"
-Message-ID: <52DEE374.7040908@intel.com>
-Date: Tue, 21 Jan 2014 13:15:32 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753716AbaAUVR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:17:57 -0500
+Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:35114
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750824AbaAUVRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 16:17:55 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h17326ah8275bh1de097h186068hz2dh839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h1155h)
+X-WSS-ID: 0MZRSHM-08-4KN-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+To: <dougthompson@xmission.com>, <bp@alien8.de>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH] AMD64_EDAC: Fix logic to determine channel for F15 M30h processors
+Date: Tue, 21 Jan 2014 15:03:36 -0600
+Message-ID: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Peng Tao <tao.peng@emc.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [PATCH] staging: lustre: fix GFP_ATOMIC macro usage
-References: <1389948416-26390-1-git-send-email-m.szyprowski@samsung.com> <20140117143329.GA6877@kroah.com> <20140117145128.GR7444@mwanda> <20140117151735.GB16623@kroah.com> <CF037522.8B804%andreas.dilger@intel.com>
-In-Reply-To: <CF037522.8B804%andreas.dilger@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 12:02 PM, Dilger, Andreas wrote:
-> The Lustre allocation macros track the memory usage across the whole
-> filesystem,
-> not just of a single structure that a mempool/slab/whatever would do.
-> This is
-> useful to know for debugging purposes (e.g. user complains about not having
-> enough RAM for their highly-tuned application, or to check for leaks at
-> unmount).
+The current logic that returns (sys_addr >> 8) & 0x7 when
+num_dcts_intlv = 4 is incorrect. We should really be doing-
+If intlv_addr = 0x4, then interleave on bits [9:8] and if
+intlv_addr = 0x5, interleave on bits [10:9].
 
-Urg, it does this with a global variable.  If we did this kind of thing
-generically, we'd get eaten alive by all of the cacheline bouncing from
-that atomic.  It's also a 32-bit atomic.  Guess it's never had more than
-4GB of memory tracked in there. :)
+Refer F15 M30h BKDG D18F2x110[7:6] (DRAM Controller Select Low)
+(Link:http://support.amd.com/TechDocs/49125_15h_Models_30h-3Fh_BKDG.pdf)
 
-This also doesn't track overhead from things that *are* in slabs like
-the inodes, or the 14 kmem_caches that lustre has, so it's far from a
-complete picture of how lustre is using memory.
+Tested on F15 M30h with mce_inj module and patch did not cause
+any regressions.
 
-> It can also log the alloc/free calls and post-process them to find leaks
-> easily, or find pieces code that is allocating too much memory that are not
-> using dedicated slabs.  This also works if you encounter a system with a
-> lot of allocated memory, enable "free" logging, and then unmount the
-> filesystem. 
-> The logs will show which structures are being freed (assuming they are not
-> leaked completely) and point you to whatever is not being shrunk properly.
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+---
+ drivers/edac/amd64_edac.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-This isn't perfect, but it does cover most of the ext4 call sites in my
-kernel.  It would work better for a module, I'd imagine:
-
-cd /sys/kernel/debug/tracing/events/kmem
-echo -n 'call_site < 0xffffffff81e0af00 && call_site >=
-0xffffffff81229cf0' > kmalloc/filter
-echo 1 > kmalloc/enable
-cat /sys/kernel/debug/tracing/trace_pipe
-
-It will essentially log all the kmalloc() calls from the ext4 code.  I
-got the call site locations from grepping System.map.  It would be
-_really_ nice if we were able to do something like:
-
-	echo 'call_site =~ *ext4*'
-
-but there's no way to do that which I know of.  You could probably rig
-something up with the function graph tracer by triggering only on entry
-to the lustre code.
-
-> I don't know if there is any way to track this with regular kmalloc(), and
-> creating separate slabs for so ever data structure would be ugly.  The
-> generic
-> /proc/meminfo data doesn't really tell you what is using all the memory,
-> and
-> the size-NNNN slabs give some information, but are used all over the
-> kernel.
-> 
-> I'm pretty much resigned to losing all of this functionality, but it
-> definitely
-> has been very useful for finding problems.
-
-Yeah, it is hard to find out who is responsible for leaking pages or
-kmalloc()s, especially after the fact.  But, we seem to limp along just
-fine.  If lustre is that bad of a memory leaker that it *NEEDS* this
-feature, we have bigger problems on our hands. :)
-
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index b53d0de..ef9fe30 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1240,9 +1240,17 @@ static u8 f15_m30h_determine_channel(struct amd64_pvt *pvt, u64 sys_addr,
+ 	if (num_dcts_intlv == 2) {
+ 		select = (sys_addr >> 8) & 0x3;
+ 		channel = select ? 0x3 : 0;
+-	} else if (num_dcts_intlv == 4)
+-		channel = (sys_addr >> 8) & 0x7;
+-
++	} else if (num_dcts_intlv == 4) {
++		u8 intlv_addr = dct_sel_interleave_addr(pvt);
++		switch (intlv_addr) {
++		case 0x4:
++			channel = (sys_addr >> 8) & 0x3;
++			break;
++		case 0x5:
++			channel = (sys_addr >> 9) & 0x3;
++			break;
++		}
++	}
+ 	return channel;
+ }
+ 
+-- 
+1.7.10.4
 
 
