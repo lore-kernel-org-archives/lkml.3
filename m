@@ -1,253 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750827AbaAUFDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:03:41 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45160 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaAUFDc (ORCPT
+	id S1750995AbaAUFFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:05:15 -0500
+Received: from smtprelay.synopsys.com ([198.182.60.111]:37550 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaAUFFH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:03:32 -0500
-X-AuditID: 9c930197-b7b7cae000000e34-24-52ddffa18966
-Date: Tue, 21 Jan 2014 14:04:39 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Cai Liu <liucai.lfn@gmail.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
-        Cai Liu <cai.liu@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mm/zswap: Check all pool pages instead of one pool
- pages
-Message-ID: <20140121050439.GA16664@bbox>
-References: <CAFLCcBqyhL=wfC4uJmpp9MkGExBuPJC4EqY2RHRngnEn_1ytSA@mail.gmail.com>
+	Tue, 21 Jan 2014 00:05:07 -0500
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 00:05:07 EST
+From: Vineet Gupta <vgupta@synopsys.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Michal Marek <mmarek@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v3] arch: use ASM_NL instead of ';' for assembler new
+ line character in the macro
+Thread-Topic: [PATCH v3] arch: use ASM_NL instead of ';' for assembler new
+ line character in the macro
+Thread-Index: AQHPFDHt63WzlyRIrUmDCRPNQCI9Sw==
+Date: Tue, 21 Jan 2014 04:55:15 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075178198@IN01WEMBXA.internal.synopsys.com>
+References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com>
+ <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com>
+ <526F149A.3000306@asianux.com> <52733FEC.4010807@synopsys.com>
+ <528DD92E.9070408@synopsys.com> <52C6AF2B.8050104@suse.cz>
+ <C2D7FE5348E1B147BCA15975FBA23075175CC4@IN01WEMBXA.internal.synopsys.com>
+ <52CA76D3.2010102@suse.cz> <52CE4496.5030401@synopsys.com>
+ <52D01639.9000205@gmail.com> <52D1F6F1.1070006@gmail.com>
+ <52DA4D09.7030904@gmail.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.197.120]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLCcBqyhL=wfC4uJmpp9MkGExBuPJC4EqY2RHRngnEn_1ytSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please check your MUA and don't break thread.
+Hi Mike,
 
-On Tue, Jan 21, 2014 at 11:07:42AM +0800, Cai Liu wrote:
-> Thanks for your review.
-> 
-> 2014/1/21 Minchan Kim <minchan@kernel.org>:
-> > Hello Cai,
-> >
-> > On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
-> >> zswap can support multiple swapfiles. So we need to check
-> >> all zbud pool pages in zswap.
-> >>
-> >> Version 2:
-> >>   * add *total_zbud_pages* in zbud to record all the pages in pools
-> >>   * move the updating of pool pages statistics to
-> >>     alloc_zbud_page/free_zbud_page to hide the details
-> >>
-> >> Signed-off-by: Cai Liu <cai.liu@samsung.com>
-> >> ---
-> >>  include/linux/zbud.h |    2 +-
-> >>  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
-> >>  mm/zswap.c           |    4 ++--
-> >>  3 files changed, 35 insertions(+), 15 deletions(-)
-> >>
-> >> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
-> >> index 2571a5c..1dbc13e 100644
-> >> --- a/include/linux/zbud.h
-> >> +++ b/include/linux/zbud.h
-> >> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
-> >>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
-> >>  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
-> >>  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
-> >> -u64 zbud_get_pool_size(struct zbud_pool *pool);
-> >> +u64 zbud_get_pool_size(void);
-> >>
-> >>  #endif /* _ZBUD_H_ */
-> >> diff --git a/mm/zbud.c b/mm/zbud.c
-> >> index 9451361..711aaf4 100644
-> >> --- a/mm/zbud.c
-> >> +++ b/mm/zbud.c
-> >> @@ -52,6 +52,13 @@
-> >>  #include <linux/spinlock.h>
-> >>  #include <linux/zbud.h>
-> >>
-> >> +/*********************************
-> >> +* statistics
-> >> +**********************************/
-> >> +
-> >> +/* zbud pages in all pools */
-> >> +static u64 total_zbud_pages;
-> >> +
-> >>  /*****************
-> >>   * Structures
-> >>  *****************/
-> >> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
-> >>       return zhdr;
-> >>  }
-> >>
-> >> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
-> >> +{
-> >> +     struct page *page;
-> >> +
-> >> +     page = alloc_page(gfp);
-> >> +
-> >> +     if (page) {
-> >> +             pool->pages_nr++;
-> >> +             total_zbud_pages++;
-> >
-> > Who protect race?
-> 
-> Yes, here the pool->pages_nr and also the total_zbud_pages are not protected.
-> I will re-do it.
-> 
-> I will change *total_zbud_pages* to atomic type.
+On Saturday 18 January 2014 03:14 PM, Chen Gang wrote:
+> Hello Maintainers:
+>
+> Please help check this patch when you have time.
+>
+> Thanks.
 
-Wait, it doesn't make sense. Now, you assume zbud allocator would be used
-for only zswap. It's true until now but we couldn't make sure it in future.
-If other user start to use zbud allocator, total_zbud_pages would be pointless.
+Do you know whose tree this is goona go thru. I can take it thru ARC (but maybe
+for 3.15, however it would be better it went thru mm or some such).
 
-Another concern is that what's your scenario for above two swap?
-How often we need to call zbud_get_pool_size?
-In previous your patch, you reduced the number of call so IIRC,
-we only called it in zswap_is_full and for debugfs.
-Of course, it would need some lock or refcount to prevent destroy
-of zswap_tree in parallel with zswap_frontswap_invalidate_area but
-zswap_is_full doesn't need to be exact so RCU would be good fit.
+-Vineet
 
-Most important point is that now zswap doesn't consider multiple swap.
-For example, Let's assume you uses two swap A and B with different priority
-and A already has charged 19% long time ago and let's assume that A swap is
-full now so VM start to use B so that B has charged 1% recently.
-It menas zswap charged (19% + 1%)i is full by default.
+>
+> On 01/12/2014 09:59 AM, Chen Gang wrote:
+>> For some assemblers, they use another character as newline in a macro
+>> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
+>> macro) instead of ';' for it.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> Acked-by: Vineet Gupta <vgupta@synopsys.com>
+>> ---
+>>  arch/arc/include/asm/linkage.h |  2 ++
+>>  include/linux/linkage.h        | 19 ++++++++++++-------
+>>  2 files changed, 14 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
+>> index 0283e9e..66ee552 100644
+>> --- a/arch/arc/include/asm/linkage.h
+>> +++ b/arch/arc/include/asm/linkage.h
+>> @@ -11,6 +11,8 @@
+>>  
+>>  #ifdef __ASSEMBLY__
+>>  
+>> +#define ASM_NL		 `	/* use '`' to mark new line in macro */
+>> +
+>>  /* Can't use the ENTRY macro in linux/linkage.h
+>>   * gas considers ';' as comment vs. newline
+>>   */
+>> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+>> index d3e8ad2..a6a42dd 100644
+>> --- a/include/linux/linkage.h
+>> +++ b/include/linux/linkage.h
+>> @@ -6,6 +6,11 @@
+>>  #include <linux/export.h>
+>>  #include <asm/linkage.h>
+>>  
+>> +/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
+>> +#ifndef ASM_NL
+>> +#define ASM_NL		 ;
+>> +#endif
+>> +
+>>  #ifdef __cplusplus
+>>  #define CPP_ASMLINKAGE extern "C"
+>>  #else
+>> @@ -75,21 +80,21 @@
+>>  
+>>  #ifndef ENTRY
+>>  #define ENTRY(name) \
+>> -  .globl name; \
+>> -  ALIGN; \
+>> -  name:
+>> +	.globl name ASM_NL \
+>> +	ALIGN ASM_NL \
+>> +	name:
+>>  #endif
+>>  #endif /* LINKER_SCRIPT */
+>>  
+>>  #ifndef WEAK
+>>  #define WEAK(name)	   \
+>> -	.weak name;	   \
+>> +	.weak name ASM_NL   \
+>>  	name:
+>>  #endif
+>>  
+>>  #ifndef END
+>>  #define END(name) \
+>> -  .size name, .-name
+>> +	.size name, .-name
+>>  #endif
+>>  
+>>  /* If symbol 'name' is treated as a subroutine (gets called, and returns)
+>> @@ -98,8 +103,8 @@
+>>   */
+>>  #ifndef ENDPROC
+>>  #define ENDPROC(name) \
+>> -  .type name, @function; \
+>> -  END(name)
+>> +	.type name, @function ASM_NL \
+>> +	END(name)
+>>  #endif
+>>  
+>>  #endif
+>>
+>
 
-Then, if VM want to swap out more pages into B, zbud_reclaim_page
-would be evict one of pages in B's pool and it would be repeated
-continuously. It's totally LRU reverse problem and swap thrashing in B
-would happen.
-
-Please say your usecase scenario and if it's really problem,
-we need more surgery.
-
-Thanks.
-
-> For *pool->pages_nr*, one way is to use pool->lock to protect. But I
-> think it is too heavy.
-> So does it ok to change pages_nr to atomic type too?
-> 
-> 
-> >
-> >> +     }
-> >> +
-> >> +     return page;
-> >> +}
-> >> +
-> >> +
-> >>  /* Resets the struct page fields and frees the page */
-> >> -static void free_zbud_page(struct zbud_header *zhdr)
-> >> +static void free_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
-> >>  {
-> >>       __free_page(virt_to_page(zhdr));
-> >> +
-> >> +     pool->pages_nr--;
-> >> +     total_zbud_pages--;
-> >>  }
-> >>
-> >>  /*
-> >> @@ -279,11 +304,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-> >>
-> >>       /* Couldn't find unbuddied zbud page, create new one */
-> >>       spin_unlock(&pool->lock);
-> >> -     page = alloc_page(gfp);
-> >> +     page = alloc_zbud_page(pool, gfp);
-> >>       if (!page)
-> >>               return -ENOMEM;
-> >>       spin_lock(&pool->lock);
-> >> -     pool->pages_nr++;
-> >>       zhdr = init_zbud_page(page);
-> >>       bud = FIRST;
-> >>
-> >> @@ -349,8 +373,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
-> >>       if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> >>               /* zbud page is empty, free */
-> >>               list_del(&zhdr->lru);
-> >> -             free_zbud_page(zhdr);
-> >> -             pool->pages_nr--;
-> >> +             free_zbud_page(pool, zhdr);
-> >>       } else {
-> >>               /* Add to unbuddied list */
-> >>               freechunks = num_free_chunks(zhdr);
-> >> @@ -447,8 +470,7 @@ next:
-> >>                        * Both buddies are now free, free the zbud page and
-> >>                        * return success.
-> >>                        */
-> >> -                     free_zbud_page(zhdr);
-> >> -                     pool->pages_nr--;
-> >> +                     free_zbud_page(pool, zhdr);
-> >>                       spin_unlock(&pool->lock);
-> >>                       return 0;
-> >>               } else if (zhdr->first_chunks == 0 ||
-> >> @@ -496,14 +518,12 @@ void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
-> >>
-> >>  /**
-> >>   * zbud_get_pool_size() - gets the zbud pool size in pages
-> >> - * @pool:    pool whose size is being queried
-> >>   *
-> >> - * Returns: size in pages of the given pool.  The pool lock need not be
-> >> - * taken to access pages_nr.
-> >> + * Returns: size in pages of all the zbud pools.
-> >>   */
-> >> -u64 zbud_get_pool_size(struct zbud_pool *pool)
-> >> +u64 zbud_get_pool_size(void)
-> >>  {
-> >> -     return pool->pages_nr;
-> >> +     return total_zbud_pages;
-> >>  }
-> >>
-> >>  static int __init init_zbud(void)
-> >> diff --git a/mm/zswap.c b/mm/zswap.c
-> >> index 5a63f78..ef44d9d 100644
-> >> --- a/mm/zswap.c
-> >> +++ b/mm/zswap.c
-> >> @@ -291,7 +291,7 @@ static void zswap_free_entry(struct zswap_tree *tree,
-> >>       zbud_free(tree->pool, entry->handle);
-> >>       zswap_entry_cache_free(entry);
-> >>       atomic_dec(&zswap_stored_pages);
-> >> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> >> +     zswap_pool_pages = zbud_get_pool_size();
-> >>  }
-> >>
-> >>  /* caller must hold the tree lock */
-> >> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
-> >>
-> >>       /* update stats */
-> >>       atomic_inc(&zswap_stored_pages);
-> >> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> >> +     zswap_pool_pages = zbud_get_pool_size();
-> >>
-> >>       return 0;
-> >>
-> >> --
-> >> 1.7.10.4
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
