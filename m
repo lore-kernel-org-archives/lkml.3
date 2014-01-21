@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaAUTNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 14:13:31 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:42606 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773AbaAUTNa (ORCPT
+	id S1752487AbaAUTRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 14:17:01 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:55949 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaAUTQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 14:13:30 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfstAo5SQMel8AXawDOUvwr8pxjMon91SD6m7JJcBA==
-X-RZG-CLASS-ID: mo00
-Date: Tue, 21 Jan 2014 20:13:26 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH V3 1/1] Drivers: hv: Implement the file copy service
-Message-ID: <20140121191326.GA16171@aepfle.de>
-References: <1390331164-14292-1-git-send-email-kys@microsoft.com>
+	Tue, 21 Jan 2014 14:16:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1390331164-14292-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
+In-Reply-To: <20131126003919.GT14725@sirena.org.uk>
+References: <20131125174037.GR14725@sirena.org.uk>
+	<CA+55aFwPcr8TYpLUg5NP9x3RGCv4+U7vz-nNH6Br5ku3MDwaDw@mail.gmail.com>
+	<20131126003919.GT14725@sirena.org.uk>
+Date: Tue, 21 Jan 2014 11:16:57 -0800
+X-Google-Sender-Auth: zpSk8SOAnXJWLoOGgtAVc9hTz1w
+Message-ID: <CA+55aFxX3odNLBt1L6iAPGybekioqaW3SREmXywd_jnz_tDBeQ@mail.gmail.com>
+Subject: Re: [GIT PULL] regulator updates for v3.13-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, K. Y. Srinivasan wrote:
+On Mon, Nov 25, 2013 at 4:39 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+> If you're OK with octopus merges for things like this I'll definitely
+> take another look at using them, the enormous stack of merge commits
+> always looks noisy to me in the logs and pull requests and for things
+> like driver updates there's unlikely to be much doubt about which branch
+> it was if there's a problem.
 
-Looks better. A few comments below:
+Christ. When you start doing octopus merges, you don't do it by half
+measures, do you?
 
+I just pulled the sound updates from Takashi, and as a result got your
+merge commit 2cde51fbd0f3. That one has 66 parents.
 
-> +++ b/drivers/hv/hv_fcopy.c
+That kind of merge either needs to be split up, or gitk needs to be
+made better about visualizing it, because it ends up being *so* wide
+that the history is hard to read.
 
-> +static bool daemon_died;
+I think you'll find that having that many parents also breaks old
+versions of git.
 
-This is a write only variable.
+Anyway, I'd suggest you try to limit octopus merges to ~15 parents or
+less to make the visualization tools not go crazy.  Maybe aim for just
+10 or so in most cases.
 
-> +static u32 daemon_version;
+It's pulled, and it's fine, but there's clearly a balance between
+"octopus merges are fine" and "Christ, that's not an octopus, that's a
+Cthulhu merge".
 
-This is a write only variable.
-
-> +static int fcopy_handle_handshake(u32 version)
-> +{
-> +	pr_info("FCP: user-mode registering done. Daemon version: %d\n",
-> +		version);
-> +	fcopy_transaction.active = false;
-> +	daemon_version = version;
-
-I think fcopy_handle_handshake should proactivly reject requests if
-version is not 0.
-
-There is an unused FCOPY_VERSION as well. I think this should not be in
-a header. Instead the kernel should handle all known versions and reject
-everything it does not know about.
-
-> +	syslog(LOG_INFO, "Target file name: %s\n", target_fname);
-
-Newline in syslog
-
-> +				if (mkdir((char *)smsg->path_name, 0755)) {
-> +					syslog(LOG_ERR, "Failed to create %s\n",
-
-Newline in syslog
-
-> +		syslog(LOG_INFO, "File: %s exists\n", target_fname);
-
-Newline in syslog
-
-> +		syslog(LOG_INFO, "Open Failed: %s\n", strerror(errno));
-
-Newline in syslog
-
-> +				syslog(LOG_ERR, "Read error: %s\n",
-
-Newline in syslog
-
-> +			syslog(LOG_ERR, "Unknown operation: %d\n",
-
-Newline in syslog
-
-Olaf
+                Linus
