@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488AbaAUVdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:33:55 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:50786 "EHLO
+	id S1754828AbaAUVZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:25:28 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50693 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146AbaAUVZh (ORCPT
+	with ESMTP id S1752608AbaAUVZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:25:37 -0500
+	Tue, 21 Jan 2014 16:25:00 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>
-Subject: [PATCH 49/73] drivers/mtd: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:22:52 -0500
-Message-ID: <1390339396-3479-50-git-send-email-paul.gortmaker@windriver.com>
+        Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>
+Subject: [PATCH 34/73] mips: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:22:37 -0500
+Message-ID: <1390339396-3479-35-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -31,506 +29,738 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c | 1 -
- drivers/mtd/chips/cfi_cmdset_0002.c | 1 -
- drivers/mtd/chips/cfi_cmdset_0020.c | 1 -
- drivers/mtd/devices/m25p80.c        | 1 -
- drivers/mtd/devices/mtd_dataflash.c | 1 -
- drivers/mtd/devices/sst25l.c        | 1 -
- drivers/mtd/inftlmount.c            | 1 -
- drivers/mtd/maps/bfin-async-flash.c | 1 -
- drivers/mtd/maps/gpio-addr-flash.c  | 1 -
- drivers/mtd/maps/intel_vr_nor.c     | 1 -
- drivers/mtd/maps/ixp4xx.c           | 1 -
- drivers/mtd/maps/lantiq-flash.c     | 1 -
- drivers/mtd/maps/latch-addr-flash.c | 1 -
- drivers/mtd/maps/pci.c              | 1 -
- drivers/mtd/maps/physmap_of.c       | 1 -
- drivers/mtd/maps/plat-ram.c         | 1 -
- drivers/mtd/maps/pxa2xx-flash.c     | 1 -
- drivers/mtd/maps/rbtx4939-flash.c   | 1 -
- drivers/mtd/maps/sa1100-flash.c     | 1 -
- drivers/mtd/maps/scb2_flash.c       | 1 -
- drivers/mtd/maps/sun_uflash.c       | 1 -
- drivers/mtd/mtd_blkdevs.c           | 1 -
- drivers/mtd/nand/ams-delta.c        | 1 -
- drivers/mtd/nand/au1550nd.c         | 1 -
- drivers/mtd/nand/bf5xx_nand.c       | 1 -
- drivers/mtd/nand/davinci_nand.c     | 1 -
- drivers/mtd/nand/fsl_elbc_nand.c    | 1 -
- drivers/mtd/nand/fsl_ifc_nand.c     | 1 -
- drivers/mtd/nand/gpio.c             | 1 -
- drivers/mtd/nand/mpc5121_nfc.c      | 1 -
- drivers/mtd/nand/nuc900_nand.c      | 1 -
- drivers/mtd/nand/pasemi_nand.c      | 1 -
- drivers/mtd/nand/s3c2410.c          | 1 -
- drivers/mtd/onenand/generic.c       | 1 -
- drivers/mtd/onenand/omap2.c         | 1 -
- drivers/mtd/onenand/onenand_base.c  | 1 -
- drivers/mtd/tests/mtd_test.c        | 1 -
- drivers/mtd/ubi/ubi.h               | 1 -
- 38 files changed, 38 deletions(-)
+ arch/mips/alchemy/common/power.c               | 1 -
+ arch/mips/ath79/common.h                       | 1 -
+ arch/mips/bcm47xx/nvram.c                      | 1 -
+ arch/mips/bcm63xx/early_printk.c               | 1 -
+ arch/mips/boot/compressed/dbg.c                | 1 -
+ arch/mips/boot/compressed/uart-16550.c         | 1 -
+ arch/mips/cavium-octeon/smp.c                  | 1 -
+ arch/mips/fw/arc/file.c                        | 1 -
+ arch/mips/include/asm/highmem.h                | 1 -
+ arch/mips/include/asm/mach-ath79/ar71xx_regs.h | 1 -
+ arch/mips/include/asm/mach-generic/floppy.h    | 1 -
+ arch/mips/include/asm/mach-jazz/floppy.h       | 1 -
+ arch/mips/jz4740/platform.c                    | 1 -
+ arch/mips/kernel/bmips_vec.S                   | 1 -
+ arch/mips/kernel/crash.c                       | 1 -
+ arch/mips/kernel/spram.c                       | 1 -
+ arch/mips/kernel/sync-r4k.c                    | 1 -
+ arch/mips/kvm/kvm_tlb.c                        | 1 -
+ arch/mips/lantiq/xway/clk.c                    | 1 -
+ arch/mips/lasat/at93c.c                        | 1 -
+ arch/mips/lasat/picvue.c                       | 1 -
+ arch/mips/lib/uncached.c                       | 1 -
+ arch/mips/loongson/lemote-2f/clock.c           | 1 -
+ arch/mips/mm/c-octeon.c                        | 1 -
+ arch/mips/mm/c-r3k.c                           | 1 -
+ arch/mips/mm/cache.c                           | 1 -
+ arch/mips/mm/cex-sb1.S                         | 1 -
+ arch/mips/mm/hugetlbpage.c                     | 1 -
+ arch/mips/mm/page.c                            | 1 -
+ arch/mips/mm/sc-rm7k.c                         | 1 -
+ arch/mips/mm/tlb-r3k.c                         | 1 -
+ arch/mips/mm/tlb-r8k.c                         | 1 -
+ arch/mips/mm/tlbex.c                           | 1 -
+ arch/mips/mm/uasm-micromips.c                  | 1 -
+ arch/mips/mm/uasm-mips.c                       | 1 -
+ arch/mips/mti-malta/malta-amon.c               | 1 -
+ arch/mips/mti-sead3/sead3-pic32-bus.c          | 1 -
+ arch/mips/netlogic/common/reset.S              | 1 -
+ arch/mips/netlogic/common/smpboot.S            | 1 -
+ arch/mips/netlogic/xlp/wakeup.c                | 1 -
+ arch/mips/netlogic/xlr/wakeup.c                | 1 -
+ arch/mips/pci/fixup-rc32434.c                  | 1 -
+ arch/mips/pci/fixup-sb1250.c                   | 1 -
+ arch/mips/pci/ops-bcm63xx.c                    | 1 -
+ arch/mips/pci/ops-bonito64.c                   | 1 -
+ arch/mips/pci/ops-lantiq.c                     | 1 -
+ arch/mips/pci/ops-loongson2.c                  | 1 -
+ arch/mips/pci/ops-mace.c                       | 1 -
+ arch/mips/pci/ops-msc.c                        | 1 -
+ arch/mips/pci/ops-nile4.c                      | 1 -
+ arch/mips/pci/ops-rc32434.c                    | 1 -
+ arch/mips/pci/pci-ip27.c                       | 1 -
+ arch/mips/sgi-ip27/ip27-console.c              | 1 -
+ arch/mips/sgi-ip27/ip27-irq-pci.c              | 1 -
+ arch/mips/sgi-ip27/ip27-klconfig.c             | 1 -
+ arch/mips/sgi-ip27/ip27-xtalk.c                | 1 -
+ 56 files changed, 56 deletions(-)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-index 7751443..a19719e 100644
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -21,7 +21,6 @@
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/init.h>
- #include <asm/io.h>
- #include <asm/byteorder.h>
+diff --git a/arch/mips/alchemy/common/power.c b/arch/mips/alchemy/common/power.c
+index 0c7fce2..bdb28dee 100644
+--- a/arch/mips/alchemy/common/power.c
++++ b/arch/mips/alchemy/common/power.c
+@@ -29,7 +29,6 @@
+  *  675 Mass Ave, Cambridge, MA 02139, USA.
+  */
  
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index 89b9d68..718244d 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -24,7 +24,6 @@
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
 -#include <linux/init.h>
- #include <asm/io.h>
- #include <asm/byteorder.h>
- 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0020.c b/drivers/mtd/chips/cfi_cmdset_0020.c
-index 096993f..8852942 100644
---- a/drivers/mtd/chips/cfi_cmdset_0020.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0020.c
-@@ -22,7 +22,6 @@
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/init.h>
- #include <asm/io.h>
- #include <asm/byteorder.h>
- 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index d0f6475..4978f00 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
+ #include <linux/pm.h>
+ #include <linux/sysctl.h>
+ #include <linux/jiffies.h>
+diff --git a/arch/mips/ath79/common.h b/arch/mips/ath79/common.h
+index 648d2da..a312071 100644
+--- a/arch/mips/ath79/common.h
++++ b/arch/mips/ath79/common.h
 @@ -15,7 +15,6 @@
-  *
+ #define __ATH79_COMMON_H
+ 
+ #include <linux/types.h>
+-#include <linux/init.h>
+ 
+ #define ATH79_MEM_SIZE_MIN	(2 * 1024 * 1024)
+ #define ATH79_MEM_SIZE_MAX	(128 * 1024 * 1024)
+diff --git a/arch/mips/bcm47xx/nvram.c b/arch/mips/bcm47xx/nvram.c
+index 085a3ee..6decb27 100644
+--- a/arch/mips/bcm47xx/nvram.c
++++ b/arch/mips/bcm47xx/nvram.c
+@@ -11,7 +11,6 @@
+  * option) any later version.
   */
  
 -#include <linux/init.h>
- #include <linux/err.h>
- #include <linux/errno.h>
+ #include <linux/types.h>
  #include <linux/module.h>
-diff --git a/drivers/mtd/devices/mtd_dataflash.c b/drivers/mtd/devices/mtd_dataflash.c
-index 624069d..8b278d2 100644
---- a/drivers/mtd/devices/mtd_dataflash.c
-+++ b/drivers/mtd/devices/mtd_dataflash.c
-@@ -10,7 +10,6 @@
-  * 2 of the License, or (at your option) any later version.
- */
- #include <linux/module.h>
+ #include <linux/ssb/ssb.h>
+diff --git a/arch/mips/bcm63xx/early_printk.c b/arch/mips/bcm63xx/early_printk.c
+index f92f1a2..6092226 100644
+--- a/arch/mips/bcm63xx/early_printk.c
++++ b/arch/mips/bcm63xx/early_printk.c
+@@ -6,7 +6,6 @@
+  * Copyright (C) 2008 Maxime Bizon <mbizon@freebox.fr>
+  */
+ 
 -#include <linux/init.h>
- #include <linux/slab.h>
+ #include <bcm63xx_io.h>
+ #include <linux/serial_bcm63xx.h>
+ 
+diff --git a/arch/mips/boot/compressed/dbg.c b/arch/mips/boot/compressed/dbg.c
+index 134a616..06c6a5b 100644
+--- a/arch/mips/boot/compressed/dbg.c
++++ b/arch/mips/boot/compressed/dbg.c
+@@ -6,7 +6,6 @@
+  * need to implement your own putc().
+  */
+ #include <linux/compiler.h>
+-#include <linux/init.h>
+ #include <linux/types.h>
+ 
+ void __weak putc(char c)
+diff --git a/arch/mips/boot/compressed/uart-16550.c b/arch/mips/boot/compressed/uart-16550.c
+index 869172d..237494b 100644
+--- a/arch/mips/boot/compressed/uart-16550.c
++++ b/arch/mips/boot/compressed/uart-16550.c
+@@ -4,7 +4,6 @@
+ 
+ #include <linux/types.h>
+ #include <linux/serial_reg.h>
+-#include <linux/init.h>
+ 
+ #include <asm/addrspace.h>
+ 
+diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+index 24a2167..67a078f 100644
+--- a/arch/mips/cavium-octeon/smp.c
++++ b/arch/mips/cavium-octeon/smp.c
+@@ -6,7 +6,6 @@
+  * Copyright (C) 2004-2008, 2009, 2010 Cavium Networks
+  */
+ #include <linux/cpu.h>
+-#include <linux/init.h>
  #include <linux/delay.h>
- #include <linux/device.h>
-diff --git a/drivers/mtd/devices/sst25l.c b/drivers/mtd/devices/sst25l.c
-index 687bf27..c63ecbc 100644
---- a/drivers/mtd/devices/sst25l.c
-+++ b/drivers/mtd/devices/sst25l.c
-@@ -15,7 +15,6 @@
-  *
+ #include <linux/smp.h>
+ #include <linux/interrupt.h>
+diff --git a/arch/mips/fw/arc/file.c b/arch/mips/fw/arc/file.c
+index a8b0803..49fd3ff 100644
+--- a/arch/mips/fw/arc/file.c
++++ b/arch/mips/fw/arc/file.c
+@@ -8,7 +8,6 @@
+  * Copyright (C) 1994, 1995, 1996, 1999 Ralf Baechle
+  * Copyright (C) 1999 Silicon Graphics, Inc.
   */
+-#include <linux/init.h>
+ 
+ #include <asm/fw/arc/types.h>
+ #include <asm/sgialib.h>
+diff --git a/arch/mips/include/asm/highmem.h b/arch/mips/include/asm/highmem.h
+index b0dd0c8..572e63e 100644
+--- a/arch/mips/include/asm/highmem.h
++++ b/arch/mips/include/asm/highmem.h
+@@ -19,7 +19,6 @@
+ 
+ #ifdef __KERNEL__
  
 -#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/mutex.h>
-diff --git a/drivers/mtd/inftlmount.c b/drivers/mtd/inftlmount.c
-index 4adc037..487e64f 100644
---- a/drivers/mtd/inftlmount.c
-+++ b/drivers/mtd/inftlmount.c
-@@ -30,7 +30,6 @@
- #include <asm/uaccess.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nftl.h>
- #include <linux/mtd/inftl.h>
-diff --git a/drivers/mtd/maps/bfin-async-flash.c b/drivers/mtd/maps/bfin-async-flash.c
-index 5434d8d..6ea51e5 100644
---- a/drivers/mtd/maps/bfin-async-flash.c
-+++ b/drivers/mtd/maps/bfin-async-flash.c
-@@ -14,7 +14,6 @@
-  * Licensed under the GPL-2 or later.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/maps/gpio-addr-flash.c b/drivers/mtd/maps/gpio-addr-flash.c
-index 1adba86..a4c477b 100644
---- a/drivers/mtd/maps/gpio-addr-flash.c
-+++ b/drivers/mtd/maps/gpio-addr-flash.c
-@@ -14,7 +14,6 @@
-  */
- 
- #include <linux/gpio.h>
--#include <linux/init.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-diff --git a/drivers/mtd/maps/intel_vr_nor.c b/drivers/mtd/maps/intel_vr_nor.c
-index 46d195f..5ab71f0 100644
---- a/drivers/mtd/maps/intel_vr_nor.c
-+++ b/drivers/mtd/maps/intel_vr_nor.c
-@@ -31,7 +31,6 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
- #include <linux/mtd/partitions.h>
-diff --git a/drivers/mtd/maps/ixp4xx.c b/drivers/mtd/maps/ixp4xx.c
-index d6b2451..6a589f1 100644
---- a/drivers/mtd/maps/ixp4xx.c
-+++ b/drivers/mtd/maps/ixp4xx.c
+ #include <linux/interrupt.h>
+ #include <linux/uaccess.h>
+ #include <asm/kmap_types.h>
+diff --git a/arch/mips/include/asm/mach-ath79/ar71xx_regs.h b/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
+index b86a125..cd41e93 100644
+--- a/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
++++ b/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
 @@ -16,7 +16,6 @@
- #include <linux/err.h>
- #include <linux/module.h>
+ #define __ASM_MACH_AR71XX_REGS_H
+ 
  #include <linux/types.h>
 -#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
- #include <linux/slab.h>
-diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-flash.c
-index 93c507a..7aa682c 100644
---- a/drivers/mtd/maps/lantiq-flash.c
-+++ b/drivers/mtd/maps/lantiq-flash.c
-@@ -13,7 +13,6 @@
- #include <linux/kernel.h>
  #include <linux/io.h>
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
- #include <linux/mtd/partitions.h>
-diff --git a/drivers/mtd/maps/latch-addr-flash.c b/drivers/mtd/maps/latch-addr-flash.c
-index 98bb5d5..cadfbe0 100644
---- a/drivers/mtd/maps/latch-addr-flash.c
-+++ b/drivers/mtd/maps/latch-addr-flash.c
-@@ -10,7 +10,6 @@
-  * kind, whether express or implied.
-  */
+ #include <linux/bitops.h>
  
+diff --git a/arch/mips/include/asm/mach-generic/floppy.h b/arch/mips/include/asm/mach-generic/floppy.h
+index 5b5cd68..e2561d9 100644
+--- a/arch/mips/include/asm/mach-generic/floppy.h
++++ b/arch/mips/include/asm/mach-generic/floppy.h
+@@ -9,7 +9,6 @@
+ #define __ASM_MACH_GENERIC_FLOPPY_H
+ 
+ #include <linux/delay.h>
 -#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/maps/pci.c b/drivers/mtd/maps/pci.c
-index 36da518..eb0242e 100644
---- a/drivers/mtd/maps/pci.c
-+++ b/drivers/mtd/maps/pci.c
+ #include <linux/ioport.h>
+ #include <linux/sched.h>
+ #include <linux/linkage.h>
+diff --git a/arch/mips/include/asm/mach-jazz/floppy.h b/arch/mips/include/asm/mach-jazz/floppy.h
+index 62aa1e2..4b86c88 100644
+--- a/arch/mips/include/asm/mach-jazz/floppy.h
++++ b/arch/mips/include/asm/mach-jazz/floppy.h
+@@ -9,7 +9,6 @@
+ #define __ASM_MACH_JAZZ_FLOPPY_H
+ 
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/linkage.h>
+ #include <linux/types.h>
+ #include <linux/mm.h>
+diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
+index 1be41e2..a447101 100644
+--- a/arch/mips/jz4740/platform.c
++++ b/arch/mips/jz4740/platform.c
 @@ -14,7 +14,6 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- 
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
-index d111097..217c25d 100644
---- a/drivers/mtd/maps/physmap_of.c
-+++ b/drivers/mtd/maps/physmap_of.c
-@@ -15,7 +15,6 @@
- 
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/init.h>
- #include <linux/device.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
-diff --git a/drivers/mtd/maps/plat-ram.c b/drivers/mtd/maps/plat-ram.c
-index 10196f5..76ace85 100644
---- a/drivers/mtd/maps/plat-ram.c
-+++ b/drivers/mtd/maps/plat-ram.c
-@@ -23,7 +23,6 @@
- 
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
- #include <linux/ioport.h>
-diff --git a/drivers/mtd/maps/pxa2xx-flash.c b/drivers/mtd/maps/pxa2xx-flash.c
-index 9aad854..cb4d92e 100644
---- a/drivers/mtd/maps/pxa2xx-flash.c
-+++ b/drivers/mtd/maps/pxa2xx-flash.c
-@@ -13,7 +13,6 @@
- #include <linux/types.h>
- #include <linux/slab.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
-diff --git a/drivers/mtd/maps/rbtx4939-flash.c b/drivers/mtd/maps/rbtx4939-flash.c
-index 9352512..146b604 100644
---- a/drivers/mtd/maps/rbtx4939-flash.c
-+++ b/drivers/mtd/maps/rbtx4939-flash.c
-@@ -13,7 +13,6 @@
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/device.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/mtd/maps/sa1100-flash.c b/drivers/mtd/maps/sa1100-flash.c
-index 8fc06bf..3428034e 100644
---- a/drivers/mtd/maps/sa1100-flash.c
-+++ b/drivers/mtd/maps/sa1100-flash.c
-@@ -7,7 +7,6 @@
- #include <linux/types.h>
- #include <linux/ioport.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/mtd/maps/scb2_flash.c b/drivers/mtd/maps/scb2_flash.c
-index 3051c4c..b7a22a6 100644
---- a/drivers/mtd/maps/scb2_flash.c
-+++ b/drivers/mtd/maps/scb2_flash.c
-@@ -47,7 +47,6 @@
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <asm/io.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
-diff --git a/drivers/mtd/maps/sun_uflash.c b/drivers/mtd/maps/sun_uflash.c
-index 39cc418..b6f1aac 100644
---- a/drivers/mtd/maps/sun_uflash.c
-+++ b/drivers/mtd/maps/sun_uflash.c
-@@ -11,7 +11,6 @@
- #include <linux/module.h>
- #include <linux/fs.h>
- #include <linux/errno.h>
--#include <linux/init.h>
- #include <linux/ioport.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
-index 5073cbc..0b2ccb6 100644
---- a/drivers/mtd/mtd_blkdevs.c
-+++ b/drivers/mtd/mtd_blkdevs.c
-@@ -30,7 +30,6 @@
- #include <linux/blkpg.h>
- #include <linux/spinlock.h>
- #include <linux/hdreg.h>
--#include <linux/init.h>
- #include <linux/mutex.h>
- #include <asm/uaccess.h>
- 
-diff --git a/drivers/mtd/nand/ams-delta.c b/drivers/mtd/nand/ams-delta.c
-index 8611eb4..4936e9e 100644
---- a/drivers/mtd/nand/ams-delta.c
-+++ b/drivers/mtd/nand/ams-delta.c
-@@ -17,7 +17,6 @@
   */
  
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/delay.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/nand/au1550nd.c b/drivers/mtd/nand/au1550nd.c
-index 2880d88..7d84c4e 100644
---- a/drivers/mtd/nand/au1550nd.c
-+++ b/drivers/mtd/nand/au1550nd.c
-@@ -11,7 +11,6 @@
- 
- #include <linux/slab.h>
- #include <linux/gpio.h>
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
-index 94f55db..b7a2494 100644
---- a/drivers/mtd/nand/bf5xx_nand.c
-+++ b/drivers/mtd/nand/bf5xx_nand.c
-@@ -37,7 +37,6 @@
- 
- #include <linux/module.h>
- #include <linux/types.h>
+ #include <linux/device.h>
 -#include <linux/init.h>
  #include <linux/kernel.h>
- #include <linux/string.h>
- #include <linux/ioport.h>
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index a4989ec..4f5f322 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -24,7 +24,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/resource.h>
+diff --git a/arch/mips/kernel/bmips_vec.S b/arch/mips/kernel/bmips_vec.S
+index 122aa7f..a5bf73d 100644
+--- a/arch/mips/kernel/bmips_vec.S
++++ b/arch/mips/kernel/bmips_vec.S
+@@ -8,7 +8,6 @@
+  * Reset/NMI/re-entry vectors for BMIPS processors
+  */
+ 
+-#include <linux/init.h>
+ 
+ #include <asm/asm.h>
+ #include <asm/asmmacro.h>
+diff --git a/arch/mips/kernel/crash.c b/arch/mips/kernel/crash.c
+index 93aa302..d212646 100644
+--- a/arch/mips/kernel/crash.c
++++ b/arch/mips/kernel/crash.c
+@@ -5,7 +5,6 @@
+ #include <linux/bootmem.h>
+ #include <linux/crash_dump.h>
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/irq.h>
+ #include <linux/types.h>
+ #include <linux/sched.h>
+diff --git a/arch/mips/kernel/spram.c b/arch/mips/kernel/spram.c
+index dfed8a4..b242e2c 100644
+--- a/arch/mips/kernel/spram.c
++++ b/arch/mips/kernel/spram.c
+@@ -8,7 +8,6 @@
+  *
+  * Copyright (C) 2007, 2008 MIPS Technologies, Inc.
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/ptrace.h>
+ #include <linux/stddef.h>
+diff --git a/arch/mips/kernel/sync-r4k.c b/arch/mips/kernel/sync-r4k.c
+index 84536bf..c24ad5f 100644
+--- a/arch/mips/kernel/sync-r4k.c
++++ b/arch/mips/kernel/sync-r4k.c
+@@ -11,7 +11,6 @@
   */
  
  #include <linux/kernel.h>
 -#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/err.h>
-diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
-index bcf6080..ec549cd 100644
---- a/drivers/mtd/nand/fsl_elbc_nand.c
-+++ b/drivers/mtd/nand/fsl_elbc_nand.c
-@@ -24,7 +24,6 @@
+ #include <linux/irqflags.h>
+ #include <linux/cpumask.h>
  
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
- #include <linux/ioport.h>
-diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
-index 90ca7e7..f8c77e3 100644
---- a/drivers/mtd/nand/fsl_ifc_nand.c
-+++ b/drivers/mtd/nand/fsl_ifc_nand.c
-@@ -22,7 +22,6 @@
- 
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/of_address.h>
- #include <linux/slab.h>
-diff --git a/drivers/mtd/nand/gpio.c b/drivers/mtd/nand/gpio.c
-index 8e6148a..117ce33 100644
---- a/drivers/mtd/nand/gpio.c
-+++ b/drivers/mtd/nand/gpio.c
-@@ -18,7 +18,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/err.h>
--#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nfc.c
-index 31ee7cf..e78841a 100644
---- a/drivers/mtd/nand/mpc5121_nfc.c
-+++ b/drivers/mtd/nand/mpc5121_nfc.c
-@@ -30,7 +30,6 @@
- #include <linux/gfp.h>
- #include <linux/delay.h>
- #include <linux/err.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/nand/nuc900_nand.c b/drivers/mtd/nand/nuc900_nand.c
-index 9ee09a8..90c99ea 100644
---- a/drivers/mtd/nand/nuc900_nand.c
-+++ b/drivers/mtd/nand/nuc900_nand.c
+diff --git a/arch/mips/kvm/kvm_tlb.c b/arch/mips/kvm/kvm_tlb.c
+index c777dd3..26db6ba 100644
+--- a/arch/mips/kvm/kvm_tlb.c
++++ b/arch/mips/kvm/kvm_tlb.c
 @@ -10,7 +10,6 @@
+ * Authors: Sanjay Lal <sanjayl@kymasys.com>
+ */
+ 
+-#include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+diff --git a/arch/mips/lantiq/xway/clk.c b/arch/mips/lantiq/xway/clk.c
+index 1ab576d..8750dc0 100644
+--- a/arch/mips/lantiq/xway/clk.c
++++ b/arch/mips/lantiq/xway/clk.c
+@@ -8,7 +8,6 @@
+ 
+ #include <linux/io.h>
+ #include <linux/export.h>
+-#include <linux/init.h>
+ #include <linux/clk.h>
+ 
+ #include <asm/time.h>
+diff --git a/arch/mips/lasat/at93c.c b/arch/mips/lasat/at93c.c
+index 793e234..942f32b 100644
+--- a/arch/mips/lasat/at93c.c
++++ b/arch/mips/lasat/at93c.c
+@@ -8,7 +8,6 @@
+ #include <linux/delay.h>
+ #include <asm/lasat/lasat.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ 
+ #include "at93c.h"
+ 
+diff --git a/arch/mips/lasat/picvue.c b/arch/mips/lasat/picvue.c
+index 7eb3348..d613b97 100644
+--- a/arch/mips/lasat/picvue.c
++++ b/arch/mips/lasat/picvue.c
+@@ -9,7 +9,6 @@
+ #include <asm/bootinfo.h>
+ #include <asm/lasat/lasat.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/string.h>
+ 
+diff --git a/arch/mips/lib/uncached.c b/arch/mips/lib/uncached.c
+index d8522f8..09d5dee 100644
+--- a/arch/mips/lib/uncached.c
++++ b/arch/mips/lib/uncached.c
+@@ -8,7 +8,6 @@
+  *	Author: Maciej W. Rozycki <macro@mips.com>
   */
  
- #include <linux/slab.h>
 -#include <linux/init.h>
+ 
+ #include <asm/addrspace.h>
+ #include <asm/bug.h>
+diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
+index 4dc2f5f..aed32b8 100644
+--- a/arch/mips/loongson/lemote-2f/clock.c
++++ b/arch/mips/loongson/lemote-2f/clock.c
+@@ -10,7 +10,6 @@
+ #include <linux/cpufreq.h>
+ #include <linux/errno.h>
+ #include <linux/export.h>
+-#include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+diff --git a/arch/mips/mm/c-octeon.c b/arch/mips/mm/c-octeon.c
+index c8efdb5..f41a5c5 100644
+--- a/arch/mips/mm/c-octeon.c
++++ b/arch/mips/mm/c-octeon.c
+@@ -6,7 +6,6 @@
+  * Copyright (C) 2005-2007 Cavium Networks
+  */
+ #include <linux/export.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+diff --git a/arch/mips/mm/c-r3k.c b/arch/mips/mm/c-r3k.c
+index 2fcde0c..135ec31 100644
+--- a/arch/mips/mm/c-r3k.c
++++ b/arch/mips/mm/c-r3k.c
+@@ -9,7 +9,6 @@
+  * Copyright (C) 1998 Gleb Raiko & Vladimir Roganov
+  * Copyright (C) 2001, 2004, 2007  Maciej W. Rozycki
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+index 15f813c..fde7e56 100644
+--- a/arch/mips/mm/cache.c
++++ b/arch/mips/mm/cache.c
+@@ -8,7 +8,6 @@
+  */
+ #include <linux/fs.h>
+ #include <linux/fcntl.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/linkage.h>
  #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-diff --git a/drivers/mtd/nand/pasemi_nand.c b/drivers/mtd/nand/pasemi_nand.c
-index 90f871a..2c98f9d 100644
---- a/drivers/mtd/nand/pasemi_nand.c
-+++ b/drivers/mtd/nand/pasemi_nand.c
-@@ -23,7 +23,6 @@
+diff --git a/arch/mips/mm/cex-sb1.S b/arch/mips/mm/cex-sb1.S
+index 191cf6e..5d5f296 100644
+--- a/arch/mips/mm/cex-sb1.S
++++ b/arch/mips/mm/cex-sb1.S
+@@ -15,7 +15,6 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  */
+-#include <linux/init.h>
+ 
+ #include <asm/asm.h>
+ #include <asm/regdef.h>
+diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
+index 01fda44..77e0ae0 100644
+--- a/arch/mips/mm/hugetlbpage.c
++++ b/arch/mips/mm/hugetlbpage.c
+@@ -11,7 +11,6 @@
+  * Copyright (C) 2008, 2009 Cavium Networks, Inc.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ #include <linux/hugetlb.h>
+diff --git a/arch/mips/mm/page.c b/arch/mips/mm/page.c
+index cbd81d1..58033c4 100644
+--- a/arch/mips/mm/page.c
++++ b/arch/mips/mm/page.c
+@@ -8,7 +8,6 @@
+  * Copyright (C) 2008  Thiemo Seufer
+  * Copyright (C) 2012  MIPS Technologies, Inc.
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+diff --git a/arch/mips/mm/sc-rm7k.c b/arch/mips/mm/sc-rm7k.c
+index aaffbba..9ac1efc 100644
+--- a/arch/mips/mm/sc-rm7k.c
++++ b/arch/mips/mm/sc-rm7k.c
+@@ -6,7 +6,6 @@
+ 
  #undef DEBUG
  
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
-diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
-index 47fbd9a..62a8958 100644
---- a/drivers/mtd/nand/s3c2410.c
-+++ b/drivers/mtd/nand/s3c2410.c
-@@ -29,7 +29,6 @@
- 
- #include <linux/module.h>
- #include <linux/types.h>
 -#include <linux/init.h>
  #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/bitops.h>
+diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
+index 9aca109..d657493 100644
+--- a/arch/mips/mm/tlb-r3k.c
++++ b/arch/mips/mm/tlb-r3k.c
+@@ -10,7 +10,6 @@
+  * Copyright (C) 2002  Ralf Baechle
+  * Copyright (C) 2002  Maciej W. Rozycki
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+diff --git a/arch/mips/mm/tlb-r8k.c b/arch/mips/mm/tlb-r8k.c
+index 6a99733..138a2ec 100644
+--- a/arch/mips/mm/tlb-r8k.c
++++ b/arch/mips/mm/tlb-r8k.c
+@@ -8,7 +8,6 @@
+  * Carsten Langgaard, carstenl@mips.com
+  * Copyright (C) 2002 MIPS Technologies, Inc.  All rights reserved.
+  */
+-#include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
+index 6fdfe1f..b234b1b 100644
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -26,7 +26,6 @@
+ #include <linux/types.h>
+ #include <linux/smp.h>
  #include <linux/string.h>
+-#include <linux/init.h>
+ #include <linux/cache.h>
+ 
+ #include <asm/cacheflush.h>
+diff --git a/arch/mips/mm/uasm-micromips.c b/arch/mips/mm/uasm-micromips.c
+index 060000f..b8d580c 100644
+--- a/arch/mips/mm/uasm-micromips.c
++++ b/arch/mips/mm/uasm-micromips.c
+@@ -15,7 +15,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ 
+ #include <asm/inst.h>
+ #include <asm/elf.h>
+diff --git a/arch/mips/mm/uasm-mips.c b/arch/mips/mm/uasm-mips.c
+index 0c72458..3abd609 100644
+--- a/arch/mips/mm/uasm-mips.c
++++ b/arch/mips/mm/uasm-mips.c
+@@ -15,7 +15,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ 
+ #include <asm/inst.h>
+ #include <asm/elf.h>
+diff --git a/arch/mips/mti-malta/malta-amon.c b/arch/mips/mti-malta/malta-amon.c
+index 0319ad8..592ac04 100644
+--- a/arch/mips/mti-malta/malta-amon.c
++++ b/arch/mips/mti-malta/malta-amon.c
+@@ -9,7 +9,6 @@
+  * Arbitrary Monitor Interface
+  */
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/smp.h>
+ 
+ #include <asm/addrspace.h>
+diff --git a/arch/mips/mti-sead3/sead3-pic32-bus.c b/arch/mips/mti-sead3/sead3-pic32-bus.c
+index eb2bf93..3b12aa5 100644
+--- a/arch/mips/mti-sead3/sead3-pic32-bus.c
++++ b/arch/mips/mti-sead3/sead3-pic32-bus.c
+@@ -8,7 +8,6 @@
+ #include <linux/delay.h>
+ #include <linux/kernel.h>
+ #include <linux/spinlock.h>
+-#include <linux/init.h>
  #include <linux/io.h>
-diff --git a/drivers/mtd/onenand/generic.c b/drivers/mtd/onenand/generic.c
-index 8e1919b..093c29a 100644
---- a/drivers/mtd/onenand/generic.c
-+++ b/drivers/mtd/onenand/generic.c
-@@ -13,7 +13,6 @@
+ #include <linux/errno.h>
+ 
+diff --git a/arch/mips/netlogic/common/reset.S b/arch/mips/netlogic/common/reset.S
+index dfbf94d..b231fe1 100644
+--- a/arch/mips/netlogic/common/reset.S
++++ b/arch/mips/netlogic/common/reset.S
+@@ -32,7 +32,6 @@
+  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   */
  
- #include <linux/module.h>
 -#include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
- #include <linux/mtd/mtd.h>
-diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
-index 6547c84..d945473 100644
---- a/drivers/mtd/onenand/omap2.c
-+++ b/drivers/mtd/onenand/omap2.c
-@@ -25,7 +25,6 @@
  
- #include <linux/device.h>
- #include <linux/module.h>
+ #include <asm/asm.h>
+ #include <asm/asm-offsets.h>
+diff --git a/arch/mips/netlogic/common/smpboot.S b/arch/mips/netlogic/common/smpboot.S
+index db3b894..8597657 100644
+--- a/arch/mips/netlogic/common/smpboot.S
++++ b/arch/mips/netlogic/common/smpboot.S
+@@ -32,7 +32,6 @@
+  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
 -#include <linux/init.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/onenand.h>
- #include <linux/mtd/partitions.h>
-diff --git a/drivers/mtd/onenand/onenand_base.c b/drivers/mtd/onenand/onenand_base.c
-index 1de33b5..531ccbc 100644
---- a/drivers/mtd/onenand/onenand_base.c
-+++ b/drivers/mtd/onenand/onenand_base.c
-@@ -24,7 +24,6 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/slab.h>
+ 
+ #include <asm/asm.h>
+ #include <asm/asm-offsets.h>
+diff --git a/arch/mips/netlogic/xlp/wakeup.c b/arch/mips/netlogic/xlp/wakeup.c
+index 4eb7cdb..9a92617 100644
+--- a/arch/mips/netlogic/xlp/wakeup.c
++++ b/arch/mips/netlogic/xlp/wakeup.c
+@@ -32,7 +32,6 @@
+  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
 -#include <linux/init.h>
- #include <linux/sched.h>
+ #include <linux/kernel.h>
+ #include <linux/threads.h>
+ 
+diff --git a/arch/mips/netlogic/xlr/wakeup.c b/arch/mips/netlogic/xlr/wakeup.c
+index ec60e71..d61cba1 100644
+--- a/arch/mips/netlogic/xlr/wakeup.c
++++ b/arch/mips/netlogic/xlr/wakeup.c
+@@ -32,7 +32,6 @@
+  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-#include <linux/init.h>
  #include <linux/delay.h>
- #include <linux/interrupt.h>
-diff --git a/drivers/mtd/tests/mtd_test.c b/drivers/mtd/tests/mtd_test.c
-index c818a63..111ee46 100644
---- a/drivers/mtd/tests/mtd_test.c
-+++ b/drivers/mtd/tests/mtd_test.c
-@@ -1,6 +1,5 @@
- #define pr_fmt(fmt) "mtd_test: " fmt
+ #include <linux/threads.h>
  
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/sched.h>
- #include <linux/printk.h>
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index 8ea6297..4176322 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -22,7 +22,6 @@
- #ifndef __UBI_UBI_H__
- #define __UBI_UBI_H__
- 
--#include <linux/init.h>
+diff --git a/arch/mips/pci/fixup-rc32434.c b/arch/mips/pci/fixup-rc32434.c
+index d0f6ecb..7fcafd5 100644
+--- a/arch/mips/pci/fixup-rc32434.c
++++ b/arch/mips/pci/fixup-rc32434.c
+@@ -27,7 +27,6 @@
  #include <linux/types.h>
- #include <linux/list.h>
- #include <linux/rbtree.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ 
+ #include <asm/mach-rc32434/rc32434.h>
+ #include <asm/mach-rc32434/irq.h>
+diff --git a/arch/mips/pci/fixup-sb1250.c b/arch/mips/pci/fixup-sb1250.c
+index 1441bec..8feae91 100644
+--- a/arch/mips/pci/fixup-sb1250.c
++++ b/arch/mips/pci/fixup-sb1250.c
+@@ -8,7 +8,6 @@
+  *	2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/pci.h>
+ 
+ /*
+diff --git a/arch/mips/pci/ops-bcm63xx.c b/arch/mips/pci/ops-bcm63xx.c
+index 6144bb3..13eea69 100644
+--- a/arch/mips/pci/ops-bcm63xx.c
++++ b/arch/mips/pci/ops-bcm63xx.c
+@@ -9,7 +9,6 @@
+ #include <linux/types.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
+ 
+diff --git a/arch/mips/pci/ops-bonito64.c b/arch/mips/pci/ops-bonito64.c
+index 830352e..c06205a 100644
+--- a/arch/mips/pci/ops-bonito64.c
++++ b/arch/mips/pci/ops-bonito64.c
+@@ -22,7 +22,6 @@
+ #include <linux/types.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ 
+ #include <asm/mips-boards/bonito64.h>
+ 
+diff --git a/arch/mips/pci/ops-lantiq.c b/arch/mips/pci/ops-lantiq.c
+index 16e7c25..e5738ee 100644
+--- a/arch/mips/pci/ops-lantiq.c
++++ b/arch/mips/pci/ops-lantiq.c
+@@ -9,7 +9,6 @@
+ #include <linux/types.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/mm.h>
+ #include <asm/addrspace.h>
+diff --git a/arch/mips/pci/ops-loongson2.c b/arch/mips/pci/ops-loongson2.c
+index 98254af..24138bb 100644
+--- a/arch/mips/pci/ops-loongson2.c
++++ b/arch/mips/pci/ops-loongson2.c
+@@ -14,7 +14,6 @@
+ #include <linux/types.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/export.h>
+ 
+ #include <loongson.h>
+diff --git a/arch/mips/pci/ops-mace.c b/arch/mips/pci/ops-mace.c
+index 1cfb558..6b5821f 100644
+--- a/arch/mips/pci/ops-mace.c
++++ b/arch/mips/pci/ops-mace.c
+@@ -6,7 +6,6 @@
+  * Copyright (C) 2000, 2001 Keith M Wesolowski
+  */
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/pci.h>
+ #include <linux/types.h>
+ #include <asm/pci.h>
+diff --git a/arch/mips/pci/ops-msc.c b/arch/mips/pci/ops-msc.c
+index 92a8543..dbbf365 100644
+--- a/arch/mips/pci/ops-msc.c
++++ b/arch/mips/pci/ops-msc.c
+@@ -24,7 +24,6 @@
+ #include <linux/types.h>
+ #include <linux/pci.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ 
+ #include <asm/mips-boards/msc01_pci.h>
+ 
+diff --git a/arch/mips/pci/ops-nile4.c b/arch/mips/pci/ops-nile4.c
+index 499e35c..a1a7c9f 100644
+--- a/arch/mips/pci/ops-nile4.c
++++ b/arch/mips/pci/ops-nile4.c
+@@ -1,5 +1,4 @@
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/pci.h>
+ #include <asm/bootinfo.h>
+ 
+diff --git a/arch/mips/pci/ops-rc32434.c b/arch/mips/pci/ops-rc32434.c
+index 7c7182e..874ed6d 100644
+--- a/arch/mips/pci/ops-rc32434.c
++++ b/arch/mips/pci/ops-rc32434.c
+@@ -26,7 +26,6 @@
+  *  675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ #include <linux/delay.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/pci.h>
+ #include <linux/types.h>
+diff --git a/arch/mips/pci/pci-ip27.c b/arch/mips/pci/pci-ip27.c
+index 162b4cb..0f09eaf 100644
+--- a/arch/mips/pci/pci-ip27.c
++++ b/arch/mips/pci/pci-ip27.c
+@@ -7,7 +7,6 @@
+  * Copyright (C) 1999, 2000, 04 Ralf Baechle (ralf@linux-mips.org)
+  * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+ #include <linux/pci.h>
+diff --git a/arch/mips/sgi-ip27/ip27-console.c b/arch/mips/sgi-ip27/ip27-console.c
+index b952d5b..45fdfbc 100644
+--- a/arch/mips/sgi-ip27/ip27-console.c
++++ b/arch/mips/sgi-ip27/ip27-console.c
+@@ -5,7 +5,6 @@
+  *
+  * Copyright (C) 2001, 2002 Ralf Baechle
+  */
+-#include <linux/init.h>
+ 
+ #include <asm/page.h>
+ #include <asm/sn/addrs.h>
+diff --git a/arch/mips/sgi-ip27/ip27-irq-pci.c b/arch/mips/sgi-ip27/ip27-irq-pci.c
+index ec22ec5..2a1c407 100644
+--- a/arch/mips/sgi-ip27/ip27-irq-pci.c
++++ b/arch/mips/sgi-ip27/ip27-irq-pci.c
+@@ -8,7 +8,6 @@
+ 
+ #undef DEBUG
+ 
+-#include <linux/init.h>
+ #include <linux/irq.h>
+ #include <linux/errno.h>
+ #include <linux/signal.h>
+diff --git a/arch/mips/sgi-ip27/ip27-klconfig.c b/arch/mips/sgi-ip27/ip27-klconfig.c
+index 7afe146..c873d62 100644
+--- a/arch/mips/sgi-ip27/ip27-klconfig.c
++++ b/arch/mips/sgi-ip27/ip27-klconfig.c
+@@ -2,7 +2,6 @@
+  * Copyright (C) 1999, 2000 Ralf Baechle (ralf@gnu.org)
+  * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
+  */
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/interrupt.h>
+diff --git a/arch/mips/sgi-ip27/ip27-xtalk.c b/arch/mips/sgi-ip27/ip27-xtalk.c
+index d59b820..20f582a 100644
+--- a/arch/mips/sgi-ip27/ip27-xtalk.c
++++ b/arch/mips/sgi-ip27/ip27-xtalk.c
+@@ -7,7 +7,6 @@
+  * Generic XTALK initialization code
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/smp.h>
+ #include <asm/sn/types.h>
 -- 
 1.8.4.1
 
