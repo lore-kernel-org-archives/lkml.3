@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaAUWTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:19:38 -0500
-Received: from mail.windriver.com ([147.11.1.11]:64930 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191AbaAUWTe (ORCPT
+	id S1754511AbaAUWUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:20:32 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:44267 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434AbaAUWU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:19:34 -0500
-Message-ID: <52DEF26B.80404@windriver.com>
-Date: Tue, 21 Jan 2014 17:19:23 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 20/73] arm: use subsys_initcall in non-modular pl320 IPC
- code
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-21-git-send-email-paul.gortmaker@windriver.com> <4922482.oeJaTIvZxl@wuerfel>
-In-Reply-To: <4922482.oeJaTIvZxl@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+	Tue, 21 Jan 2014 17:20:27 -0500
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: [PATCH v4 0/9] pseudo-interleaving for automatic NUMA balancing
+Date: Tue, 21 Jan 2014 17:20:02 -0500
+Message-Id: <1390342811-11769-1-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-21 04:44 PM, Arnd Bergmann wrote:
-> On Tuesday 21 January 2014 16:22:23 Paul Gortmaker wrote:
->>
->> Note that direct use of __initcall is discouraged, vs. one
->> of the priority categorized subgroups.  As __initcall gets
->> mapped onto device_initcall, our use of subsys_initcall (which
->> seems to make sense for netfilter code) will thus change this
->> registration from level 6-device to level 4-subsys (i.e. slightly
->> earlier).  However no impact of that small difference is expected.
-> 
-> This doesn't have anything to do with netfilter. The only user
-> of this driver at the moment is the highbank cpufreq driver, but
-> that could change.
+The current automatic NUMA balancing code base has issues with
+workloads that do not fit on one NUMA load. Page migration is
+slowed down, but memory distribution between the nodes where
+the workload runs is essentially random, often resulting in a
+suboptimal amount of memory bandwidth being available to the
+workload.
 
-Thanks -- cut and paste error from an earlier, similar changeset.
-Will "s/netfilter/IPC/" 
+In order to maximize performance of workloads that do not fit in one NUMA
+node, we want to satisfy the following criteria:
+1) keep private memory local to each thread
+2) avoid excessive NUMA migration of pages
+3) distribute shared memory across the active nodes, to
+   maximize memory bandwidth available to the workload
 
-Paul.
---
-> 
-> 	Arnd
-> 
+This patch series identifies the NUMA nodes on which the workload
+is actively running, and balances (somewhat lazily) the memory
+between those nodes, satisfying the criteria above.
+
+As usual, the series has had some performance testing, but it
+could always benefit from more testing, on other systems.
+
+Changes since v3:
+ - various code cleanups suggested by Mel Gorman (some in their own patches)
+ - after some testing, switch back to the NUMA specific CPU use stats,
+   since that results in a 1% performance increase for two 8-warehouse
+   specjbb instances on a 4-node system, and reduced page migration across
+   the board
+Changes since v2:
+ - dropped tracepoint (for now?)
+ - implement obvious improvements suggested by Peter
+ - use the scheduler maintained CPU use statistics, drop
+   the NUMA specific ones for now. We can add those later
+   if they turn out to be beneficial
+Changes since v1:
+ - fix divide by zero found by Chegu Vinod
+ - improve comment, as suggested by Peter Zijlstra
+ - do stats calculations in task_numa_placement in local variables
+
+
+Some performance numbers, with two 40-warehouse specjbb instances
+on an 8 node system with 10 CPU cores per node, using a pre-cleanup
+version of these patches, courtesy of Chegu Vinod:
+
+numactl manual pinning
+spec1.txt:           throughput =     755900.20 SPECjbb2005 bops
+spec2.txt:           throughput =     754914.40 SPECjbb2005 bops
+
+NO-pinning results (Automatic NUMA balancing, with patches)
+spec1.txt:           throughput =     706439.84 SPECjbb2005 bops
+spec2.txt:           throughput =     729347.75 SPECjbb2005 bops
+
+NO-pinning results (Automatic NUMA balancing, without patches)
+spec1.txt:           throughput =     667988.47 SPECjbb2005 bops
+spec2.txt:           throughput =     638220.45 SPECjbb2005 bops
+
+No Automatic NUMA and NO-pinning results
+spec1.txt:           throughput =     544120.97 SPECjbb2005 bops
+spec2.txt:           throughput =     453553.41 SPECjbb2005 bops
+
+
+My own performance numbers are not as relevant, since I have been
+running with a more hostile workload on purpose, and I have run
+into a scheduler issue that caused the workload to run on only
+two of the four NUMA nodes on my test system...
+
