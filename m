@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaAUIia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 03:38:30 -0500
-Received: from 0106ds1-hvi.0.fullrate.dk ([90.184.84.98]:25995 "EHLO
-	mail.knielsen-hq.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaAUIi1 (ORCPT
+	id S1753831AbaAUIlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 03:41:08 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38330 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaAUIlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 03:38:27 -0500
-From: Kristian Nielsen <knielsen@knielsen-hq.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: GPF in aio_migratepage
-References: <20131126032645.GA32301@redhat.com>
-	<20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel>
-	<20131126152337.GL15489@kvack.org>
-	<87d2lh6h92.fsf@frigg.knielsen-hq.org>
-	<529C5CA6.6090708@cn.fujitsu.com> <20131202174913.GA18853@redhat.com>
-	<87ob4hu66n.fsf@frigg.knielsen-hq.org>
-	<52AE6C4A.9080203@cn.fujitsu.com>
-	<871u14ty2q.fsf@frigg.knielsen-hq.org>
-	<20131222213443.GA6891@kvack.org>
-	<87wqiwse81.fsf@frigg.knielsen-hq.org>
-Date: Tue, 21 Jan 2014 09:38:23 +0100
-In-Reply-To: <87wqiwse81.fsf@frigg.knielsen-hq.org> (Kristian Nielsen's
-	message of "Sun, 22 Dec 2013 23:38:54 +0100")
-Message-ID: <87a9epwwzk.fsf@frigg.knielsen-hq.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 21 Jan 2014 03:41:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1390291850-17849-1-git-send-email-geert@linux-m68k.org>
+References: <1390291850-17849-1-git-send-email-geert@linux-m68k.org>
+Date: Tue, 21 Jan 2014 09:41:05 +0100
+X-Google-Sender-Auth: uF5qKgD9HOviz_sNbwFBzHADXM4
+Message-ID: <CAMuHMdVBD7Gn_0zNBD+oVq11=UrCrB-Aocm4EmGRgHdRqF+XoA@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.13
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Linux-sh list <linux-sh@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kristian Nielsen <knielsen@knielsen-hq.org> writes:
+On Tue, Jan 21, 2014 at 9:10 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.13[1]  to v3.13-rc8[3], the summaries are:
+>   - build errors: +22/-3
 
-> Benjamin LaHaise <bcrl@kvack.org> writes:
->
->> Linus just pushed out 3.13-rc5 that has changes to aio_migratepage() that 
->> should make it much more robust, as well as other fixes.  Can you please 
->> give it a spin as well and let me know if it works?  Thanks a bunch!
->
-> Ok, will do.
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'dmac_resource.end'):  => 87:2
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'dmac_resource.start'):  => 86:2
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'epbr_resources[0].end'):  => 69:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'epbr_resources[0].start'):  => 68:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'epbr_resources[1].end'):  => 74:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'epbr_resources[1].start'):  => 73:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'femi_resources[0].end'):  => 50:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'femi_resources[0].start'):  => 49:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'femi_resources[1].end'):  => 55:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'femi_resources[1].start'):  => 54:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'pbr_resources[0].end'):  => 100:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'pbr_resources[0].start'):  => 99:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'pbr_resources[1].end'):  => 105:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: (near initialization for 'pbr_resources[1].start'):  => 104:3
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: braced-group within expression allowed only inside a function:
+=> 30:12, 73:12, 31:10, 99:12, 68:12, 36:10, 86:11, 54:12, 74:10,
+55:10, 104:12, 49:12, 69:10, 87:9, 105:10, 35:12, 50:10, 100:10
+  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
+error: initializer element is not constant:  => 74:3, 86:2, 55:3,
+105:3, 73:3, 68:3, 100:3, 104:3, 99:3, 87:2, 50:3, 69:3, 49:3, 54:3
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error:
+'cached_to_uncached' undeclared (first use in this function):  =>
+99:17
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit
+declaration of function 'cpu_context'
+[-Werror=implicit-function-declaration]:  => 192:2
+  + /scratch/kisskb/src/kernel/bounds.c: error: -mcall-aixdesc must be
+big endian:  => 1:0
 
-JFYI, I have been running -rc5 (and later -rc7) for a month now without seeing
-anything like this again. So hopefully the issue is solved.
+sh-randconfig
 
- - Kristian.
+  + /scratch/kisskb/src/scripts/mod/devicetable-offsets.c: error:
+-mcall-aixdesc must be big endian:  => 1:0
+  + /scratch/kisskb/src/scripts/mod/empty.c: error: -mcall-aixdesc
+must be big endian:  => 1:0
+  + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
+
+powerpc-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7082/ (119 out of 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7056/ (119 out of 120 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
