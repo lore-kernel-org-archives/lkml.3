@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaAUXfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:35:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:35639 "EHLO mga09.intel.com"
+	id S1754238AbaAUXg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:36:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56634 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094AbaAUXfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:35:47 -0500
+	id S1753514AbaAUXgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:36:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="470404163"
-Subject: [PATCH v9 0/6] MCS Lock: MCS lock code cleanup and optimizations
+   d="scan'208";a="442569409"
+Subject: [PATCH v9 3/6] MCS Lock: Optimizations and extra comments
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -35,10 +35,11 @@ Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
         Aswin Chandramouleeswaran <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>,
         "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <cover.1390320729.git.tim.c.chen@linux.intel.com>
 References: <cover.1390320729.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Jan 2014 15:35:44 -0800
-Message-ID: <1390347344.3138.61.camel@schen9-DESK>
+Date: Tue, 21 Jan 2014 15:36:05 -0800
+Message-ID: <1390347365.3138.64.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -46,133 +47,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This update to the patch series now make mcs_spin_lock and mcs_spin_unlock
-as inlined functions for better efficiency in the hot path.  We order the
-files in the architecture of each Kbuild before we add mcs_spinlock.h for
-hooking in architecture specific arch_mcs_spin_{lock,unlock}_contended
-functions.
+From: Jason Low <jason.low2@hp.com>
 
-Peter, please review the last two patches and bless them with your
-signed-off if they look right.
+Remove unnecessary operation to assign locked status to 1 if lock is
+acquired without contention. Lock status will not be checked by lock
+holder again once it is acquired and any lock
+contenders will not be looking at the lock holder's lock status.
 
-This patch series fixes barriers of MCS lock and perform some optimizations.
-Proper passing of the mcs lock is now done with smp_load_acquire() in
-mcs_spin_lock() and smp_store_release() in mcs_spin_unlock.  Note that
-this is not sufficient to form a full memory barrier across cpus on
-many architectures (except x86) for the mcs_unlock and mcs_lock pair.
-For code that needs a full memory barrier with mcs_unlock and mcs_lock
-pair, smp_mb__after_unlock_lock() should be used after mcs_lock.
+Make the cmpxchg(lock, node, NULL) == node check in mcs_spin_unlock()
+likely() as it is likely that a race did not occur most of the time.
 
-Will also added hooks to allow for architecture specific
-implementation and optimization of the of the contended paths of
-lock and unlock of mcs_spin_lock and mcs_spin_unlock functions.
+Also add in more comments describing how the local node is used in MCS locks.
 
-The original mcs lock code has potential leaks between critical sections, which
-was not a problem when MCS was embedded within the mutex but needs
-to be corrected when allowing the MCS lock to be used by itself for
-other locking purposes.  The MCS lock code was previously embedded in
-the mutex.c and is now sepearted.  This allows for easier reuse of MCS
-lock in other places like rwsem and qrwlock.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ include/linux/mcs_spinlock.h | 27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
 
-Tim
-
-v9:
-1. Inline mcs_spin_lock and mcs_spin_unlock for better efficiency in hot paths.
-2. Sort files in each architecutre's Kbuild before adding mcs_spinlock.h.
-
-v8:
-1. Move order of patches by putting barrier corrections first.
-2. Use generic-asm headers for hooking in arch specific mcs_spin_lock_contended
-and mcs_spin_lock_uncontended function.
-3. Some minor cleanup and comments added.
-
-v7:
-1. Update architecture specific hooks with concise architecture
-specific arch_mcs_spin_lock_contended and arch_mcs_spin_lock_uncontended
-functions.
-
-v6:
-1. Fix a bug of improper xchg_acquire and extra space in barrier
-fixing patch.
-2. Added extra hooks to allow for architecture specific version
-of mcs_spin_lock and mcs_spin_unlock to be used.
-
-v5:
-1. Rework barrier correction patch.  We now use smp_load_acquire()
-in mcs_spin_lock() and smp_store_release() in
-mcs_spin_unlock() to allow for architecture dependent barriers to be
-automatically used.  This is clean and will provide the right
-barriers for all architecture.
-
-v4:
-1. Move patch series to the latest tip after v3.12
-
-v3:
-1. modified memory barriers to support non x86 architectures that have
-weak memory ordering.
-
-v2:
-1. change export mcs_spin_lock as a GPL export symbol
-2. corrected mcs_spin_lock to references
-
-
-Jason Low (1):
-  MCS Lock: Optimizations and extra comments
-
-Peter Zijlstra (2):
-  MCS Lock: Order the header files in Kbuild of each architecture in
-    alphabetical order
-  MCS Lock: Allow architecture specific asm files to be used for
-    contended case
-
-Tim Chen (1):
-  MCS Lock: Restructure the MCS lock defines and locking code into its
-    own file
-
-Waiman Long (1):
-  MCS Lock: Barrier corrections
-
-Will Deacon (1):
-  MCS Lock: Allow architectures to hook in to contended paths
-
- arch/alpha/include/asm/Kbuild      |   5 +-
- arch/arc/include/asm/Kbuild        |   7 ++-
- arch/arm/include/asm/Kbuild        |   3 +-
- arch/arm64/include/asm/Kbuild      |   5 +-
- arch/avr32/include/asm/Kbuild      |  39 ++++++-------
- arch/blackfin/include/asm/Kbuild   |   5 +-
- arch/c6x/include/asm/Kbuild        |   3 +-
- arch/cris/include/asm/Kbuild       |   3 +-
- arch/frv/include/asm/Kbuild        |   3 +-
- arch/hexagon/include/asm/Kbuild    |   7 ++-
- arch/ia64/include/asm/Kbuild       |   5 +-
- arch/m32r/include/asm/Kbuild       |   3 +-
- arch/m68k/include/asm/Kbuild       |   5 +-
- arch/metag/include/asm/Kbuild      |   3 +-
- arch/microblaze/include/asm/Kbuild |   5 +-
- arch/mips/include/asm/Kbuild       |   3 +-
- arch/mn10300/include/asm/Kbuild    |   3 +-
- arch/openrisc/include/asm/Kbuild   |   9 +--
- arch/parisc/include/asm/Kbuild     |  27 +++++++--
- arch/powerpc/include/asm/Kbuild    |   6 +-
- arch/s390/include/asm/Kbuild       |   3 +-
- arch/score/include/asm/Kbuild      |   3 +-
- arch/sh/include/asm/Kbuild         |   7 ++-
- arch/sparc/include/asm/Kbuild      |   9 +--
- arch/tile/include/asm/Kbuild       |   3 +-
- arch/um/include/asm/Kbuild         |  30 ++++++++--
- arch/unicore32/include/asm/Kbuild  |   3 +-
- arch/x86/include/asm/Kbuild        |   1 +
- arch/xtensa/include/asm/Kbuild     |   3 +-
- include/asm-generic/mcs_spinlock.h |  13 +++++
- include/linux/mcs_spinlock.h       | 114 +++++++++++++++++++++++++++++++++++++
- include/linux/mutex.h              |   5 +-
- kernel/locking/mutex.c             |  60 +++----------------
- 33 files changed, 275 insertions(+), 128 deletions(-)
- create mode 100644 include/asm-generic/mcs_spinlock.h
- create mode 100644 include/linux/mcs_spinlock.h
-
+diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
+index 9578ef8..143fa42 100644
+--- a/include/linux/mcs_spinlock.h
++++ b/include/linux/mcs_spinlock.h
+@@ -25,6 +25,17 @@ struct mcs_spinlock {
+  * with mcs_unlock and mcs_lock pair, smp_mb__after_unlock_lock() should be
+  * used after mcs_lock.
+  */
++
++/*
++ * In order to acquire the lock, the caller should declare a local node and
++ * pass a reference of the node to this function in addition to the lock.
++ * If the lock has already been acquired, then this will proceed to spin
++ * on this node->locked until the previous lock holder sets the node->locked
++ * in mcs_spin_unlock().
++ *
++ * We don't inline mcs_spin_lock() so that perf can correctly account for the
++ * time spent in this lock function.
++ */
+ static inline
+ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ {
+@@ -36,8 +47,14 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ 
+ 	prev = xchg(lock, node);
+ 	if (likely(prev == NULL)) {
+-		/* Lock acquired */
+-		node->locked = 1;
++		/*
++		 * Lock acquired, don't need to set node->locked to 1. Threads
++		 * only spin on its own node->locked value for lock acquisition.
++		 * However, since this thread can immediately acquire the lock
++		 * and does not proceed to spin on its own node->locked, this
++		 * value won't be used. If a debug mode is needed to
++		 * audit lock status, then set node->locked value here.
++		 */
+ 		return;
+ 	}
+ 	ACCESS_ONCE(prev->next) = node;
+@@ -50,6 +67,10 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ 		arch_mutex_cpu_relax();
+ }
+ 
++/*
++ * Releases the lock. The caller should pass in the corresponding node that
++ * was used to acquire the lock.
++ */
+ static inline
+ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ {
+@@ -59,7 +80,7 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ 		/*
+ 		 * Release the lock by setting it to NULL
+ 		 */
+-		if (cmpxchg(lock, node, NULL) == node)
++		if (likely(cmpxchg(lock, node, NULL) == node))
+ 			return;
+ 		/* Wait until the next pointer is set */
+ 		while (!(next = ACCESS_ONCE(node->next)))
 -- 
 1.7.11.7
+
 
 
