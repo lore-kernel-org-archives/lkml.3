@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaAUVYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:24:24 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56161 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaAUVYT (ORCPT
+	id S1754181AbaAUVYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:24:33 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50623 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaAUVY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:24:19 -0500
+	Tue, 21 Jan 2014 16:24:28 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>
-Subject: [PATCH 07/73] x86: replace __init_or_module with __init in non-modular vsmp_64.c
-Date: Tue, 21 Jan 2014 16:22:10 -0500
-Message-ID: <1390339396-3479-8-git-send-email-paul.gortmaker@windriver.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCH 14/73] powerpc: don't use module_init for non-modular core hugetlb code
+Date: Tue, 21 Jan 2014 16:22:17 -0500
+Message-ID: <1390339396-3479-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,40 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __init_or_module is from commit 05e12e1c4c09cd35ac9f4e6af1e
-("x86: fix 27-rc crash on vsmp due to paravirt during module load").
+The hugetlbpage.o is obj-y (always built in).  It will never
+be modular, so using module_init as an alias for __initcall is
+somewhat misleading.
 
-But as of commit 70511134f61bd6e5eed19f767381f9fb3e762d49
-("Revert "x86: don't compile vsmp_64 for 32bit") this file
-became obj-y and hence is now only for built-in.  That makes
-any "_or_module" support no longer necessary.
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-We need to distinguish between the two in order to do some
-header reorganization between init.h and module.h and we
-don't want to be including module.h in non-modular code.
+Note that direct use of __initcall is discouraged, vs. one
+of the priority categorized subgroups.  As __initcall gets
+mapped onto device_initcall, our use of arch_initcall (which
+makes sense for arch code) will thus change this registration
+from level 6-device to level 3-arch (i.e. slightly earlier).
+However no observable impact of that small difference has
+been observed during testing, or is expected.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/vsmp_64.c | 2 +-
+ arch/powerpc/mm/hugetlbpage.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 992f890..e72ec17 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -69,7 +69,7 @@ static void vsmp_irq_enable(void)
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 90bb6d9..d25c202 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -911,7 +911,7 @@ static int __init hugetlbpage_init(void)
+ 	return 0;
  }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_irq_enable);
+ #endif
+-module_init(hugetlbpage_init);
++arch_initcall(hugetlbpage_init);
  
--static unsigned __init_or_module vsmp_patch(u8 type, u16 clobbers, void *ibuf,
-+static unsigned __init vsmp_patch(u8 type, u16 clobbers, void *ibuf,
- 				  unsigned long addr, unsigned len)
+ void flush_dcache_icache_hugepage(struct page *page)
  {
- 	switch (type) {
 -- 
 1.8.4.1
 
