@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaAUS4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 13:56:02 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57711 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaAUSz6 (ORCPT
+	id S1752031AbaAUTAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 14:00:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29728 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaAUTAD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 13:55:58 -0500
-Date: Tue, 21 Jan 2014 18:55:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140121185553.GW17314@sirena.org.uk>
-References: <1389900750-27625-1-git-send-email-nm@ti.com>
+	Tue, 21 Jan 2014 14:00:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,696,1384329600"; 
+   d="scan'208,223";a="442417326"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+Thread-Topic: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+Thread-Index: Ac8W2vphzR+67aUqRYGd5SJTleJnZg==
+Date: Tue, 21 Jan 2014 18:59:57 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fJLw1dhSMr+9E5PS"
-Content-Disposition: inline
-In-Reply-To: <1389900750-27625-1-git-send-email-nm@ti.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ti-abb: Add support for interleaved LDO
- registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 3155a190ce6ebb213e6c724240f4e6620ba67a9d Mon Sep 17 00:00:00 2001
+From: Liu Jinsong <jinsong.liu@intel.com>
+Date: Fri, 13 Dec 2013 02:32:03 +0800
+Subject: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
 
---fJLw1dhSMr+9E5PS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+EBX of cpuid(0xD, 0) is dynamic per XCR0 features enable/disable.
+Bit 63 of XCR0 is reserved for future expansion.
 
-On Thu, Jan 16, 2014 at 01:32:30PM -0600, Nishanth Menon wrote:
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+---
+ arch/x86/include/asm/xsave.h |    2 ++
+ arch/x86/kvm/cpuid.c         |    6 +++---
+ arch/x86/kvm/x86.c           |    7 +++++--
+ 3 files changed, 10 insertions(+), 5 deletions(-)
 
-> -	abb->base = devm_ioremap_resource(dev, res);
-
-> +	abb->base = devm_ioremap_nocache(dev, res->start, resource_size(res));
-
-devm_ioremap_resouce() should do the right thing if the memory region is
-marked as uncacheable (with IORESOURCE_CACHEABLE not set).  Since I
-can't see the OF code actually setting that flag on the resources unless
-I'm missing something this change isn't needed?
-
---fJLw1dhSMr+9E5PS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3sK2AAoJELSic+t+oim9ClwP/3NkQLt/mxG6IiRa88CEscFn
-hekzf9gKmrBK+sodAM+kbdwteizCuH2z0TsBHlDdUs5uKCS3VgUKl0583+MGnPrm
-VtT3bI4rCU9b5Yx8RuAR9tXnFrVbpanpp1ofQUUId0HbNMNRlT8HNafO4FfejSZK
-7D7rhJb4C+557IDcReMOMakq1sCRf8yrrYJyYPBXAVN7/GJNcv2xj6ZWJlcChXK6
-xSjaTrKqSxUX9yHq7Yv/arCfpiQSMaJhd5fWdF0Yjvy7w0VVYYdDNxjhCPwQlCxK
-NBS6m+WFD7aKn1uBbRvrXzABA83oakrpUKCn9EIJ4MvK352emiWt8i59NtfAA/al
-pIXzifLAKptRO0IAqIZxgWNf+7EKx5ni+Fbd3TobhKB8weCfw2JyqSveC4TiJsHD
-ppDQsRGj0NnnfQHf7bVbuu6SD7cqeYcwZSnLk2yhmtXGYtIP5iDwmItk8ZmGJaHi
-pupwKXMgYzWfrIr5HXXqsId1TXpxbCSq/gIdQVBWrobSB3mdgZnUuMQFm+kj+Gqt
-237QJYb15EVtq6lV8Oj6qyzwZKTBb2aCRZl6YkSvkFmNzT91tpMp1V3C8RUYtRmP
-9HRvUdCXOu8vaWw6YtTF/FKZfvrmJb1JTh8DQFbpdYUMuZXxJuKu4KfUdaK/x/D4
-XVrDkb0ivqllk0/QDm+W
-=cn1t
------END PGP SIGNATURE-----
-
---fJLw1dhSMr+9E5PS--
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 5547389..f6c4e85 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -13,6 +13,8 @@
+ #define XSTATE_BNDCSR	0x10
+ 
+ #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
++/* Bit 63 of XCR0 is reserved for future expansion */
++#define XSTATE_EXTEND_MASK	(~(XSTATE_FPSSE | (1 << 63)))
+ 
+ #define FXSAVE_SIZE	512
+ 
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index c697625..2d661e6 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -28,7 +28,7 @@ static u32 xstate_required_size(u64 xstate_bv)
+ 	int feature_bit = 0;
+ 	u32 ret = XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET;
+ 
+-	xstate_bv &= ~XSTATE_FPSSE;
++	xstate_bv &= XSTATE_EXTEND_MASK;
+ 	while (xstate_bv) {
+ 		if (xstate_bv & 0x1) {
+ 		        u32 eax, ebx, ecx, edx;
+@@ -74,8 +74,8 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
+ 		vcpu->arch.guest_supported_xcr0 =
+ 			(best->eax | ((u64)best->edx << 32)) &
+ 			host_xcr0 & KVM_SUPPORTED_XCR0;
+-		vcpu->arch.guest_xstate_size =
+-			xstate_required_size(vcpu->arch.guest_supported_xcr0);
++		vcpu->arch.guest_xstate_size = best->ebx =
++			xstate_required_size(vcpu->arch.xcr0);
+ 	}
+ 
+ 	kvm_pmu_cpuid_update(vcpu);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 21ef1ba..1657ca2 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -576,13 +576,13 @@ static void kvm_put_guest_xcr0(struct kvm_vcpu *vcpu)
+ 
+ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ {
+-	u64 xcr0;
++	u64 xcr0 = xcr;
++	u64 old_xcr0 = vcpu->arch.xcr0;
+ 	u64 valid_bits;
+ 
+ 	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
+ 	if (index != XCR_XFEATURE_ENABLED_MASK)
+ 		return 1;
+-	xcr0 = xcr;
+ 	if (!(xcr0 & XSTATE_FP))
+ 		return 1;
+ 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+@@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ 
+ 	kvm_put_guest_xcr0(vcpu);
+ 	vcpu->arch.xcr0 = xcr0;
++
++	if ((xcr0 ^ old_xcr0) & XSTATE_EXTEND_MASK)
++		kvm_update_cpuid(vcpu);
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
