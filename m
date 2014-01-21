@@ -1,235 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaAUNpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 08:45:40 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:55071 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935AbaAUNph (ORCPT
+	id S1754537AbaAUNtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 08:49:45 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:47379 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103AbaAUNtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 08:45:37 -0500
-X-IronPort-AV: E=Sophos;i="4.95,696,1384300800"; 
-   d="scan'208";a="92811377"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <will.deacon@arm.com>
-CC: <stefano.stabellini@eu.citrix.com>, <jaccon.bastiaansen@gmail.com>,
-        <arnd@arndb.de>, <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: [PATCH v4] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build dependencies for XEN
-Date: Tue, 21 Jan 2014 13:44:24 +0000
-Message-ID: <1390311864-19119-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 21 Jan 2014 08:49:42 -0500
+Date: Tue, 21 Jan 2014 08:49:37 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, "arm@kernel.org" <arm@kernel.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+Message-ID: <20140121134937.GG31176@beef>
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>
+ <1387592016-13740-1-git-send-email-syin@broadcom.com>
+ <1387592016-13740-4-git-send-email-syin@broadcom.com>
+ <CACRpkdaPZrR=kEknr3YKDWLd_E+o22Yn19ei7iT6cdbYdbeZ2w@mail.gmail.com>
+ <52D98B99.5050604@broadcom.com>
+ <20140118025600.GS31049@beef>
+ <CACRpkdYAANtY=9QtDnYNZLSrF09nTWUH4nK5oJ7mzznS+_=bHA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYAANtY=9QtDnYNZLSrF09nTWUH4nK5oJ7mzznS+_=bHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove !GENERIC_ATOMIC64 build dependency:
-- introduce xen_atomic64_xchg
-- use it to implement xchg_xen_ulong
+On Mon, Jan 20, 2014 at 09:16:24AM +0100, Linus Walleij wrote:
+> On Sat, Jan 18, 2014 at 3:56 AM, Matt Porter <mporter@linaro.org> wrote:
+> 
+> > I wonder if Linus would accept a rename at this point (too late for 3.14
+> > presumably, but for 3.15) of s/capri/bcm281xx throughout, bcm11351 for
+> > the compatible string, as we have for the machine compatible, and also
+> > BCM281XX for the Kconfig option.
+> 
+> Yes, if there is some consensus that this is what we want to do.
+> 
+> I can certainly merge that during the 3.14-rc phase for that matter.
 
-Remove !CPU_V6 build dependency:
-- introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
-  CONFIG_CPU_V6
-- implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16
+Ok, sounds great, thanks.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: arnd@arndb.de
-CC: linux@arm.linux.org.uk
-CC: will.deacon@arm.com
-CC: catalin.marinas@arm.com
-CC: linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org
-CC: xen-devel@lists.xenproject.org
-
----
-
-Changes in v4:
-- avoid moving and renaming atomic64_xchg
-- introduce xen_atomic64_xchg
-- fix asm comment in __cmpxchg8 and __cmpxchg16.
-
----
- arch/arm/Kconfig                   |    3 +-
- arch/arm/include/asm/cmpxchg.h     |   60 ++++++++++++++++++++++++------------
- arch/arm/include/asm/sync_bitops.h |   24 ++++++++++++++-
- arch/arm/include/asm/xen/events.h  |   32 ++++++++++++++++++-
- 4 files changed, 95 insertions(+), 24 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c1f1a7e..ae54ae0 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1881,8 +1881,7 @@ config XEN_DOM0
- config XEN
- 	bool "Xen guest support on ARM (EXPERIMENTAL)"
- 	depends on ARM && AEABI && OF
--	depends on CPU_V7 && !CPU_V6
--	depends on !GENERIC_ATOMIC64
-+	depends on CPU_V7
- 	select ARM_PSCI
- 	select SWIOTLB_XEN
- 	help
-diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
-index df2fbba..a17cff1 100644
---- a/arch/arm/include/asm/cmpxchg.h
-+++ b/arch/arm/include/asm/cmpxchg.h
-@@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
-  * cmpxchg only support 32-bits operands on ARMv6.
-  */
- 
-+static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
-+				      unsigned long new)
-+{
-+	unsigned long oldval, res;
-+
-+	do {
-+		asm volatile("@ __cmpxchg8\n"
-+		"	ldrexb	%1, [%2]\n"
-+		"	mov	%0, #0\n"
-+		"	teq	%1, %3\n"
-+		"	strexbeq %0, %4, [%2]\n"
-+			: "=&r" (res), "=&r" (oldval)
-+			: "r" (ptr), "Ir" (old), "r" (new)
-+			: "memory", "cc");
-+	} while (res);
-+
-+	return oldval;
-+}
-+
-+static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
-+				      unsigned long new)
-+{
-+	unsigned long oldval, res;
-+
-+	do {
-+		asm volatile("@ __cmpxchg16\n"
-+		"	ldrexh	%1, [%2]\n"
-+		"	mov	%0, #0\n"
-+		"	teq	%1, %3\n"
-+		"	strexheq %0, %4, [%2]\n"
-+			: "=&r" (res), "=&r" (oldval)
-+			: "r" (ptr), "Ir" (old), "r" (new)
-+			: "memory", "cc");
-+	} while (res);
-+
-+	return oldval;
-+}
-+
- static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
- 				      unsigned long new, int size)
- {
-@@ -141,28 +179,10 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
- 	switch (size) {
- #ifndef CONFIG_CPU_V6	/* min ARCH >= ARMv6K */
- 	case 1:
--		do {
--			asm volatile("@ __cmpxchg1\n"
--			"	ldrexb	%1, [%2]\n"
--			"	mov	%0, #0\n"
--			"	teq	%1, %3\n"
--			"	strexbeq %0, %4, [%2]\n"
--				: "=&r" (res), "=&r" (oldval)
--				: "r" (ptr), "Ir" (old), "r" (new)
--				: "memory", "cc");
--		} while (res);
-+		oldval = __cmpxchg8(ptr, old, new);
- 		break;
- 	case 2:
--		do {
--			asm volatile("@ __cmpxchg1\n"
--			"	ldrexh	%1, [%2]\n"
--			"	mov	%0, #0\n"
--			"	teq	%1, %3\n"
--			"	strexheq %0, %4, [%2]\n"
--				: "=&r" (res), "=&r" (oldval)
--				: "r" (ptr), "Ir" (old), "r" (new)
--				: "memory", "cc");
--		} while (res);
-+		oldval = __cmpxchg16(ptr, old, new);
- 		break;
- #endif
- 	case 4:
-diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-index 63479ee..942659a 100644
---- a/arch/arm/include/asm/sync_bitops.h
-+++ b/arch/arm/include/asm/sync_bitops.h
-@@ -21,7 +21,29 @@
- #define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
- #define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
- #define sync_test_bit(nr, addr)		test_bit(nr, addr)
--#define sync_cmpxchg			cmpxchg
- 
-+static inline unsigned long sync_cmpxchg(volatile void *ptr,
-+										 unsigned long old,
-+										 unsigned long new)
-+{
-+	unsigned long oldval;
-+	int size = sizeof(*(ptr));
-+
-+	smp_mb();
-+	switch (size) {
-+	case 1:
-+		oldval = __cmpxchg8(ptr, old, new);
-+		break;
-+	case 2:
-+		oldval = __cmpxchg16(ptr, old, new);
-+		break;
-+	default:
-+		oldval = __cmpxchg(ptr, old, new, size);
-+		break;
-+	}
-+	smp_mb();
-+
-+	return oldval;
-+}
- 
- #endif
-diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
-index 8b1f37b..2032ee6 100644
---- a/arch/arm/include/asm/xen/events.h
-+++ b/arch/arm/include/asm/xen/events.h
-@@ -16,7 +16,37 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
- 	return raw_irqs_disabled_flags(regs->ARM_cpsr);
- }
- 
--#define xchg_xen_ulong(ptr, val) atomic64_xchg(container_of((ptr),	\
-+#ifdef CONFIG_GENERIC_ATOMIC64
-+/* if CONFIG_GENERIC_ATOMIC64 is defined we cannot use the generic
-+ * atomic64_xchg function because it is implemented using spin locks.
-+ * Here we need proper atomic instructions to read and write memory
-+ * shared with the hypervisor.
-+ */
-+static inline u64 xen_atomic64_xchg(atomic64_t *ptr, u64 new)
-+{
-+	u64 result;
-+	unsigned long tmp;
-+
-+	smp_mb();
-+
-+	__asm__ __volatile__("@ xen_atomic64_xchg\n"
-+"1:	ldrexd	%0, %H0, [%3]\n"
-+"	strexd	%1, %4, %H4, [%3]\n"
-+"	teq	%1, #0\n"
-+"	bne	1b"
-+	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
-+	: "r" (&ptr->counter), "r" (new)
-+	: "cc");
-+
-+	smp_mb();
-+
-+	return result;
-+}
-+#else
-+#define xen_atomic64_xchg atomic64_xchg
-+#endif
-+
-+#define xchg_xen_ulong(ptr, val) xen_atomic64_xchg(container_of((ptr),	\
- 							    atomic64_t,	\
- 							    counter), (val))
- 
--- 
-1.7.10.4
-
+-Matt
