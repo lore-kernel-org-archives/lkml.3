@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaAUQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:15:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47688 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755027AbaAUQPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:15:22 -0500
-Date: Tue, 21 Jan 2014 16:15:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 6/6] numa,sched: do statistics calculation using local
- variables only
-Message-ID: <20140121161518.GM4963@suse.de>
-References: <1390245667-24193-1-git-send-email-riel@redhat.com>
- <1390245667-24193-7-git-send-email-riel@redhat.com>
+	id S932114AbaAUQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:16:09 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:10480 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087AbaAUQQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 11:16:07 -0500
+Message-ID: <52DE9D43.1020305@hp.com>
+Date: Tue, 21 Jan 2014 11:16:03 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1390245667-24193-7-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+References: <CA+55aFydYLQeBq=4AQQp_4dAnq09ocLmde1LFaXiNAJ=wJzfFA@mail.gmail.com> <20140116103659.GO7572@laptop.programming.kicks-ass.net> <20140118100105.GV10038@linux.vnet.ibm.com> <20140118113406.GY30183@twins.programming.kicks-ass.net> <20140118122548.GX10038@linux.vnet.ibm.com> <20140118124136.GZ30183@twins.programming.kicks-ass.net> <20140118212227.GA10038@linux.vnet.ibm.com> <CA+55aFww9F7DA2V611OjkDyf8nfBVFZkLCu1M243mcj7DKqekA@mail.gmail.com> <20140119080405.GB10038@linux.vnet.ibm.com> <52DE8BEE.4040303@hp.com> <20140121154113.GB31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140121154113.GB31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 02:21:07PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> The current code in task_numa_placement calculates the difference
-> between the old and the new value, but also temporarily stores half
-> of the old value in the per-process variables.
-> 
-> The NUMA balancing code looks at those per-process variables, and
-> having other tasks temporarily see halved statistics could lead to
-> unwanted numa migrations. This can be avoided by doing all the math
-> in local variables.
-> 
-> This change also simplifies the code a little.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+On 01/21/2014 10:41 AM, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 10:02:06AM -0500, Waiman Long wrote:
+>> My latest v9 series of qrwlock patch will automatically adapt to the lack of
+>> atomic byte access by using an atomic integer instruction instead. So the
+>> new series should work for pre-EV56 Alpha, it is just a bit less efficient
+>> in this case.
+> See my other email; I don't think you can do that without also changing
+> the implementation of the queue_read_{try}lock() functions.
+>
+> Without those changes you can have transient values in your 'read-count'
+> part of the word and a full word write will wreck things.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+I don't see any problem with my current logic. If a writer has the write 
+lock, the writer byte has to have a value of 0xff. So atomically 
+subtracting 0xff from it will guarantee that the writer byte will become 
+zero, which is the same as assigning a zero value to that byte. The only 
+difference is that an atomic subtract instruction will need to be used 
+instead of a simple byte assignment.
 
--- 
-Mel Gorman
-SUSE Labs
+Please let me know if there is any flaw in my logic.
+
+-Longman
