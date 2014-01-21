@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaAUOMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:12:06 -0500
-Received: from david.siemens.de ([192.35.17.14]:24412 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754606AbaAUOME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:12:04 -0500
-Message-ID: <52DE8009.9010902@siemens.com>
-Date: Tue, 21 Jan 2014 15:11:21 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754696AbaAUOO0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:14:26 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:57236 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385AbaAUOOX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:14:23 -0500
+Date: Tue, 21 Jan 2014 15:14:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Cong Ding <dinggnu@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140121141419.GB4559@gmail.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+ <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com>
+ <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com>
+ <20140121102700.GB2981@gmail.com>
+ <52DE7C49.90503@zytor.com>
+ <20140121140311.GB4537@gmail.com>
+ <52DE7EBD.1000908@zytor.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
-References: <52DE6FCE.2050708@siemens.com> <20140121140113.GL30183@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121140113.GL30183@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DE7EBD.1000908@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-21 15:01, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 02:02:06PM +0100, Jan Kiszka wrote:
->> Hi all,
->>
->> while trying to plug a race in the CPU hotplug code on xAPIC systems, I
->> was analyzing IPI transmission patterns. The handlers in
->> arch/x86/include/asm/ipi.h first wait for ICR, then send. In contrast,
->> arch_irq_work_raise sends the self-IPI directly and then waits. This
->> looks inconsistent. Is it intended?
->>
->> BTW, the races are in wakeup_secondary_cpu_via_init and
->> wakeup_secondary_cpu_via_nmi (lacking IRQ disable around ICR accesses).
->> There we also send first, then wait for completion. But I guess that is
->> due to the code originally only being used during boot. Will send fixes
->> for those once the sync pattern is clear to me.
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 01/21/2014 06:03 AM, Ingo Molnar wrote:
+> > 
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > 
+> >> On 01/21/2014 02:27 AM, Ingo Molnar wrote:
+> >>>
+> >>> Hm, live annotation of the kernel image is a relatively new perf 
+> >>> feature, and KASLR predated that (by years) - which would at least in 
+> >>> part explain why it went unnoticed. (Although it does not excuse the 
+> >>> lack of testing.)
+> >>
+> >> kASLR is new, but on 32 bits we have relocated the kernel for a long 
+> >> time. [...]
+> > 
+> > I doubt many people develop on 32-bit x86, and the group of people 
+> > looking at annotated 32-bit assembly kernel profiles ought to be 
+> > another order of magnitude smaller than that ...
 > 
-> Could be I had no clue what I was doing and copy/pasted the code until
-> it compiled and ran.
-> 
-> In fact, I've got no clue what an ICR is.
+> Yes... I was commenting on the statement that "kASLR predated that 
+> by years".  It hasn't been common.
 
-Old xAPIC requires you to only send IPIs, when the APIC signals it is
-done with sending the previous one. Therefore we wait for availability
-in the other IPI transmission services before writing to ICR.
+Ah, I didn't mean to suggest that it's an old upstream feature: what I 
+mean is that the KASLR patch is pretty old, and it has been deployed 
+by the Chromium guys for quite some time, and by others?
 
-OK, then I will write a separate patch for arch_irq_work_raise to switch
-the ordering.
+It was just never combined with perf live annotation which is a recent 
+perf feature.
 
-Jan
+Anyway ... I suspect it's the fixing of the bug that matters most, not 
+its genealogy ;)
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Thanks,
+
+	Ingo
