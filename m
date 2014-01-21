@@ -1,132 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaAUOHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:07:32 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20938 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754274AbaAUOHa (ORCPT
+	id S1754776AbaAUOIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:08:11 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:46948 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244AbaAUOIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:07:30 -0500
-Date: Tue, 21 Jan 2014 09:07:28 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v6 3/8] x86: add generic function to modify more calls
- using int3 framework
-Message-ID: <20140121090728.5197831f@gandalf.local.home>
-In-Reply-To: <1390312215.14199.60.camel@pathway.suse.cz>
-References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
-	<1386690140-19941-4-git-send-email-pmladek@suse.cz>
-	<20140114193338.4375f205@gandalf.local.home>
-	<1390312215.14199.60.camel@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 21 Jan 2014 09:08:10 -0500
+Message-ID: <52DE7F48.5000207@linaro.org>
+Date: Tue, 21 Jan 2014 15:08:08 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] ARM: u300: move timer driver to clocksource
+References: <1390312354-32689-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1390312354-32689-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jan 2014 14:50:15 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
+On 01/21/2014 02:52 PM, Linus Walleij wrote:
+> Move the U300 timer driver down to the clocksource driver
+> subsystem and keep arch/arm clean.
+>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-> On Tue, 2014-01-14 at 19:33 -0500, Steven Rostedt wrote:
-> > >  
-> > >  	/* Patch the first byte. We do not know how to recover from an error. */
-> > > -	text_poke_or_die(addr, opcode, sizeof(int3));
-> > > +	text_poke_or_die(addr, opcode, sizeof(bp_int3));
-> > >  
-> > >  	run_sync();
-> > 
-> > Shouldn't we be setting the bp_int3_handler back to NULL here?
-> 
-> It might be cleaner but it is not really needed. "poke_int3_handler()"
+Hi Linus,
 
-Yeah, I was stating that as more of being "cleaner". I saw that the
-current code handles this, but it feels like it would be more robust to
-set it to NULL now.
+I applied this patch on my tree for 3.15.
 
-> checks "bp_int3_handler" only when "bp_patching_in_progress" is enabled.
-> The "in_progress" variable is disabled right after the above mentioned
-> "run_sync()", so we are on the safe side.
-> 
-> Note that the original "text_poke_bp()" implementation disabled only the
-> "in_progress" variable at the end as well.
-> 
-> 
-> > > +static int add_iter_breakpoint(struct text_poke_bp_iter *iterator,
-> > > +				       void *iter)
-> > > +{
-> > > +	void *addr;
-> > > +	const void *old_opcode;
-> > > +	int ret = 0;
-> > > +
-> > > +	/* nope if the code is not defined */
-> > 
-> > The above comment does not make sense.
-> 
-> It is here to handle the situation when "ftrace_test_record(rec,
-> enable)" returns FTRACE_UPDATE_IGNORE. In this case, even the original
-> implementation does not add the breakpoint.
-> 
-> I did not want to confuse the universal implementation with extra flags.
-> Instead, I passed NULL "old_code" pointer when the patching was not
-> needed for this particular address.
-> 
-> I agree that it might be a bit confusing. The question is whether it is
-> enough to improve documentation or rather use an extra flag or so.
-> 
-> I am going to improve the comments unless you say otherwise.
+Thanks !
+   -- Daniel
 
-I was confused by the comment. Please add more documentation in the
-comment to explain this. You can state what it is there for (for
-ftrace to ignore records) without having to add extra flags. But 10
-years from now, we want developers to understand why things were done
-the way they were done without having to look through email archives or
-git logs.
+> ---
+> Hi Daniel/tglx, if you prefer I can take this through ARM SoC
+> but since I'm listed as maintainer for this driver and nothing
+> much is happening on the U300, feel free to apply it to your
+> tree.
+> ---
+>   MAINTAINERS                                                    | 1 +
+>   arch/arm/mach-u300/Makefile                                    | 2 +-
+>   drivers/clocksource/Makefile                                   | 1 +
+>   arch/arm/mach-u300/timer.c => drivers/clocksource/timer-u300.c | 4 ----
+>   4 files changed, 3 insertions(+), 5 deletions(-)
+>   rename arch/arm/mach-u300/timer.c => drivers/clocksource/timer-u300.c (99%)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6a6e4ac72287..ede1049b2aa0 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1296,6 +1296,7 @@ M:	Linus Walleij <linus.walleij@linaro.org>
+>   L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>   S:	Supported
+>   F:	arch/arm/mach-u300/
+> +F:	drivers/clocksource/timer-u300.c
+>   F:	drivers/i2c/busses/i2c-stu300.c
+>   F:	drivers/rtc/rtc-coh901331.c
+>   F:	drivers/watchdog/coh901327_wdt.c
+> diff --git a/arch/arm/mach-u300/Makefile b/arch/arm/mach-u300/Makefile
+> index 0f362b64fb87..3ec74ac95bc1 100644
+> --- a/arch/arm/mach-u300/Makefile
+> +++ b/arch/arm/mach-u300/Makefile
+> @@ -2,7 +2,7 @@
+>   # Makefile for the linux kernel, U300 machine.
+>   #
+>
+> -obj-y		:= core.o timer.o
+> +obj-y		:= core.o
+>   obj-m		:=
+>   obj-n		:=
+>   obj-		:=
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 33621efb9148..dc17673d7397 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -21,6 +21,7 @@ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
+>   obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+>   obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
+>   obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+> +obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
+>   obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+>   obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+>   obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+> diff --git a/arch/arm/mach-u300/timer.c b/drivers/clocksource/timer-u300.c
+> similarity index 99%
+> rename from arch/arm/mach-u300/timer.c
+> rename to drivers/clocksource/timer-u300.c
+> index 5226162fac69..79722349955e 100644
+> --- a/arch/arm/mach-u300/timer.c
+> +++ b/drivers/clocksource/timer-u300.c
+> @@ -1,8 +1,4 @@
+>   /*
+> - *
+> - * arch/arm/mach-u300/timer.c
+> - *
+> - *
+>    * Copyright (C) 2007-2009 ST-Ericsson AB
+>    * License terms: GNU General Public License (GPL) version 2
+>    * Timer COH 901 328, runs the OS timer interrupt.
+>
 
-> 
-> > 
-> > > +	old_opcode = iterator->get_old_opcode(iter);
-> > > +	if (!old_opcode)
-> > > +		return 0;
-> > > +
-> > > +	addr = iterator->get_addr(iter);
-> > > +	ret = text_poke_check(addr, old_opcode, bp_int3_len);
-> > > +
-> > > +	if (likely(!ret))
-> > > +		/* write the breakpoint */
-> > 
-> > Comment is redundant and can be removed.
-> > 
-> > > +		ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +
-> > > +static int update_iter_code(struct text_poke_bp_iter *iterator,
-> > > +				   void *iter)
-> > > +{
-> > > +	void *addr;
-> > > +	const void *opcode;
-> > > +
-> > > +	/* nope if the code is not defined */
-> > 
-> > Still does not make sense :-)
-> 
-> It is the same reason/trick that is used in "add_iter_breakpoint()".
-> NULL code pointer means that we actually do not want to patch this
-> particular address.
-> 
 
-Good, please add more text to the comment to explain it better.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Thanks,
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
--- Steve
