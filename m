@@ -1,188 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaAUV6D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:58:03 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40970 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750862AbaAUV6B (ORCPT
+	id S1754289AbaAUWAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:00:01 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50340 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaAUV76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:58:01 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhprAIfs3lJ20iCRPGdsb2JhbABagwuIRbQ7gRUXAwEBAQE4NYIlAQEBBCcRHh4EARAIAw4DAwECAQkWBAsJAwIBAgEnCgwIBg0BBQICF4dpwn8XjhtkB4Q4AQOFK58xh02BUSmBLA
-Message-ID: <52DEED63.2010401@internode.on.net>
-Date: Wed, 22 Jan 2014 08:27:55 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	Tue, 21 Jan 2014 16:59:58 -0500
+Message-ID: <52DEEDDA.4060302@codeaurora.org>
+Date: Tue, 21 Jan 2014 13:59:54 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Anssi Hannula <anssi.hannula@iki.fi>,
-        ALSA devel <alsa-devel@alsa-project.org>, xorg-driver-ati@lists.x.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ALSA: hda - Fix possible races in HDMI driver - lockup on shutdown
- when radeon.audio=1 after using audacity
-References: <52DB7878.8000004@internode.on.net>	<s5hha8zox0j.wl%tiwai@suse.de>	<52DDCB6B.7010602@internode.on.net> <s5hk3dt8u4q.wl%tiwai@suse.de>
-In-Reply-To: <s5hk3dt8u4q.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>
+Subject: Re: [PATCH v2 5/7] ARM: perf_event: Fully support Krait CPU PMU events
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org> <1389808535-23852-6-git-send-email-sboyd@codeaurora.org> <20140121180711.GN30706@mudshark.cambridge.arm.com> <52DEBE6B.7000904@codeaurora.org>
+In-Reply-To: <52DEBE6B.7000904@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Takashi Iwai wrote, on 21/01/14 21:43:
-> At Tue, 21 Jan 2014 11:50:43 +1030,
-> Arthur Marsh wrote:
+On 01/21/14 10:37, Stephen Boyd wrote:
+> On 01/21/14 10:07, Will Deacon wrote:
+>> Finally, I'd really like to see this get some test coverage, but I don't
+>> want to try running mainline on my phone :) Could you give your patches a
+>> spin with Vince's perf fuzzer please?
 >>
+>>   https://github.com/deater/perf_event_tests.git
 >>
+>> (then build the contents of the fuzzer directory and run it for as long as
+>> you can).
 >>
->> Takashi Iwai wrote, on 20/01/14 19:22:
->>> At Sun, 19 Jan 2014 17:32:16 +1030,
->>> Arthur Marsh wrote:
->>>>
->>>> I have had reproducible lock-ups on shut-down (at the shutting down ALSA
->>>> stage) of my AMD64 machine (Asus M3A78Pro motherboard, BIOS 1701
->>>> 01/27/2011, CPU AMD Athlon(tm) II X4 640 Processor) running the 64 bit
->>>> Linux kernel more recent than 3.12 when *both* radeon.audio=1 was set
->>>> and I had been running audacity 2.0.5. (iommu=noaperture is also set).
->>>>
->>>> The problem was reproducible with the stock Debian kernel
->>>> linux-image-3.13-rc6-amd64 version 3.13~rc6-1~exp1.
->>>>
->>>> The machine is using an ATI/AMD 3850HD video card with a DVI cable to a
->>>> DVI input on my monitor, and the default audio device is the
->>>> motherboard's on-board audio device:
->>>>
->>>> 00:14.2 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] SBx00
->>>> Azalia (Intel HDA)
->>>>
->>>> 01:00.0 VGA compatible controller: Advanced Micro Devices, Inc.
->>>> [AMD/ATI] RV670 [Radeon HD 3690/3850]
->>>> 01:00.1 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] RV670/680
->>>> HDMI Audio [Radeon HD 3690/3800 Series]
->>>>
->>>> $ git bisect bad
->>>> cbbaa603a03cc46681e24d6b2804b62fde95a2af is the first bad commit
->>>> commit cbbaa603a03cc46681e24d6b2804b62fde95a2af
->>>> Author: Takashi Iwai <tiwai@suse.de>
->>>> Date:   Thu Oct 17 18:03:24 2013 +0200
->>>>
->>>>        ALSA: hda - Fix possible races in HDMI driver
->>>>
->>>>        Some per_pin fields and ELD contents might be changed dynamically in
->>>>        multiple ways where the concurrent accesses are still opened in the
->>>>        current code.  This patch fixes such possible races by using eld->lock
->>>>        in appropriate places.
->>>>
->>>>        Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
->>>>        Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>>
->>>> :040000 040000 0c29281f82a3ebd9a704d481114f9cfcefea07c8
->>>> d71fd101125cd29a628cb5e66c7ee4f56e28329b M      sound
->>>>
->>>> When running audacity from the command line there was the following output:
->>>>
->>>> ALSA lib pcm_dsnoop.c:618:(snd_pcm_dsnoop_open) unable to open slave
->>>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
->>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.rear
->>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.center_lfe
->>>> ALSA lib pcm.c:2239:(snd_pcm_open_noupdate) Unknown PCM cards.pcm.side
->>>> ALSA lib pcm_dmix.c:1022:(snd_pcm_dmix_open) unable to open slave
->>>> Expression 'stream->playback.pcm' failed in
->>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
->>>> Expression 'stream->playback.pcm' failed in
->>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
->>>> Expression 'stream->playback.pcm' failed in
->>>> 'src/hostapi/alsa/pa_linux_alsa.c', line: 4611
->>>>
->>>> I am happy to supply further information or run further tests to help in
->>>> isolating the problem and verifying a solution.
->>>
->>> Could you build the kernel with lockdep kconfig and see whether it
->>> reports errors?
->>>
->>> Reverting the commit doesn't work cleanly.  Instead, you can try to
->>> simply comment out all mutex_lock(&per_pin->lock) and
->>> mutex_unlock(&per_pin->lock) calls in patch_hdmi.c to see whether it's
->>> a mutex deadlock.
->>>
->>>
->>> thanks,
->>>
->>> Takashi
->>>
->>
->> I rebuilt the kernel after commenting out all mutex_lock(&per_pin->lock)
->> and mutex_unlock(&per_pin->lock) calls in patch_hdmi.c, and the
->> resulting kernel shutdown without hanging.
->
-> Thanks.  Could you try the patch below?  It's already queued for
-> 3.14.  If this patch really fixes the issue, I'm going to send it to
-> stable 3.13.x.
->
->
-> Takashi
->
-> -- 8< --
-> From: David Henningsson <david.henningsson@canonical.com>
-> Subject: [PATCH] ALSA: hda - Explicitly keep codec powered up in
->   hdmi_present_sense
->
-> This should help us avoid the following mutex deadlock:
->
-> [] mutex_lock+0x2a/0x50
-> [] hdmi_present_sense+0x53/0x3a0 [snd_hda_codec_hdmi]
-> [] generic_hdmi_resume+0x5a/0x70 [snd_hda_codec_hdmi]
-> [] hda_call_codec_resume+0xec/0x1d0 [snd_hda_codec]
-> [] snd_hda_power_save+0x1e4/0x280 [snd_hda_codec]
-> [] codec_exec_verb+0x5f/0x290 [snd_hda_codec]
-> [] snd_hda_codec_read+0x5b/0x90 [snd_hda_codec]
-> [] snd_hdmi_get_eld_size+0x1e/0x20 [snd_hda_codec_hdmi]
-> [] snd_hdmi_get_eld+0x2c/0xd0 [snd_hda_codec_hdmi]
-> [] hdmi_present_sense+0x9a/0x3a0 [snd_hda_codec_hdmi]
-> [] hdmi_repoll_eld+0x34/0x50 [snd_hda_codec_hdmi]
->
-> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->   sound/pci/hda/patch_hdmi.c | 6 +++++-
->   1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-> index f5060fc7c303..977db17db26c 100644
-> --- a/sound/pci/hda/patch_hdmi.c
-> +++ b/sound/pci/hda/patch_hdmi.c
-> @@ -1496,11 +1496,14 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
->   	 * specification worked this way. Hence, we just ignore the data in
->   	 * the unsolicited response to avoid custom WARs.
->   	 */
-> -	int present = snd_hda_pin_sense(codec, pin_nid);
-> +	int present;
->   	bool update_eld = false;
->   	bool eld_changed = false;
->   	bool ret;
->
-> +	snd_hda_power_up(codec);
-> +	present = snd_hda_pin_sense(codec, pin_nid);
-> +
->   	mutex_lock(&per_pin->lock);
->   	pin_eld->monitor_present = !!(present & AC_PINSENSE_PRESENCE);
->   	if (pin_eld->monitor_present)
-> @@ -1573,6 +1576,7 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
->   		jack->block_report = !ret;
->
->   	mutex_unlock(&per_pin->lock);
-> +	snd_hda_power_down(codec);
->   	return ret;
->   }
->
->
+> Ok. I'll see what I can do.
 
-The patch worked thanks.
+Neat. This quickly discovered a problem.
 
-I had to revert this patch to update the kernel to the current Linus' 
-git head.
+BUG: using smp_processor_id() in preemptible [00000000] code: perf_fuzzer/70
+caller is krait_pmu_get_event_idx+0x58/0xd8
+CPU: 2 PID: 70 Comm: perf_fuzzer Not tainted 3.13.0-rc7-next-20140108-00041-gb038353c8516-dirty #58
+[<c02165dc>] (unwind_backtrace) from [<c0212ffc>] (show_stack+0x10/0x14)
+[<c0212ffc>] (show_stack) from [<c06ad5fc>] (dump_stack+0x6c/0xb8)
+[<c06ad5fc>] (dump_stack) from [<c04b0928>] (debug_smp_processor_id+0xc4/0xe8)
+[<c04b0928>] (debug_smp_processor_id) from [<c021a19c>] (krait_pmu_get_event_idx+0x58/0xd8)
+[<c021a19c>] (krait_pmu_get_event_idx) from [<c021833c>] (validate_event+0x2c/0x54)
+[<c021833c>] (validate_event) from [<c02186b4>] (armpmu_event_init+0x264/0x2dc)
+[<c02186b4>] (armpmu_event_init) from [<c02b28e4>] (perf_init_event+0x138/0x194)
+[<c02b28e4>] (perf_init_event) from [<c02b2c04>] (perf_event_alloc+0x2c4/0x348)
+[<c02b2c04>] (perf_event_alloc) from [<c02b37e4>] (SyS_perf_event_open+0x7b8/0x9cc)
+[<c02b37e4>] (SyS_perf_event_open) from [<c020ef80>] (ret_fast_syscall+0x0/0x48)
 
-Regards,
+This is happening because the pmresrn_used mask is per-cpu but
+validate_group() is called in preemptible context. It looks like we'll
+need to add another unsigned long * field to struct pmu_hw_events just
+for Krait purposes? Or we could use the upper 16 bits of the used_mask
+bitmap to hold the pmresr_used values? Sounds sort of hacky but it
+avoids adding another bitmap for every PMU user and there aren't any
+Krait CPUs with more than 5 counters anyway.
 
-Arthur.
+This is the diff for the latter version. I'll let the fuzzer run overnight.
+
+diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
+index 994ac445e792..ae1919be8f98 100644
+--- a/arch/arm/include/asm/pmu.h
++++ b/arch/arm/include/asm/pmu.h
+@@ -71,7 +71,8 @@ struct arm_pmu {
+ 	void		(*disable)(struct perf_event *event);
+ 	int		(*get_event_idx)(struct pmu_hw_events *hw_events,
+ 					 struct perf_event *event);
+-	void		(*clear_event_idx)(struct perf_event *event);
++	void		(*clear_event_idx)(struct pmu_hw_events *hw_events,
++					 struct perf_event *event);
+ 	int		(*set_event_filter)(struct hw_perf_event *evt,
+ 					    struct perf_event_attr *attr);
+ 	u32		(*read_counter)(struct perf_event *event);
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 70191f68c26d..361a1aaee7c8 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -208,7 +208,7 @@ armpmu_del(struct perf_event *event, int flags)
+ 	hw_events->events[idx] = NULL;
+ 	clear_bit(idx, hw_events->used_mask);
+ 	if (armpmu->clear_event_idx)
+-		armpmu->clear_event_idx(event);
++		armpmu->clear_event_idx(hw_events, event);
+ 
+ 	perf_event_update_userpage(event);
+ }
+diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+index daa675529c12..1a905395b74c 100644
+--- a/arch/arm/kernel/perf_event_v7.c
++++ b/arch/arm/kernel/perf_event_v7.c
+@@ -1483,9 +1483,6 @@ static int armv7_a7_pmu_init(struct arm_pmu *cpu_pmu)
+ #define VENUM_EVENT		(2 << 16)
+ #define KRAIT_EVENT_MASK	(KRAIT_EVENT | VENUM_EVENT)
+ #define PMRESRn_EN		BIT(31)
+-#define NUM_PMRESR	(KRAIT_VPMRESR0_GROUP0 + 4 - KRAIT_PMRESR0_GROUP0)
+-
+-static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(NUM_PMRESR)], pmresrn_used);
+ 
+ static u32 krait_read_pmresrn(int n)
+ {
+@@ -1542,6 +1539,7 @@ static void krait_pre_vpmresr0(u32 *venum_orig_val, u32 *fp_orig_val)
+ 	u32 venum_new_val;
+ 	u32 fp_new_val;
+ 
++	BUG_ON(preemptible());
+ 	/* CPACR Enable CP10 and CP11 access */
+ 	*venum_orig_val = get_copro_access();
+ 	venum_new_val = *venum_orig_val | CPACC_SVC(10) | CPACC_SVC(11);
+@@ -1555,6 +1553,7 @@ static void krait_pre_vpmresr0(u32 *venum_orig_val, u32 *fp_orig_val)
+ 
+ static void krait_post_vpmresr0(u32 venum_orig_val, u32 fp_orig_val)
+ {
++	BUG_ON(preemptible());
+ 	/* Restore FPEXC */
+ 	fmxr(FPEXC, fp_orig_val);
+ 	isb();
+@@ -1750,7 +1749,6 @@ static int krait_pmu_get_event_idx(struct pmu_hw_events *cpuc,
+ 	unsigned int group;
+ 	bool krait_event;
+ 	struct hw_perf_event *hwc = &event->hw;
+-	unsigned long *bitmap = this_cpu_ptr(pmresrn_used);
+ 
+ 	region = (hwc->config_base >> 12) & 0xf;
+ 	code   = (hwc->config_base >> 4) & 0xff;
+@@ -1773,26 +1771,27 @@ static int krait_pmu_get_event_idx(struct pmu_hw_events *cpuc,
+ 			bit = krait_get_pmresrn_event(region);
+ 		bit -= krait_get_pmresrn_event(0);
+ 		bit += group;
++		bit <<= 16; /* Use the upper 16 bits of the used_mask */
+ 
+-		if (test_and_set_bit(bit, bitmap))
++		if (test_and_set_bit(bit, cpuc->used_mask))
+ 			return -EAGAIN;
+ 	}
+ 
+ 	idx = armv7pmu_get_event_idx(cpuc, event);
+ 	if (idx < 0 && krait_event)
+-		clear_bit(bit, bitmap);
++		clear_bit(bit, cpuc->used_mask);
+ 
+ 	return idx;
+ }
+ 
+-static void krait_pmu_clear_event_idx(struct perf_event *event)
++static void krait_pmu_clear_event_idx(struct pmu_hw_events *cpuc,
++				      struct perf_event *event)
+ {
+ 	int bit;
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	unsigned int region;
+ 	unsigned int group;
+ 	bool krait_event;
+-	unsigned long *bitmap = this_cpu_ptr(pmresrn_used);
+ 
+ 	region = (hwc->config_base >> 12) & 0xf;
+ 	group  = (hwc->config_base >> 0) & 0xf;
+@@ -1805,7 +1804,8 @@ static void krait_pmu_clear_event_idx(struct perf_event *event)
+ 			bit = krait_get_pmresrn_event(region);
+ 		bit -= krait_get_pmresrn_event(0);
+ 		bit += group;
+-		clear_bit(bit, bitmap);
++		bit <<= 16;
++		clear_bit(bit, cpuc->used_mask);
+ 	}
+ }
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
