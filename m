@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaAUXE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:04:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13699 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187AbaAUXEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:04:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="468666594"
-From: "Brown, Aaron F" <aaron.f.brown@intel.com>
-To: "standby24x7@gmail.com" <standby24x7@gmail.com>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
-Thread-Topic: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
-Thread-Index: AQHPFv0xe1cN4Rs1G0C2iUxe2h/eYA==
-Date: Tue, 21 Jan 2014 23:04:53 +0000
-Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B73142908@ORSMSX101.amr.corp.intel.com>
-References: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753861AbaAUXIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:08:09 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:44418 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750862AbaAUXID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:08:03 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-mm@kvack.org
+Subject: [BUG] mm: thp: hugepage_vma_check has a blind spot
+Date: Tue, 21 Jan 2014 17:07:49 -0600
+Message-Id: <1390345671-136133-1-git-send-email-athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0LN54fQ013421
 
-On Wed, 2014-01-15 at 01:14 +0900, Masanari Iida wrote:
-> cppcheck detected following warning in ixgbe_fcoe.c
-> (warning) %d in format string (no. 1) requires 'int' but the
-> argument type is 'unsigned int'.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Tested-By: Jack Morgan <jack.morgan@intel.com>
-Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
+hugepage_vma_check is called during khugepaged_scan_mm_slot to ensure
+that khugepaged doesn't try to allocate THPs in vmas where they are
+disallowed, either due to THPs being disabled system-wide, or through
+MADV_NOHUGEPAGE.
 
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c
-> index f58db45..0872617 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c
-> @@ -585,7 +585,7 @@ static int ixgbe_fcoe_dma_pool_alloc(struct ixgbe_fcoe *fcoe,
->  	struct dma_pool *pool;
->  	char pool_name[32];
->  
-> -	snprintf(pool_name, 32, "ixgbe_fcoe_ddp_%d", cpu);
-> +	snprintf(pool_name, 32, "ixgbe_fcoe_ddp_%u", cpu);
->  
->  	pool = dma_pool_create(pool_name, dev, IXGBE_FCPTR_MAX,
->  			       IXGBE_FCPTR_ALIGN, PAGE_SIZE);
+The logic that hugepage_vma_check uses doesn't seem to cover all cases,
+in my opinion.  Looking at the original code:
 
+       if ((!(vma->vm_flags & VM_HUGEPAGE) && !khugepaged_always()) ||
+	   (vma->vm_flags & VM_NOHUGEPAGE))
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+We can see that it's possible to have THP disabled system-wide, but still
+receive THPs in this vma.  It seems that it's assumed that just because
+khugepaged_always == false, TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG must be
+set, which is not the case.  We could have VM_HUGEPAGE set, but have THP
+set to "never" system-wide, in which case, the condition presented in the
+if will evaluate to false, and (provided the other checks pass) we can
+end up giving out a THP even though the behavior is set to "never."
+
+While we do properly check these flags in khugepaged_has_work, it looks
+like it's possible to sleep after we check khugepaged_hask_work, but
+before hugepage_vma_check, during which time, hugepages could have been
+disabled system-wide, in which case, we could hand out THPs when we
+shouldn't be.
+
+This small fix makes hugepage_vma_check work more like
+transparent_hugepage_enabled, checking if THPs are set to "always"
+system-wide, then checking if THPs are set to "madvise," as well as
+making sure that VM_HUGEPAGE is set for this vma.
+
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org> 
+Cc: Mel Gorman <mgorman@suse.de> 
+Cc: Rik van Riel <riel@redhat.com> 
+Cc: Ingo Molnar <mingo@kernel.org> 
+Cc: Peter Zijlstra <peterz@infradead.org> 
+Cc: linux-mm@kvack.org 
+Cc: linux-kernel@vger.kernel.org 
+
+---
+ mm/huge_memory.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 95d1acb..f62fba9 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2394,7 +2394,8 @@ static struct page
+ 
+ static bool hugepage_vma_check(struct vm_area_struct *vma)
+ {
+-	if ((!(vma->vm_flags & VM_HUGEPAGE) && !khugepaged_always()) ||
++	if ((!khugepaged_always() ||
++	     (!(vma->vm_flags & VM_HUGEPAGE) && !khugepaged_req_madv())) ||
+ 	    (vma->vm_flags & VM_NOHUGEPAGE))
+ 		return false;
+ 
+-- 
+1.7.12.4
+
