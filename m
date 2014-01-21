@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaAUVde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:33:34 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:50791 "EHLO
+	id S1755488AbaAUVdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:33:55 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50786 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875AbaAUVZk (ORCPT
+	with ESMTP id S1754146AbaAUVZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:25:40 -0500
+	Tue, 21 Jan 2014 16:25:37 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-crypto@vger.kernel.org>
-Subject: [PATCH 62/73] drivers/crypto: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:23:05 -0500
-Message-ID: <1390339396-3479-63-git-send-email-paul.gortmaker@windriver.com>
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>
+Subject: [PATCH 49/73] drivers/mtd: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:22:52 -0500
+Message-ID: <1390339396-3479-50-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -31,130 +31,506 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-mtd@lists.infradead.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/crypto/atmel-aes.c        | 1 -
- drivers/crypto/atmel-sha.c        | 1 -
- drivers/crypto/atmel-tdes.c       | 1 -
- drivers/crypto/nx/nx_debugfs.c    | 1 -
- drivers/crypto/omap-aes.c         | 1 -
- drivers/crypto/omap-sham.c        | 1 -
- drivers/crypto/picoxcell_crypto.c | 1 -
- drivers/crypto/s5p-sss.c          | 1 -
- drivers/crypto/tegra-aes.c        | 1 -
- 9 files changed, 9 deletions(-)
+ drivers/mtd/chips/cfi_cmdset_0001.c | 1 -
+ drivers/mtd/chips/cfi_cmdset_0002.c | 1 -
+ drivers/mtd/chips/cfi_cmdset_0020.c | 1 -
+ drivers/mtd/devices/m25p80.c        | 1 -
+ drivers/mtd/devices/mtd_dataflash.c | 1 -
+ drivers/mtd/devices/sst25l.c        | 1 -
+ drivers/mtd/inftlmount.c            | 1 -
+ drivers/mtd/maps/bfin-async-flash.c | 1 -
+ drivers/mtd/maps/gpio-addr-flash.c  | 1 -
+ drivers/mtd/maps/intel_vr_nor.c     | 1 -
+ drivers/mtd/maps/ixp4xx.c           | 1 -
+ drivers/mtd/maps/lantiq-flash.c     | 1 -
+ drivers/mtd/maps/latch-addr-flash.c | 1 -
+ drivers/mtd/maps/pci.c              | 1 -
+ drivers/mtd/maps/physmap_of.c       | 1 -
+ drivers/mtd/maps/plat-ram.c         | 1 -
+ drivers/mtd/maps/pxa2xx-flash.c     | 1 -
+ drivers/mtd/maps/rbtx4939-flash.c   | 1 -
+ drivers/mtd/maps/sa1100-flash.c     | 1 -
+ drivers/mtd/maps/scb2_flash.c       | 1 -
+ drivers/mtd/maps/sun_uflash.c       | 1 -
+ drivers/mtd/mtd_blkdevs.c           | 1 -
+ drivers/mtd/nand/ams-delta.c        | 1 -
+ drivers/mtd/nand/au1550nd.c         | 1 -
+ drivers/mtd/nand/bf5xx_nand.c       | 1 -
+ drivers/mtd/nand/davinci_nand.c     | 1 -
+ drivers/mtd/nand/fsl_elbc_nand.c    | 1 -
+ drivers/mtd/nand/fsl_ifc_nand.c     | 1 -
+ drivers/mtd/nand/gpio.c             | 1 -
+ drivers/mtd/nand/mpc5121_nfc.c      | 1 -
+ drivers/mtd/nand/nuc900_nand.c      | 1 -
+ drivers/mtd/nand/pasemi_nand.c      | 1 -
+ drivers/mtd/nand/s3c2410.c          | 1 -
+ drivers/mtd/onenand/generic.c       | 1 -
+ drivers/mtd/onenand/omap2.c         | 1 -
+ drivers/mtd/onenand/onenand_base.c  | 1 -
+ drivers/mtd/tests/mtd_test.c        | 1 -
+ drivers/mtd/ubi/ubi.h               | 1 -
+ 38 files changed, 38 deletions(-)
 
-diff --git a/drivers/crypto/atmel-aes.c b/drivers/crypto/atmel-aes.c
-index d7c9e31..70fb6fb 100644
---- a/drivers/crypto/atmel-aes.c
-+++ b/drivers/crypto/atmel-aes.c
-@@ -24,7 +24,6 @@
- #include <linux/platform_device.h>
- 
- #include <linux/device.h>
+diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
+index 7751443..a19719e 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -21,7 +21,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
 -#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-diff --git a/drivers/crypto/atmel-sha.c b/drivers/crypto/atmel-sha.c
-index 0618be0..637141b 100644
---- a/drivers/crypto/atmel-sha.c
-+++ b/drivers/crypto/atmel-sha.c
-@@ -24,7 +24,6 @@
- #include <linux/platform_device.h>
+ #include <asm/io.h>
+ #include <asm/byteorder.h>
  
- #include <linux/device.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-diff --git a/drivers/crypto/atmel-tdes.c b/drivers/crypto/atmel-tdes.c
-index 6cde5b5..604a67f 100644
---- a/drivers/crypto/atmel-tdes.c
-+++ b/drivers/crypto/atmel-tdes.c
+diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+index 89b9d68..718244d 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
 @@ -24,7 +24,6 @@
- #include <linux/platform_device.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+-#include <linux/init.h>
+ #include <asm/io.h>
+ #include <asm/byteorder.h>
  
- #include <linux/device.h>
+diff --git a/drivers/mtd/chips/cfi_cmdset_0020.c b/drivers/mtd/chips/cfi_cmdset_0020.c
+index 096993f..8852942 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0020.c
++++ b/drivers/mtd/chips/cfi_cmdset_0020.c
+@@ -22,7 +22,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
 -#include <linux/init.h>
+ #include <asm/io.h>
+ #include <asm/byteorder.h>
+ 
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index d0f6475..4978f00 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -15,7 +15,6 @@
+  *
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/err.h>
  #include <linux/errno.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-diff --git a/drivers/crypto/nx/nx_debugfs.c b/drivers/crypto/nx/nx_debugfs.c
-index 7ab2e8d..899d857 100644
---- a/drivers/crypto/nx/nx_debugfs.c
-+++ b/drivers/crypto/nx/nx_debugfs.c
-@@ -24,7 +24,6 @@
+ #include <linux/module.h>
+diff --git a/drivers/mtd/devices/mtd_dataflash.c b/drivers/mtd/devices/mtd_dataflash.c
+index 624069d..8b278d2 100644
+--- a/drivers/mtd/devices/mtd_dataflash.c
++++ b/drivers/mtd/devices/mtd_dataflash.c
+@@ -10,7 +10,6 @@
+  * 2 of the License, or (at your option) any later version.
+ */
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+diff --git a/drivers/mtd/devices/sst25l.c b/drivers/mtd/devices/sst25l.c
+index 687bf27..c63ecbc 100644
+--- a/drivers/mtd/devices/sst25l.c
++++ b/drivers/mtd/devices/sst25l.c
+@@ -15,7 +15,6 @@
+  *
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/mutex.h>
+diff --git a/drivers/mtd/inftlmount.c b/drivers/mtd/inftlmount.c
+index 4adc037..487e64f 100644
+--- a/drivers/mtd/inftlmount.c
++++ b/drivers/mtd/inftlmount.c
+@@ -30,7 +30,6 @@
+ #include <asm/uaccess.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nftl.h>
+ #include <linux/mtd/inftl.h>
+diff --git a/drivers/mtd/maps/bfin-async-flash.c b/drivers/mtd/maps/bfin-async-flash.c
+index 5434d8d..6ea51e5 100644
+--- a/drivers/mtd/maps/bfin-async-flash.c
++++ b/drivers/mtd/maps/bfin-async-flash.c
+@@ -14,7 +14,6 @@
+  * Licensed under the GPL-2 or later.
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/maps/gpio-addr-flash.c b/drivers/mtd/maps/gpio-addr-flash.c
+index 1adba86..a4c477b 100644
+--- a/drivers/mtd/maps/gpio-addr-flash.c
++++ b/drivers/mtd/maps/gpio-addr-flash.c
+@@ -14,7 +14,6 @@
+  */
+ 
+ #include <linux/gpio.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+diff --git a/drivers/mtd/maps/intel_vr_nor.c b/drivers/mtd/maps/intel_vr_nor.c
+index 46d195f..5ab71f0 100644
+--- a/drivers/mtd/maps/intel_vr_nor.c
++++ b/drivers/mtd/maps/intel_vr_nor.c
+@@ -31,7 +31,6 @@
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/drivers/mtd/maps/ixp4xx.c b/drivers/mtd/maps/ixp4xx.c
+index d6b2451..6a589f1 100644
+--- a/drivers/mtd/maps/ixp4xx.c
++++ b/drivers/mtd/maps/ixp4xx.c
+@@ -16,7 +16,6 @@
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
  #include <linux/string.h>
- #include <linux/debugfs.h>
- #include <linux/module.h>
+ #include <linux/slab.h>
+diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-flash.c
+index 93c507a..7aa682c 100644
+--- a/drivers/mtd/maps/lantiq-flash.c
++++ b/drivers/mtd/maps/lantiq-flash.c
+@@ -13,7 +13,6 @@
+ #include <linux/kernel.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
 -#include <linux/init.h>
- #include <linux/crypto.h>
- #include <crypto/hash.h>
- #include <asm/vio.h>
-diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
-index dde41f1d..6d34dac 100644
---- a/drivers/crypto/omap-aes.c
-+++ b/drivers/crypto/omap-aes.c
-@@ -19,7 +19,6 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/drivers/mtd/maps/latch-addr-flash.c b/drivers/mtd/maps/latch-addr-flash.c
+index 98bb5d5..cadfbe0 100644
+--- a/drivers/mtd/maps/latch-addr-flash.c
++++ b/drivers/mtd/maps/latch-addr-flash.c
+@@ -10,7 +10,6 @@
+  * kind, whether express or implied.
+  */
  
- #include <linux/err.h>
- #include <linux/module.h>
 -#include <linux/init.h>
- #include <linux/errno.h>
  #include <linux/kernel.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
-index a727a6a..5d303eb 100644
---- a/drivers/crypto/omap-sham.c
-+++ b/drivers/crypto/omap-sham.c
-@@ -19,7 +19,6 @@
- #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/maps/pci.c b/drivers/mtd/maps/pci.c
+index 36da518..eb0242e 100644
+--- a/drivers/mtd/maps/pci.c
++++ b/drivers/mtd/maps/pci.c
+@@ -14,7 +14,6 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ 
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
+index d111097..217c25d 100644
+--- a/drivers/mtd/maps/physmap_of.c
++++ b/drivers/mtd/maps/physmap_of.c
+@@ -15,7 +15,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
  #include <linux/device.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+diff --git a/drivers/mtd/maps/plat-ram.c b/drivers/mtd/maps/plat-ram.c
+index 10196f5..76ace85 100644
+--- a/drivers/mtd/maps/plat-ram.c
++++ b/drivers/mtd/maps/plat-ram.c
+@@ -23,7 +23,6 @@
+ 
  #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/ioport.h>
+diff --git a/drivers/mtd/maps/pxa2xx-flash.c b/drivers/mtd/maps/pxa2xx-flash.c
+index 9aad854..cb4d92e 100644
+--- a/drivers/mtd/maps/pxa2xx-flash.c
++++ b/drivers/mtd/maps/pxa2xx-flash.c
+@@ -13,7 +13,6 @@
+ #include <linux/types.h>
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+diff --git a/drivers/mtd/maps/rbtx4939-flash.c b/drivers/mtd/maps/rbtx4939-flash.c
+index 9352512..146b604 100644
+--- a/drivers/mtd/maps/rbtx4939-flash.c
++++ b/drivers/mtd/maps/rbtx4939-flash.c
+@@ -13,7 +13,6 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/mtd/maps/sa1100-flash.c b/drivers/mtd/maps/sa1100-flash.c
+index 8fc06bf..3428034e 100644
+--- a/drivers/mtd/maps/sa1100-flash.c
++++ b/drivers/mtd/maps/sa1100-flash.c
+@@ -7,7 +7,6 @@
+ #include <linux/types.h>
+ #include <linux/ioport.h>
+ #include <linux/kernel.h>
 -#include <linux/init.h>
  #include <linux/errno.h>
- #include <linux/interrupt.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/mtd/maps/scb2_flash.c b/drivers/mtd/maps/scb2_flash.c
+index 3051c4c..b7a22a6 100644
+--- a/drivers/mtd/maps/scb2_flash.c
++++ b/drivers/mtd/maps/scb2_flash.c
+@@ -47,7 +47,6 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
  #include <linux/kernel.h>
-diff --git a/drivers/crypto/picoxcell_crypto.c b/drivers/crypto/picoxcell_crypto.c
-index a6175ba..e50a1b9 100644
---- a/drivers/crypto/picoxcell_crypto.c
-+++ b/drivers/crypto/picoxcell_crypto.c
-@@ -29,7 +29,6 @@
- #include <linux/dma-mapping.h>
- #include <linux/dmapool.h>
+-#include <linux/init.h>
+ #include <asm/io.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+diff --git a/drivers/mtd/maps/sun_uflash.c b/drivers/mtd/maps/sun_uflash.c
+index 39cc418..b6f1aac 100644
+--- a/drivers/mtd/maps/sun_uflash.c
++++ b/drivers/mtd/maps/sun_uflash.c
+@@ -11,7 +11,6 @@
+ #include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/errno.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
+index 5073cbc..0b2ccb6 100644
+--- a/drivers/mtd/mtd_blkdevs.c
++++ b/drivers/mtd/mtd_blkdevs.c
+@@ -30,7 +30,6 @@
+ #include <linux/blkpg.h>
+ #include <linux/spinlock.h>
+ #include <linux/hdreg.h>
+-#include <linux/init.h>
+ #include <linux/mutex.h>
+ #include <asm/uaccess.h>
+ 
+diff --git a/drivers/mtd/nand/ams-delta.c b/drivers/mtd/nand/ams-delta.c
+index 8611eb4..4936e9e 100644
+--- a/drivers/mtd/nand/ams-delta.c
++++ b/drivers/mtd/nand/ams-delta.c
+@@ -17,7 +17,6 @@
+  */
+ 
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/nand/au1550nd.c b/drivers/mtd/nand/au1550nd.c
+index 2880d88..7d84c4e 100644
+--- a/drivers/mtd/nand/au1550nd.c
++++ b/drivers/mtd/nand/au1550nd.c
+@@ -11,7 +11,6 @@
+ 
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
+index 94f55db..b7a2494 100644
+--- a/drivers/mtd/nand/bf5xx_nand.c
++++ b/drivers/mtd/nand/bf5xx_nand.c
+@@ -37,7 +37,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/ioport.h>
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index a4989ec..4f5f322 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -24,7 +24,6 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/err.h>
+diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
+index bcf6080..ec549cd 100644
+--- a/drivers/mtd/nand/fsl_elbc_nand.c
++++ b/drivers/mtd/nand/fsl_elbc_nand.c
+@@ -24,7 +24,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/ioport.h>
+diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+index 90ca7e7..f8c77e3 100644
+--- a/drivers/mtd/nand/fsl_ifc_nand.c
++++ b/drivers/mtd/nand/fsl_ifc_nand.c
+@@ -22,7 +22,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/of_address.h>
+ #include <linux/slab.h>
+diff --git a/drivers/mtd/nand/gpio.c b/drivers/mtd/nand/gpio.c
+index 8e6148a..117ce33 100644
+--- a/drivers/mtd/nand/gpio.c
++++ b/drivers/mtd/nand/gpio.c
+@@ -18,7 +18,6 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nfc.c
+index 31ee7cf..e78841a 100644
+--- a/drivers/mtd/nand/mpc5121_nfc.c
++++ b/drivers/mtd/nand/mpc5121_nfc.c
+@@ -30,7 +30,6 @@
+ #include <linux/gfp.h>
+ #include <linux/delay.h>
  #include <linux/err.h>
 -#include <linux/init.h>
  #include <linux/interrupt.h>
  #include <linux/io.h>
- #include <linux/list.h>
-diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index cf149b1..78b7eed 100644
---- a/drivers/crypto/s5p-sss.c
-+++ b/drivers/crypto/s5p-sss.c
-@@ -14,7 +14,6 @@
- #include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/module.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/nand/nuc900_nand.c b/drivers/mtd/nand/nuc900_nand.c
+index 9ee09a8..90c99ea 100644
+--- a/drivers/mtd/nand/nuc900_nand.c
++++ b/drivers/mtd/nand/nuc900_nand.c
+@@ -10,7 +10,6 @@
+  */
+ 
+ #include <linux/slab.h>
 -#include <linux/init.h>
- #include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+diff --git a/drivers/mtd/nand/pasemi_nand.c b/drivers/mtd/nand/pasemi_nand.c
+index 90f871a..2c98f9d 100644
+--- a/drivers/mtd/nand/pasemi_nand.c
++++ b/drivers/mtd/nand/pasemi_nand.c
+@@ -23,7 +23,6 @@
+ #undef DEBUG
+ 
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
+index 47fbd9a..62a8958 100644
+--- a/drivers/mtd/nand/s3c2410.c
++++ b/drivers/mtd/nand/s3c2410.c
+@@ -29,7 +29,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/init.h>
  #include <linux/kernel.h>
- #include <linux/clk.h>
-diff --git a/drivers/crypto/tegra-aes.c b/drivers/crypto/tegra-aes.c
-index 060eecc..4c0548f 100644
---- a/drivers/crypto/tegra-aes.c
-+++ b/drivers/crypto/tegra-aes.c
-@@ -30,7 +30,6 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ #include <linux/string.h>
+ #include <linux/io.h>
+diff --git a/drivers/mtd/onenand/generic.c b/drivers/mtd/onenand/generic.c
+index 8e1919b..093c29a 100644
+--- a/drivers/mtd/onenand/generic.c
++++ b/drivers/mtd/onenand/generic.c
+@@ -13,7 +13,6 @@
+  */
  
  #include <linux/module.h>
 -#include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/clk.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+ #include <linux/mtd/mtd.h>
+diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
+index 6547c84..d945473 100644
+--- a/drivers/mtd/onenand/omap2.c
++++ b/drivers/mtd/onenand/omap2.c
+@@ -25,7 +25,6 @@
+ 
+ #include <linux/device.h>
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/onenand.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/drivers/mtd/onenand/onenand_base.c b/drivers/mtd/onenand/onenand_base.c
+index 1de33b5..531ccbc 100644
+--- a/drivers/mtd/onenand/onenand_base.c
++++ b/drivers/mtd/onenand/onenand_base.c
+@@ -24,7 +24,6 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/slab.h>
+-#include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/mtd/tests/mtd_test.c b/drivers/mtd/tests/mtd_test.c
+index c818a63..111ee46 100644
+--- a/drivers/mtd/tests/mtd_test.c
++++ b/drivers/mtd/tests/mtd_test.c
+@@ -1,6 +1,5 @@
+ #define pr_fmt(fmt) "mtd_test: " fmt
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+ #include <linux/printk.h>
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index 8ea6297..4176322 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -22,7 +22,6 @@
+ #ifndef __UBI_UBI_H__
+ #define __UBI_UBI_H__
+ 
+-#include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
 -- 
 1.8.4.1
 
