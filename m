@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaAUQkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 11:40:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754836AbaAUQkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 11:40:00 -0500
-Message-ID: <52DEA14E.2030602@redhat.com>
-Date: Tue, 21 Jan 2014 17:33:18 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1755004AbaAUQqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 11:46:20 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:46736 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466AbaAUQqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 11:46:18 -0500
+Message-ID: <52DEA455.7000208@gmail.com>
+Date: Tue, 21 Jan 2014 17:46:13 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: Re: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
-References: <1386394315-48984-1-git-send-email-jinsong.liu@intel.com> <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com> <52A83606.40908@redhat.com> <DE8DF0795D48FD4CA783C40EC829233501421D73@SHSMSX101.ccr.corp.intel.com> <52A98548.9010008@redhat.com> <DE8DF0795D48FD4CA783C40EC829233501422743@SHSMSX101.ccr.corp.intel.com> <52DD3427.9020502@redhat.com> <DE8DF0795D48FD4CA783C40EC82923350149CB2D@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350149CB2D@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com
+Subject: Re: [PATCH 01/13] sched: Add 3 new scheduler syscalls to support
+ an extended scheduling parameters ABI
+References: <20131217122720.950475833@infradead.org> <20131217123352.692059839@infradead.org> <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com> <20140121153851.GZ31570@twins.programming.kicks-ass.net> <20140121154603.GF3694@twins.programming.kicks-ass.net> <20140121110255.7d9af63d@gandalf.local.home> <20140121160647.GD31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140121160647.GD31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/01/2014 16:25, Liu, Jinsong ha scritto:
-> Hmm? I remember I have sent out the rebased patches v3 last month
-> If you didn't receive them I'm OK to rebase and resend them. BTW, what's
-> the review remarks? I remember you commented that the patches are fine.
-> Any misunderstanding please point out to me.
+On 01/21/2014 05:06 PM, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 11:02:55AM -0500, Steven Rostedt wrote:
+>> On Tue, 21 Jan 2014 16:46:03 +0100
+>> Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>>> On Tue, Jan 21, 2014 at 04:38:51PM +0100, Peter Zijlstra wrote:
+>>>>     SCHED_DEADLINE: Sporadic task model deadline scheduling
+>>>> 	SCHED_DEADLINE is an implementation of GEDF (Global Earliest
+>>>> 	Deadline First) with additional CBS (Constant Bandwidth Server).
+>>>
+>>> We might want to re-word that to:
+>>>
+>>> 	SCHED_DEADLINE currently is an implementation of GEDF, however
+>>> 	any policy that correctly schedules the sporadic task model is
+>>> 	a valid implementation.
+>>>
+>>> To make sure we should not rely on the actual implementation; there's
+>>> many possible algorithms to schedule the sporadic task model.
+>>
+>> Probably should post some links to GEDF documentation too?
+> 
+> At best I think we can do something like:
+> 
+> SEE ALSO
+> 	Documentation/scheduler/sched_deadline.txt in the Linux kernel
+> 	source tree (since kernel 3.14).
+> 
+> Possibly also an ISBN for a good scheduling theory book (if there exists
+> such a thing), but I would have to rely on others to provide such as my
+> shelfs are devoid of such material.
+> 
 
-You sent v3 of QEMU, but not of KVM.  I don't see any mail from you 
-after December 12th on kvm@vger.kernel.org.
+Well, picking just one is not that easy, I'd say (among many others):
 
-I can see my comment that the patches were fine (apart from needing a 
-rebase), but the threading was wrong and I cannot find anymore _which_ 
-patches they were.  I did find a comment that BNDCFGS must be added to 
-msrs_to_save, but I don't know if that was v1 or v2 because you didn't 
-add the version number when sending v2.
+ - Handbook of Scheduling: Algorithms, Models, and Performance Analysis
+   by Joseph Y-T. Leung, James H. Anderson - ISBN-10: 1584883979
+   (especially cap. 30);
+ - Hard Real-Time Computing Systems by Giorgio C. Buttazzo
+   ISBN 978-1-4614-0675-4 (even if it is more about UP);
+ - A survey of hard real-time scheduling for multiprocessor systems
+   by RI Davis, A Burns - ACM Computing Surveys (CSUR), 2011
+   (available at http://www-users.cs.york.ac.uk/~robdavis/papers/MPSurveyv5.0.pdf);
 
-Paolo
+Probably last one is better (as is freely downloadable). We should add
+something in the documentation too.
+
+Thanks,
+
+- Juri
