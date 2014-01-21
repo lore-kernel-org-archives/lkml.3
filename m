@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487AbaAUMFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:05:15 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25372 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754082AbaAUMFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:05:14 -0500
-Date: Tue, 21 Jan 2014 12:04:41 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
-Message-ID: <20140121120440.GD14830@arm.com>
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
- <20131228163308.GA1638@infradead.org>
- <52DD6101.4010708@zytor.com>
+	id S1754556AbaAUMJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:09:21 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:10603 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477AbaAUMJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 07:09:19 -0500
+X-IronPort-AV: E=Sophos;i="4.95,696,1384300800"; 
+   d="scan'208";a="94836649"
+Date: Tue, 21 Jan 2014 12:08:02 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Will Deacon <will.deacon@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gang.chen@asianux.com" <gang.chen@asianux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
+Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
+ dependencies for XEN
+In-Reply-To: <20140121110826.GG30706@mudshark.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1401211207080.21510@kaball.uk.xensource.com>
+References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140109103004.GB11089@mudshark.cambridge.arm.com> <201401091204.17932.arnd@arndb.de> <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com> <20140109184251.GL17838@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1401161622570.21510@kaball.uk.xensource.com> <20140116193123.GB22105@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1401201523240.21510@kaball.uk.xensource.com> <20140121110826.GG30706@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DD6101.4010708@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 05:46:41PM +0000, H. Peter Anvin wrote:
-> On 12/28/2013 08:33 AM, Christoph Hellwig wrote:
-> > On Fri, Dec 27, 2013 at 02:14:16PM -0800, H.J. Lu wrote:
-> >> X32 uses the same kernel system call interface as x86-64 for many
-> >> system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
-> >> x32.  Where long or unsigned long are used in struct types for such
-> >> system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
-> >> long for all ABIs other than x32.  I am submitting 8 patches to replace
-> >> long or unsigned long with __kernel_[u]long_t so that those struct types
-> >> can be used with x32 system calls.
-
-Does this mean that you are changing the x32 ABI (or it hasn't been
-declared stable yet)?
-
-> This comment by Christoph was literally the only feedback on this
-> patchset.  The definition of __kernel_[u]long_t is "the size of 'long'
-> for the native kernel for the ABI".  H.J.'s patchset only affects x86
-> (specifically x86-64) since on all other platforms __kernel_[u]long_t is
-> simply defined as long/unsigned long.
+On Tue, 21 Jan 2014, Will Deacon wrote:
+> On Mon, Jan 20, 2014 at 03:32:48PM +0000, Stefano Stabellini wrote:
+> > On Thu, 16 Jan 2014, Will Deacon wrote:
+> > > For the xchg part, yes, that looks a lot better. I don't like the #undef
+> > > CONFIG_CPU_V6 though, can that be rewritten to use __LINUX_ARM_ARCH__?
+> > 
+> > The problem is that the 1 and 2 byte parameter size cases in __cmpxchg
+> > are ifdef'ed CONFIG_CPU_V6 but drivers/xen/grant-table.c needs them.
+> > 
+> > So we can either undef CONFIG_CPU_V6 in grant-table.c or call a
+> > different function.
+> > 
+> > If I switch from ifdef CONFIG_CPU_V6 to if __LINUX_ARM_ARCH__ > 6 in
+> > __cmpxchg, we still have the problem that if __LINUX_ARM_ARCH__ == 6,
+> > grant-table.c doesn't compile.
+> > 
+> > Maybe the approach taken by the other patch for cmpxchg is better, see
+> > below.
 > 
-> That being said, x32 is not the only ABI of this type.  In particular,
-> if the MIPS N32 and ARM64 ILP32 maintainers have suggestions which would
-> make this work more applicable to them, it would be highly useful to
-> receive any such feedback.
+> Yes, I prefer this approach. Minor comment below.
+> 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index c1f1a7e..ae54ae0 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -1881,8 +1881,7 @@ config XEN_DOM0
+> >  config XEN
+> >  	bool "Xen guest support on ARM (EXPERIMENTAL)"
+> >  	depends on ARM && AEABI && OF
+> > -	depends on CPU_V7 && !CPU_V6
+> > -	depends on !GENERIC_ATOMIC64
+> > +	depends on CPU_V7
+> >  	select ARM_PSCI
+> >  	select SWIOTLB_XEN
+> >  	help
+> > diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
+> > index df2fbba..cc8a4a2 100644
+> > --- a/arch/arm/include/asm/cmpxchg.h
+> > +++ b/arch/arm/include/asm/cmpxchg.h
+> > @@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
+> >   * cmpxchg only support 32-bits operands on ARMv6.
+> >   */
+> >  
+> > +static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
+> > +				      unsigned long new)
+> > +{
+> > +	unsigned long oldval, res;
+> > +
+> > +	do {
+> > +		asm volatile("@ __cmpxchg1\n"
+> > +		"	ldrexb	%1, [%2]\n"
+> > +		"	mov	%0, #0\n"
+> > +		"	teq	%1, %3\n"
+> > +		"	strexbeq %0, %4, [%2]\n"
+> > +			: "=&r" (res), "=&r" (oldval)
+> > +			: "r" (ptr), "Ir" (old), "r" (new)
+> > +			: "memory", "cc");
+> > +	} while (res);
+> > +
+> > +	return oldval;
+> > +}
+> > +
+> > +static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
+> > +				      unsigned long new)
+> > +{
+> > +	unsigned long oldval, res;
+> > +
+> > +	do {
+> > +		asm volatile("@ __cmpxchg1\n"
+> 
+> Can you fix this comment while you're here please?
 
-ILP32 for arm64 is still work in progress and subject to change. So far
-the preliminary ABI
-(http://git.kernel.org/cgit/linux/kernel/git/cmarinas/linux-aarch64.git/log/?h=ilp32)
-redefines kernel_(u)long_t is defined as (unsigned) long long. Most of
-the syscalls are 64-bit generic with ~23 routed to compat. I would like
-to simplify these further and even use native 64-bit signal handling but
-it requires some changes to generic structures.
-
-I'll have a look at H.J.'s patches and give comments, they may come in
-handy.
-
--- 
-Catalin
+OK, I'll use @ __cmpxchg16 and @ __cmpxchg8.
+I'll resend as a separate patch.
