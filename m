@@ -1,153 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaAUX1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 18:27:19 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:64999 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaAUX1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 18:27:16 -0500
-Date: Tue, 21 Jan 2014 15:27:08 -0800
-From: Steven Noonan <steven@uplinklabs.net>
-To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [BISECTED] Linux 3.12.7 introduces page map handling regression
-Message-ID: <20140121232708.GA29787@amazon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753140AbaAUXfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 18:35:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35639 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752094AbaAUXfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 18:35:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
+   d="scan'208";a="470404163"
+Subject: [PATCH v9 0/6] MCS Lock: MCS lock code cleanup and optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+References: <cover.1390320729.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Jan 2014 15:35:44 -0800
+Message-ID: <1390347344.3138.61.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A user reported a problem starting vsftpd on a Xen paravirtualized
-guest, with this in dmesg:
+This update to the patch series now make mcs_spin_lock and mcs_spin_unlock
+as inlined functions for better efficiency in the hot path.  We order the
+files in the architecture of each Kbuild before we add mcs_spinlock.h for
+hooking in architecture specific arch_mcs_spin_{lock,unlock}_contended
+functions.
 
-[   60.654862] BUG: Bad page map in process vsftpd  pte:8000000493b88165 pmd:e9cc01067
-[   60.654876] page:ffffea00124ee200 count:0 mapcount:-1 mapping:     (null) index:0x0
-[   60.654879] page flags: 0x2ffc0000000014(referenced|dirty)
-[   60.654885] addr:00007f97eea74000 vm_flags:00100071 anon_vma:ffff880e98f80380 mapping:          (null) index:7f97eea74
-[   60.654890] CPU: 4 PID: 587 Comm: vsftpd Not tainted 3.12.7-1-ec2 #1
-[   60.654893]  ffff880e9cc6ec38 ffff880e9cc61ca0 ffffffff814c763b 00007f97eea74000
-[   60.654900]  ffff880e9cc61ce8 ffffffff8116784e 0000000000000000 0000000000000000
-[   60.654906]  ffff880e9cc013a0 ffffea00124ee200 00007f97eea75000 ffff880e9cc61e10
-[   60.654912] Call Trace:
-[   60.654921]  [<ffffffff814c763b>] dump_stack+0x45/0x56
-[   60.654928]  [<ffffffff8116784e>] print_bad_pte+0x22e/0x250
-[   60.654933]  [<ffffffff81169073>] unmap_single_vma+0x583/0x890
-[   60.654938]  [<ffffffff8116a405>] unmap_vmas+0x65/0x90
-[   60.654942]  [<ffffffff81173795>] exit_mmap+0xc5/0x170
-[   60.654948]  [<ffffffff8105d295>] mmput+0x65/0x100
-[   60.654952]  [<ffffffff81062983>] do_exit+0x393/0x9e0
-[   60.654955]  [<ffffffff810630dc>] do_group_exit+0xcc/0x140
-[   60.654959]  [<ffffffff81063164>] SyS_exit_group+0x14/0x20
-[   60.654965]  [<ffffffff814d602d>] system_call_fastpath+0x1a/0x1f
-[   60.654968] Disabling lock debugging due to kernel taint
-[   60.655191] BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:0 val:-1
-[   60.655196] BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:1 val:1
+Peter, please review the last two patches and bless them with your
+signed-off if they look right.
 
+This patch series fixes barriers of MCS lock and perform some optimizations.
+Proper passing of the mcs lock is now done with smp_load_acquire() in
+mcs_spin_lock() and smp_store_release() in mcs_spin_unlock.  Note that
+this is not sufficient to form a full memory barrier across cpus on
+many architectures (except x86) for the mcs_unlock and mcs_lock pair.
+For code that needs a full memory barrier with mcs_unlock and mcs_lock
+pair, smp_mb__after_unlock_lock() should be used after mcs_lock.
 
-The issue could not be reproduced under an HVM instance with the same
-kernel, so it appears to be exclusive to paravirtual Xen guests.
+Will also added hooks to allow for architecture specific
+implementation and optimization of the of the contended paths of
+lock and unlock of mcs_spin_lock and mcs_spin_unlock functions.
 
-I noted that it wasn't present in 3.10.27, but was present in 3.12.7 and
-3.12.8. I ran through a bisection to find the root cause:
+The original mcs lock code has potential leaks between critical sections, which
+was not a problem when MCS was embedded within the mutex but needs
+to be corrected when allowing the MCS lock to be used by itself for
+other locking purposes.  The MCS lock code was previously embedded in
+the mutex.c and is now sepearted.  This allows for easier reuse of MCS
+lock in other places like rwsem and qrwlock.
 
- # start: 'v3.12.7' 'v3.10.27'
- # bad:  [4301b7a8] Linux 3.12.7
- # good: [1071ea6e] Linux 3.10.27
- # good: [8bb495e3] Linux 3.10
- # good: [8fe73691] staging: comedi: comedi_bond: change return value
- # good: [22e04f6b] Merge branch 'for-linus' of git://git.kernel.org/p
- # good: [b7c09ad4] Merge branch 'for-linus' of git://git.kernel.org/p
- # good: [13caa8ed] Merge git://git.kernel.org/pub/scm/linux/kernel/gi
- # good: [13caa8ed] Merge git://git.kernel.org/pub/scm/linux/kernel/gi
- # good: [f5fa9283] ipv6: reset dst.expires value when clearing expire
- # good: [4af9d888] bridge: flush br's address entry in fdb when remov
- # good: [8c13daf6] dm delay: fix a possible deadlock due to shared wo
- # good: [93c02d70] firewire: sbp2: bring back WRITE SAME support
- # good: [18065245] ACPI / PCI / hotplug: Avoid warning when _ADR not
- # bad:  [8807a436] mm/memory-failure.c: transfer page count from head
- # bad:  [fd5df800] mm: numa: avoid unnecessary disruption of NUMA hin
- # good: [c18e3316] mm: numa: do not clear PMD during PTE update scan
- # good: [f3b578d9] mm: numa: avoid unnecessary work on the failure pa
- # bad:  [3d792d61] mm: numa: clear numa hinting information on mprote
- # good: [cefeb279] sched: numa: skip inaccessible VMAs
- # first bad:  [3d792d61] mm: numa: clear numa hinting information on mprote
+Tim
 
-If only I'd tested v3.12.0, that bisection would have been a lot shorter!
+v9:
+1. Inline mcs_spin_lock and mcs_spin_unlock for better efficiency in hot paths.
+2. Sort files in each architecutre's Kbuild before adding mcs_spinlock.h.
 
+v8:
+1. Move order of patches by putting barrier corrections first.
+2. Use generic-asm headers for hooking in arch specific mcs_spin_lock_contended
+and mcs_spin_lock_uncontended function.
+3. Some minor cleanup and comments added.
 
-It looks like this is the change implicated (introduced in v3.12.7):
+v7:
+1. Update architecture specific hooks with concise architecture
+specific arch_mcs_spin_lock_contended and arch_mcs_spin_lock_uncontended
+functions.
 
-    commit 3d792d616ba408ab55a54c1bb75a9367d997acfa
-    Author: Mel Gorman <mgorman@suse.de>
-    Date:   Tue Jan 7 14:00:44 2014 +0000
-    
-        mm: numa: clear numa hinting information on mprotect
-    
-        commit 1667918b6483b12a6496bf54151b827b8235d7b1 upstream.
-    
-        On a protection change it is no longer clear if the page should be still
-        accessible.  This patch clears the NUMA hinting fault bits on a
-        protection change.
-    
-        Signed-off-by: Mel Gorman <mgorman@suse.de>
-        Reviewed-by: Rik van Riel <riel@redhat.com>
-        Cc: Alex Thorlton <athorlton@sgi.com>
-        Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-        Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-        Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+v6:
+1. Fix a bug of improper xchg_acquire and extra space in barrier
+fixing patch.
+2. Added extra hooks to allow for architecture specific version
+of mcs_spin_lock and mcs_spin_unlock to be used.
+
+v5:
+1. Rework barrier correction patch.  We now use smp_load_acquire()
+in mcs_spin_lock() and smp_store_release() in
+mcs_spin_unlock() to allow for architecture dependent barriers to be
+automatically used.  This is clean and will provide the right
+barriers for all architecture.
+
+v4:
+1. Move patch series to the latest tip after v3.12
+
+v3:
+1. modified memory barriers to support non x86 architectures that have
+weak memory ordering.
+
+v2:
+1. change export mcs_spin_lock as a GPL export symbol
+2. corrected mcs_spin_lock to references
 
 
-This clearly points to breakage of mprotect() in particular. Checking
-what vsftpd was doing via strace, I was able to come up with a simple
-test case which triggers the issue:
+Jason Low (1):
+  MCS Lock: Optimizations and extra comments
 
-    #include <errno.h>
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <sys/mman.h>
-    
-    void die(const char *what)
-    {
-    	perror(what);
-    	exit(1);
-    }
-    
-    int main(int arg, char **argv)
-    {
-    	void *p = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    
-    	if (p == MAP_FAILED)
-    		die("mmap");
-    
-    	/* Tickle the page. */
-    	((char *)p)[0] = 0;
-    
-    	if (mprotect(p, 4096, PROT_NONE) != 0)
-    		die("mprotect");
-    
-    	if (mprotect(p, 4096, PROT_READ) != 0)
-    		die("mprotect");
-    
-    	if (munmap(p, 4096) != 0)
-    		die("munmap");
-    
-    	return 0;
-    }
+Peter Zijlstra (2):
+  MCS Lock: Order the header files in Kbuild of each architecture in
+    alphabetical order
+  MCS Lock: Allow architecture specific asm files to be used for
+    contended case
 
-This could probably be reduced further. I didn't spend much time on it.
+Tim Chen (1):
+  MCS Lock: Restructure the MCS lock defines and locking code into its
+    own file
 
-Adding people cited in the patch to CC, as well as Konrad since this is
-a Xen issue (I haven't been able to repro on HVM or bare metal so far).
+Waiman Long (1):
+  MCS Lock: Barrier corrections
 
-Any ideas what's causing the BUG, and how we can fix it?
+Will Deacon (1):
+  MCS Lock: Allow architectures to hook in to contended paths
 
-- Steven
+ arch/alpha/include/asm/Kbuild      |   5 +-
+ arch/arc/include/asm/Kbuild        |   7 ++-
+ arch/arm/include/asm/Kbuild        |   3 +-
+ arch/arm64/include/asm/Kbuild      |   5 +-
+ arch/avr32/include/asm/Kbuild      |  39 ++++++-------
+ arch/blackfin/include/asm/Kbuild   |   5 +-
+ arch/c6x/include/asm/Kbuild        |   3 +-
+ arch/cris/include/asm/Kbuild       |   3 +-
+ arch/frv/include/asm/Kbuild        |   3 +-
+ arch/hexagon/include/asm/Kbuild    |   7 ++-
+ arch/ia64/include/asm/Kbuild       |   5 +-
+ arch/m32r/include/asm/Kbuild       |   3 +-
+ arch/m68k/include/asm/Kbuild       |   5 +-
+ arch/metag/include/asm/Kbuild      |   3 +-
+ arch/microblaze/include/asm/Kbuild |   5 +-
+ arch/mips/include/asm/Kbuild       |   3 +-
+ arch/mn10300/include/asm/Kbuild    |   3 +-
+ arch/openrisc/include/asm/Kbuild   |   9 +--
+ arch/parisc/include/asm/Kbuild     |  27 +++++++--
+ arch/powerpc/include/asm/Kbuild    |   6 +-
+ arch/s390/include/asm/Kbuild       |   3 +-
+ arch/score/include/asm/Kbuild      |   3 +-
+ arch/sh/include/asm/Kbuild         |   7 ++-
+ arch/sparc/include/asm/Kbuild      |   9 +--
+ arch/tile/include/asm/Kbuild       |   3 +-
+ arch/um/include/asm/Kbuild         |  30 ++++++++--
+ arch/unicore32/include/asm/Kbuild  |   3 +-
+ arch/x86/include/asm/Kbuild        |   1 +
+ arch/xtensa/include/asm/Kbuild     |   3 +-
+ include/asm-generic/mcs_spinlock.h |  13 +++++
+ include/linux/mcs_spinlock.h       | 114 +++++++++++++++++++++++++++++++++++++
+ include/linux/mutex.h              |   5 +-
+ kernel/locking/mutex.c             |  60 +++----------------
+ 33 files changed, 275 insertions(+), 128 deletions(-)
+ create mode 100644 include/asm-generic/mcs_spinlock.h
+ create mode 100644 include/linux/mcs_spinlock.h
+
+-- 
+1.7.11.7
+
+
