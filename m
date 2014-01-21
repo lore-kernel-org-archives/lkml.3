@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915AbaAUVZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:25:43 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:50775 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865AbaAUVZb (ORCPT
+	id S1755459AbaAUVcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:32:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56572 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900AbaAUVZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:25:31 -0500
+	Tue, 21 Jan 2014 16:25:42 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>
-Subject: [PATCH 59/73] drivers/gpio: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:23:02 -0500
-Message-ID: <1390339396-3479-60-git-send-email-paul.gortmaker@windriver.com>
+        Chris Ball <chris@printf.net>, <linux-mmc@vger.kernel.org>
+Subject: [PATCH 61/73] drivers/mmc: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:23:04 -0500
+Message-ID: <1390339396-3479-62-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,234 +29,194 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-gpio@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>
+Cc: linux-mmc@vger.kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpio/gpio-74x164.c    | 1 -
- drivers/gpio/gpio-adp5520.c   | 1 -
- drivers/gpio/gpio-adp5588.c   | 1 -
- drivers/gpio/gpio-generic.c   | 1 -
- drivers/gpio/gpio-grgpio.c    | 1 -
- drivers/gpio/gpio-janz-ttl.c  | 1 -
- drivers/gpio/gpio-kempld.c    | 1 -
- drivers/gpio/gpio-lpc32xx.c   | 1 -
- drivers/gpio/gpio-max730x.c   | 1 -
- drivers/gpio/gpio-moxart.c    | 1 -
- drivers/gpio/gpio-msm-v2.c    | 1 -
- drivers/gpio/gpio-rcar.c      | 1 -
- drivers/gpio/gpio-rdc321x.c   | 1 -
- drivers/gpio/gpio-sch.c       | 1 -
- drivers/gpio/gpio-sodaville.c | 1 -
- drivers/gpio/gpio-twl6040.c   | 1 -
- drivers/gpio/gpio-vr41xx.c    | 1 -
- 17 files changed, 17 deletions(-)
+ drivers/mmc/host/android-goldfish.c | 1 -
+ drivers/mmc/host/bfin_sdh.c         | 1 -
+ drivers/mmc/host/mmci.c             | 1 -
+ drivers/mmc/host/msm_sdcc.c         | 1 -
+ drivers/mmc/host/mxcmmc.c           | 1 -
+ drivers/mmc/host/mxs-mmc.c          | 1 -
+ drivers/mmc/host/omap.c             | 1 -
+ drivers/mmc/host/omap_hsmmc.c       | 1 -
+ drivers/mmc/host/pxamci.c           | 1 -
+ drivers/mmc/host/sdhci-acpi.c       | 1 -
+ drivers/mmc/host/sdhci-pxav2.c      | 1 -
+ drivers/mmc/host/sdhci-pxav3.c      | 1 -
+ drivers/mmc/host/sdhci-tegra.c      | 1 -
+ drivers/mmc/host/wmt-sdmmc.c        | 1 -
+ 14 files changed, 14 deletions(-)
 
-diff --git a/drivers/gpio/gpio-74x164.c b/drivers/gpio/gpio-74x164.c
-index e4ae298..8aa8a97 100644
---- a/drivers/gpio/gpio-74x164.c
-+++ b/drivers/gpio/gpio-74x164.c
-@@ -9,7 +9,6 @@
-  *  published by the Free Software Foundation.
-  */
+diff --git a/drivers/mmc/host/android-goldfish.c b/drivers/mmc/host/android-goldfish.c
+index 8b4e20a..54fc950 100644
+--- a/drivers/mmc/host/android-goldfish.c
++++ b/drivers/mmc/host/android-goldfish.c
+@@ -35,7 +35,6 @@
+ #include <linux/mmc/card.h>
  
+ #include <linux/moduleparam.h>
 -#include <linux/init.h>
- #include <linux/mutex.h>
- #include <linux/spi/spi.h>
- #include <linux/gpio.h>
-diff --git a/drivers/gpio/gpio-adp5520.c b/drivers/gpio/gpio-adp5520.c
-index 6132659..00f54fa 100644
---- a/drivers/gpio/gpio-adp5520.c
-+++ b/drivers/gpio/gpio-adp5520.c
-@@ -9,7 +9,6 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/adp5520.h>
- 
-diff --git a/drivers/gpio/gpio-adp5588.c b/drivers/gpio/gpio-adp5588.c
-index 3f190e6..a5b7a20 100644
---- a/drivers/gpio/gpio-adp5588.c
-+++ b/drivers/gpio/gpio-adp5588.c
-@@ -10,7 +10,6 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
--#include <linux/init.h>
- #include <linux/i2c.h>
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
-diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-index d2196bf..cdc8437 100644
---- a/drivers/gpio/gpio-generic.c
-+++ b/drivers/gpio/gpio-generic.c
-@@ -44,7 +44,6 @@ o        `                     ~~~~\___/~~~~    ` controller in FPGA is ,.`
-  *               `.......````.```
-  */
- 
--#include <linux/init.h>
- #include <linux/err.h>
- #include <linux/bug.h>
- #include <linux/kernel.h>
-diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
-index 84d2478..d137fd3 100644
---- a/drivers/gpio/gpio-grgpio.c
-+++ b/drivers/gpio/gpio-grgpio.c
-@@ -22,7 +22,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/spinlock.h>
- #include <linux/io.h>
- #include <linux/of.h>
-diff --git a/drivers/gpio/gpio-janz-ttl.c b/drivers/gpio/gpio-janz-ttl.c
-index 2ecd3a0..ab0bfb9 100644
---- a/drivers/gpio/gpio-janz-ttl.c
-+++ b/drivers/gpio/gpio-janz-ttl.c
-@@ -11,7 +11,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
-index c6d8817..8a2ff81 100644
---- a/drivers/gpio/gpio-kempld.c
-+++ b/drivers/gpio/gpio-kempld.c
-@@ -14,7 +14,6 @@
-  * GNU General Public License for more details.
-  */
- 
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/bitops.h>
-diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
-index 225344d..f2f9353 100644
---- a/drivers/gpio/gpio-lpc32xx.c
-+++ b/drivers/gpio/gpio-lpc32xx.c
-@@ -17,7 +17,6 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/io.h>
- #include <linux/errno.h>
- #include <linux/gpio.h>
-diff --git a/drivers/gpio/gpio-max730x.c b/drivers/gpio/gpio-max730x.c
-index 8672755..f8c01a4 100644
---- a/drivers/gpio/gpio-max730x.c
-+++ b/drivers/gpio/gpio-max730x.c
-@@ -31,7 +31,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/mutex.h>
- #include <linux/spi/max7301.h>
-diff --git a/drivers/gpio/gpio-moxart.c b/drivers/gpio/gpio-moxart.c
-index 2af9900..799da97 100644
---- a/drivers/gpio/gpio-moxart.c
-+++ b/drivers/gpio/gpio-moxart.c
-@@ -11,7 +11,6 @@
-  */
- 
- #include <linux/err.h>
--#include <linux/init.h>
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/gpio.h>
-diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
-index a3351ac..f817e59 100644
---- a/drivers/gpio/gpio-msm-v2.c
-+++ b/drivers/gpio/gpio-msm-v2.c
-@@ -21,7 +21,6 @@
- #include <linux/bitops.h>
- #include <linux/err.h>
- #include <linux/gpio.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irqchip/chained_irq.h>
-diff --git a/drivers/gpio/gpio-rcar.c b/drivers/gpio/gpio-rcar.c
-index ca76ce7..32963f2 100644
---- a/drivers/gpio/gpio-rcar.c
-+++ b/drivers/gpio/gpio-rcar.c
-@@ -15,7 +15,6 @@
- 
- #include <linux/err.h>
- #include <linux/gpio.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
  #include <linux/ioport.h>
-diff --git a/drivers/gpio/gpio-rdc321x.c b/drivers/gpio/gpio-rdc321x.c
-index 88577c3..45e1fc7 100644
---- a/drivers/gpio/gpio-rdc321x.c
-+++ b/drivers/gpio/gpio-rdc321x.c
+ #include <linux/dma-mapping.h>
+ #include <linux/delay.h>
+diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
+index 2b7f37e..e5efbbf 100644
+--- a/drivers/mmc/host/bfin_sdh.c
++++ b/drivers/mmc/host/bfin_sdh.c
+@@ -9,7 +9,6 @@
+ #define DRIVER_NAME	"bfin-sdh"
+ 
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index b931226..ebb64cd 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -10,7 +10,6 @@
+  */
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
+index 9405ecd..15933dc 100644
+--- a/drivers/mmc/host/msm_sdcc.c
++++ b/drivers/mmc/host/msm_sdcc.c
+@@ -17,7 +17,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+index f7199c8..b573b50 100644
+--- a/drivers/mmc/host/mxcmmc.c
++++ b/drivers/mmc/host/mxcmmc.c
+@@ -18,7 +18,6 @@
+  */
+ 
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 073e871..19633fe 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
 @@ -21,7 +21,6 @@
   */
- #include <linux/module.h>
+ 
  #include <linux/kernel.h>
 -#include <linux/init.h>
- #include <linux/spinlock.h>
+ #include <linux/ioport.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+diff --git a/drivers/mmc/host/omap.c b/drivers/mmc/host/omap.c
+index 98b6b6e..41f536f 100644
+--- a/drivers/mmc/host/omap.c
++++ b/drivers/mmc/host/omap.c
+@@ -13,7 +13,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
  #include <linux/platform_device.h>
- #include <linux/pci.h>
-diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
-index 5af6571..4dd3ded 100644
---- a/drivers/gpio/gpio-sch.c
-+++ b/drivers/gpio/gpio-sch.c
-@@ -18,7 +18,6 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ #include <linux/interrupt.h>
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index dbd32ad..2a629fb 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -16,7 +16,6 @@
   */
  
+ #include <linux/module.h>
 -#include <linux/init.h>
  #include <linux/kernel.h>
+ #include <linux/debugfs.h>
+ #include <linux/dmaengine.h>
+diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
+index 32fe113..9427d67 100644
+--- a/drivers/mmc/host/pxamci.c
++++ b/drivers/mmc/host/pxamci.c
+@@ -17,7 +17,6 @@
+  *	max block length up to 1023
+  */
  #include <linux/module.h>
- #include <linux/io.h>
-diff --git a/drivers/gpio/gpio-sodaville.c b/drivers/gpio/gpio-sodaville.c
-index 7c6c518..8bd814f 100644
---- a/drivers/gpio/gpio-sodaville.c
-+++ b/drivers/gpio/gpio-sodaville.c
-@@ -11,7 +11,6 @@
- 
- #include <linux/errno.h>
- #include <linux/gpio.h>
 -#include <linux/init.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-diff --git a/drivers/gpio/gpio-twl6040.c b/drivers/gpio/gpio-twl6040.c
-index 0caf5cd..9377fc0 100644
---- a/drivers/gpio/gpio-twl6040.c
-+++ b/drivers/gpio/gpio-twl6040.c
-@@ -23,7 +23,6 @@
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
+index 9ce17f6..4d68e1a 100644
+--- a/drivers/mmc/host/sdhci-acpi.c
++++ b/drivers/mmc/host/sdhci-acpi.c
+@@ -18,7 +18,6 @@
+  *
   */
  
+-#include <linux/init.h>
+ #include <linux/export.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+diff --git a/drivers/mmc/host/sdhci-pxav2.c b/drivers/mmc/host/sdhci-pxav2.c
+index d51e061..b75a975 100644
+--- a/drivers/mmc/host/sdhci-pxav2.c
++++ b/drivers/mmc/host/sdhci-pxav2.c
+@@ -18,7 +18,6 @@
+  */
+ 
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/module.h>
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 793dacd..783c991 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -17,7 +17,6 @@
+  *
+  */
+ #include <linux/err.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index a835898..ec7ebbc 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -14,7 +14,6 @@
+ 
+ #include <linux/err.h>
  #include <linux/module.h>
 -#include <linux/init.h>
- #include <linux/kthread.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-diff --git a/drivers/gpio/gpio-vr41xx.c b/drivers/gpio/gpio-vr41xx.c
-index 9902732..b983bc0 100644
---- a/drivers/gpio/gpio-vr41xx.c
-+++ b/drivers/gpio/gpio-vr41xx.c
-@@ -22,7 +22,6 @@
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/gpio.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
  #include <linux/io.h>
- #include <linux/irq.h>
+diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
+index e902ed7..12a47ea 100644
+--- a/drivers/mmc/host/wmt-sdmmc.c
++++ b/drivers/mmc/host/wmt-sdmmc.c
+@@ -9,7 +9,6 @@
+  *  published by the Free Software Foundation
+  */
+ 
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/ioport.h>
 -- 
 1.8.4.1
 
