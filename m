@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaAUSur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 13:50:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59861 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396AbaAUSuo (ORCPT
+	id S1751014AbaAUSxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 13:53:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58138 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750773AbaAUSxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 13:50:44 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
-Date: Tue, 21 Jan 2014 19:50:06 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-wireless" <linux-wireless@vger.kernel.org>,
-        "linux-sunxi" <linux-sunxi@googlegroups.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Chen-Yu Tsai" <wens@csie.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-References: <1389941251-32692-1-git-send-email-wens@csie.org> <201401211335.16885.arnd@arndb.de> <CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
-In-Reply-To: <CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
+	Tue, 21 Jan 2014 13:53:09 -0500
+Date: Tue, 21 Jan 2014 13:53:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] lockdep: pack subclass/trylock/read/check into a
+ single argument
+Message-ID: <20140121135306.7c01892c@gandalf.local.home>
+In-Reply-To: <20140121184310.GA24702@redhat.com>
+References: <20140120181942.GA20783@redhat.com>
+	<20140120182019.GA26515@redhat.com>
+	<20140121141022.GX31570@twins.programming.kicks-ass.net>
+	<20140121173534.GA25642@redhat.com>
+	<20140121184310.GA24702@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401211950.07011.arnd@arndb.de>
-X-Provags-ID: V02:K0:fMmEYTpMU9mz5BkwaZd6xblpOuxeBKt1xYZMATyMiOy
- r1G5aiBiXGhh3ejkjHLtDK0NfgAdS6hsq7fKmZLa1DqySnnPEF
- q5ZeweX23qgz4dQRPWu5HZndu17thkh215UfHTibKCOcdIkRhS
- znM3lpE0AEs+8udISUlnC7dEY740GgwRfIzMps+A24CIqr+60k
- Up62IywHiXWXkNqtUO2a6C7wUaNBZBy1HjBSfRP+2zg33Cr1xa
- kw9fVFSlxzWGjfrtFOt/dkECph64lz02KVua+XYm47E7YbYk4+
- 3dKlAFSfcvtlYg+4qc8KWRdlwfozxjiEkbo3/1krQaIzUqgals
- I9mEqLx3L+usRWsOBvkA=
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 January 2014, Alexandre Courbot wrote:
-> >> As discussed earlier in this thread I'm not sure the con_id is
-> >> suitable for labelling GPIOs. It'd be better to have a proper name
-> >> specified in DT/ACPI instead.
+On Tue, 21 Jan 2014 19:43:10 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+> On 01/21, Dave Jones wrote:
 > >
-> > +1
+> > On Tue, Jan 21, 2014 at 03:10:22PM +0100, Peter Zijlstra wrote:
+> >  >
+> >  > I tried the below but filed to see my vmlinux shrink, maybe I'm just not
+> >  > building the right kernel, or otherwise GCC is stupid.
+> >  >
+> >  > -extern void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+> >  > -			 int trylock, int read, int check,
+> >  > -			 struct lockdep_map *nest_lock, unsigned long ip);
+> >  > +struct lockdep_acquire_flags {
+> >  > +	unsigned long subclass : 3;
+> >  > +	unsigned long trylock  : 1;
+> >  > +	unsigned long read     : 2;
+> >  > +	unsigned long check    : 1;
+> >  > +};
+> >
+> > As it's only 7 bits here, could we pack them into a char ?
 > 
-> I wonder why you guys prefer to have the name defined in the GPIO
-> mapping. Having the driver decide the label makes it easier to look up
-> which GPIO does what in debugfs, whereas nothing prevents people to
-> name GPIOs whatever inadequate name they want in the device DT node.
-> What am I overlooking here?
+> Do you mean __attribute__((packed)) ?
+> 
 
-I should have another look at the debugfs representation, but isn't
-there a global namespace that gets used for all gpios?  Neither the
-con_id nor the name that the driver picks would be globally unique
-and stable across kernel versions, so they don't make a good user
-interface.
+I think Dave means:
 
-I think what we want here is a system-wide unique identifier for
-each gpio line that may get represented in debugfs, and use a new
-DT mechanism to communicate that.
+	unsigned char subclass	: 3;
+	unsigned char trylock	: 1;
+	unsigned char read	: 2;
+	unsigned char check	: 1;
 
-	Arnd
+-- Steve
