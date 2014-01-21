@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaAUWO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 17:14:56 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:62629 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaAUWOy (ORCPT
+	id S1754286AbaAUWPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 17:15:41 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34781 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaAUWPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 17:14:54 -0500
-Date: Tue, 21 Jan 2014 14:14:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@sr71.net>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] mm: slub: fix ALLOC_SLOWPATH stat
-In-Reply-To: <alpine.DEB.2.02.1401081824170.15616@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1401211413440.1666@chino.kir.corp.google.com>
-References: <20140106204300.DE79BA86@viggo.jf.intel.com> <alpine.DEB.2.02.1401081824170.15616@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Jan 2014 17:15:39 -0500
+Message-ID: <1390342665.5567.776.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 10/17] target: Add protection SGLs to
+ target_submit_cmd_map_sgls
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>
+Date: Tue, 21 Jan 2014 14:17:45 -0800
+In-Reply-To: <52DBC145.7040104@dev.mellanox.co.il>
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
+	 <1390099480-29013-11-git-send-email-nab@daterainc.com>
+	 <52DBC145.7040104@dev.mellanox.co.il>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014, David Rientjes wrote:
-
-> > There used to be only one path out of __slab_alloc(), and
-> > ALLOC_SLOWPATH got bumped in that exit path.  Now there are two,
-> > and a bunch of gotos.  ALLOC_SLOWPATH can now get set more than once
-> > during a single call to __slab_alloc() which is pretty bogus.
-> > Here's the sequence:
-> > 
-> > 1. Enter __slab_alloc(), fall through all the way to the
-> >    stat(s, ALLOC_SLOWPATH);
-> > 2. hit 'if (!freelist)', and bump DEACTIVATE_BYPASS, jump to
-> >    new_slab (goto #1)
-> > 3. Hit 'if (c->partial)', bump CPU_PARTIAL_ALLOC, goto redo
-> >    (goto #2)
-> > 4. Fall through in the same path we did before all the way to
-> >    stat(s, ALLOC_SLOWPATH)
-> > 5. bump ALLOC_REFILL stat, then return
-> > 
-> > Doing this is obviously bogus.  It keeps us from being able to
-> > accurately compare ALLOC_SLOWPATH vs. ALLOC_FASTPATH.  It also
-> > means that the total number of allocs always exceeds the total
-> > number of frees.
-> > 
-> > This patch moves stat(s, ALLOC_SLOWPATH) to be called from the
-> > same place that __slab_alloc() is.  This makes it much less
-> > likely that ALLOC_SLOWPATH will get botched again in the
-> > spaghetti-code inside __slab_alloc().
-> > 
-> > Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+On Sun, 2014-01-19 at 14:12 +0200, Sagi Grimberg wrote:
+> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds support to target_submit_cmd_map_sgls() for
+> > accepting 'sgl_prot' + 'sgl_prot_count' parameters for
+> > DIF protection information.
+> >
+> > Note the passed parameters are stored at se_cmd->t_prot_sg
+> > and se_cmd->t_prot_nents respectively.
+> >
+> > Also, update tcm_loop and vhost-scsi fabrics usage of
+> > target_submit_cmd_map_sgls() to take into account the
+> > new parameters.
 > 
-> Acked-by: David Rientjes <rientjes@google.com>
+> I didn't see that you added protection allocation to transports that 
+> does not use
+> target_submit_cmd_map_sgls() - which happens to be iSCSI/iSER/SRP :(
 > 
+> Don't you think that prot SG allocation should be added also to 
+> target_alloc_sgl()? by then
+> se_cmd should contain the protection attributes and this routine can 
+> know if it needs to
+> allocate prot_sg as well. This is how I used it...
 
-Pekka, are you going to pick this up for linux-next?  I think it would be 
-nice to have for 3.14 for those of us who use the stats.
+Yes, this specific bit was left out for the moment as no code in the
+patch for v3.14 actually uses it..
+
+I'm planning to add it to for-next -> v3.15 code as soon as the merge
+window closes.
+
+--nab
+
