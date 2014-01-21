@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaAUUiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:38:07 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:42496 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaAUUiB (ORCPT
+	id S1753140AbaAUUlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:41:47 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:59986 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbaAUUlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:38:01 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Liqin <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] Score: Remove "select HAVE_GENERIC_HARDIRQS" again
-Date: Tue, 21 Jan 2014 21:37:52 +0100
-Message-Id: <1390336672-21921-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 21 Jan 2014 15:41:46 -0500
+Date: Tue, 21 Jan 2014 12:41:41 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jianguo Wu <wujianguo@huawei.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
+ info when OOM?
+In-Reply-To: <52DE6AA0.1000801@huawei.com>
+Message-ID: <alpine.DEB.2.02.1401211236520.10355@chino.kir.corp.google.com>
+References: <52DCFC33.80008@huawei.com> <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com> <52DE6AA0.1000801@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5fbbf8a1a93452b26e7791cf32cefce62b0a480b ("Score: The commit is for
-compiling successfully.") re-introduced "select HAVE_GENERIC_HARDIRQS" in
-v3.12-rc4, which had just been removed in v3.12-rc1 by commit
-0244ad004a54e39308d495fee0a2e637f8b5c317 ("Remove GENERIC_HARDIRQ config
-option").
+On Tue, 21 Jan 2014, Jianguo Wu wrote:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/score/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+> > The problem is that slabinfo becomes excessively verbose and dumping it 
+> > all to the kernel log often times causes important messages to be lost.  
+> > This is why we control things like the tasklist dump with a VM sysctl.  It 
+> > would be possible to dump, say, the top ten slab caches with the highest 
+> > memory usage, but it will only be helpful for slab leaks.  Typically there 
+> > are better debugging tools available than analyzing the kernel log; if you 
+> > see unusually high slab memory in the meminfo dump, you can enable it.
+> > 
+> 
+> But, when OOM has happened, we can only use kernel log, slab/vmalloc info from proc
+> is stale. Maybe we can dump slab/vmalloc with a VM sysctl, and only top 10/20 entrys?
+> 
 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index 305f7ee1f382..c75d06aa27c3 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -2,7 +2,6 @@ menu "Machine selection"
- 
- config SCORE
-        def_bool y
--       select HAVE_GENERIC_HARDIRQS
-        select GENERIC_IRQ_SHOW
-        select GENERIC_IOMAP
-        select GENERIC_ATOMIC64
--- 
-1.7.9.5
+You could, but it's a tradeoff between how much to dump to a general 
+resource such as the kernel log and how many sysctls we add that control 
+every possible thing.  Slab leaks would definitely be a minority of oom 
+conditions and you should normally be able to reproduce them by running 
+the same workload; just use slabtop(1) or manually inspect /proc/slabinfo 
+while such a workload is running for indicators.  I don't think we want to 
+add the information by default, though, nor do we want to add sysctls to 
+control the behavior (you'd still need to reproduce the issue after 
+enabling it).
 
+We are currently discussing userspace oom handlers, though, that would 
+allow you to run a process that would be notified and allowed to allocate 
+a small amount of memory on oom conditions.  It would then be trivial to 
+dump any information you feel pertinent in userspace prior to killing 
+something.  I like to inspect heap profiles for memory hogs while 
+debugging our malloc() issues, for example, and you could look more 
+closely at kernel memory.
+
+I'll cc you on future discussions of that feature.
