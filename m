@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaAUMk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:40:56 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17504 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289AbaAUMkx (ORCPT
+	id S1754605AbaAUMm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:42:28 -0500
+Received: from 76-95-110-109.host.sevstar.net ([109.110.95.76]:1716 "EHLO
+	seaborn.com.ua" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750842AbaAUMm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:40:53 -0500
-Message-ID: <52DE6AA0.1000801@huawei.com>
-Date: Tue, 21 Jan 2014 20:40:00 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 21 Jan 2014 07:42:26 -0500
+Date: Tue, 21 Jan 2014 14:42:18 +0200
+Message-ID: <1034605906-3628@seaborn.com.ua>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
- info when OOM?
-References: <52DCFC33.80008@huawei.com> <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+From: Mail Delivery Subsystem <postmaster@seaborn.com.ua>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?utf-8?Q?=D0=92=D0=BE=D0=B7=D0=B2=D1=80=D0=B0=D1=89=D0=B5=D0=BD?=
+	=?utf-8?Q?=D0=BD=D0=BE=D0=B5_=D1=81=D0=BE=D0=BE=D0=B1=D1=89?=
+	=?utf-8?Q?=D0=B5=D0=BD=D0=B8=D0=B5_=D1=8D=D0=BB=D0=B5=D0=BA?=
+	=?utf-8?Q?=D1=82=D1=80=D0=BE=D0=BD=D0=BD=D0=BE=D0=B9_=D0=BF?=
+	=?utf-8?Q?=D0=BE=D1=87=D1=82=D1=8B=3A_=D0=9C=D0=BE=D0=B6=D0=B5?=
+	=?utf-8?Q?=D0=BC_=D1=81o=D0=B1=D1=80=D0=B0=D1=82=D1=8C_=D0=B4?=
+	=?utf-8?Q?=D0=BB=D1=8F_=D0=92ac_=D0=BAo=D0=BD=D1=82ak=D1=82?=
+	=?utf-8?Q?=D1=8B_=D1=82o=D0=BB=D1=8Cko_Ba=D1=88=D0=B8=D1=85=20?=
+	=?utf-8?Q?=D0=BF=D0=BE=D1=82e=D0=BD=D1=86=D0=B8a=D0=BB=D1=8C?=
+	=?utf-8?Q?=D0=BD=D1=8Bx_k=D0=BB=D0=B8e=D0=BD=D1=82o=D0=B2=20?=
+	=?utf-8?Q?=D0=BDeck=D0=BE=D0=BB=D1=8C=D0=BA=D0=BE_=D0=B4ec=D1=8F?=
+	=?utf-8?Q?=D1=82k=D0=BE=D0=B2_=D1=82=D1=8Bc=D1=8F=D1=87_=D0=B2?=
+	=?utf-8?Q?_=D1=82=D0=B5=D1=87e=D0=BD=D0=B8=D0=B5_=D1=81=D1=83?=
+	=?utf-8?Q?=D1=82=D0=BE=D0=BA_=D0=A2=D0=B5=D0=BB=D0=B5=D1=84?=
+	=?utf-8?Q?=D0=BE=D0=BD=3A_+79831292529?=
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="MIME-1034605906-41-delim"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/21 13:34, David Rientjes wrote:
+--MIME-1034605906-41-delim
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 
-> On Mon, 20 Jan 2014, Jianguo Wu wrote:
-> 
->> When OOM happen, will dump buddy free areas info, hugetlb pages info,
->> memory state of all eligible tasks, per-cpu memory info.
->> But do not dump slab/vmalloc info, sometime, it's not enough to figure out the
->> reason OOM happened.
->>
->> So, my questions are:
->> 1. Should dump slab/vmalloc info when OOM happen? Though we can get these from proc file,
->> but usually we do not monitor the logs and check proc file immediately when OOM happened.
->>
-> 
 
-Hi David,
-Thank you for your patience to answer!
+Это информационное сообщение передано сервером seaborn.com.ua. 
 
-> The problem is that slabinfo becomes excessively verbose and dumping it 
-> all to the kernel log often times causes important messages to be lost.  
-> This is why we control things like the tasklist dump with a VM sysctl.  It 
-> would be possible to dump, say, the top ten slab caches with the highest 
-> memory usage, but it will only be helpful for slab leaks.  Typically there 
-> are better debugging tools available than analyzing the kernel log; if you 
-> see unusually high slab memory in the meminfo dump, you can enable it.
-> 
+Сервер не смог доставить сообщение электронной почты 
 
-But, when OOM has happened, we can only use kernel log, slab/vmalloc info from proc
-is stale. Maybe we can dump slab/vmalloc with a VM sysctl, and only top 10/20 entrys?
+  Subject: Можем сoбрать для Вac кoнтakты тoльko Baш� ...
+  Date: Tue, 21 Jan 2014 12:04:24 +0200
 
-Thanks.
 
->> 2. /proc/$pid/smaps and pagecache info also helpful when OOM, should also be dumped?
 
->>
-> 
-> Also very verbose and would cause important messages to be lost, we try to 
-> avoid spamming the kernel log with all of this information as much as 
-> possible.
-> 
->> 3. Without these info, usually how to figure out OOM reason?
->>
-> 
-> Analyze the memory usage in the meminfo and determine what is unusually 
-> high; if it's mostly anonymous memory, you can usually correlate it back 
-> to a high rss for a process in the tasklist that you didn't suspect to be 
-> using that much memory, for example.
-> 
-> 
+по следующим адресам:
 
+  <linux-kernel@vger.kernel.org> (seaborn.com.ua: Message was manually deleted from the queue)
+--MIME-1034605906-41-delim
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; seaborn.com.ua
+Arrival-Date: Tue, 21 Jan 2014 12:04:05 +0200
+
+Original-Recipient: linux-kernel@vger.kernel.org
+Final-Recipient: rfc822;linux-kernel@vger.kernel.org
+Action: failed
+Status: 5.3.0
+Diagnostic-Code: SMTP; Message was manually deleted from the queue
+
+--MIME-1034605906-41-delim
+Content-Type: text/rfc822-headers
+
+Date: Tue, 21 Jan 2014 12:04:24 +0200
+X-Spam-Status: No, hits=0.0 required=5.0
+	tests=TOTAL_SCORE: 0.000
+X-Spam-Level: 
+Received: from ngs.ru ([192.168.1.1])
+	by seaborn.com.ua
+	for linux-kernel@vger.kernel.org;
+	Tue, 21 Jan 2014 12:04:05 +0200
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="windows-1251"
+From: <linux-kernel@vger.kernel.org>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?utf-8?B?0JzQvtC20LXQvCDRgW/QsdGA0LDRgtGMINC00LvRjyDQkmFjINC6b9C90YJha9GC0Ysg0YJv0LvRjGtvIEJh0YjQuNGFINC/0L7RgmXQvdGG0Lhh0LvRjNC90Yt4IGvQu9C4ZdC90YJv0LIg0L1lY2vQvtC70YzQutC+INC0ZWPRj9GCa9C+0LIg0YLRi2PRj9GHINCyINGC0LXRh2XQvdC40LUg0YHRg9GC0L7QuiDQotC10LvQtdGE0L7QvTogKzc5ODMxMjkyNTI5?=
+
+--MIME-1034605906-41-delim--
 
 
