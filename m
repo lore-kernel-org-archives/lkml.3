@@ -1,48 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaAUCXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jan 2014 21:23:01 -0500
-Received: from aurora.thatsmathematics.com ([162.209.10.89]:45395 "EHLO
-	aurora.thatsmathematics.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660AbaAUCWy (ORCPT
+	id S1752719AbaAUCbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jan 2014 21:31:33 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60586 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaAUCbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jan 2014 21:22:54 -0500
-Date: Mon, 20 Jan 2014 19:22:51 -0700 (MST)
-From: Nate Eldredge <nate@thatsmathematics.com>
-X-X-Sender: nate@minerva.lan
-To: George Spelvin <linux@horizon.com>
-cc: adilger@dilger.ca, arjan@linux.intel.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, maarten-baert@hotmail.com, mingo@elte.hu,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, viro@zeniv.linux.org.uk
-Subject: Re: math_state_restore and kernel_fpu_end disable interrupts?
-In-Reply-To: <20140119210228.9598.qmail@science.horizon.com>
-Message-ID: <alpine.DEB.2.10.1401201915250.2663@minerva.lan>
-References: <20140119210228.9598.qmail@science.horizon.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 20 Jan 2014 21:31:25 -0500
+X-AuditID: 9c93016f-b7b1aae000000f15-ac-52dddbfbc10e
+Date: Tue, 21 Jan 2014 11:32:33 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Cai Liu <cai.liu@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Seth Jennings'" <sjenning@linux.vnet.ibm.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>, "'Linux-MM'" <linux-mm@kvack.org>,
+        "'Linux-Kernel'" <linux-kernel@vger.kernel.org>, liucai.lfn@gmail.com
+Subject: Re: [PATCH v2]  mm/zswap: Check all pool pages instead of one pool
+ pages
+Message-ID: <20140121023233.GI28712@bbox>
+References: <000701cf15b4$6822c740$386855c0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000701cf15b4$6822c740$386855c0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jan 2014, George Spelvin wrote:
+Hello Cai,
 
->> It's credited to Suresh Siddha, whom I've cc'ed (along with others who
->> signed off).  Suresh, if you're still around, could you comment on why
->> math_state_restore always leaves interrupts disabled, regardless of their
->> state on entry?  Is there a deep reason or is it a bug?
->
-> What the comments seemed to be implying was that it was a bug to enter
-> this code with interrupts enabled.  So the problem may be a little bit
-> more systemic; expert counsel is required.
+On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
+> zswap can support multiple swapfiles. So we need to check
+> all zbud pool pages in zswap.
+> 
+> Version 2:
+>   * add *total_zbud_pages* in zbud to record all the pages in pools
+>   * move the updating of pool pages statistics to
+>     alloc_zbud_page/free_zbud_page to hide the details
+> 
+> Signed-off-by: Cai Liu <cai.liu@samsung.com>
+> ---
+>  include/linux/zbud.h |    2 +-
+>  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
+>  mm/zswap.c           |    4 ++--
+>  3 files changed, 35 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+> index 2571a5c..1dbc13e 100644
+> --- a/include/linux/zbud.h
+> +++ b/include/linux/zbud.h
+> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
+>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+>  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
+>  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
+> -u64 zbud_get_pool_size(struct zbud_pool *pool);
+> +u64 zbud_get_pool_size(void);
+>  
+>  #endif /* _ZBUD_H_ */
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index 9451361..711aaf4 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -52,6 +52,13 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/zbud.h>
+>  
+> +/*********************************
+> +* statistics
+> +**********************************/
+> +
+> +/* zbud pages in all pools */
+> +static u64 total_zbud_pages;
+> +
+>  /*****************
+>   * Structures
+>  *****************/
+> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
+>  	return zhdr;
+>  }
+>  
+> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
+> +{
+> +	struct page *page;
+> +
+> +	page = alloc_page(gfp);
+> +
+> +	if (page) {
+> +		pool->pages_nr++;
+> +		total_zbud_pages++;
 
-It would be kind of weird for code that requires disabled interrupts on 
-entry to turn around and enable interrupts itself.  I agree that it would 
-really help for a guru to take a look...
+Who protect race?
 
-On which note, Suresh's email bounced :-(
+> +	}
+> +
+> +	return page;
+> +}
+> +
+> +
+>  /* Resets the struct page fields and frees the page */
+> -static void free_zbud_page(struct zbud_header *zhdr)
+> +static void free_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
+>  {
+>  	__free_page(virt_to_page(zhdr));
+> +
+> +	pool->pages_nr--;
+> +	total_zbud_pages--;
+>  }
+>  
+>  /*
+> @@ -279,11 +304,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  
+>  	/* Couldn't find unbuddied zbud page, create new one */
+>  	spin_unlock(&pool->lock);
+> -	page = alloc_page(gfp);
+> +	page = alloc_zbud_page(pool, gfp);
+>  	if (!page)
+>  		return -ENOMEM;
+>  	spin_lock(&pool->lock);
+> -	pool->pages_nr++;
+>  	zhdr = init_zbud_page(page);
+>  	bud = FIRST;
+>  
+> @@ -349,8 +373,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+>  	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
+>  		/* zbud page is empty, free */
+>  		list_del(&zhdr->lru);
+> -		free_zbud_page(zhdr);
+> -		pool->pages_nr--;
+> +		free_zbud_page(pool, zhdr);
+>  	} else {
+>  		/* Add to unbuddied list */
+>  		freechunks = num_free_chunks(zhdr);
+> @@ -447,8 +470,7 @@ next:
+>  			 * Both buddies are now free, free the zbud page and
+>  			 * return success.
+>  			 */
+> -			free_zbud_page(zhdr);
+> -			pool->pages_nr--;
+> +			free_zbud_page(pool, zhdr);
+>  			spin_unlock(&pool->lock);
+>  			return 0;
+>  		} else if (zhdr->first_chunks == 0 ||
+> @@ -496,14 +518,12 @@ void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
+>  
+>  /**
+>   * zbud_get_pool_size() - gets the zbud pool size in pages
+> - * @pool:	pool whose size is being queried
+>   *
+> - * Returns: size in pages of the given pool.  The pool lock need not be
+> - * taken to access pages_nr.
+> + * Returns: size in pages of all the zbud pools.
+>   */
+> -u64 zbud_get_pool_size(struct zbud_pool *pool)
+> +u64 zbud_get_pool_size(void)
+>  {
+> -	return pool->pages_nr;
+> +	return total_zbud_pages;
+>  }
+>  
+>  static int __init init_zbud(void)
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index 5a63f78..ef44d9d 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -291,7 +291,7 @@ static void zswap_free_entry(struct zswap_tree *tree,
+>  	zbud_free(tree->pool, entry->handle);
+>  	zswap_entry_cache_free(entry);
+>  	atomic_dec(&zswap_stored_pages);
+> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+> +	zswap_pool_pages = zbud_get_pool_size();
+>  }
+>  
+>  /* caller must hold the tree lock */
+> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>  
+>  	/* update stats */
+>  	atomic_inc(&zswap_stored_pages);
+> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+> +	zswap_pool_pages = zbud_get_pool_size();
+>  
+>  	return 0;
+>  
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Nate Eldredge
-nate@thatsmathematics.com
-
+Kind regards,
+Minchan Kim
