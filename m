@@ -1,140 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750995AbaAUFFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:05:15 -0500
-Received: from smtprelay.synopsys.com ([198.182.60.111]:37550 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaAUFFH convert rfc822-to-8bit (ORCPT
+	id S1750860AbaAUFQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:16:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58418 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaAUFQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:05:07 -0500
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 00:05:07 EST
-From: Vineet Gupta <vgupta@synopsys.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>, Michal Marek <mmarek@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v3] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-Thread-Topic: [PATCH v3] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-Thread-Index: AQHPFDHt63WzlyRIrUmDCRPNQCI9Sw==
-Date: Tue, 21 Jan 2014 04:55:15 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075178198@IN01WEMBXA.internal.synopsys.com>
-References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com>
- <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com>
- <526F149A.3000306@asianux.com> <52733FEC.4010807@synopsys.com>
- <528DD92E.9070408@synopsys.com> <52C6AF2B.8050104@suse.cz>
- <C2D7FE5348E1B147BCA15975FBA23075175CC4@IN01WEMBXA.internal.synopsys.com>
- <52CA76D3.2010102@suse.cz> <52CE4496.5030401@synopsys.com>
- <52D01639.9000205@gmail.com> <52D1F6F1.1070006@gmail.com>
- <52DA4D09.7030904@gmail.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.197.120]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jan 2014 00:16:00 -0500
+Date: Mon, 20 Jan 2014 21:15:36 -0800
+From: "tip-bot for H.J. Lu" <tipbot@zytor.com>
+Message-ID: <tip-7fb30128527a4220f181c2867edd9ac178175a87@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com
+In-Reply-To: <1388182464-28428-2-git-send-email-hjl.tools@gmail.com>
+References: <1388182464-28428-2-git-send-email-hjl.tools@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] uapi: Use __kernel_long_t in struct timex
+Git-Commit-ID: 7fb30128527a4220f181c2867edd9ac178175a87
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 20 Jan 2014 21:15:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Commit-ID:  7fb30128527a4220f181c2867edd9ac178175a87
+Gitweb:     http://git.kernel.org/tip/7fb30128527a4220f181c2867edd9ac178175a87
+Author:     H.J. Lu <hjl.tools@gmail.com>
+AuthorDate: Fri, 27 Dec 2013 14:14:17 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 20 Jan 2014 14:44:05 -0800
 
-On Saturday 18 January 2014 03:14 PM, Chen Gang wrote:
-> Hello Maintainers:
->
-> Please help check this patch when you have time.
->
-> Thanks.
+uapi: Use __kernel_long_t in struct timex
 
-Do you know whose tree this is goona go thru. I can take it thru ARC (but maybe
-for 3.15, however it would be better it went thru mm or some such).
+x32 adjtimex system call is the same as x86-64 adjtimex system call,
+which uses 64-bit integer for long in struct timex. But x32 long is
+32 bit.  This patch replaces long in struct timex with __kernel_long_t.
 
--Vineet
+Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/r/1388182464-28428-2-git-send-email-hjl.tools@gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ include/uapi/linux/timex.h | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
->
-> On 01/12/2014 09:59 AM, Chen Gang wrote:
->> For some assemblers, they use another character as newline in a macro
->> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
->> macro) instead of ';' for it.
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> Acked-by: Vineet Gupta <vgupta@synopsys.com>
->> ---
->>  arch/arc/include/asm/linkage.h |  2 ++
->>  include/linux/linkage.h        | 19 ++++++++++++-------
->>  2 files changed, 14 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
->> index 0283e9e..66ee552 100644
->> --- a/arch/arc/include/asm/linkage.h
->> +++ b/arch/arc/include/asm/linkage.h
->> @@ -11,6 +11,8 @@
->>  
->>  #ifdef __ASSEMBLY__
->>  
->> +#define ASM_NL		 `	/* use '`' to mark new line in macro */
->> +
->>  /* Can't use the ENTRY macro in linux/linkage.h
->>   * gas considers ';' as comment vs. newline
->>   */
->> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
->> index d3e8ad2..a6a42dd 100644
->> --- a/include/linux/linkage.h
->> +++ b/include/linux/linkage.h
->> @@ -6,6 +6,11 @@
->>  #include <linux/export.h>
->>  #include <asm/linkage.h>
->>  
->> +/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
->> +#ifndef ASM_NL
->> +#define ASM_NL		 ;
->> +#endif
->> +
->>  #ifdef __cplusplus
->>  #define CPP_ASMLINKAGE extern "C"
->>  #else
->> @@ -75,21 +80,21 @@
->>  
->>  #ifndef ENTRY
->>  #define ENTRY(name) \
->> -  .globl name; \
->> -  ALIGN; \
->> -  name:
->> +	.globl name ASM_NL \
->> +	ALIGN ASM_NL \
->> +	name:
->>  #endif
->>  #endif /* LINKER_SCRIPT */
->>  
->>  #ifndef WEAK
->>  #define WEAK(name)	   \
->> -	.weak name;	   \
->> +	.weak name ASM_NL   \
->>  	name:
->>  #endif
->>  
->>  #ifndef END
->>  #define END(name) \
->> -  .size name, .-name
->> +	.size name, .-name
->>  #endif
->>  
->>  /* If symbol 'name' is treated as a subroutine (gets called, and returns)
->> @@ -98,8 +103,8 @@
->>   */
->>  #ifndef ENDPROC
->>  #define ENDPROC(name) \
->> -  .type name, @function; \
->> -  END(name)
->> +	.type name, @function ASM_NL \
->> +	END(name)
->>  #endif
->>  
->>  #endif
->>
->
-
+diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
+index a7ea81f..92685d8 100644
+--- a/include/uapi/linux/timex.h
++++ b/include/uapi/linux/timex.h
+@@ -63,27 +63,27 @@
+  */
+ struct timex {
+ 	unsigned int modes;	/* mode selector */
+-	long offset;		/* time offset (usec) */
+-	long freq;		/* frequency offset (scaled ppm) */
+-	long maxerror;		/* maximum error (usec) */
+-	long esterror;		/* estimated error (usec) */
++	__kernel_long_t offset;	/* time offset (usec) */
++	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
++	__kernel_long_t maxerror;/* maximum error (usec) */
++	__kernel_long_t esterror;/* estimated error (usec) */
+ 	int status;		/* clock command/status */
+-	long constant;		/* pll time constant */
+-	long precision;		/* clock precision (usec) (read only) */
+-	long tolerance;		/* clock frequency tolerance (ppm)
+-				 * (read only)
+-				 */
++	__kernel_long_t constant;/* pll time constant */
++	__kernel_long_t precision;/* clock precision (usec) (read only) */
++	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
++				   * (read only)
++				   */
+ 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
+-	long tick;		/* (modified) usecs between clock ticks */
++	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
+ 
+-	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
+-	long jitter;            /* pps jitter (us) (ro) */
++	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
++	__kernel_long_t jitter; /* pps jitter (us) (ro) */
+ 	int shift;              /* interval duration (s) (shift) (ro) */
+-	long stabil;            /* pps stability (scaled ppm) (ro) */
+-	long jitcnt;            /* jitter limit exceeded (ro) */
+-	long calcnt;            /* calibration intervals (ro) */
+-	long errcnt;            /* calibration errors (ro) */
+-	long stbcnt;            /* stability limit exceeded (ro) */
++	__kernel_long_t stabil;            /* pps stability (scaled ppm) (ro) */
++	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
++	__kernel_long_t calcnt; /* calibration intervals (ro) */
++	__kernel_long_t errcnt; /* calibration errors (ro) */
++	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
+ 
+ 	int tai;		/* TAI offset (ro) */
+ 
