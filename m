@@ -1,59 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaAUOGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:06:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35848 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360AbaAUOGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:06:40 -0500
-Message-ID: <52DE7EBD.1000908@zytor.com>
-Date: Tue, 21 Jan 2014 06:05:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754745AbaAUOHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:07:32 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20938 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754274AbaAUOHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:07:30 -0500
+Date: Tue, 21 Jan 2014 09:07:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v6 3/8] x86: add generic function to modify more calls
+ using int3 framework
+Message-ID: <20140121090728.5197831f@gandalf.local.home>
+In-Reply-To: <1390312215.14199.60.camel@pathway.suse.cz>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	<1386690140-19941-4-git-send-email-pmladek@suse.cz>
+	<20140114193338.4375f205@gandalf.local.home>
+	<1390312215.14199.60.camel@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Cong Ding <dinggnu@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CA+55aFyxisSNKstMuanfrkhu5=2bxcu2cxZxMg38Zw0HAoXppg@mail.gmail.com> <CA+55aFyaf2B4Fo-dCJUJ=03aPVdLF7r4uMYNduYPMFwJQYngcA@mail.gmail.com> <20140121102700.GB2981@gmail.com> <52DE7C49.90503@zytor.com> <20140121140311.GB4537@gmail.com>
-In-Reply-To: <20140121140311.GB4537@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 06:03 AM, Ingo Molnar wrote:
+On Tue, 21 Jan 2014 14:50:15 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
+
+> On Tue, 2014-01-14 at 19:33 -0500, Steven Rostedt wrote:
+> > >  
+> > >  	/* Patch the first byte. We do not know how to recover from an error. */
+> > > -	text_poke_or_die(addr, opcode, sizeof(int3));
+> > > +	text_poke_or_die(addr, opcode, sizeof(bp_int3));
+> > >  
+> > >  	run_sync();
+> > 
+> > Shouldn't we be setting the bp_int3_handler back to NULL here?
 > 
-> * H. Peter Anvin <hpa@zytor.com> wrote:
+> It might be cleaner but it is not really needed. "poke_int3_handler()"
+
+Yeah, I was stating that as more of being "cleaner". I saw that the
+current code handles this, but it feels like it would be more robust to
+set it to NULL now.
+
+> checks "bp_int3_handler" only when "bp_patching_in_progress" is enabled.
+> The "in_progress" variable is disabled right after the above mentioned
+> "run_sync()", so we are on the safe side.
 > 
->> On 01/21/2014 02:27 AM, Ingo Molnar wrote:
->>>
->>> Hm, live annotation of the kernel image is a relatively new perf 
->>> feature, and KASLR predated that (by years) - which would at least in 
->>> part explain why it went unnoticed. (Although it does not excuse the 
->>> lack of testing.)
->>
->> kASLR is new, but on 32 bits we have relocated the kernel for a long 
->> time. [...]
+> Note that the original "text_poke_bp()" implementation disabled only the
+> "in_progress" variable at the end as well.
 > 
-> I doubt many people develop on 32-bit x86, and the group of people 
-> looking at annotated 32-bit assembly kernel profiles ought to be 
-> another order of magnitude smaller than that ...
+> 
+> > > +static int add_iter_breakpoint(struct text_poke_bp_iter *iterator,
+> > > +				       void *iter)
+> > > +{
+> > > +	void *addr;
+> > > +	const void *old_opcode;
+> > > +	int ret = 0;
+> > > +
+> > > +	/* nope if the code is not defined */
+> > 
+> > The above comment does not make sense.
+> 
+> It is here to handle the situation when "ftrace_test_record(rec,
+> enable)" returns FTRACE_UPDATE_IGNORE. In this case, even the original
+> implementation does not add the breakpoint.
+> 
+> I did not want to confuse the universal implementation with extra flags.
+> Instead, I passed NULL "old_code" pointer when the patching was not
+> needed for this particular address.
+> 
+> I agree that it might be a bit confusing. The question is whether it is
+> enough to improve documentation or rather use an extra flag or so.
+> 
+> I am going to improve the comments unless you say otherwise.
+
+I was confused by the comment. Please add more documentation in the
+comment to explain this. You can state what it is there for (for
+ftrace to ignore records) without having to add extra flags. But 10
+years from now, we want developers to understand why things were done
+the way they were done without having to look through email archives or
+git logs.
+
+> 
+> > 
+> > > +	old_opcode = iterator->get_old_opcode(iter);
+> > > +	if (!old_opcode)
+> > > +		return 0;
+> > > +
+> > > +	addr = iterator->get_addr(iter);
+> > > +	ret = text_poke_check(addr, old_opcode, bp_int3_len);
+> > > +
+> > > +	if (likely(!ret))
+> > > +		/* write the breakpoint */
+> > 
+> > Comment is redundant and can be removed.
+> > 
+> > > +		ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
+> > > +
+> > > +	return ret;
+> > > +}
+> > > +
+> > > +static int update_iter_code(struct text_poke_bp_iter *iterator,
+> > > +				   void *iter)
+> > > +{
+> > > +	void *addr;
+> > > +	const void *opcode;
+> > > +
+> > > +	/* nope if the code is not defined */
+> > 
+> > Still does not make sense :-)
+> 
+> It is the same reason/trick that is used in "add_iter_breakpoint()".
+> NULL code pointer means that we actually do not want to patch this
+> particular address.
 > 
 
-Yes... I was commenting on the statement that "kASLR predated that by
-years".  It hasn't been common.
+Good, please add more text to the comment to explain it better.
 
-	-hpa
+Thanks,
 
+-- Steve
