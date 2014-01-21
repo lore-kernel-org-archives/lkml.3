@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaAUIlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 03:41:08 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38330 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaAUIlG (ORCPT
+	id S1754061AbaAUIlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 03:41:37 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:60325 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaAUIld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 03:41:06 -0500
+	Tue, 21 Jan 2014 03:41:33 -0500
+Message-ID: <52DE32BB.4010006@linaro.org>
+Date: Tue, 21 Jan 2014 09:41:31 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1390291850-17849-1-git-send-email-geert@linux-m68k.org>
-References: <1390291850-17849-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 21 Jan 2014 09:41:05 +0100
-X-Google-Sender-Auth: uF5qKgD9HOviz_sNbwFBzHADXM4
-Message-ID: <CAMuHMdVBD7Gn_0zNBD+oVq11=UrCrB-Aocm4EmGRgHdRqF+XoA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.13
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, alex.shi@linaro.org
+Subject: Re: [PATCH 4/4] sched: Idle task shortcut optimization
+References: <1389949444-14821-1-git-send-email-daniel.lezcano@linaro.org> <1389949444-14821-4-git-send-email-daniel.lezcano@linaro.org> <20140117142644.GI11314@laptop.programming.kicks-ass.net> <52D94705.1000407@linaro.org> <20140117152310.GK11314@laptop.programming.kicks-ass.net> <52D94B95.2060704@linaro.org> <20140117153323.GM11314@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140117153323.GM11314@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 9:10 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.13[1]  to v3.13-rc8[3], the summaries are:
->   - build errors: +22/-3
+On 01/17/2014 04:33 PM, Peter Zijlstra wrote:
+> On Fri, Jan 17, 2014 at 04:26:13PM +0100, Daniel Lezcano wrote:
+>>
+>> Ah, ok. Let me try it.
+>>
+>
+> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+>
+> has a queue that applies to tip/master.
+>
+> The patches as on lkml need a little help in applying.
+>
+> They've not been near a compiler yet though :/
 
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'dmac_resource.end'):  => 87:2
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'dmac_resource.start'):  => 86:2
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'epbr_resources[0].end'):  => 69:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'epbr_resources[0].start'):  => 68:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'epbr_resources[1].end'):  => 74:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'epbr_resources[1].start'):  => 73:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'femi_resources[0].end'):  => 50:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'femi_resources[0].start'):  => 49:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'femi_resources[1].end'):  => 55:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'femi_resources[1].start'):  => 54:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'pbr_resources[0].end'):  => 100:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'pbr_resources[0].start'):  => 99:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'pbr_resources[1].end'):  => 105:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: (near initialization for 'pbr_resources[1].start'):  => 104:3
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: braced-group within expression allowed only inside a function:
-=> 30:12, 73:12, 31:10, 99:12, 68:12, 36:10, 86:11, 54:12, 74:10,
-55:10, 104:12, 49:12, 69:10, 87:9, 105:10, 35:12, 50:10, 100:10
-  + /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c:
-error: initializer element is not constant:  => 74:3, 86:2, 55:3,
-105:3, 73:3, 68:3, 100:3, 104:3, 99:3, 87:2, 50:3, 69:3, 49:3, 54:3
-  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error:
-'cached_to_uncached' undeclared (first use in this function):  =>
-99:17
-  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit
-declaration of function 'cpu_context'
-[-Werror=implicit-function-declaration]:  => 192:2
-  + /scratch/kisskb/src/kernel/bounds.c: error: -mcall-aixdesc must be
-big endian:  => 1:0
+Hi Peter,
 
-sh-randconfig
+do you want me to resend the full serie with your patchset included ?
 
-  + /scratch/kisskb/src/scripts/mod/devicetable-offsets.c: error:
--mcall-aixdesc must be big endian:  => 1:0
-  + /scratch/kisskb/src/scripts/mod/empty.c: error: -mcall-aixdesc
-must be big endian:  => 1:0
-  + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
+Thanks
+   -- Daniel
 
-powerpc-randconfig
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7082/ (119 out of 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7056/ (119 out of 120 configs)
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Gr{oetje,eeting}s,
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
