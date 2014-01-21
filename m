@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511AbaAUVfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:35:25 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:50755 "EHLO
+	id S1754745AbaAUVZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:25:19 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50706 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780AbaAUVZZ (ORCPT
+	with ESMTP id S1754587AbaAUVZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:25:25 -0500
+	Tue, 21 Jan 2014 16:25:03 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Karsten Keil <isdn@linux-pingi.de>, Armin Schindler <mac@melware.de>,
-        <netdev@vger.kernel.org>
-Subject: [PATCH 53/73] drivers/isdn: delete non-required instances of include <linux/init.h>
-Date: Tue, 21 Jan 2014 16:22:56 -0500
-Message-ID: <1390339396-3479-54-git-send-email-paul.gortmaker@windriver.com>
+        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>
+Subject: [PATCH 40/73] watchdog: delete non-required instances of include <linux/init.h>
+Date: Tue, 21 Jan 2014 16:22:43 -0500
+Message-ID: <1390339396-3479-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,624 +29,324 @@ and hence don't need to include <linux/init.h>.  Most are just a
 left over from __devinit and __cpuinit removal, or simply due to
 code getting copied from one driver to the next.
 
-Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: Armin Schindler <mac@melware.de> (maintainer:ISDN SUBSYSTEM
-Cc: netdev@vger.kernel.org
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/isdn/hardware/avm/avm_cs.c     | 1 -
- drivers/isdn/hardware/eicon/platform.h | 1 -
- drivers/isdn/hisax/amd7930_fn.c        | 1 -
- drivers/isdn/hisax/asuscom.c           | 1 -
- drivers/isdn/hisax/avm_a1.c            | 1 -
- drivers/isdn/hisax/avm_a1p.c           | 1 -
- drivers/isdn/hisax/avma1_cs.c          | 1 -
- drivers/isdn/hisax/bkm_a4t.c           | 1 -
- drivers/isdn/hisax/bkm_a8.c            | 1 -
- drivers/isdn/hisax/diva.c              | 1 -
- drivers/isdn/hisax/elsa.c              | 1 -
- drivers/isdn/hisax/elsa_cs.c           | 1 -
- drivers/isdn/hisax/enternow_pci.c      | 1 -
- drivers/isdn/hisax/fsm.c               | 1 -
- drivers/isdn/hisax/gazel.c             | 1 -
- drivers/isdn/hisax/hfc_2bds0.c         | 1 -
- drivers/isdn/hisax/hfc_2bs0.c          | 1 -
- drivers/isdn/hisax/hfc_pci.c           | 1 -
- drivers/isdn/hisax/hfc_sx.c            | 1 -
- drivers/isdn/hisax/hfcscard.c          | 1 -
- drivers/isdn/hisax/hscx.c              | 1 -
- drivers/isdn/hisax/icc.c               | 1 -
- drivers/isdn/hisax/ipacx.c             | 1 -
- drivers/isdn/hisax/isac.c              | 1 -
- drivers/isdn/hisax/isar.c              | 1 -
- drivers/isdn/hisax/isurf.c             | 1 -
- drivers/isdn/hisax/ix1_micro.c         | 1 -
- drivers/isdn/hisax/jade.c              | 1 -
- drivers/isdn/hisax/mic.c               | 1 -
- drivers/isdn/hisax/netjet.c            | 1 -
- drivers/isdn/hisax/niccy.c             | 1 -
- drivers/isdn/hisax/nj_s.c              | 1 -
- drivers/isdn/hisax/nj_u.c              | 1 -
- drivers/isdn/hisax/s0box.c             | 1 -
- drivers/isdn/hisax/saphir.c            | 1 -
- drivers/isdn/hisax/sedlbauer.c         | 1 -
- drivers/isdn/hisax/sedlbauer_cs.c      | 1 -
- drivers/isdn/hisax/sportster.c         | 1 -
- drivers/isdn/hisax/st5481_b.c          | 1 -
- drivers/isdn/hisax/st5481_usb.c        | 1 -
- drivers/isdn/hisax/teleint.c           | 1 -
- drivers/isdn/hisax/teles0.c            | 1 -
- drivers/isdn/hisax/teles3.c            | 1 -
- drivers/isdn/hisax/teles_cs.c          | 1 -
- drivers/isdn/hisax/telespci.c          | 1 -
- drivers/isdn/hisax/w6692.c             | 1 -
- drivers/isdn/i4l/isdnhdlc.c            | 1 -
- 47 files changed, 47 deletions(-)
+ drivers/watchdog/ar7_wdt.c          | 1 -
+ drivers/watchdog/ath79_wdt.c        | 1 -
+ drivers/watchdog/bcm47xx_wdt.c      | 1 -
+ drivers/watchdog/bcm63xx_wdt.c      | 1 -
+ drivers/watchdog/cpu5wdt.c          | 1 -
+ drivers/watchdog/cpwd.c             | 1 -
+ drivers/watchdog/davinci_wdt.c      | 1 -
+ drivers/watchdog/hpwdt.c            | 1 -
+ drivers/watchdog/i6300esb.c         | 1 -
+ drivers/watchdog/jz4740_wdt.c       | 1 -
+ drivers/watchdog/max63xx_wdt.c      | 1 -
+ drivers/watchdog/mtx-1_wdt.c        | 1 -
+ drivers/watchdog/nuc900_wdt.c       | 1 -
+ drivers/watchdog/of_xilinx_wdt.c    | 1 -
+ drivers/watchdog/omap_wdt.c         | 1 -
+ drivers/watchdog/orion_wdt.c        | 1 -
+ drivers/watchdog/pnx4008_wdt.c      | 1 -
+ drivers/watchdog/rdc321x_wdt.c      | 1 -
+ drivers/watchdog/retu_wdt.c         | 1 -
+ drivers/watchdog/riowd.c            | 1 -
+ drivers/watchdog/s3c2410_wdt.c      | 1 -
+ drivers/watchdog/sp805_wdt.c        | 1 -
+ drivers/watchdog/stmp3xxx_rtc_wdt.c | 1 -
+ drivers/watchdog/wdt_pci.c          | 1 -
+ 24 files changed, 24 deletions(-)
 
-diff --git a/drivers/isdn/hardware/avm/avm_cs.c b/drivers/isdn/hardware/avm/avm_cs.c
-index 62b8030..4332bd8 100644
---- a/drivers/isdn/hardware/avm/avm_cs.c
-+++ b/drivers/isdn/hardware/avm/avm_cs.c
-@@ -11,7 +11,6 @@
- 
+diff --git a/drivers/watchdog/ar7_wdt.c b/drivers/watchdog/ar7_wdt.c
+index 3a99657..ae6c287 100644
+--- a/drivers/watchdog/ar7_wdt.c
++++ b/drivers/watchdog/ar7_wdt.c
+@@ -28,7 +28,6 @@
  #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/errno.h>
+-#include <linux/init.h>
+ #include <linux/miscdevice.h>
+ #include <linux/platform_device.h>
+ #include <linux/watchdog.h>
+diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
+index 9fa1f69..399c3fd 100644
+--- a/drivers/watchdog/ath79_wdt.c
++++ b/drivers/watchdog/ath79_wdt.c
+@@ -22,7 +22,6 @@
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/fs.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
  #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/ptrace.h>
- #include <linux/string.h>
- #include <linux/tty.h>
-diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
-index b2edb75..b034ac1 100644
---- a/drivers/isdn/hardware/eicon/platform.h
-+++ b/drivers/isdn/hardware/eicon/platform.h
-@@ -19,7 +19,6 @@
- #endif
- 
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/skbuff.h>
-diff --git a/drivers/isdn/hisax/amd7930_fn.c b/drivers/isdn/hisax/amd7930_fn.c
-index 36817e0..4d437f2 100644
---- a/drivers/isdn/hisax/amd7930_fn.c
-+++ b/drivers/isdn/hisax/amd7930_fn.c
-@@ -58,7 +58,6 @@
- #include "isac.h"
- #include "amd7930_fn.h"
- #include <linux/interrupt.h>
--#include <linux/init.h>
- #include <linux/gfp.h>
- 
- static void Amd7930_new_ph(struct IsdnCardState *cs);
-diff --git a/drivers/isdn/hisax/asuscom.c b/drivers/isdn/hisax/asuscom.c
-index 62f9c43..cdbbec7 100644
---- a/drivers/isdn/hisax/asuscom.c
-+++ b/drivers/isdn/hisax/asuscom.c
-@@ -12,7 +12,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/isapnp.h>
- #include "hisax.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/avm_a1.c b/drivers/isdn/hisax/avm_a1.c
-index 7dd7408..d3dbf02 100644
---- a/drivers/isdn/hisax/avm_a1.c
-+++ b/drivers/isdn/hisax/avm_a1.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/avm_a1p.c b/drivers/isdn/hisax/avm_a1p.c
-index bc52d54..50f1b1a 100644
---- a/drivers/isdn/hisax/avm_a1p.c
-+++ b/drivers/isdn/hisax/avm_a1p.c
-@@ -13,7 +13,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/avma1_cs.c b/drivers/isdn/hisax/avma1_cs.c
-index baad94e..cf305b5 100644
---- a/drivers/isdn/hisax/avma1_cs.c
-+++ b/drivers/isdn/hisax/avma1_cs.c
-@@ -13,7 +13,6 @@
- 
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/ptrace.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-diff --git a/drivers/isdn/hisax/bkm_a4t.c b/drivers/isdn/hisax/bkm_a4t.c
-index c360164..8ac171b 100644
---- a/drivers/isdn/hisax/bkm_a4t.c
-+++ b/drivers/isdn/hisax/bkm_a4t.c
-@@ -11,7 +11,6 @@
-  */
- 
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/bkm_a8.c b/drivers/isdn/hisax/bkm_a8.c
-index dd663ea..20ad1f7 100644
---- a/drivers/isdn/hisax/bkm_a8.c
-+++ b/drivers/isdn/hisax/bkm_a8.c
-@@ -11,7 +11,6 @@
-  */
- 
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "ipac.h"
-diff --git a/drivers/isdn/hisax/diva.c b/drivers/isdn/hisax/diva.c
-index 4fc90de..c8d2682 100644
---- a/drivers/isdn/hisax/diva.c
-+++ b/drivers/isdn/hisax/diva.c
-@@ -15,7 +15,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/elsa.c b/drivers/isdn/hisax/elsa.c
-index 2be1c8a..bdf952b 100644
---- a/drivers/isdn/hisax/elsa.c
-+++ b/drivers/isdn/hisax/elsa.c
-@@ -18,7 +18,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/slab.h>
- #include "hisax.h"
- #include "arcofi.h"
-diff --git a/drivers/isdn/hisax/elsa_cs.c b/drivers/isdn/hisax/elsa_cs.c
-index 40f6fad..ca35784 100644
---- a/drivers/isdn/hisax/elsa_cs.c
-+++ b/drivers/isdn/hisax/elsa_cs.c
-@@ -37,7 +37,6 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/ptrace.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-diff --git a/drivers/isdn/hisax/enternow_pci.c b/drivers/isdn/hisax/enternow_pci.c
-index e8d431a..2fd3886 100644
---- a/drivers/isdn/hisax/enternow_pci.c
-+++ b/drivers/isdn/hisax/enternow_pci.c
-@@ -67,7 +67,6 @@
- #include <linux/interrupt.h>
- #include <linux/ppp_defs.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include "netjet.h"
- 
- 
-diff --git a/drivers/isdn/hisax/fsm.c b/drivers/isdn/hisax/fsm.c
-index c7a9471..61db6fa 100644
---- a/drivers/isdn/hisax/fsm.c
-+++ b/drivers/isdn/hisax/fsm.c
+ #include <linux/miscdevice.h>
+diff --git a/drivers/watchdog/bcm47xx_wdt.c b/drivers/watchdog/bcm47xx_wdt.c
+index b4021a2..b61fcc5 100644
+--- a/drivers/watchdog/bcm47xx_wdt.c
++++ b/drivers/watchdog/bcm47xx_wdt.c
 @@ -16,7 +16,6 @@
- 
- #include <linux/module.h>
- #include <linux/slab.h>
+ #include <linux/bcm47xx_wdt.h>
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
 -#include <linux/init.h>
- #include "hisax.h"
- 
- #define FSM_TIMER_DEBUG 0
-diff --git a/drivers/isdn/hisax/gazel.c b/drivers/isdn/hisax/gazel.c
-index 35c6df6..5157ac7 100644
---- a/drivers/isdn/hisax/gazel.c
-+++ b/drivers/isdn/hisax/gazel.c
-@@ -11,7 +11,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/hfc_2bds0.c b/drivers/isdn/hisax/hfc_2bds0.c
-index a756e5c..17fcbbd 100644
---- a/drivers/isdn/hisax/hfc_2bds0.c
-+++ b/drivers/isdn/hisax/hfc_2bds0.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include "hisax.h"
-diff --git a/drivers/isdn/hisax/hfc_2bs0.c b/drivers/isdn/hisax/hfc_2bs0.c
-index 838531b..2e2c319 100644
---- a/drivers/isdn/hisax/hfc_2bs0.c
-+++ b/drivers/isdn/hisax/hfc_2bs0.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "hfc_2bs0.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/hfc_pci.c b/drivers/isdn/hisax/hfc_pci.c
-index 4a48255..5d8a1c7 100644
---- a/drivers/isdn/hisax/hfc_pci.c
-+++ b/drivers/isdn/hisax/hfc_pci.c
-@@ -15,7 +15,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "hfc_pci.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
-index fa1fefd..99c7f09 100644
---- a/drivers/isdn/hisax/hfc_sx.c
-+++ b/drivers/isdn/hisax/hfc_sx.c
-@@ -11,7 +11,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "hfc_sx.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/hfcscard.c b/drivers/isdn/hisax/hfcscard.c
-index 394da64..1b69f0c 100644
---- a/drivers/isdn/hisax/hfcscard.c
-+++ b/drivers/isdn/hisax/hfcscard.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/isapnp.h>
- #include "hisax.h"
- #include "hfc_2bds0.h"
-diff --git a/drivers/isdn/hisax/hscx.c b/drivers/isdn/hisax/hscx.c
-index 3e305fe..8c237dc 100644
---- a/drivers/isdn/hisax/hscx.c
-+++ b/drivers/isdn/hisax/hscx.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "hscx.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/icc.c b/drivers/isdn/hisax/icc.c
-index 51dae91..575700f 100644
---- a/drivers/isdn/hisax/icc.c
-+++ b/drivers/isdn/hisax/icc.c
-@@ -14,7 +14,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "icc.h"
- // #include "arcofi.h"
-diff --git a/drivers/isdn/hisax/ipacx.c b/drivers/isdn/hisax/ipacx.c
-index 5faa5de..d522dfb 100644
---- a/drivers/isdn/hisax/ipacx.c
-+++ b/drivers/isdn/hisax/ipacx.c
-@@ -11,7 +11,6 @@
-  */
  #include <linux/kernel.h>
- #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+diff --git a/drivers/watchdog/bcm63xx_wdt.c b/drivers/watchdog/bcm63xx_wdt.c
+index 4eb188b..3fb18bb 100644
+--- a/drivers/watchdog/bcm63xx_wdt.c
++++ b/drivers/watchdog/bcm63xx_wdt.c
+@@ -15,7 +15,6 @@
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/fs.h>
 -#include <linux/init.h>
- #include "hisax_if.h"
- #include "hisax.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/isac.c b/drivers/isdn/hisax/isac.c
-index 7fdf78f..e671728 100644
---- a/drivers/isdn/hisax/isac.c
-+++ b/drivers/isdn/hisax/isac.c
-@@ -19,7 +19,6 @@
- #include "isdnl1.h"
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <linux/miscdevice.h>
+diff --git a/drivers/watchdog/cpu5wdt.c b/drivers/watchdog/cpu5wdt.c
+index f7ae49e..6d03e8e 100644
+--- a/drivers/watchdog/cpu5wdt.c
++++ b/drivers/watchdog/cpu5wdt.c
+@@ -27,7 +27,6 @@
+ #include <linux/errno.h>
+ #include <linux/miscdevice.h>
+ #include <linux/fs.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/timer.h>
+ #include <linux/completion.h>
+diff --git a/drivers/watchdog/cpwd.c b/drivers/watchdog/cpwd.c
+index 213225e..e55ed70 100644
+--- a/drivers/watchdog/cpwd.c
++++ b/drivers/watchdog/cpwd.c
+@@ -21,7 +21,6 @@
+ #include <linux/fs.h>
+ #include <linux/errno.h>
+ #include <linux/major.h>
+-#include <linux/init.h>
+ #include <linux/miscdevice.h>
  #include <linux/interrupt.h>
- #include <linux/slab.h>
+ #include <linux/ioport.h>
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index b1bae03..d09ad22 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -16,7 +16,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/watchdog.h>
 -#include <linux/init.h>
- 
- #define DBUSY_TIMER_VALUE 80
- #define ARCOFI_USE 1
-diff --git a/drivers/isdn/hisax/isar.c b/drivers/isdn/hisax/isar.c
-index f4956c7..993c6f3 100644
---- a/drivers/isdn/hisax/isar.c
-+++ b/drivers/isdn/hisax/isar.c
-@@ -8,7 +8,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isar.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/isurf.c b/drivers/isdn/hisax/isurf.c
-index 1399ddd..0d5849f 100644
---- a/drivers/isdn/hisax/isurf.c
-+++ b/drivers/isdn/hisax/isurf.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "isar.h"
-diff --git a/drivers/isdn/hisax/ix1_micro.c b/drivers/isdn/hisax/ix1_micro.c
-index 7ae39f5..7d3b35c 100644
---- a/drivers/isdn/hisax/ix1_micro.c
-+++ b/drivers/isdn/hisax/ix1_micro.c
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/device.h>
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 2b75e8b..75d2243 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
 @@ -17,7 +17,6 @@
-  * Germany
-  */
  
+ #include <linux/device.h>
+ #include <linux/fs.h>
 -#include <linux/init.h>
- #include <linux/isapnp.h>
- #include "hisax.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/jade.c b/drivers/isdn/hisax/jade.c
-index e2ae787..f2c24f7 100644
---- a/drivers/isdn/hisax/jade.c
-+++ b/drivers/isdn/hisax/jade.c
-@@ -11,7 +11,6 @@
-  */
- 
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "hscx.h"
- #include "jade.h"
-diff --git a/drivers/isdn/hisax/mic.c b/drivers/isdn/hisax/mic.c
-index 9339867..6cf1367 100644
---- a/drivers/isdn/hisax/mic.c
-+++ b/drivers/isdn/hisax/mic.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/netjet.c b/drivers/isdn/hisax/netjet.c
-index 233e432..93b10a5 100644
---- a/drivers/isdn/hisax/netjet.c
-+++ b/drivers/isdn/hisax/netjet.c
-@@ -14,7 +14,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/niccy.c b/drivers/isdn/hisax/niccy.c
-index e4c33cf..480cc66 100644
---- a/drivers/isdn/hisax/niccy.c
-+++ b/drivers/isdn/hisax/niccy.c
-@@ -13,7 +13,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/nj_s.c b/drivers/isdn/hisax/nj_s.c
-index 32b4bbd..3c43f52 100644
---- a/drivers/isdn/hisax/nj_s.c
-+++ b/drivers/isdn/hisax/nj_s.c
-@@ -5,7 +5,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/nj_u.c b/drivers/isdn/hisax/nj_u.c
-index 4e8adbe..9f6eaab 100644
---- a/drivers/isdn/hisax/nj_u.c
-+++ b/drivers/isdn/hisax/nj_u.c
-@@ -5,7 +5,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "icc.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/hisax/s0box.c b/drivers/isdn/hisax/s0box.c
-index 4e7d0aa..3749b09 100644
---- a/drivers/isdn/hisax/s0box.c
-+++ b/drivers/isdn/hisax/s0box.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/saphir.c b/drivers/isdn/hisax/saphir.c
-index 6b2d0ec..dc36783 100644
---- a/drivers/isdn/hisax/saphir.c
-+++ b/drivers/isdn/hisax/saphir.c
-@@ -12,7 +12,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/sedlbauer.c b/drivers/isdn/hisax/sedlbauer.c
-index f16a47b..1b9459f 100644
---- a/drivers/isdn/hisax/sedlbauer.c
-+++ b/drivers/isdn/hisax/sedlbauer.c
-@@ -38,7 +38,6 @@
-  * For example: hisaxctrl <DriverID> 9 ISAR.BIN
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "ipac.h"
-diff --git a/drivers/isdn/hisax/sedlbauer_cs.c b/drivers/isdn/hisax/sedlbauer_cs.c
-index 92ef62d..f738f26 100644
---- a/drivers/isdn/hisax/sedlbauer_cs.c
-+++ b/drivers/isdn/hisax/sedlbauer_cs.c
-@@ -37,7 +37,6 @@
- 
+ #include <linux/io.h>
+ #include <linux/bitops.h>
  #include <linux/kernel.h>
- #include <linux/module.h>
+diff --git a/drivers/watchdog/i6300esb.c b/drivers/watchdog/i6300esb.c
+index 25a2bfd..d7befd5 100644
+--- a/drivers/watchdog/i6300esb.c
++++ b/drivers/watchdog/i6300esb.c
+@@ -36,7 +36,6 @@
+ #include <linux/mm.h>
+ #include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
 -#include <linux/init.h>
- #include <linux/ptrace.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-diff --git a/drivers/isdn/hisax/sportster.c b/drivers/isdn/hisax/sportster.c
-index 18cee63..943a186 100644
---- a/drivers/isdn/hisax/sportster.c
-+++ b/drivers/isdn/hisax/sportster.c
-@@ -12,7 +12,6 @@
-  *
-  *
-  */
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/st5481_b.c b/drivers/isdn/hisax/st5481_b.c
-index 4098491..ca141d6 100644
---- a/drivers/isdn/hisax/st5481_b.c
-+++ b/drivers/isdn/hisax/st5481_b.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/gfp.h>
- #include <linux/usb.h>
- #include <linux/netdevice.h>
-diff --git a/drivers/isdn/hisax/st5481_usb.c b/drivers/isdn/hisax/st5481_usb.c
-index ead0a4f..ee78014 100644
---- a/drivers/isdn/hisax/st5481_usb.c
-+++ b/drivers/isdn/hisax/st5481_usb.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/usb.h>
- #include <linux/slab.h>
- #include "st5481.h"
-diff --git a/drivers/isdn/hisax/teleint.c b/drivers/isdn/hisax/teleint.c
-index bf64754..d947abc 100644
---- a/drivers/isdn/hisax/teleint.c
-+++ b/drivers/isdn/hisax/teleint.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hfc_2bs0.h"
-diff --git a/drivers/isdn/hisax/teles0.c b/drivers/isdn/hisax/teles0.c
-index ce9eabd..bd439a9 100644
---- a/drivers/isdn/hisax/teles0.c
-+++ b/drivers/isdn/hisax/teles0.c
-@@ -15,7 +15,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isdnl1.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/teles3.c b/drivers/isdn/hisax/teles3.c
-index 38fb2c1..c608d80 100644
---- a/drivers/isdn/hisax/teles3.c
-+++ b/drivers/isdn/hisax/teles3.c
-@@ -13,7 +13,6 @@
-  *              Beat Doebeli
-  *
-  */
--#include <linux/init.h>
- #include <linux/isapnp.h>
- #include "hisax.h"
- #include "isac.h"
-diff --git a/drivers/isdn/hisax/teles_cs.c b/drivers/isdn/hisax/teles_cs.c
-index b8dd149..c0e532e 100644
---- a/drivers/isdn/hisax/teles_cs.c
-+++ b/drivers/isdn/hisax/teles_cs.c
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
+ #include <linux/uaccess.h>
+diff --git a/drivers/watchdog/jz4740_wdt.c b/drivers/watchdog/jz4740_wdt.c
+index 3aa50cf..91e45ca 100644
+--- a/drivers/watchdog/jz4740_wdt.c
++++ b/drivers/watchdog/jz4740_wdt.c
 @@ -18,7 +18,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/device.h>
+diff --git a/drivers/watchdog/max63xx_wdt.c b/drivers/watchdog/max63xx_wdt.c
+index bdb3f4a..0e9cc6f 100644
+--- a/drivers/watchdog/max63xx_wdt.c
++++ b/drivers/watchdog/max63xx_wdt.c
+@@ -20,7 +20,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+ #include <linux/bitops.h>
+ #include <linux/platform_device.h>
+ #include <linux/spinlock.h>
+diff --git a/drivers/watchdog/mtx-1_wdt.c b/drivers/watchdog/mtx-1_wdt.c
+index edb31ff..ff27c4a 100644
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -40,7 +40,6 @@
+ #include <linux/errno.h>
+ #include <linux/miscdevice.h>
+ #include <linux/fs.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/timer.h>
+ #include <linux/completion.h>
+diff --git a/drivers/watchdog/nuc900_wdt.c b/drivers/watchdog/nuc900_wdt.c
+index a0d893b..7135803 100644
+--- a/drivers/watchdog/nuc900_wdt.c
++++ b/drivers/watchdog/nuc900_wdt.c
+@@ -12,7 +12,6 @@
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/fs.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/clk.h>
+ #include <linux/kernel.h>
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index fb57103..19fa92d01 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -16,7 +16,6 @@
+ #include <linux/kernel.h>
+ #include <linux/fs.h>
+ #include <linux/miscdevice.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/watchdog.h>
+ #include <linux/io.h>
+diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+index 09cf013..fbcb6f6 100644
+--- a/drivers/watchdog/omap_wdt.c
++++ b/drivers/watchdog/omap_wdt.c
+@@ -34,7 +34,6 @@
+ #include <linux/mm.h>
+ #include <linux/watchdog.h>
+ #include <linux/reboot.h>
+-#include <linux/init.h>
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
+ #include <linux/moduleparam.h>
+diff --git a/drivers/watchdog/orion_wdt.c b/drivers/watchdog/orion_wdt.c
+index f7722a4..4981634 100644
+--- a/drivers/watchdog/orion_wdt.c
++++ b/drivers/watchdog/orion_wdt.c
+@@ -18,7 +18,6 @@
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+ #include <linux/clk.h>
+diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
+index 5bec20f..15fb316 100644
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -24,7 +24,6 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/spinlock.h>
+diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
+index 082d062..29cf4dc 100644
+--- a/drivers/watchdog/rdc321x_wdt.c
++++ b/drivers/watchdog/rdc321x_wdt.c
+@@ -27,7 +27,6 @@
+ #include <linux/errno.h>
+ #include <linux/miscdevice.h>
+ #include <linux/fs.h>
+-#include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/timer.h>
+ #include <linux/completion.h>
+diff --git a/drivers/watchdog/retu_wdt.c b/drivers/watchdog/retu_wdt.c
+index f53615d..a7a0695 100644
+--- a/drivers/watchdog/retu_wdt.c
++++ b/drivers/watchdog/retu_wdt.c
+@@ -16,7 +16,6 @@
+  * GNU General Public License for more details.
+  */
  
+-#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/device.h>
+diff --git a/drivers/watchdog/riowd.c b/drivers/watchdog/riowd.c
+index 3dd8ed2..cfed0fe 100644
+--- a/drivers/watchdog/riowd.c
++++ b/drivers/watchdog/riowd.c
+@@ -10,7 +10,6 @@
+ #include <linux/types.h>
+ #include <linux/fs.h>
+ #include <linux/errno.h>
+-#include <linux/init.h>
+ #include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
+ #include <linux/of.h>
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index aec946d..aba6cd4 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -30,7 +30,6 @@
+ #include <linux/types.h>
+ #include <linux/timer.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/interrupt.h>
+ #include <linux/clk.h>
+diff --git a/drivers/watchdog/sp805_wdt.c b/drivers/watchdog/sp805_wdt.c
+index 3f786ce..6ee6db1 100644
+--- a/drivers/watchdog/sp805_wdt.c
++++ b/drivers/watchdog/sp805_wdt.c
+@@ -16,7 +16,6 @@
+ #include <linux/amba/bus.h>
+ #include <linux/bitops.h>
+ #include <linux/clk.h>
+-#include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/ioport.h>
+ #include <linux/kernel.h>
+diff --git a/drivers/watchdog/stmp3xxx_rtc_wdt.c b/drivers/watchdog/stmp3xxx_rtc_wdt.c
+index bb64ae3..3804d5e 100644
+--- a/drivers/watchdog/stmp3xxx_rtc_wdt.c
++++ b/drivers/watchdog/stmp3xxx_rtc_wdt.c
+@@ -9,7 +9,6 @@
+  * under the terms of the GNU General Public License version 2 as published by
+  * the Free Software Foundation.
+  */
+-#include <linux/init.h>
  #include <linux/kernel.h>
  #include <linux/module.h>
+ #include <linux/watchdog.h>
+diff --git a/drivers/watchdog/wdt_pci.c b/drivers/watchdog/wdt_pci.c
+index 3dc578e..48b2c05 100644
+--- a/drivers/watchdog/wdt_pci.c
++++ b/drivers/watchdog/wdt_pci.c
+@@ -49,7 +49,6 @@
+ #include <linux/delay.h>
+ #include <linux/notifier.h>
+ #include <linux/reboot.h>
 -#include <linux/init.h>
- #include <linux/ptrace.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-diff --git a/drivers/isdn/hisax/telespci.c b/drivers/isdn/hisax/telespci.c
-index 33eeb46..f9b2169 100644
---- a/drivers/isdn/hisax/telespci.c
-+++ b/drivers/isdn/hisax/telespci.c
-@@ -12,7 +12,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "isac.h"
- #include "hscx.h"
-diff --git a/drivers/isdn/hisax/w6692.c b/drivers/isdn/hisax/w6692.c
-index a858955..7e0c60c 100644
---- a/drivers/isdn/hisax/w6692.c
-+++ b/drivers/isdn/hisax/w6692.c
-@@ -10,7 +10,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include "hisax.h"
- #include "w6692.h"
- #include "isdnl1.h"
-diff --git a/drivers/isdn/i4l/isdnhdlc.c b/drivers/isdn/i4l/isdnhdlc.c
-index 027d1c5..5daace1 100644
---- a/drivers/isdn/i4l/isdnhdlc.c
-+++ b/drivers/isdn/i4l/isdnhdlc.c
-@@ -23,7 +23,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/crc-ccitt.h>
- #include <linux/isdn/hdlc.h>
- #include <linux/bitrev.h>
+ #include <linux/fs.h>
+ #include <linux/pci.h>
+ #include <linux/io.h>
 -- 
 1.8.4.1
 
