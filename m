@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaAUOfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 09:35:34 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:20982 "EHLO thoth.sbs.de"
+	id S1754759AbaAUOgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 09:36:11 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:4488 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274AbaAUOfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 09:35:31 -0500
-Message-ID: <52DE8592.9090807@siemens.com>
-Date: Tue, 21 Jan 2014 15:34:58 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754660AbaAUOgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 09:36:09 -0500
+X-IronPort-AV: E=Sophos;i="4.95,696,1384300800"; 
+   d="scan'208";a="94888546"
+Date: Tue, 21 Jan 2014 14:22:53 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>, <jonathan.davies@citrix.com>,
+        <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v3] xen/grant-table: Avoid m2p_override during
+ mapping
+In-Reply-To: <52DE78BF.2070909@citrix.com>
+Message-ID: <alpine.DEB.2.02.1401211416420.21510@kaball.uk.xensource.com>
+References: <1390244288-3186-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401211217510.21510@kaball.uk.xensource.com> <52DE78BF.2070909@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
-References: <52DE6FCE.2050708@siemens.com> <20140121140113.GL30183@twins.programming.kicks-ass.net> <52DE8009.9010902@siemens.com>
-In-Reply-To: <52DE8009.9010902@siemens.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-21 15:11, Jan Kiszka wrote:
-> On 2014-01-21 15:01, Peter Zijlstra wrote:
->> On Tue, Jan 21, 2014 at 02:02:06PM +0100, Jan Kiszka wrote:
->>> Hi all,
->>>
->>> while trying to plug a race in the CPU hotplug code on xAPIC systems, I
->>> was analyzing IPI transmission patterns. The handlers in
->>> arch/x86/include/asm/ipi.h first wait for ICR, then send. In contrast,
->>> arch_irq_work_raise sends the self-IPI directly and then waits. This
->>> looks inconsistent. Is it intended?
->>>
->>> BTW, the races are in wakeup_secondary_cpu_via_init and
->>> wakeup_secondary_cpu_via_nmi (lacking IRQ disable around ICR accesses).
->>> There we also send first, then wait for completion. But I guess that is
->>> due to the code originally only being used during boot. Will send fixes
->>> for those once the sync pattern is clear to me.
->>
->> Could be I had no clue what I was doing and copy/pasted the code until
->> it compiled and ran.
->>
->> In fact, I've got no clue what an ICR is.
+On Tue, 21 Jan 2014, David Vrabel wrote:
+> On 21/01/14 12:26, Stefano Stabellini wrote:
+> > On Mon, 20 Jan 2014, Zoltan Kiss wrote:
+> >
+> >> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> >> -				       &kmap_ops[i] : NULL);
+> >> +		if (m2p_override)
+> >> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> >> +					       &kmap_ops[i] : NULL);
+> >> +		else {
+> >> +			unsigned long pfn = page_to_pfn(pages[i]);
+> >> +			WARN_ON(PagePrivate(pages[i]));
+> >> +			SetPagePrivate(pages[i]);
+> >> +			set_page_private(pages[i], mfn);
+> >> +			pages[i]->index = pfn_to_mfn(pfn);
+> >> +			if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> >> +				return -ENOMEM;
+> > 
+> > What happens if the page is PageHighMem?
+> > 
+> > This looks like a subset of m2p_add_override, but it is missing some
+> > relevant bits, like the PageHighMem check, or the p2m(m2p(mfn)) == mfn
+> > check.  Maybe we can find a way to avoid duplicating the code.
+> > We could split m2p_add_override in two functions or add yet another
+> > parameter to it.
 > 
-> Old xAPIC requires you to only send IPIs, when the APIC signals it is
-> done with sending the previous one. Therefore we wait for availability
-> in the other IPI transmission services before writing to ICR.
+> The PageHighMem() check isn't relevant as we're not mapping anything
+> here.  Also, a page for a kernel grant mapping only cannot be highmem.
 > 
-> OK, then I will write a separate patch for arch_irq_work_raise to switch
-> the ordering.
+> The check for a local mfn and the additional set_phys_to_machine() is
+> only necessary if something tries an mfn_to_pfn() on the local mfn.  We
+> can only omit adding an m2p override if we know thing will try
+> mfn_to_pfn(), therefore the check and set_phys_to_machine() is unnecessary.
 
-Hmm, missed that we do have synchronization already via
-apic->send_IPI_self -> default_send_IPI_self ->
-__default_send_IPI_shortcut. So the closing wait would only be relevant
-if we need to settle the APIC because we may have interrupted a
-wait_icr_idle + write_icr sequence. But shouldnt those sequences be
-atomic (except for the problematic wakeup_secondary path)?
+OK, you convinced me that the two checks are superfluous for this case.
 
-Still confused: What is the official locking model around wait_icr_idle,
-write(ICR), and also write(IRC2)? IRQ disable around ICR2+ICR accesses
-and preempt_disable around wait + write? That is also important to fix
-the SMP boot-up code properly.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Can we still avoid the code duplication by removing the corresponding
+code from m2p_add_override and m2p_remove_override and doing the
+set_page_private thing uniquely in grant-table.c?
