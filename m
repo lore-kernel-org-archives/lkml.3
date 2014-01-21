@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170AbaAUVnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 16:43:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57763 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbaAUVnm (ORCPT
+	id S1754386AbaAUVYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 16:24:47 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:50649 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257AbaAUVYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 16:43:42 -0500
-Date: Tue, 21 Jan 2014 21:43:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Message-ID: <20140121214338.GB17314@sirena.org.uk>
+	Tue, 21 Jan 2014 16:24:41 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        <linux-ia64@vger.kernel.org>
+Subject: [PATCH 25/73] ia64: don't use module_init for non-modular core kernel/mca.c code
+Date: Tue, 21 Jan 2014 16:22:28 -0500
+Message-ID: <1390339396-3479-26-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <1390339396-3479-45-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lmWPTIvm4M7zUP/T"
-Content-Disposition: inline
-In-Reply-To: <1390339396-3479-45-git-send-email-paul.gortmaker@windriver.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 44/73] spi: delete non-required instances of include
- <linux/init.h>
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The mca.c code is always built in.  It will never be modular,
+so using module_init as an alias for __initcall is rather
+misleading.
 
---lmWPTIvm4M7zUP/T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-On Tue, Jan 21, 2014 at 04:22:47PM -0500, Paul Gortmaker wrote:
+Direct use of __initcall is discouraged, vs prioritized ones.
+Use of device_initcall is consistent with what __initcall
+maps onto, and hence does not change the init order, making the
+impact of this change zero.   Should someone with real hardware
+for boot testing want to change it later to arch_initcall or
+something different, they can do that at a later date.
 
-> None of these files are actually using any __init type directives
-> and hence don't need to include <linux/init.h>.  Most are just a
-> left over from __devinit and __cpuinit removal, or simply due to
-> code getting copied from one driver to the next.
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/ia64/sn/kernel/mca.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Applied, thanks.
+diff --git a/arch/ia64/sn/kernel/mca.c b/arch/ia64/sn/kernel/mca.c
+index 27793f7..5b799d4d 100644
+--- a/arch/ia64/sn/kernel/mca.c
++++ b/arch/ia64/sn/kernel/mca.c
+@@ -142,5 +142,4 @@ static int __init sn_salinfo_init(void)
+ 		salinfo_platform_oemdata = &sn_salinfo_platform_oemdata;
+ 	return 0;
+ }
+-
+-module_init(sn_salinfo_init)
++device_initcall(sn_salinfo_init);
+-- 
+1.8.4.1
 
---lmWPTIvm4M7zUP/T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS3uoHAAoJELSic+t+oim9KssP/0UjRPSQRdVnM59X2SWved2m
-KVSMBXCt2ZiibCG+JETYR1VewYXmXO+SEWHzdA7YmgS4UDeljS4TQT/bwUZNRixF
-fYk3p/x0UGhM5n8tTUYiGiVvhkyj0bORnjo6aOVrVT0CWdguCPt8nlw/x2K5mfUE
-v/7E1RKcD2y6ZtnK6YS+K8I16u2CoQOoZHm9Nj74356uGRNClTygo2OokroGFaTi
-Uwgxvr8JXnbEvDPZo7G21WV1croRXtROigW9zP+rexjUKGoK92unyZVjONEST24D
-oK7MhtMccna0Kt2UGvaeaPpwvBNj+onKvRli+1cUq/bK+M/AqwEYobIn/u6hb2Qm
-SEq1Y79uz33abR4gluj/H0PkbYGBmvUDE9bWRsPmEdvlLORCNVAu/D3dMJkElB8W
-rOaPGzuX8ggohOhEc0GCh7kOBbiUH6YGKBWmzohHho0T2sEiZn23YVecqcyQHGzy
-JobbrCK1mnnd1fUv246Bz/nygLQoNA0T8C7+3D07iv6NZ8sSSigmMlRsro7XjOjK
-zIMyi3luO0KGRJFXremAqtzmp510UD3Fvk0YTGbGf7PvcsCkl1bdtErZtFrP2GvZ
-I60JGIgx/eqjn2tIRLQbL3p1oRetHAQJ885jleFCzUl1yph3/eICda6sKPLgH0RV
-fW3J+B6xCI9s1/3xEjZZ
-=GUZl
------END PGP SIGNATURE-----
-
---lmWPTIvm4M7zUP/T--
