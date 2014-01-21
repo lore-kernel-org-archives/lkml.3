@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaAUFxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:53:51 -0500
-Received: from mail-gg0-f176.google.com ([209.85.161.176]:37886 "EHLO
-	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaAUFxq (ORCPT
+	id S1752922AbaAUFyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:54:39 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50677 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303AbaAUFyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:53:46 -0500
-Date: Mon, 20 Jan 2014 21:53:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Xishi Qiu <qiuxishi@huawei.com>
-cc: robin.yb@huawei.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] fs: don't write pages when receiving a pending SIGKILL
- in __get_user_pages()
-In-Reply-To: <52D9D6F2.2030003@huawei.com>
-Message-ID: <alpine.DEB.2.02.1401202151500.21729@chino.kir.corp.google.com>
-References: <52D9D6F2.2030003@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 21 Jan 2014 00:54:35 -0500
+X-AuditID: 9c93017e-b7b63ae000000e6a-87-52de0b991c0f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Gaurav Jain <gjain@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
+References: <20140116143749.GA21526@ghostprotocols.net>
+	<CEFDA8E4.2D359%gjain@fb.com> <87sisn6ojf.fsf@sejong.aot.lge.com>
+	<20140117143404.GB3207@ghostprotocols.net>
+Date: Tue, 21 Jan 2014 14:54:32 +0900
+In-Reply-To: <20140117143404.GB3207@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Fri, 17 Jan 2014 11:34:04 -0300")
+Message-ID: <87iotd7ucn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-2044261302-1390283624=:21729"
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Arnaldo,
 
---531381512-2044261302-1390283624=:21729
-Content-Type: TEXT/PLAIN; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+On Fri, 17 Jan 2014 11:34:04 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jan 17, 2014 at 04:44:04PM +0900, Namhyung Kim escreveu:
+>> On Thu, 16 Jan 2014 20:23:27 +0000, Gaurav Jain wrote:
+>> > On 1/16/14, 9:37 AM, "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
+>> > wrote:
+>> >
+>> >>Em Thu, Jan 16, 2014 at 10:49:31AM +0900, Namhyung Kim escreveu:
+>> >>> Gaurav reported that perf cannot profile JIT program if it executes
+>> >>> the code on heap.  This was because current map__new() only handle JIT
+>> >>> on anon mappings - extends it to handle no_dso (heap, stack) case too.
+>> >>> 
+>> >>> This patch assumes JIT profiling only provides dynamic function
+>> >>> symbols so check the mapping type to distinguish the case.  It'd
+>> >>> provide no symbols for data mapping - if we need to support symbols on
+>> >>> data mappings later it should be changed.
+>> >>
+>> >>But we do support symbols in data mappings, that is why we have
+>> >>MAP__VARIABLE, etc, can you elaborate?
+>
+>> > Does perf support data mappings from perf map files? Could you please
+>> > share an example of how I may be able to use this.
+>
+>> IIUC there's no difference between function and data mapping.  So you
+>> can use same perf map file for both - in fact there's no way to use
+>> different map file in a single task.  I guess perf will use it to find
+>
+> Do the /tmp/perf mapping has any per entry indication on the type of
+> symbol it is (data, text) like ELF and kallsyms symtabs have?
 
-On Sat, 18 Jan 2014, Xishi Qiu wrote:
+Quoting Documentation/jit-interface.txt:
 
-> In the process IO direction, dio_refill_pages will call get_user_pages_fast 
-> to map the page from user space. If ret is less than 0 and IO is write, the 
-> function will create a zero page to fill data. This may work for some file 
-> system, but in some device operate we prefer whole write or fail, not half 
-> data half zero, e.g. fs metadata, like inode, identy.
+  Each line has the following format, fields separated with spaces:
 
-So you're attemping to define a behavior for all users of direct IO for a 
-problem that is filesystem or backing device dependent?  Perhaps if you 
-elaborated on the problem that you're seeing then we could address it.
+  START SIZE symbolname
 
-> This happens often when kill a process which is doing direct IO. Consider 
-> the following cases, the process A is doing IO process, may enter __get_user_pages 
-> function, if other processes send process A SIG_KILL, A will enter the 
-> following branches 
-> 		/*
-> 		 * If we have a pending SIGKILL, don't keep faulting
-> 		 * pages and potentially allocating memory.
-> 		 */
-> 		if (unlikely(fatal_signal_pending(current)))
-> 			return i ? i : -ERESTARTSYS;
-> Return current pages. direct IO will write the pages, the subsequent pages 
-> which can’t get will use zero page instead. 
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> Signed-off-by: Bin Yang <robin.yb@huawei.com>
-> ---
->  fs/direct-io.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 0e04142..b74d565 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -174,6 +174,9 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
->  		&dio->pages[0]);		/* Put results here */
->  
->  	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
-> +		/* If task is killed, do not write anymore */
-> +		if (ret == -ERESTARTSYS)
-> +			goto out;
->  		struct page *page = ZERO_PAGE(0);
->  		/*
->  		 * A memory fault, but the filesystem has some outstanding
+  START and SIZE are hex numbers without 0x.
+  symbolname is the rest of the line, so it could contain special
+  characters.
 
-We don't mix declarations and text, please try to compile your patches 
-before proposing them.
---531381512-2044261302-1390283624=:21729--
+>
+> It is possible for a function and a variable to have the same virtual
+> address in some architectures (SPARC, iirc), that is why we have
+> different MAP_ types (FUNCTION, VARIABLE) (which should really be
+> renamed to TEXT, DATA).
+
+Hmm.. didn't know that, interesting..
+
+>
+> So a 'struct map' for a data mmap should possibly point to a different
+> 'dso' of the JIT /tmp/perf-... style if those maps don't have per entry
+> indication of text/data.
+
+Yes, but there's no way to do it currently.
+
+>
+>> only function symbols in function mappings and variables in data
+>> mapping based on the address it accesses.
+>
+> Well, the lookup should figure out if the IP refers to TEXT or DATA and
+> use MAP__{FUNCTION, VARIABLE} accordingly when asking for symbol
+> resolution.
+
+Right.  But in this case we cannot determine whether a symbol in the
+/tmp/perf-... file is a function or variable.
+
+>
+>> What I wasn't sure is whether JIT program also produces some dynamic data.
+>> And I think only perf mem command cares about data mappings, no?
+>
+> Well, I think it would be great to do that kind of data resolution for
+> JITs the same way it is interesting to do for ELF ones :-)
+>
+> I need to stare harder at that patch, but with the above in mind, do we
+> really have to check if the map is MAP__FUNCTION as IIRC this patch
+> does?
+
+Not sure.  For a JIT case, I guess the mapping is always executable and
+we don't support data mapping yet, so it seems okay for now.
+
+Thanks,
+Namhyung
