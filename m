@@ -1,75 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaAUFVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 00:21:25 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:54376 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaAUFVL (ORCPT
+	id S1751140AbaAUFa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 00:30:56 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53546 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaAUFao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 00:21:11 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2] media: i2c: mt9p031: Check return value of clk_prepare_enable/clk_set_rate
-Date: Tue, 21 Jan 2014 10:50:57 +0530
-Message-Id: <1390281657-7185-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 21 Jan 2014 00:30:44 -0500
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Jan 2014 21:30:24 -0800
+Message-ID: <CALCETrVLF_1d5cg5izPLmZa_e7bxHH-rrgp-m0uGFmuVwO_73w@mail.gmail.com>
+Subject: [BTRFS-specific] Re: Dirty deleted files cause pointless I/O storms
+ (unless truncated first)
+To: Dave Chinner <david@fromorbit.com>, linux-btrfs@vger.kernel.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+[cc: btrfs]
 
-clk_set_rate(), clk_prepare_enable() functions can fail, so check the return
-values to avoid surprises.
+On Mon, Jan 20, 2014 at 8:46 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Jan 20, 2014 at 04:59:23PM -0800, Andy Lutomirski wrote:
+>> The code below runs quickly for a few iterations, and then it slows
+>> down and the whole system becomes laggy for far too long.
+>>
+>> Removing the sync_file_range call results in no I/O being performed at
+>> all (which means that the kernel isn't totally screwing this up), and
+>> changing "4096" to SIZE causes lots of I/O but without
+>> the going-out-to-lunch bit (unsurprisingly).
+>
+> More details please. hardware, storage, kernel version, etc.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- Changes for v2:
- 1: Called regulator_bulk_disable() in the error path
- 
- drivers/media/i2c/mt9p031.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+The kernel is 3.11.10-301.fc20.x86_64.  It's an excessively fast CPU
+(Intel i7-3930K) with 16GB RAM and a Corsair Force 3 SSD (6Gb/s SATA)
+SSD.  The FS is btrfs on LVM on dm-crypt.
 
-diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-index e5ddf47..05278f5 100644
---- a/drivers/media/i2c/mt9p031.c
-+++ b/drivers/media/i2c/mt9p031.c
-@@ -222,12 +222,15 @@ static int mt9p031_clk_setup(struct mt9p031 *mt9p031)
- 
- 	struct i2c_client *client = v4l2_get_subdevdata(&mt9p031->subdev);
- 	struct mt9p031_platform_data *pdata = mt9p031->pdata;
-+	int ret;
- 
- 	mt9p031->clk = devm_clk_get(&client->dev, NULL);
- 	if (IS_ERR(mt9p031->clk))
- 		return PTR_ERR(mt9p031->clk);
- 
--	clk_set_rate(mt9p031->clk, pdata->ext_freq);
-+	ret = clk_set_rate(mt9p031->clk, pdata->ext_freq);
-+	if (ret < 0)
-+		return ret;
- 
- 	mt9p031->pll.ext_clock = pdata->ext_freq;
- 	mt9p031->pll.pix_clock = pdata->target_freq;
-@@ -286,8 +289,14 @@ static int mt9p031_power_on(struct mt9p031 *mt9p031)
- 		return ret;
- 
- 	/* Emable clock */
--	if (mt9p031->clk)
--		clk_prepare_enable(mt9p031->clk);
-+	if (mt9p031->clk) {
-+		ret = clk_prepare_enable(mt9p031->clk);
-+		if (ret) {
-+			regulator_bulk_disable(ARRAY_SIZE(mt9p031->regulators),
-+					       mt9p031->regulators);
-+			return ret;
-+		}
-+	}
- 
- 	/* Now RESET_BAR must be high */
- 	if (gpio_is_valid(mt9p031->reset)) {
--- 
-1.7.9.5
+In that setup, this thing goes quickly for 100 iterations or so, at
+which point even trying to Ctrl-C it lags out for ten seconds or so.
 
+I clearly should have tested more thoroughly, though -- I can't
+reproduce this problem on ext4.
+
+>
+> I can't reproduce any slowdown with the code as posted on a VM
+> running 3.31-rc5 with 16GB RAM and an SSD w/ ext4 or XFS. The
+> workload is only generating about 80 IOPS on ext4 so even a slow
+> spindle should be able handle this without problems...
+>
+>> Surprisingly, uncommenting the ftruncate call seems to fix the
+>> problem.  This suggests that all the necessary infrastructure to avoid
+>> wasting time writing to deleted files is there but that it's not
+>> getting used.
+>
+> Not surprising at all - if it's stuck in a writeback loop somewhere,
+> truncating the file will terminate writeback because it end up being
+> past EOF and so stops immediately...
+
+Presumably ext4 and xfs are smart enough to stop writeback when the
+inode is gone, but btrfs is still either keeping the inode alive or
+just finishes writeback anyway.
+
+--Andy
+
+#define _GNU_SOURCE
+#include <sys/mman.h>
+#include <err.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
+#define SIZE (16 * 1048576)
+
+static void hammer(const char *name)
+{
+  int fd = open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+  if (fd == -1)
+    err(1, "open");
+
+  fallocate(fd, 0, 0, SIZE);
+
+  void *addr = mmap(NULL, SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  if (addr == MAP_FAILED)
+    err(1, "mmap");
+
+  memset(addr, 0, SIZE);
+
+  if (munmap(addr, SIZE) != 0)
+    err(1, "munmap");
+
+  if (sync_file_range(fd, 0, 4096,
+              SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
+              SYNC_FILE_RANGE_WAIT_AFTER) != 0)
+    err(1, "sync_file_range");
+
+  if (unlink(name) != 0)
+    err(1, "unlink");
+
+  //  if (ftruncate(fd, 0) != 0)
+  //    err(1, "ftruncate");
+
+  close(fd);
+}
+
+int main(int argc, char **argv)
+{
+  if (argc != 2) {
+    printf("Usage: hammer_and_delete FILENAME\n");
+    return 1;
+  }
+
+  while (true) {
+    hammer(argv[1]);
+    write(1, ".", 1);
+  }
+}
