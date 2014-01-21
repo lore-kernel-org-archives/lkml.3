@@ -1,184 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396AbaAUUqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 15:46:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44837 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaAUUqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 15:46:04 -0500
-Date: Tue, 21 Jan 2014 12:45:40 -0800
-From: tip-bot for Michael Davidson <tipbot@zytor.com>
-Message-ID: <tip-4cac7bb27b772924d5c6ac6caaa1ba9e929e8199@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, md@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, md@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20140121203223.GA12649@www.outflux.net>
-References: <20140121203223.GA12649@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, relocs: Add manual debug mode
-Git-Commit-ID: 4cac7bb27b772924d5c6ac6caaa1ba9e929e8199
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754230AbaAUUrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 15:47:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29735 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085AbaAUUrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 15:47:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
+   d="scan'208";a="442464612"
+From: "Brown, Aaron F" <aaron.f.brown@intel.com>
+To: "Julia.Lawall@lip6.fr" <Julia.Lawall@lip6.fr>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ixgbevf: delete unneeded call to pci_set_power_state
+Thread-Topic: [PATCH] ixgbevf: delete unneeded call to pci_set_power_state
+Thread-Index: AQHPFun5reSYbpjPtU6E4rQdUZwjyQ==
+Date: Tue, 21 Jan 2014 20:47:17 +0000
+Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7314262D@ORSMSX101.amr.corp.intel.com>
+References: <1389114026-27854-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1389114026-27854-1-git-send-email-Julia.Lawall@lip6.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 21 Jan 2014 12:45:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0LKlU7q012414
 
-Commit-ID:  4cac7bb27b772924d5c6ac6caaa1ba9e929e8199
-Gitweb:     http://git.kernel.org/tip/4cac7bb27b772924d5c6ac6caaa1ba9e929e8199
-Author:     Michael Davidson <md@google.com>
-AuthorDate: Tue, 21 Jan 2014 12:32:23 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 21 Jan 2014 12:41:48 -0800
+On Tue, 2014-01-07 at 18:00 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> This driver does not need to adjust the power state on suspend, so the
+> call to pci_set_power_state in the resume function is a no-op.  Drop it, to
+> make the code more understandable.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
 
-x86, relocs: Add manual debug mode
+> ---
+>  drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+> index a5d3167..5709fb0 100644
+> --- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+> @@ -3226,7 +3226,6 @@ static int ixgbevf_resume(struct pci_dev *pdev)
+>  	struct net_device *netdev = adapter->netdev;
+>  	u32 err;
+>  
+> -	pci_set_power_state(pdev, PCI_D0);
+>  	pci_restore_state(pdev);
+>  	/*
+>  	 * pci_restore_state clears dev->state_saved so call
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Improve the debuggability of relocations output. When trying to compare
-the output between different linkers, it's handy to be able to see the
-section names in output.
 
-Signed-off-by: Michael Davidson <md@google.com>
-Link: http://lkml.kernel.org/r/20140121203223.GA12649@www.outflux.net
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/tools/relocs.c        | 30 +++++++++++++++++++++++++++++-
- arch/x86/tools/relocs.h        |  7 ++++---
- arch/x86/tools/relocs_common.c | 16 ++++++++++++----
- 3 files changed, 45 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
-index 11f9285..cfbdbdb 100644
---- a/arch/x86/tools/relocs.c
-+++ b/arch/x86/tools/relocs.c
-@@ -1025,6 +1025,29 @@ static void emit_relocs(int as_text, int use_real_mode)
- 	}
- }
- 
-+/*
-+ * As an aid to debugging problems with different linkers
-+ * print summary information about the relocs.
-+ * Since different linkers tend to emit the sections in
-+ * different orders we use the section names in the output.
-+ */
-+static int do_reloc_info(struct section *sec, Elf_Rel *rel, ElfW(Sym) *sym,
-+				const char *symname)
-+{
-+	printf("%s\t%s\t%s\t%s\n",
-+		sec_name(sec->shdr.sh_info),
-+		rel_type(ELF_R_TYPE(rel->r_info)),
-+		symname,
-+		sec_name(sym->st_shndx));
-+	return 0;
-+}
-+
-+static void print_reloc_info(void)
-+{
-+	printf("reloc section\treloc type\tsymbol\tsymbol section\n");
-+	walk_relocs(do_reloc_info);
-+}
-+
- #if ELF_BITS == 64
- # define process process_64
- #else
-@@ -1032,7 +1055,8 @@ static void emit_relocs(int as_text, int use_real_mode)
- #endif
- 
- void process(FILE *fp, int use_real_mode, int as_text,
--	     int show_absolute_syms, int show_absolute_relocs)
-+	     int show_absolute_syms, int show_absolute_relocs,
-+	     int show_reloc_info)
- {
- 	regex_init(use_real_mode);
- 	read_ehdr(fp);
-@@ -1050,5 +1074,9 @@ void process(FILE *fp, int use_real_mode, int as_text,
- 		print_absolute_relocs();
- 		return;
- 	}
-+	if (show_reloc_info) {
-+		print_reloc_info();
-+		return;
-+	}
- 	emit_relocs(as_text, use_real_mode);
- }
-diff --git a/arch/x86/tools/relocs.h b/arch/x86/tools/relocs.h
-index 07cdb1e..f595906 100644
---- a/arch/x86/tools/relocs.h
-+++ b/arch/x86/tools/relocs.h
-@@ -29,8 +29,9 @@ enum symtype {
- };
- 
- void process_32(FILE *fp, int use_real_mode, int as_text,
--		int show_absolute_syms, int show_absolute_relocs);
-+		int show_absolute_syms, int show_absolute_relocs,
-+		int show_reloc_info);
- void process_64(FILE *fp, int use_real_mode, int as_text,
--		int show_absolute_syms, int show_absolute_relocs);
--
-+		int show_absolute_syms, int show_absolute_relocs,
-+		int show_reloc_info);
- #endif /* RELOCS_H */
-diff --git a/arch/x86/tools/relocs_common.c b/arch/x86/tools/relocs_common.c
-index 44d3968..acab636 100644
---- a/arch/x86/tools/relocs_common.c
-+++ b/arch/x86/tools/relocs_common.c
-@@ -11,12 +11,13 @@ void die(char *fmt, ...)
- 
- static void usage(void)
- {
--	die("relocs [--abs-syms|--abs-relocs|--text|--realmode] vmlinux\n");
-+	die("relocs [--abs-syms|--abs-relocs|--reloc-info|--text|--realmode]" \
-+	    " vmlinux\n");
- }
- 
- int main(int argc, char **argv)
- {
--	int show_absolute_syms, show_absolute_relocs;
-+	int show_absolute_syms, show_absolute_relocs, show_reloc_info;
- 	int as_text, use_real_mode;
- 	const char *fname;
- 	FILE *fp;
-@@ -25,6 +26,7 @@ int main(int argc, char **argv)
- 
- 	show_absolute_syms = 0;
- 	show_absolute_relocs = 0;
-+	show_reloc_info = 0;
- 	as_text = 0;
- 	use_real_mode = 0;
- 	fname = NULL;
-@@ -39,6 +41,10 @@ int main(int argc, char **argv)
- 				show_absolute_relocs = 1;
- 				continue;
- 			}
-+			if (strcmp(arg, "--reloc-info") == 0) {
-+				show_reloc_info = 1;
-+				continue;
-+			}
- 			if (strcmp(arg, "--text") == 0) {
- 				as_text = 1;
- 				continue;
-@@ -67,10 +73,12 @@ int main(int argc, char **argv)
- 	rewind(fp);
- 	if (e_ident[EI_CLASS] == ELFCLASS64)
- 		process_64(fp, use_real_mode, as_text,
--			   show_absolute_syms, show_absolute_relocs);
-+			   show_absolute_syms, show_absolute_relocs,
-+			   show_reloc_info);
- 	else
- 		process_32(fp, use_real_mode, as_text,
--			   show_absolute_syms, show_absolute_relocs);
-+			   show_absolute_syms, show_absolute_relocs,
-+			   show_reloc_info);
- 	fclose(fp);
- 	return 0;
- }
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
