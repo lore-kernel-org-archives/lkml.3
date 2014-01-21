@@ -1,108 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaAUMUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 07:20:15 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56396 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaAUMUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 07:20:12 -0500
-Date: Tue, 21 Jan 2014 13:20:10 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [11/11] system 1: Saving energy using DVFS
-Message-ID: <20140121122010.GB11893@amd.pavel.ucw.cz>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-12-git-send-email-morten.rasmussen@arm.com>
- <20140120164926.GB23051@amd.pavel.ucw.cz>
- <20140120171010.GB29971@arm.com>
- <20140120181208.GC25439@amd.pavel.ucw.cz>
- <20140121114225.GC14830@arm.com>
+	id S1754595AbaAUMVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 07:21:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43345 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754274AbaAUMVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 07:21:35 -0500
+Date: Tue, 21 Jan 2014 12:21:30 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 2/6] numa,sched: track from which nodes NUMA faults are
+ triggered
+Message-ID: <20140121122130.GG4963@suse.de>
+References: <1390245667-24193-1-git-send-email-riel@redhat.com>
+ <1390245667-24193-3-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140121114225.GC14830@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1390245667-24193-3-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > That's a 1750mAs difference. There are of course other parts drawing
-> > > current but simple things like the above really make a difference in the
-> > > mobile space, both in terms of battery and thermal budget.
-> > 
-> > Aha, I noticed the values are now the other way around. [And notice
-> > that if user _does_ lock/turn off the screen after the operation,
-> > difference between power consumptions is factor of two. People do turn
-> > off screens before putting phone back in pocket.]
+On Mon, Jan 20, 2014 at 02:21:03PM -0500, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
 > 
-> It depends on the use-case, that's why the problem is so complicated.
-> Race-to-idle may work well if just checking bus timetables but not if
-> you are watching video or listening to music (the latter with screen
-> off).
-
-Exactly, it is complex. That's why it is important to get real
-numbers, please.
-
-And yes, if your _system_ has low power consumption in
-active-at-low-frequency mode, race-to-idle may not be a win for you.
-
-> > You are right that as long as user does _not_ wait for the computation
-> > result, running at low frequency might make sense. That may be true on
-> > cellphone so fast that all the actions are "instant". I have yet to
-> > see such cellphone. That probably means that staying on low frequency
-> > normally and going to high after cpu is busy for 100msec or so is
-> > right thing: if cpu is busy for 100msec, it probably means user is
-> > waiting for the result.
+> Track which nodes NUMA faults are triggered from, in other words
+> the CPUs on which the NUMA faults happened. This uses a similar
+> mechanism to what is used to track the memory involved in numa faults.
 > 
-> I'm talking about use-cases where a task (or multiple threads) are
-> running and only loading the CPU partially (audio or video playback).
-> Here you have an average number of instructions to execute per decoded
-> frame in a certain time. Once the frame is decoded, the CPU can go idle,
-> so you can choose whether to race to idle or run at lower frequency (and
-> lower energy per the same number of frame decoding instructions) with
-> less idle time. There are modern platforms where the latter behaviour is
-> more efficient.
-
-So, my Thinkpad X60 is not such platform. Early Athlon64 notebooks
-_were_ such platforms. Can you provide example modern platform you are
-talking about?
-
-> I would really like race to idle to be true for all cases, it would
-> simplify the kernel and we could just remove cpufreq, always running the
-> CPUs at max frequency. But so far I don't see Intel ignoring this
-> problem either, they keep developing a pstate driver which changes the
-> P-states based on average CPU load.
-
-Race-to-idle is win on all modern x86 systems, because they have high
-power consumption even on low non-idle frequency, due to leakage. We
-still keep P-states for cooling, for completeness and for older
-systems.
-
-> > But it depends on the numbers you did not tell us. I'm pretty sure
-> > N900 does _not_ have 11% power consuption at 33% performance; I just
-> > assumed so for sake of argument.
-> > 
-> > So, really, details are needed.
+> The next patches use this to build up a bitmap of which nodes a
+> workload is actively running on.
 > 
-> If that's the only issue to be addressed, I'm happy to ignore the
-> frequency scaling initially and focus on idle. But since people still do
-> frequency scaling and this would interfere with the scheduler, we have
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Chegu Vinod <chegu_vinod@hp.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  include/linux/sched.h | 10 ++++++++--
+>  kernel/sched/fair.c   | 30 +++++++++++++++++++++++-------
+>  2 files changed, 31 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 97efba4..a9f7f05 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1492,6 +1492,14 @@ struct task_struct {
+>  	unsigned long *numa_faults_buffer;
+>  
+>  	/*
+> +	 * Track the nodes where faults are incurred. This is not very
+> +	 * interesting on a per-task basis, but it help with smarter
+> +	 * numa memory placement for groups of processes.
+> +	 */
+> +	unsigned long *numa_faults_from;
+> +	unsigned long *numa_faults_from_buffer;
+> +
 
-I guess there are modern platforms and workloads where frequency
-scaling makes sense. You only need to find one, and provide numbers
-for it. Please.
-       	   	     	     	      	      	      	      Pavel
+As an aside I wonder if we can derive any useful metric from this. One
+potential santiy check would be the number of nodes that a task is incurring
+faults on. It would be best if the highest number of faults were recorded
+on the node the task is currently running on. After that we either want
+to minimise the number of nodes trapping faults or interleave between
+all available nodes to avoid applying too much memory pressure on any
+one node. For interleaving to always be the best option we would have to
+assume that all nodes are equal distance but that would be a reasonable
+assumption to start with.
+
+> +	/*
+>  	 * numa_faults_locality tracks if faults recorded during the last
+>  	 * scan window were remote/local. The task scan period is adapted
+>  	 * based on the locality of the faults with different weights
+> @@ -1594,8 +1602,6 @@ extern void task_numa_fault(int last_node, int node, int pages, int flags);
+>  extern pid_t task_numa_group_id(struct task_struct *p);
+>  extern void set_numabalancing_state(bool enabled);
+>  extern void task_numa_free(struct task_struct *p);
+> -
+> -extern unsigned int sysctl_numa_balancing_migrate_deferred;
+>  #else
+>  static inline void task_numa_fault(int last_node, int node, int pages,
+>  				   int flags)
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 41e2176..1945ddc 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -886,6 +886,7 @@ struct numa_group {
+>  
+>  	struct rcu_head rcu;
+>  	unsigned long total_faults;
+> +	unsigned long *faults_from;
+>  	unsigned long faults[0];
+>  };
+>  
+
+faults_from is not ambiguous but it does not tell us a lot of information
+either. If I am reading this right then fundamentally this patch means we
+are tracking two pieces of information
+
+1. The node the data resided on at the time of the hinting fault (numa_faults)
+2. The node the accessing task was residing on at the time of the fault (faults_from)
+
+We should be able to have names that reflect that. How about
+memory_faults_locality and cpu_faults_locality with a prepartion patch
+doing a simple rename for numa_faults and this patch adding
+cpu_faults_locality?
+
+It will be tough to be consistent about this but the clearer we are about
+making decisions based on task locationo vs data location the happier we
+will be in the long run.
+
+> @@ -1372,10 +1373,11 @@ static void task_numa_placement(struct task_struct *p)
+>  		int priv, i;
+>  
+>  		for (priv = 0; priv < 2; priv++) {
+> -			long diff;
+> +			long diff, f_diff;
+>  
+>  			i = task_faults_idx(nid, priv);
+>  			diff = -p->numa_faults[i];
+> +			f_diff = -p->numa_faults_from[i];
+>  
+>  			/* Decay existing window, copy faults since last scan */
+>  			p->numa_faults[i] >>= 1;
+> @@ -1383,12 +1385,18 @@ static void task_numa_placement(struct task_struct *p)
+>  			fault_types[priv] += p->numa_faults_buffer[i];
+>  			p->numa_faults_buffer[i] = 0;
+>  
+> +			p->numa_faults_from[i] >>= 1;
+> +			p->numa_faults_from[i] += p->numa_faults_from_buffer[i];
+> +			p->numa_faults_from_buffer[i] = 0;
+> +
+>  			faults += p->numa_faults[i];
+>  			diff += p->numa_faults[i];
+> +			f_diff += p->numa_faults_from[i];
+>  			p->total_numa_faults += diff;
+>  			if (p->numa_group) {
+>  				/* safe because we can only change our own group */
+>  				p->numa_group->faults[i] += diff;
+> +				p->numa_group->faults_from[i] += f_diff;
+>  				p->numa_group->total_faults += diff;
+>  				group_faults += p->numa_group->faults[i];
+>  			}
+> @@ -1457,7 +1465,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+>  
+>  	if (unlikely(!p->numa_group)) {
+>  		unsigned int size = sizeof(struct numa_group) +
+> -				    2*nr_node_ids*sizeof(unsigned long);
+> +				    4*nr_node_ids*sizeof(unsigned long);
+>  
+
+Should we convert that magic number to a define? NR_NUMA_HINT_FAULT_STATS?
+
+>  		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
+>  		if (!grp)
+> @@ -1467,8 +1475,10 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+>  		spin_lock_init(&grp->lock);
+>  		INIT_LIST_HEAD(&grp->task_list);
+>  		grp->gid = p->pid;
+> +		/* Second half of the array tracks where faults come from */
+> +		grp->faults_from = grp->faults + 2 * nr_node_ids;
+>  
+
+We have accessors when we overload arrays like this such as task_faults_idx
+for example. We should have similar accessors for this in case those
+offsets very change.
+
+> -		for (i = 0; i < 2*nr_node_ids; i++)
+> +		for (i = 0; i < 4*nr_node_ids; i++)
+>  			grp->faults[i] = p->numa_faults[i];
+>  
+
+This is a little obscure now. Functionally it is copying both numa_faults and
+numa_faults_from but a casual reading of that will get confused. Minimally
+it needs a comment explaining what is being copied here. Also, why did we
+not use memcpy?
+
+>  		grp->total_faults = p->total_numa_faults;
+> @@ -1526,7 +1536,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+>  
+>  	double_lock(&my_grp->lock, &grp->lock);
+>  
+> -	for (i = 0; i < 2*nr_node_ids; i++) {
+> +	for (i = 0; i < 4*nr_node_ids; i++) {
+>  		my_grp->faults[i] -= p->numa_faults[i];
+>  		grp->faults[i] += p->numa_faults[i];
+>  	}
+
+The same obscure trick is used throughout and I'm not sure how
+maintainable that will be. Would it be better to be explicit about this?
+
+/* NUMA hinting faults may be either shared or private faults */
+#define NR_NUMA_HINT_FAULT_TYPES 2
+
+/* Track shared and private faults
+#define NR_NUMA_HINT_FAULT_STATS (NR_NUMA_HINT_FAULT_TYPES*2)
+
+> @@ -1558,7 +1568,7 @@ void task_numa_free(struct task_struct *p)
+>  
+>  	if (grp) {
+>  		spin_lock(&grp->lock);
+> -		for (i = 0; i < 2*nr_node_ids; i++)
+> +		for (i = 0; i < 4*nr_node_ids; i++)
+>  			grp->faults[i] -= p->numa_faults[i];
+>  		grp->total_faults -= p->total_numa_faults;
+>  
+> @@ -1571,6 +1581,8 @@ void task_numa_free(struct task_struct *p)
+>  
+>  	p->numa_faults = NULL;
+>  	p->numa_faults_buffer = NULL;
+> +	p->numa_faults_from = NULL;
+> +	p->numa_faults_from_buffer = NULL;
+>  	kfree(numa_faults);
+>  }
+>  
+> @@ -1581,6 +1593,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+>  {
+>  	struct task_struct *p = current;
+>  	bool migrated = flags & TNF_MIGRATED;
+> +	int this_node = task_node(current);
+>  	int priv;
+>  
+>  	if (!numabalancing_enabled)
+> @@ -1596,7 +1609,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+>  
+>  	/* Allocate buffer to track faults on a per-node basis */
+>  	if (unlikely(!p->numa_faults)) {
+> -		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+> +		int size = sizeof(*p->numa_faults) * 4 * nr_node_ids;
+>  
+>  		/* numa_faults and numa_faults_buffer share the allocation */
+>  		p->numa_faults = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
+> @@ -1604,7 +1617,9 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+>  			return;
+>  
+>  		BUG_ON(p->numa_faults_buffer);
+> -		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
+> +		p->numa_faults_from = p->numa_faults + (2 * nr_node_ids);
+> +		p->numa_faults_buffer = p->numa_faults + (4 * nr_node_ids);
+> +		p->numa_faults_from_buffer = p->numa_faults + (6 * nr_node_ids);
+>  		p->total_numa_faults = 0;
+>  		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
+>  	}
+> @@ -1634,6 +1649,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+>  		p->numa_pages_migrated += pages;
+>  
+>  	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+> +	p->numa_faults_from_buffer[task_faults_idx(this_node, priv)] += pages;
+>  	p->numa_faults_locality[!!(flags & TNF_FAULT_LOCAL)] += pages;
+
+this_node and node is similarly ambiguous in terms of name. Rename of
+data_node and cpu_node would have been clearer.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Mel Gorman
+SUSE Labs
