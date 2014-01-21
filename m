@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaAUHL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 02:11:57 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:61823 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaAUHLq convert rfc822-to-8bit (ORCPT
+	id S1753498AbaAUHXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 02:23:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22531 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaAUHWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 02:11:46 -0500
-Date: Tue, 21 Jan 2014 08:11:34 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: More GPIO madness on iMX6 - and the crappy ARM port of Linux
-Message-ID: <20140121081134.1cf7924f@ipc1.ka-ro>
-In-Reply-To: <CAAVeFuJhYv_vKqgyyaw7LOzRvErjf4u=5jJCvpoEgA0ZsMj-1Q@mail.gmail.com>
-References: <20140117184731.GE15937@n2100.arm.linux.org.uk>
-	<52D98712.3070103@wwwdotorg.org>
-	<20140117202405.GF15937@n2100.arm.linux.org.uk>
-	<52D995C4.80104@wwwdotorg.org>
-	<20140117205346.GH15937@n2100.arm.linux.org.uk>
-	<CACRpkdaRQRD85-0wUmip=j1SHzti6Nb69JEUXznYTkrxGvky=A@mail.gmail.com>
-	<CAAVeFuJhYv_vKqgyyaw7LOzRvErjf4u=5jJCvpoEgA0ZsMj-1Q@mail.gmail.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jan 2014 02:22:52 -0500
+Date: Tue, 21 Jan 2014 10:22:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Borislav Petkov <bp@alien8.de>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] x86, AMD, NB: silence an underflow test
+Message-ID: <20140121072209.GA22095@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is under CAP_SYS_ADMIN but Smatch complains that mask comes from
+the user and the test for "mask > 0xf" can underflow.  The fix is
+simple.
 
-Alexandre Courbot wrote:
-> On Sat, Jan 18, 2014 at 7:43 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Fri, Jan 17, 2014 at 9:53 PM, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> >> On Fri, Jan 17, 2014 at 01:42:44PM -0700, Stephen Warren wrote:
-> >
-[...]
-> > If the OPEN_DRAIN flag is set on that descriptor we should
-> > always be able to read the input. But as this is not really what the
-> > I2C core wants to know (it really would prefer not to bother with
-> > such GPIO flag details) so is it better if we add a special call to
-> > figure out if the input can be read? Like:
-> >
-> > bool gpiod_input_always_valid(const struct gpio_desc *desc);
-> >
-> > And leave it up to the core to look at flags, driver characteristics
-> > etc and determine whether the input can be trusted?
-> 
-> I am personally a little bit scared by the number of exported
-> functions in the GPIO framework. It is a pretty large number for
-> something that is supposed to be simple, so I'd like to avoid adding
-> more. :) How about the following:
-> 
-> 1) GPIOs configured as output without the open drain or open source
-> flag either return -EINVAL on gpiod_get_value(), or a cached value
-> tracked by gpiolib for consistency (probably the latter).
-> 2) GPIOs configured as open drain or open source report the actual
-> value read on the pin, like i2c-core needs. This requires that, for
-> each GPIO that can be set open drain or open source,
-> gpiod_input_always_valid() == true.
-> 
-I would not bind this to the open drain configuration. Any GPIO output
-pin may actually be in a different state than programmed when the
-output is forcefully driven by another source (shortcut).
-So it makes sense to be able to read back the real state of the pad
-even for push pull outputs.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index a54ee1d054d9..0c4e3e47d462 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -19,7 +19,7 @@ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(void);
+ extern int amd_get_subcaches(int);
+-extern int amd_set_subcaches(int, int);
++extern int amd_set_subcaches(int, unsigned long);
+ 
+ struct amd_l3_cache {
+ 	unsigned indices;
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 59554dca96ec..d9fceb697322 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -179,7 +179,7 @@ int amd_get_subcaches(int cpu)
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+ 
+-int amd_set_subcaches(int cpu, int mask)
++int amd_set_subcaches(int cpu, unsigned long mask)
+ {
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
