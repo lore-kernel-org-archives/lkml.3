@@ -1,93 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaAVRlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:41:21 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50782 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaAVRlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:41:17 -0500
+	id S1752659AbaAVRqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:46:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaAVRqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 12:46:20 -0500
+Date: Wed, 22 Jan 2014 18:45:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH 0/2] mm->def_flags cleanups (Was: Change khugepaged to
+	respect MMF_THP_DISABLE flag)
+Message-ID: <20140122174553.GA29710@redhat.com>
+References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com> <13c9d1b0213af7cee7afb54de368a0b189e98df8.1389905087.git.athorlton@sgi.com> <20140118234957.GB10970@node.dhcp.inet.fi> <20140120195812.GD18196@sgi.com> <20140120201525.GA31416@redhat.com> <20140120204108.GE18196@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH=mFZwtOiTZvOd0_iezcYG+dL=mdxspECUmVeQq6e684sjKqg@mail.gmail.com>
-References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-	<CAH=mFZzmcp5amS-JsNApWiwgYqs70M==FUA6KoxH+oLdbZihcg@mail.gmail.com>
-	<CAK2H+ee8MgXdm3eTzrkvo=R-=8U_0LOmEAKMnKga8KU04jmgCg@mail.gmail.com>
-	<CAH=mFZzLEQ5MAAmwB3tdcM+DxWQho9C6h1Ho7NhKe6JMnOhyVg@mail.gmail.com>
-	<CAK2H+eeihXmxcaupmiXLLRbsbMKiaRT52sxWLX_p3EBFJVuiyA@mail.gmail.com>
-	<CAH=mFZwtOiTZvOd0_iezcYG+dL=mdxspECUmVeQq6e684sjKqg@mail.gmail.com>
-Date: Wed, 22 Jan 2014 09:41:16 -0800
-Message-ID: <CAK2H+edXO3Akcv8jMuantrhd1UzyMZ3MUFkFXYGweS_fLbN_cw@mail.gmail.com>
-Subject: Re: Help Needed
-From: Mark Knecht <markknecht@gmail.com>
-To: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140120204108.GE18196@sgi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 7:47 AM, Madhusudhan Rao Sripalle
-<madhu.sripalle@gmail.com> wrote:
-> I have attached the boot directory contents, /boot/grub/grub.cfg and
-> /etc/default/grub contents. Also attached the mount points on the
-> system.
+Alex, Andrew, I think this simple series makes sense in any case,
+but _perhaps_ it can also help THP_DISABLE.
+
+On 01/20, Alex Thorlton wrote:
 >
-> On Wed, Jan 22, 2014 at 8:39 PM, Mark Knecht <markknecht@gmail.com> wrote:
->> On Wed, Jan 22, 2014 at 7:05 AM, Madhusudhan Rao Sripalle
->> <madhu.sripalle@gmail.com> wrote:
->>> The grub file is /boot/grub/grub.cfg. The newly built kernel is
->>> reflected in grub.cfg. But, the grub doesn't display this new kernel
->>> at the boot time. I tried few tips from the web. It is no help. That
->>> is why I sought help from this forum.
->>
->> You have not provided enough information for anyone to help you very
->> much. Show  things like the contents of /boot, your grub config file,
->> etc., and maybe we'll see the mistake you're making.
->>
->> Good luck,
->> Mark
+> On Mon, Jan 20, 2014 at 09:15:25PM +0100, Oleg Nesterov wrote:
+> >
+> > Although I got lost a bit, and probably misunderstood... but it
+> > seems to me that whatever you do this patch should not touch
+> > khugepaged_scan_mm_slot.
+>
+> Maybe I've gotten myself confused as well :)  After looking through the
+> code some more, my understanding is that khugepaged_test_exit is used to
+> make sure that __khugepaged_exit isn't running from underneath at certain
+> times, so to have khugepaged_test_exit return true when __khugepaged_exit
+> is not necessarily running, seems incorrect to me.
 
-I thin you need someone who knows your disto. You're likely going to
-be better served on a distro-specific list.
+Still can't understand... probably I need to see v3.
 
-In my case (Gentoo) the file edited to give me boot options is
-/boot/grub/grub.conf which is not what you attached. I don't have the
-file on my system but maybe your disto calls it something else.
-Anyway, the contents of what you showed are quite different from the
-way we do it on Gentoo. My grub.conf file contents for comparison:
+But you know, I have another idea. Not sure you will like it, and probably
+I missed something.
 
-c2RAID6 ~ # cat /boot/grub/grub.conf
-default 0
-timeout 15
-splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+Can't we simply add VM_NOHUGEPAGE into ->def_flags? See the (untested)
+patch below, on top of this series.
+
+What do you think?
+
+Oleg.
 
 
-title RAID6 3.10.27-gentoo using LABEL (RAID6, md=1.2, initramfs in kernel)
-root (hd0,0)
-kernel (hd0,0)/boot/bzImage-3.10.27-gentoo root=LABEL=RAID6root
-video=vesafb vga=0x307
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd00..bc1dd9e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -167,6 +167,8 @@ extern unsigned int kobjsize(const void *objp);
+  */
+ #define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_PFNMAP)
+ 
++#define VM_INIT_DEF_MASK	VM_NOHUGEPAGE
++
+ /*
+  * mapping from the currently active vm_flags protection bits (the
+  * low four bits) to a page protection mask..
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 289760f..58afc04 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -149,4 +149,7 @@
+ 
+ #define PR_GET_TID_ADDRESS	40
+ 
++#define PR_SET_THP_DISABLE	41
++#define PR_GET_THP_DISABLE	42
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b84bef7..f6d020b 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -529,8 +529,6 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	atomic_set(&mm->mm_count, 1);
+ 	init_rwsem(&mm->mmap_sem);
+ 	INIT_LIST_HEAD(&mm->mmlist);
+-	mm->flags = (current->mm) ?
+-		(current->mm->flags & MMF_INIT_MASK) : default_dump_filter;
+ 	mm->core_state = NULL;
+ 	atomic_long_set(&mm->nr_ptes, 0);
+ 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+@@ -538,8 +536,15 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	mm_init_aio(mm);
+ 	mm_init_owner(mm, p);
+ 
+-	if (likely(!mm_alloc_pgd(mm))) {
++	if (current->mm) {
++		mm->flags = current->mm->flags & MMF_INIT_MASK;
++		mm->def_flags = current->mm->def_flags & VM_INIT_DEF_MASK;
++	} else {
++		mm->flags = default_dump_filter;
+ 		mm->def_flags = 0;
++	}
++
++	if (likely(!mm_alloc_pgd(mm))) {
+ 		mmu_notifier_mm_init(mm);
+ 		return mm;
+ 	}
+diff --git a/kernel/sys.c b/kernel/sys.c
+index ac1842e..eb8b0fc 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -2029,6 +2029,19 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		if (arg2 || arg3 || arg4 || arg5)
+ 			return -EINVAL;
+ 		return current->no_new_privs ? 1 : 0;
++	case PR_SET_THP_DISABLE:
++	case PR_GET_THP_DISABLE:
++		down_write(&me->mm->mmap_sem);
++		if (option == PR_SET_THP_DISABLE) {
++			if (arg2)
++				me->mm->def_flags |= VM_NOHUGEPAGE;
++			else
++				me->mm->def_flags &= ~VM_NOHUGEPAGE;
++		} else {
++			error = !!(me->mm->flags && VM_NOHUGEPAGE);
++		}
++		up_write(&me->mm->mmap_sem);
++		break;
+ 	default:
+ 		error = -EINVAL;
+ 		break;
 
-title RAID6 3.10.26-gentoo using LABEL (RAID6, md=1.2, initramfs in kernel)
-root (hd0,0)
-kernel (hd0,0)/boot/bzImage-3.10.26-gentoo root=LABEL=RAID6root
-video=vesafb vga=0x307
-
-
-title SSD 3.8.13-gentoo using LABEL (SSD, no initramfs)
-root (hd5,1)
-kernel (hd5,0)/boot/bzImage-3.8.13-gentoo root=LABEL=SDDroot
-video=vesafb vga=0x307
-
-title SSD 3.8.13-gentoo using /dev/sda2 (SSD, no initramfs)
-root (hd5,1)
-kernel (hd5,0)/boot/bzImage-3.8.13-gentoo root=/dev/sda2 video=vesafb vga=0x307
-
-c2RAID6 ~ #
-
-When I build a new kernel it's just added in the manner I briefly
-explained earlier.
-
-Likely I cannot give more help.
-
-Good luck,
-Mark
