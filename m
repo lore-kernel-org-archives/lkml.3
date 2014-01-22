@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035AbaAVWOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:14:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15112 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991AbaAVWN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:13:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,702,1384329600"; 
-   d="scan'208";a="443117984"
-Date: Wed, 22 Jan 2014 14:19:04 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, fengguang.wu@intel.com,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Fei Yang <fei.yang@intel.com>
-Subject: Re: [PATCH v2] x86: don't introduce more __cpuinit users in
- intel_mid_weak_decls.h
-Message-ID: <20140122221904.GC6519@psi-dev26.jf.intel.com>
-References: <52dff2dd.pH9hExjpyBbWvw0a%fengguang.wu@intel.com>
- <1390412055-19341-1-git-send-email-paul.gortmaker@windriver.com>
- <20140122215032.GA6519@psi-dev26.jf.intel.com>
- <52E0404E.4010403@linux.intel.com>
- <52E041E7.4010908@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E041E7.4010908@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756064AbaAVWOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:14:42 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38067 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaAVWOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 17:14:40 -0500
+Message-ID: <1390429008.5567.975.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 02/17] target: Add DIF CHECK_CONDITION ASC/ASCQ
+ exception cases
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>, Oren Duer <oren@mellanox.com>
+Date: Wed, 22 Jan 2014 14:16:48 -0800
+In-Reply-To: <52DFF56E.2010502@dev.mellanox.co.il>
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com>
+	 <1390099480-29013-3-git-send-email-nab@daterainc.com>
+	 <52DFF56E.2010502@dev.mellanox.co.il>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 05:10:47PM -0500, Paul Gortmaker wrote:
-> On 14-01-22 05:03 PM, H. Peter Anvin wrote:
-> > On 01/22/2014 01:50 PM, David Cohen wrote:
-> >>>  
-> >>> -void * __cpuinit get_penwell_ops()
-> >>> +void *get_penwell_ops()
-> >>>  {
-> >>>  	return &penwell_ops;
-> >>>  }
-> >>>  
-> >>> -void * __cpuinit get_cloverview_ops()
-> >>> +void *get_cloverview_ops()
-> >>>  {
-> >>>  	return &penwell_ops;
-> >>>  }
-> >>
-> > 
-> > Can someone also find and fix the missing (void)s?
+On Wed, 2014-01-22 at 18:44 +0200, Sagi Grimberg wrote:
+> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
+> > exception cases into transport_send_check_condition_and_sense().
+> >
+> > This includes:
+> >
+> >    LOGICAL BLOCK GUARD CHECK FAILED
+> >    LOGICAL BLOCK APPLICATION TAG CHECK FAILED
+> >    LOGICAL BLOCK REFERENCE TAG CHECK FAILED
+> >
+> > that used by DIF TYPE1 and TYPE3 failure cases.
+> >
+> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> > Cc: Christoph Hellwig <hch@lst.de>
+> > Cc: Hannes Reinecke <hare@suse.de>
+> > Cc: Sagi Grimberg <sagig@mellanox.com>
+> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > ---
+> >   drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+> >   include/target/target_core_base.h      |    3 +++
+> >   2 files changed, 33 insertions(+)
+> >
+> > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> > index 18c828d..fa4fc04 100644
+> > --- a/drivers/target/target_core_transport.c
+> > +++ b/drivers/target/target_core_transport.c
+> > @@ -2674,6 +2674,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
+> >   		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
+> >   		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
+> >   		break;
+> > +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
+> > +		/* CURRENT ERROR */
+> > +		buffer[0] = 0x70;
+> > +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> > +		/* ILLEGAL REQUEST */
+> > +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> > +		/* LOGICAL BLOCK GUARD CHECK FAILED */
+> > +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> > +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
+> > +		break;
+> > +	case TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED:
+> > +		/* CURRENT ERROR */
+> > +		buffer[0] = 0x70;
+> > +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> > +		/* ILLEGAL REQUEST */
+> > +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> > +		/* LOGICAL BLOCK APPLICATION TAG CHECK FAILED */
+> > +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> > +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x02;
+> > +		break;
+> > +	case TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED:
+> > +		/* CURRENT ERROR */
+> > +		buffer[0] = 0x70;
+> > +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> > +		/* ILLEGAL REQUEST */
+> > +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> > +		/* LOGICAL BLOCK REFERENCE TAG CHECK FAILED */
+> > +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> > +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x03;
+> > +		break;
 > 
-> Sure, I can do that, if nobody else wants to.
-
-I'm sending it. I'm taking care fixing this intel-mid errors right now.
-
-Br, David
-
+> Hey Nic,
 > 
-> P.
-> --
+> I think we missed the failed LBA here. AFAICT According to SPC-4, a DIF
+> error should be accompanied by Information sense-data descriptor with 
+> the (first) failed
+> sector in the information field. This means that this routine should be 
+> ready to accept a
+> u32 bad_sector or something. I'm not sure how much of a must it really is.
 > 
-> > 
-> > 	-hpa
-> > 
-> > 
+> Let me prepare a patch...
+> 
+
+Ah yes, good catch.  This is what se_cmd->block_num was intended for..
+
+Care to add these assignments to target_core_sbc.c:sbc_dif_verify_*
+failures as well..?
+
+--nab
+
