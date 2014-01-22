@@ -1,425 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaAVFdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 00:33:00 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60018 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaAVFc4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 00:32:56 -0500
-Date: Tue, 21 Jan 2014 21:32:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Abhijith Das <adas@redhat.com>, sasha.levin@oracle.com
-Subject: Re: [PATCH 17/24] GFS2: Use RCU/hlist_bl based hash for quotas
-Message-ID: <20140122053248.GX10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1390220627-1571-1-git-send-email-swhiteho@redhat.com>
- <1390220627-1571-18-git-send-email-swhiteho@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390220627-1571-18-git-send-email-swhiteho@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012205-6688-0000-0000-000005C0B3AF
+	id S1751675AbaAVFnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 00:43:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:45394 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819AbaAVFm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 00:42:59 -0500
+Date: Wed, 22 Jan 2014 16:42:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Lv Zheng <lv.zheng@intel.com>
+Subject: linux-next: manual merge of the drivers-x86 tree with the pm tree
+Message-Id: <20140122164254.6880efb8506ed4636768d935@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__22_Jan_2014_16_42_54_+1100_5fOYg=WRj_5TDjTc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 12:23:40PM +0000, Steven Whitehouse wrote:
-> Prior to this patch, GFS2 kept all the quotas for each
-> super block in a single linked list. This is rather slow
-> when there are large numbers of quotas.
-> 
-> This patch introduces a hlist_bl based hash table, similar
-> to the one used for glocks. The initial look up of the quota
-> is now lockless in the case where it is already cached,
-> although we still have to take the per quota spinlock in
-> order to bump the ref count. Either way though, this is a
-> big improvement on what was there before.
-> 
-> The qd_lock and the per super block list is preserved, for
-> the time being. However it is intended that since this is no
-> longer used for its original role, it should be possible to
-> shrink the number of items on that list in due course and
-> remove the requirement to take qd_lock in qd_get.
-> 
-> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: Abhijith Das <adas@redhat.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+--Signature=_Wed__22_Jan_2014_16_42_54_+1100_5fOYg=WRj_5TDjTc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Interesting!  I thought that Sasha Levin had a hash table in the works,
-but I don't see it, so CCing him.
+Hi Matthew,
 
-A few questions and comments below.
+Today's linux-next merge of the drivers-x86 tree got a conflict in
+drivers/platform/x86/mxm-wmi.c between commit 8b48463f8942 ("ACPI: Clean
+up inclusions of ACPI header files") from the pm tree and commit
+475879d65123 ("drivers: platform: Include appropriate header file in
+mxm-wmi.c") from the drivers-x86 tree.
 
-							Thanx, Paul
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-> index a99f60c..59d99ec 100644
-> --- a/fs/gfs2/incore.h
-> +++ b/fs/gfs2/incore.h
-> @@ -428,10 +428,13 @@ enum {
->  };
-> 
->  struct gfs2_quota_data {
-> +	struct hlist_bl_node qd_hlist;
->  	struct list_head qd_list;
->  	struct kqid qd_id;
-> +	struct gfs2_sbd *qd_sbd;
->  	struct lockref qd_lockref;
->  	struct list_head qd_lru;
-> +	unsigned qd_hash;
-> 
->  	unsigned long qd_flags;		/* QDF_... */
-> 
-> @@ -450,6 +453,7 @@ struct gfs2_quota_data {
-> 
->  	u64 qd_sync_gen;
->  	unsigned long qd_last_warn;
-> +	struct rcu_head qd_rcu;
->  };
-> 
->  struct gfs2_trans {
-> diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-> index 0650db2..c272e73 100644
-> --- a/fs/gfs2/main.c
-> +++ b/fs/gfs2/main.c
-> @@ -76,6 +76,7 @@ static int __init init_gfs2_fs(void)
-> 
->  	gfs2_str2qstr(&gfs2_qdot, ".");
->  	gfs2_str2qstr(&gfs2_qdotdot, "..");
-> +	gfs2_quota_hash_init();
-> 
->  	error = gfs2_sys_init();
->  	if (error)
-> diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-> index 1b6b367..a1df01d 100644
-> --- a/fs/gfs2/quota.c
-> +++ b/fs/gfs2/quota.c
-> @@ -52,6 +52,10 @@
->  #include <linux/dqblk_xfs.h>
->  #include <linux/lockref.h>
->  #include <linux/list_lru.h>
-> +#include <linux/rcupdate.h>
-> +#include <linux/rculist_bl.h>
-> +#include <linux/bit_spinlock.h>
-> +#include <linux/jhash.h>
-> 
->  #include "gfs2.h"
->  #include "incore.h"
-> @@ -67,10 +71,43 @@
->  #include "inode.h"
->  #include "util.h"
-> 
-> -/* Lock order: qd_lock -> qd->lockref.lock -> lru lock */
-> +#define GFS2_QD_HASH_SHIFT      12
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Should this be a function of the number of CPUs?  (Might not be an issue
-if the really big systems don't use GFS.)
+diff --cc drivers/platform/x86/mxm-wmi.c
+index 3c59c0a3ee0f,7503d2b9b073..000000000000
+--- a/drivers/platform/x86/mxm-wmi.c
++++ b/drivers/platform/x86/mxm-wmi.c
+@@@ -20,7 -20,9 +20,8 @@@
+  #include <linux/kernel.h>
+  #include <linux/module.h>
+  #include <linux/init.h>
++ #include <linux/mxm-wmi.h>
+ -#include <acpi/acpi_bus.h>
+ -#include <acpi/acpi_drivers.h>
+ +#include <linux/acpi.h>
+ =20
+  MODULE_AUTHOR("Dave Airlie");
+  MODULE_DESCRIPTION("MXM WMI Driver");
 
-> +#define GFS2_QD_HASH_SIZE       (1 << GFS2_QD_HASH_SHIFT)
-> +#define GFS2_QD_HASH_MASK       (GFS2_QD_HASH_SIZE - 1)
-> +
-> +/* Lock order: qd_lock -> bucket lock -> qd->lockref.lock -> lru lock */
->  static DEFINE_SPINLOCK(qd_lock);
->  struct list_lru gfs2_qd_lru;
-> 
-> +static struct hlist_bl_head qd_hash_table[GFS2_QD_HASH_SIZE];
-> +
-> +static unsigned int gfs2_qd_hash(const struct gfs2_sbd *sdp,
-> +				 const struct kqid qid)
-> +{
-> +	unsigned int h;
-> +
-> +	h = jhash(&sdp, sizeof(struct gfs2_sbd *), 0);
-> +	h = jhash(&qid, sizeof(struct kqid), h);
-> +
-> +	return h & GFS2_QD_HASH_MASK;
-> +}
-> +
-> +static inline void spin_lock_bucket(unsigned int hash)
-> +{
-> +        hlist_bl_lock(&qd_hash_table[hash]);
-> +}
-> +
-> +static inline void spin_unlock_bucket(unsigned int hash)
-> +{
-> +        hlist_bl_unlock(&qd_hash_table[hash]);
-> +}
-> +
-> +static void gfs2_qd_dealloc(struct rcu_head *rcu)
-> +{
-> +	struct gfs2_quota_data *qd = container_of(rcu, struct gfs2_quota_data, qd_rcu);
-> +	kmem_cache_free(gfs2_quotad_cachep, qd);
-> +}
-> +
->  static void gfs2_qd_dispose(struct list_head *list)
->  {
->  	struct gfs2_quota_data *qd;
-> @@ -87,6 +124,10 @@ static void gfs2_qd_dispose(struct list_head *list)
->  		list_del(&qd->qd_list);
->  		spin_unlock(&qd_lock);
-> 
-> +		spin_lock_bucket(qd->qd_hash);
-> +		hlist_bl_del_rcu(&qd->qd_hlist);
-> +		spin_unlock_bucket(qd->qd_hash);
-> +
+--Signature=_Wed__22_Jan_2014_16_42_54_+1100_5fOYg=WRj_5TDjTc
+Content-Type: application/pgp-signature
 
-Good, removed from the RCU-traversed list before invoking call_rcu().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
->  		gfs2_assert_warn(sdp, !qd->qd_change);
->  		gfs2_assert_warn(sdp, !qd->qd_slot_count);
->  		gfs2_assert_warn(sdp, !qd->qd_bh_count);
-> @@ -95,7 +136,7 @@ static void gfs2_qd_dispose(struct list_head *list)
->  		atomic_dec(&sdp->sd_quota_count);
-> 
->  		/* Delete it from the common reclaim list */
-> -		kmem_cache_free(gfs2_quotad_cachep, qd);
-> +		call_rcu(&qd->qd_rcu, gfs2_qd_dealloc);
->  	}
->  }
-> 
-> @@ -165,83 +206,95 @@ static u64 qd2offset(struct gfs2_quota_data *qd)
->  	return offset;
->  }
-> 
-> -static int qd_alloc(struct gfs2_sbd *sdp, struct kqid qid,
-> -		    struct gfs2_quota_data **qdp)
-> +static struct gfs2_quota_data *qd_alloc(unsigned hash, struct gfs2_sbd *sdp, struct kqid qid)
->  {
->  	struct gfs2_quota_data *qd;
->  	int error;
-> 
->  	qd = kmem_cache_zalloc(gfs2_quotad_cachep, GFP_NOFS);
->  	if (!qd)
-> -		return -ENOMEM;
-> +		return NULL;
-> 
-> +	qd->qd_sbd = sdp;
->  	qd->qd_lockref.count = 1;
->  	spin_lock_init(&qd->qd_lockref.lock);
->  	qd->qd_id = qid;
->  	qd->qd_slot = -1;
->  	INIT_LIST_HEAD(&qd->qd_lru);
-> +	qd->qd_hash = hash;
-> 
->  	error = gfs2_glock_get(sdp, qd2index(qd),
->  			      &gfs2_quota_glops, CREATE, &qd->qd_gl);
->  	if (error)
->  		goto fail;
-> 
-> -	*qdp = qd;
-> -
-> -	return 0;
-> +	return qd;
-> 
->  fail:
->  	kmem_cache_free(gfs2_quotad_cachep, qd);
-> -	return error;
-> +	return NULL;
->  }
-> 
-> -static int qd_get(struct gfs2_sbd *sdp, struct kqid qid,
-> -		  struct gfs2_quota_data **qdp)
-> +static struct gfs2_quota_data *gfs2_qd_search_bucket(unsigned int hash,
-> +						     const struct gfs2_sbd *sdp,
-> +						     struct kqid qid)
->  {
-> -	struct gfs2_quota_data *qd = NULL, *new_qd = NULL;
-> -	int error, found;
-> -
-> -	*qdp = NULL;
-> +	struct gfs2_quota_data *qd;
-> +	struct hlist_bl_node *h;
-> 
-> -	for (;;) {
-> -		found = 0;
-> -		spin_lock(&qd_lock);
-> -		list_for_each_entry(qd, &sdp->sd_quota_list, qd_list) {
-> -			if (qid_eq(qd->qd_id, qid) &&
-> -			    lockref_get_not_dead(&qd->qd_lockref)) {
-> -				list_lru_del(&gfs2_qd_lru, &qd->qd_lru);
-> -				found = 1;
-> -				break;
-> -			}
-> +	hlist_bl_for_each_entry_rcu(qd, h, &qd_hash_table[hash], qd_hlist) {
+iQIcBAEBCAAGBQJS31phAAoJEMDTa8Ir7ZwVASAP+wdqGFeFQuslrJ5JRIQ4dmB2
+1Nw1I1xjTsXGgb5uYNJ/bnz4uaRF84qkKWfSHt3nx2hhDUjjVL6uS6QnGUz2L8hV
+VbrlbaGgFtjDE47E3fB8DmJsDkKtq8d68RsMs0+sDCP9AYcsaOWJVwFvS6rL1E+t
+LWbavw9wA2cJGz0r2dtgAM2vf0N6VO0dEQ9f9lYGy8PuWaEyp+NiE1ojz6v+xh3R
+0HekmLqnsAyzuhe1rBFIihQZtwWxxbsctVZ2OSGvATkDr5/PKwUERZYGDIfi4R3V
+n9wj+DpZTUHNrhy1dblIHiKbICT5OF0VNBLWViialoS9KEezhpkj0hLMb+1wWiYG
+Nr20XbHUzhfidAzJEgjRA1RNZj4pSiGfJbnotCRWcQ+hCMtGEfT1+TUM/24VbqD2
+yP/smhQZU+9Wbu61o/RFJHFQalXTS+NNR86M3EM8zULpxraqTH4/vvj+EYvcXzgB
+cphASuTRoYeddzpzlL4Wi27IONsVCmjPDPfii90xtawq3Oev5d/nXj2/QVyERiFE
+o7cHjCkz5s770zUN886Qcc5E8Q9c157JSs7RGojDB/7sEAcXUsqq+XKIvjoUlcm7
+9YAwAWlUj8/g63wAsmtS4q8pSZepOFg1KcjnFpgBnn4Cg97hg33KPEZJ+fzTYuXo
+MBcN+SVYrswrr9nvYSbW
+=7v3M
+-----END PGP SIGNATURE-----
 
-All callers of gfs2_qd_search_bucket() either hold the update-side lock
-(acquired via spin_lock_bucket()) or have invoked rcu_read_lock(), so
-this is good.
-
-> +		if (!qid_eq(qd->qd_id, qid))
-> +			continue;
-> +		if (qd->qd_sbd != sdp)
-> +			continue;
-> +		if (lockref_get_not_dead(&qd->qd_lockref)) {
-> +			list_lru_del(&gfs2_qd_lru, &qd->qd_lru);
-
-list_lru_del() acquires a lock, but it is from an array whose size
-depends on the NODES_SHIFT Kconfig variable.  The array size seems to
-vary from 8 to 16 to 64 to 1024, depending on other configuration info,
-so should be OK.
-
-> +			return qd;
->  		}
-> +	}
-> 
-> -		if (!found)
-> -			qd = NULL;
-> +	return NULL;
-> +}
-> 
-> -		if (!qd && new_qd) {
-> -			qd = new_qd;
-> -			list_add(&qd->qd_list, &sdp->sd_quota_list);
-> -			atomic_inc(&sdp->sd_quota_count);
-> -			new_qd = NULL;
-> -		}
-> 
-> -		spin_unlock(&qd_lock);
-> +static int qd_get(struct gfs2_sbd *sdp, struct kqid qid,
-> +		  struct gfs2_quota_data **qdp)
-> +{
-> +	struct gfs2_quota_data *qd, *new_qd;
-> +	unsigned int hash = gfs2_qd_hash(sdp, qid);
-> 
-> -		if (qd) {
-> -			if (new_qd) {
-> -				gfs2_glock_put(new_qd->qd_gl);
-> -				kmem_cache_free(gfs2_quotad_cachep, new_qd);
-> -			}
-> -			*qdp = qd;
-> -			return 0;
-> -		}
-> +	rcu_read_lock();
-> +	*qdp = qd = gfs2_qd_search_bucket(hash, sdp, qid);
-> +	rcu_read_unlock();
-> 
-> -		error = qd_alloc(sdp, qid, &new_qd);
-> -		if (error)
-> -			return error;
-> +	if (qd)
-> +		return 0;
-> +
-> +	new_qd = qd_alloc(hash, sdp, qid);
-> +	if (!new_qd)
-> +		return -ENOMEM;
-> +
-> +	spin_lock(&qd_lock);
-> +	spin_lock_bucket(hash);
-> +	*qdp = qd = gfs2_qd_search_bucket(hash, sdp, qid);
-> +	if (qd == NULL) {
-> +		*qdp = new_qd;
-> +		list_add(&new_qd->qd_list, &sdp->sd_quota_list);
-> +		hlist_bl_add_head_rcu(&new_qd->qd_hlist, &qd_hash_table[hash]);
-> +		atomic_inc(&sdp->sd_quota_count);
-> +	}
-> +	spin_unlock_bucket(hash);
-> +	spin_unlock(&qd_lock);
-> +
-> +	if (qd) {
-> +		gfs2_glock_put(new_qd->qd_gl);
-> +		kmem_cache_free(gfs2_quotad_cachep, new_qd);
->  	}
-> +
-> +	return 0;
->  }
-> 
-> +
->  static void qd_hold(struct gfs2_quota_data *qd)
->  {
->  	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
-> @@ -1215,6 +1268,7 @@ int gfs2_quota_init(struct gfs2_sbd *sdp)
->  	unsigned int blocks = size >> sdp->sd_sb.sb_bsize_shift;
->  	unsigned int x, slot = 0;
->  	unsigned int found = 0;
-> +	unsigned int hash;
->  	u64 dblock;
->  	u32 extlen = 0;
->  	int error;
-> @@ -1272,8 +1326,9 @@ int gfs2_quota_init(struct gfs2_sbd *sdp)
->  			if (!qc_change)
->  				continue;
-> 
-> -			error = qd_alloc(sdp, qc_id, &qd);
-> -			if (error) {
-> +			hash = gfs2_qd_hash(sdp, qc_id);
-> +			qd = qd_alloc(hash, sdp, qc_id);
-> +			if (qd == NULL) {
->  				brelse(bh);
->  				goto fail;
->  			}
-> @@ -1289,6 +1344,10 @@ int gfs2_quota_init(struct gfs2_sbd *sdp)
->  			atomic_inc(&sdp->sd_quota_count);
->  			spin_unlock(&qd_lock);
-> 
-> +			spin_lock_bucket(hash);
-> +			hlist_bl_add_head_rcu(&qd->qd_hlist, &qd_hash_table[hash]);
-> +			spin_unlock_bucket(hash);
-> +
->  			found++;
->  		}
-> 
-> @@ -1335,11 +1394,16 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
->  		spin_unlock(&qd->qd_lockref.lock);
-> 
->  		list_del(&qd->qd_list);
-> +
->  		/* Also remove if this qd exists in the reclaim list */
->  		list_lru_del(&gfs2_qd_lru, &qd->qd_lru);
->  		atomic_dec(&sdp->sd_quota_count);
->  		spin_unlock(&qd_lock);
-> 
-> +		spin_lock_bucket(qd->qd_hash);
-> +		hlist_bl_del_rcu(&qd->qd_hlist);
-
-Might just be my unfamiliarity with this code, but it took me a bit
-to see the difference between ->qd_hlist and ->qd_list.  Of course, until
-I spotted the difference, I was wondering why you were removing the
-item twice.  ;-)
-
-> +		spin_unlock_bucket(qd->qd_hash);
-> +
->  		if (!qd->qd_lockref.count) {
->  			gfs2_assert_warn(sdp, !qd->qd_change);
->  			gfs2_assert_warn(sdp, !qd->qd_slot_count);
-> @@ -1348,7 +1412,7 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
->  		gfs2_assert_warn(sdp, !qd->qd_bh_count);
-> 
->  		gfs2_glock_put(qd->qd_gl);
-> -		kmem_cache_free(gfs2_quotad_cachep, qd);
-> +		call_rcu(&qd->qd_rcu, gfs2_qd_dealloc);
-> 
->  		spin_lock(&qd_lock);
->  	}
-> @@ -1643,3 +1707,11 @@ const struct quotactl_ops gfs2_quotactl_ops = {
->  	.get_dqblk	= gfs2_get_dqblk,
->  	.set_dqblk	= gfs2_set_dqblk,
->  };
-> +
-> +void __init gfs2_quota_hash_init(void)
-> +{
-> +	unsigned i;
-> +
-> +	for(i = 0; i < GFS2_QD_HASH_SIZE; i++)
-> +		INIT_HLIST_BL_HEAD(&qd_hash_table[i]);
-> +}
-> diff --git a/fs/gfs2/quota.h b/fs/gfs2/quota.h
-> index 96e4f34..55d506e 100644
-> --- a/fs/gfs2/quota.h
-> +++ b/fs/gfs2/quota.h
-> @@ -57,5 +57,6 @@ static inline int gfs2_quota_lock_check(struct gfs2_inode *ip)
->  extern const struct quotactl_ops gfs2_quotactl_ops;
->  extern struct shrinker gfs2_qd_shrinker;
->  extern struct list_lru gfs2_qd_lru;
-> +extern void __init gfs2_quota_hash_init(void);
-> 
->  #endif /* __QUOTA_DOT_H__ */
-> -- 
-> 1.8.3.1
-> 
-
+--Signature=_Wed__22_Jan_2014_16_42_54_+1100_5fOYg=WRj_5TDjTc--
