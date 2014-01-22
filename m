@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaAVUBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 15:01:18 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:53647 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752358AbaAVUBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 15:01:17 -0500
-Date: Wed, 22 Jan 2014 21:01:13 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org, arnd@arndb.de,
-        linux@roeck-us.net
-Subject: Re: [PATCH] watchdog: mach-moxart: add restart handler
-Message-ID: <20140122200113.GA7490@spo001.leaseweb.com>
-References: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
-Mime-Version: 1.0
+	id S1755615AbaAVUB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:01:57 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:51970 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753391AbaAVUB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 15:01:56 -0500
+Date: Wed, 22 Jan 2014 14:02:14 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 0/2] mm->def_flags cleanups (Was: Change khugepaged to
+ respect MMF_THP_DISABLE flag)
+Message-ID: <20140122200214.GV18196@sgi.com>
+References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com>
+ <13c9d1b0213af7cee7afb54de368a0b189e98df8.1389905087.git.athorlton@sgi.com>
+ <20140118234957.GB10970@node.dhcp.inet.fi>
+ <20140120195812.GD18196@sgi.com>
+ <20140120201525.GA31416@redhat.com>
+ <20140120204108.GE18196@sgi.com>
+ <20140122174553.GA29710@redhat.com>
+ <20140122184042.GQ18196@sgi.com>
+ <20140122192514.GA1779@redhat.com>
+ <20140122194327.GA2826@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <20140122194327.GA2826@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonas,
-
-> mach-moxart lacks a separate register for reset; as a workaround,
-> add a function that can be hooked to arm_pm_restart.
+On Wed, Jan 22, 2014 at 08:43:27PM +0100, Oleg Nesterov wrote:
+> On 01/22, Oleg Nesterov wrote:
+> >
+> > On 01/22, Alex Thorlton wrote:
+> > > > +	case PR_SET_THP_DISABLE:
+> > > > +	case PR_GET_THP_DISABLE:
+> > > > +		down_write(&me->mm->mmap_sem);
+> > > > +		if (option == PR_SET_THP_DISABLE) {
+> > > > +			if (arg2)
+> > > > +				me->mm->def_flags |= VM_NOHUGEPAGE;
+> > > > +			else
+> > > > +				me->mm->def_flags &= ~VM_NOHUGEPAGE;
+> > > > +		} else {
+> > > > +			error = !!(me->mm->flags && VM_NOHUGEPAGE);
+> > >
+> > > Should be:
+> > >
+> > > error = !!(me->mm->def_flags && VM_NOHUGEPAGE);
+> >
+> > No, we need to return 1 if this bit is set ;)
 > 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> Damn, you are right of course, we need "&". I didn't notice "&&"
+> in the patch I sent and misunderstood your "&&" above ;) Sorry.
 
-Added to linux-watchdog-next.
+Actually, I didn't catch that either!  Looking at it, though, we
+definitely do want bitwise AND here, not logical.
 
-> ---
-> 
-> Notes:
->     During review of this driver, the restart handler for moxart was
->     removed, and moved to platform code under arch/arm/mach-moxart/.
->     
->     Since then, new considerations arrived,
->     see replies from Arnd and Guenter:
->     
->     "[PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files"
->     http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/219175.html
->     
->     I can move this to a new power/restart driver, but first, I want to
->     hear what Wim or others think.
->     
->     Until there is a better solution, my motivation is that this uses
->     the watchdog. The way I see it, the problem is that there is no
->     separate register for reset, this was always a workaround for that.
->     
->     Applies to next-20131218
+However, what I was originally referring to is:  Shouldn't we be
+checking mm->***def_flags*** for the VM_NOHUGEPAGE bit, as opposed
+to mm->flags?  i.e. I think we want this:
 
-Will review this again after the merge window is over.
+error = !!(me->mm->def_flags & VM_NOHUGEPAGE);
 
-Kind regards,
-Wim.
+As opposed to:
 
+error = !!(me->mm->flags && VM_NOHUGEPAGE);
+
+The way I understand it, the VM_NOHUGEPAGE bit is defined for
+mm->vma->flags, but not for mm->flags.  Am I wrong here?
+
+- Alex
