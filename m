@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaAVK7P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:59:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50916 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754704AbaAVK7M (ORCPT
+	id S1755279AbaAVLA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 06:00:27 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40068 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600AbaAVLAY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:59:12 -0500
-Date: Wed, 22 Jan 2014 10:58:40 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+	Wed, 22 Jan 2014 06:00:24 -0500
+Date: Wed, 22 Jan 2014 11:00:18 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Neil Leeder <nleeder@codeaurora.org>,
-        Ashwin Chaugule <ashwinc@codeaurora.org>
-Subject: Re: [PATCH v2 5/7] ARM: perf_event: Fully support Krait CPU PMU
- events
-Message-ID: <20140122105840.GD1621@mudshark.cambridge.arm.com>
-References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
- <1389808535-23852-6-git-send-email-sboyd@codeaurora.org>
- <20140121180711.GN30706@mudshark.cambridge.arm.com>
- <52DEBE6B.7000904@codeaurora.org>
- <52DEEDDA.4060302@codeaurora.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain
+ look-up
+Message-ID: <20140122110018.GB24288@e102568-lin.cambridge.arm.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+ <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
+ <20140116163409.GD25540@e102568-lin.cambridge.arm.com>
+ <52DD5DC5.3000908@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DEEDDA.4060302@codeaurora.org>
+In-Reply-To: <52DD5DC5.3000908@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Jan 2014 11:00:19.0589 (UTC) FILETIME=[23BD0350:01CF1761]
+X-MC-Unique: 114012211002007601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 09:59:54PM +0000, Stephen Boyd wrote:
-> On 01/21/14 10:37, Stephen Boyd wrote:
-> > On 01/21/14 10:07, Will Deacon wrote:
-> >> Finally, I'd really like to see this get some test coverage, but I don't
-> >> want to try running mainline on my phone :) Could you give your patches a
-> >> spin with Vince's perf fuzzer please?
-> >>
-> >>   https://github.com/deater/perf_event_tests.git
-> >>
-> >> (then build the contents of the fuzzer directory and run it for as long as
-> >> you can).
-> >>
-> > Ok. I'll see what I can do.
+On Mon, Jan 20, 2014 at 05:32:53PM +0000, Tomasz Figa wrote:
+> Hi Lorenzo,
 > 
-> Neat. This quickly discovered a problem.
-
-Yeah, the fuzzer is good at that!
-
-> BUG: using smp_processor_id() in preemptible [00000000] code: perf_fuzzer/70
-> caller is krait_pmu_get_event_idx+0x58/0xd8
-> CPU: 2 PID: 70 Comm: perf_fuzzer Not tainted 3.13.0-rc7-next-20140108-00041-gb038353c8516-dirty #58
-> [<c02165dc>] (unwind_backtrace) from [<c0212ffc>] (show_stack+0x10/0x14)
-> [<c0212ffc>] (show_stack) from [<c06ad5fc>] (dump_stack+0x6c/0xb8)
-> [<c06ad5fc>] (dump_stack) from [<c04b0928>] (debug_smp_processor_id+0xc4/0xe8)
-> [<c04b0928>] (debug_smp_processor_id) from [<c021a19c>] (krait_pmu_get_event_idx+0x58/0xd8)
-> [<c021a19c>] (krait_pmu_get_event_idx) from [<c021833c>] (validate_event+0x2c/0x54)
-> [<c021833c>] (validate_event) from [<c02186b4>] (armpmu_event_init+0x264/0x2dc)
-> [<c02186b4>] (armpmu_event_init) from [<c02b28e4>] (perf_init_event+0x138/0x194)
-> [<c02b28e4>] (perf_init_event) from [<c02b2c04>] (perf_event_alloc+0x2c4/0x348)
-> [<c02b2c04>] (perf_event_alloc) from [<c02b37e4>] (SyS_perf_event_open+0x7b8/0x9cc)
-> [<c02b37e4>] (SyS_perf_event_open) from [<c020ef80>] (ret_fast_syscall+0x0/0x48)
+> On 16.01.2014 17:34, Lorenzo Pieralisi wrote:
+> > Hi Tomasz,
+> >
+> > thank you for posting this series. I would like to use the DT bindings
+> > for power domains in the bindings for C-states on ARM:
+> >
+> > http://comments.gmane.org/gmane.linux.power-management.general/41012
+> >
+> > and in particular link a given C-state to a given power domain so that the
+> > kernel will have a way to actually check what devices are lost upon C-state
+> > entry (and for devices I also mean CPU peripheral like PMUs, GIC CPU IF,
+> > caches and possibly cpus, all of them already represented with DT nodes).
+> >
+> > I have a remark:
+> >
+> > -  Can we group device nodes under a single power-domain-parent so that
+> >     all devices defined under that parent won't have to re-define a
+> >     power-domain property (a property like interrupt-parent, so to speak)
+> >
+> > What do you think ?
 > 
-> This is happening because the pmresrn_used mask is per-cpu but
-> validate_group() is called in preemptible context. It looks like we'll
-> need to add another unsigned long * field to struct pmu_hw_events just
-> for Krait purposes? Or we could use the upper 16 bits of the used_mask
-> bitmap to hold the pmresr_used values? Sounds sort of hacky but it
-> avoids adding another bitmap for every PMU user and there aren't any
-> Krait CPUs with more than 5 counters anyway.
+> Hmm, I can see potential benefits of such construct on platforms with 
+> clear hierarchy of devices, but to make sure I'm getting it correctly, 
+> is the following what you have in mind?
+> 
+> soc-domain-x@12340000 {
+> 	compatible = "...";
+> 	reg = <...>;
+> 	power-domain-parent = <&power_domains DOMAIN_X>;
+> 
+> 	device@1000 {
+> 		compatible = "...";
+> 		// inherits power-domain = <&power_domains DOMAIN_X>
+> 	};
+> 
+> 	device@2000 {
+> 		compatible = "...";
+> 		// inherits power-domain = <&power_domains DOMAIN_X>
+> 	};
+> };
 
-I'm fine with that approach, but a comment saying what we're doing with
-those upper bits wouldn't go amiss.
+Yes, exactly, it could avoid duplicated data. I still have an issue
+with nodes that are per-cpu but define just one node (eg PMU), since
+a CPU might belong in a power-domain on its own (ie one power domain
+per-CPU) and basically this means that arch-timers, PMU & company should
+link to multiple power domains, ie one per CPU or we find a way to define
+a power domain as "banked".
 
-> This is the diff for the latter version. I'll let the fuzzer run overnight.
+I need to think about this a bit more, thanks for your feedback.
 
-Cheers,
+Lorenzo
 
-Will
