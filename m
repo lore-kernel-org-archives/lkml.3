@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055AbaAVRAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:00:09 -0500
-Received: from mail.windriver.com ([147.11.1.11]:33902 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaAVRAC (ORCPT
+	id S1755937AbaAVRAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:00:40 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36481 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752831AbaAVRAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:00:02 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <x86@kernel.org>, <fengguang.wu@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Fei Yang <fei.yang@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH] x86: don't introduce more __cpuinit users in intel_mid_weak_decls.h
-Date: Wed, 22 Jan 2014 11:59:51 -0500
-Message-ID: <1390409991-7701-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <52dff2dd.pH9hExjpyBbWvw0a%fengguang.wu@intel.com>
-References: <52dff2dd.pH9hExjpyBbWvw0a%fengguang.wu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 22 Jan 2014 12:00:35 -0500
+Message-ID: <1390410033.2372.28.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Chris Mason <clm@fb.com>, "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>
+Date: Wed, 22 Jan 2014 09:00:33 -0800
+In-Reply-To: <52DFF5A8.1090002@redhat.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+		 <20140122093435.GS4963@suse.de>
+		 <1390403770.1198.4.camel@ret.masoncoding.com>
+	 <1390406584.2372.7.camel@dabdike.int.hansenpartnership.com>
+	 <52DFF5A8.1090002@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 85611e3febe78955a519f5f9eb47b941525c8c76 ("x86, intel-mid:
-Add Clovertrail platform support") added new instances of __cpuinit
-usage.  We removed this a couple versions ago; we now want to remove
-the compat no-op stubs.  Introducing new users is not what we want to
-see at this point in time, as it will break once the stubs are gone.
+On Wed, 2014-01-22 at 11:45 -0500, Ric Wheeler wrote:
+> On 01/22/2014 11:03 AM, James Bottomley wrote:
+> > On Wed, 2014-01-22 at 15:14 +0000, Chris Mason wrote:
+> >> On Wed, 2014-01-22 at 09:34 +0000, Mel Gorman wrote:
+> >>> On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> >>>> One topic that has been lurking forever at the edges is the current
+> >>>> 4k limitation for file system block sizes. Some devices in
+> >>>> production today and others coming soon have larger sectors and it
+> >>>> would be interesting to see if it is time to poke at this topic
+> >>>> again.
+> >>>>
+> >>> Large block support was proposed years ago by Christoph Lameter
+> >>> (http://lwn.net/Articles/232757/). I think I was just getting started
+> >>> in the community at the time so I do not recall any of the details. I do
+> >>> believe it motivated an alternative by Nick Piggin called fsblock though
+> >>> (http://lwn.net/Articles/321390/). At the very least it would be nice to
+> >>> know why neither were never merged for those of us that were not around
+> >>> at the time and who may not have the chance to dive through mailing list
+> >>> archives between now and March.
+> >>>
+> >>> FWIW, I would expect that a show-stopper for any proposal is requiring
+> >>> high-order allocations to succeed for the system to behave correctly.
+> >>>
+> >> My memory is that Nick's work just didn't have the momentum to get
+> >> pushed in.  It all seemed very reasonable though, I think our hatred of
+> >> buffered heads just wasn't yet bigger than the fear of moving away.
+> >>
+> >> But, the bigger question is how big are the blocks going to be?  At some
+> >> point (64K?) we might as well just make a log structured dm target and
+> >> have a single setup for both shingled and large sector drives.
+> > There is no real point.  Even with 4k drives today using 4k sectors in
+> > the filesystem, we still get 512 byte writes because of journalling and
+> > the buffer cache.
+> 
+> I think that you are wrong here James. Even with 512 byte drives, the IO's we 
+> send down tend to be 4k or larger. Do you have traces that show this and details?
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-Cc: Fei Yang <fei.yang@intel.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+It's mostly an ext3 journalling issue ... and it's only metadata and
+mostly the ioschedulers can elevate it into 4k chunks, so yes, most of
+our writes are 4k+, so this is a red herring, yes.
 
-[patch will be added to init cleanup series:
-   http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git/  ]
+> >
+> > The question is what would we need to do to support these devices and
+> > the answer is "try to send IO in x byte multiples x byte aligned" this
+> > really becomes an ioscheduler problem, not a supporting large page
+> > problem.
+> >
+> > James
+> >
+> 
+> Not that simple.
+> 
+> The requirement of some of these devices are that you *never* send down a 
+> partial write or an unaligned write.
 
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+But this is the million dollar question.  That was originally going to
+be the requirement of the 4k sector devices but look what happened in
+the market.
 
-diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-index a537ffc16299..41fe17d0d8ff 100644
---- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-@@ -14,6 +14,6 @@
- /* For every CPU addition a new get_<cpuname>_ops interface needs
-  * to be added.
-  */
--extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
--extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
-+extern void *get_penwell_ops(void) __attribute__((weak));
-+extern void *get_cloverview_ops(void) __attribute__((weak));
- extern void * __init get_tangier_ops(void) __attribute__((weak));
--- 
-1.8.5.2
+> Also keep in mind that larger block sizes allow us to track larger
+> files with 
+> smaller amounts of metadata which is a second win.
+
+Larger file block sizes are completely independent from larger device
+block sizes (we can have 16k file block sizes on 4k or even 512b
+devices).  The questions on larger block size devices are twofold:
+
+     1. If manufacturers tell us that they'll only support I/O on the
+        physical sector size, do we believe them, given that they said
+        this before on 4k and then backed down.  All the logical vs
+        physical sector stuff is now in T10 standards, why would they
+        try to go all physical again, especially as they've now all
+        written firmware that does the necessary RMW?
+     2. If we agree they'll do RMW in Firmware again, what do we have to
+        do to take advantage of larger sector sizes beyond what we
+        currently do in alignment and chunking?  There may still be
+        issues in FS journal and data layouts.
+
+James
+
 
