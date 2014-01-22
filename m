@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaAVXgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:36:50 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:46087 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338AbaAVXgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:36:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,702,1384272000"; 
-   d="scan'208";a="9445257"
-Message-ID: <52E056AF.8060005@cn.fujitsu.com>
-Date: Thu, 23 Jan 2014 07:39:27 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755352AbaAVXhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:37:54 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45870 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752539AbaAVXhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 18:37:53 -0500
+Date: Wed, 22 Jan 2014 23:37:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 21/24] drm/i2c: tda998x: add the active aspect in
+	HDMI AVI frame
+Message-ID: <20140122233744.GR15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195846.0b83e7b1@armhf>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: hang on early boot, numa init code stack overflow?
-References: <20140122163244.GA24936@redhat.com>
-In-Reply-To: <20140122163244.GA24936@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/23 07:35:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/23 07:35:22,
-	Serialize complete at 2014/01/23 07:35:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140119195846.0b83e7b1@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 12:32 AM, Dave Jones wrote:
-> I'm seeing a hang during boot on my test box running the current tree,
-> It doesn't always happen, perhaps one in five boots.
-> I managed to get a partial trace after booting with earlyprintk=vga
->
-> dump_stack
-> panic
-> ? numa_clear_kernel_node_hotplug
-> __stack_chk_fail
-> numa_clear_kernel_node_hotplug
-> ? memblock_search_pfn_nid
-> ? __early_pfn_to_nid
-> numa_init
-> x86_numa_init
-> initmem_init
-> setup_arch
-> start_kernel
->
-> Looks like something overflowed the stack.
-> This is just a quad-core i5, nothing fancy numa-wise.
->
-> This code was added in a0acda917284183f9b71e2d08b0aa0aea722b321
+On Sun, Jan 19, 2014 at 07:58:46PM +0100, Jean-Francois Moine wrote:
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-Will send a patch to fix it today.
+"The picture aspect setting was zero, which is reserved.  A setting of
+Same As Picture makes more sense."
 
-Thanks.
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
->
-> 	Dave
->
->
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
