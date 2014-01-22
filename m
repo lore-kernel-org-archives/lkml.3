@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaAVMBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:01:24 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60796 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755161AbaAVMBX convert rfc822-to-8bit (ORCPT
+	id S1755523AbaAVMDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:03:22 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:57953 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161AbaAVMDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:01:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,699,1384329600"; 
-   d="scan'208";a="462793164"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: RE: [PATCH v2 0/4] Intel MPX support
-Thread-Topic: [PATCH v2 0/4] Intel MPX support
-Thread-Index: AQHPF2iQ1cV6ZhmSakelbdnep6mdOZqQpCQw
-Date: Wed, 22 Jan 2014 12:01:18 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014EC163@SHSMSX102.ccr.corp.intel.com>
-References: <1390382866-6361-1-git-send-email-qiaowei.ren@intel.com>
- <20140122115321.GA8281@gmail.com>
-In-Reply-To: <20140122115321.GA8281@gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Jan 2014 07:03:19 -0500
+Message-ID: <52DFB382.5080002@redhat.com>
+Date: Wed, 22 Jan 2014 13:03:14 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: Re: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
+References: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 22/01/2014 06:29, Liu, Jinsong ha scritto:
+> These patches are version 3 to enalbe Intel MPX for KVM.
+>
+> Version 1:
+>   * Add some Intel MPX definiation
+>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features enable/disable
+>   * vmx and msr handle for MPX support at KVM
+>   * enalbe MPX feature for guest
+>
+> Version 2:
+>   * remove generic MPX definiation, Qiaowei's patch has add the definiation at kernel side
+>   * add MSR_IA32_BNDCFGS to msrs_to_save
+>
+> Version 3:
+>   * rebase on latest kernel, which include Qiaowei's MPX common definiation pulled from HPA's tree
 
+I am afraid there is still some work to do on these patches, so they 
+need to be delayed to 3.15.
 
-> -----Original Message-----
-> From: Ingo Molnar [mailto:mingo.kernel.org@gmail.com] On Behalf Of Ingo
-> Molnar
-> Sent: Wednesday, January 22, 2014 7:53 PM
-> To: Ren, Qiaowei
-> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
-> linux-kernel@vger.kernel.org; Peter Zijlstra
-> Subject: Re: [PATCH v2 0/4] Intel MPX support
-> 
-> 
-> * Qiaowei Ren <qiaowei.ren@intel.com> wrote:
-> 
-> > Changes since v1:
-> >   * check to see if #BR occurred in userspace or kernel space.
-> >   * use generic structure and macro as much as possible when
-> >     decode mpx instructions.
-> >
-> > Qiaowei Ren (4):
-> >   x86, mpx: add documentation on Intel MPX
-> >   x86, mpx: hook #BR exception handler to allocate bound tables
-> >   x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
-> >   x86, mpx: extend siginfo structure to include bound violation
-> >     information
-> >
-> >  Documentation/x86/intel_mpx.txt    |   76 +++++++
-> >  arch/x86/Kconfig                   |    4 +
-> >  arch/x86/include/asm/mpx.h         |   63 ++++++
-> >  arch/x86/include/asm/processor.h   |   16 ++
-> >  arch/x86/kernel/Makefile           |    1 +
-> >  arch/x86/kernel/mpx.c              |  417
-> ++++++++++++++++++++++++++++++++++++
-> >  arch/x86/kernel/traps.c            |   61 +++++-
-> >  include/uapi/asm-generic/siginfo.h |    9 +-
-> >  include/uapi/linux/prctl.h         |    6 +
-> >  kernel/signal.c                    |    4 +
-> >  kernel/sys.c                       |   12 +
-> >  11 files changed, 667 insertions(+), 2 deletions(-)  create mode
-> > 100644 Documentation/x86/intel_mpx.txt  create mode 100644
-> > arch/x86/include/asm/mpx.h  create mode 100644 arch/x86/kernel/mpx.c
-> 
-> Such a patch submission is absolutely inadequate!
-> 
-> Please outline:
-> 
->   - a short summary of what the feature does
-> 
->   - a short description of what hardware supports it today or will
->     support it in the future
-> 
->   - a short description of whether the feature needs any
->     configuration from the user or it's entirely auto-enabled on
->     hardware that supports it.
-> 
->   - a cost/benefit description to unrelated code: is this slowing down
->     anything else?
-> 
->   - how does user-space compiler support stand, what's the expected
->     status there, etc.
-> 
-> Only a small fraction of that information can be found in
-> Documentation/x86/intel_mpx.txt. in
-> 
-> I'm absolutely sick of these semi-anonymous patch submissions from Intel, so
-> I'm NAK-ing it until it's communicated properly.
-> 
-Ok. I will add related content into this documentation.
+Patch 1:
+	this seems mostly separate from the rest of the MPX work.  I
+	commented on the missing "ULL" suffix, but I would also like to
+	understand why you put this patch in this series.
 
-Thanks,
-Qiaowei
+Patch 2:
+	As remarked in the reply to this patch:
+	- the vmx_disable_intercept_for_msr has to be unconditional
+	- you need a new kvm_x86_ops member mpx_supported, to disable
+	MPX whenever the two VMX controls are not available.
+
+Patch 3:
+	this patch needs to be rebased.  Apart from that it is fine,
+	but please move the VMX bits together with patch 2, and the
+	other bits together with patch 4.
+
+Patch 4:
+	this patch needs to be rebased and to use the new mpx_supported
+	member
+
+If you also want to look at nested VMX support for MPX, that would be 
+nice.  It should not be hard.  Otherwise we can take care of that later.
+
+Thanks for your work,
+
+Paolo
