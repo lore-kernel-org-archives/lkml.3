@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929AbaAVVFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:05:05 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58708 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865AbaAVVFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:05:02 -0500
-Date: Wed, 22 Jan 2014 22:05:04 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yijing Wang <wangyijing@huawei.com>
-cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH] clocksource: fix some comments typo in clocksource.c
-In-Reply-To: <1388653000-9944-1-git-send-email-wangyijing@huawei.com>
-Message-ID: <alpine.DEB.2.02.1401222201260.24986@ionos.tec.linutronix.de>
-References: <1388653000-9944-1-git-send-email-wangyijing@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756003AbaAVVFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:05:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886AbaAVVF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 16:05:29 -0500
+Date: Wed, 22 Jan 2014 22:05:24 +0100
+From: Jan Kara <jack@suse.cz>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Chris Mason <clm@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Message-ID: <20140122210524.GA27916@quack.suse.cz>
+References: <20131220093022.GV11295@suse.de>
+ <52DF353D.6050300@redhat.com>
+ <20140122093435.GS4963@suse.de>
+ <1390403770.1198.4.camel@ret.masoncoding.com>
+ <1390406584.2372.7.camel@dabdike.int.hansenpartnership.com>
+ <52DFF5A8.1090002@redhat.com>
+ <1390410033.2372.28.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390410033.2372.28.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jan 2014, Yijing Wang wrote:
-
-> Fix some trivial comments typo in kernel/time/clocksource.c
-
-That's not a typo. Thats a left over. The function simply cannot fail
-anymore. So the subject of that patch should be something like:
-
-clocksource: Remove outdated comments
-
-And the changelog should explain, that the functions always return 0,
-so the comment is just pointless. A nice follow up on that would be to
-actually make the function void instead of returning a pointless int,
-but that requires to check all call sites.
-
-Thanks,
-
-	tglx
- 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  kernel/time/clocksource.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+On Wed 22-01-14 09:00:33, James Bottomley wrote:
+> On Wed, 2014-01-22 at 11:45 -0500, Ric Wheeler wrote:
+> > On 01/22/2014 11:03 AM, James Bottomley wrote:
+> > > On Wed, 2014-01-22 at 15:14 +0000, Chris Mason wrote:
+> > >> On Wed, 2014-01-22 at 09:34 +0000, Mel Gorman wrote:
+> > >>> On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> > >>>> One topic that has been lurking forever at the edges is the current
+> > >>>> 4k limitation for file system block sizes. Some devices in
+> > >>>> production today and others coming soon have larger sectors and it
+> > >>>> would be interesting to see if it is time to poke at this topic
+> > >>>> again.
+> > >>>>
+> > >>> Large block support was proposed years ago by Christoph Lameter
+> > >>> (http://lwn.net/Articles/232757/). I think I was just getting started
+> > >>> in the community at the time so I do not recall any of the details. I do
+> > >>> believe it motivated an alternative by Nick Piggin called fsblock though
+> > >>> (http://lwn.net/Articles/321390/). At the very least it would be nice to
+> > >>> know why neither were never merged for those of us that were not around
+> > >>> at the time and who may not have the chance to dive through mailing list
+> > >>> archives between now and March.
+> > >>>
+> > >>> FWIW, I would expect that a show-stopper for any proposal is requiring
+> > >>> high-order allocations to succeed for the system to behave correctly.
+> > >>>
+> > >> My memory is that Nick's work just didn't have the momentum to get
+> > >> pushed in.  It all seemed very reasonable though, I think our hatred of
+> > >> buffered heads just wasn't yet bigger than the fear of moving away.
+> > >>
+> > >> But, the bigger question is how big are the blocks going to be?  At some
+> > >> point (64K?) we might as well just make a log structured dm target and
+> > >> have a single setup for both shingled and large sector drives.
+> > > There is no real point.  Even with 4k drives today using 4k sectors in
+> > > the filesystem, we still get 512 byte writes because of journalling and
+> > > the buffer cache.
+> > 
+> > I think that you are wrong here James. Even with 512 byte drives, the IO's we 
+> > send down tend to be 4k or larger. Do you have traces that show this and details?
 > 
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index ba3e502..9951575 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -779,8 +779,6 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
->   * @scale:	Scale factor multiplied against freq to get clocksource hz
->   * @freq:	clocksource frequency (cycles per second) divided by scale
->   *
-> - * Returns -EBUSY if registration fails, zero otherwise.
-> - *
->   * This *SHOULD NOT* be called directly! Please use the
->   * clocksource_register_hz() or clocksource_register_khz helper functions.
->   */
-> @@ -805,7 +803,6 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
->   * clocksource_register - Used to install new clocksources
->   * @cs:		clocksource to be registered
->   *
-> - * Returns -EBUSY if registration fails, zero otherwise.
->   */
->  int clocksource_register(struct clocksource *cs)
->  {
-> -- 
-> 1.7.1
+> It's mostly an ext3 journalling issue ... and it's only metadata and
+> mostly the ioschedulers can elevate it into 4k chunks, so yes, most of
+> our writes are 4k+, so this is a red herring, yes.
+  ext3 (similarly as ext4) does block level journalling meaning that it
+journals *only* full blocks. So an ext3/4 filesystem with 4 KB blocksize
+will never journal anything else than full 4 KB blocks. So I'm not sure
+where this 512-byte writes idea came from..
+
+> > Also keep in mind that larger block sizes allow us to track larger
+> > files with 
+> > smaller amounts of metadata which is a second win.
 > 
+> Larger file block sizes are completely independent from larger device
+> block sizes (we can have 16k file block sizes on 4k or even 512b
+> devices).  The questions on larger block size devices are twofold:
 > 
-> 
+>      1. If manufacturers tell us that they'll only support I/O on the
+>         physical sector size, do we believe them, given that they said
+>         this before on 4k and then backed down.  All the logical vs
+>         physical sector stuff is now in T10 standards, why would they
+>         try to go all physical again, especially as they've now all
+>         written firmware that does the necessary RMW?
+>      2. If we agree they'll do RMW in Firmware again, what do we have to
+>         do to take advantage of larger sector sizes beyond what we
+>         currently do in alignment and chunking?  There may still be
+>         issues in FS journal and data layouts.
+  I also believe drives will support smaller-than-blocksize writes. But
+supporting larger fs blocksize can sometimes be beneficial for other
+reasons (think performance with specialized workloads because amount of
+metadata is smaller, fragmentation is smaller, ...). Currently ocfs2, ext4,
+and possibly others go through the hoops to support allocating file data in
+chunks larger than fs blocksize - at the first sight that should be
+straightforward but if you look at the code you find out there are nasty
+corner cases which make it pretty ugly. And each fs doing these large data
+allocations currently invents its own way to deal with the problems. So
+providing some common infrastructure for dealing with blocks larger than
+page size would definitely relieve some pain.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
