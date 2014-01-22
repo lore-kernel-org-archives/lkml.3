@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaAVTyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:54:21 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:43592 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaAVTyT (ORCPT
+	id S1755849AbaAVTzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:55:13 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:41228 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786AbaAVTzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:54:19 -0500
-Message-ID: <52E021E8.8060608@gmail.com>
-Date: Wed, 22 Jan 2014 13:54:16 -0600
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 14:55:10 -0500
 MIME-Version: 1.0
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] hid-microsoft: Add ID's for Surface Type/Touch Cover 2
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <xm26lhy7kin2.fsf@sword-of-the-dawn.mtv.corp.google.com>
+References: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
+ <1390376734-6800-1-git-send-email-vincent.guittot@linaro.org> <xm26lhy7kin2.fsf@sword-of-the-dawn.mtv.corp.google.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 22 Jan 2014 11:54:39 -0800
+Message-ID: <CAPM31R+0HL9M25CCNVJ4yhSSuyN1raML0eEbFKKLzBLMcbhBMQ@mail.gmail.com>
+Subject: Re: [PATCH] Revert "sched: Fix sleep time double accounting in
+ enqueue entity"
+To: Benjamin Segall <bsegall@google.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes bug 64811 (https://bugzilla.kernel.org/show_bug.cgi?id=64811)
-The Microsoft Surface Type/Touch cover 2 devices have the flag HID_DG_CONTACTID in their reports.This causes the device to bind to the hid-multitouch driver, which doesn't handle generic keyboard/mouse input events.
-The patch adds the hardware id's of the device to hid-microsoft and to the HID special driver array, which makes the device get handled by hid-generic/hid-input properly.
+On Wed, Jan 22, 2014 at 9:53 AM,  <bsegall@google.com> wrote:
+> Vincent Guittot <vincent.guittot@linaro.org> writes:
+>
+>> This reverts commit 282cf499f03ec1754b6c8c945c9674b02631fb0f.
+>>
+>> With the current implementation, the load average statistics of a sched entity
+>> change according to other activity on the CPU even if this activity is done
+>> between the running window of the sched entity and have no influence on the
+>> running duration of the task.
+>>
+>> When a task wakes up on the same CPU, we currently update last_runnable_update
+>> with the return  of __synchronize_entity_decay without updating the
+>> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
+>> the load_contrib of the se with the rq's blocked_load_contrib before removing
+>> it from the latter (with __synchronize_entity_decay) but we must keep
+>> last_runnable_update unchanged for updating runnable_avg_sum/period during the
+>> next update_entity_load_avg.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> Unless paul wants to squash this into a possible change to the if
+> (wakeup) stuff:
+> Reviewed-by: Ben Segall <bsegall@google.com>
+>
 
-Singed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Reviewed-by: Benjamin Tissoires<benjamin.tissoires@redhat.com>
+I can send that separately as Vincent suggests.  This is good to go.
 
----
-  drivers/hid/hid-core.c      | 2 ++
-  drivers/hid/hid-ids.h       | 2 ++
-  drivers/hid/hid-microsoft.c | 4 ++++
-  3 files changed, 8 insertions(+)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 253fe23..b10f6d0 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1778,6 +1778,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_USB) },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K) },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TOUCH_COVER_2) },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index f9304cb..bb77d22 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -611,6 +611,8 @@
-  #define USB_DEVICE_ID_MS_PRESENTER_8K_USB	0x0713
-  #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K	0x0730
-  #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500	0x076c
-+#define USB_DEVICE_ID_MS_TOUCH_COVER_2 0x07a7
-+#define USB_DEVICE_ID_MS_TYPE_COVER_2  0x07a9
-  
-  #define USB_VENDOR_ID_MOJO		0x8282
-  #define USB_DEVICE_ID_RETRO_ADAPTER	0x3201
-diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-index 551795b..277e545 100644
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -207,6 +207,10 @@ static const struct hid_device_id ms_devices[] = {
-  		.driver_data = MS_NOGET },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
-  		.driver_data = MS_DUPLICATE_USAGES },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_2),
-+		.driver_data = 0 },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TOUCH_COVER_2),
-+		.driver_data = 0 },
-  
-  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT),
-  		.driver_data = MS_PRESENTER },
--- 
-1.8.4.2
-
+>>
+>> ---
+>>  kernel/sched/fair.c |    8 +-------
+>>  1 file changed, 1 insertion(+), 7 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index e64b079..6d61f20 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -2365,13 +2365,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>>               }
+>>               wakeup = 0;
+>>       } else {
+>> -             /*
+>> -              * Task re-woke on same cpu (or else migrate_task_rq_fair()
+>> -              * would have made count negative); we must be careful to avoid
+>> -              * double-accounting blocked time after synchronizing decays.
+>> -              */
+>> -             se->avg.last_runnable_update += __synchronize_entity_decay(se)
+>> -                                                     << 20;
+>> +             __synchronize_entity_decay(se);
+>>       }
+>>
+>>       /* migrated tasks did not contribute to our blocked load */
