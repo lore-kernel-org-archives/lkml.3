@@ -1,208 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaAVROH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:14:07 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:18069 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaAVROD (ORCPT
+	id S1752824AbaAVRPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:15:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34867 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaAVRPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:14:03 -0500
-Message-ID: <52DFFC44.4030104@hp.com>
-Date: Wed, 22 Jan 2014 12:13:40 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 22 Jan 2014 12:15:33 -0500
+Date: Wed, 22 Jan 2014 18:14:54 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122171454.GR31570@twins.programming.kicks-ass.net>
+References: <20131212140835.729222186@infradead.org>
+ <20131212141655.362219382@infradead.org>
+ <52DEF495.2020304@oracle.com>
 MIME-Version: 1.0
-To: bsegall@google.com
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v2] sched: reduce contention on tg's load_avg & runnable_avg
-References: <1389838956-56574-1-git-send-email-Waiman.Long@hp.com> <xm26k3dzlrdu.fsf@sword-of-the-dawn.mtv.corp.google.com>
-In-Reply-To: <xm26k3dzlrdu.fsf@sword-of-the-dawn.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DEF495.2020304@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 01:21 PM, bsegall@google.com wrote:
-> Waiman Long<Waiman.Long@hp.com>  writes:
->
->> It was found that with a perf profile of a compute workload (at 1500
->> users) of the AIM7 benchmark running on a glueless 4-socket 40-core
->> Westmere-EX system (HT on) on a 3.13-rc8 kernel that the scheduling
->> tick related functions account for quite a significant portion of
->> the total kernel cpu cycles.
->>
->>    0.62%  reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
->>    0.47%  reaim  [kernel.kallsyms]  [k] entity_tick
->>    0.10%  reaim  [kernel.kallsyms]  [k] update_cfs_shares
->>    0.03%  reaim  [kernel.kallsyms]  [k] update_curr
->>
->> The scheduling tick functions account for about 1.22% of the total
->> CPU cycles. Of the top 2 function in the above list, the reading
->> and writing of the tg->load_avg variable account for over 90% of the
->> CPU cycles:
->>
->>    atomic_long_add(tg_contrib,&tg->load_avg);
->>    atomic_long_read(&tg->load_avg) + 1);
->>
->> This patch reduces the contention on the load_avg variable (and
->> secondarily on the runnable_avg variable) by the following 2 measures:
->>
->> 1. Make the load_avg and runnable_avg fields of the task_group
->>     structure sit in their own cacheline without sharing it with others.
->>     This only applies if the kernel is built for NUMA systems with
->>     multiple sockets.
-> How much of the benefit comes from this (and how much for load_avg vs
-> runnable_avg vs just one separate cache_line for the pair)?
+On Tue, Jan 21, 2014 at 05:28:37PM -0500, Sasha Levin wrote:
+> 	[    0.000000] Initmem setup node 30 [mem 0x12ee000000-0x138dffffff]
+> 	[    0.000000]   NODE_DATA [mem 0xcfa42000-0xcfa72fff]
+> 	[    0.000000]     NODE_DATA(30) on node 1
+> 	[    0.000000] Initmem setup node 31 [mem 0x138e000000-0x142fffffff]
+> 	[    0.000000]   NODE_DATA [mem 0xcfa11000-0xcfa41fff]
+> 	[    0.000000]     NODE_DATA(31) on node 1
+> 	[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+> 	[    0.000000] kvm-clock: cpu 0, msr 0:cf991001, boot clock
+> 	[133538.294040] Zone ranges:
+> 	[133538.294338]   DMA      [mem 0x00001000-0x00ffffff]
+> 	[133538.294804]   DMA32    [mem 0x01000000-0xffffffff]
+> 	[133538.295223]   Normal   [mem 0x100000000-0x142fffffff]
+> 	[133538.295670] Movable zone start for each node
 
-Below are the performance data for different cacheline placement:
+OK, took me a while to fiddle with KVM and all the various muck around
+that to reproduce. But I can confirm the below does fix the issue for
+me.
 
-    Cacheline Placement | %CPU  |  JPM   |
-   ---------------------+-------+--------+
-   2 separate cachelines| 0.55% | 405803 |
-   1 common cacheline   | 1.01% | 403462 |
-   2nd change only      | 1.06% | 403820 |
-   Original code        | 1.22% | 398509 |
+I'm hoping to not have to re-introcude the kevents_up() check, but I
+need to figure out what hardware triggered that and test again.
 
-It seems like forcing the 2 fields to be in the same cacheline actually 
-make it perform a little bit worse. It is likely that the 2 fields were 
-actually in 2 different cacheline in x86.
+---
+Subject: sched/clock: Fixup early sched_clock initialization
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 22 Jan 2014 12:59:18 +0100
 
->> 2. Use atomic_long_add_return() to update the fields and save the
->>     returned value in a temporary location in the cfs structure to
->>     be used later instead of reading the fields directly.
->>
-> This is safe for tg->runnable_avg, as it only lasts for one line of
-> __update_entity_load_avg_contrib, and is never used for rq->cfs. That
-> said, given that it is such a short and contained duration it seems
-> simpler to just pass it around in __update_entity_load_avg_contrib
-> rather than make a new field on cfs_rq.
+The code would assume sched_clock_stable() and switch to !stable
+later, this switch brings a discontinuity in time.
 
-Thank for the suggestion, I will look into that.
+The discontinuity on switching from stable to unstable was always
+present, but previously we would set stable/unstable before
+initializing TSC and usually stick to the one we start out with.
 
->> The second change does require some changes in the ordering of how
->> some of the average counts are being computed and hence may have a
->> slight effect on their behavior.
->>
->> With these 2 changes, the perf profile becomes:
->>
->>    0.42%   reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
->>    0.05%   reaim  [kernel.kallsyms]  [k] update_cfs_shares
->>    0.04%   reaim  [kernel.kallsyms]  [k] update_curr
->>    0.04%   reaim  [kernel.kallsyms]  [k] entity_tick
->>
->> The %CPU cycle is reduced to about 0.55%. It is not a big change,
->> but it did improve the compute benchmark slightly from 398509 JPM
->> (Jobs/Minute) to 405803 JPM which is about 2% improvement and reduced
->> the reported systime from 50.03s to 48.37s.
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   kernel/sched/fair.c  |   29 ++++++++++++++++++++++-------
->>   kernel/sched/sched.h |   14 ++++++++++++--
->>   2 files changed, 34 insertions(+), 9 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index c7395d9..c4aa86d 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -1868,7 +1868,10 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
->>   	 * to gain a more accurate current total weight. See
->>   	 * update_cfs_rq_load_contribution().
->>   	 */
->> -	tg_weight = atomic_long_read(&tg->load_avg);
->> +	/* Use the saved version of tg's load_avg, if available */
->> +	tg_weight = cfs_rq->tg_load_save;
->> +	if (!tg_weight)
->> +		tg_weight = atomic_long_read(&tg->load_avg);
->>   	tg_weight -= cfs_rq->tg_load_contrib;
->>   	tg_weight += cfs_rq->load.weight;
->>
->> @@ -2155,7 +2158,8 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->>   	tg_contrib -= cfs_rq->tg_load_contrib;
->>
->>   	if (force_update || abs(tg_contrib)>  cfs_rq->tg_load_contrib / 8) {
->> -		atomic_long_add(tg_contrib,&tg->load_avg);
->> +		cfs_rq->tg_load_save =
->> +			atomic_long_add_return(tg_contrib,&tg->load_avg);
->>   		cfs_rq->tg_load_contrib += tg_contrib;
->>   	}
->>   }
->> @@ -2176,7 +2180,8 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
->>   	contrib -= cfs_rq->tg_runnable_contrib;
->>
->>   	if (abs(contrib)>  cfs_rq->tg_runnable_contrib / 64) {
->> -		atomic_add(contrib,&tg->runnable_avg);
->> +		cfs_rq->tg_runnable_save =
->> +			atomic_add_return(contrib,&tg->runnable_avg);
->>   		cfs_rq->tg_runnable_contrib += contrib;
->>   	}
->>   }
->> @@ -2186,12 +2191,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->>   	struct cfs_rq *cfs_rq = group_cfs_rq(se);
->>   	struct task_group *tg = cfs_rq->tg;
->>   	int runnable_avg;
->> +	long load_avg;
->>
->>   	u64 contrib;
->>
->>   	contrib = cfs_rq->tg_load_contrib * tg->shares;
->> -	se->avg.load_avg_contrib = div_u64(contrib,
->> -				     atomic_long_read(&tg->load_avg) + 1);
->> +	/*
->> +	 * Retrieve&  clear the saved tg's load_avg and use it if not 0
->> +	 */
->> +	load_avg = cfs_rq->tg_load_save;
->> +	cfs_rq->tg_load_save = 0;
->> +	if (unlikely(!load_avg))
->> +		load_avg = atomic_long_read(&tg->load_avg);
->> +	se->avg.load_avg_contrib = div_u64(contrib, load_avg + 1);
->>
->>   	/*
->>   	 * For group entities we need to compute a correction term in the case
->> @@ -2216,7 +2228,10 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->>   	 * of consequential size guaranteed to see n_i*w_i quickly converge to
->>   	 * our upper bound of 1-cpu.
->>   	 */
->> -	runnable_avg = atomic_read(&tg->runnable_avg);
->> +	runnable_avg = cfs_rq->tg_runnable_save;
->> +	cfs_rq->tg_runnable_save = 0;
->> +	if (unlikely(!runnable_avg))
->> +		runnable_avg = atomic_read(&tg->runnable_avg);
->>   	if (runnable_avg<  NICE_0_LOAD) {
->>   		se->avg.load_avg_contrib *= runnable_avg;
->>   		se->avg.load_avg_contrib>>= NICE_0_SHIFT;
->> @@ -2823,9 +2838,9 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
->>   	/*
->>   	 * Ensure that runnable average is periodically updated.
->>   	 */
->> -	update_entity_load_avg(curr, 1);
->>   	update_cfs_rq_blocked_load(cfs_rq, 1);
->>   	update_cfs_shares(cfs_rq);
->> +	update_entity_load_avg(curr, 1);
-> You've confused group_cfs_rq(curr) and cfs_rq=cfs_rq_of(curr) here -
-> there is no need to do this accuracy-reducing reordering.
-> update_cfs_rq_blocked_load would set cfs_rq->tg_load_save, and then
-> entity_tick(curr->parent) called this same tick would read this value,
-> the same way enqueue/dequeue will do what you wanted.
+So the static_key bits brought an extra switch where there previously
+wasn't one.
 
-I will try to do it without reordering calls here.
+Things are further complicated by the fact that we cannot use
+static_key as early as we usually call set_sched_clock_stable().
 
-> That said, there is still a problem that tg_load_save could escape in
-> cases where __update_entity_load_avg_contrib gets skipped, either via
-> __update_entity_load_avg_contrib not crossing a boundary or
-> enqueue/dequeue aborting early due to cfs_rq_throttled. Worst case
-> should be accessing a value ~1ms old though, which might be acceptable.
+Fix things by tracking the stable state in a regular variable and only
+set the static_key to the right state on sched_clock_init(), which is
+ran right after late_time_init->tsc_init().
 
-Will provide a more detailed analysis of all possible cases in the next 
-version of the patch.
+Before this we would not be using the TSC anyway.
 
--Longman
+Fixes: 35af99e646c7 ("sched/clock, x86: Use a static_key for sched_clock_stable")
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com
+Cc: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: lenb@kernel.org
+Cc: rjw@rjwysocki.net
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: rui.zhang@intel.com
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: dyoung@redhat.com
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140122115918.GG3694@twins.programming.kicks-ass.net
+---
+ kernel/sched/clock.c |   53 +++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 41 insertions(+), 12 deletions(-)
+
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -77,35 +77,50 @@ __read_mostly int sched_clock_running;
+ 
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+ static struct static_key __sched_clock_stable = STATIC_KEY_INIT;
++static int __sched_clock_stable_early;
+ 
+ int sched_clock_stable(void)
+ {
+-	if (static_key_false(&__sched_clock_stable))
+-		return false;
+-	return true;
++	return static_key_false(&__sched_clock_stable);
+ }
+ 
+-void set_sched_clock_stable(void)
++static void __set_sched_clock_stable(void)
+ {
+ 	if (!sched_clock_stable())
+-		static_key_slow_dec(&__sched_clock_stable);
++		static_key_slow_inc(&__sched_clock_stable);
++}
++
++void set_sched_clock_stable(void)
++{
++	__sched_clock_stable_early = 1;
++
++	smp_mb(); /* matches sched_clock_init() */
++
++	if (!sched_clock_running)
++		return;
++
++	__set_sched_clock_stable();
+ }
+ 
+ static void __clear_sched_clock_stable(struct work_struct *work)
+ {
+ 	/* XXX worry about clock continuity */
+ 	if (sched_clock_stable())
+-		static_key_slow_inc(&__sched_clock_stable);
++		static_key_slow_dec(&__sched_clock_stable);
+ }
+ 
+ static DECLARE_WORK(sched_clock_work, __clear_sched_clock_stable);
+ 
+ void clear_sched_clock_stable(void)
+ {
+-	if (keventd_up())
+-		schedule_work(&sched_clock_work);
+-	else
+-		__clear_sched_clock_stable(&sched_clock_work);
++	__sched_clock_stable_early = 0;
++
++	smp_mb(); /* matches sched_clock_init() */
++
++	if (!sched_clock_running)
++		return;
++
++	schedule_work(&sched_clock_work);
+ }
+ 
+ struct sched_clock_data {
+@@ -140,6 +155,20 @@ void sched_clock_init(void)
+ 	}
+ 
+ 	sched_clock_running = 1;
++
++	/*
++	 * Ensure that it is impossible to not do a static_key update.
++	 *
++	 * Either {set,clear}_sched_clock_stable() must see sched_clock_running
++	 * and do the update, or we must see their __sched_clock_stable_early
++	 * and do the update, or both.
++	 */
++	smp_mb(); /* matches {set,clear}_sched_clock_stable() */
++
++	if (__sched_clock_stable_early)
++		__set_sched_clock_stable();
++	else
++		__clear_sched_clock_stable(NULL);
+ }
+ 
+ /*
+@@ -340,7 +369,7 @@ EXPORT_SYMBOL_GPL(sched_clock_idle_wakeu
+  */
+ u64 cpu_clock(int cpu)
+ {
+-	if (static_key_false(&__sched_clock_stable))
++	if (!sched_clock_stable())
+ 		return sched_clock_cpu(cpu);
+ 
+ 	return sched_clock();
+@@ -355,7 +384,7 @@ u64 cpu_clock(int cpu)
+  */
+ u64 local_clock(void)
+ {
+-	if (static_key_false(&__sched_clock_stable))
++	if (!sched_clock_stable())
+ 		return sched_clock_cpu(raw_smp_processor_id());
+ 
+ 	return sched_clock();
