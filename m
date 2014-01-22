@@ -1,259 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaAVTsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:48:08 -0500
-Received: from mail.windriver.com ([147.11.1.11]:65133 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaAVTsG (ORCPT
+	id S1755348AbaAVTsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:48:46 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:60181 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297AbaAVTso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:48:06 -0500
-Message-ID: <52E0205E.3090600@windriver.com>
-Date: Wed, 22 Jan 2014 14:47:42 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 14:48:44 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] clk: Fix notifier documentation
+Date: Wed, 22 Jan 2014 11:48:37 -0800
+Message-Id: <1390420117-25930-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.5.3
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [RFC][PATCH] preempt: Debug for possible missed preemption checks
-References: <20140116235751.084728c8@gandalf.local.home>
-In-Reply-To: <20140116235751.084728c8@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-16 11:57 PM, Steven Rostedt wrote:
-> Peter Zijlstra mentioned that he wanted to catch the following problem:
-> 
->  local_irq_disable();
->  preempt_disable();
->  local_irq_enable();
-> 
->  local_irq_disable();
->  preempt_enable();
->  local_irq_enable();
-> 
+Contradicting to documenation, the notifier callbacks do receive
+the original clock rate in struct clk_notifier_data.old_rate and the new
+frequency struct clk_notifier_data.new_rate, independent of the
+notification reason.
 
-[...]
+This behavior also seems to make more sense, since callbacks can use the
+same code to deterimine whether clocks are scaled up or down. Something
+which would not even possible in the post-rate-change case if the
+behavior was as documented.
 
-> +
-> +static void update_pied_state(enum pied_stat_type type, bool enable,
-> +			      unsigned long ip)
-> +{
-> +	struct stack_trace *trace;
-> +	int state, new_state;
-> +	unsigned long flags;
-> +
-> +	if (pied_failed)
-> +		return;
-> +
-> +	if (this_cpu_read(pied_recursive))
-> +		return;
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+Hi Mike,
 
-Maybe I'm just missing something obvious, but it wasn't clear to me
-how or what the recursive check above would reliably protect against,
-when the increment is ~20 lines below and not a cmpxchg here.
+I am working with some clock notifiers and if my results are correct the
+notifiers behave differently from how they are documented.
+I think the actual behavior makes more sense than the documented and my original
+plan was to change the behavior, but it seems I might get away with a
+doc-update.
 
-Thanks,
-Paul.
---
+	Thanks,
+	Sören
 
-> +
-> +	/*
-> +	 * Boot up may start with interrupts and/or preemption
-> +	 * disabled. We can't start the state updates till
-> +	 * we have synced with the initial state.
-> +	 */
-> +	if (!this_cpu_read(pied_initialized)) {
-> +		/*
-> +		 * The first time we enable preemption with interrupts
-> +		 * enabled on a CPU, start the state transactions.
-> +		 */
-> +		if (!in_interrupt() && type == PIED_STATE_PREEMPT &&
-> +		    enable && !irqs_disabled())
-> +			this_cpu_write(pied_initialized, 1);
-> +		return;
-> +	}
-> +
-> +	if (type == PIED_STATE_INTERRUPT) {
-> +		if (enable == false) {
-> +			/* Ignore nested disabling of interrupts */
-> +			if (this_cpu_read(pied_irqsoff))
-> +				return;
-> +			this_cpu_write(pied_irqsoff, 1);
-> +		} else
-> +			this_cpu_write(pied_irqsoff, 0);
-> +	}
-> +
-> +	this_cpu_inc(pied_recursive);
-> +	raw_local_irq_save(flags);
-> +
-> +	state = this_cpu_read(current_pied_state);
-> +
-> +	switch (type) {
-> +	case PIED_STATE_PREEMPT:
-> +		new_state = pied_state_trans[state].preempt_change;
-> +		switch (new_state) {
-> +		case 0: case 1: case 6: case 7:
-> +			if (!enable)
-> +				pied_state_bug(type, enable, state, new_state);
-> +			break;
-> +		default:
-> +			if (enable)
-> +				pied_state_bug(type, enable, state, new_state);
-> +			break;
-> +		}
-> +		break;
-> +	case PIED_STATE_INTERRUPT:
-> +		new_state = pied_state_trans[state].interrupt_change;
-> +		switch (new_state) {
-> +		case 0: case 2: case 3: case 7:
-> +			if (!enable)
-> +				pied_state_bug(type, enable, state, new_state);
-> +			break;
-> +		default:
-> +			if (enable)
-> +				pied_state_bug(type, enable, state, new_state);
-> +			break;
-> +		}
-> +		break;
-> +	}
-> +
-> +	switch (new_state) {
-> +	case PIED_DANGEROUS_STATE:
-> +		/*
-> +		 * If we are in an interrupt, then we need to switch
-> +		 * to state 3 to prevent from going into state 5, 6 and 7.
-> +		 *
-> +		 * PDIEX ==> PDIE
-> +		 */
-> +		if (in_interrupt()) {
-> +			new_state = 3;
-> +			break;
-> +		}
-> +		trace = this_cpu_ptr(&pied_stack_trace);
-> +		trace->nr_entries = 0;
-> +		trace->max_entries = PIED_STACK_MAX;
-> +		trace->entries = this_cpu_ptr(pied_stack);
-> +
-> +		trace->skip = 3;
-> +
-> +		save_stack_trace(trace);
-> +
-> +		break;
-> +	case PIED_BAD_STATE:
-> +
-> +		/*
-> +		 * Interrupts themselves do not cause problems as they
-> +		 * always check NEED_RESCHED when going back to normal context.
-> +		 *
-> +		 * PEIEX ==> PEIE
-> +		 */
-> +		if (in_interrupt()) {
-> +			new_state = 0;
-> +			break;
-> +		}
-> +
-> +		lockdep_off();
-> +		pied_failed = true;
-> +		printk("\n");
-> +		printk("===============================\n");
-> +		printk("[INFO: preempt check hit problem state]\n");
-> +		print_irqtrace_events(current);
-> +		printk("Entered dangerous state at: \n");
-> +		print_stack_trace(this_cpu_ptr(&pied_stack_trace), 2); 
-> +		printk("\nstack backtrace:\n");
-> +		dump_stack();
-> +		print_pied_trail();
-> +		lockdep_on();
-> +		break;
-> +	}
-> +	this_cpu_write(current_pied_state, new_state);
-> +	update_pied_trail(new_state, ip, irqs_disabled_flags(flags));
-> +	raw_local_irq_restore(flags);
-> +	this_cpu_dec(pied_recursive);
-> +}
-> +
-> +void trace_preempt_on(unsigned long a0, unsigned long a1)
-> +{
-> +	time_preempt_on(a0, a1);
-> +	update_pied_state(PIED_STATE_PREEMPT, true, a0);
-> +}
-> +
-> +void trace_preempt_off(unsigned long a0, unsigned long a1)
-> +{
-> +	time_preempt_off(a0, a1);
-> +	update_pied_state(PIED_STATE_PREEMPT, false, a0);
-> +}
-> +#endif /* CONFIG_PREEMPT */
-> Index: linux-trace.git/kernel/sched/core.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/sched/core.c
-> +++ linux-trace.git/kernel/sched/core.c
-> @@ -2414,7 +2414,8 @@ void __kprobes preempt_count_add(int val
->  	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
->  				PREEMPT_MASK - 10);
->  #endif
-> -	if (preempt_count() == val)
-> +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> +	if ((preempt_count() & ~PREEMPT_ACTIVE) == val)
->  		trace_preempt_off(ip, parent_ip);
->  }
->  EXPORT_SYMBOL(preempt_count_add);
-> @@ -2435,7 +2436,8 @@ void __kprobes preempt_count_sub(int val
->  		return;
->  #endif
->  
-> -	if (preempt_count() == val)
-> +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> +	if ((preempt_count() & ~PREEMPT_ACTIVE) == val)
->  		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
->  	__preempt_count_sub(val);
->  }
-> Index: linux-trace.git/kernel/softirq.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/softirq.c
-> +++ linux-trace.git/kernel/softirq.c
-> @@ -111,7 +111,8 @@ static void __local_bh_disable(unsigned
->  		trace_softirqs_off(ip);
->  	raw_local_irq_restore(flags);
->  
-> -	if (preempt_count() == cnt)
-> +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> +	if ((preempt_count() & ~PREEMPT_ACTIVE) == cnt)
->  		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
->  }
->  #else /* !CONFIG_TRACE_IRQFLAGS */
-> Index: linux-trace.git/kernel/trace/trace_irqsoff.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/trace/trace_irqsoff.c
-> +++ linux-trace.git/kernel/trace/trace_irqsoff.c
-> @@ -516,13 +516,13 @@ EXPORT_SYMBOL(trace_hardirqs_off_caller)
->  #endif /*  CONFIG_IRQSOFF_TRACER */
->  
->  #ifdef CONFIG_PREEMPT_TRACER
-> -void trace_preempt_on(unsigned long a0, unsigned long a1)
-> +void time_preempt_on(unsigned long a0, unsigned long a1)
->  {
->  	if (preempt_trace() && !irq_trace())
->  		stop_critical_timing(a0, a1);
->  }
->  
-> -void trace_preempt_off(unsigned long a0, unsigned long a1)
-> +void time_preempt_off(unsigned long a0, unsigned long a1)
->  {
->  	if (preempt_trace() && !irq_trace())
->  		start_critical_timing(a0, a1);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+ drivers/clk/clk.c | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 2cf2ea6b77a1..26825db03e64 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1983,20 +1983,11 @@ EXPORT_SYMBOL_GPL(devm_clk_unregister);
+  * re-enter into the clk framework by calling any top-level clk APIs;
+  * this will cause a nested prepare_lock mutex.
+  *
+- * Pre-change notifier callbacks will be passed the current, pre-change
+- * rate of the clk via struct clk_notifier_data.old_rate.  The new,
+- * post-change rate of the clk is passed via struct
++ * In all notification cases cases (pre, post and abort rate change) the
++ * original clock rate is passed to the callback via struct
++ * clk_notifier_data.old_rate and the new frequency is passed via struct
+  * clk_notifier_data.new_rate.
+  *
+- * Post-change notifiers will pass the now-current, post-change rate of
+- * the clk in both struct clk_notifier_data.old_rate and struct
+- * clk_notifier_data.new_rate.
+- *
+- * Abort-change notifiers are effectively the opposite of pre-change
+- * notifiers: the original pre-change clk rate is passed in via struct
+- * clk_notifier_data.new_rate and the failed post-change rate is passed
+- * in via struct clk_notifier_data.old_rate.
+- *
+  * clk_notifier_register() must be called from non-atomic context.
+  * Returns -EINVAL if called with null arguments, -ENOMEM upon
+  * allocation failure; otherwise, passes along the return value of
+-- 
+1.8.5.3
+
