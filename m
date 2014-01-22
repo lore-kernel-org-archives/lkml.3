@@ -1,298 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaAVUJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 15:09:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:37268 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753040AbaAVUJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 15:09:14 -0500
-Date: Wed, 22 Jan 2014 15:09:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [RFC][PATCH] preempt: Debug for possible missed preemption
- checks
-Message-ID: <20140122150907.75ed820b@gandalf.local.home>
-In-Reply-To: <52E0205E.3090600@windriver.com>
-References: <20140116235751.084728c8@gandalf.local.home>
-	<52E0205E.3090600@windriver.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1756104AbaAVUNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:13:38 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:13874 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755685AbaAVUNc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 15:13:32 -0500
+From: Chris Mason <clm@fb.com>
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Topic: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Index: AQHPFx61ZXTlm16UX0ihGnyWT2seDpqRAjIAgABNLACAAAa5AIAABq0AgAAFt4CAAB0+gIAABPgAgAALu4CAAALjgIAAAOYAgAAE/YCAAAFJgIAADiiAgAAFggCAAAbvgA==
+Date: Wed, 22 Jan 2014 20:13:20 +0000
+Message-ID: <1390421691.1198.43.camel@ret.masoncoding.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
+	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
+	 <20140122151913.GY4963@suse.de>
+	 <1390410233.1198.7.camel@ret.masoncoding.com>
+	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+	 <1390413819.1198.20.camel@ret.masoncoding.com>
+	 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
+	 <52E00B28.3060609@redhat.com>
+	 <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
+	 <52E0106B.5010604@redhat.com>
+	 <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>
+	 <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
+In-Reply-To: <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <4377FC09DDDAD244BD307A4929AD8592@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.997696947966296 urlsuspect_oldscore=0.997696947966296
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997696947966296 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401220146
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jan 2014 14:47:42 -0500
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On Wed, 2014-01-22 at 11:50 -0800, Andrew Morton wrote:
++AD4- On Wed, 22 Jan 2014 11:30:19 -0800 James Bottomley +ADw-James.Bottomley+AEA-hansenpartnership.com+AD4- wrote:
++AD4- 
++AD4- +AD4- But this, I think, is the fundamental point for debate.  If we can pull
++AD4- +AD4- alignment and other tricks to solve 99+ACU- of the problem is there a need
++AD4- +AD4- for radical VM surgery?  Is there anything coming down the pipe in the
++AD4- +AD4- future that may move the devices ahead of the tricks?
++AD4- 
++AD4- I expect it would be relatively simple to get large blocksizes working
++AD4- on powerpc with 64k PAGE+AF8-SIZE.  So before diving in and doing huge
++AD4- amounts of work, perhaps someone can do a proof-of-concept on powerpc
++AD4- (or ia64) with 64k blocksize.
 
- 
-> > +
-> > +static void update_pied_state(enum pied_stat_type type, bool enable,
-> > +			      unsigned long ip)
-> > +{
-> > +	struct stack_trace *trace;
-> > +	int state, new_state;
-> > +	unsigned long flags;
-> > +
-> > +	if (pied_failed)
-> > +		return;
-> > +
-> > +	if (this_cpu_read(pied_recursive))
-> > +		return;
-> 
-> Maybe I'm just missing something obvious, but it wasn't clear to me
-> how or what the recursive check above would reliably protect against,
-> when the increment is ~20 lines below and not a cmpxchg here.
 
-It protects against interrupts.
+Maybe 5 drives in raid5 on MD, with 4K coming from each drive.  Well
+aligned 16K IO will work, everything else will about the same as a rmw
+from a single drive.
 
-You don't need cmpxchg to protect against interrupts. Think about it.
-Even a simple "read/modify/write" works too. The key is, interrupts are
-nested:
-
-	read x = 1
-	x = x + 1 (modified on stack)
-
-	interrupt comes in.
-
-		read x = 1 (everything is ok to continue our state)
-
-		x = x + 1
-
-		write x (x now equals 2)
-
-		update the state
-
-		read x = 2
-
-		x = x - 1
-
-		write x (x is back to 1)
-
-		interrupt ends
-
-	write x (x is now 2, just like it would be without the
-		interrupt)
-
-	read state (the state is what we expect it to be)
-
-The only thing you need is a barrier to keep gcc from messing things
-up, but the local_irq_save() does that for us.
-
-Note, the bad state can't happen in an interrupt, but we keep track of
-states in the interrupt because it makes it easier to compute. Too many
-corner cases to ignore interrupts (I tried). But the interrupts that
-happens inside this code are not those corner cases and we can ignore
-(with the recursive flag).
-
--- Steve
-
-> 
-> Thanks,
-> Paul.
-> --
-> 
-> > +
-> > +	/*
-> > +	 * Boot up may start with interrupts and/or preemption
-> > +	 * disabled. We can't start the state updates till
-> > +	 * we have synced with the initial state.
-> > +	 */
-> > +	if (!this_cpu_read(pied_initialized)) {
-> > +		/*
-> > +		 * The first time we enable preemption with interrupts
-> > +		 * enabled on a CPU, start the state transactions.
-> > +		 */
-> > +		if (!in_interrupt() && type == PIED_STATE_PREEMPT &&
-> > +		    enable && !irqs_disabled())
-> > +			this_cpu_write(pied_initialized, 1);
-> > +		return;
-> > +	}
-> > +
-> > +	if (type == PIED_STATE_INTERRUPT) {
-> > +		if (enable == false) {
-> > +			/* Ignore nested disabling of interrupts */
-> > +			if (this_cpu_read(pied_irqsoff))
-> > +				return;
-> > +			this_cpu_write(pied_irqsoff, 1);
-> > +		} else
-> > +			this_cpu_write(pied_irqsoff, 0);
-> > +	}
-> > +
-> > +	this_cpu_inc(pied_recursive);
-> > +	raw_local_irq_save(flags);
-> > +
-> > +	state = this_cpu_read(current_pied_state);
-> > +
-> > +	switch (type) {
-> > +	case PIED_STATE_PREEMPT:
-> > +		new_state = pied_state_trans[state].preempt_change;
-> > +		switch (new_state) {
-> > +		case 0: case 1: case 6: case 7:
-> > +			if (!enable)
-> > +				pied_state_bug(type, enable, state, new_state);
-> > +			break;
-> > +		default:
-> > +			if (enable)
-> > +				pied_state_bug(type, enable, state, new_state);
-> > +			break;
-> > +		}
-> > +		break;
-> > +	case PIED_STATE_INTERRUPT:
-> > +		new_state = pied_state_trans[state].interrupt_change;
-> > +		switch (new_state) {
-> > +		case 0: case 2: case 3: case 7:
-> > +			if (!enable)
-> > +				pied_state_bug(type, enable, state, new_state);
-> > +			break;
-> > +		default:
-> > +			if (enable)
-> > +				pied_state_bug(type, enable, state, new_state);
-> > +			break;
-> > +		}
-> > +		break;
-> > +	}
-> > +
-> > +	switch (new_state) {
-> > +	case PIED_DANGEROUS_STATE:
-> > +		/*
-> > +		 * If we are in an interrupt, then we need to switch
-> > +		 * to state 3 to prevent from going into state 5, 6 and 7.
-> > +		 *
-> > +		 * PDIEX ==> PDIE
-> > +		 */
-> > +		if (in_interrupt()) {
-> > +			new_state = 3;
-> > +			break;
-> > +		}
-> > +		trace = this_cpu_ptr(&pied_stack_trace);
-> > +		trace->nr_entries = 0;
-> > +		trace->max_entries = PIED_STACK_MAX;
-> > +		trace->entries = this_cpu_ptr(pied_stack);
-> > +
-> > +		trace->skip = 3;
-> > +
-> > +		save_stack_trace(trace);
-> > +
-> > +		break;
-> > +	case PIED_BAD_STATE:
-> > +
-> > +		/*
-> > +		 * Interrupts themselves do not cause problems as they
-> > +		 * always check NEED_RESCHED when going back to normal context.
-> > +		 *
-> > +		 * PEIEX ==> PEIE
-> > +		 */
-> > +		if (in_interrupt()) {
-> > +			new_state = 0;
-> > +			break;
-> > +		}
-> > +
-> > +		lockdep_off();
-> > +		pied_failed = true;
-> > +		printk("\n");
-> > +		printk("===============================\n");
-> > +		printk("[INFO: preempt check hit problem state]\n");
-> > +		print_irqtrace_events(current);
-> > +		printk("Entered dangerous state at: \n");
-> > +		print_stack_trace(this_cpu_ptr(&pied_stack_trace), 2); 
-> > +		printk("\nstack backtrace:\n");
-> > +		dump_stack();
-> > +		print_pied_trail();
-> > +		lockdep_on();
-> > +		break;
-> > +	}
-> > +	this_cpu_write(current_pied_state, new_state);
-> > +	update_pied_trail(new_state, ip, irqs_disabled_flags(flags));
-> > +	raw_local_irq_restore(flags);
-> > +	this_cpu_dec(pied_recursive);
-> > +}
-> > +
-> > +void trace_preempt_on(unsigned long a0, unsigned long a1)
-> > +{
-> > +	time_preempt_on(a0, a1);
-> > +	update_pied_state(PIED_STATE_PREEMPT, true, a0);
-> > +}
-> > +
-> > +void trace_preempt_off(unsigned long a0, unsigned long a1)
-> > +{
-> > +	time_preempt_off(a0, a1);
-> > +	update_pied_state(PIED_STATE_PREEMPT, false, a0);
-> > +}
-> > +#endif /* CONFIG_PREEMPT */
-> > Index: linux-trace.git/kernel/sched/core.c
-> > ===================================================================
-> > --- linux-trace.git.orig/kernel/sched/core.c
-> > +++ linux-trace.git/kernel/sched/core.c
-> > @@ -2414,7 +2414,8 @@ void __kprobes preempt_count_add(int val
-> >  	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
-> >  				PREEMPT_MASK - 10);
-> >  #endif
-> > -	if (preempt_count() == val)
-> > +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> > +	if ((preempt_count() & ~PREEMPT_ACTIVE) == val)
-> >  		trace_preempt_off(ip, parent_ip);
-> >  }
-> >  EXPORT_SYMBOL(preempt_count_add);
-> > @@ -2435,7 +2436,8 @@ void __kprobes preempt_count_sub(int val
-> >  		return;
-> >  #endif
-> >  
-> > -	if (preempt_count() == val)
-> > +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> > +	if ((preempt_count() & ~PREEMPT_ACTIVE) == val)
-> >  		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-> >  	__preempt_count_sub(val);
-> >  }
-> > Index: linux-trace.git/kernel/softirq.c
-> > ===================================================================
-> > --- linux-trace.git.orig/kernel/softirq.c
-> > +++ linux-trace.git/kernel/softirq.c
-> > @@ -111,7 +111,8 @@ static void __local_bh_disable(unsigned
-> >  		trace_softirqs_off(ip);
-> >  	raw_local_irq_restore(flags);
-> >  
-> > -	if (preempt_count() == cnt)
-> > +	/* PREEMPT_ACTIVE gets set directly, it must be ignored */
-> > +	if ((preempt_count() & ~PREEMPT_ACTIVE) == cnt)
-> >  		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-> >  }
-> >  #else /* !CONFIG_TRACE_IRQFLAGS */
-> > Index: linux-trace.git/kernel/trace/trace_irqsoff.c
-> > ===================================================================
-> > --- linux-trace.git.orig/kernel/trace/trace_irqsoff.c
-> > +++ linux-trace.git/kernel/trace/trace_irqsoff.c
-> > @@ -516,13 +516,13 @@ EXPORT_SYMBOL(trace_hardirqs_off_caller)
-> >  #endif /*  CONFIG_IRQSOFF_TRACER */
-> >  
-> >  #ifdef CONFIG_PREEMPT_TRACER
-> > -void trace_preempt_on(unsigned long a0, unsigned long a1)
-> > +void time_preempt_on(unsigned long a0, unsigned long a1)
-> >  {
-> >  	if (preempt_trace() && !irq_trace())
-> >  		stop_critical_timing(a0, a1);
-> >  }
-> >  
-> > -void trace_preempt_off(unsigned long a0, unsigned long a1)
-> > +void time_preempt_off(unsigned long a0, unsigned long a1)
-> >  {
-> >  	if (preempt_trace() && !irq_trace())
-> >  		start_critical_timing(a0, a1);
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> > 
+-chris
 
