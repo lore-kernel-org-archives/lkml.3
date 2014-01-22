@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbaAVXhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:37:54 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45870 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752539AbaAVXhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:37:53 -0500
-Date: Wed, 22 Jan 2014 23:37:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 21/24] drm/i2c: tda998x: add the active aspect in
-	HDMI AVI frame
-Message-ID: <20140122233744.GR15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195846.0b83e7b1@armhf>
+	id S1753330AbaAVXoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:44:17 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:36123 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752338AbaAVXoQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 18:44:16 -0500
+From: Gaurav Jain <gjain@fb.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
+Thread-Topic: [PATCH] perf tools: Fix JIT profiling on heap
+Thread-Index: AQHPE1fkV6lP9aISxEm2DlWsTOWtmpqRcOSE
+Date: Wed, 22 Jan 2014 23:43:45 +0000
+Message-ID: <20B8A056-FE5B-4062-A043-6E34C45B34B8@fb.com>
+References: <20140116143749.GA21526@ghostprotocols.net>
+	<CEFDA8E4.2D359%gjain@fb.com>,<87sisn6ojf.fsf@sejong.aot.lge.com>
+In-Reply-To: <87sisn6ojf.fsf@sejong.aot.lge.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140119195846.0b83e7b1@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 07:58:46PM +0100, Jean-Francois Moine wrote:
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> On Jan 17, 2014, at 2:44 AM, "Namhyung Kim" <namhyung@kernel.org> wrote:
+> 
+> Hi Gaurav,
+> 
+>> On Thu, 16 Jan 2014 20:23:27 +0000, Gaurav Jain wrote:
+>> On 1/16/14, 9:37 AM, "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
+>> wrote:
+>> Does perf support data mappings from perf map files? Could you please
+>> share an example of how I may be able to use this.
+> 
+> IIUC there's no difference between function and data mapping.  So you
+> can use same perf map file for both - in fact there's no way to use
+> different map file in a single task.  I guess perf will use it to find
+> only function symbols in function mappings and variables in data
+> mapping based on the address it accesses.
+> 
+> What I wasn't sure is whether JIT program also produces some dynamic data.
+> And I think only perf mem command cares about data mappings, no?
 
-"The picture aspect setting was zero, which is reserved.  A setting of
-Same As Picture makes more sense."
+I don't think we generate symbols for dynamic data at the moment. There may be uses in the future. I don't know about other JIT programs.
 
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+If we can include this behaviour it would be great, but I don't have a way to test it. I'd guess if somebody had a valid use case, they would report the issue. Otherwise, the patch as you've written it works great for me.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Gaurav
