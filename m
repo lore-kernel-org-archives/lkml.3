@@ -1,352 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaAVOUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:20:22 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:47030 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704AbaAVOUT (ORCPT
+	id S1755825AbaAVOVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:21:35 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:23752 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439AbaAVOVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:20:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com>
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
- <20140114001115.GU1992@bbox> <CALZtONCCrckuHxgHB=GQj0tHszLAYTZZLGzFTnRkj9pvxx0dyg@mail.gmail.com>
- <20140115054208.GL1992@bbox> <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 22 Jan 2014 09:19:58 -0500
-X-Google-Sender-Auth: jKcF_5_jxIQD-XiUB1LpM1O_3so
-Message-ID: <CALZtONAaPCi8eUhSmdXSxWbeFFN=ChsfL9OurSZUsSPo-_gnfg@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: add writethrough option
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Weijie Yang <weijie.yang@samsung.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jan 2014 09:21:32 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc96d000004885-85-52dfd3ea2432
+Content-transfer-encoding: 8BIT
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH RESEND] cpufreq: exynos: Fix build error of no type of
+ module_init
+Date: Wed, 22 Jan 2014 15:21:16 +0100
+Message-id: <1390400476-22951-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xK7qvLt8PMjjdwWHxtOkHu8XrF4YW
+	vQuuslmcbXrDbvHm4WZGi02Pr7FaXN41h83ic+8RRosZ5/cxWZw5fYnVYv2M1ywWG796OPB4
+	3Lm2h81j85J6jy1X21k8+rasYvT4vEkugDWKyyYlNSezLLVI3y6BK+PiBOOCufwVry+dZGxg
+	3MDbxcjJISFgInH76l52CFtM4sK99WxdjFwcQgJLGSV+Nu9hA0nwCghK/Jh8j6WLkYODWUBe
+	4silbJAws4C6xKR5i5gh6vuYJGYuf8wMkmATMJbYvHwJ2CARgZlMEk/f7WEHcZgF1jBKTHzb
+	ADZVWCBEovX2J1YQm0VAVaJ1Qz8LxDZ3iT8dP9hBtkkIKEjMmWQzgZFvFpI7ZiHcMQvJHQsY
+	mVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihIT31x2MS49ZHWIU4GBU4uEN2HUvSIg1say4
+	MvcQowQHs5IIr8eq+0FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGPtzjBtr/VnXvAkWP+PqXGb2
+	ctXaJRfjdm+o8c/OvZz74MJOz8dn9FY6edoeuKN7dL/XdM5M66uSWvGTc8qz5N4f2qpav6n0
+	xJEmKb9b3roZFgIPcwykbl5OO9WekJh+i91VPFxP41NDspwOmwhnXtxX5yfyr6TUv3/wyVB/
+	bM/TfX3fb915SizFGYmGWsxFxYkAgM+5UE0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 12:41 AM, Dan Streetman <ddstreet@ieee.org> wrote:
-> On Wed, Jan 15, 2014 at 12:42 AM, Minchan Kim <minchan@kernel.org> wrote:
->> Hello,
->>
->> On Tue, Jan 14, 2014 at 10:10:44AM -0500, Dan Streetman wrote:
->>> On Mon, Jan 13, 2014 at 7:11 PM, Minchan Kim <minchan@kernel.org> wrote:
->>> > Hello Dan,
->>> >
->>> > Sorry for the late response and I didn't look at the code yet
->>> > because I am not convinced. :(
->>> >
->>> > On Thu, Dec 19, 2013 at 08:23:27AM -0500, Dan Streetman wrote:
->>> >> Currently, zswap is writeback cache; stored pages are not sent
->>> >> to swap disk, and when zswap wants to evict old pages it must
->>> >> first write them back to swap cache/disk manually.  This avoids
->>> >> swap out disk I/O up front, but only moves that disk I/O to
->>> >> the writeback case (for pages that are evicted), and adds the
->>> >> overhead of having to uncompress the evicted pages and the
->>> >> need for an additional free page (to store the uncompressed page).
->>> >>
->>> >> This optionally changes zswap to writethrough cache by enabling
->>> >> frontswap_writethrough() before registering, so that any
->>> >> successful page store will also be written to swap disk.  The
->>> >> default remains writeback.  To enable writethrough, the param
->>> >> zswap.writethrough=1 must be used at boot.
->>> >>
->>> >> Whether writeback or writethrough will provide better performance
->>> >> depends on many factors including disk I/O speed/throughput,
->>> >> CPU speed(s), system load, etc.  In most cases it is likely
->>> >> that writeback has better performance than writethrough before
->>> >> zswap is full, but after zswap fills up writethrough has
->>> >> better performance than writeback.
->>> >
->>> > So you claims we should use writeback default but writethrough
->>> > after memory limit is full?
->>> > But it would break LRU ordering and I think better idea is to
->>> > handle it more generic way rather than chaning entire policy.
->>>
->>> This patch only adds the option of using writethrough.  That's all.
->>
->> The point is that please explain that what's the your problem now
->> and prove that adding new option for solve the problem is best.
->> Just "Optionally, having is better" is not good approach to merge/maintain.
->
-> You may have missed the earlier emails discussing all that, so to
-> recap it appears that writeback is (usually) faster before zswap is
-> full, while writethrough appears (usually) slightly faster after zswap
-> has filled up.  It's highly dependent on the actual system details
-> (cpu speed, IO speed, load, etc) though.
->
->>
->>>
->>> > Now, zswap evict out just *a* page rather than a bunch of pages
->>> > so it stucks every store if many swap write happens continuously.
->>> > It's not efficient so how about adding kswapd's threshold concept
->>> > like min/low/high? So, it could evict early before reaching zswap
->>> > memory pool and stop it reaches high watermark.
->>> > I guess it could be better than now.
->>>
->>> Well, I don't think that's related to this patch, but certainly a good idea to
->>> investigate.
->>
->> Why I suggested it that I feel from your description that wb is just
->> slower than wt since zswap memory is pool.
->
-> evicting pages early doesn't avoid the overhead of having to
-> decompress the pages nor does it avoid having to write them to disk,
-> so I don't think it has a direct relation to this patch to add the
-> writethrough option.
->
->>
->>>
->>> >
->>> > Other point: As I read device-mapper/cache.txt, cache operating mode
->>> > already supports writethrough. It means zram zRAM can support
->>> > writeback/writethough with dm-cache.
->>> > Have you tried it? Is there any problem?
->>>
->>> zswap isn't a block device though, so that doesn't apply (unless I'm
->>> missing something).
->>
->> zram is block device so freely you can make it to swap block device
->> and binding it with dm-cache will make what you want.
->> The whole point is we could do what you want without adding new
->> so I hope you prove what's the problem in existing solution so that
->> we could judge and try to solve the pain point with more ideal
->> approach.
->
-> Sorry, it seems like you're saying "you can drop zswap and start using
-> zram, so this patch isn't needed", which really doesn't actually
-> address this patch I don't think.  zswap vs. zram isn't an argument
-> I'm trying to get into right now.
->
->>
->>>
->>> >
->>> > Acutally, I really don't know how much benefit we have that in-memory
->>> > swap overcomming to the real storage but if you want, zRAM with dm-cache
->>> > is another option rather than invent new wheel by "just having is better".
->>>
->>> I'm not sure if this patch is related to the zswap vs. zram discussions.  This
->>> only adds the option of using writethrough to zswap.  It's a first
->>> step to possibly
->>> making zswap work more efficiently using writeback and/or writethrough
->>> depending on
->>> the system and conditions.
->>
->> The patch size is small. Okay I don't want to be a party-pooper
->> but at least, I should say my thought for Andrew to help judging.
->
-> Sure, I'm glad to have your suggestions.
+Add missing include to fix build error:
+drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
+drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_init’ [-Werror=implicit-int]
+drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
+drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
+drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_exit’ [-Werror=implicit-int]
+drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
+drivers/cpufreq/exynos-cpufreq.c:292:1: warning: ‘exynos_cpufreq_platdrv_init’ defined but not used [-Wunused-function]
+cc1: some warnings being treated as errors
+make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
+make[1]: *** [drivers/cpufreq] Error 2
 
-To give this a bump - Andrew do you have any concerns about this
-patch?  Or can you pick this up?
+Build error happens on gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
+and was introduced by commit d568b6f71df1 (cpufreq: exynos: Convert
+exynos-cpufreq to platform driver).
 
->
->>
->>>
->>> >
->>> > Thanks.
->>> >
->>> >>
->>> >> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->>> >>
->>> >> ---
->>> >>
->>> >> Based on specjbb testing on my laptop, the results for both writeback
->>> >> and writethrough are better than not using zswap at all, but writeback
->>> >> does seem to be better than writethrough while zswap isn't full.  Once
->>> >> it fills up, performance for writethrough is essentially close to not
->>> >> using zswap, while writeback seems to be worse than not using zswap.
->>> >> However, I think more testing on a wider span of systems and conditions
->>> >> is needed.  Additionally, I'm not sure that specjbb is measuring true
->>> >> performance under fully loaded cpu conditions, so additional cpu load
->>> >> might need to be added or specjbb parameters modified (I took the
->>> >> values from the 4 "warehouses" test run).
->>> >>
->>> >> In any case though, I think having writethrough as an option is still
->>> >> useful.  More changes could be made, such as changing from writeback
->>> >> to writethrough based on the zswap % full.  And the patch doesn't
->>> >> change default behavior - writethrough must be specifically enabled.
->>> >>
->>> >> The %-ized numbers I got from specjbb on average, using the default
->>> >> 20% max_pool_percent and varying the amount of heap used as shown:
->>> >>
->>> >> ram | no zswap | writeback | writethrough
->>> >> 75     93.08     100         96.90
->>> >> 87     96.58     95.58       96.72
->>> >> 100    92.29     89.73       86.75
->>> >> 112    63.80     38.66       19.66
->>> >> 125    4.79      29.90       15.75
->>> >> 137    4.99      4.50        4.75
->>> >> 150    4.28      4.62        5.01
->>> >> 162    5.20      2.94        4.66
->>> >> 175    5.71      2.11        4.84
->>> >>
->>> >>
->>> >>
->>> >>  mm/zswap.c | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
->>> >>  1 file changed, 64 insertions(+), 4 deletions(-)
->>> >>
->>> >> diff --git a/mm/zswap.c b/mm/zswap.c
->>> >> index e55bab9..2f919db 100644
->>> >> --- a/mm/zswap.c
->>> >> +++ b/mm/zswap.c
->>> >> @@ -61,6 +61,8 @@ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
->>> >>  static u64 zswap_pool_limit_hit;
->>> >>  /* Pages written back when pool limit was reached */
->>> >>  static u64 zswap_written_back_pages;
->>> >> +/* Pages evicted when pool limit was reached */
->>> >> +static u64 zswap_evicted_pages;
->>> >>  /* Store failed due to a reclaim failure after pool limit was reached */
->>> >>  static u64 zswap_reject_reclaim_fail;
->>> >>  /* Compressed page was too big for the allocator to (optimally) store */
->>> >> @@ -89,6 +91,10 @@ static unsigned int zswap_max_pool_percent = 20;
->>> >>  module_param_named(max_pool_percent,
->>> >>                       zswap_max_pool_percent, uint, 0644);
->>> >>
->>> >> +/* Writeback/writethrough mode (fixed at boot for now) */
->>> >> +static bool zswap_writethrough;
->>> >> +module_param_named(writethrough, zswap_writethrough, bool, 0444);
->>> >> +
->>> >>  /*********************************
->>> >>  * compression functions
->>> >>  **********************************/
->>> >> @@ -629,6 +635,48 @@ end:
->>> >>  }
->>> >>
->>> >>  /*********************************
->>> >> +* evict code
->>> >> +**********************************/
->>> >> +
->>> >> +/*
->>> >> + * This evicts pages that have already been written through to swap.
->>> >> + */
->>> >> +static int zswap_evict_entry(struct zbud_pool *pool, unsigned long handle)
->>> >> +{
->>> >> +     struct zswap_header *zhdr;
->>> >> +     swp_entry_t swpentry;
->>> >> +     struct zswap_tree *tree;
->>> >> +     pgoff_t offset;
->>> >> +     struct zswap_entry *entry;
->>> >> +
->>> >> +     /* extract swpentry from data */
->>> >> +     zhdr = zbud_map(pool, handle);
->>> >> +     swpentry = zhdr->swpentry; /* here */
->>> >> +     zbud_unmap(pool, handle);
->>> >> +     tree = zswap_trees[swp_type(swpentry)];
->>> >> +     offset = swp_offset(swpentry);
->>> >> +     BUG_ON(pool != tree->pool);
->>> >> +
->>> >> +     /* find and ref zswap entry */
->>> >> +     spin_lock(&tree->lock);
->>> >> +     entry = zswap_rb_search(&tree->rbroot, offset);
->>> >> +     if (!entry) {
->>> >> +             /* entry was invalidated */
->>> >> +             spin_unlock(&tree->lock);
->>> >> +             return 0;
->>> >> +     }
->>> >> +
->>> >> +     zswap_evicted_pages++;
->>> >> +
->>> >> +     zswap_rb_erase(&tree->rbroot, entry);
->>> >> +     zswap_entry_put(tree, entry);
->>> >> +
->>> >> +     spin_unlock(&tree->lock);
->>> >> +
->>> >> +     return 0;
->>> >> +}
->>> >> +
->>> >> +/*********************************
->>> >>  * frontswap hooks
->>> >>  **********************************/
->>> >>  /* attempts to compress and store an single page */
->>> >> @@ -744,7 +792,7 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
->>> >>       spin_lock(&tree->lock);
->>> >>       entry = zswap_entry_find_get(&tree->rbroot, offset);
->>> >>       if (!entry) {
->>> >> -             /* entry was written back */
->>> >> +             /* entry was written back or evicted */
->>> >>               spin_unlock(&tree->lock);
->>> >>               return -1;
->>> >>       }
->>> >> @@ -778,7 +826,7 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
->>> >>       spin_lock(&tree->lock);
->>> >>       entry = zswap_rb_search(&tree->rbroot, offset);
->>> >>       if (!entry) {
->>> >> -             /* entry was written back */
->>> >> +             /* entry was written back or evicted */
->>> >>               spin_unlock(&tree->lock);
->>> >>               return;
->>> >>       }
->>> >> @@ -813,18 +861,26 @@ static void zswap_frontswap_invalidate_area(unsigned type)
->>> >>       zswap_trees[type] = NULL;
->>> >>  }
->>> >>
->>> >> -static struct zbud_ops zswap_zbud_ops = {
->>> >> +static struct zbud_ops zswap_zbud_writeback_ops = {
->>> >>       .evict = zswap_writeback_entry
->>> >>  };
->>> >> +static struct zbud_ops zswap_zbud_writethrough_ops = {
->>> >> +     .evict = zswap_evict_entry
->>> >> +};
->>> >>
->>> >>  static void zswap_frontswap_init(unsigned type)
->>> >>  {
->>> >>       struct zswap_tree *tree;
->>> >> +     struct zbud_ops *ops;
->>> >>
->>> >>       tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
->>> >>       if (!tree)
->>> >>               goto err;
->>> >> -     tree->pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
->>> >> +     if (zswap_writethrough)
->>> >> +             ops = &zswap_zbud_writethrough_ops;
->>> >> +     else
->>> >> +             ops = &zswap_zbud_writeback_ops;
->>> >> +     tree->pool = zbud_create_pool(GFP_KERNEL, ops);
->>> >>       if (!tree->pool)
->>> >>               goto freetree;
->>> >>       tree->rbroot = RB_ROOT;
->>> >> @@ -875,6 +931,8 @@ static int __init zswap_debugfs_init(void)
->>> >>                       zswap_debugfs_root, &zswap_reject_compress_poor);
->>> >>       debugfs_create_u64("written_back_pages", S_IRUGO,
->>> >>                       zswap_debugfs_root, &zswap_written_back_pages);
->>> >> +     debugfs_create_u64("evicted_pages", S_IRUGO,
->>> >> +                     zswap_debugfs_root, &zswap_evicted_pages);
->>> >>       debugfs_create_u64("duplicate_entry", S_IRUGO,
->>> >>                       zswap_debugfs_root, &zswap_duplicate_entry);
->>> >>       debugfs_create_u64("pool_pages", S_IRUGO,
->>> >> @@ -919,6 +977,8 @@ static int __init init_zswap(void)
->>> >>               pr_err("per-cpu initialization failed\n");
->>> >>               goto pcpufail;
->>> >>       }
->>> >> +     if (zswap_writethrough)
->>> >> +             frontswap_writethrough(true);
->>> >>       frontswap_register_ops(&zswap_frontswap_ops);
->>> >>       if (zswap_debugfs_init())
->>> >>               pr_warn("debugfs initialization failed\n");
->>> >> --
->>> >> 1.8.3.1
->>> >>
->>> >> --
->>> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> >> the body to majordomo@kvack.org.  For more info on Linux MM,
->>> >> see: http://www.linux-mm.org/ .
->>> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>> >
->>> > --
->>> > Kind regards,
->>> > Minchan Kim
->>>
->>> --
->>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>> see: http://www.linux-mm.org/ .
->>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
->> --
->> Kind regards,
->> Minchan Kim
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/cpufreq/exynos-cpufreq.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index fcd2914d081a..fa54c2b88dd7 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -17,6 +17,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/cpufreq.h>
+ #include <linux/suspend.h>
++#include <linux/module.h>
+ #include <linux/platform_device.h>
+ 
+ #include <plat/cpu.h>
+-- 
+1.7.9.5
+
