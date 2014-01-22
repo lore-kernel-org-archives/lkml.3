@@ -1,120 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaAVVFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:05:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43719 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886AbaAVVF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:05:29 -0500
-Date: Wed, 22 Jan 2014 22:05:24 +0100
-From: Jan Kara <jack@suse.cz>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Ric Wheeler <rwheeler@redhat.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Chris Mason <clm@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Message-ID: <20140122210524.GA27916@quack.suse.cz>
-References: <20131220093022.GV11295@suse.de>
- <52DF353D.6050300@redhat.com>
- <20140122093435.GS4963@suse.de>
- <1390403770.1198.4.camel@ret.masoncoding.com>
- <1390406584.2372.7.camel@dabdike.int.hansenpartnership.com>
- <52DFF5A8.1090002@redhat.com>
- <1390410033.2372.28.camel@dabdike.int.hansenpartnership.com>
+	id S1755424AbaAVVIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:08:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42768 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaAVVIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 16:08:37 -0500
+Date: Wed, 22 Jan 2014 22:08:14 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+References: <20140122120757.GL31570@twins.programming.kicks-ass.net>
+ <20140122122609.GA392@x4>
+ <20140122123022.GN31570@twins.programming.kicks-ass.net>
+ <20140122131456.GA389@x4>
+ <52DFD50E.800@oracle.com>
+ <20140122183538.GA389@x4>
+ <20140122184253.GN30183@twins.programming.kicks-ass.net>
+ <20140122190905.GA391@x4>
+ <20140122191254.GA390@x4>
+ <20140122201605.GU11314@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390410033.2372.28.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140122201605.GU11314@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22-01-14 09:00:33, James Bottomley wrote:
-> On Wed, 2014-01-22 at 11:45 -0500, Ric Wheeler wrote:
-> > On 01/22/2014 11:03 AM, James Bottomley wrote:
-> > > On Wed, 2014-01-22 at 15:14 +0000, Chris Mason wrote:
-> > >> On Wed, 2014-01-22 at 09:34 +0000, Mel Gorman wrote:
-> > >>> On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
-> > >>>> One topic that has been lurking forever at the edges is the current
-> > >>>> 4k limitation for file system block sizes. Some devices in
-> > >>>> production today and others coming soon have larger sectors and it
-> > >>>> would be interesting to see if it is time to poke at this topic
-> > >>>> again.
-> > >>>>
-> > >>> Large block support was proposed years ago by Christoph Lameter
-> > >>> (http://lwn.net/Articles/232757/). I think I was just getting started
-> > >>> in the community at the time so I do not recall any of the details. I do
-> > >>> believe it motivated an alternative by Nick Piggin called fsblock though
-> > >>> (http://lwn.net/Articles/321390/). At the very least it would be nice to
-> > >>> know why neither were never merged for those of us that were not around
-> > >>> at the time and who may not have the chance to dive through mailing list
-> > >>> archives between now and March.
-> > >>>
-> > >>> FWIW, I would expect that a show-stopper for any proposal is requiring
-> > >>> high-order allocations to succeed for the system to behave correctly.
-> > >>>
-> > >> My memory is that Nick's work just didn't have the momentum to get
-> > >> pushed in.  It all seemed very reasonable though, I think our hatred of
-> > >> buffered heads just wasn't yet bigger than the fear of moving away.
-> > >>
-> > >> But, the bigger question is how big are the blocks going to be?  At some
-> > >> point (64K?) we might as well just make a log structured dm target and
-> > >> have a single setup for both shingled and large sector drives.
-> > > There is no real point.  Even with 4k drives today using 4k sectors in
-> > > the filesystem, we still get 512 byte writes because of journalling and
-> > > the buffer cache.
-> > 
-> > I think that you are wrong here James. Even with 512 byte drives, the IO's we 
-> > send down tend to be 4k or larger. Do you have traces that show this and details?
 > 
-> It's mostly an ext3 journalling issue ... and it's only metadata and
-> mostly the ioschedulers can elevate it into 4k chunks, so yes, most of
-> our writes are 4k+, so this is a red herring, yes.
-  ext3 (similarly as ext4) does block level journalling meaning that it
-journals *only* full blocks. So an ext3/4 filesystem with 4 KB blocksize
-will never journal anything else than full 4 KB blocks. So I'm not sure
-where this 512-byte writes idea came from..
+> I think its the right region to look through. My current suspect is the
+> linear continuity fit with the initial 'random' multiplier.
+> 
+> That initial 'random' multiplier can get us quite high, and we'll fit
+> the function to match that but continue at a sane rate.
+> 
+> I'll try and prod a little more later this evening as time permits.
 
-> > Also keep in mind that larger block sizes allow us to track larger
-> > files with 
-> > smaller amounts of metadata which is a second win.
-> 
-> Larger file block sizes are completely independent from larger device
-> block sizes (we can have 16k file block sizes on 4k or even 512b
-> devices).  The questions on larger block size devices are twofold:
-> 
->      1. If manufacturers tell us that they'll only support I/O on the
->         physical sector size, do we believe them, given that they said
->         this before on 4k and then backed down.  All the logical vs
->         physical sector stuff is now in T10 standards, why would they
->         try to go all physical again, especially as they've now all
->         written firmware that does the necessary RMW?
->      2. If we agree they'll do RMW in Firmware again, what do we have to
->         do to take advantage of larger sector sizes beyond what we
->         currently do in alignment and chunking?  There may still be
->         issues in FS journal and data layouts.
-  I also believe drives will support smaller-than-blocksize writes. But
-supporting larger fs blocksize can sometimes be beneficial for other
-reasons (think performance with specialized workloads because amount of
-metadata is smaller, fragmentation is smaller, ...). Currently ocfs2, ext4,
-and possibly others go through the hoops to support allocating file data in
-chunks larger than fs blocksize - at the first sight that should be
-straightforward but if you look at the code you find out there are nasty
-corner cases which make it pretty ugly. And each fs doing these large data
-allocations currently invents its own way to deal with the problems. So
-providing some common infrastructure for dealing with blocks larger than
-page size would definitely relieve some pain.
+Does this cure things?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+---
+ arch/x86/kernel/tsc.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a3acbac2ee72..bb04148c5fe0 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -237,7 +237,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+ /* XXX surely we already have this someplace in the kernel?! */
+ #define DIV_ROUND(n, d) (((n) + ((d) / 2)) / (d))
+ 
+-static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
++static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu, bool origin)
+ {
+ 	unsigned long long tsc_now, ns_now;
+ 	struct cyc2ns_data *data;
+@@ -252,7 +252,10 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+ 	data = cyc2ns_write_begin(cpu);
+ 
+ 	rdtscll(tsc_now);
+-	ns_now = cycles_2_ns(tsc_now);
++	if (origin)
++		ns_now = 0;
++	else
++		ns_now = cycles_2_ns(tsc_now);
+ 
+ 	/*
+ 	 * Compute a new multiplier as per the above comment and ensure our
+@@ -926,7 +929,7 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+ 			mark_tsc_unstable("cpufreq changes");
+ 	}
+ 
+-	set_cyc2ns_scale(tsc_khz, freq->cpu);
++	set_cyc2ns_scale(tsc_khz, freq->cpu, false);
+ 
+ 	return 0;
+ }
+@@ -1199,7 +1202,7 @@ void __init tsc_init(void)
+ 	 */
+ 	for_each_possible_cpu(cpu) {
+ 		cyc2ns_init(cpu);
+-		set_cyc2ns_scale(cpu_khz, cpu);
++		set_cyc2ns_scale(cpu_khz, cpu, true);
+ 	}
+ 
+ 	if (tsc_disabled > 0)
