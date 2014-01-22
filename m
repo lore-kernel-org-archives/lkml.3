@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaAVUr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 15:47:26 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:16798 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334AbaAVUrY (ORCPT
+	id S1754670AbaAVUsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:48:01 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58361 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424AbaAVUr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 15:47:24 -0500
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-scsi@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lsf-pc@lists.linux-foundation.org
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going beyond 4096 bytes
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
-	<20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
-	<20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
-Date: Wed, 22 Jan 2014 15:47:12 -0500
-In-Reply-To: <52DFDCA6.1050204@redhat.com> (Ric Wheeler's message of "Wed, 22
-	Jan 2014 09:58:46 -0500")
-Message-ID: <yq138kfbv73.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	Wed, 22 Jan 2014 15:47:59 -0500
+Message-ID: <52E02E7E.4050203@codeaurora.org>
+Date: Wed, 22 Jan 2014 12:47:58 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>
+Subject: Re: [PATCH v2 5/7] ARM: perf_event: Fully support Krait CPU PMU events
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org> <1389808535-23852-6-git-send-email-sboyd@codeaurora.org> <20140121180711.GN30706@mudshark.cambridge.arm.com> <52DEBE6B.7000904@codeaurora.org>
+In-Reply-To: <52DEBE6B.7000904@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Ric" == Ric Wheeler <rwheeler@redhat.com> writes:
+On 01/21/14 10:37, Stephen Boyd wrote:
+> On 01/21/14 10:07, Will Deacon wrote:
+>> Do you need isbs to ensure the pmresrn side-effects have happened, or are
+>> the registers self-synchronising? Similarly for your other IMP DEF
+>> registers.
+> There aren't any isbs in the downstream android sources so I assume
+> they're self synchronizing. I'll confirm with the CPU designers to make
+> sure.
+>
 
-Ric> I will have to see if I can get a storage vendor to make a public
-Ric> statement, but there are vendors hoping to see this land in Linux
-Ric> in the next few years. I assume that anyone with a shipping device
-Ric> will have to at least emulate the 4KB sector size for years to
-Ric> come, but that there might be a significant performance win for
-Ric> platforms that can do a larger block.
+CPU folks say no need for isb. They mentioned that the lack of an isb
+after the armv7_pmnc_enable_counter() call will leave the action of
+enabling the counter "in-flight". The window is probably pretty short on
+an SMP kernel because of the spin_unlock right after with the barriers
+in it, but the same can't be said for a UP kernel.
 
-I am aware of two companies that already created devices with 8KB
-logical blocks and expected Linux to work. I had to do some explaining.
-
-I agree with Ric that this is something we'll need to address sooner
-rather than later.
+Also, the fuzzer didn't find anything else, but I found a bug in the
+bitmap logic, updated and reran the fuzzer this morning. Everything
+looks good.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
