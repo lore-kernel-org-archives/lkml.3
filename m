@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523AbaAVMDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:03:22 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:57953 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161AbaAVMDT (ORCPT
+	id S1755525AbaAVMH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:07:29 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:42452 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856AbaAVMH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:03:19 -0500
-Message-ID: <52DFB382.5080002@redhat.com>
-Date: Wed, 22 Jan 2014 13:03:14 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 07:07:26 -0500
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: Re: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
-References: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140121204803.GA853@earth.universe>
+References: <1389393286-15263-1-git-send-email-sre@debian.org>
+	<1389401268-15069-1-git-send-email-sre@debian.org>
+	<20140121204803.GA853@earth.universe>
+Date: Wed, 22 Jan 2014 16:07:25 +0400
+Message-ID: <CALT56yOZ5qCoS-xwFV7sqE1LATQUFckOkQa7dd24Foq7A4Xv2g@mail.gmail.com>
+Subject: Re: [PATCHv3] dt: binding documentation for bq2415x charger
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Sebastian Reichel <sre@ring0.de>
+Cc: Anton Vorontsov <anton@enomsg.org>,
+        kernel list <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/01/2014 06:29, Liu, Jinsong ha scritto:
-> These patches are version 3 to enalbe Intel MPX for KVM.
+Hello,
+
+On Wed, Jan 22, 2014 at 12:48 AM, Sebastian Reichel <sre@ring0.de> wrote:
+> Hi Dmitry,
 >
-> Version 1:
->   * Add some Intel MPX definiation
->   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features enable/disable
->   * vmx and msr handle for MPX support at KVM
->   * enalbe MPX feature for guest
+>> Add devicetree binding documentation for bq2415x charger.
+>>
+>> Signed-off-by: Sebastian Reichel <sre@debian.org>
+>> Acked-by: Pavel Machek <pavel@ucw.cz>
 >
-> Version 2:
->   * remove generic MPX definiation, Qiaowei's patch has add the definiation at kernel side
->   * add MSR_IA32_BNDCFGS to msrs_to_save
+> I've seen, that you just sent a pull request for the power supply
+> tree. Can you please add this patch [0] and send another pull
+> request? It should go into the kernel together with the bq2415x DT
+> support patch!
+
+If that is fine with you, I will add this to a 'fixes' branch and send
+a pull request
+somewhere near -rc2/-rc3. Agreed?
+
 >
-> Version 3:
->   * rebase on latest kernel, which include Qiaowei's MPX common definiation pulled from HPA's tree
+> [0] http://www.spinics.net/lists/devicetree/msg18023.html
 
-I am afraid there is still some work to do on these patches, so they 
-need to be delayed to 3.15.
-
-Patch 1:
-	this seems mostly separate from the rest of the MPX work.  I
-	commented on the missing "ULL" suffix, but I would also like to
-	understand why you put this patch in this series.
-
-Patch 2:
-	As remarked in the reply to this patch:
-	- the vmx_disable_intercept_for_msr has to be unconditional
-	- you need a new kvm_x86_ops member mpx_supported, to disable
-	MPX whenever the two VMX controls are not available.
-
-Patch 3:
-	this patch needs to be rebased.  Apart from that it is fine,
-	but please move the VMX bits together with patch 2, and the
-	other bits together with patch 4.
-
-Patch 4:
-	this patch needs to be rebased and to use the new mpx_supported
-	member
-
-If you also want to look at nested VMX support for MPX, that would be 
-nice.  It should not be hard.  Otherwise we can take care of that later.
-
-Thanks for your work,
-
-Paolo
+-- 
+With best wishes
+Dmitry
