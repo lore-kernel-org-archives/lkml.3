@@ -1,102 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaAVHZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 02:25:35 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:57648 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaAVHZb (ORCPT
+	id S1753105AbaAVH30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 02:29:26 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45509 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaAVH3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 02:25:31 -0500
-Message-ID: <1390375658.5567.917.camel@haakon3.risingtidesystems.com>
-Subject: Re: linux rdma 3.14 merge plans
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Or Gerlitz <or.gerlitz@gmail.com>,
+	Wed, 22 Jan 2014 02:29:25 -0500
+Date: Tue, 21 Jan 2014 23:29:14 -0800
+From: Steven Noonan <steven@uplinklabs.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, george.dunlap@eu.citrix.com,
+        dario.faggioli@citrix.com, Elena Ufimtseva <ufimtseva@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hefty Sean <sean.hefty@intel.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Jan 2014 23:27:38 -0800
-In-Reply-To: <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
-References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
-	 <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
-	 <52CD1C68.4050406@mellanox.com>
-	 <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
-	 <1389820541.5567.543.camel@haakon3.risingtidesystems.com>
-	 <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
-	 <1389906852.5567.668.camel@haakon3.risingtidesystems.com>
-	 <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
-	 <1390102949.5567.749.camel@haakon3.risingtidesystems.com>
-	 <52DBB4F1.4020400@mellanox.com>
-	 <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
-	 <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
-	 <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
+Message-ID: <20140122072914.GA9283@orcus.uplinklabs.net>
+References: <20140121232708.GA29787@amazon.com>
+ <20140122014908.GG18164@kroah.com>
+ <CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
+ <20140122032045.GA22182@falcon.amazon.com>
+ <20140122050215.GC9931@konrad-lan.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140122050215.GC9931@konrad-lan.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland & Co,
-
-On Tue, 2014-01-21 at 16:43 -0800, Roland Dreier wrote:
-> On Tue, Jan 21, 2014 at 2:00 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
-> > Roland, ping! the signature patches were posted > three months ago. We
-> > deserve a response from the maintainer that goes beyond "I need to
-> > think on that".
-> >
-> > Responsiveness was stated by Linus to be the #1 requirement from
-> > kernel maintainers.
+On Wed, Jan 22, 2014 at 12:02:15AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jan 21, 2014 at 07:20:45PM -0800, Steven Noonan wrote:
+> > On Tue, Jan 21, 2014 at 06:47:07PM -0800, Linus Torvalds wrote:
+> > > On Tue, Jan 21, 2014 at 5:49 PM, Greg Kroah-Hartman
+> > > <gregkh@linuxfoundation.org> wrote:
 > 
-> Or, I'm not sure what response you're after from me.  Linus has also
-> said that maintainers should say "no" a lot more
-> (http://lwn.net/Articles/571995/) so maybe you want me to say, "No, I
-> won't merge this patch set, since it adds a bunch of complexity to
-> support a feature no one really cares about."  Is that it? 
-
-The patch set proposed by Sagi + Or is modest in terms of LOC to core IB
-code, and includes mostly mlx5 specific driver changes that enables HW
-offloads.
-
-> (And yes I
-> am skeptical about this stuff — I work at an enterprise storage
-> company and even here it's hard to find anyone who cares about
-> DIF/DIX, especially offload features that stop it from being
-> end-to-end)
+> Adding extra folks to the party.
+> > > >
+> > > > Odds are this also shows up in 3.13, right?
+> > 
+> > Reproduced using 3.13 on the PV guest:
+> > 
+> > 	[  368.756763] BUG: Bad page map in process mp  pte:80000004a67c6165 pmd:e9b706067
+> > 	[  368.756777] page:ffffea001299f180 count:0 mapcount:-1 mapping:          (null) index:0x0
+> > 	[  368.756781] page flags: 0x2fffff80000014(referenced|dirty)
+> > 	[  368.756786] addr:00007fd1388b7000 vm_flags:00100071 anon_vma:ffff880e9ba15f80 mapping:          (null) index:7fd1388b7
+> > 	[  368.756792] CPU: 29 PID: 618 Comm: mp Not tainted 3.13.0-ec2 #1
+> > 	[  368.756795]  ffff880e9b718958 ffff880e9eaf3cc0 ffffffff814d8748 00007fd1388b7000
+> > 	[  368.756803]  ffff880e9eaf3d08 ffffffff8116d289 0000000000000000 0000000000000000
+> > 	[  368.756809]  ffff880e9b7065b8 ffffea001299f180 00007fd1388b8000 ffff880e9eaf3e30
+> > 	[  368.756815] Call Trace:
+> > 	[  368.756825]  [<ffffffff814d8748>] dump_stack+0x45/0x56
+> > 	[  368.756833]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
+> > 	[  368.756837]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
+> > 	[  368.756842]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
+> > 	[  368.756847]  [<ffffffff81175dac>] unmap_region+0xac/0x120
+> > 	[  368.756852]  [<ffffffff81176379>] ? vma_rb_erase+0x1c9/0x210
+> > 	[  368.756856]  [<ffffffff81177f10>] do_munmap+0x280/0x370
+> > 	[  368.756860]  [<ffffffff81178041>] vm_munmap+0x41/0x60
+> > 	[  368.756864]  [<ffffffff81178f32>] SyS_munmap+0x22/0x30
+> > 	[  368.756869]  [<ffffffff814e70ed>] system_call_fastpath+0x1a/0x1f
+> > 	[  368.756872] Disabling lock debugging due to kernel taint
+> > 	[  368.760084] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:0 val:-1
+> > 	[  368.760091] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:1 val:1
+> > 
+> > > 
+> > > Probably. I don't have a Xen PV setup to test with (and very little
+> > > interest in setting one up).. And I have a suspicion that it might not
+> > > be so much about Xen PV, as perhaps about the kind of hardware.
+> > > 
+> > > I suspect the issue has something to do with the magic _PAGE_NUMA
+> > > tie-in with _PAGE_PRESENT. And then mprotect(PROT_NONE) ends up
+> > > removing the _PAGE_PRESENT bit, and now the crazy numa code is
+> > > confused.
+> > > 
+> > > The whole _PAGE_NUMA thing is a f*cking horrible hack, and shares the
+> > > bit with _PAGE_PROTNONE, which is why it then has that tie-in to
+> > > _PAGE_PRESENT.
+> > > 
+> > > Adding Andrea to the Cc, because he's the author of that horridness.
+> > > Putting Steven's test-case here as an attachement for Andrea, maybe
+> > > that makes him go "Ahh, yes, silly case".
+> > > 
+> > > Also added Kirill, because he was involved the last _PAGE_NUMA debacle.
+> > > 
+> > > Andrea, you can find the thread on lkml, but it boils down to commit
+> > > 1667918b6483 (backported to 3.12.7 as 3d792d616ba4) breaking the
+> > > attached test-case (but apparently only under Xen PV). There it
+> > > apparently causes a "BUG: Bad page map .." error.
 > 
-
-My understanding is most HBAs capable of T10 PI offload in DIX PASS +
-VERIFY mode are already implementing DIX INSERT + STRIP modes in various
-capacities to support legacy environments.
-
-Beyond the DIX INSERT + STRIP case for enterprise storage, the amount of
-FC + SAS HBAs that already support T10 PI metadata is substantial.
-
-> I'm sure you're not expecting me to say, "Sure, I'll merge it without
-> understanding the problem it's solving or how it's doing that,"
-> especially given the your recent history of pushing me to merge stuff
-> like the IP-RoCE patches back when they broke the userspace ABI.
-
-With the merge window now upon us, there is a understandable reluctance
-to merge new features.  Given the amount of time the series has spent on
-the list, it is however a good candidate to consider for an exception.
-
-Short of that, are you planning to accept the series for the next round
-once the current merge window closes..?
-
-We'd really like to start enabling fabrics with these types of offloads
-for v3.15. 
-
-> I'd really rather spend my time on something actually useful like
-> cleaning up softroce.
+> I *think* it is due to the fact that pmd_numa and pte_numa is getting the _raw_
+> value of PMDs and PTEs. That is - it does not use the pvops interface
+> and instead reads the values directly from the page-table. Since the
+> page-table is also manipulated by the hypervisor - there are certain
+> flags it also sets to do its business. It might be that it uses
+> _PAGE_GLOBAL as well - and Linux picks up on that. If it was using
+> pte_flags that would invoke the pvops interface.
 > 
+> Elena, Dariof and George, you guys had been looking at this a bit deeper
+> than I have. Does the Xen hypervisor use the _PAGE_GLOBAL for PV guests?
+> 
+> This not-compiled-totally-bad-patch might shed some light on what I was
+> thinking _could_ fix this issue - and IS NOT A FIX - JUST A HACK.
+> It does not fix it for PMDs naturally (as there are no PMD paravirt ops
+> for that).
 
-+1 for softroce + T10 PI support!
+Unfortunately the Totally Bad Patch seems to make no difference. I am
+still able to repro the issue:
 
---nab
+	[  346.374929] BUG: Bad page map in process mp  pte:80000004ae928065 pmd:e993f9067
+	[  346.374942] page:ffffea0012ba4a00 count:0 mapcount:-1 mapping:          (null) index:0x0
+	[  346.374946] page flags: 0x2fffff80000014(referenced|dirty)
+	[  346.374951] addr:00007f06a9bbb000 vm_flags:00100071 anon_vma:ffff880e9939fe00 mapping:          (null) index:7f06a9bbb
+	[  346.374956] CPU: 29 PID: 609 Comm: mp Not tainted 3.13.0-ec2+ #1
+	[  346.374960]  ffff880e9cc38da8 ffff880e991a3cc0 ffffffff814d8768 00007f06a9bbb000
+	[  346.374967]  ffff880e991a3d08 ffffffff8116d289 0000000000000000 0000000000000000
+	[  346.374972]  ffff880e993f9dd8 ffffea0012ba4a00 00007f06a9bbc000 ffff880e991a3e30
+	[  346.374979] Call Trace:
+	[  346.374988]  [<ffffffff814d8768>] dump_stack+0x45/0x56
+	[  346.374996]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
+	[  346.375000]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
+	[  346.375006]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
+	[  346.375011]  [<ffffffff81175dbc>] unmap_region+0xac/0x120
+	[  346.375016]  [<ffffffff81176389>] ? vma_rb_erase+0x1c9/0x210
+	[  346.375021]  [<ffffffff81177f20>] do_munmap+0x280/0x370
+	[  346.375025]  [<ffffffff81178051>] vm_munmap+0x41/0x60
+	[  346.375029]  [<ffffffff81178f42>] SyS_munmap+0x22/0x30
+	[  346.375034]  [<ffffffff814e712d>] system_call_fastpath+0x1a/0x1f
+	[  346.375037] Disabling lock debugging due to kernel taint
+	[  346.380082] BUG: Bad rss-counter state mm:ffff880e9d22bc00 idx:0 val:-1
+	[  346.380088] BUG: Bad rss-counter state mm:ffff880e9d22bc00 idx:1 val:1
+
+This dump doesn't look dramatically different, either.
+
+> 
+> The other question is - how is AutoNUMA running when it is not enabled?
+> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
+> turned on?
+
+Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
+mean not enabled at runtime?
+
+[1] http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
 
