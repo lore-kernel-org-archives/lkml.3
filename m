@@ -1,77 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaAVPWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:22:48 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:60769 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862AbaAVPWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:22:46 -0500
-Date: Wed, 22 Jan 2014 09:22:39 -0600
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, jasowang@redhat.com
-Subject: Re: kvm virtio ethernet ring on guest side over high throughput
- (packet per second)
-Message-ID: <20140122152239.GA11404@stefanha-thinkpad.redhat.com>
-References: <CAMrG31x0H1OjtNfdcXq2EqZ20XPHCX8qvrQSSuMqR=hsttYmXQ@mail.gmail.com>
+	id S1756025AbaAVPZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:25:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755223AbaAVPZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 10:25:14 -0500
+Date: Wed, 22 Jan 2014 16:25:09 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID for 3.14
+Message-ID: <alpine.LNX.2.00.1401221554250.27143@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMrG31x0H1OjtNfdcXq2EqZ20XPHCX8qvrQSSuMqR=hsttYmXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 04:06:05PM -0200, Alejandro Comisario wrote:
+Linus,
 
-CCed Michael Tsirkin and Jason Wang who work on KVM networking.
+please pull from
 
-> Hi guys, we had in the past when using physical servers, several
-> throughput issues regarding the throughput of our APIS, in our case we
-> measure this with packets per seconds, since we dont have that much
-> bandwidth (Mb/s) since our apis respond lots of packets very small
-> ones (maximum response of 3.5k and avg response of 1.5k), when we
-> where using this physical servers, when we reach throughput capacity
-> (due to clients tiemouts) we touched the ethernet ring configuration
-> and we made the problem dissapear.
-> 
-> Today with kvm and over 10k virtual instances, when we want to
-> increase the throughput of KVM instances, we bumped with the fact that
-> when using virtio on guests, we have a max configuration of the ring
-> of 256 TX/RX, and from the host side the atached vnet has a txqueuelen
-> of 500.
-> 
-> What i want to know is, how can i tune the guest to support more
-> packets per seccond if i know that's my bottleneck?
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-I suggest investigating performance in a systematic way.  Set up a
-benchmark that saturates the network.  Post the details of the benchmark
-and the results that you are seeing.
+to receive
 
-Then, we can discuss how to investigate the root cause of the bottleneck.
 
-> * does virtio exposes more packets to configure in the virtual ethernet's ring ?
 
-No, ring size is hardcoded in QEMU (on the host).
+- quite some work on hid-sony driver in order to have DualShock 4 device
+  properly supported, from Frank Praznik
 
-> * does the use of vhost_net helps me with increasing packets per
-> second and not only bandwidth?
+- fixed support for suspending I2C conntected devices, from Mika 
+  Westerberg
 
-vhost_net is generally the most performant network option.
+- regression fix for 0xff05 usage on Microsoft Ergonomy, from Jiri kosina
 
-> does anyone has to struggle with this before and knows where i can look into ?
-> there's LOOOOOOOOOOOOOOOTS of information about networking performance
-> tuning of kvm, but nothing related to increase throughput in pps
-> capacity.
-> 
-> This is a couple of configurations that we are having right now on the
-> compute nodes:
-> 
-> * 2x1Gb bonded interfaces (want to know the more than 20 models we are
-> using, just ask for it)
-> * Multi queue interfaces, pined via irq to different cores
-> * Linux bridges,  no VLAN, no open-vswitch
-> * ubuntu 12.04 kernel 3.2.0-[40-48]
+- support for Synaptics HD touchscreen, from AceLan Kao
+
+- workaround for USB 3.0 problem for logitech-dj connected devices, from 
+  Benjamin Tisssoires
+
+- support for Logitech Dual Action pads, from Vitaly Katraew
+
+- quite a few other assorted fixes and device ID additions
+
+
+
+
+Thanks!
+
+
+AceLan Kao (3):
+      HID: usbhid: merge the sis quirk
+      HID: usbhid: quirk for Synaptics HD touchscreen
+      HID: usbhid: quirk for Synaptics Quad HD touchscreen
+
+Adam Cozzette (1):
+      HID: usbkbd: fix inconsistent debugging output
+
+Antonio Ospite (1):
+      HID: debug: add labels for some new buttons
+
+Benjamin Tissoires (1):
+      HID: input: fix input sysfs path for hid devices
+
+Benjamin Tisssoires (1):
+      HID: logitech-dj: Fix USB 3.0 issue
+
+Emanuel Krenz (1):
+      HID: add support for SiS multitouch panel in the touch monitor LG 23ET83V
+
+Frank Praznik (10):
+      HID: sony: Add force-feedback support for the Dualshock 4
+      HID: sony: Add LED controls for the Dualshock 4
+      HID: sony: Rename worker function
+      HID: sony: Use separate identifiers for USB and Bluetooth connected Dualshock 4 controllers.
+      HID: sony: Use standard output reports instead of raw reports to send data to the Dualshock 4.
+      HID: sony: Fix spacing in the device definitions.
+      HID: sony: Map gyroscopes and accelerometers to axes
+      HID: sony: Cache the output report for the Dualshock 4
+      HID: sony: Add annotated HID descriptor for the Dualshock 4
+      HID: sony: Use colors for the Dualshock 4 LED names
+
+Jiri Kosina (3):
+      HID: microsoft: no fallthrough in MS ergonomy 0xff05 usage
+      HID: remove SIS entries from hid_have_special_driver[]
+      HID: hidraw: make comment more accurate and nicer
+
+Julia Lawall (1):
+      HID: sony: fix error return code
+
+Kharlamov Alexey (1):
+      HID: hid-holtek-mouse: add new a070 mouse
+
+Mika Westerberg (1):
+      HID: i2c-hid: disable interrupt on suspend
+
+Olivier Gay (1):
+      HID: logitech-dj: add HIDRAW dependency in Kconfig
+
+Srinivas Pandruvada (1):
+      HID: hid-sensor-hub: Fix buggy report descriptors
+
+Sven Eckelmann (5):
+      HID: sony: Rename rumble_* functions/variables to state_*
+      HID: sony: Use BIT(x) macro to define quirks constants
+      HID: sony: Rename buzz_* functions to sony_led_*
+      HID: sony: Move LED data to the main structure
+      HID: sony: Add LED support for Sixaxis/Dualshock3 USB
+
+Vitaly Katraew (1):
+      HID: add support for Logitech Dual Action gamepads
+
+Wanlong Gao (1):
+      HID: usbhid: fix sis quirk
+
+ drivers/hid/Kconfig             |    1 +
+ drivers/hid/hid-core.c          |    5 +-
+ drivers/hid/hid-debug.c         |    5 +-
+ drivers/hid/hid-holtek-mouse.c  |    3 +
+ drivers/hid/hid-ids.h           |   15 +-
+ drivers/hid/hid-input.c         |    2 +-
+ drivers/hid/hid-lg.c            |    2 +
+ drivers/hid/hid-logitech-dj.c   |    8 +
+ drivers/hid/hid-microsoft.c     |    1 +
+ drivers/hid/hid-multitouch.c    |    7 +-
+ drivers/hid/hid-sensor-hub.c    |   45 +++
+ drivers/hid/hid-sony.c          |  594 +++++++++++++++++++++++++++++++--------
+ drivers/hid/hidraw.c            |   27 ++-
+ drivers/hid/i2c-hid/i2c-hid.c   |    2 +
+ drivers/hid/usbhid/hid-quirks.c |    9 +-
+ drivers/hid/usbhid/usbkbd.c     |    2 +-
+ 16 files changed, 592 insertions(+), 136 deletions(-)
+
+-- 
+Jiri Kosina
+SUSE Labs
