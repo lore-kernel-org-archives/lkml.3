@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755AbaAVSrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:47:07 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37171 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752578AbaAVSrE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:47:04 -0500
-Message-ID: <1390416421.2372.68.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chris Mason <clm@fb.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Date: Wed, 22 Jan 2014 10:47:01 -0800
-In-Reply-To: <1390415924.1198.36.camel@ret.masoncoding.com>
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
-	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
-	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
-	 <20140122151913.GY4963@suse.de>
-	 <1390410233.1198.7.camel@ret.masoncoding.com>
-	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
-	 <1390413819.1198.20.camel@ret.masoncoding.com>
-	 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
-	 <1390415924.1198.36.camel@ret.masoncoding.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753239AbaAVStR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:49:17 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50932 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572AbaAVStQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:49:16 -0500
+Date: Wed, 22 Jan 2014 13:48:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20140122184836.GE4407@cmpxchg.org>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+ <20140117000517.GB18112@dastard>
+ <20140120231737.GS6963@cmpxchg.org>
+ <20140121030358.GN18112@dastard>
+ <20140121055017.GT6963@cmpxchg.org>
+ <20140122030607.GB27606@dastard>
+ <20140122065714.GU6963@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122065714.GU6963@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 18:37 +0000, Chris Mason wrote:
-> On Wed, 2014-01-22 at 10:13 -0800, James Bottomley wrote:
-> > On Wed, 2014-01-22 at 18:02 +0000, Chris Mason wrote:
-[agreement cut because it's boring for the reader]
-> > Realistically, if you look at what the I/O schedulers output on a
-> > standard (spinning rust) workload, it's mostly large transfers.
-> > Obviously these are misalgned at the ends, but we can fix some of that
-> > in the scheduler.  Particularly if the FS helps us with layout.  My
-> > instinct tells me that we can fix 99% of this with layout on the FS + io
-> > schedulers ... the remaining 1% goes to the drive as needing to do RMW
-> > in the device, but the net impact to our throughput shouldn't be that
-> > great.
-> 
-> There are a few workloads where the VM and the FS would team up to make
-> this fairly miserable
-> 
-> Small files.  Delayed allocation fixes a lot of this, but the VM doesn't
-> realize that fileA, fileB, fileC, and fileD all need to be written at
-> the same time to avoid RMW.  Btrfs and MD have setup plugging callbacks
-> to accumulate full stripes as much as possible, but it still hurts.
-> 
-> Metadata.  These writes are very latency sensitive and we'll gain a lot
-> if the FS is explicitly trying to build full sector IOs.
+On Wed, Jan 22, 2014 at 01:57:14AM -0500, Johannes Weiner wrote:
+> Not at this time, I'll try to look into that.  For now, I am updating
+> the patch to revert the shrinker back to DEFAULT_SEEKS and change the
+> object count to only include objects above a certain threshold, which
+> assumes a worst-case population of 4 in 64 slots.  It's not perfect,
+> but neither was the seeks magic, and it's easier to reason about what
+> it's actually doing.
 
-OK, so these two cases I buy ... the question is can we do something
-about them today without increasing the block size?
+Ah, the quality of 2am submissions...  8 out of 64 of course.
 
-The metadata problem, in particular, might be block independent: we
-still have a lot of small chunks to write out at fractured locations.
-With a large block size, the FS knows it's been bad and can expect the
-rolled up newspaper, but it's not clear what it could do about it.
+> @@ -266,14 +269,38 @@ struct list_lru workingset_shadow_nodes;
+>  static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+>  					struct shrink_control *sc)
+>  {
+> -	return list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> +	unsigned long shadow_nodes;
+> +	unsigned long max_nodes;
+> +	unsigned long pages;
+> +
+> +	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> +	pages = node_present_pages(sc->nid);
+> +	/*
+> +	 * Active cache pages are limited to 50% of memory, and shadow
+> +	 * entries that represent a refault distance bigger than that
+> +	 * do not have any effect.  Limit the number of shadow nodes
+> +	 * such that shadow entries do not exceed the number of active
+> +	 * cache pages, assuming a worst-case node population density
+> +	 * of 1/16th on average.
 
-The small files issue looks like something we should be tackling today
-since writing out adjacent files would actually help us get bigger
-transfers.
+1/8th.  The actual code is consistent:
 
-James
-
-
-
+> +	 * On 64-bit with 7 radix_tree_nodes per page and 64 slots
+> +	 * each, this will reclaim shadow entries when they consume
+> +	 * ~2% of available memory:
+> +	 *
+> +	 * PAGE_SIZE / radix_tree_nodes / node_entries / PAGE_SIZE
+> +	 */
+> +	max_nodes = pages >> (1 + RADIX_TREE_MAP_SHIFT - 3);
+> +
+> +	if (shadow_nodes <= max_nodes)
+> +		return 0;
+> +
+> +	return shadow_nodes - max_nodes;
+>  }
+>  
+>  static enum lru_status shadow_lru_isolate(struct list_head *item,
+>  					  spinlock_t *lru_lock,
+>  					  void *arg)
+>  {
+> -	unsigned long *nr_reclaimed = arg;
+>  	struct address_space *mapping;
+>  	struct radix_tree_node *node;
+>  	unsigned int i;
