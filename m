@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaAVQsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 11:48:00 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48772 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaAVQr4 (ORCPT
+	id S1752739AbaAVQ5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 11:57:50 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:44591 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaAVQ5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 11:47:56 -0500
-Date: Wed, 22 Jan 2014 08:47:50 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ims-pcu: Add commands supported by the new version of
- the FW
-Message-ID: <20140122164750.GA5080@core.coreip.homeip.net>
-References: <1390396825-10255-1-git-send-email-andrew.smirnov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390396825-10255-1-git-send-email-andrew.smirnov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 22 Jan 2014 11:57:44 -0500
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH v2] Add Xilinx AXI Video DMA Engine driver
+Date: Wed, 22 Jan 2014 22:22:44 +0530
+Message-Id: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 05:20:25AM -0800, Andrey Smirnov wrote:
-> +static int ims_pcu_write_ofn_config(struct ims_pcu *pcu, u8 addr, u8 data)
-> +{
-> +	u8 buffer[] = { addr, data };
-> +	int error;
-> +	u16 result;
-> +
-> +	error = ims_pcu_execute_command(pcu, OFN_SET_CONFIG,
-> +					&buffer, sizeof(buffer));
-> +	if (error)
-> +		return error;
-> +
-> +	result = (s16)get_unaligned_le16(pcu->cmd_buf + OFN_REG_RESULT_OFFSET);
-> +	if ((result < 0)
+Hi,
 
-I am fairly certain this does not even compile, but even if it did,
-result is declared u16 so even if you do the cast above the comparison
-will always be false.
+This is the driver for Xilinx AXI Video Direct Memory Access Engine.
+It is a soft IP core, which provides high-bandwidth direct memory
+access between memory and AXI4-Stream video type target peripherals
+including peripherals which support AXI4-Stream Video Protocol. The
+core provides efficient two dimensional DMA operations with independent
+asynchronous read and write channel operation.
 
-Thanks.
+For more information on the IP, please refer to
+http://www.xilinx.com/support/documentation/ip_documentation/axi_vdma/v6_1/pg020_axi_vdma.pdf
+
+Use cases:
+++++++++++
+1. Xilinx Video Targeted Reference design
+   http://www.wiki.xilinx.com/Zynq+Base+TRD+14.5
+2. Common Display Framework
+   http://events.linuxfoundation.org/sites/events/files/slides/20131024-elce.pdf
+
+Regards,
+Srikanth 
+
+Srikanth Thokala (1):
+  dma: Add Xilinx AXI Video Direct Memory Access Engine driver support
+
+ .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 +
+ drivers/dma/Kconfig                                |   14 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/xilinx/Makefile                        |    1 +
+ drivers/dma/xilinx/xilinx_vdma.c                   | 1486 ++++++++++++++++++++
+ include/linux/amba/xilinx_dma.h                    |   50 +
+ 6 files changed, 1627 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+ create mode 100644 drivers/dma/xilinx/Makefile
+ create mode 100644 drivers/dma/xilinx/xilinx_vdma.c
+ create mode 100644 include/linux/amba/xilinx_dma.h
 
 -- 
-Dmitry
+1.7.9.5
+
