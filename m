@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaAVV2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:28:01 -0500
-Received: from mailsafe.webbplatsen.se ([94.247.172.109]:42307 "EHLO
-	mailsafe.webbplatsen.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134AbaAVV2A (ORCPT
+	id S1755656AbaAVV22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:28:28 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45737 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753307AbaAVV20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:28:00 -0500
-Date: Wed, 22 Jan 2014 22:27:01 +0100
-From: Joakim Hernberg <jbh@alchemy.lu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <bitbucket@online.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.6-rt9
-Message-ID: <20140122222701.4c44b08d@tor.valhalla.alchemy.lu>
-In-Reply-To: <20140120211736.0c97418a@gandalf.local.home>
-References: <20131223225017.GA8623@linutronix.de>
-	<1387900067.5490.33.camel@marge.simpson.net>
-	<20140117170052.GF5785@linutronix.de>
-	<1390014929.5444.38.camel@marge.simpson.net>
-	<20140120211736.0c97418a@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
+	Wed, 22 Jan 2014 16:28:26 -0500
+Date: Wed, 22 Jan 2014 21:28:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 07/24] drm/i2c: tda998x: set the video mode from the
+	adjusted value
+Message-ID: <20140122212820.GH15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195840.1ecab03b@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140119195840.1ecab03b@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014 21:17:36 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> I happen to have a i7 box to test on, and sure enough, the latest
-> 3.12-rt locks up on boot and reverting the
-> timers-do-not-raise-softirq-unconditionally.patch, it boots fine.
-
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Sun, Jan 19, 2014 at 07:58:40PM +0100, Jean-Francois Moine wrote:
+> This patch uses always the adjusted video mode instead of a mix of
+> original and adjusted mode.
 > 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 46467be..8212c10 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -1464,13 +1464,11 @@ void run_local_timers(void)
->  		raise_softirq(TIMER_SOFTIRQ);
->  		return;
->  	}
-> -	if (!base->active_timers)
-> -		goto out;
->  
->  	/* Check whether the next pending timer has expired */
->  	if (time_before_eq(base->next_timer, jiffies))
->  		raise_softirq(TIMER_SOFTIRQ);
-> -out:
-> +
->  	rt_spin_unlock_after_trylock_in_irq(&base->lock);
->  
->  }
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-This fixes the problem on my i7-2600k.
+Nothing obviously wrong and appears to work, thanks.
+
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
 -- 
-
-   Joakim
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
