@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbaAVIMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 03:12:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58171 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754261AbaAVIMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 03:12:16 -0500
-Date: Wed, 22 Jan 2014 09:12:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
- in mem_cgroup_iter
-Message-ID: <20140122081212.GA18154@dhcp22.suse.cz>
-References: <20140121083454.GA1894@dhcp22.suse.cz>
- <1390301143-9541-1-git-send-email-mhocko@suse.cz>
- <1390301143-9541-2-git-send-email-mhocko@suse.cz>
- <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
+	id S1752549AbaAVIYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 03:24:21 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:39033 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaAVIYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 03:24:18 -0500
+Message-ID: <52DF802D.4030608@linaro.org>
+Date: Wed, 22 Jan 2014 16:24:13 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Low <jason.low2@hp.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        daniel.lezcano@linaro.org, Mike Galbraith <efault@gmx.de>,
+        wangyun@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] sched: add statistic for rq->max_idle_balance_cost
+References: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>	<1390282399-17091-2-git-send-email-alex.shi@linaro.org> <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>
+In-Reply-To: <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-01-14 11:42:19, Andrew Morton wrote:
-> On Tue, 21 Jan 2014 11:45:43 +0100 Michal Hocko <mhocko@suse.cz> wrote:
+On 01/21/2014 03:43 PM, Jason Low wrote:
+> On Mon, Jan 20, 2014 at 9:33 PM, Alex Shi <alex.shi@linaro.org> wrote:
+>> It's useful to track this value in debug mode.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@linaro.org>
+>> ---
+>>  kernel/sched/debug.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+>> index 1e43e70..f5c529a 100644
+>> --- a/kernel/sched/debug.c
+>> +++ b/kernel/sched/debug.c
+>> @@ -315,6 +315,7 @@ do {                                                                        \
+>>         P(sched_goidle);
+>>  #ifdef CONFIG_SMP
+>>         P64(avg_idle);
+>> +       p64(max_idle_balance_cost);
 > 
-> > 19f39402864e (memcg: simplify mem_cgroup_iter) has reorganized
-> > mem_cgroup_iter code in order to simplify it. A part of that change was
-> > dropping an optimization which didn't call css_tryget on the root of
-> > the walked tree. The patch however didn't change the css_put part in
-> > mem_cgroup_iter which excludes root.
-> > This wasn't an issue at the time because __mem_cgroup_iter_next bailed
-> > out for root early without taking a reference as cgroup iterators
-> > (css_next_descendant_pre) didn't visit root themselves.
-> > 
-> > Nevertheless cgroup iterators have been reworked to visit root by
-> > bd8815a6d802 (cgroup: make css_for_each_descendant() and friends include
-> > the origin css in the iteration) when the root bypass have been dropped
-> > in __mem_cgroup_iter_next. This means that css_put is not called for
-> > root and so css along with mem_cgroup and other cgroup internal object
-> > tied by css lifetime are never freed.
-> > 
-> > Fix the issue by reintroducing root check in __mem_cgroup_iter_next
-> > and do not take css reference for it.
-> > 
-> > This reference counting magic protects us also from another issue, an
-> > endless loop reported by Hugh Dickins when reclaim races with root
-> > removal and css_tryget called by iterator internally would fail. There
-> > would be no other nodes to visit so __mem_cgroup_iter_next would return
-> > NULL and mem_cgroup_iter would interpret it as "start looping from root
-> > again" and so mem_cgroup_iter would loop forever internally.
+> Hi Alex,
 > 
-> I grabbed these two patches but I will sit on them for a week or so,
-> pending review-n-test.
-
-Yes, there is no rush and this needs a proper review.
-
-> > Cc: stable@vger.kernel.org # mem_leak part 3.12+
+> Does this need to be P64(max_idle_balance_cost)?
 > 
-> What does this mean?
 
-Dohh. I had both patches in one but then I decided to split it. This is
-just left over. Should be 3.12+.
+Ops, this letter lay in my Drafts box.
 
-Sorry about the confusion.
+Yes, thanks for fix!
+
+===
+
+>From 173417f3646ac1c6ac83809b51d0471591cbc8f0 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@linaro.org>
+Date: Tue, 21 Jan 2014 13:28:55 +0800
+Subject: [RFC PATCH] sched: add statistic for rq->max_idle_balance_cost
+
+It's useful to track this value in debug mode.
+
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/debug.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 1e43e70..f5c529a 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -315,6 +315,7 @@ do {									\
+ 	P(sched_goidle);
+ #ifdef CONFIG_SMP
+ 	P64(avg_idle);
++	P64(max_idle_balance_cost);
+ #endif
+  	P(ttwu_count);
+-- 
+1.8.1.2
+
+
 
 -- 
-Michal Hocko
-SUSE Labs
+Thanks
+    Alex
