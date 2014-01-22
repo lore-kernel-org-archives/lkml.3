@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaAVKxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:53:14 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35380 "EHLO mga01.intel.com"
+	id S1755223AbaAVK6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:58:09 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:1098 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaAVKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:53:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,698,1384329600"; 
-   d="scan'208";a="468946492"
-Date: Wed, 22 Jan 2014 13:00:11 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        netdev <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Chen-Yu Tsai <wens@csie.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
-Message-ID: <20140122110011.GU18029@intel.com>
-References: <1389941251-32692-1-git-send-email-wens@csie.org>
- <CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
- <CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
- <201401211335.16885.arnd@arndb.de>
- <CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
- <CACRpkdZbb=eO8YRtMn6hW0vn97PkHUo88e_o61DEC8=wPY3_PQ@mail.gmail.com>
+	id S1751773AbaAVK6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:58:05 -0500
+X-IronPort-AV: E=Sophos;i="4.95,699,1384300800"; 
+   d="scan'208";a="93196688"
+Message-ID: <52DFA438.6050103@citrix.com>
+Date: Wed, 22 Jan 2014 10:58:00 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZbb=eO8YRtMn6hW0vn97PkHUo88e_o61DEC8=wPY3_PQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
+ mapping
+References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 10:58:38AM +0100, Linus Walleij wrote:
-> On Tue, Jan 21, 2014 at 3:53 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+On 21/01/14 20:22, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
 > 
-> > The good (or bad, rather) thing about DT is that we can do whatever we
-> > please with the new bindings: decide which name or which index
-> > (doesn't matter here) a GPIO should have. However we don't have this
-> > control over ACPI, where nothing guarantees that the same index will
-> > be used for the same GPIO function.
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
 > 
-> It's not like ACPI will impose some tables on us and expect us to
-> use them as-is no matter how crazy they are. Then indeed the whole
-> idea of unifying ACPI and DT accessors would be moot and it would
-> only work by mistake or as a good joke.
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
+> 
+> v4:
+> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> - clear page->private before doing anything with the page, so m2p_find_override
+>   won't race with this
 
-With the current ACPI version we really don't have much of a choice here.
-Only way we can distinguish between a set of GPIOs is to use index and hope
-that the vendor puts the GPIOs in the table in same order that the driver
-expects :-(
+I would prune this version information out of the commit message.
 
-This is going to get a bit better when ACPI gets properties (like Arnd
-commented already) as then we can get the correct index based on a name in
-a table. However, it still requires the vendor to use naming that is
-suitable for Linux driver in question.
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Suggested-by: David Vrabel <david.vrabel@citrix.com>
 
-> The situation with ACPI is just like with DT, it is assumed that the
-> author of these tables also look at the Linux kernel drivers to figure
-> out what argument goes where and we can influence them.
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-I certainly hope, now that Android is becoming more and more important,
-that the vendors will actually check what the Linux drivers expect and
-populate the tables with such information that is suitable for both ACPI
-and DT enabled driver.
+But I think this needs Stefano's ack.
+
+It would be useful to get this into 3.14 if possible.
+
+David
