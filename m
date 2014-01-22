@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409AbaAVHAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 02:00:37 -0500
-Received: from ozlabs.org ([203.10.76.45]:39732 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaAVHAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 02:00:30 -0500
-Date: Wed, 22 Jan 2014 18:00:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <linux-alpha@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ia64@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-s390@vger.kernel.org>, <sparclinux@vger.kernel.org>,
-        <x86@kernel.org>, <netdev@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <rusty@rustcorp.com.au>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC 00/73] tree-wide: clean up some no longer required
- #include <linux/init.h>
-Message-Id: <20140122180023.dd90d34cba38d9f9ac516349@canb.auug.org.au>
-In-Reply-To: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__22_Jan_2014_18_00_23_+1100_zcOtMRV1NI/h=88n"
+	id S1754510AbaAVHBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 02:01:21 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37761 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaAVHBT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 02:01:19 -0500
+Date: Tue, 21 Jan 2014 23:00:44 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jamie Liu <jamieliu@google.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] swap: do not skip lowest_bit in scan_swap_map() scan
+ loop
+In-Reply-To: <1390357276-16521-1-git-send-email-jamieliu@google.com>
+Message-ID: <alpine.LSU.2.11.1401212251310.1001@eggly.anvils>
+References: <1390357276-16521-1-git-send-email-jamieliu@google.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_Jan_2014_18_00_23_+1100_zcOtMRV1NI/h=88n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 21 Jan 2014, Jamie Liu wrote:
 
-Hi Paul,
+> In the second half of scan_swap_map()'s scan loop, offset is set to
+> si->lowest_bit and then incremented before entering the loop for the
+> first time, causing si->swap_map[si->lowest_bit] to be skipped.
+> 
+> Signed-off-by: Jamie Liu <jamieliu@google.com>
 
-On Tue, 21 Jan 2014 16:22:03 -0500 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> Where: This work exists as a queue of patches that I apply to
-> linux-next; since the changes are fixing some things that currently
-> can only be found there.  The patch series can be found at:
->=20
->    http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git
->    git://git.kernel.org/pub/scm/linux/kernel/git/paulg/init.git
->=20
-> I've avoided annoying Stephen with another queue of patches for
-> linux-next while the development content was in flux, but now that
-> the merge window has opened, and new additions are fewer, perhaps he
-> wouldn't mind tacking it on the end...  Stephen?
+Acked-by: Hugh Dickins <hughd@google.com>
 
-OK, I have added this to the end of linux-next today - we will see how we
-go.  It is called "init".
+Good catch.  At first I was puzzled that this off-by-one could have
+gone unnoticed for so long (ever since 2.6.29); but now I think that
+almost always we have a good amount of slack, in those pages duplicated
+between swap and swapcache, which can be reclaimed at the vm_swap_full()
+check, and so conceal this loss of a single slot.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Wed__22_Jan_2014_18_00_23_+1100_zcOtMRV1NI/h=88n
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS32yLAAoJEMDTa8Ir7ZwVm18P/i9+tdEJe4LadVgjePUgRka0
-guzWVBgQs96hVeg/7h+LJWNRsMgu90m1S6n0BhoA/maJqSb1zHJ5VhWbPuDkCdRo
-EEB1J/lW35ziCkBg+ejAQm1c+5QIsoyi0MbuFEGyX7a8FgFJrzC3bJCQCysNHsxR
-mKYtXKdpPzpluxSzjCdecZyfWA6SU3Lbvgh6Th3yyQaAlm/QOk/k3wGGvQND/ODS
-37ktKXITCAnhCZ6HvVanJvim6pK78dDJPL1h7yVZ/heYJbEqEONfFuHeg+j1RVZg
-ilcnhvmkg6jEJoQkHB+ZopLVwv+QEnkPxzDPwmNNcAIexxvHXXpOkc3geeWtNsHp
-NNvJFXIWMbzemktgVNM3r5uxgnPmAcHCU6vaZTv/kodSZDuGrkvbOscwEpNyr1Bw
-rVm5gSiLyfA8eecFymGhPXvPvrAbmcA11lxZCh0V4gmgC5eKrUwiTIFGhm6n9WCy
-FartKLucuqCzLOgLujCC+c+7BOwTjc1vyMBbQtBwSCfPc/tyZZLvI9QTyv3tJKro
-G4Jimb7wth9sm93N7n9uplshLbNrNvTbE3Q9OU+mOKMzj0uD9ck/htxfh1vEZKWd
-vfuOCJrgnQdOA/TeZQmlKfIy/t2hkJXAV/oipKVrGg45oJZB72Tt7BA4FhUi/PeE
-2qfphmmDreRrUP/I4bqp
-=j4pk
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_Jan_2014_18_00_23_+1100_zcOtMRV1NI/h=88n--
+> ---
+>  mm/swapfile.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 612a7c9..6635081 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -616,7 +616,7 @@ scan:
+>  		}
+>  	}
+>  	offset = si->lowest_bit;
+> -	while (++offset < scan_base) {
+> +	while (offset < scan_base) {
+>  		if (!si->swap_map[offset]) {
+>  			spin_lock(&si->lock);
+>  			goto checks;
+> @@ -629,6 +629,7 @@ scan:
+>  			cond_resched();
+>  			latency_ration = LATENCY_LIMIT;
+>  		}
+> +		offset++;
+>  	}
+>  	spin_lock(&si->lock);
+>  
+> -- 
+> 1.8.5.3
+> 
+> 
