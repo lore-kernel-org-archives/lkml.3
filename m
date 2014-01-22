@@ -1,201 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaAVSBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:01:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55774 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409AbaAVSBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:01:02 -0500
-Message-ID: <52E00757.6010306@canonical.com>
-Date: Wed, 22 Jan 2014 13:00:55 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755497AbaAVSC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:02:27 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:5258 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752531AbaAVSCV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:02:21 -0500
+From: Chris Mason <clm@fb.com>
+To: "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Topic: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Index: AQHPFx61ZXTlm16UX0ihGnyWT2seDpqRAjIAgABNLACAAAa5AIAABq0AgAAFt4CAAB0+gIAABPgAgAALu4A=
+Date: Wed, 22 Jan 2014 18:02:09 +0000
+Message-ID: <1390413819.1198.20.camel@ret.masoncoding.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
+	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
+	 <20140122151913.GY4963@suse.de>
+	 <1390410233.1198.7.camel@ret.masoncoding.com>
+	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <E44B69ECB3DF564D943C1ED6AA6B2644@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.11][v3.12][v3.13][Regression] EISA: Initialize device before
- its resources
-References: <52D81C92.9050800@canonical.com> <CAErSpo64e52Vv8bJ54cPcpnZ=OHMaxt2-D6dA4HCrrLnKo1n7g@mail.gmail.com> <52D82169.2000107@canonical.com> <20140117170204.GA13939@google.com> <52D983DF.3070202@canonical.com> <20140117221906.GA6219@google.com> <52D9DA4D.80407@canonical.com> <CAErSpo5E63usrdvH1NLJ=x4ntqaAD-eswnBd47QUfKK3E2pcYA@mail.gmail.com>
-In-Reply-To: <CAErSpo5E63usrdvH1NLJ=x4ntqaAD-eswnBd47QUfKK3E2pcYA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.77635683940025e-15 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997696947966296
+ urlsuspect_oldscore=0.997696947966296 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997696947966296 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401220123
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2014 09:37 AM, Bjorn Helgaas wrote:
-> On Fri, Jan 17, 2014 at 6:35 PM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 01/17/2014 05:19 PM, Bjorn Helgaas wrote:
->>> On Fri, Jan 17, 2014 at 02:26:23PM -0500, Joseph Salisbury wrote:
->>>> On 01/17/2014 12:02 PM, Bjorn Helgaas wrote:
->>>>> On Thu, Jan 16, 2014 at 01:14:01PM -0500, Joseph Salisbury wrote:
->>>>>> On 01/16/2014 01:12 PM, Bjorn Helgaas wrote:
->>>>>>> On Thu, Jan 16, 2014 at 10:53 AM, Joseph Salisbury
->>>>>>> <joseph.salisbury@canonical.com> wrote:
->>>>>>>> Hi Bjorn,
->>>>>>>>
->>>>>>>> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
->>>>>>>> was found the following commit introduced this bug:
->>>>>>> Sorry about that, and thanks for the report.  Did you mean to include
->>>>>>> URL for the bug?
->>>>>> Yes, sorry about that:
->>>>>> http://pad.lv/1251816
->>>>> Hi Joseph,
->>>>>
->>>>> Can you attach the 3.8.0-32-generic config (the one matching the successful
->>>>> boot at https://launchpadlibrarian.net/156685076/BootDmesg.txt) to the bug?
->>>> I attached the config file to the bug:
->>>> https://launchpadlibrarian.net/162754666/config.common.ubuntu
->>>>
->>>> I also attached a tar file with the complete config directory for that
->>>> kernel version.
->>>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/+attachment/3951156/+files/raring-config.tar
->>> Thanks again.  I attached the following reverts to launchpad.  I screwed up
->>> when doing those EISA changes.  I'd like to squeeze these into my v3.14
->>> merge request (probably early next week), so please test and let me know
->>> if this fixes the problem.  I'm really sorry for the inconvenience.
->>>
->>> Bjorn
->>>
->>>
->>> Revert "EISA: Log device resources in dmesg"
->>>
->>> From: Bjorn Helgaas <bhelgaas@google.com>
->>>
->>> This reverts commit a2080d0c561c546d73cb8b296d4b7ca414e6860b.
->>>
->>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>> ---
->>>  drivers/eisa/eisa-bus.c |    1 -
->>>  1 file changed, 1 deletion(-)
->>>
->>> diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
->>> index 8842cde69177..1b86fe0c2e80 100644
->>> --- a/drivers/eisa/eisa-bus.c
->>> +++ b/drivers/eisa/eisa-bus.c
->>> @@ -288,7 +288,6 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
->>>                       edev->res[i].flags = IORESOURCE_IO | IORESOURCE_BUSY;
->>>               }
->>>
->>> -             dev_printk(KERN_DEBUG, &edev->dev, "%pR\n", &edev->res[i]);
->>>               if (request_resource(root->res, &edev->res[i]))
->>>                       goto failed;
->>>       }
->>> Revert "EISA: Initialize device before its resources"
->>>
->>> From: Bjorn Helgaas <bhelgaas@google.com>
->>>
->>> This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
->>>
->>> In the eisa_probe() force_probe path, if we were unable to request slot
->>> resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
->>> allocate resource for EISA slot %d" before reading the EISA signature in
->>> eisa_init_device().
->>>
->>> Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
->>> the EISA signature before requesting the slot resources, and this caused
->>> hangs during boot.
->>>
->>> Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
->>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>> ---
->>>  drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
->>>  1 file changed, 15 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
->>> index 1b86fe0c2e80..612afeaec3cb 100644
->>> --- a/drivers/eisa/eisa-bus.c
->>> +++ b/drivers/eisa/eisa-bus.c
->>> @@ -277,11 +277,13 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
->>>               }
->>>
->>>               if (slot) {
->>> +                     edev->res[i].name  = NULL;
->>>                       edev->res[i].start = SLOT_ADDRESS(root, slot)
->>>                                            + (i * 0x400);
->>>                       edev->res[i].end   = edev->res[i].start + 0xff;
->>>                       edev->res[i].flags = IORESOURCE_IO;
->>>               } else {
->>> +                     edev->res[i].name  = NULL;
->>>                       edev->res[i].start = SLOT_ADDRESS(root, slot)
->>>                                            + EISA_VENDOR_ID_OFFSET;
->>>                       edev->res[i].end   = edev->res[i].start + 3;
->>> @@ -327,19 +329,20 @@ static int __init eisa_probe(struct eisa_root_device *root)
->>>               return -ENOMEM;
->>>       }
->>>
->>> -     if (eisa_init_device(root, edev, 0)) {
->>> +     if (eisa_request_resources(root, edev, 0)) {
->>> +             dev_warn(root->dev,
->>> +                      "EISA: Cannot allocate resource for mainboard\n");
->>>               kfree(edev);
->>>               if (!root->force_probe)
->>> -                     return -ENODEV;
->>> +                     return -EBUSY;
->>>               goto force_probe;
->>>       }
->>>
->>> -     if (eisa_request_resources(root, edev, 0)) {
->>> -             dev_warn(root->dev,
->>> -                      "EISA: Cannot allocate resource for mainboard\n");
->>> +     if (eisa_init_device(root, edev, 0)) {
->>> +             eisa_release_resources(edev);
->>>               kfree(edev);
->>>               if (!root->force_probe)
->>> -                     return -EBUSY;
->>> +                     return -ENODEV;
->>>               goto force_probe;
->>>       }
->>>
->>> @@ -362,11 +365,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
->>>                       continue;
->>>               }
->>>
->>> -             if (eisa_init_device(root, edev, i)) {
->>> -                     kfree(edev);
->>> -                     continue;
->>> -             }
->>> -
->>>               if (eisa_request_resources(root, edev, i)) {
->>>                       dev_warn(root->dev,
->>>                                "Cannot allocate resource for EISA slot %d\n",
->>> @@ -375,6 +373,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
->>>                       continue;
->>>               }
->>>
->>> +             if (eisa_init_device(root, edev, i)) {
->>> +                     eisa_release_resources(edev);
->>> +                     kfree(edev);
->>> +                     continue;
->>> +             }
->>> +
->>>               if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
->>>                       enabled_str = " (forced enabled)";
->>>               else if (edev->state == EISA_CONFIG_FORCED)
->> Thanks again for looking at this, Bjorn!
->>
->> Yes, reverting commit 26abfeed4 does in fact resolve the bug.  I already
->> built a test kernel, noted in comment #34:
->> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/comments/34
->>
->> The original bug reporter tested the kernel to confirm it fixes the bug:
->> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/comments/36
-> OK.  I don't know exactly what patch you applied to revert this.  I
-> assume that you reverted both a2080d0c561 and 26abfeed43.
+On Wed, 2014-01-22 at 09:21 -0800, James Bottomley wrote:
++AD4- On Wed, 2014-01-22 at 17:02 +-0000, Chris Mason wrote:
 
-Right, my original test kernel only had commit 26abfeed43 reverted.  I
-built one more kernel with both a2080d0c561 and 26abfeed43 reverted, and
-that does resolve the bug:
- https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816/comments/44
++AFs- I like big sectors and I cannot lie +AF0-
 
-Thanks again for the help, Bjorn!
++AD4-  
++AD4- +AD4- I really think that if we want to make progress on this one, we need
++AD4- +AD4- code and someone that owns it.  Nick's work was impressive, but it was
++AD4- +AD4- mostly there for getting rid of buffer heads.  If we have a device that
++AD4- +AD4- needs it and someone working to enable that device, we'll go forward
++AD4- +AD4- much faster.
++AD4- 
++AD4- Do we even need to do that (eliminate buffer heads)?  We cope with 4k
++AD4- sector only devices just fine today because the bh mechanisms now
++AD4- operate on top of the page cache and can do the RMW necessary to update
++AD4- a bh in the page cache itself which allows us to do only 4k chunked
++AD4- writes, so we could keep the bh system and just alter the granularity of
++AD4- the page cache.
++AD4- 
 
->
->> Would it be also possible for you to request the revert in the stable
->> trees, in addition to 3.14?
-> Oh, of course, thanks for the reminder.  I added a stable tag and re-pushed.
->
-> Bjorn
+We're likely to have people mixing 4K drives and +ADw-fill in some other
+size here+AD4- on the same box.  We could just go with the biggest size and
+use the existing bh code for the sub-pagesized blocks, but I really
+hesitate to change VM fundamentals for this.
+
+>From a pure code point of view, it may be less work to change it once in
+the VM.  But from an overall system impact point of view, it's a big
+change in how the system behaves just for filesystem metadata.
+
++AD4- The other question is if the drive does RMW between 4k and whatever its
++AD4- physical sector size, do we need to do anything to take advantage of
++AD4- it ... as in what would altering the granularity of the page cache buy
++AD4- us?
+
+The real benefit is when and how the reads get scheduled.  We're able to
+do a much better job pipelining the reads, controlling our caches and
+reducing write latency by having the reads done up in the OS instead of
+the drive.
+
+-chris
 
