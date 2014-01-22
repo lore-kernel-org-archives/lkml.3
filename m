@@ -1,62 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaAVEYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 23:24:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45063 "EHLO
+	id S1754522AbaAVEfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 23:35:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45223 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553AbaAVEYH (ORCPT
+	with ESMTP id S1751805AbaAVEfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 23:24:07 -0500
-Date: Tue, 21 Jan 2014 20:24:00 -0800
+	Tue, 21 Jan 2014 23:35:17 -0500
+Date: Tue, 21 Jan 2014 20:35:15 -0800
 From: Jens Axboe <axboe@kernel.dk>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        kmo@daterainc.com
-Subject: Re: bio_integrity_verify() bug causing READ verify to be silently
- skipped
-Message-ID: <20140122042400.GG20347@kernel.dk>
-References: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
- <yq1sit4zv23.fsf@sermon.lab.mkp.net>
- <1389936047.5567.721.camel@haakon3.risingtidesystems.com>
- <yq1ha92uv73.fsf@sermon.lab.mkp.net>
- <1390348402.5567.805.camel@haakon3.risingtidesystems.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH -trivial] mg_disk: Spelling s/finised/finished/
+Message-ID: <20140122043515.GI20347@kernel.dk>
+References: <1390317353-8805-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390348402.5567.805.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1390317353-8805-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21 2014, Nicholas A. Bellinger wrote:
-> On Fri, 2014-01-17 at 16:58 -0500, Martin K. Petersen wrote:
-> > >>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
-> > 
-> > >> That breaks partial completion, though. I'll take a look at Kent's
-> > >> changes...
-> > 
-> > nab> Ping..?  Any updates on a proper bugfix for this..?
-> > 
-> > I did put your patch in my queue and have been working on a fix for the
-> > partial completion case. The latter requires a bit of massaging that
-> > interferes with other pending changes.
-> > 
-> > Given that your patch does address a valid issue I'm OK with Jens
-> > putting it in as is. I'll build upon it for my changes.
-> > 
-> 
-> <nod>
-> 
-> Jens, are you going to pick this one up, or shall I include it in the
-> upcoming target-pending/for-next pull request instead..?
-> 
-> Either way, it needs a CC' to stable for >= v3.10.y.
+On Tue, Jan 21 2014, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-I'll queue it up, thanks.
+Applied, thanks.
 
 -- 
 Jens Axboe
