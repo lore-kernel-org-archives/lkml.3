@@ -1,139 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaAVSfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:35:09 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37034 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751379AbaAVSfF (ORCPT
+	id S1754670AbaAVSfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:35:42 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:58961 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545AbaAVSfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:35:05 -0500
-Message-ID: <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Chris Mason <clm@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Date: Wed, 22 Jan 2014 10:35:03 -0800
-In-Reply-To: <52E00B28.3060609@redhat.com>
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
-		 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
-		 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
-		 <20140122151913.GY4963@suse.de>
-		 <1390410233.1198.7.camel@ret.masoncoding.com>
-		 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
-		 <1390413819.1198.20.camel@ret.masoncoding.com>
-	 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
-	 <52E00B28.3060609@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jan 2014 13:35:40 -0500
+Date: Wed, 22 Jan 2014 19:35:38 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122183538.GA389@x4>
+References: <20131212140835.729222186@infradead.org>
+ <20131212141655.362219382@infradead.org>
+ <52DEF495.2020304@oracle.com>
+ <20140122104532.GJ31570@twins.programming.kicks-ass.net>
+ <20140122120048.GB389@x4>
+ <20140122120757.GL31570@twins.programming.kicks-ass.net>
+ <20140122122609.GA392@x4>
+ <20140122123022.GN31570@twins.programming.kicks-ass.net>
+ <20140122131456.GA389@x4>
+ <52DFD50E.800@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DFD50E.800@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 13:17 -0500, Ric Wheeler wrote:
-> On 01/22/2014 01:13 PM, James Bottomley wrote:
-> > On Wed, 2014-01-22 at 18:02 +0000, Chris Mason wrote:
-> >> On Wed, 2014-01-22 at 09:21 -0800, James Bottomley wrote:
-> >>> On Wed, 2014-01-22 at 17:02 +0000, Chris Mason wrote:
-> >> [ I like big sectors and I cannot lie ]
-> > I think I might be sceptical, but I don't think that's showing in my
-> > concerns ...
-> >
-> >>>> I really think that if we want to make progress on this one, we need
-> >>>> code and someone that owns it.  Nick's work was impressive, but it was
-> >>>> mostly there for getting rid of buffer heads.  If we have a device that
-> >>>> needs it and someone working to enable that device, we'll go forward
-> >>>> much faster.
-> >>> Do we even need to do that (eliminate buffer heads)?  We cope with 4k
-> >>> sector only devices just fine today because the bh mechanisms now
-> >>> operate on top of the page cache and can do the RMW necessary to update
-> >>> a bh in the page cache itself which allows us to do only 4k chunked
-> >>> writes, so we could keep the bh system and just alter the granularity of
-> >>> the page cache.
-> >>>
-> >> We're likely to have people mixing 4K drives and <fill in some other
-> >> size here> on the same box.  We could just go with the biggest size and
-> >> use the existing bh code for the sub-pagesized blocks, but I really
-> >> hesitate to change VM fundamentals for this.
-> > If the page cache had a variable granularity per device, that would cope
-> > with this.  It's the variable granularity that's the VM problem.
-> >
-> >>  From a pure code point of view, it may be less work to change it once in
-> >> the VM.  But from an overall system impact point of view, it's a big
-> >> change in how the system behaves just for filesystem metadata.
-> > Agreed, but only if we don't do RMW in the buffer cache ... which may be
-> > a good reason to keep it.
-> >
-> >>> The other question is if the drive does RMW between 4k and whatever its
-> >>> physical sector size, do we need to do anything to take advantage of
-> >>> it ... as in what would altering the granularity of the page cache buy
-> >>> us?
-> >> The real benefit is when and how the reads get scheduled.  We're able to
-> >> do a much better job pipelining the reads, controlling our caches and
-> >> reducing write latency by having the reads done up in the OS instead of
-> >> the drive.
-> > I agree with all of that, but my question is still can we do this by
-> > propagating alignment and chunk size information (i.e. the physical
-> > sector size) like we do today.  If the FS knows the optimal I/O patterns
-> > and tries to follow them, the odd cockup won't impact performance
-> > dramatically.  The real question is can the FS make use of this layout
-> > information *without* changing the page cache granularity?  Only if you
-> > answer me "no" to this do I think we need to worry about changing page
-> > cache granularity.
-> >
-> > Realistically, if you look at what the I/O schedulers output on a
-> > standard (spinning rust) workload, it's mostly large transfers.
-> > Obviously these are misalgned at the ends, but we can fix some of that
-> > in the scheduler.  Particularly if the FS helps us with layout.  My
-> > instinct tells me that we can fix 99% of this with layout on the FS + io
-> > schedulers ... the remaining 1% goes to the drive as needing to do RMW
-> > in the device, but the net impact to our throughput shouldn't be that
-> > great.
-> >
-> > James
-> >
+On 2014.01.22 at 09:26 -0500, Sasha Levin wrote:
+> On 01/22/2014 08:14 AM, Markus Trippelsdorf wrote:
+> > On 2014.01.22 at 13:30 +0100, Peter Zijlstra wrote:
+> >> >On Wed, Jan 22, 2014 at 01:26:09PM +0100, Markus Trippelsdorf wrote:
+> >>> > >On 2014.01.22 at 13:07 +0100, Peter Zijlstra wrote:
+> >>>> > > >On Wed, Jan 22, 2014 at 01:00:48PM +0100, Markus Trippelsdorf wrote:
+> >>>>> > > > >FYI it happens on real hardware on my machine:
+> >>>>> > > > >...
+> >>>>> > > > >[    0.000000] Hierarchical RCU implementation.
+> >>>>> > > > >[    0.000000] NR_IRQS:4352 nr_irqs:712 16
+> >>>>> > > > >[    0.000000] spurious 8259A interrupt: IRQ7.
+> >>>>> > > > >[    0.000000] Console: colour VGA+ 80x25
+> >>>>> > > > >[    0.000000] console [tty0] enabled
+> >>>>> > > > >[    0.000000] hpet clockevent registered
+> >>>>> > > > >[    0.000000] tsc: Fast TSC calibration using PIT
+> >>>>> > > > >[    0.003333] tsc: Detected 3210.681 MHz processor
+> >>>>> > > > >[   60.375238] Calibrating delay loop (skipped), value calculated using timer frequency.. 6423.91 BogoMIPS (lpj=10702270)
+> >>>>> > > > >[   60.375240] pid_max: default: 32768 minimum: 301
+> >>>>> > > > >[   60.375259] Mount-cache hash table entries: 256
+> >>>>> > > > >[   60.375373] tseg: 0000000000
+> >>>>> > > > >[   60.375377] CPU: Physical Processor ID: 0
+> >>>>> > > > >[   60.375377] CPU: Processor Core ID: 0
+> >>>>> > > > >[   60.375378] mce: CPU supports 6 MCE banks
+> >>>>> > > > >[   60.375382] LVT offset 0 assigned for vector 0xf9
+> >>>>> > > > >[   60.375384] process: using AMD E400 aware idle routine
+> >>>>> > > > >[   60.375386] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
+> >>>> > > >
+> >>>> > > >Should have always happened like that I think. From the log it looks
+> >>>> > > >like the moment we switch from jiffies to actual TSC in
+> >>>> > > >arch/x86/kernel/tsc.c:sched_clock().
+> >>>> > > >
+> >>>> > > >I don't think I changed the logic there, just switched from a condition
+> >>>> > > >to a jump_label.
+> >>> > >
+> >>> > >Well, v3.13 was fine. So it's definitely a regression. But it may be
+> >>> > >another issue. I will try to bisect later.
+> >> >
+> >> >OK, weird, I'll see if I can spot anything.
+> > Unfortunately the issue is unbisectable (but the remaining commits are
+> > all yours):
 > 
-> I think that the key to having the file system work with larger
-> sectors is to 
-> create them properly aligned and use the actual, native sector size as
-> their FS 
-> block size. Which is pretty much back the original challenge.
+> I've actually bisected it previously by fixing the build errors manually, and that took me
+> to this patch you see in the subject line :)
 
-Only if you think laying out stuff requires block size changes.  If a 4k
-block filesystem's allocation algorithm tried to allocate on a 16k
-boundary for instance, that gets us a lot of the performance without
-needing a lot of alteration.
+But this is a different issue. I've bisected it to:
 
-It's not even obvious that an ignorant 4k layout is going to be so
-bad ... the RMW occurs only at the ends of the transfers, not in the
-middle.  If we say 16k physical block and average 128k transfers,
-probabalistically we misalign on 6 out of 31 sectors (or 19% of the
-time).  We can make that better by increasing the transfer size (it
-comes down to 10% for 256k transfers.
+commit 20d1c86a57762f0a33a78988e3fc8818316badd4
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Fri Nov 29 15:40:29 2013 +0100
 
-> Teaching each and every file system to be aligned at the storage 
-> granularity/minimum IO size when that is larger than the physical
-> sector size is 
-> harder I think.
+    sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs
 
-But you're making assumptions about needing larger block sizes.  I'm
-asking what can we do with what we currently have?  Increasing the
-transfer size is a way of mitigating the problem with no FS support
-whatever.  Adding alignment to the FS layout algorithm is another.  When
-you've done both of those, I think you're already at the 99% aligned
-case, which is "do we need to bother any more" territory for me.
+Reverting the commit "fixes" the issue:
+...
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] NR_IRQS:4352 nr_irqs:712 16
+[    0.000000] spurious 8259A interrupt: IRQ7.
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty0] enabled
+[    0.000000] hpet clockevent registered
+[    0.000000] tsc: Fast TSC calibration using PIT
+[    0.003333] tsc: Detected 3211.075 MHz processor
+[    0.000006] Calibrating delay loop (skipped), value calculated using timer frequency.. 6424.73 BogoMIPS (lpj=10703583)
+[    0.000007] pid_max: default: 32768 minimum: 301
+[    0.000026] Mount-cache hash table entries: 256
+[    0.000139] tseg: 0000000000
+[    0.000143] CPU: Physical Processor ID: 0
+[    0.000144] CPU: Processor Core ID: 0
+[    0.000145] mce: CPU supports 6 MCE banks
+[    0.000148] LVT offset 0 assigned for vector 0xf9
+[    0.000151] process: using AMD E400 aware idle routine
+[    0.000152] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
+...
 
-James
-
-
+-- 
+Markus
