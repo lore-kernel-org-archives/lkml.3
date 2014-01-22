@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961AbaAVO6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:58:20 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:41109 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755342AbaAVO6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:58:19 -0500
-Date: Wed, 22 Jan 2014 14:57:47 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] Use __kernel_ulong_t in x86 struct semid64_ds
-Message-ID: <20140122145747.GC8065@arm.com>
-References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
- <1388165112-6545-7-git-send-email-hjl.tools@gmail.com>
- <20140121171053.GD20798@arm.com>
- <CAMe9rOoKvJNkhHLwF+gfX1T8M=ekBvCJn7PJ61U9-_OvcB-tKQ@mail.gmail.com>
+	id S1755984AbaAVO67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:58:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755342AbaAVO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 09:58:57 -0500
+Message-ID: <52DFDCA6.1050204@redhat.com>
+Date: Wed, 22 Jan 2014 09:58:46 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMe9rOoKvJNkhHLwF+gfX1T8M=ekBvCJn7PJ61U9-_OvcB-tKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com> <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com> <20140122143452.GW4963@suse.de>
+In-Reply-To: <20140122143452.GW4963@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 06:06:11PM +0000, H.J. Lu wrote:
-> On Tue, Jan 21, 2014 at 9:10 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Fri, Dec 27, 2013 at 05:25:10PM +0000, H.J. Lu wrote:
-> >> Both x32 and x86-64 use the same struct semid64_ds for system calls.
-> >> But x32 long is 32-bit. This patch replaces unsigned long with
-> >> __kernel_ulong_t in x86 struct semid64_ds.
-> >>
-> >> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
-> >> ---
-> >>  arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
-> >>  1 file changed, 5 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
-> >> index ee50c80..cc2d6a3 100644
-> >> --- a/arch/x86/include/uapi/asm/sembuf.h
-> >> +++ b/arch/x86/include/uapi/asm/sembuf.h
-> >> @@ -13,12 +13,12 @@
-> >>  struct semid64_ds {
-> >>       struct ipc64_perm sem_perm;     /* permissions .. see ipc.h */
-> >>       __kernel_time_t sem_otime;      /* last semop time */
-> >> -     unsigned long   __unused1;
-> >> +     __kernel_ulong_t __unused1;
-> >>       __kernel_time_t sem_ctime;      /* last change time */
-> >> -     unsigned long   __unused2;
-> >> -     unsigned long   sem_nsems;      /* no. of semaphores in array */
-> >> -     unsigned long   __unused3;
-> >> -     unsigned long   __unused4;
-> >> +     __kernel_ulong_t __unused2;
-> >> +     __kernel_ulong_t sem_nsems;     /* no. of semaphores in array */
-> >> +     __kernel_ulong_t __unused3;
-> >> +     __kernel_ulong_t __unused4;
-> >>  };
-> >
-> > Since you are at this, could you please change the
-> > include/uapi/asm-generic/sembuf.h structure as well?
-> 
-> I could, but my build doesn't use that header file.  I prefer not to
-> change something I can't test.
+On 01/22/2014 09:34 AM, Mel Gorman wrote:
+> On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
+>> On 01/22/2014 04:34 AM, Mel Gorman wrote:
+>>> On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+>>>> One topic that has been lurking forever at the edges is the current
+>>>> 4k limitation for file system block sizes. Some devices in
+>>>> production today and others coming soon have larger sectors and it
+>>>> would be interesting to see if it is time to poke at this topic
+>>>> again.
+>>>>
+>>> Large block support was proposed years ago by Christoph Lameter
+>>> (http://lwn.net/Articles/232757/). I think I was just getting started
+>>> in the community at the time so I do not recall any of the details. I do
+>>> believe it motivated an alternative by Nick Piggin called fsblock though
+>>> (http://lwn.net/Articles/321390/). At the very least it would be nice to
+>>> know why neither were never merged for those of us that were not around
+>>> at the time and who may not have the chance to dive through mailing list
+>>> archives between now and March.
+>>>
+>>> FWIW, I would expect that a show-stopper for any proposal is requiring
+>>> high-order allocations to succeed for the system to behave correctly.
+>>>
+>> I have a somewhat hazy memory of Andrew warning us that touching
+>> this code takes us into dark and scary places.
+>>
+> That is a light summary. As Andrew tends to reject patches with poor
+> documentation in case we forget the details in 6 months, I'm going to guess
+> that he does not remember the details of a discussion from 7ish years ago.
+> This is where Andrew swoops in with a dazzling display of his eidetic
+> memory just to prove me wrong.
+>
+> Ric, are there any storage vendor that is pushing for this right now?
+> Is someone working on this right now or planning to? If they are, have they
+> looked into the history of fsblock (Nick) and large block support (Christoph)
+> to see if they are candidates for forward porting or reimplementation?
+> I ask because without that person there is a risk that the discussion
+> will go as follows
+>
+> Topic leader: Does anyone have an objection to supporting larger block
+> 	sizes than the page size?
+> Room: Send patches and we'll talk.
+>
 
-OK, it makes sense.
+I will have to see if I can get a storage vendor to make a public statement, but 
+there are vendors hoping to see this land in Linux in the next few years. I 
+assume that anyone with a shipping device will have to at least emulate the 4KB 
+sector size for years to come, but that there might be a significant performance 
+win for platforms that can do a larger block.
 
-> I am enclosing a program to check kernel uabi header files
-> against glibc header files.  You can try it on ILP32 ARM64.
+Note that windows seems to suffer from the exact same limitation, so we are not 
+alone here with the vm page size/fs block size entanglement....
 
-Thanks, very useful. We'll give it a try when we get there. So far I
-NAK'ed the first set of arm64 ILP32 patches as they were mostly using
-the compat ABI (https://lkml.org/lkml/2013/9/9/502).
+ric
 
--- 
-Catalin
