@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaAVMH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:07:29 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:42452 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856AbaAVMH0 (ORCPT
+	id S1755540AbaAVMIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:08:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53477 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856AbaAVMIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:07:26 -0500
+	Wed, 22 Jan 2014 07:08:23 -0500
+Date: Wed, 22 Jan 2014 13:07:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122120757.GL31570@twins.programming.kicks-ass.net>
+References: <20131212140835.729222186@infradead.org>
+ <20131212141655.362219382@infradead.org>
+ <52DEF495.2020304@oracle.com>
+ <20140122104532.GJ31570@twins.programming.kicks-ass.net>
+ <20140122120048.GB389@x4>
 MIME-Version: 1.0
-In-Reply-To: <20140121204803.GA853@earth.universe>
-References: <1389393286-15263-1-git-send-email-sre@debian.org>
-	<1389401268-15069-1-git-send-email-sre@debian.org>
-	<20140121204803.GA853@earth.universe>
-Date: Wed, 22 Jan 2014 16:07:25 +0400
-Message-ID: <CALT56yOZ5qCoS-xwFV7sqE1LATQUFckOkQa7dd24Foq7A4Xv2g@mail.gmail.com>
-Subject: Re: [PATCHv3] dt: binding documentation for bq2415x charger
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Sebastian Reichel <sre@ring0.de>
-Cc: Anton Vorontsov <anton@enomsg.org>,
-        kernel list <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122120048.GB389@x4>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jan 22, 2014 at 01:00:48PM +0100, Markus Trippelsdorf wrote:
+> FYI it happens on real hardware on my machine:
+> ...
+> [    0.000000] Hierarchical RCU implementation.
+> [    0.000000] NR_IRQS:4352 nr_irqs:712 16
+> [    0.000000] spurious 8259A interrupt: IRQ7.
+> [    0.000000] Console: colour VGA+ 80x25
+> [    0.000000] console [tty0] enabled
+> [    0.000000] hpet clockevent registered
+> [    0.000000] tsc: Fast TSC calibration using PIT
+> [    0.003333] tsc: Detected 3210.681 MHz processor
+> [   60.375238] Calibrating delay loop (skipped), value calculated using timer frequency.. 6423.91 BogoMIPS (lpj=10702270)
+> [   60.375240] pid_max: default: 32768 minimum: 301
+> [   60.375259] Mount-cache hash table entries: 256
+> [   60.375373] tseg: 0000000000
+> [   60.375377] CPU: Physical Processor ID: 0
+> [   60.375377] CPU: Processor Core ID: 0
+> [   60.375378] mce: CPU supports 6 MCE banks
+> [   60.375382] LVT offset 0 assigned for vector 0xf9
+> [   60.375384] process: using AMD E400 aware idle routine
+> [   60.375386] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
 
-On Wed, Jan 22, 2014 at 12:48 AM, Sebastian Reichel <sre@ring0.de> wrote:
-> Hi Dmitry,
->
->> Add devicetree binding documentation for bq2415x charger.
->>
->> Signed-off-by: Sebastian Reichel <sre@debian.org>
->> Acked-by: Pavel Machek <pavel@ucw.cz>
->
-> I've seen, that you just sent a pull request for the power supply
-> tree. Can you please add this patch [0] and send another pull
-> request? It should go into the kernel together with the bq2415x DT
-> support patch!
+Should have always happened like that I think. From the log it looks
+like the moment we switch from jiffies to actual TSC in
+arch/x86/kernel/tsc.c:sched_clock().
 
-If that is fine with you, I will add this to a 'fixes' branch and send
-a pull request
-somewhere near -rc2/-rc3. Agreed?
-
->
-> [0] http://www.spinics.net/lists/devicetree/msg18023.html
-
--- 
-With best wishes
-Dmitry
+I don't think I changed the logic there, just switched from a condition
+to a jump_label.
