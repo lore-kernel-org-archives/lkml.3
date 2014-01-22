@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082AbaAVPhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:37:21 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:26127 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223AbaAVPhO (ORCPT
+	id S1755859AbaAVPmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:42:14 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:56012 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaAVPmM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:37:14 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f796d000005a13-55-52dfe5a75382
-Content-transfer-encoding: 8BIT
-Message-id: <1390405030.18340.11.camel@AMDC1943>
-Subject: Re: [PATCH RESEND] cpufreq: exynos: Fix build error of no type of
- module_init
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Wed, 22 Jan 2014 16:37:10 +0100
-In-reply-to: <1390402760.18340.6.camel@AMDC1943>
-References: <1390400476-22951-1-git-send-email-k.kozlowski@samsung.com>
- <CAKohpo=2wR+Sqwxj4koH0rvuk29BkNyAZgN0RR7bVH+3uqpB1Q@mail.gmail.com>
- <1390402760.18340.6.camel@AMDC1943>
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xq7rLn94PMuh6rW/xtOkHu0Xvgqts
-	Fmeb3rBbvHm4mdFi0+NrrBaXd81hs/jce4TRYsb5fUwW1/YeZ7Y4c/oSq8X6Ga9ZLDZ+9XDg
-	8bhzbQ+bx+Yl9R5brrazePRtWcXo8XmTnMf6LVuZAtiiuGxSUnMyy1KL9O0SuDKaXn9hL9is
-	WLHoZjtTA+NcmS5GTg4JAROJG82H2SFsMYkL99azdTFycQgJLGWUWLXzMCtIgldAUOLH5Hss
-	XYwcHMwC8hJHLmWDhJkF1CUmzVvEDFH/mVGivecCE0S9gcSaP+fBeoUFIiQ6Lq1hAbHZBIwl
-	Ni9fwgZiiwhESyyZeYMdpJlZoIlF4s272WBFLAKqEudW3mcEsTmBBn088JMdYsMWRok3CzsY
-	IU5Vktjd3sk+gVFgFpIDZyEcOAvJgQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMTH
-	lx2Mi49ZHWIU4GBU4uEN3HUvSIg1say4MvcQowQHs5II75kH94OEeFMSK6tSi/Lji0pzUosP
-	MTJxcEo1MFZ//PVxe1qw/IGvHpbHIiZXmPucKJnze3PprY+JV6bYnn0/xS4yLvJSRsiVsx/L
-	n+i96leJm+43i2m9gmLYuk8Rr17l9RboxnbOuvRP67LqZPH+nHwbzuRpj7w/WpcmdqRzf2mW
-	TbzwdaZQnFv9QtNv+zsfuZ765rp1a/iEOblbYrOmlzteK1NiKc5INNRiLipOBAAi9alibQIA	AA==
+	Wed, 22 Jan 2014 10:42:12 -0500
+Date: Wed, 22 Jan 2014 16:41:15 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Shijie <b32955@freescale.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect
+ use of prandom_bytes_state()
+Message-ID: <20140122164115.211a819d@ipc1.ka-ro>
+In-Reply-To: <CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
+References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
+	<20140122150959.78cf2827@ipc1.ka-ro>
+	<CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+Akinobu Mita wrote:
+> 2014/1/22 Lothar Waßmann <LW@karo-electronics.de>:
+> > Hi,
+> >
+> > Is anyone taking care of this?
+> >
+> > Lothar Waßmann wrote:
+> >> When using prandom_bytes_state() it is critical to use the same block
+> >> size in all invocations that are to produce the same random sequence.
+> >> Otherwise the state of the PRNG will be out of sync if the blocksize
+> >> is not divisible by 4.
+> >> This leads to bogus verification errors in several tests which use
+> >> different block sizes to initialize the buffer for writing and
+> >> comparison.
+> >>
+> >> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> >> ---
+> >>  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
+> >>  1 files changed, 12 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
+> >> index 2e9e2d1..72c7359 100644
+> >> --- a/drivers/mtd/tests/oobtest.c
+> >> +++ b/drivers/mtd/tests/oobtest.c
+> >> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
+> >>       int err = 0;
+> >>       loff_t addr = ebnum * mtd->erasesize;
+> >>       size_t len = mtd->ecclayout->oobavail * pgcnt;
+> >> +     int i;
+> >> +
+> >> +     for (i = 0; i < pgcnt; i++)
+> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
+> >> +                             use_len);
+> >> +     if (len % use_len)
+> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
+> >> +                             len % use_len);
+> >>
+> >> -     prandom_bytes_state(&rnd_state, writebuf, len);
+> >>       ops.mode      = MTD_OPS_AUTO_OOB;
+> >>       ops.len       = 0;
+> >>       ops.retlen    = 0;
 > 
-> On Wed, 2014-01-22 at 20:12 +0530, Viresh Kumar wrote:
-> > On 22 January 2014 19:51, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> > > Add missing include to fix build error:
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_init’ [-Werror=implicit-int]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_exit’ [-Werror=implicit-int]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
-> > > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: ‘exynos_cpufreq_platdrv_init’ defined but not used [-Wunused-function]
-> > > cc1: some warnings being treated as errors
-> > > make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
-> > > make[1]: *** [drivers/cpufreq] Error 2
-> > >
-> > > Build error happens on gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
-> > > and was introduced by commit d568b6f71df1 (cpufreq: exynos: Convert
-> > > exynos-cpufreq to platform driver).
-> > >
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > Cc: Lukasz Majewski <l.majewski@samsung.com>
-> > > Cc: Tomasz Figa <t.figa@samsung.com>
-> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> > > ---
-> > >  drivers/cpufreq/exynos-cpufreq.c |    1 +
-> > >  1 file changed, 1 insertion(+)
-> > >
-> > > diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-> > > index fcd2914d081a..fa54c2b88dd7 100644
-> > > --- a/drivers/cpufreq/exynos-cpufreq.c
-> > > +++ b/drivers/cpufreq/exynos-cpufreq.c
-> > > @@ -17,6 +17,7 @@
-> > >  #include <linux/regulator/consumer.h>
-> > >  #include <linux/cpufreq.h>
-> > >  #include <linux/suspend.h>
-> > > +#include <linux/module.h>
-> > >  #include <linux/platform_device.h>
-> > 
-> > I am surprised how that patch went through then? And nothing was
-> > reported by kbuild for it..
+> I would rather fix the use of prandom_bytes_state() in write_eraseblock()
+> than fix in verify_eraseblock_in_one_go().
 > 
-> Hi,
-> 
-> A little more explanation from my side: the build error actually happens
-> only on next/master, not Linus' tree.
-> 
-> Mentioned commit which changes the driver to platform driver is in
-> mainline since 3.12-rc2 so it seems this is not the cause of the build
-> error. I think I need to find first the real cause of this build error.
-> 
-> Best regards,
-> Krzysztof
+Why and how?
+write_whole_device() (which calls write_eraseblock()) is used multiple
+times with different verification methods (all blocks in one go or each
+block individually).
+If prandom_state_bytes() in write_eraseblock() would be changed, that
+function would have to know, how the block are going to be checked
+lateron to know how to set up the writebuffer.
 
-After bisecting, the real commit for build error is:
-caa7dcde7c424cdc81698a6e4e48072eb67ec67e
-    module: relocate module_init from init.h to module.h
-
-My patch seems valid although the reason in commit msg should be updated:
-################
-Add missing include to fix build error:
-drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
-drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_init’ [-Werror=implicit-int]
-drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
-drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
-drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_exit’ [-Werror=implicit-int]
-drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
-drivers/cpufreq/exynos-cpufreq.c:292:1: warning: ‘exynos_cpufreq_platdrv_init’ defined but not used [-Wunused-function]
-cc1: some warnings being treated as errors
-make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
-make[1]: *** [drivers/cpufreq] Error 2
-
-Build error happens on gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
-and was introduced in next tree by commit caa7dcde7c42 (module: relocate
-module_init from init.h to module.h).
-################
+Dto. for mtd_write_oob()
 
 
+Lothar Waßmann
+-- 
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
