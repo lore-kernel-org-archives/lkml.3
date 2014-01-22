@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaAVIbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 03:31:21 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:39183 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaAVIbR (ORCPT
+	id S1752736AbaAVIgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 03:36:08 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48908 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaAVIgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 03:31:17 -0500
-Message-ID: <52DF81D4.9000008@linaro.org>
-Date: Wed, 22 Jan 2014 09:31:16 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 03:36:03 -0500
+Message-ID: <52DF81B0.7020700@linux.vnet.ibm.com>
+Date: Wed, 22 Jan 2014 14:00:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>
-Subject: Re: [PATCH] Documentation: devicetree: mct: Fix counter bit of CPU
- local timers
-References: <000001cf1687$a0e5e250$e2b1a6f0$%han@samsung.com> <000101cf1749$30ae3b50$920ab1f0$%han@samsung.com>
-In-Reply-To: <000101cf1749$30ae3b50$920ab1f0$%han@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Michel Lespinasse <walken@google.com>,
+        ego@linux.vnet.ibm.com,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: Deadlock between cpu_hotplug_begin and cpu_add_remove_lock
+References: <20140122055239.GA29418@iris.ozlabs.ibm.com>
+In-Reply-To: <20140122055239.GA29418@iris.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012208-4790-0000-0000-00000C5921AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 09:08 AM, Jingoo Han wrote:
-> On Tuesday, January 21, 2014 6:03 PM, Jingoo Han wrote:
->>
->> According to the datasheet of Exynos SoCs, the counter bit
->> of CPU local timers is 31-bit, not 32-bit; thus, it should
->> be fixed.
->
-> Please, ignore this patch.
-> There is a 31-bit counter in CPU local timers; however,
-> FRC (free running down-counters) of CPU local timers is
-> 32-bit. Thus, there is no need to fix it.
-> Thank you.
+Hi Paul,
 
-Ok.
-
->>
->> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->> ---
->>   Documentation/devicetree/bindings/timer/samsung,exynos4210-mct.txt |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/timer/samsung,exynos4210-mct.txt
->> b/Documentation/devicetree/bindings/timer/samsung,exynos4210-mct.txt
->> index 167d5da..8c77791 100644
->> --- a/Documentation/devicetree/bindings/timer/samsung,exynos4210-mct.txt
->> +++ b/Documentation/devicetree/bindings/timer/samsung,exynos4210-mct.txt
->> @@ -3,7 +3,7 @@ Samsung's Multi Core Timer (MCT)
->>   The Samsung's Multi Core Timer (MCT) module includes two main blocks, the
->>   global timer and CPU local timers. The global timer is a 64-bit free running
->>   up-counter and can generate 4 interrupts when the counter reaches one of the
->> -four preset counter values. The CPU local timers are 32-bit free running
->> +four preset counter values. The CPU local timers are 31-bit free running
->>   down-counters and generate an interrupt when the counter expires. There is
->>   one CPU local timer instantiated in MCT for every CPU in the system.
->>
->> --
->> 1.7.10.4
->
+On 01/22/2014 11:22 AM, Paul Mackerras wrote:
+> This arises out of a report from a tester that offlining a CPU never
+> finished on a system they were testing.  This was on a POWER8 running
+> a 3.10.x kernel, but the issue is still present in mainline AFAICS.
+> 
+> What I found when I looked at the system was this:
+> 
+> * There was a ppc64_cpu process stuck inside cpu_hotplug_begin(),
+>   called from _cpu_down(), from cpu_down().  This process was holding
+>   the cpu_add_remove_lock mutex, since cpu_down() calls
+>   cpu_maps_update_begin() before calling _cpu_down().  It was stuck
+>   there because cpu_hotplug.refcount == 1.
+> 
+> * There was a mdadm process trying to acquire the cpu_add_remove_lock
+>   mutex inside register_cpu_notifier(), called from
+>   raid5_alloc_percpu() in drivers/md/raid5.c.  That process had
+>   previously called get_online_cpus, which is why cpu_hotplug.refcount
+>   was 1.
+> 
+> Result: deadlock.
+> 
+> Thus it seems that the following code is not safe:
+> 
+> 	get_online_cpus();
+> 	register_cpu_notifier(&...);
+> 	put_online_cpus();
 >
 
+Yes, this is a known problem, and I had proposed an elaborate solution
+some time ago: https://lkml.org/lkml/2012/3/1/39
+But that won't work for all cases, so that solution is a no-go.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+If we forget the CPU_POST_DEAD stage for a moment, we can just replace the
+calls to cpu_maps_update_begin/done() with get/put_online_cpus() in both
+register_cpu_notifier() as well as unregister_cpu_notifier(). After all,
+the callback registration code needs to synchronize only with the actual
+hotplug operations, and not the update of cpu-maps. So they don't really
+need to acquire the cpu_add_remove_lock.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+However, CPU_POST_DEAD notifications run with the hotplug lock dropped.
+So we can't simply replace cpu_add_remove_lock with hotplug lock in the
+registration routines, because notifier invocations and notifier registration
+needs to be synchronized.
+
+Hmm...
+ 
+> There are a few different places that do that sort of thing; besides
+> drivers/md/raid5.c, there are instances in arch/x86/kernel/cpu,
+> arch/x86/oprofile, drivers/cpufreq/acpi-cpufreq.c,
+> drivers/oprofile/nmi_timer_int.c and kernel/trace/ring_buffer.c.
+> 
+> My question is this: is it reasonable to call register_cpu_notifier
+> inside a get/put_online_cpus block?
+
+Ideally, we would want that to work. Because there is no other race-free
+way of registering a notifier.
+
+>  If so, the deadlock needs to be
+> fixed; if not, the callers need to be fixed, and the restriction
+> should be documented.
+
+Fixing the callers is a last resort. I'm thinking of ways to fix the
+deadlock itself, and allow the callers to call register_cpu_notifier
+within a get/put_online_cpus() block...
+
+Regards,
+Srivatsa S. Bhat
+
 
