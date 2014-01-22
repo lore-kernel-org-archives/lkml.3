@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaAVSUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:20:05 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:61426 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaAVSUC (ORCPT
+	id S1753383AbaAVSYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:24:11 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62946 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaAVSYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:20:02 -0500
+	Wed, 22 Jan 2014 13:24:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140122062730.GA25601@redhat.com>
-References: <20140122062730.GA25601@redhat.com>
-Date: Wed, 22 Jan 2014 10:20:01 -0800
-X-Google-Sender-Auth: iXnxuqZbw36Hlo81oIqCw24ZR6c
-Message-ID: <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com>
-Subject: Re: fanotify use after free.
+In-Reply-To: <52E008F0.3060602@redhat.com>
+References: <20140121232708.GA29787@amazon.com>
+	<20140122014908.GG18164@kroah.com>
+	<CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
+	<52E008F0.3060602@redhat.com>
+Date: Wed, 22 Jan 2014 10:24:06 -0800
+X-Google-Sender-Auth: NRMmZS28ntsWXPBhZEoF6YKjA_o
+Message-ID: <CA+55aFypCEec_15J-bPAuc1G=GtnQXjnnW5+dzwODq2DNW4Bsg@mail.gmail.com>
+Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Steven Noonan <steven@uplinklabs.net>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:27 PM, Dave Jones <davej@redhat.com> wrote:
+On Wed, Jan 22, 2014 at 10:07 AM, Rik van Riel <riel@redhat.com> wrote:
 >
-> BUG fanotify_event_info (Not tainted): Poison overwritten
+> The difference between a numa pte and a protnone pte is
+> the VMA permissions.
 
-Looking at the poison data, it seems that is is the
+If that is indeed the only difference, then we should damn well get
+rid of that f*cking stupid _PAGE_NUMA name entirely.
 
-        u32 response;
+It's misleading crap. Really. Just do a quick grep for that bit, and
+you see just *how* confused people are about it:
 
-field that has been overwritten (with all zero).
+   #define _PAGE_NUMA _PAGE_PROTNONE
+   ...
+        if ((pte_flags(a) & (_PAGE_PROTNONE | _PAGE_NUMA)) &
 
-That doesn't really help me guess where the bug is, though. That code
-is crazy. For example, looking at one place where it is set, we have:
-
- - process_access_response():
-
-        re->event->response = response;
-
-        wake_up(&group->fanotify_data.access_waitq);
-
-        kmem_cache_free(fanotify_response_event_cache, re);
-
-which looks buggy in *so* many ways. In particular, we're doing a
-kmem_cache_free() on "re", but what happened to "re->event" that we
-just used? There was no release of that anywhere. Wut?
-
-So it seems that the lifetime of these "fanotify_event_info"
-structures is completely buggered. I don't even see any *attempt* to
-maintain reference counts or other lifetime info. People free the
-containers that point to them without doing anything at all about the
-fsnotify_event that contains the fanotify_event_info that they point
-to.
-
-Jan - how is the lifetime of the fanotify_event_info tied to the
-lifetime of the fanotify_response_event structure that contains
-pointers into it? Because I don't see it.
-
-And considering that it's the response field that gets overwritten, it
-really sounds like *that* is the exact issue at play here - there is
-some fanotify_response_event structure holding a pointer to the
-fanotify_event that is embedded into a fanotify_event_info that has
-been freed.
-
-Jan?
+think about it. Just *THINK* about how broken that code is. The whole
+thing is a disaster. _PAGE_NUMA must die. It's shit.
 
                  Linus
