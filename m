@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaAVPye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:54:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60793 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaAVPyb (ORCPT
+	id S1755926AbaAVPyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:54:44 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36214 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753040AbaAVPyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:54:31 -0500
-Date: Wed, 22 Jan 2014 16:53:51 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dan Ballard <dan@mindstab.net>
-Cc: Lennart Poettering <lennart@poettering.net>, kay.sievers@vrfy.org,
-        Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minto Joseph <mvaliyav@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Mel Gorman <mgorman@suse.de>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] add StartTimeMonotomic, StartTimeBootTime to per pid
- in   /proc
-Message-ID: <20140122155351.GV13532@twins.programming.kicks-ass.net>
-References: <a24256fcec0f1735512ee303ce8abbdc@mindstab.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a24256fcec0f1735512ee303ce8abbdc@mindstab.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 22 Jan 2014 10:54:39 -0500
+Message-ID: <1390406077.2372.4.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 22 Jan 2014 07:54:37 -0800
+In-Reply-To: <52DF353D.6050300@redhat.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 07:10:04AM -0800, Dan Ballard wrote:
-> starttime in /proc/$PID/stat is inaccurate by "clock tick" granularity.
-> The kernel keeps better track os this exposes that in /prod/$PID/status
-> as StartTimeMonotonic and StartTimeBootTime
+On Tue, 2014-01-21 at 22:04 -0500, Ric Wheeler wrote:
+> One topic that has been lurking forever at the edges is the current 4k 
+> limitation for file system block sizes. Some devices in production today and 
+> others coming soon have larger sectors and it would be interesting to see if it 
+> is time to poke at this topic again.
 > 
+> LSF/MM seems to be pretty much the only event of the year that most of the key 
+> people will be present, so should be a great topic for a joint session.
 
-Why?
+But the question is what will the impact be.  A huge amount of fuss was
+made about 512->4k.  Linux was totally ready because we had variable
+block sizes and our page size is 4k.  I even have one pure 4k sector
+drive that works in one of my test systems.
+
+However, the result was the market chose to go the physical/logical
+route because of other Operating System considerations, all 4k drives
+expose 512 byte sectors and do RMW internally.  For us it becomes about
+layout and alignment, which we already do.  I can't see how going to 8k
+or 16k would be any different from what we've already done.  In other
+words, this is an already solved problem.
+
+James
+
+
