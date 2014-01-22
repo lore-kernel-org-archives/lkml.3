@@ -1,59 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaAVN2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:28:09 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44968 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755654AbaAVN2F (ORCPT
+	id S1755779AbaAVN2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 08:28:49 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54057 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755612AbaAVN2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:28:05 -0500
-Date: Wed, 22 Jan 2014 13:27:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geng Hui <hui.geng@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: kexec: copying code to ioremapped area
-Message-ID: <20140122132734.GB15937@n2100.arm.linux.org.uk>
-References: <1390389916-8711-1-git-send-email-wangnan0@huawei.com> <1390389916-8711-3-git-send-email-wangnan0@huawei.com>
+	Wed, 22 Jan 2014 08:28:42 -0500
+Date: Wed, 22 Jan 2014 14:27:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
+        agraf@suse.de, paul.gortmaker@windriver.com, paulus@samba.org,
+        mingo@kernel.org, mikey@neuling.org, shangw@linux.vnet.ibm.com,
+        rafael.j.wysocki@intel.com, galak@kernel.crashing.org,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
+        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V5 6/8] time/cpuidle: Support in tick broadcast framework
+ in the absence of external clock device
+In-Reply-To: <20140115080947.20446.30305.stgit@preeti.in.ibm.com>
+Message-ID: <alpine.DEB.2.02.1401221042130.4260@ionos.tec.linutronix.de>
+References: <20140115080555.20446.27238.stgit@preeti.in.ibm.com> <20140115080947.20446.30305.stgit@preeti.in.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390389916-8711-3-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 07:25:15PM +0800, Wang Nan wrote:
-> ARM's kdump is actually corrupted (at least for omap4460), mainly because of
-> cache problem: flush_icache_range can't reliably ensure the copied data
-> correctly goes into RAM.
+On Wed, 15 Jan 2014, Preeti U Murthy wrote:
+> diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+> index 086ad60..d61404e 100644
+> --- a/kernel/time/clockevents.c
+> +++ b/kernel/time/clockevents.c
+> @@ -524,12 +524,13 @@ void clockevents_resume(void)
+>  #ifdef CONFIG_GENERIC_CLOCKEVENTS
+>  /**
+>   * clockevents_notify - notification about relevant events
+> + * Returns non zero on error.
+>   */
+> -void clockevents_notify(unsigned long reason, void *arg)
+> +int clockevents_notify(unsigned long reason, void *arg)
+>  {
 
-Quite right too.  You're mistake here is thinking that flush_icache_range()
-should push it to RAM.  That's incorrect.
+The interface change of clockevents_notify wants to be a separate
+patch.
 
-flush_icache_range() is there to deal with such things as loadable modules
-and self modifying code, where the MMU is not being turned off.  Hence, it
-only flushes to the point of coherency between the I and D caches, and
-any further levels of cache between that point and memory are not touched.
-Why should it touch any more levels - it's not the function's purpose.
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index 9532690..1c23912 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/smp.h>
+>  #include <linux/module.h>
+> +#include <linux/slab.h>
+>  
+>  #include "tick-internal.h"
+>  
+> @@ -35,6 +36,15 @@ static cpumask_var_t tmpmask;
+>  static DEFINE_RAW_SPINLOCK(tick_broadcast_lock);
+>  static int tick_broadcast_force;
+>  
+> +/*
+> + * Helper variables for handling broadcast in the absence of a
+> + * tick_broadcast_device.
+> + * */
+> +static struct hrtimer *bc_hrtimer;
+> +static int bc_cpu = -1;
+> +static ktime_t bc_next_wakeup;
 
-> After mmu turned off and jump to the trampoline, kexec always failed due
-> to random undef instructions.
+Why do you need another variable to store the expiry time? The
+broadcast code already knows it and the hrtimer expiry value gives you
+the same information for free.
 
-We already have code in the kernel which deals with shutting the MMU off.
-An instance of how this can be done is illustrated in the soft_restart()
-code path, and kexec already uses this.
+> +static int hrtimer_initialized = 0;
 
-One of the first things soft_restart() does is turn off the outer cache -
-which OMAP4 does have, but this can only be done if there is a single CPU
-running.  If there's multiple CPUs running, then the outer cache can't be
-disabled, and that's the most likely cause of the problem you're seeing.
+What's the point of this hrtimer_initialized dance? Why not simply
+making the hrtimer static and avoid that all together. Also adding the
+initialization into tick_broadcast_oneshot_available() is
+braindamaged.  Why not adding this to tick_broadcast_init() which is
+the proper place to do?
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Aside of that you are making this hrtimer mode unconditional, which
+might break existing systems which are not aware of the hrtimer
+implications.
+
+What you really want is a pseudo clock event device which has the
+proper functions for handling the timer and you can register it from
+your architecture code. The broadcast core code needs a few tweaks to
+avoid the shutdown of the cpu local clock event device, but aside of
+that the whole thing just falls into place. So architectures can use
+this if they want and are sure that their low level idle code knows
+about the deep idle preventing return value of
+clockevents_notify(). Once that works you can register the hrtimer
+based broadcast device and a real hardware broadcast device with a
+higher rating. It just works.
+
+Find an incomplete and nonfunctional concept patch below. It should be
+simple to make it work for real.
+
+Thanks,
+
+	tglx
+----
+Index: linux-2.6/include/linux/clockchips.h
+===================================================================
+--- linux-2.6.orig/include/linux/clockchips.h
++++ linux-2.6/include/linux/clockchips.h
+@@ -62,6 +62,11 @@ enum clock_event_mode {
+ #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
+ #define CLOCK_EVT_FEAT_PERCPU		0x000040
+ 
++/*
++ * Clockevent device is based on a hrtimer for broadcast
++ */
++#define CLOCK_EVT_FEAT_HRTIMER		0x000080
++
+ /**
+  * struct clock_event_device - clock event device descriptor
+  * @event_handler:	Assigned by the framework to be called by the low
+@@ -83,6 +88,7 @@ enum clock_event_mode {
+  * @name:		ptr to clock event name
+  * @rating:		variable to rate clock event devices
+  * @irq:		IRQ number (only for non CPU local devices)
++ * @bound_on:		Bound on CPU
+  * @cpumask:		cpumask to indicate for which CPUs this device works
+  * @list:		list head for the management code
+  * @owner:		module reference
+@@ -113,6 +119,7 @@ struct clock_event_device {
+ 	const char		*name;
+ 	int			rating;
+ 	int			irq;
++	int			bound_on;
+ 	const struct cpumask	*cpumask;
+ 	struct list_head	list;
+ 	struct module		*owner;
+Index: linux-2.6/kernel/time/tick-broadcast-hrtimer.c
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/time/tick-broadcast-hrtimer.c
+@@ -0,0 +1,77 @@
++
++static struct hrtimer bctimer;
++
++static void bc_set_mode(enum clock_event_mode mode,
++			struct clock_event_device *bc)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/*
++		 * Note, we cannot cancel the timer here as we might
++		 * run into the following live lock scenario:
++		 *
++		 * cpu 0		cpu1
++		 * lock(broadcast_lock);
++		 *			hrtimer_interrupt()
++		 *			bc_handler()
++		 *			   tick_handle_oneshot_broadcast();
++		 *			    lock(broadcast_lock);
++		 * hrtimer_cancel()
++		 *  wait_for_callback()
++		 */
++		hrtimer_try_to_cancel(&bctimer);
++		break;
++	default:
++		break;
++	}
++}
++
++/*
++ * This is called from the guts of the broadcast code when the cpu
++ * which is about to enter idle has the earliest broadcast timer event.
++ */
++static int bc_set_next(ktime_t expires, struct clock_event_device *bc)
++{
++	/*
++	 * We try to cancel the timer first. If the callback is on
++	 * flight on some other cpu then we let it handle it. If we
++	 * were able to cancel the timer nothing can rearm it as we
++	 * own broadcast_lock.
++	 */
++	if (hrtimer_try_to_cancel(&bctimer) >= 0) {
++		hrtimer_start(&bctimer, expires, HRTIMER_MODE_ABS_PINNED);
++		/* Bind the "device" to the cpu */
++		bc->bound_on = smp_processor_id();
++	}
++	return 0;
++}
++
++static struct clock_event_device ce_broadcast_hrtimer = {
++	.set_mode		= bc_set_mode,
++	.set_next_ktime		= bc_set_next,
++	.features		= CLOCK_EVT_FEAT_ONESHOT |
++				  CLOCK_EVT_FEAT_KTIME |
++				  CLOCK_EVT_FEAT_HRTIMER,
++	.rating			= 0,
++	.bound_on		= -1,
++	.min_delta_ns		= 1,
++	.max_delta_ns		= KTIME_MAX,
++	.min_delta_ticks	= 1,
++	.max_delta_ticks	= KTIME_MAX,
++	.mult			= 1,
++	.shift			= 0,
++	.cpumask		= cpu_all_mask,
++};
++
++static enum hrtimer_restart bc_handler(struct hrtimer *t)
++{
++	ce_broadcast_hrtimer.event_handler(&ce_broadcast_hrtimer);
++	return HRTIMER_NORESTART;
++}
++
++void tick_setup_hrtimer_broadcast(void)
++{
++	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
++	bctimer.function = bc_handler;
++	clockevents_register(&ce_broadcast_hrtimer);
++}
+Index: linux-2.6/kernel/time/tick-broadcast.c
+===================================================================
+--- linux-2.6.orig/kernel/time/tick-broadcast.c
++++ linux-2.6/kernel/time/tick-broadcast.c
+@@ -630,6 +630,42 @@ again:
+ 	raw_spin_unlock(&tick_broadcast_lock);
+ }
+ 
++static int broadcast_needs_cpu(struct clock_event_device *bc, int cpu)
++{
++	if (!(bc->features & CLOCK_EVT_FEAT_HRTIMER))
++		return 0;
++	if (bc->next_event.tv64 == KTIME_MAX)
++		return 0;
++	return bc->bound_on == cpu ? -EBUSY : 0;
++}
++
++static void broadcast_shutdown_local(struct clock_event_device *bc,
++				     struct clock_event_device *dev)
++{
++	/*
++	 * For hrtimer based broadcasting we cannot shutdown the cpu
++	 * local device if our own event is the first one to expire or
++	 * if we own the broadcast timer.
++	 */
++	if (bc->features & CLOCK_EVT_FEAT_HRTIMER) {
++		if (broadcast_needs_cpu(bc))
++			return;
++		if (dev->next_event.tv64 < bc->next_event.tv64)
++			return;
++	}
++	clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
++}
++
++static void broadcast_move_bc(int deadcpu)
++{
++	struct clock_event_device *bc = tick_broadcast_device.evtdev;
++
++	if (!bc || !broadcast_needs_cpu(bc, deadcpu))
++		return;
++	/* This moves the broadcast assignment to this cpu */
++	clockevents_program_event(bc, bc->next_event, 1);
++}
++
+ /*
+  * Powerstate information: The system enters/leaves a state, where
+  * affected devices might stop
+@@ -639,8 +675,8 @@ void tick_broadcast_oneshot_control(unsi
+ 	struct clock_event_device *bc, *dev;
+ 	struct tick_device *td;
+ 	unsigned long flags;
++	int cpu, ret = 0;
+ 	ktime_t now;
+-	int cpu;
+ 
+ 	/*
+ 	 * Periodic mode does not care about the enter/exit of power
+@@ -666,7 +702,7 @@ void tick_broadcast_oneshot_control(unsi
+ 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
+ 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
+ 			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
+-			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
++			broadcast_shutdown_local(bc, dev);
+ 			/*
+ 			 * We only reprogram the broadcast timer if we
+ 			 * did not mark ourself in the force mask and
+@@ -679,6 +715,11 @@ void tick_broadcast_oneshot_control(unsi
+ 			    dev->next_event.tv64 < bc->next_event.tv64)
+ 				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
+ 		}
++		/*
++		 * If the current CPU owns the hrtimer broadcast
++		 * mechanism, it cannot go deep idle.
++		 */
++		ret = broadcast_needs_cpu(bc, cpu);
+ 	} else {
+ 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
+@@ -851,6 +892,8 @@ void tick_shutdown_broadcast_oneshot(uns
+ 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
+ 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
+ 
++	broadcast_move_bc(cpu);
++
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
