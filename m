@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaAVT02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:26:28 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58294 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755764AbaAVT00 (ORCPT
+	id S1755293AbaAVTaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:30:24 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37500 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752798AbaAVTaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:26:26 -0500
-Date: Wed, 22 Jan 2014 19:26:18 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Message-ID: <20140122192618.GX17314@sirena.org.uk>
-References: <20140115113551.0eb13409@armhf>
- <20140115165145.2c2da894@armhf>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jGviIKn9uLGVFpXC"
-Content-Disposition: inline
-In-Reply-To: <20140115165145.2c2da894@armhf>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 4/8] ASoC: simple-card: simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 22 Jan 2014 14:30:21 -0500
+Message-ID: <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Chris Mason <clm@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>
+Date: Wed, 22 Jan 2014 11:30:19 -0800
+In-Reply-To: <52E0106B.5010604@redhat.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+			 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
+			 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
+			 <20140122151913.GY4963@suse.de>
+			 <1390410233.1198.7.camel@ret.masoncoding.com>
+			 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+			 <1390413819.1198.20.camel@ret.masoncoding.com>
+		 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
+		 <52E00B28.3060609@redhat.com>
+	 <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
+	 <52E0106B.5010604@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-01-22 at 13:39 -0500, Ric Wheeler wrote:
+> On 01/22/2014 01:35 PM, James Bottomley wrote:
+> > On Wed, 2014-01-22 at 13:17 -0500, Ric Wheeler wrote:
+[...]
+> >> I think that the key to having the file system work with larger
+> >> sectors is to
+> >> create them properly aligned and use the actual, native sector size as
+> >> their FS
+> >> block size. Which is pretty much back the original challenge.
+> > Only if you think laying out stuff requires block size changes.  If a 4k
+> > block filesystem's allocation algorithm tried to allocate on a 16k
+> > boundary for instance, that gets us a lot of the performance without
+> > needing a lot of alteration.
+> 
+> The key here is that we cannot assume that writes happen only during 
+> allocation/append mode.
 
---jGviIKn9uLGVFpXC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But that doesn't matter at all, does it?  If the file is sector aligned,
+then the write is aligned.  If the write is short on a large block fs,
+well we'd just have to do the RMW in the OS anyway ... is that any
+better than doing it in the device?
 
-On Wed, Jan 15, 2014 at 04:51:45PM +0100, Jean-Francois Moine wrote:
-> Have a cleaner code using a DAI link pointer.
-=20
-Applied, thanks.
+> Unless the block size enforces it, we will have non-aligned, small
+> block IO done 
+> to allocated regions that won't get coalesced.
 
---jGviIKn9uLGVFpXC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We always get that if it's the use pattern ... the question merely
+becomes who bears the burden of RMW.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> > It's not even obvious that an ignorant 4k layout is going to be so
+> > bad ... the RMW occurs only at the ends of the transfers, not in the
+> > middle.  If we say 16k physical block and average 128k transfers,
+> > probabalistically we misalign on 6 out of 31 sectors (or 19% of the
+> > time).  We can make that better by increasing the transfer size (it
+> > comes down to 10% for 256k transfers.
+> 
+> This really depends on the nature of the device. Some devices could
+> produce very 
+> erratic performance
 
-iQIcBAEBAgAGBQJS4BtWAAoJELSic+t+oim9Nm4P/RXhHLRBrA8VHwJwIyjfphVS
-uqi35oXbwNlnGD0JSI0rqqyJWsFtlEx5ZcEShhrofNNuFTdfRzot8dpku8yGABc/
-1gqyg77olfjYvdqfZpHsrcN46S7I6pOFaP3uKT7DVYDqHQXE9KrILcu4zp4bGLQC
-pZE/MYGCM231lkHIp6o0hCqaiFv57gTfRFfxsO9mn/Ltj0LMoc6QKFW/XxT3dVEj
-FQvMrKjMIdqaGs0abDXTa64S05aJQVW6cwoMkpAxpaxUSSYxVWVN7lCrKgGStjCR
-skVUGrX4YfRO9OP2zorFrqZOb3wZt7XxDBdJm0oeWvF60mT06l5kfJMH+amXsAyV
-yGSa/saQGaqlxDBMwMjhDZPaYcARdgM3hKWu+tgRl0Q/pl0RzXrJcaA9C6Xm0EiQ
-zAXA/mX6aD41JHjF9vrvNbTG2HJ7CHezdEGryIRdFTfBqUfxatfHevdOKrWSeiGk
-Yc/B0nbhk1a/gmJqpTJjM4e4Q9Wo14TcSEdoqY86t/VezNcdEkx/PGmm0XfKINHo
-+NgJLtBYDgpj3OWF7NfC78CHUCSD9GFZ0o30EAHjsyufkpmSaeHaxCDYPDZq8Y2Y
-bRVmVOv+ReUY3UfW2clgcZY94Nsg4IIs8OXo1oJdlawn+YR/kKETRL1P8g441YTn
-Zrr1K9XIs1i1YwIdurYA
-=EO6s
------END PGP SIGNATURE-----
+Yes, we get that today with misaligned writes to the 4k devices.
 
---jGviIKn9uLGVFpXC--
+>  or even (not today, but some day) reject the IO.
+
+I really doubt this.  All 4k drives today do RMW ... I don't see that
+changing any time soon.
+
+> >> Teaching each and every file system to be aligned at the storage
+> >> granularity/minimum IO size when that is larger than the physical
+> >> sector size is
+> >> harder I think.
+> > But you're making assumptions about needing larger block sizes.  I'm
+> > asking what can we do with what we currently have?  Increasing the
+> > transfer size is a way of mitigating the problem with no FS support
+> > whatever.  Adding alignment to the FS layout algorithm is another.  When
+> > you've done both of those, I think you're already at the 99% aligned
+> > case, which is "do we need to bother any more" territory for me.
+> >
+> 
+> I would say no, we will eventually need larger file system block sizes.
+> 
+> Tuning and getting 95% (98%?) of the way there with alignment and IO
+> scheduler 
+> does help a lot. That is what we do today and it is important when
+> looking for 
+> high performance.
+> 
+> However, this is more of a short term work around for a lack of a
+> fundamental 
+> ability to do the right sized file system block for a specific class
+> of device. 
+> As such, not a crisis that must be solved today, but rather something
+> that I 
+> think is definitely worth looking at so we can figure this out over
+> the next 
+> year or so.
+
+But this, I think, is the fundamental point for debate.  If we can pull
+alignment and other tricks to solve 99% of the problem is there a need
+for radical VM surgery?  Is there anything coming down the pipe in the
+future that may move the devices ahead of the tricks?
+
+James
+
+
+
