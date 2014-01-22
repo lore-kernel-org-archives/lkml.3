@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaAVSSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:18:32 -0500
-Received: from smtprelay0075.hostedemail.com ([216.40.44.75]:49098 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752311AbaAVSS2 (ORCPT
+	id S1754825AbaAVSUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:20:05 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:61426 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaAVSUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:18:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2110:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6117:6119:7652:7903:9010:9025:10004:10400:10848:11232:116
-X-HE-Tag: rod97_6641c9ee24163
-X-Filterd-Recvd-Size: 1930
-Message-ID: <1390414701.31946.73.camel@joe-AO722>
-Subject: Re: [tip:core/urgent] MAINTAINERS: Restore "L:
- linux-kernel@vger.kernel.org" entries
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, alan@linux.intel.com,
-        acme@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Date: Wed, 22 Jan 2014 10:18:21 -0800
-In-Reply-To: <20140122180643.GP17314@sirena.org.uk>
-References: <tip-62f45f9a202c318fd5fb43cd40ef687b7dd2825f@git.kernel.org>
-	 <1390325069.2472.78.camel@joe-AO722> <20140122122728.GA8882@gmail.com>
-	 <1390395744.31946.45.camel@joe-AO722>
-	 <20140122160917.GI17314@sirena.org.uk>
-	 <1390411823.31946.63.camel@joe-AO722>
-	 <20140122180643.GP17314@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jan 2014 13:20:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140122062730.GA25601@redhat.com>
+References: <20140122062730.GA25601@redhat.com>
+Date: Wed, 22 Jan 2014 10:20:01 -0800
+X-Google-Sender-Auth: iXnxuqZbw36Hlo81oIqCw24ZR6c
+Message-ID: <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com>
+Subject: Re: fanotify use after free.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 18:06 +0000, Mark Brown wrote:
-> On Wed, Jan 22, 2014 at 09:30:23AM -0800, Joe Perches wrote:
-> > Perhaps the biggest benefit of cc'ing lkml is
-> > a centralized repository of proposed patches in
-> > https://patchwork.kernel.org/project/LKML/list/
-> 
-> Which isn't triumphantly usable as a result.
+On Tue, Jan 21, 2014 at 10:27 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> BUG fanotify_event_info (Not tainted): Poison overwritten
 
-True, the current search mechanism isn't ideal as it
-seems to only search titles and the robots.txt file
-there doesn't allow spidering.
+Looking at the poison data, it seems that is is the
 
-Anyway I do think having the ability to search for
-previously proposed patches to a particular file in a
-single place useful but not absolutely mandatory.
+        u32 response;
 
-cheers, Joe
+field that has been overwritten (with all zero).
 
+That doesn't really help me guess where the bug is, though. That code
+is crazy. For example, looking at one place where it is set, we have:
+
+ - process_access_response():
+
+        re->event->response = response;
+
+        wake_up(&group->fanotify_data.access_waitq);
+
+        kmem_cache_free(fanotify_response_event_cache, re);
+
+which looks buggy in *so* many ways. In particular, we're doing a
+kmem_cache_free() on "re", but what happened to "re->event" that we
+just used? There was no release of that anywhere. Wut?
+
+So it seems that the lifetime of these "fanotify_event_info"
+structures is completely buggered. I don't even see any *attempt* to
+maintain reference counts or other lifetime info. People free the
+containers that point to them without doing anything at all about the
+fsnotify_event that contains the fanotify_event_info that they point
+to.
+
+Jan - how is the lifetime of the fanotify_event_info tied to the
+lifetime of the fanotify_response_event structure that contains
+pointers into it? Because I don't see it.
+
+And considering that it's the response field that gets overwritten, it
+really sounds like *that* is the exact issue at play here - there is
+some fanotify_response_event structure holding a pointer to the
+fanotify_event that is embedded into a fanotify_event_info that has
+been freed.
+
+Jan?
+
+                 Linus
