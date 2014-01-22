@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790AbaAVOMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:12:20 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41426 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348AbaAVOLm (ORCPT
+	id S1755865AbaAVOMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:12:43 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51158 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592AbaAVOLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:11:42 -0500
+	Wed, 22 Jan 2014 09:11:41 -0500
 From: Jean Pihet <jean.pihet@linaro.org>
 To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         linux-arm-kernel@lists.infradead.org,
         Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>
 Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 4/4] ARM64: perf: support dwarf unwinding in compat mode
-Date: Wed, 22 Jan 2014 15:11:19 +0100
-Message-Id: <1390399879-5109-5-git-send-email-jean.pihet@linaro.org>
+Subject: [PATCH 3/4] ARM64: perf: add support for frame pointer unwinding in compat mode
+Date: Wed, 22 Jan 2014 15:11:18 +0100
+Message-Id: <1390399879-5109-4-git-send-email-jean.pihet@linaro.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1390399879-5109-1-git-send-email-jean.pihet@linaro.org>
 References: <1390399879-5109-1-git-send-email-jean.pihet@linaro.org>
@@ -23,50 +23,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for unwinding using the dwarf information in compat
-mode. Using the correct user stack pointer allows perf to record
-the frames correctly in the native and compat modes.
-
-Note that although the dwarf frame unwinding works ok using
-libunwind in native mode (on ARMv7 & ARMv8), some changes are
-required to the libunwind code for the compat mode. Those changes
-are posted separately on the libunwind mailing list.
-
-Tested on ARMv8 platform with v8 and compat v7 binaries, the latter
-are statically built.
+When profiling a 32-bit application, user space callchain unwinding
+using the frame pointer is performed in compat mode. The code is taken
+over from the AARCH32 code and adapted to work on AARCH64.
 
 Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
 ---
- arch/arm64/include/asm/compat.h | 2 +-
- arch/arm64/include/asm/ptrace.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/kernel/perf_event.c | 75 +++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 67 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
-index fda2704..e71f81f 100644
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -228,7 +228,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--#define compat_user_stack_pointer() (current_pt_regs()->compat_sp)
-+#define compat_user_stack_pointer() (user_stack_pointer(current_pt_regs()))
- 
- static inline void __user *arch_compat_alloc_user_space(long len)
- {
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index fbb0020..86d5b54 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -133,7 +133,7 @@ struct pt_regs {
- 	(!((regs)->pstate & PSR_F_BIT))
- 
- #define user_stack_pointer(regs) \
--	((regs)->sp)
-+	(!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index 5b1cd79..e868c72 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -1348,8 +1348,8 @@ early_initcall(init_hw_perf_events);
+  * Callchain handling code.
+  */
+ struct frame_tail {
+-	struct frame_tail   __user *fp;
+-	unsigned long	    lr;
++	struct frame_tail	__user *fp;
++	unsigned long		lr;
+ } __attribute__((packed));
  
  /*
-  * Are the current registers suitable for user mode? (used to maintain
+@@ -1386,22 +1386,80 @@ user_backtrace(struct frame_tail __user *tail,
+ 	return buftail.fp;
+ }
+ 
++/*
++ * The registers we're interested in are at the end of the variable
++ * length saved register structure. The fp points at the end of this
++ * structure so the address of this struct is:
++ * (struct compat_frame_tail *)(xxx->fp)-1
++ *
++ * This code has been adapted from the ARM OProfile support.
++ */
++struct compat_frame_tail {
++	compat_uptr_t	fp; /* a (struct compat_frame_tail *) in compat mode */
++	u32		sp;
++	u32		lr;
++} __attribute__((packed));
++
++static struct compat_frame_tail __user *
++compat_user_backtrace(struct compat_frame_tail __user *tail,
++		      struct perf_callchain_entry *entry)
++{
++	struct compat_frame_tail buftail;
++	unsigned long err;
++
++	/* Also check accessibility of one struct frame_tail beyond */
++	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
++		return NULL;
++
++	pagefault_disable();
++	err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
++	pagefault_enable();
++
++	if (err)
++		return NULL;
++
++	perf_callchain_store(entry, buftail.lr);
++
++	/*
++	 * Frame pointers should strictly progress back up the stack
++	 * (towards higher addresses).
++	 */
++	if (tail + 1 >= (struct compat_frame_tail __user *)
++			compat_ptr(buftail.fp))
++		return NULL;
++
++	return (struct compat_frame_tail __user *)compat_ptr(buftail.fp) - 1;
++}
++
+ void perf_callchain_user(struct perf_callchain_entry *entry,
+ 			 struct pt_regs *regs)
+ {
+-	struct frame_tail __user *tail;
+-
+ 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
+ 		/* We don't support guest os callchain now */
+ 		return;
+ 	}
+ 
+ 	perf_callchain_store(entry, regs->pc);
+-	tail = (struct frame_tail __user *)regs->regs[29];
+ 
+-	while (entry->nr < PERF_MAX_STACK_DEPTH &&
+-	       tail && !((unsigned long)tail & 0xf))
+-		tail = user_backtrace(tail, entry);
++	if (!compat_user_mode(regs)) {
++		/* AARCH64 mode */
++		struct frame_tail __user *tail;
++
++		tail = (struct frame_tail __user *)regs->regs[29];
++
++		while (entry->nr < PERF_MAX_STACK_DEPTH &&
++		       tail && !((unsigned long)tail & 0xf))
++			tail = user_backtrace(tail, entry);
++	} else {
++		/* AARCH32 compat mode */
++		struct compat_frame_tail __user *tail;
++
++		tail = (struct compat_frame_tail __user *)regs->compat_fp - 1;
++
++		while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
++			tail && !((unsigned long)tail & 0x3))
++			tail = compat_user_backtrace(tail, entry);
++	}
+ }
+ 
+ /*
+@@ -1429,6 +1487,7 @@ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 	frame.fp = regs->regs[29];
+ 	frame.sp = regs->sp;
+ 	frame.pc = regs->pc;
++
+ 	walk_stackframe(&frame, callchain_trace, entry);
+ }
+ 
 -- 
 1.7.11.7
 
