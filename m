@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaAVGyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:54:40 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34290 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285AbaAVGyb (ORCPT
+	id S1753744AbaAVG4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:56:21 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:17438
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750823AbaAVG4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:54:31 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: davem@davemloft.net
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] net/neighbour: queue work on power efficient wq
-Date: Wed, 22 Jan 2014 12:23:33 +0530
-Message-Id: <faa5b965e81fcb4c3261561e58a8ab1194ecf562.1390373223.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
-References: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
-In-Reply-To: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
-References: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+	Wed, 22 Jan 2014 01:56:20 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <robh+dt@kernel.org>, <grant.likely@linaro.org>
+CC: <panto@antoniou-consulting.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 1/2] of: add __of_add_property() without lock operations
+Date: Wed, 22 Jan 2014 13:57:39 +0800
+Message-ID: <1390370260-11273-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workqueue used in neighbour layer have no real dependency of scheduling these on
-the cpu which scheduled them.
+There two places will use the same code for adding one new property to
+the DT node. Adding __of_add_property() and prepare for fixing
+of_update_property()'s bug.
 
-On a idle system, it is observed that an idle cpu wakes up many times just to
-service this work. It would be better if we can schedule it on a cpu which the
-scheduler believes to be the most appropriate one.
-
-This patch replaces normal workqueues with power efficient versions. This
-doesn't change existing behavior of code unless CONFIG_WQ_POWER_EFFICIENT is
-enabled.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- net/core/neighbour.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/of/base.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index f8012fe..b9e9e0d 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -828,7 +828,7 @@ out:
- 	 * ARP entry timeouts range from 1/2 BASE_REACHABLE_TIME to 3/2
- 	 * BASE_REACHABLE_TIME.
- 	 */
--	schedule_delayed_work(&tbl->gc_work,
-+	queue_delayed_work(system_power_efficient_wq, &tbl->gc_work,
- 			      NEIGH_VAR(&tbl->parms, BASE_REACHABLE_TIME) >> 1);
- 	write_unlock_bh(&tbl->lock);
- }
-@@ -1565,7 +1565,8 @@ static void neigh_table_init_no_netlink(struct neigh_table *tbl)
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0e..b86b77a 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1469,11 +1469,31 @@ static int of_property_notify(int action, struct device_node *np,
+ #endif
  
- 	rwlock_init(&tbl->lock);
- 	INIT_DEFERRABLE_WORK(&tbl->gc_work, neigh_periodic_work);
--	schedule_delayed_work(&tbl->gc_work, tbl->parms.reachable_time);
-+	queue_delayed_work(system_power_efficient_wq, &tbl->gc_work,
-+			tbl->parms.reachable_time);
- 	setup_timer(&tbl->proxy_timer, neigh_proxy_process, (unsigned long)tbl);
- 	skb_queue_head_init_class(&tbl->proxy_queue,
- 			&neigh_table_proxy_queue_class);
+ /**
++ * __of_add_property - Add a property to a node without lock operations
++ */
++static int __of_add_property(struct device_node *np, struct property *prop)
++{
++	struct property **next;
++
++	prop->next = NULL;
++	next = &np->properties;
++	while (*next) {
++		if (strcmp(prop->name, (*next)->name) == 0)
++			/* duplicate ! don't insert it */
++			return -EEXIST;
++
++		next = &(*next)->next;
++	}
++	*next = prop;
++
++	return 0;
++}
++
++/**
+  * of_add_property - Add a property to a node
+  */
+ int of_add_property(struct device_node *np, struct property *prop)
+ {
+-	struct property **next;
+ 	unsigned long flags;
+ 	int rc;
+ 
+@@ -1481,27 +1501,17 @@ int of_add_property(struct device_node *np, struct property *prop)
+ 	if (rc)
+ 		return rc;
+ 
+-	prop->next = NULL;
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+-	next = &np->properties;
+-	while (*next) {
+-		if (strcmp(prop->name, (*next)->name) == 0) {
+-			/* duplicate ! don't insert it */
+-			raw_spin_unlock_irqrestore(&devtree_lock, flags);
+-			return -1;
+-		}
+-		next = &(*next)->next;
+-	}
+-	*next = prop;
++	rc = __of_add_property(np, prop);
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+ 
+ #ifdef CONFIG_PROC_DEVICETREE
+ 	/* try to add to proc as well if it was initialized */
+-	if (np->pde)
++	if (!rc && np->pde)
+ 		proc_device_tree_add_prop(np->pde, prop);
+ #endif /* CONFIG_PROC_DEVICETREE */
+ 
+-	return 0;
++	return rc;
+ }
+ 
+ /**
 -- 
-1.7.12.rc2.18.g61b472e
+1.8.4
+
 
