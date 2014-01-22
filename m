@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaAVUNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 15:13:38 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:13874 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755685AbaAVUNc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 15:13:32 -0500
-From: Chris Mason <clm@fb.com>
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Thread-Topic: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Thread-Index: AQHPFx61ZXTlm16UX0ihGnyWT2seDpqRAjIAgABNLACAAAa5AIAABq0AgAAFt4CAAB0+gIAABPgAgAALu4CAAALjgIAAAOYAgAAE/YCAAAFJgIAADiiAgAAFggCAAAbvgA==
-Date: Wed, 22 Jan 2014 20:13:20 +0000
-Message-ID: <1390421691.1198.43.camel@ret.masoncoding.com>
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
-	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
-	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
-	 <20140122151913.GY4963@suse.de>
-	 <1390410233.1198.7.camel@ret.masoncoding.com>
-	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
-	 <1390413819.1198.20.camel@ret.masoncoding.com>
-	 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
-	 <52E00B28.3060609@redhat.com>
-	 <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
-	 <52E0106B.5010604@redhat.com>
-	 <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>
-	 <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
-In-Reply-To: <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <4377FC09DDDAD244BD307A4929AD8592@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1756054AbaAVUQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:16:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41394 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711AbaAVUQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 15:16:23 -0500
+Date: Wed, 22 Jan 2014 21:16:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122201605.GU11314@laptop.programming.kicks-ass.net>
+References: <20140122120048.GB389@x4>
+ <20140122120757.GL31570@twins.programming.kicks-ass.net>
+ <20140122122609.GA392@x4>
+ <20140122123022.GN31570@twins.programming.kicks-ass.net>
+ <20140122131456.GA389@x4>
+ <52DFD50E.800@oracle.com>
+ <20140122183538.GA389@x4>
+ <20140122184253.GN30183@twins.programming.kicks-ass.net>
+ <20140122190905.GA391@x4>
+ <20140122191254.GA390@x4>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.997696947966296 urlsuspect_oldscore=0.997696947966296
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997696947966296 spamscore=0
- recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1401220146
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122191254.GA390@x4>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 11:50 -0800, Andrew Morton wrote:
-+AD4- On Wed, 22 Jan 2014 11:30:19 -0800 James Bottomley +ADw-James.Bottomley+AEA-hansenpartnership.com+AD4- wrote:
-+AD4- 
-+AD4- +AD4- But this, I think, is the fundamental point for debate.  If we can pull
-+AD4- +AD4- alignment and other tricks to solve 99+ACU- of the problem is there a need
-+AD4- +AD4- for radical VM surgery?  Is there anything coming down the pipe in the
-+AD4- +AD4- future that may move the devices ahead of the tricks?
-+AD4- 
-+AD4- I expect it would be relatively simple to get large blocksizes working
-+AD4- on powerpc with 64k PAGE+AF8-SIZE.  So before diving in and doing huge
-+AD4- amounts of work, perhaps someone can do a proof-of-concept on powerpc
-+AD4- (or ia64) with 64k blocksize.
+On Wed, Jan 22, 2014 at 08:12:54PM +0100, Markus Trippelsdorf wrote:
+> On 2014.01.22 at 20:09 +0100, Markus Trippelsdorf wrote:
+> > On 2014.01.22 at 19:42 +0100, Peter Zijlstra wrote:
+> > > On Wed, Jan 22, 2014 at 07:35:38PM +0100, Markus Trippelsdorf wrote:
+> > > 
+> > > > >FYI it happens on real hardware on my machine:
+> > > 
+> > > > >[   60.375384] process: using AMD E400 aware idle routine
+> > > 
+> > > > But this is a different issue. I've bisected it to:
+> > > > 
+> > > > commit 20d1c86a57762f0a33a78988e3fc8818316badd4
+> > > > Author: Peter Zijlstra <peterz@infradead.org>
+> > > > Date:   Fri Nov 29 15:40:29 2013 +0100
+> > > > 
+> > > >     sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs
+> > > > 
+> > > > Reverting the commit "fixes" the issue:
+> > > 
+> > > Hurm..
+> > 
+> > Turns out the fix is simple:
+> 
+> No. It isn't. I've tested the wrong kernel. Please ignore.
 
+I think its the right region to look through. My current suspect is the
+linear continuity fit with the initial 'random' multiplier.
 
-Maybe 5 drives in raid5 on MD, with 4K coming from each drive.  Well
-aligned 16K IO will work, everything else will about the same as a rmw
-from a single drive.
+That initial 'random' multiplier can get us quite high, and we'll fit
+the function to match that but continue at a sane rate.
 
--chris
+I'll try and prod a little more later this evening as time permits.
+
 
