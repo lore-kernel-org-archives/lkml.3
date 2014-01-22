@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaAVA1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 19:27:02 -0500
-Received: from ozlabs.org ([203.10.76.45]:45298 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872AbaAVA06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 19:26:58 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 31/73] module: relocate module_init from init.h to module.h
-In-Reply-To: <1390339396-3479-32-git-send-email-paul.gortmaker@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-32-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 22 Jan 2014 10:46:06 +1030
-Message-ID: <87ha8w50s9.fsf@rustcorp.com.au>
+	id S1754221AbaAVAb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 19:31:59 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:39103 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395AbaAVAb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 19:31:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <52DE9BB0.5070909@hp.com>
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
+	<1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
+	<20140120150316.GG30183@twins.programming.kicks-ass.net>
+	<52DE9410.6090500@hp.com>
+	<20140121153958.GA31570@twins.programming.kicks-ass.net>
+	<52DE9BB0.5070909@hp.com>
+Date: Tue, 21 Jan 2014 16:31:56 -0800
+X-Google-Sender-Auth: bKZ0SqAWKm0T5lGiojA2oXCD-8c
+Message-ID: <CA+55aFzyww_kwU36jYk=LUtxzPUU76xgnQEOUTqGMFNe80sOZA@mail.gmail.com>
+Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger than
+ long as atomic in x86
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> writes:
-> Modular users will always be users of init functionality, but
-> users of init functionality are not necessarily always modules.
+On Tue, Jan 21, 2014 at 8:09 AM, Waiman Long <waiman.long@hp.com> wrote:
 >
-> Hence any functionality like module_init and module_exit would
-> be more at home in the module.h file.  And module.h should
-> explicitly include init.h to make the dependency clear.
+> include/linux/compiler.h:
 >
-> We've already done all the legwork needed to ensure that this
-> move does not cause any build regressions due to implicit
-> header file include assumptions about where module_init lives.
->
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> #ifndef __native_word
+> # ifdef __arch_native_word(t)
+> #  define __native_word(t)      __arch_native_word(t)
+> # else
+> #  define __native_word(t) (sizeof(t) == sizeof(int) || sizeof(t) == siizeof(long))
+> # endif
+> #endif
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Do we even really need this?
 
-Want to delete the extraneous semicolons, for bonus points? :)
+I'd suggest removing it entirely. You might want to retain the whole
 
-> +#define module_init(x)	__initcall(x);
-...
-> +#define module_exit(x)	__exitcall(x);
+  compiletime_assert_atomic_type()
 
-Cheers,
-Rusty.
+thing on purely the alpha side, but then it's all inside just the
+alpha code, without any need for this "native_word" thing.
+
+And if somebody tries to do a "smp_store_release()" on a random
+structure or union, do we care? We're not some nanny state that wants
+to give nice warnings for insane code.
+
+              Linus
