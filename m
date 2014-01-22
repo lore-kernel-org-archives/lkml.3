@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaAVJjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 04:39:01 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:56107 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaAVJiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 04:38:55 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Leilei Zhao <leilei.zhao@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] tty/serial: atmel_serial: remove dev_dbg in atmel_set_termios
-Date: Wed, 22 Jan 2014 10:38:52 +0100
-Message-ID: <1390383532-2600-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	id S1754996AbaAVJlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 04:41:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59741 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754804AbaAVJk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 04:40:58 -0500
+Date: Wed, 22 Jan 2014 09:40:53 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC] restore user defined min_free_kbytes when disabling thp
+Message-ID: <20140122094053.GT4963@suse.de>
+References: <20140121093859.GA7546@localhost.localdomain>
+ <20140121102351.GD4963@suse.de>
+ <20140122060506.GA2657@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140122060506.GA2657@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a driver bug which stopped the whole system (in case
-of serial console).
-This log message is not useful anyway as this information is
-printed elsewhere.
+On Wed, Jan 22, 2014 at 02:05:06PM +0800, Han Pingtian wrote:
+> On Tue, Jan 21, 2014 at 10:23:51AM +0000, Mel Gorman wrote:
+> > On Tue, Jan 21, 2014 at 05:38:59PM +0800, Han Pingtian wrote:
+> > > The testcase 'thp04' of LTP will enable THP, do some testing, then
+> > > disable it if it wasn't enabled. But this will leave a different value
+> > > of min_free_kbytes if it has been set by admin. So I think it's better
+> > > to restore the user defined value after disabling THP.
+> > > 
+> > 
+> > Then have LTP record what min_free_kbytes was at the same time THP was
+> > enabled by the test and restore both settings. It leaves a window where
+> > an admin can set an alternative value during the test but that would also
+> > invalidate the test in same cases and gets filed under "don't do that".
+> > 
+> 
+> Because the value is changed in kernel, so it would be better to 
+> restore it in kernel, right? :)  I have a v2 patch which will restore
+> the value only if it isn't set again by user after THP's initialization.
+> This v2 patch is dependent on the patch 'mm: show message when updating
+> min_free_kbytes in thp' which has been added to -mm tree, can be found
+> here:
+> 
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/tty/serial/atmel_serial.c | 3 ---
- 1 file changed, 3 deletions(-)
+It still feels like the type of scenario that only shows up during tests
+that modify kernel parameters as part of the test. I do not consider it
+normal operation for THP to be enabled and disabled multiple types during
+the lifetime of the system. If the system started with THP disabled, ran
+for a long period of time then the benefit of having min_free_kbytes at
+a higher value is already lost due to the system being potentially in a
+fragmented state already.
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index a49f10d269b2..3d7206fc532f 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1853,13 +1853,10 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
- 	mode &= ~ATMEL_US_USMODE;
- 
- 	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
--		dev_dbg(port->dev, "Setting UART to RS485\n");
- 		if ((atmel_port->rs485.delay_rts_after_send) > 0)
- 			UART_PUT_TTGR(port,
- 					atmel_port->rs485.delay_rts_after_send);
- 		mode |= ATMEL_US_USMODE_RS485;
--	} else {
--		dev_dbg(port->dev, "Setting UART to RS232\n");
- 	}
- 
- 	/* set the parity, stop bits and data size */
+I'm ok with the warning being displayed if min_free_kbytes is updated
+but I'm not convinced that further trickery is necessary.
+
 -- 
-1.8.2.2
-
+Mel Gorman
+SUSE Labs
