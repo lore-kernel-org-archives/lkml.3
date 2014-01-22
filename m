@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbaAVWRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:17:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34907 "EHLO mga02.intel.com"
+	id S1755795AbaAVWT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:19:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310AbaAVWRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:17:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,702,1384329600"; 
-   d="scan'208";a="470960395"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] x86: intel-mid: add missing 'void' to functions without arguments
-Date: Wed, 22 Jan 2014 14:22:49 -0800
-Message-Id: <1390429369-13761-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <52E0404E.4010403@linux.intel.com>
-References: <52E0404E.4010403@linux.intel.com>
+	id S1751784AbaAVWTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 17:19:55 -0500
+Date: Wed, 22 Jan 2014 23:19:41 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mike Rapoport <mike.rapoport@ravellosystems.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Haggai Eran <haggaie@mellanox.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] mm/mmu_notifier: restore set_pte_at_notify semantics
+Message-ID: <20140122221941.GJ14193@redhat.com>
+References: <1389778834-21200-1-git-send-email-mike.rapoport@ravellosystems.com>
+ <20140122135459.120a50ecec95d0e3cf017586@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122135459.120a50ecec95d0e3cf017586@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing 'void' to functions that doesn't receive
-arguments.
+On Wed, Jan 22, 2014 at 01:54:59PM -0800, Andrew Morton wrote:
+> The changelog fails to describe the end-user visible effects of the
+> bug, so I (and others) will be unable to decide which kernel versions
+> need patching
+> 
+> Given that the bug has been around for 1.5 years I assume the priority
+> is low.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
+The priority is low, it's about a performance optimization
+only.
 
-Hi,
+change_pte avoids a vmexit when the guest first access the page after
+a KSM cow break, or after a KSM merge.
 
-Please, apply on top of Paul Gortmaker's patches:
-[PATCH v2] x86: don't introduce more __cpuinit users in intel_mid_weak_decls.h
-[PATCH] x86: don't add new __cpuinit users to Merrifield platform code
+But the change_pte method become worthless, it was still called but it
+did nothing with the current common code in memory.c and ksm.c.
 
-Br, David
+In the old days KVM would call gup_fast(write=1). These days write=1
+is not forced always on and a secondary MMU read fault calls gup_fast
+with write=0. So in the old days without a fully functional change_pte
+invocation, KSM merged pages could never be read from the guest
+without first breaking them with a COW. So it would have been a
+showstopper if change_pte wouldn't work.
 
----
- arch/x86/platform/intel-mid/mfld.c | 6 +++---
- arch/x86/platform/intel-mid/mrfl.c | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+These days the KVM secondary MMU page fault handler become more
+advanced and it's just a vmexit optimization.
 
-diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
-index 88b06fcf9959..23381d2174ae 100644
---- a/arch/x86/platform/intel-mid/mfld.c
-+++ b/arch/x86/platform/intel-mid/mfld.c
-@@ -58,18 +58,18 @@ static unsigned long __init mfld_calibrate_tsc(void)
- 	return 0;
- }
- 
--static void __init penwell_arch_setup()
-+static void __init penwell_arch_setup(void)
- {
- 	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
- 	pm_power_off = mfld_power_off;
- }
- 
--void *get_penwell_ops()
-+void *get_penwell_ops(void)
- {
- 	return &penwell_ops;
- }
- 
--void *get_cloverview_ops()
-+void *get_cloverview_ops(void)
- {
- 	return &penwell_ops;
- }
-diff --git a/arch/x86/platform/intel-mid/mrfl.c b/arch/x86/platform/intel-mid/mrfl.c
-index 28b636a21887..aaca91753d32 100644
---- a/arch/x86/platform/intel-mid/mrfl.c
-+++ b/arch/x86/platform/intel-mid/mrfl.c
-@@ -97,7 +97,7 @@ static struct intel_mid_ops tangier_ops = {
- 	.arch_setup = tangier_arch_setup,
- };
- 
--void *get_tangier_ops()
-+void *get_tangier_ops(void)
- {
- 	return &tangier_ops;
- }
--- 
-1.8.4.2
+> Generally, the patch is really ugly :( We have a nice consistent and
 
+It would get even uglier once we'd fix the problem Haggai pointed out
+in another email on this thread, by keeping the pte wrprotected until
+we call the mmu_notifier invalidate and in short doing 1 more TLB
+flush to convert it to a writable pte, if the change_pte method wasn't
+implemented for some registered mmu notifier for the mm.
+
+That problem isn't the end of the world and is fixable but the
+do_wp_page code gets even more hairy after fixing it with this
+approach.
+
+> symmetrical pattern of calling
+> ->invalidate_range_start()/->invalidate_range_end() and this patch
+> comes along and tears great holes in it by removing those calls from a
+> subset of places and replacing them with open-coded calls to
+> single-page ->invalidate_page().  Isn't there some (much) nicer way of
+> doing all this?
+
+The fundamental problem is that change_pte acts only on established on
+secondary MMU mappings. So if we teardown the secondary mmu mappings
+with invalidate_range_start, we can as well skip calling change_pte in
+set_pte_at_notify, and just use set_pte_at instead.
+
+Something must be done about it because current code just doesn't make
+sense to keep as is.
+
+Possible choices:
+
+1) we drop change_pte completely (not fully evaluated the impact vs
+   current production code where change_pte was in full effect and
+   skipping some vmexit with KSM activity). It won't be slower than
+   current upstream, it may be slower than current production code
+   with KSM in usage. We need to benchmark it to see if it's
+   measurable...
+
+2) we fix it with this patch, plus adding a further step to keep the
+   pte wrprotected until we flush the secondary mmu mapping.
+
+3) we change the semantics of ->change_pte not to just change, but to
+   establish not-existent secondary mmu mappings. So far the only way
+   to establish secondary mmu mappings would have been outside of the
+   mmu notifier, through regular secondary MMU page faults invoking
+   gup_fast or one of the gup variants. That may be tricky as
+   change_pte must be non blocking so it cannot reliably allocate
+   memory.
+
+Comments welcome,
+Andrea
