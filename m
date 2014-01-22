@@ -1,206 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaAVPsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:48:05 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:64651 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756030AbaAVPsA (ORCPT
+	id S1752874AbaAVPxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:53:42 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50263 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070AbaAVPxi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:48:00 -0500
+	Wed, 22 Jan 2014 10:53:38 -0500
+Date: Wed, 22 Jan 2014 15:53:31 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
+Subject: Re: [PATCH 10/20] ARM64 / ACPI: Enumerate possible/present CPU set
+ and map logical cpu id to APIC id
+Message-ID: <20140122155331.GD24288@e102568-lin.cambridge.arm.com>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+ <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAK2H+eeihXmxcaupmiXLLRbsbMKiaRT52sxWLX_p3EBFJVuiyA@mail.gmail.com>
-References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-	<CAH=mFZzmcp5amS-JsNApWiwgYqs70M==FUA6KoxH+oLdbZihcg@mail.gmail.com>
-	<CAK2H+ee8MgXdm3eTzrkvo=R-=8U_0LOmEAKMnKga8KU04jmgCg@mail.gmail.com>
-	<CAH=mFZzLEQ5MAAmwB3tdcM+DxWQho9C6h1Ho7NhKe6JMnOhyVg@mail.gmail.com>
-	<CAK2H+eeihXmxcaupmiXLLRbsbMKiaRT52sxWLX_p3EBFJVuiyA@mail.gmail.com>
-Date: Wed, 22 Jan 2014 21:17:56 +0530
-Message-ID: <CAH=mFZwtOiTZvOd0_iezcYG+dL=mdxspECUmVeQq6e684sjKqg@mail.gmail.com>
-Subject: Re: Help Needed
-From: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c129da7bd83d04f0910c83
+In-Reply-To: <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Jan 2014 15:53:32.0919 (UTC) FILETIME=[1A2E2070:01CF178A]
+X-MC-Unique: 114012215533506301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c129da7bd83d04f0910c83
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, Jan 17, 2014 at 12:25:04PM +0000, Hanjun Guo wrote:
 
-I have attached the boot directory contents, /boot/grub/grub.cfg and
-/etc/default/grub contents. Also attached the mount points on the
-system.
+[...]
 
-On Wed, Jan 22, 2014 at 8:39 PM, Mark Knecht <markknecht@gmail.com> wrote:
-> On Wed, Jan 22, 2014 at 7:05 AM, Madhusudhan Rao Sripalle
-> <madhu.sripalle@gmail.com> wrote:
->> The grub file is /boot/grub/grub.cfg. The newly built kernel is
->> reflected in grub.cfg. But, the grub doesn't display this new kernel
->> at the boot time. I tried few tips from the web. It is no help. That
->> is why I sought help from this forum.
->
-> You have not provided enough information for anyone to help you very
-> much. Show  things like the contents of /boot, your grub config file,
-> etc., and maybe we'll see the mistake you're making.
->
-> Good luck,
-> Mark
+> +/* map logic cpu id to physical GIC id */
+> +extern int arm_cpu_to_apicid[NR_CPUS];
+> +#define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
 
---001a11c129da7bd83d04f0910c83
-Content-Type: application/octet-stream; name="help_seek.output"
-Content-Disposition: attachment; filename="help_seek.output"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqqrivcn0
+Sudeep already commented on this, please update it accordingly.
 
-CgokbHMgL2Jvb3QKCmFiaS0zLjIuMC0yMy1nZW5lcmljCmNvbmZpZy0zLjExLjEwc3VwZXJoZXJv
-CmNvbmZpZy0zLjExLjEwc3VwZXJoZXJvLm9sZApjb25maWctMy4yLjAtMjMtZ2VuZXJpYwpncnVi
-CmluaXRyZC5pbWctMy4xMS4xMHN1cGVyaGVybwppbml0cmQuaW1nLTMuMi4wLTIzLWdlbmVyaWMK
-bWVtdGVzdDg2Ky5iaW4KbWVtdGVzdDg2K19tdWx0aWJvb3QuYmluClN5c3RlbS5tYXAtMy4xMS4x
-MHN1cGVyaGVybwpTeXN0ZW0ubWFwLTMuMTEuMTBzdXBlcmhlcm8ub2xkClN5c3RlbS5tYXAtMy4y
-LjAtMjMtZ2VuZXJpYwp2bWxpbnV6LTMuMTEuMTBzdXBlcmhlcm8Kdm1saW51ei0zLjExLjEwc3Vw
-ZXJoZXJvLm9sZAp2bWxpbnV6LTMuMi4wLTIzLWdlbmVyaWMKCgoKJGRmCgpGaWxlc3lzdGVtICAg
-ICAxSy1ibG9ja3MgICAgIFVzZWQgQXZhaWxhYmxlIFVzZSUgTW91bnRlZCBvbgovZGV2L3NkYTUg
-ICAgICAzNzUyODk0NTYgNTM1NjA0MDQgMzAyOTQzNzcyICAxNiUgLwp1ZGV2ICAgICAgICAgICAg
-ICA5ODI1NDggICAgICAgMTIgICAgOTgyNTM2ICAgMSUgL2Rldgp0bXBmcyAgICAgICAgICAgICAz
-OTY1MzYgICAgICA4MzYgICAgMzk1NzAwICAgMSUgL3J1bgpub25lICAgICAgICAgICAgICAgIDUx
-MjAgICAgICAgIDAgICAgICA1MTIwICAgMCUgL3J1bi9sb2NrCm5vbmUgICAgICAgICAgICAgIDk5
-MTMzMiAgICAgIDE1NiAgICA5OTExNzYgICAxJSAvcnVuL3NobQojCgojCiMgRmlsZTogL2Jvb3Qv
-Z3J1Yi9ncnViLmNmZwojCiMgRE8gTk9UIEVESVQgVEhJUyBGSUxFCiMKIwojIEl0IGlzIGF1dG9t
-YXRpY2FsbHkgZ2VuZXJhdGVkIGJ5IGdydWItbWtjb25maWcgdXNpbmcgdGVtcGxhdGVzCiMgZnJv
-bSAvZXRjL2dydWIuZCBhbmQgc2V0dGluZ3MgZnJvbSAvZXRjL2RlZmF1bHQvZ3J1YgojCgojIyMg
-QkVHSU4gL2V0Yy9ncnViLmQvMDBfaGVhZGVyICMjIwppZiBbIC1zICRwcmVmaXgvZ3J1YmVudiBd
-OyB0aGVuCiAgc2V0IGhhdmVfZ3J1YmVudj10cnVlCiAgbG9hZF9lbnYKZmkKc2V0IGRlZmF1bHQ9
-IjAiCmlmIFsgIiR7cHJldl9zYXZlZF9lbnRyeX0iIF07IHRoZW4KICBzZXQgc2F2ZWRfZW50cnk9
-IiR7cHJldl9zYXZlZF9lbnRyeX0iCiAgc2F2ZV9lbnYgc2F2ZWRfZW50cnkKICBzZXQgcHJldl9z
-YXZlZF9lbnRyeT0KICBzYXZlX2VudiBwcmV2X3NhdmVkX2VudHJ5CiAgc2V0IGJvb3Rfb25jZT10
-cnVlCmZpCgpmdW5jdGlvbiBzYXZlZGVmYXVsdCB7CiAgaWYgWyAteiAiJHtib290X29uY2V9IiBd
-OyB0aGVuCiAgICBzYXZlZF9lbnRyeT0iJHtjaG9zZW59IgogICAgc2F2ZV9lbnYgc2F2ZWRfZW50
-cnkKICBmaQp9CgpmdW5jdGlvbiByZWNvcmRmYWlsIHsKICBzZXQgcmVjb3JkZmFpbD0xCiAgaWYg
-WyAtbiAiJHtoYXZlX2dydWJlbnZ9IiBdOyB0aGVuIGlmIFsgLXogIiR7Ym9vdF9vbmNlfSIgXTsg
-dGhlbiBzYXZlX2VudiByZWNvcmRmYWlsOyBmaTsgZmkKfQoKZnVuY3Rpb24gbG9hZF92aWRlbyB7
-CiAgaW5zbW9kIHZiZQogIGluc21vZCB2Z2EKICBpbnNtb2QgdmlkZW9fYm9jaHMKICBpbnNtb2Qg
-dmlkZW9fY2lycnVzCn0KCmluc21vZCBwYXJ0X21zZG9zCmluc21vZCBleHQyCnNldCByb290PSco
-aGQwLG1zZG9zNSknCnNlYXJjaCAtLW5vLWZsb3BweSAtLWZzLXV1aWQgLS1zZXQ9cm9vdCA3MzJh
-ZTdhYi00NjgxLTQ5NjktYWI3Mi00Yzg0NDk0ODM4MjkKaWYgbG9hZGZvbnQgL3Vzci9zaGFyZS9n
-cnViL3VuaWNvZGUucGYyIDsgdGhlbgogIHNldCBnZnhtb2RlPWF1dG8KICBsb2FkX3ZpZGVvCiAg
-aW5zbW9kIGdmeHRlcm0KICBpbnNtb2QgcGFydF9tc2RvcwogIGluc21vZCBleHQyCiAgc2V0IHJv
-b3Q9JyhoZDAsbXNkb3M1KScKICBzZWFyY2ggLS1uby1mbG9wcHkgLS1mcy11dWlkIC0tc2V0PXJv
-b3QgNzMyYWU3YWItNDY4MS00OTY5LWFiNzItNGM4NDQ5NDgzODI5CiAgc2V0IGxvY2FsZV9kaXI9
-KCRyb290KS9ib290L2dydWIvbG9jYWxlCiAgc2V0IGxhbmc9ZW5fSU4KICBpbnNtb2QgZ2V0dGV4
-dApmaQp0ZXJtaW5hbF9vdXRwdXQgZ2Z4dGVybQppZiBbICIke3JlY29yZGZhaWx9IiA9IDEgXTsg
-dGhlbgogIHNldCB0aW1lb3V0PS0xCmVsc2UKICBzZXQgdGltZW91dD0xMApmaQojIyMgRU5EIC9l
-dGMvZ3J1Yi5kLzAwX2hlYWRlciAjIyMKCiMjIyBCRUdJTiAvZXRjL2dydWIuZC8wNV9kZWJpYW5f
-dGhlbWUgIyMjCnNldCBtZW51X2NvbG9yX25vcm1hbD13aGl0ZS9ibGFjawpzZXQgbWVudV9jb2xv
-cl9oaWdobGlnaHQ9YmxhY2svbGlnaHQtZ3JheQppZiBiYWNrZ3JvdW5kX2NvbG9yIDQ0LDAsMzA7
-IHRoZW4KICBjbGVhcgpmaQojIyMgRU5EIC9ldGMvZ3J1Yi5kLzA1X2RlYmlhbl90aGVtZSAjIyMK
-CiMjIyBCRUdJTiAvZXRjL2dydWIuZC8xMF9saW51eCAjIyMKZnVuY3Rpb24gZ2Z4bW9kZSB7Cglz
-ZXQgZ2Z4cGF5bG9hZD0iJDEiCglpZiBbICIkMSIgPSAia2VlcCIgXTsgdGhlbgoJCXNldCB2dF9o
-YW5kb2ZmPXZ0LmhhbmRvZmY9NwoJZWxzZQoJCXNldCB2dF9oYW5kb2ZmPQoJZmkKfQppZiBbICR7
-cmVjb3JkZmFpbH0gIT0gMSBdOyB0aGVuCiAgaWYgWyAtZSAke3ByZWZpeH0vZ2Z4YmxhY2tsaXN0
-LnR4dCBdOyB0aGVuCiAgICBpZiBod21hdGNoICR7cHJlZml4fS9nZnhibGFja2xpc3QudHh0IDM7
-IHRoZW4KICAgICAgaWYgWyAke21hdGNofSA9IDAgXTsgdGhlbgogICAgICAgIHNldCBsaW51eF9n
-ZnhfbW9kZT1rZWVwCiAgICAgIGVsc2UKICAgICAgICBzZXQgbGludXhfZ2Z4X21vZGU9dGV4dAog
-ICAgICBmaQogICAgZWxzZQogICAgICBzZXQgbGludXhfZ2Z4X21vZGU9dGV4dAogICAgZmkKICBl
-bHNlCiAgICBzZXQgbGludXhfZ2Z4X21vZGU9a2VlcAogIGZpCmVsc2UKICBzZXQgbGludXhfZ2Z4
-X21vZGU9dGV4dApmaQpleHBvcnQgbGludXhfZ2Z4X21vZGUKaWYgWyAiJGxpbnV4X2dmeF9tb2Rl
-IiAhPSAidGV4dCIgXTsgdGhlbiBsb2FkX3ZpZGVvOyBmaQptZW51ZW50cnkgJ1VidW50dSwgd2l0
-aCBMaW51eCAzLjExLjEwc3VwZXJoZXJvJyAtLWNsYXNzIHVidW50dSAtLWNsYXNzIGdudS1saW51
-eCAtLWNsYXNzIGdudSAtLWNsYXNzIG9zIHsKCXJlY29yZGZhaWwKCWdmeG1vZGUgJGxpbnV4X2dm
-eF9tb2RlCglpbnNtb2QgZ3ppbwoJaW5zbW9kIHBhcnRfbXNkb3MKCWluc21vZCBleHQyCglzZXQg
-cm9vdD0nKGhkMCxtc2RvczUpJwoJc2VhcmNoIC0tbm8tZmxvcHB5IC0tZnMtdXVpZCAtLXNldD1y
-b290IDczMmFlN2FiLTQ2ODEtNDk2OS1hYjcyLTRjODQ0OTQ4MzgyOQoJbGludXgJL2Jvb3Qvdm1s
-aW51ei0zLjExLjEwc3VwZXJoZXJvIHJvb3Q9VVVJRD03MzJhZTdhYi00NjgxLTQ5NjktYWI3Mi00
-Yzg0NDk0ODM4Mjkgcm8gICBxdWlldCBzcGxhc2ggJHZ0X2hhbmRvZmYKCWluaXRyZAkvYm9vdC9p
-bml0cmQuaW1nLTMuMTEuMTBzdXBlcmhlcm8KfQptZW51ZW50cnkgJ1VidW50dSwgd2l0aCBMaW51
-eCAzLjExLjEwc3VwZXJoZXJvIChyZWNvdmVyeSBtb2RlKScgLS1jbGFzcyB1YnVudHUgLS1jbGFz
-cyBnbnUtbGludXggLS1jbGFzcyBnbnUgLS1jbGFzcyBvcyB7CglyZWNvcmRmYWlsCglpbnNtb2Qg
-Z3ppbwoJaW5zbW9kIHBhcnRfbXNkb3MKCWluc21vZCBleHQyCglzZXQgcm9vdD0nKGhkMCxtc2Rv
-czUpJwoJc2VhcmNoIC0tbm8tZmxvcHB5IC0tZnMtdXVpZCAtLXNldD1yb290IDczMmFlN2FiLTQ2
-ODEtNDk2OS1hYjcyLTRjODQ0OTQ4MzgyOQoJZWNobwknTG9hZGluZyBMaW51eCAzLjExLjEwc3Vw
-ZXJoZXJvIC4uLicKCWxpbnV4CS9ib290L3ZtbGludXotMy4xMS4xMHN1cGVyaGVybyByb290PVVV
-SUQ9NzMyYWU3YWItNDY4MS00OTY5LWFiNzItNGM4NDQ5NDgzODI5IHJvIHJlY292ZXJ5IG5vbW9k
-ZXNldCAKCWVjaG8JJ0xvYWRpbmcgaW5pdGlhbCByYW1kaXNrIC4uLicKCWluaXRyZAkvYm9vdC9p
-bml0cmQuaW1nLTMuMTEuMTBzdXBlcmhlcm8KfQpzdWJtZW51ICJQcmV2aW91cyBMaW51eCB2ZXJz
-aW9ucyIgewptZW51ZW50cnkgJ1VidW50dSwgd2l0aCBMaW51eCAzLjExLjEwc3VwZXJoZXJvLm9s
-ZCcgLS1jbGFzcyB1YnVudHUgLS1jbGFzcyBnbnUtbGludXggLS1jbGFzcyBnbnUgLS1jbGFzcyBv
-cyB7CglyZWNvcmRmYWlsCglnZnhtb2RlICRsaW51eF9nZnhfbW9kZQoJaW5zbW9kIGd6aW8KCWlu
-c21vZCBwYXJ0X21zZG9zCglpbnNtb2QgZXh0MgoJc2V0IHJvb3Q9JyhoZDAsbXNkb3M1KScKCXNl
-YXJjaCAtLW5vLWZsb3BweSAtLWZzLXV1aWQgLS1zZXQ9cm9vdCA3MzJhZTdhYi00NjgxLTQ5Njkt
-YWI3Mi00Yzg0NDk0ODM4MjkKCWxpbnV4CS9ib290L3ZtbGludXotMy4xMS4xMHN1cGVyaGVyby5v
-bGQgcm9vdD1VVUlEPTczMmFlN2FiLTQ2ODEtNDk2OS1hYjcyLTRjODQ0OTQ4MzgyOSBybyAgIHF1
-aWV0IHNwbGFzaCAkdnRfaGFuZG9mZgoJaW5pdHJkCS9ib290L2luaXRyZC5pbWctMy4xMS4xMHN1
-cGVyaGVybwp9Cm1lbnVlbnRyeSAnVWJ1bnR1LCB3aXRoIExpbnV4IDMuMTEuMTBzdXBlcmhlcm8u
-b2xkIChyZWNvdmVyeSBtb2RlKScgLS1jbGFzcyB1YnVudHUgLS1jbGFzcyBnbnUtbGludXggLS1j
-bGFzcyBnbnUgLS1jbGFzcyBvcyB7CglyZWNvcmRmYWlsCglpbnNtb2QgZ3ppbwoJaW5zbW9kIHBh
-cnRfbXNkb3MKCWluc21vZCBleHQyCglzZXQgcm9vdD0nKGhkMCxtc2RvczUpJwoJc2VhcmNoIC0t
-bm8tZmxvcHB5IC0tZnMtdXVpZCAtLXNldD1yb290IDczMmFlN2FiLTQ2ODEtNDk2OS1hYjcyLTRj
-ODQ0OTQ4MzgyOQoJZWNobwknTG9hZGluZyBMaW51eCAzLjExLjEwc3VwZXJoZXJvLm9sZCAuLi4n
-CglsaW51eAkvYm9vdC92bWxpbnV6LTMuMTEuMTBzdXBlcmhlcm8ub2xkIHJvb3Q9VVVJRD03MzJh
-ZTdhYi00NjgxLTQ5NjktYWI3Mi00Yzg0NDk0ODM4Mjkgcm8gcmVjb3Zlcnkgbm9tb2Rlc2V0IAoJ
-ZWNobwknTG9hZGluZyBpbml0aWFsIHJhbWRpc2sgLi4uJwoJaW5pdHJkCS9ib290L2luaXRyZC5p
-bWctMy4xMS4xMHN1cGVyaGVybwp9Cm1lbnVlbnRyeSAnVWJ1bnR1LCB3aXRoIExpbnV4IDMuMi4w
-LTIzLWdlbmVyaWMnIC0tY2xhc3MgdWJ1bnR1IC0tY2xhc3MgZ251LWxpbnV4IC0tY2xhc3MgZ251
-IC0tY2xhc3Mgb3MgewoJcmVjb3JkZmFpbAoJZ2Z4bW9kZSAkbGludXhfZ2Z4X21vZGUKCWluc21v
-ZCBnemlvCglpbnNtb2QgcGFydF9tc2RvcwoJaW5zbW9kIGV4dDIKCXNldCByb290PScoaGQwLG1z
-ZG9zNSknCglzZWFyY2ggLS1uby1mbG9wcHkgLS1mcy11dWlkIC0tc2V0PXJvb3QgNzMyYWU3YWIt
-NDY4MS00OTY5LWFiNzItNGM4NDQ5NDgzODI5CglsaW51eAkvYm9vdC92bWxpbnV6LTMuMi4wLTIz
-LWdlbmVyaWMgcm9vdD1VVUlEPTczMmFlN2FiLTQ2ODEtNDk2OS1hYjcyLTRjODQ0OTQ4MzgyOSBy
-byAgIHF1aWV0IHNwbGFzaCAkdnRfaGFuZG9mZgoJaW5pdHJkCS9ib290L2luaXRyZC5pbWctMy4y
-LjAtMjMtZ2VuZXJpYwp9Cm1lbnVlbnRyeSAnVWJ1bnR1LCB3aXRoIExpbnV4IDMuMi4wLTIzLWdl
-bmVyaWMgKHJlY292ZXJ5IG1vZGUpJyAtLWNsYXNzIHVidW50dSAtLWNsYXNzIGdudS1saW51eCAt
-LWNsYXNzIGdudSAtLWNsYXNzIG9zIHsKCXJlY29yZGZhaWwKCWluc21vZCBnemlvCglpbnNtb2Qg
-cGFydF9tc2RvcwoJaW5zbW9kIGV4dDIKCXNldCByb290PScoaGQwLG1zZG9zNSknCglzZWFyY2gg
-LS1uby1mbG9wcHkgLS1mcy11dWlkIC0tc2V0PXJvb3QgNzMyYWU3YWItNDY4MS00OTY5LWFiNzIt
-NGM4NDQ5NDgzODI5CgllY2hvCSdMb2FkaW5nIExpbnV4IDMuMi4wLTIzLWdlbmVyaWMgLi4uJwoJ
-bGludXgJL2Jvb3Qvdm1saW51ei0zLjIuMC0yMy1nZW5lcmljIHJvb3Q9VVVJRD03MzJhZTdhYi00
-NjgxLTQ5NjktYWI3Mi00Yzg0NDk0ODM4Mjkgcm8gcmVjb3Zlcnkgbm9tb2Rlc2V0IAoJZWNobwkn
-TG9hZGluZyBpbml0aWFsIHJhbWRpc2sgLi4uJwoJaW5pdHJkCS9ib290L2luaXRyZC5pbWctMy4y
-LjAtMjMtZ2VuZXJpYwp9Cn0KIyMjIEVORCAvZXRjL2dydWIuZC8xMF9saW51eCAjIyMKCiMjIyBC
-RUdJTiAvZXRjL2dydWIuZC8yMF9saW51eF94ZW4gIyMjCiMjIyBFTkQgL2V0Yy9ncnViLmQvMjBf
-bGludXhfeGVuICMjIwoKIyMjIEJFR0lOIC9ldGMvZ3J1Yi5kLzIwX21lbXRlc3Q4NisgIyMjCm1l
-bnVlbnRyeSAiTWVtb3J5IHRlc3QgKG1lbXRlc3Q4NispIiB7CglpbnNtb2QgcGFydF9tc2RvcwoJ
-aW5zbW9kIGV4dDIKCXNldCByb290PScoaGQwLG1zZG9zNSknCglzZWFyY2ggLS1uby1mbG9wcHkg
-LS1mcy11dWlkIC0tc2V0PXJvb3QgNzMyYWU3YWItNDY4MS00OTY5LWFiNzItNGM4NDQ5NDgzODI5
-CglsaW51eDE2CS9ib290L21lbXRlc3Q4NisuYmluCn0KbWVudWVudHJ5ICJNZW1vcnkgdGVzdCAo
-bWVtdGVzdDg2Kywgc2VyaWFsIGNvbnNvbGUgMTE1MjAwKSIgewoJaW5zbW9kIHBhcnRfbXNkb3MK
-CWluc21vZCBleHQyCglzZXQgcm9vdD0nKGhkMCxtc2RvczUpJwoJc2VhcmNoIC0tbm8tZmxvcHB5
-IC0tZnMtdXVpZCAtLXNldD1yb290IDczMmFlN2FiLTQ2ODEtNDk2OS1hYjcyLTRjODQ0OTQ4Mzgy
-OQoJbGludXgxNgkvYm9vdC9tZW10ZXN0ODYrLmJpbiBjb25zb2xlPXR0eVMwLDExNTIwMG44Cn0K
-IyMjIEVORCAvZXRjL2dydWIuZC8yMF9tZW10ZXN0ODYrICMjIwoKIyMjIEJFR0lOIC9ldGMvZ3J1
-Yi5kLzMwX29zLXByb2JlciAjIyMKaWYgWyAieCR7dGltZW91dH0iICE9ICJ4LTEiIF07IHRoZW4K
-ICBpZiBrZXlzdGF0dXM7IHRoZW4KICAgIGlmIGtleXN0YXR1cyAtLXNoaWZ0OyB0aGVuCiAgICAg
-IHNldCB0aW1lb3V0PS0xCiAgICBlbHNlCiAgICAgIHNldCB0aW1lb3V0PTAKICAgIGZpCiAgZWxz
-ZQogICAgaWYgc2xlZXAgLS1pbnRlcnJ1cHRpYmxlIDMgOyB0aGVuCiAgICAgIHNldCB0aW1lb3V0
-PTAKICAgIGZpCiAgZmkKZmkKIyMjIEVORCAvZXRjL2dydWIuZC8zMF9vcy1wcm9iZXIgIyMjCgoj
-IyMgQkVHSU4gL2V0Yy9ncnViLmQvNDBfY3VzdG9tICMjIwojIFRoaXMgZmlsZSBwcm92aWRlcyBh
-biBlYXN5IHdheSB0byBhZGQgY3VzdG9tIG1lbnUgZW50cmllcy4gIFNpbXBseSB0eXBlIHRoZQoj
-IG1lbnUgZW50cmllcyB5b3Ugd2FudCB0byBhZGQgYWZ0ZXIgdGhpcyBjb21tZW50LiAgQmUgY2Fy
-ZWZ1bCBub3QgdG8gY2hhbmdlCiMgdGhlICdleGVjIHRhaWwnIGxpbmUgYWJvdmUuCiMjIyBFTkQg
-L2V0Yy9ncnViLmQvNDBfY3VzdG9tICMjIwoKIyMjIEJFR0lOIC9ldGMvZ3J1Yi5kLzQxX2N1c3Rv
-bSAjIyMKaWYgWyAtZiAgJHByZWZpeC9jdXN0b20uY2ZnIF07IHRoZW4KICBzb3VyY2UgJHByZWZp
-eC9jdXN0b20uY2ZnOwpmaQojIyMgRU5EIC9ldGMvZ3J1Yi5kLzQxX2N1c3RvbSAjIyMKCgoKIwoj
-IEZpbGU6IC9ldGMvZGVmYXVsdC9ncnViCiMKIyBJZiB5b3UgY2hhbmdlIHRoaXMgZmlsZSwgcnVu
-ICd1cGRhdGUtZ3J1YicgYWZ0ZXJ3YXJkcyB0byB1cGRhdGUKIyAvYm9vdC9ncnViL2dydWIuY2Zn
-LgojIEZvciBmdWxsIGRvY3VtZW50YXRpb24gb2YgdGhlIG9wdGlvbnMgaW4gdGhpcyBmaWxlLCBz
-ZWU6CiMgICBpbmZvIC1mIGdydWIgLW4gJ1NpbXBsZSBjb25maWd1cmF0aW9uJwoKR1JVQl9ERUZB
-VUxUPTAKR1JVQl9ISURERU5fVElNRU9VVD0wCkdSVUJfSElEREVOX1RJTUVPVVRfUVVJRVQ9dHJ1
-ZQpHUlVCX1RJTUVPVVQ9MTAKR1JVQl9ESVNUUklCVVRPUj1gbHNiX3JlbGVhc2UgLWkgLXMgMj4g
-L2Rldi9udWxsIHx8IGVjaG8gRGViaWFuYApHUlVCX0NNRExJTkVfTElOVVhfREVGQVVMVD0icXVp
-ZXQgc3BsYXNoIgpHUlVCX0NNRExJTkVfTElOVVg9IiIKCiMgVW5jb21tZW50IHRvIGVuYWJsZSBC
-YWRSQU0gZmlsdGVyaW5nLCBtb2RpZnkgdG8gc3VpdCB5b3VyIG5lZWRzCiMgVGhpcyB3b3JrcyB3
-aXRoIExpbnV4IChubyBwYXRjaCByZXF1aXJlZCkgYW5kIHdpdGggYW55IGtlcm5lbCB0aGF0IG9i
-dGFpbnMKIyB0aGUgbWVtb3J5IG1hcCBpbmZvcm1hdGlvbiBmcm9tIEdSVUIgKEdOVSBNYWNoLCBr
-ZXJuZWwgb2YgRnJlZUJTRCAuLi4pCiNHUlVCX0JBRFJBTT0iMHgwMTIzNDU2NywweGZlZmVmZWZl
-LDB4ODlhYmNkZWYsMHhlZmVmZWZlZiIKCiMgVW5jb21tZW50IHRvIGRpc2FibGUgZ3JhcGhpY2Fs
-IHRlcm1pbmFsIChncnViLXBjIG9ubHkpCiNHUlVCX1RFUk1JTkFMPWNvbnNvbGUKCiMgVGhlIHJl
-c29sdXRpb24gdXNlZCBvbiBncmFwaGljYWwgdGVybWluYWwKIyBub3RlIHRoYXQgeW91IGNhbiB1
-c2Ugb25seSBtb2RlcyB3aGljaCB5b3VyIGdyYXBoaWMgY2FyZCBzdXBwb3J0cyB2aWEgVkJFCiMg
-eW91IGNhbiBzZWUgdGhlbSBpbiByZWFsIEdSVUIgd2l0aCB0aGUgY29tbWFuZCBgdmJlaW5mbycK
-I0dSVUJfR0ZYTU9ERT02NDB4NDgwCgojIFVuY29tbWVudCBpZiB5b3UgZG9uJ3Qgd2FudCBHUlVC
-IHRvIHBhc3MgInJvb3Q9VVVJRD14eHgiIHBhcmFtZXRlciB0byBMaW51eAojR1JVQl9ESVNBQkxF
-X0xJTlVYX1VVSUQ9dHJ1ZQoKIyBVbmNvbW1lbnQgdG8gZGlzYWJsZSBnZW5lcmF0aW9uIG9mIHJl
-Y292ZXJ5IG1vZGUgbWVudSBlbnRyaWVzCiNHUlVCX0RJU0FCTEVfUkVDT1ZFUlk9InRydWUiCgoj
-IFVuY29tbWVudCB0byBnZXQgYSBiZWVwIGF0IGdydWIgc3RhcnQKI0dSVUJfSU5JVF9UVU5FPSI0
-ODAgNDQwIDEiCg==
---001a11c129da7bd83d04f0910c83--
+> +
+>  #else	/* !CONFIG_ACPI */
+>  #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
+>  #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
+> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
+> index 8ba3e6f..1d9b789 100644
+> --- a/drivers/acpi/plat/arm-core.c
+> +++ b/drivers/acpi/plat/arm-core.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/smp.h>
+>  
+>  #include <asm/pgtable.h>
+> +#include <asm/cputype.h>
+>  
+>  /*
+>   * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
+> @@ -52,6 +53,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
+>   */
+>  static u64 acpi_lapic_addr __initdata;
+
+Is this variable actually needed ?
+
+>  
+> +/* available_cpus here means enabled cpu in MADT */
+> +static int available_cpus;
+
+Ditto.
+
+> +
+> +/* Map logic cpu id to physical GIC id (physical CPU id). */
+> +int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
+> +static int boot_cpu_apic_id = -1;
+
+Do we need all these variables ? I think we should reuse cpu_logical_map
+data structures for that, it looks suspiciously familiar.
+
+>  #define BAD_MADT_ENTRY(entry, end) (					\
+>  	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
+>  	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
+> @@ -132,6 +140,55 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
+>   * Please refer to chapter5.2.12.14/15 of ACPI 5.0
+>   */
+>  
+> +/**
+> + * acpi_register_gic_cpu_interface - register a gic cpu interface and
+> + * generates a logic cpu number
+> + * @id: gic cpu interface id to register
+> + * @enabled: this cpu is enabled or not
+> + *
+> + * Returns the logic cpu number which maps to the gic cpu interface
+> + */
+> +static int acpi_register_gic_cpu_interface(int id, u8 enabled)
+> +{
+> +	int cpu;
+> +
+> +	if (id >= MAX_GIC_CPU_INTERFACE) {
+> +		pr_info(PREFIX "skipped apicid that is too big\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	total_cpus++;
+> +	if (!enabled)
+> +		return -EINVAL;
+> +
+> +	if (available_cpus >=  NR_CPUS) {
+> +		pr_warn(PREFIX "NR_CPUS limit of %d reached,"
+> +		" Processor %d/0x%x ignored.\n", NR_CPUS, total_cpus, id);
+> +		return -EINVAL;
+> +	}
+
+Hmm...what if you are missing the boot CPU ? It is a worthy check.
+Have a look at smp_init_cpus(), it does not bail out on cpu>= NR_CPUS
+because you do want to make sure that the DT contains the boot CPU
+node. Same logic applies.
+
+> +
+> +	available_cpus++;
+> +
+
+Is available_cpus != num_possible_cpus() ? It does not look like hence
+available_cpus can go.
+
+> +	/* allocate a logic cpu id for the new comer */
+> +	if (boot_cpu_apic_id == id) {
+> +		/*
+> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
+> +		 * for BSP, no need to allocte again.
+> +		 */
+> +		cpu = 0;
+> +	} else {
+> +		cpu = cpumask_next_zero(-1, cpu_present_mask);
+> +	}
+> +
+> +	/* map the logic cpu id to APIC id */
+> +	arm_cpu_to_apicid[cpu] = id;
+> +
+> +	set_cpu_present(cpu, true);
+> +	set_cpu_possible(cpu, true);
+
+This is getting nasty. Before adding this patch and previous ones we
+need to put in place a method for the kernel to make a definite choice between
+ACPI and DT and stick to that. We can't initialize the logical map twice
+(which will happen if your DT has valid cpu nodes and a chosen node pointing
+to proper ACPI tables) or even having some entries initialized from DT and
+others by ACPI. It is a big fat no-no, please update the series accordingly.
+
+> +
+> +	return cpu;
+> +}
+> +
+>  static int __init
+>  acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+>  {
+> @@ -144,6 +201,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
+>  
+>  	acpi_table_print_madt_entry(header);
+>  
+> +	/*
+> +	 * We need to register disabled CPU as well to permit
+> +	 * counting disabled CPUs. This allows us to size
+> +	 * cpus_possible_map more accurately, to permit
+> +	 * to not preallocating memory for all NR_CPUS
+> +	 * when we use CPU hotplug.
+> +	 */
+> +	acpi_register_gic_cpu_interface(processor->gic_id,
+> +			processor->flags & ACPI_MADT_ENABLED);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -186,6 +253,19 @@ static int __init acpi_parse_madt_gic_entries(void)
+>  		return count;
+>  	}
+>  
+> +#ifdef CONFIG_SMP
+> +	if (available_cpus == 0) {
+> +		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
+> +		arm_cpu_to_apicid[available_cpus] =
+> +			read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+> +		available_cpus = 1;	/* We've got at least one of these */
+> +	}
+
+I'd rather check the MADT for at least the boot cpu to present, if it is
+not ACPI tables are horribly buggy and the kernel should barf on that.
+
+> +#endif
+> +
+> +	/* Make boot-up look pretty */
+> +	pr_info("%d CPUs available, %d CPUs total\n", available_cpus,
+> +		total_cpus);
+
+Ok, now, how can we use the "disabled" CPUs == (total_cpus - available_cpus) ?
+
+Are we keeping track of them in the kernel at all ? It does not look
+like, so I wonder whether we need this bit of info. I do not see why it
+is pretty to know that there are disabled, aka unusable CPUs.
+
+>  	return 0;
+>  }
+>  
+> @@ -321,6 +401,9 @@ int __init early_acpi_boot_init(void)
+>  	if (acpi_disabled)
+>  		return -ENODEV;
+>  
+> +	/* Get the boot CPU's GIC cpu interface id before MADT parsing */
+> +	boot_cpu_apic_id = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+
+See Sudeep's comment.
+
+Thanks,
+Lorenzo
+
