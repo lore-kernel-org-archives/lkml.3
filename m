@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948AbaAVO5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:57:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58559 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaAVO5G (ORCPT
+	id S1755961AbaAVO6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:58:20 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:41109 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755342AbaAVO6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:57:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
-Date: Wed, 22 Jan 2014 15:56:05 +0100
-Message-ID: <3140612.0s75qS6VKb@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140122114616.GB15591@e106331-lin.cambridge.arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <52DCE790.6080809@linaro.org> <20140122114616.GB15591@e106331-lin.cambridge.arm.com>
+	Wed, 22 Jan 2014 09:58:19 -0500
+Date: Wed, 22 Jan 2014 14:57:47 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] Use __kernel_ulong_t in x86 struct semid64_ds
+Message-ID: <20140122145747.GC8065@arm.com>
+References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
+ <1388165112-6545-7-git-send-email-hjl.tools@gmail.com>
+ <20140121171053.GD20798@arm.com>
+ <CAMe9rOoKvJNkhHLwF+gfX1T8M=ekBvCJn7PJ61U9-_OvcB-tKQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ltRL2FnPYC7NlYqF91kbn6MQn3jf8jxzMkUfbx+9ZFg
- 8441Q4AATpCGShbOd6JFXntR4RPb+pciAKihUfIty1oUSzYJk6
- WygTsPV7ywlyWRP+EbUOxyYLlPuS4KE2LgdV+/X0BDnqsWS9VO
- HNjxLBaF5afVEzxxa4eGUCtSeYpR8eiFh+ux/Jsr8awXm8Fqme
- g5EX1iU/HeablQsAhWjftlEbMTxJO9pcEWDiTbLyo4KayYmA+Y
- KS3X8uooAro4zXKYsRlWNlQWOvb14uPHXCnA672+ZL1kr418B1
- 8OhYw1mA6NQxKFVxrfaZNPi6q6rZSWU4bITj077flqv1DHWfiu
- iR44PEJmRba8/H2x30pY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMe9rOoKvJNkhHLwF+gfX1T8M=ekBvCJn7PJ61U9-_OvcB-tKQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 January 2014 11:46:16 Mark Rutland wrote:
-> On Mon, Jan 20, 2014 at 09:08:32AM +0000, Hanjun Guo wrote:
-> > On 2014-1-17 22:21, Arnd Bergmann wrote:
-> > > On Friday 17 January 2014, Hanjun Guo wrote:
-> > >>
-> > >> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> > >>
-> > >> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
-> > >> name from the ACPI timer table is matched with all the registered
-> > >> timer controllers and matching initialisation routine is invoked.
-> > > 
-> > > I wouldn't anticipate this infrastructure to be required. Shouldn't all
-> > > ARMv8 machines have an architected timer?
-> > 
-> > I not sure of this, could anyone can give some guidance? if only arch
-> > timer is available for ARM64, this will make thing very simple.
+On Tue, Jan 21, 2014 at 06:06:11PM +0000, H.J. Lu wrote:
+> On Tue, Jan 21, 2014 at 9:10 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Fri, Dec 27, 2013 at 05:25:10PM +0000, H.J. Lu wrote:
+> >> Both x32 and x86-64 use the same struct semid64_ds for system calls.
+> >> But x32 long is 32-bit. This patch replaces unsigned long with
+> >> __kernel_ulong_t in x86 struct semid64_ds.
+> >>
+> >> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
+> >> ---
+> >>  arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
+> >>  1 file changed, 5 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
+> >> index ee50c80..cc2d6a3 100644
+> >> --- a/arch/x86/include/uapi/asm/sembuf.h
+> >> +++ b/arch/x86/include/uapi/asm/sembuf.h
+> >> @@ -13,12 +13,12 @@
+> >>  struct semid64_ds {
+> >>       struct ipc64_perm sem_perm;     /* permissions .. see ipc.h */
+> >>       __kernel_time_t sem_otime;      /* last semop time */
+> >> -     unsigned long   __unused1;
+> >> +     __kernel_ulong_t __unused1;
+> >>       __kernel_time_t sem_ctime;      /* last change time */
+> >> -     unsigned long   __unused2;
+> >> -     unsigned long   sem_nsems;      /* no. of semaphores in array */
+> >> -     unsigned long   __unused3;
+> >> -     unsigned long   __unused4;
+> >> +     __kernel_ulong_t __unused2;
+> >> +     __kernel_ulong_t sem_nsems;     /* no. of semaphores in array */
+> >> +     __kernel_ulong_t __unused3;
+> >> +     __kernel_ulong_t __unused4;
+> >>  };
+> >
+> > Since you are at this, could you please change the
+> > include/uapi/asm-generic/sembuf.h structure as well?
 > 
-> All ARMv8 systems should have an architected timer.
-> 
-> However, they may also have other timers (e.g. global timers for use
-> when CPUs are in low power states and their local architected timers
-> aren't active).
+> I could, but my build doesn't use that header file.  I prefer not to
+> change something I can't test.
 
-But all other timers could be regular platform drivers I suppose. No
-need for special infrastructure for those.
+OK, it makes sense.
 
-	Arnd
+> I am enclosing a program to check kernel uabi header files
+> against glibc header files.  You can try it on ILP32 ARM64.
+
+Thanks, very useful. We'll give it a try when we get there. So far I
+NAK'ed the first set of arm64 ILP32 patches as they were mostly using
+the compat ABI (https://lkml.org/lkml/2013/9/9/502).
+
+-- 
+Catalin
