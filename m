@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbaAVTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:42:58 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58306 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaAVTm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:42:57 -0500
-Date: Wed, 22 Jan 2014 19:42:46 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Message-ID: <20140122194246.GY17314@sirena.org.uk>
-References: <20140115113551.0eb13409@armhf>
- <20140115165148.2e0e19f3@armhf>
+	id S1755244AbaAVTnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:43:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379AbaAVTnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 14:43:39 -0500
+Date: Wed, 22 Jan 2014 20:43:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 0/2] mm->def_flags cleanups (Was: Change khugepaged to
+	respect MMF_THP_DISABLE flag)
+Message-ID: <20140122194327.GA2826@redhat.com>
+References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com> <13c9d1b0213af7cee7afb54de368a0b189e98df8.1389905087.git.athorlton@sgi.com> <20140118234957.GB10970@node.dhcp.inet.fi> <20140120195812.GD18196@sgi.com> <20140120201525.GA31416@redhat.com> <20140120204108.GE18196@sgi.com> <20140122174553.GA29710@redhat.com> <20140122184042.GQ18196@sgi.com> <20140122192514.GA1779@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mnf9g033gFJG8dr6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115165148.2e0e19f3@armhf>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 5/8] ASoC: simple-card: simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140122192514.GA1779@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/22, Oleg Nesterov wrote:
+>
+> On 01/22, Alex Thorlton wrote:
+> > > +	case PR_SET_THP_DISABLE:
+> > > +	case PR_GET_THP_DISABLE:
+> > > +		down_write(&me->mm->mmap_sem);
+> > > +		if (option == PR_SET_THP_DISABLE) {
+> > > +			if (arg2)
+> > > +				me->mm->def_flags |= VM_NOHUGEPAGE;
+> > > +			else
+> > > +				me->mm->def_flags &= ~VM_NOHUGEPAGE;
+> > > +		} else {
+> > > +			error = !!(me->mm->flags && VM_NOHUGEPAGE);
+> >
+> > Should be:
+> >
+> > error = !!(me->mm->def_flags && VM_NOHUGEPAGE);
+>
+> No, we need to return 1 if this bit is set ;)
 
---mnf9g033gFJG8dr6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Damn, you are right of course, we need "&". I didn't notice "&&"
+in the patch I sent and misunderstood your "&&" above ;) Sorry.
 
-On Wed, Jan 15, 2014 at 04:51:48PM +0100, Jean-Francois Moine wrote:
-> The CPU and CODEC DAI names are still copied to the user info structure.
-> Put them directly in the DAI links.
+Oleg.
 
-Applied, thanks.
-
---mnf9g033gFJG8dr6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS4B8yAAoJELSic+t+oim9X7AP/i1l7WM+mQagUXb++bO89Tsr
-yF4jGPwYzzoGWSQVqqyqk+D/4fmsmqlut7JiD5RD5Ppmv8uXyKSnBuuONgligYG3
-VeQSAv+/3Ioj8JXZUSG+n+Df1WHiSittHeMqU6g6jZSPlzk+Pf9PefyvOM0lb28x
-2pFFrwerhRxOiW7+G8rVXFN4Q4aQJuwxCkkf+lGy5J/+Qgn5NO0iAXUbYn30N18n
-fNPVJBMtsKIN5IzKd9vlCE24/Iq5/Gc8cEoXjzwFj78L6GU1rOpkxcTh0xq9bl2M
-aRkJqG0T1ZXbyEohvCx6NW72ejBP8JeY/4PNU3MOaikugzmf3R14liTPws3gO/YK
-xcDa3dStXoY5jpsg9MGXKj50sp97JRa8jqsmQNtZbjXw6KT4qGySrACT6bJWrhpD
-33Z1jkPvwhCQrSRCTF7Bpcbhz5YMO2dUhJzPRYdHqsrDMMrvp3XC//S7aWEYWZjf
-PykBrl8uZmOECZkFcLTvhAm3sa2A/V9MsU3kECsQOopLZyD2zoJ55f0PmJdSVe8a
-wXTF6hOKZWVRKf0dUGg1k7dN3o80iE+rzTkV4V1n6FajN6YUgsS0uK2I6GJMdA+P
-5qWWmIzbj7enJtg8NplFze9jJOyivY7uqAi0teM0OYSSNMAT6UbnhsfUmvw5ar2M
-cKG2FdWJFxNsD7vc2Em4
-=LAg8
------END PGP SIGNATURE-----
-
---mnf9g033gFJG8dr6--
