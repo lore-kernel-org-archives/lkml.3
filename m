@@ -1,192 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaAVBfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 20:35:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14978 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754281AbaAVBfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 20:35:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,697,1384329600"; 
-   d="scan'208";a="470452367"
-Message-ID: <52DF2047.70303@intel.com>
-Date: Wed, 22 Jan 2014 09:35:03 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755021AbaAVBfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 20:35:23 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:35033 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281AbaAVBfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 20:35:18 -0500
+Date: Tue, 21 Jan 2014 20:35:12 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Sherman Yin <syin@broadcom.com>, Mark Brown <broonie@kernel.org>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pinctrl: Rename Broadcom Capri pinctrl driver
+Message-ID: <20140122013512.GT31176@beef>
+References: <1390343886-25852-1-git-send-email-syin@broadcom.com>
+ <CAOesGMj7wXJ+DfXzk0U1pusKqZShq+KJdPY8hh=Ffj7KDti4_Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 00/14] perf, x86: Haswell LBR call stack support
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBTEoVnZ8AujD5Rvyen2bTqGS65_adF=GOps=rYS5f9=4A@mail.gmail.com>
-In-Reply-To: <CABPqkBTEoVnZ8AujD5Rvyen2bTqGS65_adF=GOps=rYS5f9=4A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMj7wXJ+DfXzk0U1pusKqZShq+KJdPY8hh=Ffj7KDti4_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 09:17 PM, Stephane Eranian wrote:
+On Tue, Jan 21, 2014 at 04:59:35PM -0800, Olof Johansson wrote:
 > Hi,
 > 
-> Is there a git tree from which I could could pull those 14 patches from?
-
-https://github.com/ukernel/linux.git perf-lbr-callstack
-
-Regards
-Yan, Zheng
-
 > 
-> On Fri, Jan 3, 2014 at 6:47 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> For many profiling tasks we need the callgraph. For example we often
->> need to see the caller of a lock or the caller of a memcpy or other
->> library function to actually tune the program. Frame pointer unwinding
->> is efficient and works well. But frame pointers are off by default on
->> 64bit code (and on modern 32bit gccs), so there are many binaries around
->> that do not use frame pointers. Profiling unchanged production code is
->> very useful in practice. On some CPUs frame pointer also has a high
->> cost. Dwarf2 unwinding also does not always work and is extremely slow
->> (upto 20% overhead).
->>
->> Haswell has a new feature that utilizes the existing Last Branch Record
->> facility to record call chains. When the feature is enabled, function
->> call will be collected as normal, but as return instructions are
->> executed the last captured branch record is popped from the on-chip LBR
->> registers. The LBR call stack facility provides an alternative to get
->> callgraph. It has some limitations too, but should work in most cases
->> and is significantly faster than dwarf. Frame pointer unwinding is still
->> the best default, but LBR call stack is a good alternative when nothing
->> else works.
->>
->> This patch series adds LBR call stack support. User can enabled/disable
->> this through an sysfs attribute file in the CPU PMU directory:
->>  echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack
->>
->> When profiling bc(1) on Fedora 19:
->>  echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
->>
->> If this feature is enabled, perf report output looks like:
->>     50.36%       bc  bc                 [.] bc_divide
->>                  |
->>                  --- bc_divide
->>                      execute
->>                      run_code
->>                      yyparse
->>                      main
->>                      __libc_start_main
->>                      _start
->>
->>     33.66%       bc  bc                 [.] _one_mult
->>                  |
->>                  --- _one_mult
->>                      bc_divide
->>                      execute
->>                      run_code
->>                      yyparse
->>                      main
->>                      __libc_start_main
->>                      _start
->>
->>      7.62%       bc  bc                 [.] _bc_do_add
->>                  |
->>                  --- _bc_do_add
->>                     |
->>                     |--99.89%-- 0x2000186a8
->>                      --0.11%-- [...]
->>
->>      6.83%       bc  bc                 [.] _bc_do_sub
->>                  |
->>                  --- _bc_do_sub
->>                     |
->>                     |--99.94%-- bc_add
->>                     |          execute
->>                     |          run_code
->>                     |          yyparse
->>                     |          main
->>                     |          __libc_start_main
->>                     |          _start
->>                      --0.06%-- [...]
->>
->>      0.46%       bc  libc-2.17.so       [.] __memset_sse2
->>                  |
->>                  --- __memset_sse2
->>                     |
->>                     |--54.13%-- bc_new_num
->>                     |          |
->>                     |          |--51.00%-- bc_divide
->>                     |          |          execute
->>                     |          |          run_code
->>                     |          |          yyparse
->>                     |          |          main
->>                     |          |          __libc_start_main
->>                     |          |          _start
->>                     |          |
->>                     |          |--30.46%-- _bc_do_sub
->>                     |          |          bc_add
->>                     |          |          execute
->>                     |          |          run_code
->>                     |          |          yyparse
->>                     |          |          main
->>                     |          |          __libc_start_main
->>                     |          |          _start
->>                     |          |
->>                     |           --18.55%-- _bc_do_add
->>                     |                     bc_add
->>                     |                     execute
->>                     |                     run_code
->>                     |                     yyparse
->>                     |                     main
->>                     |                     __libc_start_main
->>                     |                     _start
->>                     |
->>                      --45.87%-- bc_divide
->>                                execute
->>                                run_code
->>                                yyparse
->>                                main
->>                                __libc_start_main
->>                                _start
->>
->> If this feature is disabled, perf report output looks like:
->>     50.49%       bc  bc                 [.] bc_divide
->>                  |
->>                  --- bc_divide
->>
->>     33.57%       bc  bc                 [.] _one_mult
->>                  |
->>                  --- _one_mult
->>
->>      7.61%       bc  bc                 [.] _bc_do_add
->>                  |
->>                  --- _bc_do_add
->>                      0x2000186a8
->>
->>      6.88%       bc  bc                 [.] _bc_do_sub
->>                  |
->>                  --- _bc_do_sub
->>
->>      0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
->>                  |
->>                  --- __memcpy_ssse3_back
->>
->> The LBR call stack has following known limitations
->>  - Zero length calls are not filtered out by hardware
->>  - Exception handing such as setjmp/longjmp will have calls/returns not
->>    match
->>  - Pushing different return address onto the stack will have calls/returns
->>    not match
->>  - If callstack is deeper than the LBR, only the last entries are captured
->>
->> Change since previous version
->>  - split change into more patches
->>  - introduce context switch callback and use it to flush LBR
->>  - use the context switch callback to save/restore LBR
->>  - dynamic allocate memory area for storing LBR stack, always switch the
->>    memory area during context switch
->>  - disable this feature by default
->>  - more description in change logs
->>
+> On Tue, Jan 21, 2014 at 2:38 PM, Sherman Yin <syin@broadcom.com> wrote:
+> > To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+> > driver and its related CONFIG option are renamed to bcm281xx.
+> >
+> > Devicetree compatible string and binding documentation use
+> > "brcm,bcm11351-pinctrl" to match the machine binding here:
+> > Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+> >
+> > This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+> > and BCM28155 SoCs.
+> >
+> > Signed-off-by: Sherman Yin <syin@broadcom.com>
+> > Reviewed-by: Matt Porter <mporter@linaro.org>
+> > ---
+> >  ...capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} |    8 +-
+> >  arch/arm/boot/dts/bcm11351.dtsi                    |    2 +-
+> >  arch/arm/configs/bcm_defconfig                     |    2 +-
+> >  drivers/pinctrl/Kconfig                            |    8 +-
+> >  drivers/pinctrl/Makefile                           |    2 +-
+> >  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1521 ++++++++++----------
+> >  6 files changed, 775 insertions(+), 768 deletions(-)
+> >  rename Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} (98%)
+> >  rename drivers/pinctrl/{pinctrl-capri.c => pinctrl-bcm281xx.c} (25%)
+> >
+> > diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
+> > similarity index 98%
+> > rename from Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
+> > rename to Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
+> > index 9e9e9ef..c119deb 100644
+> > --- a/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
+> > +++ b/Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
+> > @@ -1,4 +1,4 @@
+> > -Broadcom Capri Pin Controller
+> > +Broadcom BCM281xx Pin Controller
+> >
+> >  This is a pin controller for the Broadcom BCM281xx SoC family, which includes
+> >  BCM11130, BCM11140, BCM11351, BCM28145, and BCM28155 SoCs.
+> > @@ -7,14 +7,14 @@ BCM11130, BCM11140, BCM11351, BCM28145, and BCM28155 SoCs.
+> >
+> >  Required Properties:
+> >
+> > -- compatible:  Must be "brcm,capri-pinctrl".
+> > +- compatible:  Must be "brcm,bcm11351-pinctrl"
+> 
+> Since the original binding is queued for 3.14 (I believe?), if this
+> rename isn't merged for 3.14 then you will still need to accept the
+> old compatible string (binding). You can document it as deprecated,
+> but the driver needs to still probe with it.
 
+Linus had mentioned that he could take a rename in 3.14-rc for this
+driver which is really what we had in mind here. Since the binding
+doesn't become stable until 3.14 is actually released I was under the
+impression that this is ok without keeping a deprecated compatible
+string. I notice that Tomasz had comments about this type of situation
+in http://www.spinics.net/lists/devicetree/msg18010.html
+
+-Matt
