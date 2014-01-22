@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaAVX1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:27:25 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45840 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752539AbaAVX1Y (ORCPT
+	id S1753593AbaAVX3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:29:03 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52673 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaAVX3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:27:24 -0500
-Date: Wed, 22 Jan 2014 23:27:16 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 18/24] drm/i2c: tda998x: fix the ENABLE_SPACE
-	register
-Message-ID: <20140122232716.GO15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195845.086be909@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140119195845.086be909@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 22 Jan 2014 18:29:01 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-1e-52e0543586eb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCHSET 0/5] perf tools: Update on filtered entries' percentage output (v3)
+Date: Thu, 23 Jan 2014 08:28:48 +0900
+Message-Id: <1390433333-15350-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 07:58:45PM +0100, Jean-Francois Moine wrote:
-> This patch fixes the ENABLE_SPACE register, the value of which was
-> inverted.
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+Hello,
 
-I've researched the change to PLL_SERIAL_2, and this is correct.  I think
-your change to REG_ENABLE_SPACE is also correct.  This looks like a bug
-fix to me, so maybe consider having it applied to previous kernel
-versions as well?
+I added --percentage option to perf report to control display of
+percentage of filtered entries.
 
-Also... please try putting yourself in the position of a reviewer of your
-own patches - read the patch and then read the description, and ask whether
-the description is adequate for the patch... the description talks just
-about the ENABLE_SPACE register.  But what about the PLL_SERIAL_2 register
-changes?  They're *totally* not described.
+ usage: perf report [<options>]
 
-Hence...
+        --percentage <relative|absolute>
+                          how to display percentage of filtered entries
 
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+"relative" means it's relative to filtered entries only so that the
+sum of shown entries will be always 100%.  "absolute" means it retains
+original value before and after the filter applied.  In patch 5, I
+made the "absolute" as default since it makes more sense IMHO.
+    
+      $ perf report -s comm
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+           6.11%            as
+           4.35%            sh
+           4.14%          make
+           1.13%        fixdep
+      ...
+    
+      $ perf report -s comm -c cc1,gcc --percentage absolute
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+    
+      $ perf report -s comm -c cc1,gcc --percentage relative
+      # Overhead       Command
+      # ........  ............
+      #
+          90.69%           cc1
+           9.31%           gcc
+    
+Note that it has zero effect if no filter was applied.
 
-and no acked-by.
+I only added the option to perf report for now.  If it looks good to
+you I'll add it to perf top too.
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Namhyung Kim (5):
+  perf tools: Count filtered entries to total period also
+  perf ui/tui: Add support for showing relative percentage
+  perf report: Add --percentage option
+  perf report: Add report.percentage config option
+  perf tools: Show absolute percentage by default
+
+ tools/perf/Documentation/perf-report.txt | 24 ++++++++++++++++++------
+ tools/perf/builtin-report.c              | 28 +++++++++++++++++++++++++++-
+ tools/perf/util/event.c                  | 18 ++++++++----------
+ tools/perf/util/hist.c                   | 27 ++++++++++++++-------------
+ tools/perf/util/hist.h                   |  7 +++++++
+ tools/perf/util/symbol.h                 |  5 +++--
+ 6 files changed, 77 insertions(+), 32 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.7.11.7
+
