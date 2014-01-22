@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaAVVWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:22:49 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45725 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752437AbaAVVWs (ORCPT
+	id S1755547AbaAVVYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:24:35 -0500
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:47112 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752310AbaAVVYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:22:48 -0500
-Date: Wed, 22 Jan 2014 21:22:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 03/24] drm/i2c: tda998x: code cleanup
-Message-ID: <20140122212242.GG15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195838.372fbbaa@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140119195838.372fbbaa@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 22 Jan 2014 16:24:33 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH] staging/usbip: Change vhci_hcd store_attach() device information message to include speed string
+Date: Wed, 22 Jan 2014 14:24:29 -0700
+Message-Id: <1390425869-11910-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 07:58:38PM +0100, Jean-Francois Moine wrote:
-> This patch:
-> - replaces ARRAY_SIZE() by sizeof() when a number of bytes is needed,
-> - adds a linefeed in an error message and
-> - removes an useless variable setting.
-> 
-> Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+Change vhci_hcd store_attach() routine to include speed string in its device
+information message. The current call to dev_info() prints out speed number
+which is the enum number. Change to call usb_speed_string() to print speed
+string in addition to the number.
 
-Thanks.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/staging/usbip/vhci_sysfs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
+diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
+index 0141bc3..03e6edf 100644
+--- a/drivers/staging/usbip/vhci_sysfs.c
++++ b/drivers/staging/usbip/vhci_sysfs.c
+@@ -215,8 +215,9 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 	}
+ 
+-	dev_info(dev, "rhport(%u) sockfd(%d) devid(%u) speed(%u)\n",
+-		 rhport, sockfd, devid, speed);
++	dev_info(dev,
++		 "rhport(%u) sockfd(%d) devid(%u) speed(%u) speed_str(%s)\n",
++		 rhport, sockfd, devid, speed, usb_speed_string(speed));
+ 
+ 	vdev->devid         = devid;
+ 	vdev->speed         = speed;
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.8.3.2
+
