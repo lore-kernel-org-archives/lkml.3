@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589AbaAVOek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:34:40 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:65260 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856AbaAVOej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:34:39 -0500
+	id S1755785AbaAVOfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:35:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37220 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755560AbaAVOe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 09:34:58 -0500
+Date: Wed, 22 Jan 2014 14:34:52 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Message-ID: <20140122143452.GW4963@suse.de>
+References: <20131220093022.GV11295@suse.de>
+ <52DF353D.6050300@redhat.com>
+ <20140122093435.GS4963@suse.de>
+ <52DFD168.8080001@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
-Date: Wed, 22 Jan 2014 20:04:37 +0530
-Message-ID: <CAH=mFZzmcp5amS-JsNApWiwgYqs70M==FUA6KoxH+oLdbZihcg@mail.gmail.com>
-Subject: Re: Help Needed
-From: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <52DFD168.8080001@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks to Randy and Ryan for the responses. The pointers are really
-helpful. Currently I am facing an issue with Ubuntu's grub not
-displaying the newly built kernel.
+On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
+> On 01/22/2014 04:34 AM, Mel Gorman wrote:
+> >On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> >>One topic that has been lurking forever at the edges is the current
+> >>4k limitation for file system block sizes. Some devices in
+> >>production today and others coming soon have larger sectors and it
+> >>would be interesting to see if it is time to poke at this topic
+> >>again.
+> >>
+> >Large block support was proposed years ago by Christoph Lameter
+> >(http://lwn.net/Articles/232757/). I think I was just getting started
+> >in the community at the time so I do not recall any of the details. I do
+> >believe it motivated an alternative by Nick Piggin called fsblock though
+> >(http://lwn.net/Articles/321390/). At the very least it would be nice to
+> >know why neither were never merged for those of us that were not around
+> >at the time and who may not have the chance to dive through mailing list
+> >archives between now and March.
+> >
+> >FWIW, I would expect that a show-stopper for any proposal is requiring
+> >high-order allocations to succeed for the system to behave correctly.
+> >
+> 
+> I have a somewhat hazy memory of Andrew warning us that touching
+> this code takes us into dark and scary places.
+> 
 
-Existing kernel on the ubuntu system is 3.2.0-23-generic. While the
-new one is 3.11.10. The Grub has/displays fedora and ubuntu each one
-and their corresponding recovery modes. On building and installing
-3.11.10 on Ubuntu's, the newly built kernel doesn't show up in grub at
-the boot time. Kindly help. Updating grub also doesn't help.
+That is a light summary. As Andrew tends to reject patches with poor
+documentation in case we forget the details in 6 months, I'm going to guess
+that he does not remember the details of a discussion from 7ish years ago.
+This is where Andrew swoops in with a dazzling display of his eidetic
+memory just to prove me wrong.
 
--Madhu
+Ric, are there any storage vendor that is pushing for this right now?
+Is someone working on this right now or planning to? If they are, have they
+looked into the history of fsblock (Nick) and large block support (Christoph)
+to see if they are candidates for forward porting or reimplementation?
+I ask because without that person there is a risk that the discussion
+will go as follows
 
-On Sat, Jan 18, 2014 at 11:04 PM, Madhusudhan Rao Sripalle
-<madhu.sripalle@gmail.com> wrote:
-> Hi,
->
-> I am an expert of HP-UX (kernel and drivers), while being novice at
-> linux. I am currently looking ways for quick ramp up so that I could
-> contribute to linux community.
->
-> Kindly provide pointers starting from where I could get the kernel
-> sources. Appreciate help in advance.
->
->
-> -Madhu
+Topic leader: Does anyone have an objection to supporting larger block
+	sizes than the page size?
+Room: Send patches and we'll talk.
+
+-- 
+Mel Gorman
+SUSE Labs
