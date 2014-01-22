@@ -1,145 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaAVDv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:51:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338AbaAVDvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:51:25 -0500
-Message-ID: <1390362683.21885.46.camel@localhost>
-Subject: [GIT PULL] audit subsystem for 3.14
-From: Eric Paris <eparis@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: rgb@redhat.com, linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 21 Jan 2014 22:51:23 -0500
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754489AbaAVDyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:54:50 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55614 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaAVDyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 22:54:47 -0500
+Date: Tue, 21 Jan 2014 19:54:40 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: uninline rcu_lock_acquire/etc ?
+Message-ID: <20140122035440.GW10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140120181942.GA20783@redhat.com>
+ <20140120182019.GA26515@redhat.com>
+ <20140121141022.GX31570@twins.programming.kicks-ass.net>
+ <20140121173534.GA25642@redhat.com>
+ <20140121184310.GA24702@redhat.com>
+ <20140121193909.GA17497@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121193909.GA17497@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012203-0928-0000-0000-000005E027CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, Jan 21, 2014 at 08:39:09PM +0100, Oleg Nesterov wrote:
+> On 01/21, Oleg Nesterov wrote:
+> >
+> > But I agreed that the code looks simpler with bitfields, so perhaps
+> > this patch is better.
+> 
+> Besides, I guess the major offender is rcu...
+> 
+> Paul, can't we do something like below? Saves 19.5 kilobytes,
+> 
+> 	-       5255131 2974376 10125312        18354819        1181283 vmlinux
+> 	+	5235227 2970344 10125312        18330883        117b503 vmlinux
+> 
+> probably we can also uninline rcu_lockdep_assert()...
 
-Please consider pulling the following audit changes.  Again we stayed
-pretty well contained inside the audit system.  Venturing out was fixing
-a couple of function prototypes which were inconsistent (didn't hurt
-anything, but we used the same value as an int, uint, u32, and I think
-even a long in a couple of places).  We also made a couple of minor
-changes to when a couple of LSMs called the audit system.  We hoped to
-add aarch64 audit support this go round, but it wasn't ready.
+Looks mostly plausible, some questions inline below.
 
-There is one merge issue.  Take your code, then convert the prototype
-for the first 4 functions changing the "u32 ses" to "unsigned int ses".
-(Do not change the u32 secid)
+							Thanx, Paul
 
-I'm disappearing on vacation on Thursday.  I should have internet
-access, but it'll be spotty.  If anything goes wrong please be sure to
-cc rgb@redhat.com.  He'll make fixing things his top priority.
+> Oleg.
+> ---
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 2eef290..58f7a97 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -310,18 +310,34 @@ static inline bool rcu_lockdep_current_cpu_online(void)
+>  }
+>  #endif /* #else #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
+> 
+> -#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> -
+> -static inline void rcu_lock_acquire(struct lockdep_map *map)
+> +static inline void __rcu_lock_acquire(struct lockdep_map *map, unsigned long ip)
+>  {
+> -	lock_acquire(map, 0, 0, 2, 0, NULL, _THIS_IP_);
+> +	lock_acquire(map, 0, 0, 2, 0, NULL, ip);
+>  }
+> 
+> -static inline void rcu_lock_release(struct lockdep_map *map)
+> +static inline void __rcu_lock_release(struct lockdep_map *map, unsigned long ip)
+>  {
+>  	lock_release(map, 1, _THIS_IP_);
+>  }
+> 
+> +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
+> +extern void rcu_lock_acquire(void);
+> +extern void rcu_lock_release(void);
+> +extern void rcu_lock_acquire_bh(void);
+> +extern void rcu_lock_release_bh(void);
+> +extern void rcu_lock_acquire_sched(void);
+> +extern void rcu_lock_release_sched(void);
+> +#else
+> +#define rcu_lock_acquire()		do { } while (0)
+> +#define rcu_lock_release()		do { } while (0)
+> +#define rcu_lock_acquire_bh()		do { } while (0)
+> +#define rcu_lock_release_bh()		do { } while (0)
+> +#define rcu_lock_acquire_sched()	do { } while (0)
+> +#define rcu_lock_release_sched()	do { } while (0)
+> +#endif
+> +
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +
+>  extern struct lockdep_map rcu_lock_map;
+>  extern struct lockdep_map rcu_bh_lock_map;
+>  extern struct lockdep_map rcu_sched_lock_map;
+> @@ -419,9 +435,6 @@ static inline int rcu_read_lock_sched_held(void)
+> 
+>  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> 
+> -# define rcu_lock_acquire(a)		do { } while (0)
+> -# define rcu_lock_release(a)		do { } while (0)
+> -
+>  static inline int rcu_read_lock_held(void)
+>  {
+>  	return 1;
+> @@ -766,11 +779,9 @@ static inline void rcu_preempt_sleep_check(void)
+>   */
+>  static inline void rcu_read_lock(void)
+>  {
+> -	__rcu_read_lock();
+>  	__acquire(RCU);
+> -	rcu_lock_acquire(&rcu_lock_map);
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_lock() used illegally while idle");
+> +	__rcu_read_lock();
+> +	rcu_lock_acquire();
 
--Eric
+Not sure why __rcu_read_lock() needs to be in any particular order
+with respect to the sparse __acquire(RCU), but should work either way.
+Same question about the other reorderings of similar statements.
 
-The following changes since commit fc582aef7dcc27a7120cf232c1e76c569c7b6eab:
+>  }
+> 
+>  /*
+> @@ -790,11 +801,9 @@ static inline void rcu_read_lock(void)
+>   */
+>  static inline void rcu_read_unlock(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock() used illegally while idle");
+> -	rcu_lock_release(&rcu_lock_map);
+> -	__release(RCU);
+> +	rcu_lock_release();
+>  	__rcu_read_unlock();
+> +	__release(RCU);
+>  }
+> 
+>  /**
+> @@ -816,11 +825,9 @@ static inline void rcu_read_unlock(void)
+>   */
+>  static inline void rcu_read_lock_bh(void)
+>  {
+> -	local_bh_disable();
+>  	__acquire(RCU_BH);
+> -	rcu_lock_acquire(&rcu_bh_lock_map);
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_lock_bh() used illegally while idle");
+> +	local_bh_disable();
+> +	rcu_lock_acquire_bh();
+>  }
+> 
+>  /*
+> @@ -830,11 +837,9 @@ static inline void rcu_read_lock_bh(void)
+>   */
+>  static inline void rcu_read_unlock_bh(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock_bh() used illegally while idle");
+> -	rcu_lock_release(&rcu_bh_lock_map);
+> -	__release(RCU_BH);
+> +	rcu_lock_release_bh();
+>  	local_bh_enable();
+> +	__release(RCU_BH);
+>  }
+> 
+>  /**
+> @@ -852,9 +857,9 @@ static inline void rcu_read_unlock_bh(void)
+>   */
+>  static inline void rcu_read_lock_sched(void)
+>  {
+> -	preempt_disable();
+>  	__acquire(RCU_SCHED);
+> -	rcu_lock_acquire(&rcu_sched_lock_map);
+> +	preempt_disable();
+> +	rcu_lock_acquire_sched();
+>  	rcu_lockdep_assert(rcu_is_watching(),
+>  			   "rcu_read_lock_sched() used illegally while idle");
 
-  Merge tag 'v3.12' (2013-11-22 18:57:54 -0500)
+The above pair of lines (rcu_lockdep_assert()) should also be removed,
+correct?
 
-are available in the git repository at:
+>  }
+> @@ -862,8 +867,8 @@ static inline void rcu_read_lock_sched(void)
+>  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+>  static inline notrace void rcu_read_lock_sched_notrace(void)
+>  {
+> -	preempt_disable_notrace();
+>  	__acquire(RCU_SCHED);
+> +	preempt_disable_notrace();
 
+I cannot help repeating myself on this one...  ;-)
 
-  git://git.infradead.org/users/eparis/audit.git master
+Why the change in order?
 
-for you to fetch changes up to f3411cb2b2e396a41ed3a439863f028db7140a34:
+>  }
+> 
+>  /*
+> @@ -873,18 +878,16 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
+>   */
+>  static inline void rcu_read_unlock_sched(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock_sched() used illegally while idle");
+> -	rcu_lock_release(&rcu_sched_lock_map);
+> -	__release(RCU_SCHED);
+> +	rcu_lock_release_sched();
+>  	preempt_enable();
+> +	__release(RCU_SCHED);
+>  }
+> 
+>  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+>  static inline notrace void rcu_read_unlock_sched_notrace(void)
+>  {
+> -	__release(RCU_SCHED);
+>  	preempt_enable_notrace();
+> +	__release(RCU_SCHED);
+>  }
+> 
+>  /**
+> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> index 9b058ee..9b0f568 100644
+> --- a/include/linux/srcu.h
+> +++ b/include/linux/srcu.h
+> @@ -219,7 +219,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  {
+>  	int retval = __srcu_read_lock(sp);
+> 
+> -	rcu_lock_acquire(&(sp)->dep_map);
+> +	__rcu_lock_acquire(&(sp)->dep_map, _THIS_IP_);
 
-  audit: whitespace fix in kernel-parameters.txt (2014-01-17 17:15:02 -0500)
+Good, we do not way srcu_read_lock() complaining about offline or idle
+CPUs.
 
-----------------------------------------------------------------
-AKASHI Takahiro (2):
-      audit: correct a type mismatch in audit_syscall_exit()
-      audit: Modify a set of system calls in audit class definitions
-
-Dan Duval (2):
-      audit: efficiency fix 1: only wake up if queue shorter than backlog limit
-      audit: efficiency fix 2: request exclusive wait since all need same resource
-
-Eric Paris (8):
-      audit: convert all sessionid declaration to unsigned int
-      audit: wait_for_auditd rework for readability
-      audit: documentation of audit= kernel parameter
-      audit: use define's for audit version
-      audit: remove needless switch in AUDIT_SET
-      audit: rework AUDIT_TTY_SET to only grab spin_lock once
-      audit: reorder AUDIT_TTY_SET arguments
-      audit: remove pr_info for every network namespace
-
-Eric W. Biederman (1):
-      audit: Simplify and correct audit_log_capset
-
-Gao feng (7):
-      audit: remove useless code in audit_enable
-      audit: fix incorrect order of log new and old feature
-      audit: don't generate audit feature changed log when audit disabled
-      audit: use old_lock in audit_set_feature
-      audit: don't generate loginuid log when audit disabled
-      audit: print error message when fail to create audit socket
-      audit: fix incorrect set of audit_sock
-
-Joe Perches (3):
-      audit: Use hex_byte_pack_upper
-      audit: Use more current logging style
-      audit: Convert int limit uses to u32
-
-Paul Davies C (2):
-      audit: drop audit_log_abend()
-      audit: Added exe field to audit core dump signal log
-
-Richard Guy Briggs (24):
-      audit: fix netlink portid naming and types
-      audit: restore order of tty and ses fields in log output
-      audit: listen in all network namespaces
-      audit: reset audit backlog wait time after error recovery
-      audit: make use of remaining sleep time from wait_for_auditd
-      documentation: document the audit= kernel start-up parameter
-      audit: add kernel set-up parameter to override default backlog limit
-      audit: clean up AUDIT_GET/SET local variables and future-proof API
-      audit: add audit_backlog_wait_time configuration option
-      audit: fix incorrect type of sessionid
-      audit: allow unlimited backlog queue
-      audit: get rid of *NO* daemon at audit_pid=0 message
-      audit: log AUDIT_TTY_SET config changes
-      audit: refactor audit_receive_msg() to clarify AUDIT_*_RULE* cases
-      audit: prevent an older auditd shutdown from orphaning a newer auditd startup
-      selinux: call WARN_ONCE() instead of calling audit_log_start()
-      smack: call WARN_ONCE() instead of calling audit_log_start()
-      audit: drop audit_cmd_lock in AUDIT_USER family of cases
-      audit: log on errors from filter user rules
-      audit: fix dangling keywords in audit_log_set_loginuid() output
-      audit: log task info on feature change
-      audit: update MAINTAINERS
-      audit: fix location of __net_initdata for audit_net_ops
-      audit: whitespace fix in kernel-parameters.txt
-
-Toshiyuki Okajima (1):
-      audit: audit_log_start running on auditd should not stop
-
- Documentation/kernel-parameters.txt     |  16 ++++++
- MAINTAINERS                             |   3 +-
- drivers/tty/tty_audit.c                 |   2 +-
- include/asm-generic/audit_change_attr.h |   4 +-
- include/asm-generic/audit_write.h       |   6 +++
- include/linux/audit.h                   |  22 ++++----
- include/linux/init_task.h               |   2 +-
- include/net/netlabel.h                  |   2 +-
- include/net/xfrm.h                      |  20 +++----
- include/uapi/linux/audit.h              |   8 +++
- kernel/audit.c                          | 365 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------------
- kernel/audit.h                          |  15 ++++--
- kernel/auditfilter.c                    |  93 +++++++++++++++++++--------------
- kernel/auditsc.c                        |  44 +++++++++-------
- kernel/capability.c                     |   2 +-
- net/xfrm/xfrm_policy.c                  |   8 +--
- net/xfrm/xfrm_state.c                   |   6 +--
- net/xfrm/xfrm_user.c                    |  12 ++---
- security/selinux/ss/services.c          |  12 ++---
- security/smack/smack_lsm.c              |   5 +-
- 20 files changed, 404 insertions(+), 243 deletions(-)
+>  	return retval;
+>  }
+> 
+> @@ -233,7 +233,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+>  	__releases(sp)
+>  {
+> -	rcu_lock_release(&(sp)->dep_map);
+> +	__rcu_lock_release(&(sp)->dep_map, _THIS_IP_);
+>  	__srcu_read_unlock(sp, idx);
+>  }
+> 
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index a3596c8..19ff915 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -333,4 +333,47 @@ static int __init check_cpu_stall_init(void)
+>  }
+>  early_initcall(check_cpu_stall_init);
+> 
+> +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
+> +
+> +static void ck_rcu_is_watching(const char *message)
+> +{
+> +	rcu_lockdep_assert(rcu_is_watching(), message);
+> +}
+> +
+> +void rcu_lock_acquire(void)
+> +{
+> +	__rcu_lock_acquire(&rcu_lock_map, _RET_IP_);
+> +	ck_rcu_is_watching("rcu_read_lock() used illegally while idle");
+> +}
+> +
+> +void rcu_lock_release(void)
+> +{
+> +	ck_rcu_is_watching("rcu_read_unlock() used illegally while idle");
+> +	__rcu_lock_release(&rcu_lock_map, _RET_IP_);
+> +}
+> +
+> +void rcu_lock_acquire_bh(void)
+> +{
+> +	__rcu_lock_acquire(&rcu_bh_lock_map, _RET_IP_);
+> +	ck_rcu_is_watching("rcu_read_lock_bh() used illegally while idle");
+> +}
+> +
+> +void rcu_lock_release_bh(void)
+> +{
+> +	ck_rcu_is_watching("rcu_read_unlock_bh() used illegally while idle");
+> +	__rcu_lock_release(&rcu_bh_lock_map, _RET_IP_);
+> +}
+> +void rcu_lock_acquire_sched(void)
+> +{
+> +	__rcu_lock_acquire(&rcu_sched_lock_map, _RET_IP_);
+> +	ck_rcu_is_watching("rcu_read_lock_sched() used illegally while idle");
+> +}
+> +
+> +void rcu_lock_release_sched(void)
+> +{
+> +	ck_rcu_is_watching("rcu_read_unlock_sched() used illegally while idle");
+> +	__rcu_lock_release(&rcu_sched_lock_map, _RET_IP_);
+> +}
+> +#endif
+> +
+>  #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
+> 
 
