@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaAVEWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 23:22:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45021 "EHLO
+	id S1754332AbaAVEYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 23:24:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45063 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaAVEWW (ORCPT
+	with ESMTP id S1752553AbaAVEYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 23:22:22 -0500
-Date: Tue, 21 Jan 2014 20:22:09 -0800
+	Tue, 21 Jan 2014 23:24:07 -0500
+Date: Tue, 21 Jan 2014 20:24:00 -0800
 From: Jens Axboe <axboe@kernel.dk>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Matias Bjorling <m@bjorling.me>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>, Jan Kara <jack@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, Jeff <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Sumanth <sumantk2@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH V3 1/2]  null_blk: Null pointer deference problem in
- alloc_page_buffers
-Message-ID: <20140122042209.GF20347@kernel.dk>
-References: <1390303800-22422-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <1390303800-22422-2-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        kmo@daterainc.com
+Subject: Re: bio_integrity_verify() bug causing READ verify to be silently
+ skipped
+Message-ID: <20140122042400.GG20347@kernel.dk>
+References: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
+ <yq1sit4zv23.fsf@sermon.lab.mkp.net>
+ <1389936047.5567.721.camel@haakon3.risingtidesystems.com>
+ <yq1ha92uv73.fsf@sermon.lab.mkp.net>
+ <1390348402.5567.805.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390303800-22422-2-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1390348402.5567.805.camel@haakon3.risingtidesystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21 2014, Raghavendra K T wrote:
->  If we load the null_blk module with bs=8k we get following oops:
-> [ 3819.812190] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [ 3819.812387] IP: [<ffffffff81170aa5>] create_empty_buffers+0x28/0xaf
-> [ 3819.812527] PGD 219244067 PUD 215a06067 PMD 0
-> [ 3819.812640] Oops: 0000 [#1] SMP
-> [ 3819.812772] Modules linked in: null_blk(+)
+On Tue, Jan 21 2014, Nicholas A. Bellinger wrote:
+> On Fri, 2014-01-17 at 16:58 -0500, Martin K. Petersen wrote:
+> > >>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
+> > 
+> > >> That breaks partial completion, though. I'll take a look at Kent's
+> > >> changes...
+> > 
+> > nab> Ping..?  Any updates on a proper bugfix for this..?
+> > 
+> > I did put your patch in my queue and have been working on a fix for the
+> > partial completion case. The latter requires a bit of massaging that
+> > interferes with other pending changes.
+> > 
+> > Given that your patch does address a valid issue I'm OK with Jens
+> > putting it in as is. I'll build upon it for my changes.
+> > 
 > 
->  Fix that by resetting block size to PAGE_SIZE if it is greater than PAGE_SIZE
+> <nod>
+> 
+> Jens, are you going to pick this one up, or shall I include it in the
+> upcoming target-pending/for-next pull request instead..?
+> 
+> Either way, it needs a CC' to stable for >= v3.10.y.
 
-Thanks, applied.
+I'll queue it up, thanks.
 
 -- 
 Jens Axboe
