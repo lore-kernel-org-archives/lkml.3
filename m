@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaAVGFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:05:16 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53110 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaAVGFM (ORCPT
+	id S1754853AbaAVGGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:06:42 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23433 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaAVGGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:05:12 -0500
-Date: Wed, 22 Jan 2014 14:05:06 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC] restore user defined min_free_kbytes when disabling thp
-Message-ID: <20140122060506.GA2657@localhost.localdomain>
-Mail-Followup-To: Mel Gorman <mgorman@suse.de>,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	Dave Hansen <dave.hansen@intel.com>,
-	David Rientjes <rientjes@google.com>
-References: <20140121093859.GA7546@localhost.localdomain>
- <20140121102351.GD4963@suse.de>
+	Wed, 22 Jan 2014 01:06:41 -0500
+Message-ID: <52DF5FE9.9020508@oracle.com>
+Date: Wed, 22 Jan 2014 01:06:33 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121102351.GD4963@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012206-1344-0000-0000-0000051E9FD4
+To: paulmck@linux.vnet.ibm.com, Steven Whitehouse <swhiteho@redhat.com>
+CC: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Abhijith Das <adas@redhat.com>
+Subject: Re: [PATCH 17/24] GFS2: Use RCU/hlist_bl based hash for quotas
+References: <1390220627-1571-1-git-send-email-swhiteho@redhat.com> <1390220627-1571-18-git-send-email-swhiteho@redhat.com> <20140122053248.GX10038@linux.vnet.ibm.com>
+In-Reply-To: <20140122053248.GX10038@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:23:51AM +0000, Mel Gorman wrote:
-> On Tue, Jan 21, 2014 at 05:38:59PM +0800, Han Pingtian wrote:
-> > The testcase 'thp04' of LTP will enable THP, do some testing, then
-> > disable it if it wasn't enabled. But this will leave a different value
-> > of min_free_kbytes if it has been set by admin. So I think it's better
-> > to restore the user defined value after disabling THP.
-> > 
-> 
-> Then have LTP record what min_free_kbytes was at the same time THP was
-> enabled by the test and restore both settings. It leaves a window where
-> an admin can set an alternative value during the test but that would also
-> invalidate the test in same cases and gets filed under "don't do that".
-> 
+On 01/22/2014 12:32 AM, Paul E. McKenney wrote:
+> On Mon, Jan 20, 2014 at 12:23:40PM +0000, Steven Whitehouse wrote:
+>> >Prior to this patch, GFS2 kept all the quotas for each
+>> >super block in a single linked list. This is rather slow
+>> >when there are large numbers of quotas.
+>> >
+>> >This patch introduces a hlist_bl based hash table, similar
+>> >to the one used for glocks. The initial look up of the quota
+>> >is now lockless in the case where it is already cached,
+>> >although we still have to take the per quota spinlock in
+>> >order to bump the ref count. Either way though, this is a
+>> >big improvement on what was there before.
+>> >
+>> >The qd_lock and the per super block list is preserved, for
+>> >the time being. However it is intended that since this is no
+>> >longer used for its original role, it should be possible to
+>> >shrink the number of items on that list in due course and
+>> >remove the requirement to take qd_lock in qd_get.
+>> >
+>> >Signed-off-by: Steven Whitehouse<swhiteho@redhat.com>
+>> >Cc: Abhijith Das<adas@redhat.com>
+>> >Cc: Paul E. McKenney<paulmck@linux.vnet.ibm.com>
+> Interesting!  I thought that Sasha Levin had a hash table in the works,
+> but I don't see it, so CCing him.
 
-Because the value is changed in kernel, so it would be better to 
-restore it in kernel, right? :)  I have a v2 patch which will restore
-the value only if it isn't set again by user after THP's initialization.
-This v2 patch is dependent on the patch 'mm: show message when updating
-min_free_kbytes in thp' which has been added to -mm tree, can be found
-here:
+Indeed, there is a hlist based hashtable at include/linux/hashtable.h for couple kernel
+versions now. However, there's no hlist_bl one.
 
-http://ozlabs.org/~akpm/mmotm/broken-out/mm-show-message-when-updating-min_free_kbytes-in-thp.patch
+If there is a plan on adding a hlist_bl hashtable for whatever reason, it should probably
+be done by expanding hashtable.h so that more places that use hlist_bl would benefit from it (yes,
+there are couple more places that do hlist_bl hashtable).
 
-please have a look. Thanks.
+Also, do we really want to use hlist_bl here? It doesn't seem like it's being done to conserve on
+memory, and that's the only reason it should be used for. Doing a single spinlock per bucket is
+much more efficient than using the bit locking scheme that hlist_bl does.
 
 
->From 8b79586ff9a1d85cbe45102a86888268094ec0ae Mon Sep 17 00:00:00 2001
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-Date: Tue, 21 Jan 2014 17:24:43 +0800
-Subject: [PATCH] mm: restore user defined min_free_kbytes when disabling thp
-
-thp increases the value of min_free_kbytes in initialization. This will
-change the user defined value of min_free_kbytes sometimes. So try to
-restore the value when disabling thp if the value has been changed in
-thp initialization and isn't changed by user afte that.
-
-Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
----
- mm/huge_memory.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 94a824f..fcb8ce58 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -164,6 +164,16 @@ static int start_khugepaged(void)
- 	} else if (khugepaged_thread) {
- 		kthread_stop(khugepaged_thread);
- 		khugepaged_thread = NULL;
-+
-+		if (user_min_free_kbytes >= 0 && 
-+		    user_min_free_kbytes != min_free_kbytes) {
-+			pr_info("restore min_free_kbytes from %d to user "
-+				"defined %d when stopping khugepaged\n",
-+				min_free_kbytes, user_min_free_kbytes);
-+
-+			min_free_kbytes = user_min_free_kbytes;
-+			setup_per_zone_wmarks();
-+		}
- 	}
- 
- 	return err;
--- 
-1.7.7.6
-
+Thanks,
+Sasha
