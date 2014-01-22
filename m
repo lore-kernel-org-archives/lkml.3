@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaAVTzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:55:13 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:41228 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaAVTzK (ORCPT
+	id S1755891AbaAVT4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:56:34 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41125 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaAVT4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:55:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <xm26lhy7kin2.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
- <1390376734-6800-1-git-send-email-vincent.guittot@linaro.org> <xm26lhy7kin2.fsf@sword-of-the-dawn.mtv.corp.google.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 22 Jan 2014 11:54:39 -0800
-Message-ID: <CAPM31R+0HL9M25CCNVJ4yhSSuyN1raML0eEbFKKLzBLMcbhBMQ@mail.gmail.com>
-Subject: Re: [PATCH] Revert "sched: Fix sleep time double accounting in
- enqueue entity"
-To: Benjamin Segall <bsegall@google.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jan 2014 14:56:31 -0500
+Message-ID: <1390420720.5567.952.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 0/3] percpu_ida+Co: Make percpu_ida_alloc accept task
+ state bitmask
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+Date: Wed, 22 Jan 2014 11:58:40 -0800
+In-Reply-To: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
+References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 9:53 AM,  <bsegall@google.com> wrote:
-> Vincent Guittot <vincent.guittot@linaro.org> writes:
->
->> This reverts commit 282cf499f03ec1754b6c8c945c9674b02631fb0f.
->>
->> With the current implementation, the load average statistics of a sched entity
->> change according to other activity on the CPU even if this activity is done
->> between the running window of the sched entity and have no influence on the
->> running duration of the task.
->>
->> When a task wakes up on the same CPU, we currently update last_runnable_update
->> with the return  of __synchronize_entity_decay without updating the
->> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
->> the load_contrib of the se with the rq's blocked_load_contrib before removing
->> it from the latter (with __synchronize_entity_decay) but we must keep
->> last_runnable_update unchanged for updating runnable_avg_sum/period during the
->> next update_entity_load_avg.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> Unless paul wants to squash this into a possible change to the if
-> (wakeup) stuff:
-> Reviewed-by: Ben Segall <bsegall@google.com>
->
+Hey Jens,
 
-I can send that separately as Vincent suggests.  This is good to go.
+On Mon, 2014-01-20 at 03:44 +0000, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> Hi Linus,
+> 
+> Here is the -v2 series for converting percpu_ida_alloc() + consumer
+> usage to accept the task state bitmask parameter, w/o the extra
+> legacy gfp_t wrapper.
+> 
+> As requested, the first patch contains only the parameter change
+> to percpu_ida_alloc() + existing consumers, and makes no semantic
+> or behavior change.  This patch is CC'ed for stable, and will need
+> some light massaging to apply back to v3.12.y.
+> 
 
->>
->> ---
->>  kernel/sched/fair.c |    8 +-------
->>  1 file changed, 1 insertion(+), 7 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index e64b079..6d61f20 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -2365,13 +2365,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->>               }
->>               wakeup = 0;
->>       } else {
->> -             /*
->> -              * Task re-woke on same cpu (or else migrate_task_rq_fair()
->> -              * would have made count negative); we must be careful to avoid
->> -              * double-accounting blocked time after synchronizing decays.
->> -              */
->> -             se->avg.last_runnable_update += __synchronize_entity_decay(se)
->> -                                                     << 20;
->> +             __synchronize_entity_decay(se);
->>       }
->>
->>       /* migrated tasks did not contribute to our blocked load */
+Any objections to the blk-mq changes in patch #1..?  Please ACK.  :)
+
+> The second patch is a blk-mq cleanup to propigate the task state
+> bitmask usage up to the blk-mq vs. legacy split in blk_get_request().
+> 
+
+How about this one..?  Do you want to pick it up for v3.15, or have it
+included in target-pending/for-next now..?
+
+Thanks,
+
+--nab
+
+> The last patch fixes the original iscsi-target session reset bug
+> by passing TASK_INTERRUPTIBLE, and adds the signal_pending_state()
+> bit required in percpu_ida_alloc() code.  This is also CC'ed for
+> v3.12.y.
+> 
+> CC'ing Ingo + Peter for TASK_RUNNING + prepare_to_wait() bit.
+> 
+> Thank you,
+> 
+> --nab
+> 
+> Kent Overstreet (1):
+>   percpu_ida: Make percpu_ida_alloc + callers accept task state bitmask
+> 
+> Nicholas Bellinger (2):
+>   blk-mq: Convert gfp_t parameters to task state bitmask
+>   iscsi-target: Fix connection reset hang with percpu_ida_alloc
+> 
+>  block/blk-core.c                         |    4 +++-
+>  block/blk-flush.c                        |    2 +-
+>  block/blk-mq-tag.c                       |   14 +++++++-------
+>  block/blk-mq-tag.h                       |    2 +-
+>  block/blk-mq.c                           |   28 ++++++++++++++--------------
+>  drivers/target/iscsi/iscsi_target_util.c |    8 ++++++--
+>  drivers/target/tcm_fc/tfc_cmd.c          |    2 +-
+>  drivers/vhost/scsi.c                     |    2 +-
+>  include/linux/blk-mq.h                   |    4 ++--
+>  include/linux/percpu_ida.h               |    3 ++-
+>  lib/percpu_ida.c                         |   17 +++++++++++------
+>  11 files changed, 49 insertions(+), 37 deletions(-)
+> 
+
+
