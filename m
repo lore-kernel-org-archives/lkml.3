@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaAVChh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 21:37:37 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:32812 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaAVChf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 21:37:35 -0500
-Date: Tue, 21 Jan 2014 21:37:31 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [GIT PULL] percpu changes for v3.14-rc1
-Message-ID: <20140122023711.GA4860@htj.dyndns.org>
-References: <20140121094814.GB6928@htj.dyndns.org>
- <CA+55aFy6k0ezh69eXGDAJPfKHDRLPurCUBKXW4pcV-UjQVGLmg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy6k0ezh69eXGDAJPfKHDRLPurCUBKXW4pcV-UjQVGLmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754821AbaAVCk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 21:40:27 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:46879 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619AbaAVCk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 21:40:26 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] uapi: convert u64 to __u64 in exported headers
+Date: Tue, 21 Jan 2014 21:40:26 -0500
+Message-Id: <1390358426-8884-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+The u64 type is not defined in any exported kernel headers, so trying
+to use it will lead to build failures.
 
-On Tue, Jan 21, 2014 at 05:51:13PM -0800, Linus Torvalds wrote:
-> On Tue, Jan 21, 2014 at 1:48 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> > I messed up the for-3.14 branch (committed stuff to for-next) and had
-> > to rebuild for-3.14 by cherry-picking; however, the result is the same
-> > as published to the next tree through for-next.
-> >
-> > The changes are available in the following git branch
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git
-> 
-> You messed up the pull request too.. The branch name is missing from
-> that git line, even if you did mention it a few lines earlier...
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/uapi/linux/nfs4.h       | 2 +-
+ include/uapi/linux/perf_event.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Oops, sorry.  The branch is for-3.14.
-
-I have no idea how that happened tho.  That even isn't a part that I
-edit.  I did
-
-  git request-pull master git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.14 > out
-
-and then pulled in that file and added the description on top and diff
-at the end.  I still have the "out" file created by the above command
-and it also lacks the branch tag, so it definitely wasn't me somehow
-deleting it while editing.  If I run the git-request-pull again, it
-does have "for-3.14" there with everything else identical.  I wonder
-whether git-request-pull somehow skips over branch tag when remote
-for-3.14 doesn't match local one?
-
-Ooh, right, that was it.  So, after running git-request-pull for the
-first time, I rebuilt for-3.14, did git push -f and then ran
-git-request-pull.  At that point, the new for-3.14 hasn't propagated
-to git://git.kernel.org yet, so git-request-pull couldn't find the
-head which matched the SHA1 and thus omitted printing the branch.  I
-wonder whether this is a new behavior.  I saw the warning message
-multiple times but ISTR the generated pull request having the branch
-name specified on the command line regardless.  Maybe it should just
-fail rather than generating pull request w/o branch tag?
-
-Thanks.
-
+diff --git a/include/uapi/linux/nfs4.h b/include/uapi/linux/nfs4.h
+index 788128e..35f5f4c 100644
+--- a/include/uapi/linux/nfs4.h
++++ b/include/uapi/linux/nfs4.h
+@@ -150,7 +150,7 @@
+ #define NFS4_SECINFO_STYLE4_CURRENT_FH	0
+ #define NFS4_SECINFO_STYLE4_PARENT	1
+ 
+-#define NFS4_MAX_UINT64	(~(u64)0)
++#define NFS4_MAX_UINT64	(~(__u64)0)
+ 
+ /* An NFS4 sessions server must support at least NFS4_MAX_OPS operations.
+  * If a compound requires more operations, adjust NFS4_MAX_OPS accordingly.
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 959d454..7a3fed5 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -787,7 +787,7 @@ union perf_mem_data_src {
+ #define PERF_MEM_TLB_SHIFT	26
+ 
+ #define PERF_MEM_S(a, s) \
+-	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
++	(((__u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+ 
+ /*
+  * single taken branch record layout:
 -- 
-tejun
+1.8.4.3
+
