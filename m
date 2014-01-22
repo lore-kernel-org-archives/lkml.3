@@ -1,252 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaAVTDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:03:03 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46066 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852AbaAVTB4 (ORCPT
+	id S1755823AbaAVTDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:03:48 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58262 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656AbaAVTDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:01:56 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH RFC 2/4] drivers: of: implement reserved-memory handling for dma
-Date: Wed, 22 Jan 2014 12:58:50 -0600
-Message-Id: <1390417133-6650-3-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1390417133-6650-1-git-send-email-joshc@codeaurora.org>
-References: <1390417133-6650-1-git-send-email-joshc@codeaurora.org>
+	Wed, 22 Jan 2014 14:03:46 -0500
+Date: Wed, 22 Jan 2014 19:03:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Message-ID: <20140122190316.GT17314@sirena.org.uk>
+References: <20140115165128.479994c3@armhf>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q+oMmc1K1xhZpILv"
+Content-Disposition: inline
+In-Reply-To: <20140115165128.479994c3@armhf>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 0/8] ASoC: simple-card: simplify code
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for handling 'shared-dma-pool' reserved-memory nodes.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- drivers/of/Kconfig               |   7 ++
- drivers/of/Makefile              |   1 +
- drivers/of/of_reserved_mem_dma.c | 178 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 186 insertions(+)
- create mode 100644 drivers/of/of_reserved_mem_dma.c
+--q+oMmc1K1xhZpILv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index aba13df..ca58fb3e 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -81,4 +81,11 @@ config OF_RESERVED_MEM
- 	help
- 	  Helpers to allow for reservation of memory regions
- 
-+config OF_RESERVED_MEM_DMA
-+	depends on OF_RESERVED_MEM
-+	depends on DMA_CMA || HAVE_GENERIC_DMA_COHERENT
-+	def_bool y
-+	help
-+	  Helpers for reserving memory regions for DMA use
-+
- endmenu # OF
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index ed9660a..6142227 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -10,3 +10,4 @@ obj-$(CONFIG_OF_PCI)	+= of_pci.o
- obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
- obj-$(CONFIG_OF_MTD)	+= of_mtd.o
- obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
-+obj-$(CONFIG_OF_RESERVED_MEM_DMA) += of_reserved_mem_dma.o
-diff --git a/drivers/of/of_reserved_mem_dma.c b/drivers/of/of_reserved_mem_dma.c
-new file mode 100644
-index 0000000..e24f02d
---- /dev/null
-+++ b/drivers/of/of_reserved_mem_dma.c
-@@ -0,0 +1,178 @@
-+/*
-+ * Device tree based initialization code for DMA reserved regions.
-+ *
-+ * Copyright (c) 2013, The Linux Foundation. All Rights Reserved.
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ * Author: Marek Szyprowski <m.szyprowski@samsung.com>
-+ * Author: Josh Cartwright <joshc@codeaurora.org>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License or (at your optional) any later version of the license.
-+ */
-+#include <linux/memblock.h>
-+#include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/of_platform.h>
-+#include <linux/mm.h>
-+#include <linux/sizes.h>
-+#include <linux/mm_types.h>
-+#include <linux/dma-contiguous.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/of_reserved_mem.h>
-+
-+static void rmem_dma_device_init(struct reserved_mem *rmem,
-+				 struct platform_device *pdev,
-+				 struct of_phandle_args *args)
-+{
-+	dma_declare_coherent_memory(&pdev->dev, rmem->base, rmem->base,
-+		rmem->size, DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-+}
-+
-+static void rmem_dma_device_release(struct reserved_mem *rmem,
-+				    struct platform_device *pdev)
-+{
-+	dma_release_declared_memory(&pdev->dev);
-+}
-+
-+static const struct reserved_mem_ops rmem_dma_ops = {
-+	.device_init	= rmem_dma_device_init,
-+	.device_release	= rmem_dma_device_release,
-+};
-+
-+static int __init rmem_dma_get_reg(unsigned long node, const char *uname,
-+				   phys_addr_t *base, phys_addr_t *size)
-+{
-+	unsigned long len;
-+	__be32 *prop;
-+
-+	prop = of_get_flat_dt_prop(node, "reg", &len);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	if (len < (dt_root_addr_cells + dt_root_size_cells) * sizeof(__be32)) {
-+		pr_err("Malformed 'shared-dma-pool' reserved-mem node '%s'.\n",
-+				uname);
-+		return -EINVAL;
-+	}
-+
-+	*base = dt_mem_next_cell(dt_root_addr_cells, &prop);
-+	*size = dt_mem_next_cell(dt_root_size_cells, &prop);
-+	return 0;
-+}
-+
-+static int __init rmem_dma_get_size(unsigned long node, const char *uname,
-+				    phys_addr_t *size)
-+{
-+	unsigned long len;
-+	__be32 *prop;
-+
-+	prop = of_get_flat_dt_prop(node, "size", &len);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	if (len < dt_root_size_cells * sizeof(__be32)) {
-+		pr_err("Malformed 'shared-dma-pool' reserved-mem node '%s'.\n",
-+				uname);
-+		return -EINVAL;
-+	}
-+
-+	*size = dt_mem_next_cell(dt_root_size_cells, &prop);
-+	return 0;
-+}
-+
-+static void rmem_cma_device_init(struct reserved_mem *rmem,
-+				 struct platform_device *pdev,
-+				 struct of_phandle_args *args)
-+{
-+	dev_set_cma_area(&pdev->dev, rmem->cma);
-+}
-+
-+static const struct reserved_mem_ops rmem_cma_ops = {
-+	.device_init	= rmem_cma_device_init,
-+};
-+
-+static int __init rmem_cma_reserve_area(struct reserved_mem *rmem,
-+					unsigned long node, const char *uname)
-+{
-+	int err;
-+
-+	err = dma_contiguous_reserve_area(rmem->size, rmem->base, 0,
-+					  &rmem->cma);
-+	if (err) {
-+		pr_err("Unable to setup CMA reserved-mem region for '%s'.\n",
-+				uname);
-+		return err;
-+	}
-+
-+	if (of_get_flat_dt_prop(node, "linux,cma-default", NULL))
-+		dma_contiguous_set_default(rmem->cma);
-+
-+	rmem->ops = &rmem_cma_ops;
-+	return 0;
-+}
-+
-+static int __init rmem_cma_setup(struct reserved_mem *rmem,
-+				 unsigned long node,
-+				 const char *uname)
-+{
-+	int err;
-+
-+	err = rmem_dma_get_reg(node, uname, &rmem->base, &rmem->size);
-+	if (!err)
-+		goto out_done;
-+
-+	rmem->base = 0;
-+	err = rmem_dma_get_size(node, uname, &rmem->size);
-+	if (err)
-+		goto out_err;
-+
-+out_done:
-+	return rmem_cma_reserve_area(rmem, node, uname);
-+
-+out_err:
-+	pr_err("Malformed 'shared-dma-pool' node '%s'.\n", uname);
-+	return err;
-+}
-+
-+static int __init rmem_dma_excl_setup(struct reserved_mem *rmem,
-+				      unsigned long node,
-+				      const char *uname)
-+{
-+	int err;
-+
-+	err = rmem_dma_get_reg(node, uname, &rmem->base, &rmem->size);
-+	if (!err)
-+		goto out_done;
-+
-+	err = rmem_dma_get_size(node, uname, &rmem->size);
-+	if (err)
-+		goto out_err;
-+
-+	rmem->base = memblock_alloc_base(rmem->size, PAGE_SIZE,
-+					 MEMBLOCK_ALLOC_ANYWHERE);
-+	memblock_free(rmem->base, rmem->size);
-+
-+out_done:
-+	rmem->ops = &rmem_dma_ops;
-+	return memblock_remove(rmem->base, rmem->size);
-+
-+out_err:
-+	pr_err("Unable to setup reserved-mem region '%s' for DMA.\n", uname);
-+	return err;
-+}
-+
-+static int __init rmem_dma_setup(struct reserved_mem *rmem,
-+				 unsigned long node,
-+				 const char *uname)
-+{
-+	if (IS_ENABLED(CONFIG_DMA_CMA) &&
-+		of_get_flat_dt_prop(node, "reusable", NULL))
-+		return rmem_cma_setup(rmem, node, uname);
-+
-+	return rmem_dma_excl_setup(rmem, node, uname);
-+}
-+RESERVEDMEM_OF_DECLARE(dma, "shared-dma-pool", rmem_dma_setup);
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+On Wed, Jan 15, 2014 at 04:51:28PM +0100, Jean-Francois Moine wrote:
+> This patch set simplifies the code and make easier a possible multi-DAI
+> links extension.
 
+Just as a general thing about this and the other simple-card patches
+that are floating around: there's a lot of them all working on the same
+things.  It'd be good to see more peer review and testing going on,
+mostly there's no comments from other people working on the code.
+
+--q+oMmc1K1xhZpILv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS4BXxAAoJELSic+t+oim9rRYP/2snpMzp//3GGy7PXbi+yHa8
+d9dIsvhpI1rwlvzoJP32njHoh9YbwjjlqBkc+pTPeYRcBTL2O+8KpmSM2I7e7I8u
+P6hYreDb1b0woXMBT75W/J3se5D7vAv2JnT7byk22x3GrXbDULnDakRzY5VBTCl6
+pw2vYvL/AR7LpnGvpXwJyVCsuN12ayF2Jh1YtXFHhwF5s9aVIxBuHkqn7CtE8/H0
+JH4Eg6sVXqyxKXKz1015jWIbk0IQ14Gv2lZg6qIVy3bOI6+HWbQCMhbxaaecAmx3
+cCVuLxQr4ikCXxxmXWp4TKuwgZwqkHMwK2n0gUubj2YGmjtQ+SSwNGuqV+h6AZon
+0KADwKBY/Ffgysl6uN3xlL3xtHO9waeHhfofqFc/UvIYOnRNgjvNz/p/WcWxUoJu
+rbRkIJy9oso9uS9DJdQEpWjQlWFuirfEvg+4fwTsm9dQ385jGy6FRxNYG5NvhH8K
+1y3IFZArYPBb9mwfxWAInG09jy6/3qzdHE8688ZexFaa5SDbOHl6jtoiG0b5IJ/u
+FwNzNCpkF0dcDXEyUbLGVTmLjQYWrQmQ6GcsCXFDbv1yALU4Te6QvmnI/XAfQNnp
+trkFsu4w4SMcGCvPyJS9aq12HFJJMeuiI8ATWxfoSQ4kCRtvCFBYp2A39CYzOwAC
+z1NpzINgZDenwjRQ21CC
+=ZXuV
+-----END PGP SIGNATURE-----
+
+--q+oMmc1K1xhZpILv--
