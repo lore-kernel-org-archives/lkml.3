@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999AbaAVXu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:50:57 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:41722 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaAVXu4 (ORCPT
+	id S1756064AbaAVXwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:52:12 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45891 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753123AbaAVXwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:50:56 -0500
+	Wed, 22 Jan 2014 18:52:11 -0500
+Date: Wed, 22 Jan 2014 23:52:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 22/24] drm/i2c: tda998x: change the frequence in the
+	audio channel
+Message-ID: <20140122235204.GS15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195847.646a40b0@armhf>
 MIME-Version: 1.0
-In-Reply-To: <20B8A056-FE5B-4062-A043-6E34C45B34B8@fb.com>
-References: <20140116143749.GA21526@ghostprotocols.net> <CEFDA8E4.2D359%gjain@fb.com>
- <87sisn6ojf.fsf@sejong.aot.lge.com> <20B8A056-FE5B-4062-A043-6E34C45B34B8@fb.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 22 Jan 2014 23:50:35 +0000
-X-Google-Sender-Auth: _ir9Etx5pi56p8HTpzhI9nWCdeE
-Message-ID: <CAM9d7ciasrmauzZCQmFKkeNhdOjvi4h_d9ziis_RqUM_eH5M_g@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-To: Gaurav Jain <gjain@fb.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140119195847.646a40b0@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gaurav,
+On Sun, Jan 19, 2014 at 07:58:47PM +0100, Jean-Francois Moine wrote:
+> This patch sets the frequence as 'not indicated' instead of '48kHz'
+> and adds some comments.
+> 
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-On Wed, Jan 22, 2014 at 11:43 PM, Gaurav Jain <gjain@fb.com> wrote:
->> On Jan 17, 2014, at 2:44 AM, "Namhyung Kim" <namhyung@kernel.org> wrote:
->> What I wasn't sure is whether JIT program also produces some dynamic data.
->> And I think only perf mem command cares about data mappings, no?
->
-> I don't think we generate symbols for dynamic data at the moment. There may be uses in the future. I don't know about other JIT programs.
->
-> If we can include this behaviour it would be great, but I don't have a way to test it. I'd guess if somebody had a valid use case, they would report the issue. Otherwise, the patch as you've written it works great for me.
+Good catch that byte 2 doesn't exist in this set.
 
-Thanks for confirming it and testing the patch!
+sound/asounddef.h has definitions for these:
 
-Thanks,
-Namhyung
+IEC958_AES0_CON_NOT_COPYRIGHT
+IEC958_AES3_CON_FS_NOTID
+IEC958_AES4_CON_MAX_WORDLEN_24
+IEC958_AES4_CON_ORIGFS_NOTID
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
