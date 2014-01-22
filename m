@@ -1,72 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbaAVMQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:16:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53629 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362AbaAVMQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755483AbaAVMQb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 Jan 2014 07:16:31 -0500
-Date: Wed, 22 Jan 2014 13:16:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        dyoung@redhat.com
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140122121603.GH3694@twins.programming.kicks-ass.net>
-References: <20131212140835.729222186@infradead.org>
- <20131212141655.362219382@infradead.org>
- <52DEF495.2020304@oracle.com>
- <20140122104532.GJ31570@twins.programming.kicks-ass.net>
- <20140122120048.GB389@x4>
- <20140122120757.GL31570@twins.programming.kicks-ass.net>
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:56891 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304AbaAVMQa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 07:16:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122120757.GL31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140122080238.GD31230@bbox>
+References: <CAFLCcBqyhL=wfC4uJmpp9MkGExBuPJC4EqY2RHRngnEn_1ytSA@mail.gmail.com>
+	<20140121050439.GA16664@bbox>
+	<CAFLCcBr1_=i3Pdh8_MToS0Dc1UGruviMiydF5c-vX2Bv8AfeAw@mail.gmail.com>
+	<20140121081820.GA31230@bbox>
+	<CAFLCcBo90jDa562OxwACFVBmSAwVM06oGnx7ooq7YKAvNdqU=w@mail.gmail.com>
+	<20140122080238.GD31230@bbox>
+Date: Wed, 22 Jan 2014 20:16:28 +0800
+Message-ID: <CAFLCcBqPeeJEqyO978VQmiP3coAHBhoC86jQ0rwFwD-dkGyjkw@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zswap: Check all pool pages instead of one pool pages
+From: Cai Liu <liucai.lfn@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Cai Liu <cai.liu@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 01:07:57PM +0100, Peter Zijlstra wrote:
-> On Wed, Jan 22, 2014 at 01:00:48PM +0100, Markus Trippelsdorf wrote:
-> > FYI it happens on real hardware on my machine:
-> > ...
-> > [    0.000000] Hierarchical RCU implementation.
-> > [    0.000000] NR_IRQS:4352 nr_irqs:712 16
-> > [    0.000000] spurious 8259A interrupt: IRQ7.
-> > [    0.000000] Console: colour VGA+ 80x25
-> > [    0.000000] console [tty0] enabled
-> > [    0.000000] hpet clockevent registered
-> > [    0.000000] tsc: Fast TSC calibration using PIT
-> > [    0.003333] tsc: Detected 3210.681 MHz processor
-> > [   60.375238] Calibrating delay loop (skipped), value calculated using timer frequency.. 6423.91 BogoMIPS (lpj=10702270)
-> > [   60.375240] pid_max: default: 32768 minimum: 301
-> > [   60.375259] Mount-cache hash table entries: 256
-> > [   60.375373] tseg: 0000000000
-> > [   60.375377] CPU: Physical Processor ID: 0
-> > [   60.375377] CPU: Processor Core ID: 0
-> > [   60.375378] mce: CPU supports 6 MCE banks
-> > [   60.375382] LVT offset 0 assigned for vector 0xf9
-> > [   60.375384] process: using AMD E400 aware idle routine
-> > [   60.375386] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
-> 
-> Should have always happened like that I think. From the log it looks
-> like the moment we switch from jiffies to actual TSC in
-> arch/x86/kernel/tsc.c:sched_clock().
-> 
-> I don't think I changed the logic there, just switched from a condition
-> to a jump_label.
+Hello Minchan
 
-On that, the bestest solution is to completely rip out the no_tsc
-option, its daft. The few people still running chips without TSC can use
-X86_TSC=n.
+
+2014/1/22 Minchan Kim <minchan@kernel.org>
+>
+> Hello Cai,
+>
+> On Tue, Jan 21, 2014 at 09:52:25PM +0800, Cai Liu wrote:
+> > Hello Minchan
+> >
+> > 2014/1/21 Minchan Kim <minchan@kernel.org>:
+> > > Hello,
+> > >
+> > > On Tue, Jan 21, 2014 at 02:35:07PM +0800, Cai Liu wrote:
+> > >> 2014/1/21 Minchan Kim <minchan@kernel.org>:
+> > >> > Please check your MUA and don't break thread.
+> > >> >
+> > >> > On Tue, Jan 21, 2014 at 11:07:42AM +0800, Cai Liu wrote:
+> > >> >> Thanks for your review.
+> > >> >>
+> > >> >> 2014/1/21 Minchan Kim <minchan@kernel.org>:
+> > >> >> > Hello Cai,
+> > >> >> >
+> > >> >> > On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
+> > >> >> >> zswap can support multiple swapfiles. So we need to check
+> > >> >> >> all zbud pool pages in zswap.
+> > >> >> >>
+> > >> >> >> Version 2:
+> > >> >> >>   * add *total_zbud_pages* in zbud to record all the pages in pools
+> > >> >> >>   * move the updating of pool pages statistics to
+> > >> >> >>     alloc_zbud_page/free_zbud_page to hide the details
+> > >> >> >>
+> > >> >> >> Signed-off-by: Cai Liu <cai.liu@samsung.com>
+> > >> >> >> ---
+> > >> >> >>  include/linux/zbud.h |    2 +-
+> > >> >> >>  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
+> > >> >> >>  mm/zswap.c           |    4 ++--
+> > >> >> >>  3 files changed, 35 insertions(+), 15 deletions(-)
+> > >> >> >>
+> > >> >> >> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+> > >> >> >> index 2571a5c..1dbc13e 100644
+> > >> >> >> --- a/include/linux/zbud.h
+> > >> >> >> +++ b/include/linux/zbud.h
+> > >> >> >> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
+> > >> >> >>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+> > >> >> >>  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
+> > >> >> >>  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
+> > >> >> >> -u64 zbud_get_pool_size(struct zbud_pool *pool);
+> > >> >> >> +u64 zbud_get_pool_size(void);
+> > >> >> >>
+> > >> >> >>  #endif /* _ZBUD_H_ */
+> > >> >> >> diff --git a/mm/zbud.c b/mm/zbud.c
+> > >> >> >> index 9451361..711aaf4 100644
+> > >> >> >> --- a/mm/zbud.c
+> > >> >> >> +++ b/mm/zbud.c
+> > >> >> >> @@ -52,6 +52,13 @@
+> > >> >> >>  #include <linux/spinlock.h>
+> > >> >> >>  #include <linux/zbud.h>
+> > >> >> >>
+> > >> >> >> +/*********************************
+> > >> >> >> +* statistics
+> > >> >> >> +**********************************/
+> > >> >> >> +
+> > >> >> >> +/* zbud pages in all pools */
+> > >> >> >> +static u64 total_zbud_pages;
+> > >> >> >> +
+> > >> >> >>  /*****************
+> > >> >> >>   * Structures
+> > >> >> >>  *****************/
+> > >> >> >> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
+> > >> >> >>       return zhdr;
+> > >> >> >>  }
+> > >> >> >>
+> > >> >> >> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
+> > >> >> >> +{
+> > >> >> >> +     struct page *page;
+> > >> >> >> +
+> > >> >> >> +     page = alloc_page(gfp);
+> > >> >> >> +
+> > >> >> >> +     if (page) {
+> > >> >> >> +             pool->pages_nr++;
+> > >> >> >> +             total_zbud_pages++;
+> > >> >> >
+> > >> >> > Who protect race?
+> > >> >>
+> > >> >> Yes, here the pool->pages_nr and also the total_zbud_pages are not protected.
+> > >> >> I will re-do it.
+> > >> >>
+> > >> >> I will change *total_zbud_pages* to atomic type.
+> > >> >
+> > >> > Wait, it doesn't make sense. Now, you assume zbud allocator would be used
+> > >> > for only zswap. It's true until now but we couldn't make sure it in future.
+> > >> > If other user start to use zbud allocator, total_zbud_pages would be pointless.
+> > >>
+> > >> Yes, you are right.  ZBUD is a common module. So in this patch calculate the
+> > >> zswap pool size in zbud is not suitable.
+> > >>
+> > >> >
+> > >> > Another concern is that what's your scenario for above two swap?
+> > >> > How often we need to call zbud_get_pool_size?
+> > >> > In previous your patch, you reduced the number of call so IIRC,
+> > >> > we only called it in zswap_is_full and for debugfs.
+> > >>
+> > >> zbud_get_pool_size() is called frequently when adding/freeing zswap
+> > >> entry happen in zswap . This is why in this patch I added a counter in zbud,
+> > >> and then in zswap the iteration of zswap_list to calculate the pool size will
+> > >> not be needed.
+> > >
+> > > We can remove updating zswap_pool_pages in zswap_frontswap_store and
+> > > zswap_free_entry as I said. So zswap_is_full is only hot spot.
+> > > Do you think it's still big overhead? Why? Maybe locking to prevent
+> > > destroying? Then, we can use RCU to minimize the overhead as I mentioned.
+> >
+> > I get your point. Yes, In my previous patch, zswap_is_full() was the
+> > only path to call
+> > zbud_get_pool_size(). And your suggestion on patch v1 to remove the unnecessary
+> > iteration will reduce the overhead further.
+> >
+> > So adding the calculating of all the pool size in zswap.c is better.
+> >
+> > >>
+> > >> > Of course, it would need some lock or refcount to prevent destroy
+> > >> > of zswap_tree in parallel with zswap_frontswap_invalidate_area but
+> > >> > zswap_is_full doesn't need to be exact so RCU would be good fit.
+> > >> >
+> > >> > Most important point is that now zswap doesn't consider multiple swap.
+> > >> > For example, Let's assume you uses two swap A and B with different priority
+> > >> > and A already has charged 19% long time ago and let's assume that A swap is
+> > >> > full now so VM start to use B so that B has charged 1% recently.
+> > >> > It menas zswap charged (19% + 1%)i is full by default.
+> > >> >
+> > >> > Then, if VM want to swap out more pages into B, zbud_reclaim_page
+> > >> > would be evict one of pages in B's pool and it would be repeated
+> > >> > continuously. It's totally LRU reverse problem and swap thrashing in B
+> > >> > would happen.
+> > >> >
+> > >>
+> > >> The scenario is below:
+> > >> There are 2 swap A, B in system. If pool size of A reach 19% of ram
+> > >> size and swap A
+> > >> is also full. Then swap B will be used. Pool size of B will be
+> > >> increased until it hit
+> > >> the 20% of the ram size. By now zswap pool size is about 39% of ram size.
+> > >> If there are more than 2 swap file/device,  zswap pool will expand out
+> > >> of control
+> > >> and there may be no swapout happened.
+> > >
+> > > I know.
+> > >
+> > >>
+> > >> I think the original intention of zswap designer is to keep the total
+> > >> zswap pools size below
+> > >> 20% of RAM size.
+> > >
+> > > My point is your patch still doesn't solve the example I mentioned.
+> >
+> > Hmm. My patch only make sure all the zswap pools use maximum 20% of
+> > RAM size. It is a new problem in your example. The zbud_reclaim_page would
+> > not swap out the oldest zbud page when multiple swaps are used.
+> >
+> > Maybe the new problem can be resolved in another patch.
+>
+> It means current zswap has a problem in multiple swap but you want
+> to fix a problem which happens only when it is used for multiple swap.
+> So, I'm not sure we want a fix in this phase before discussing more
+> fundamental thing.
+>
+
+Yes, The bug which I want to fix only happens when multiple swap are used.
+
+> That's why I want to know why you want to use multiple swap with zswap
+> but you are never saying it to us. :(
+>
+
+If user uses more than one swap device/file, then this is an issue.
+Zswap pool is created when a swap device/file is swapped on happens.
+So there will be more than one zswap pool when user uses 2 or even
+more swap devices/files.
+
+I am not sure whether multiple swap are popular. But if multiple swap
+are swapped
+on, then multiple zswap pool will be created. And the size of these pools may
+out of control.
+
+Thanks.
+
+> >
+> > Thanks.
+> >
+> > >
+> > >>
+> > >> Thanks.
+> > >>
+> > >> > Please say your usecase scenario and if it's really problem,
+> > >> > we need more surgery.
+> > >> >
+> > >> > Thanks.
+> > >> >
+> > >> >> For *pool->pages_nr*, one way is to use pool->lock to protect. But I
+> > >> >> think it is too heavy.
+> > >> >> So does it ok to change pages_nr to atomic type too?
+> > >> >>
+> > >> >>
+> > >> >> >
+> > >> >> >> +     }
+> > >> >> >> +
+> > >> >> >> +     return page;
+> > >> >> >> +}
+> > >> >> >> +
+> > >> >> >> +
+> > >> >> >>  /* Resets the struct page fields and frees the page */
+> > >> >> >> -static void free_zbud_page(struct zbud_header *zhdr)
+> > >> >> >> +static void free_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
+> > >> >> >>  {
+> > >> >> >>       __free_page(virt_to_page(zhdr));
+> > >> >> >> +
+> > >> >> >> +     pool->pages_nr--;
+> > >> >> >> +     total_zbud_pages--;
+> > >> >> >>  }
+> > >> >> >>
+> > >> >> >>  /*
+> > >> >> >> @@ -279,11 +304,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> > >> >> >>
+> > >> >> >>       /* Couldn't find unbuddied zbud page, create new one */
+> > >> >> >>       spin_unlock(&pool->lock);
+> > >> >> >> -     page = alloc_page(gfp);
+> > >> >> >> +     page = alloc_zbud_page(pool, gfp);
+> > >> >> >>       if (!page)
+> > >> >> >>               return -ENOMEM;
+> > >> >> >>       spin_lock(&pool->lock);
+> > >> >> >> -     pool->pages_nr++;
+> > >> >> >>       zhdr = init_zbud_page(page);
+> > >> >> >>       bud = FIRST;
+> > >> >> >>
+> > >> >> >> @@ -349,8 +373,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+> > >> >> >>       if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
+> > >> >> >>               /* zbud page is empty, free */
+> > >> >> >>               list_del(&zhdr->lru);
+> > >> >> >> -             free_zbud_page(zhdr);
+> > >> >> >> -             pool->pages_nr--;
+> > >> >> >> +             free_zbud_page(pool, zhdr);
+> > >> >> >>       } else {
+> > >> >> >>               /* Add to unbuddied list */
+> > >> >> >>               freechunks = num_free_chunks(zhdr);
+> > >> >> >> @@ -447,8 +470,7 @@ next:
+> > >> >> >>                        * Both buddies are now free, free the zbud page and
+> > >> >> >>                        * return success.
+> > >> >> >>                        */
+> > >> >> >> -                     free_zbud_page(zhdr);
+> > >> >> >> -                     pool->pages_nr--;
+> > >> >> >> +                     free_zbud_page(pool, zhdr);
+> > >> >> >>                       spin_unlock(&pool->lock);
+> > >> >> >>                       return 0;
+> > >> >> >>               } else if (zhdr->first_chunks == 0 ||
+> > >> >> >> @@ -496,14 +518,12 @@ void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
+> > >> >> >>
+> > >> >> >>  /**
+> > >> >> >>   * zbud_get_pool_size() - gets the zbud pool size in pages
+> > >> >> >> - * @pool:    pool whose size is being queried
+> > >> >> >>   *
+> > >> >> >> - * Returns: size in pages of the given pool.  The pool lock need not be
+> > >> >> >> - * taken to access pages_nr.
+> > >> >> >> + * Returns: size in pages of all the zbud pools.
+> > >> >> >>   */
+> > >> >> >> -u64 zbud_get_pool_size(struct zbud_pool *pool)
+> > >> >> >> +u64 zbud_get_pool_size(void)
+> > >> >> >>  {
+> > >> >> >> -     return pool->pages_nr;
+> > >> >> >> +     return total_zbud_pages;
+> > >> >> >>  }
+> > >> >> >>
+> > >> >> >>  static int __init init_zbud(void)
+> > >> >> >> diff --git a/mm/zswap.c b/mm/zswap.c
+> > >> >> >> index 5a63f78..ef44d9d 100644
+> > >> >> >> --- a/mm/zswap.c
+> > >> >> >> +++ b/mm/zswap.c
+> > >> >> >> @@ -291,7 +291,7 @@ static void zswap_free_entry(struct zswap_tree *tree,
+> > >> >> >>       zbud_free(tree->pool, entry->handle);
+> > >> >> >>       zswap_entry_cache_free(entry);
+> > >> >> >>       atomic_dec(&zswap_stored_pages);
+> > >> >> >> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
+> > >> >> >> +     zswap_pool_pages = zbud_get_pool_size();
+> > >> >> >>  }
+> > >> >> >>
+> > >> >> >>  /* caller must hold the tree lock */
+> > >> >> >> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+> > >> >> >>
+> > >> >> >>       /* update stats */
+> > >> >> >>       atomic_inc(&zswap_stored_pages);
+> > >> >> >> -     zswap_pool_pages = zbud_get_pool_size(tree->pool);
+> > >> >> >> +     zswap_pool_pages = zbud_get_pool_size();
+> > >> >> >>
+> > >> >> >>       return 0;
+> > >> >> >>
+> > >> >> >> --
+> > >> >> >> 1.7.10.4
+> > >> >> >>
+> > >> >> >> --
+> > >> >> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > >> >> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> > >> >> >> see: http://www.linux-mm.org/ .
+> > >> >> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > >> >> >
+> > >> >> > --
+> > >> >> > Kind regards,
+> > >> >> > Minchan Kim
+> > >> >>
+> > >> >> --
+> > >> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > >> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> > >> >> see: http://www.linux-mm.org/ .
+> > >> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > >> >
+> > >> > --
+> > >> > Kind regards,
+> > >> > Minchan Kim
+> > >>
+> > >> --
+> > >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> > >> see: http://www.linux-mm.org/ .
+> > >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > >
+> > > --
+> > > Kind regards,
+> > > Minchan Kim
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
