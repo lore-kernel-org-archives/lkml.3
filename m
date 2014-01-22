@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883AbaAVVem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:34:42 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:31697 "EHLO
+	id S1756014AbaAVVfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:35:00 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:31714 "EHLO
 	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaAVVej (ORCPT
+	with ESMTP id S1755352AbaAVVek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:34:39 -0500
+	Wed, 22 Jan 2014 16:34:40 -0500
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
@@ -23,9 +23,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Chen <tim.c.chen@linux.intel.com>,
         "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v10 3/4] qrwlock, x86: Add char and short as atomic data type in x86
-Date: Wed, 22 Jan 2014 16:33:57 -0500
-Message-Id: <1390426438-31252-4-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v10 4/4] qrwlock: Use the mcs_spinlock helper functions for MCS queuing
+Date: Wed, 22 Jan 2014 16:33:58 -0500
+Message-Id: <1390426438-31252-5-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1390426438-31252-1-git-send-email-Waiman.Long@hp.com>
 References: <1390426438-31252-1-git-send-email-Waiman.Long@hp.com>
@@ -33,48 +33,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic __native_word() macro defined in include/linux/compiler.h
-only allows "int" and "long" data types to be treated as native and
-atomic. The x86 architecture, however, allow the use of char and short
-data types as atomic as well.
-
-This patch extends the data type allowed in the __native_word() macro to
-allow the use of char and short for the x86 architecture.
+There is a pending MCS lock patch series that adds generic MCS lock
+helper functions to do MCS-style locking. This patch will enable
+the queue rwlock to use that generic MCS lock/unlock primitives for
+internal queuing. This patch should only be merged after the merging
+of that generic MCS locking patch.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/barrier.h |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ include/asm-generic/qrwlock.h |    7 +---
+ kernel/locking/qrwlock.c      |   71 ++++-------------------------------------
+ 2 files changed, 9 insertions(+), 69 deletions(-)
 
-diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
-index 04a4890..0149a66 100644
---- a/arch/x86/include/asm/barrier.h
-+++ b/arch/x86/include/asm/barrier.h
-@@ -24,6 +24,24 @@
- #define wmb()	asm volatile("sfence" ::: "memory")
- #endif
+diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
+index 53dfba7..876ec9c 100644
+--- a/include/asm-generic/qrwlock.h
++++ b/include/asm-generic/qrwlock.h
+@@ -38,10 +38,7 @@
+  * the writer field. The least significant 8 bits is the writer field
+  * whereas the remaining 24 bits is the reader count.
+  */
+-struct qrwnode {
+-	struct qrwnode *next;
+-	int		wait;	/* Waiting flag */
+-};
++struct mcs_spinlock;
  
-+/*
-+ * Define x86 specific atomic types that can be used in read_acquire
-+ * and store_release barriers.
-+ */
-+#define __arch_native_word(t)	(sizeof(t) == sizeof(char)  || \
-+				 sizeof(t) == sizeof(short) || \
-+				 sizeof(t) == sizeof(int)   || \
-+				 sizeof(t) == sizeof(long))
-+/*
-+ * Due to cyclic header file dependency problem, the only way to modify
-+ * the behavior of __native_word() macro within
-+ * compiletime_assert_atomic_type() is to redefine it.
-+ */
-+#ifdef __native_word
-+#undef __native_word
-+#endif
-+#define __native_word(t)	__arch_native_word(t)
-+
+ typedef struct qrwlock {
+ 	union qrwcnts {
+@@ -57,7 +54,7 @@ typedef struct qrwlock {
+ 		atomic_t    rwa;	/* Reader/writer atomic	*/
+ 		u32	    rwc;	/* Reader/writer counts */
+ 	} cnts;
+-	struct qrwnode *waitq;		/* Tail of waiting queue */
++	struct mcs_spinlock *waitq;	/* Tail of waiting queue */
+ } arch_rwlock_t;
+ 
+ /*
+diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
+index c76b8ce..cc8d5a1 100644
+--- a/kernel/locking/qrwlock.c
++++ b/kernel/locking/qrwlock.c
+@@ -21,6 +21,7 @@
+ #include <linux/percpu.h>
+ #include <linux/hardirq.h>
+ #include <linux/mutex.h>
++#include <linux/mcs_spinlock.h>
+ #include <asm-generic/qrwlock.h>
+ 
+ /*
+@@ -50,64 +51,6 @@
+ #define qrw_xadd(rw, inc)	(u32)(atomic_add_return(inc, &(rw).rwa) - inc)
+ 
  /**
-  * read_barrier_depends - Flush all pending reads that subsequents reads
-  * depend on.
+- * wait_in_queue - Add to queue and wait until it is at the head
+- * @lock: Pointer to queue rwlock structure
+- * @node: Node pointer to be added to the queue
+- */
+-static inline void wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
+-{
+-	struct qrwnode *prev;
+-
+-	node->next = NULL;
+-	node->wait = true;
+-	prev = xchg(&lock->waitq, node);
+-	if (prev) {
+-		prev->next = node;
+-		/*
+-		 * Wait until the waiting flag is off
+-		 */
+-		while (smp_load_acquire(&node->wait))
+-			arch_mutex_cpu_relax();
+-	}
+-}
+-
+-/**
+- * signal_next - Signal the next one in queue to be at the head
+- * @lock: Pointer to queue rwlock structure
+- * @node: Node pointer to the current head of queue
+- */
+-static inline void signal_next(struct qrwlock *lock, struct qrwnode *node)
+-{
+-	struct qrwnode *next;
+-
+-	/*
+-	 * Try to notify the next node first without disturbing the cacheline
+-	 * of the lock. If that fails, check to see if it is the last node
+-	 * and so should clear the wait queue.
+-	 */
+-	next = ACCESS_ONCE(node->next);
+-	if (likely(next))
+-		goto notify_next;
+-
+-	/*
+-	 * Clear the wait queue if it is the last node
+-	 */
+-	if ((ACCESS_ONCE(lock->waitq) == node) &&
+-	    (cmpxchg(&lock->waitq, node, NULL) == node))
+-			return;
+-	/*
+-	 * Wait until the next one in queue set up the next field
+-	 */
+-	while (likely(!(next = ACCESS_ONCE(node->next))))
+-		arch_mutex_cpu_relax();
+-	/*
+-	 * The next one in queue is now at the head
+-	 */
+-notify_next:
+-	smp_store_release(&next->wait, false);
+-}
+-
+-/**
+  * rspin_until_writer_unlock - inc reader count & spin until writer is gone
+  * @lock  : Pointer to queue rwlock structure
+  * @writer: Current queue rwlock writer status byte
+@@ -130,7 +73,7 @@ rspin_until_writer_unlock(struct qrwlock *lock, u32 rwc)
+  */
+ void queue_read_lock_slowpath(struct qrwlock *lock)
+ {
+-	struct qrwnode node;
++	struct mcs_spinlock node;
+ 	union qrwcnts cnts;
+ 
+ 	/*
+@@ -150,7 +93,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+ 	/*
+ 	 * Put the reader into the wait queue
+ 	 */
+-	wait_in_queue(lock, &node);
++	mcs_spin_lock(&lock->waitq, &node);
+ 
+ 	/*
+ 	 * At the head of the wait queue now, wait until the writer state
+@@ -167,7 +110,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+ 	/*
+ 	 * Signal the next one in queue to become queue head
+ 	 */
+-	signal_next(lock, &node);
++	mcs_spin_unlock(&lock->waitq, &node);
+ }
+ EXPORT_SYMBOL(queue_read_lock_slowpath);
+ 
+@@ -223,18 +166,18 @@ static inline void queue_write_3step_lock(struct qrwlock *lock)
+  */
+ void queue_write_lock_slowpath(struct qrwlock *lock)
+ {
+-	struct qrwnode node;
++	struct mcs_spinlock node;
+ 
+ 	/*
+ 	 * Put the writer into the wait queue
+ 	 */
+-	wait_in_queue(lock, &node);
++	mcs_spin_lock(&lock->waitq, &node);
+ 
+ 	/*
+ 	 * At the head of the wait queue now, call queue_write_3step_lock()
+ 	 * to acquire the lock until it is done.
+ 	 */
+ 	queue_write_3step_lock(lock);
+-	signal_next(lock, &node);
++	mcs_spin_unlock(&lock->waitq, &node);
+ }
+ EXPORT_SYMBOL(queue_write_lock_slowpath);
 -- 
 1.7.1
 
