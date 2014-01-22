@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337AbaAVRsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:48:38 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50872 "EHLO zene.cmpxchg.org"
+	id S1755441AbaAVRs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:48:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755184AbaAVRse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:48:34 -0500
-Date: Wed, 22 Jan 2014 12:47:44 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/9] mm + fs: prepare for non-page entries in page cache
- radix trees
-Message-ID: <20140122174744.GC4407@cmpxchg.org>
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
- <1389377443-11755-6-git-send-email-hannes@cmpxchg.org>
- <20140113020132.GO1992@bbox>
+	id S1754490AbaAVRsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 12:48:55 -0500
+Date: Wed, 22 Jan 2014 18:46:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH 2/2] mm: thp: kill the bogus ->def_flags check in
+	hugepage_madvise()
+Message-ID: <20140122174646.GC29710@redhat.com>
+References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com> <13c9d1b0213af7cee7afb54de368a0b189e98df8.1389905087.git.athorlton@sgi.com> <20140118234957.GB10970@node.dhcp.inet.fi> <20140120195812.GD18196@sgi.com> <20140120201525.GA31416@redhat.com> <20140120204108.GE18196@sgi.com> <20140122174553.GA29710@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140113020132.GO1992@bbox>
+In-Reply-To: <20140122174553.GA29710@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 11:01:32AM +0900, Minchan Kim wrote:
-> On Fri, Jan 10, 2014 at 01:10:39PM -0500, Johannes Weiner wrote:
-> > shmem mappings already contain exceptional entries where swap slot
-> > information is remembered.
-> > 
-> > To be able to store eviction information for regular page cache,
-> > prepare every site dealing with the radix trees directly to handle
-> > entries other than pages.
-> > 
-> > The common lookup functions will filter out non-page entries and
-> > return NULL for page cache holes, just as before.  But provide a raw
-> > version of the API which returns non-page entries as well, and switch
-> > shmem over to use it.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Minchan Kim <minchan@kernel.org>
+hugepage_madvise() checks "mm->def_flags & VM_NOHUGEPAGE" but
+this can be never true, currently mm->def_flags can only have
+VM_LOCKED.
 
-Thanks, Minchan!
+And otoh we might want to add VM_NOHUGEPAGE into ->def_flags
+but override it in vma->vm_flags via madvise(MADV_HUGEPAGE).
 
-> > @@ -890,6 +973,73 @@ repeat:
-> >  EXPORT_SYMBOL(find_or_create_page);
-> >  
-> >  /**
-> > + * __find_get_pages - gang pagecache lookup
-> > + * @mapping:	The address_space to search
-> > + * @start:	The starting page index
-> > + * @nr_pages:	The maximum number of pages
-> > + * @pages:	Where the resulting pages are placed
-> 
-> where is @indices?
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ mm/huge_memory.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Fixed :)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index bccd5a6..e8b656c 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1941,8 +1941,6 @@ int hugepage_madvise(struct vm_area_struct *vma,
+ 		 */
+ 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+-		if (mm->def_flags & VM_NOHUGEPAGE)
+-			return -EINVAL;
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+ 		/*
+-- 
+1.5.5.1
 
-> > @@ -894,6 +894,53 @@ EXPORT_SYMBOL(__pagevec_lru_add);
-> >  
-> >  /**
-> >   * pagevec_lookup - gang pagecache lookup
-> 
->       __pagevec_lookup?
-> 
-> > + * @pvec:	Where the resulting entries are placed
-> > + * @mapping:	The address_space to search
-> > + * @start:	The starting entry index
-> > + * @nr_pages:	The maximum number of entries
-> 
->       missing @indices?
-> 
-> > + *
-> > + * pagevec_lookup() will search for and return a group of up to
-> > + * @nr_pages pages and shadow entries in the mapping.  All entries are
-> > + * placed in @pvec.  pagevec_lookup() takes a reference against actual
-> > + * pages in @pvec.
-> > + *
-> > + * The search returns a group of mapping-contiguous entries with
-> > + * ascending indexes.  There may be holes in the indices due to
-> > + * not-present entries.
-> > + *
-> > + * pagevec_lookup() returns the number of entries which were found.
-> 
->       __pagevec_lookup
 
-Yikes, all three fixed.
-
-> > @@ -22,6 +22,22 @@
-> >  #include <linux/cleancache.h>
-> >  #include "internal.h"
-> >  
-> > +static void clear_exceptional_entry(struct address_space *mapping,
-> > +				    pgoff_t index, void *entry)
-> > +{
-> > +	/* Handled by shmem itself */
-> > +	if (shmem_mapping(mapping))
-> > +		return;
-> > +
-> > +	spin_lock_irq(&mapping->tree_lock);
-> > +	/*
-> > +	 * Regular page slots are stabilized by the page lock even
-> > +	 * without the tree itself locked.  These unlocked entries
-> > +	 * need verification under the tree lock.
-> > +	 */
-> 
-> Could you explain why repeated spin_lock with irq disabled isn't problem
-> in truncation path?
-
-To modify the cache tree, we have to take the IRQ-safe tree_lock, this
-is no different than removing a page (see truncate_complete_page).
