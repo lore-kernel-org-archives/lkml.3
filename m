@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaAVKJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:09:22 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:59834 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaAVKJV (ORCPT
+	id S1754764AbaAVKKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:10:23 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42511 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751773AbaAVKKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:09:21 -0500
-Message-ID: <52DF98CA.3000300@dev.mellanox.co.il>
-Date: Wed, 22 Jan 2014 12:09:14 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 05:10:22 -0500
+Message-ID: <52DF990B.4060703@arm.com>
+Date: Wed, 22 Jan 2014 10:10:19 +0000
+From: Chris Redpath <Chris.Redpath@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH-v2 11/17] target/iblock: Add blk_integrity + BIP passthrough
- support
-References: <1390099480-29013-1-git-send-email-nab@daterainc.com>	<1390099480-29013-12-git-send-email-nab@daterainc.com>	<52DBC32C.4060505@dev.mellanox.co.il> <yq1fvogbx5a.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1fvogbx5a.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mingo@kernel.org" <mingo@kernel.org>, "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH] sched: fix sched_entity avg statistics update
+References: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/22/2014 3:52 AM, Martin K. Petersen wrote:
->>>>>> "Sagi" == Sagi Grimberg <sagig@dev.mellanox.co.il> writes:
-> Sagi> Please remind me why we ignore IP-CSUM guard type again?  MKP,
-> Sagi> will this be irrelevant for the initiator as well? if so, I don't
-> Sagi> see a reason to expose this in RDMA verbs.
+On 21/01/14 16:12, Vincent Guittot wrote:
+> With the current implementation, the load average statistics of a sched entity
+> change according to other activity on the CPU even if this activity is done
+> between the running window of the sched entity and have no influence on the
+> running duration of the task.
 >
-> I don't see much use for IP checksum for the target. You are required by
-> SBC to use T10 CRC on the wire so there is no point in converting to IP
-> checksum in the backend.
+> When a task wakes up on the same CPU, we currently update last_runnable_update
+> with the return  of __synchronize_entity_decay without updating the
+> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
+> the load_contrib of the se with the rq's blocked_load_contrib before removing
+> it from the latter (with __synchronize_entity_decay) but we must keep
+> last_runnable_update unchanged for updating runnable_avg_sum/period during the
+> next update_entity_load_avg.
 >
-> My impending patches will allow you to pass through PI with T10 CRC to a
-> device with an IP checksum block integrity profile (i.e. the choice of
-> checksum is a per-bio bip flag instead of an HBA-enforced global).
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>   kernel/sched/fair.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index e64b079..5b0ef90 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2370,8 +2370,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>   		 * would have made count negative); we must be careful to avoid
+>   		 * double-accounting blocked time after synchronizing decays.
+>   		 */
+> -		se->avg.last_runnable_update += __synchronize_entity_decay(se)
+> -							<< 20;
+> +		__synchronize_entity_decay(se);
+>   	}
+>
+>   	/* migrated tasks did not contribute to our blocked load */
 >
 
-OK, so IP checksum support still makes sense.
+I've noticed this problem too. It becomes more apparent if you are 
+closely inspecting load signals and comparing against ideal signals 
+generated from task runtime traces. IMO it should be fixed.
 
-Thanks!
-
-Sagi.
