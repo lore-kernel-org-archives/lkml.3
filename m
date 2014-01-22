@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061AbaAVP46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:56:58 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:55484 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125AbaAVP4x (ORCPT
+	id S1753285AbaAVQDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 11:03:10 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36261 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751379AbaAVQDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:56:53 -0500
-Message-ID: <52DFEA40.8020305@gmail.com>
-Date: Wed, 22 Jan 2014 16:56:48 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-CC: mtk.manpages@gmail.com, Andrew Josey <ajosey@opengroup.org>,
-        Felix Janda <felix.janda@posteo.de>
-Subject: IEEE/TOG grant permission to distribute POSIX.1-2013 man pages for
- Linux
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jan 2014 11:03:07 -0500
+Message-ID: <1390406584.2372.7.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chris Mason <clm@fb.com>
+Cc: "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>
+Date: Wed, 22 Jan 2014 08:03:04 -0800
+In-Reply-To: <1390403770.1198.4.camel@ret.masoncoding.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+	 <20140122093435.GS4963@suse.de>
+	 <1390403770.1198.4.camel@ret.masoncoding.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Wed, 2014-01-22 at 15:14 +0000, Chris Mason wrote:
+> On Wed, 2014-01-22 at 09:34 +0000, Mel Gorman wrote:
+> > On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> > > One topic that has been lurking forever at the edges is the current
+> > > 4k limitation for file system block sizes. Some devices in
+> > > production today and others coming soon have larger sectors and it
+> > > would be interesting to see if it is time to poke at this topic
+> > > again.
+> > > 
+> > 
+> > Large block support was proposed years ago by Christoph Lameter
+> > (http://lwn.net/Articles/232757/). I think I was just getting started
+> > in the community at the time so I do not recall any of the details. I do
+> > believe it motivated an alternative by Nick Piggin called fsblock though
+> > (http://lwn.net/Articles/321390/). At the very least it would be nice to
+> > know why neither were never merged for those of us that were not around
+> > at the time and who may not have the chance to dive through mailing list
+> > archives between now and March.
+> > 
+> > FWIW, I would expect that a show-stopper for any proposal is requiring
+> > high-order allocations to succeed for the system to behave correctly.
+> > 
+> 
+> My memory is that Nick's work just didn't have the momentum to get
+> pushed in.  It all seemed very reasonable though, I think our hatred of
+> buffered heads just wasn't yet bigger than the fear of moving away.
+> 
+> But, the bigger question is how big are the blocks going to be?  At some
+> point (64K?) we might as well just make a log structured dm target and
+> have a single setup for both shingled and large sector drives.
 
-The manual pages produced by the Linux man-pages project attempt
-to document deviations between Linux behavior and the POSIX.1 standard.
-However, the pages are no substitute for the standard itself.
+There is no real point.  Even with 4k drives today using 4k sectors in
+the filesystem, we still get 512 byte writes because of journalling and
+the buffer cache.
 
-In 2004, the IEEE and The Open Group decided to grant permission to the 
-Linux man-pages project to distribute parts of the then-current version
-of POSIX.1 in manual page format. That decision provided an extremely
-valuable resource for Linux programmers who wanted to write applications
-that are portable across UNIX systems. Evidence of that value has been
-demonstrated by regular requests in the last few years that the project
-should update its copy of the POSIX manual pages to the latest
-version provided by The Austin Group (the umbrella group that works
-on development of the POSIX.1 standard).
+The question is what would we need to do to support these devices and
+the answer is "try to send IO in x byte multiples x byte aligned" this
+really becomes an ioscheduler problem, not a supporting large page
+problem.
 
-We are pleased to announce that, once again, the IEEE and The Open Group
-have kindly granted us permission to distribute extracts from the 
-latest version of the POSIX.1 standard:
+James
 
-    IEEE Std 1003.1, 2013 Edition, Standard for Information 
-    Technology--Portable Operating System Interface (POSIX), 
-    The Open Group Base Specifications Issue 7, 
-    Copyright (C) 2013 by the Institute of Electrical and 
-    Electronics Engineers, Inc and The Open Group.
 
-(For those curious about the "2013" designation, this is
-POSIX.1-2008 with the 2013 Technical Corrigendum 1 applied.) 
-
-Thanks to some excellent scripting work by Felix Janda, the source 
-files supplied by IEEE and The Open Group have been cleanly converted 
-to  "man" format. The result is that portions of the standard are now
-made available for easy reference  as (1139!) manual pages. Those 
-pages are divided into three sections:
-
-    Section 0p = POSIX headers (specifications for header files)
-    Section 1p = POSIX utilities (i.e., specifications shell commands)
-    Section 3p = POSIX functions (specifications for functions)
-
-Tarballs containing the pages can be found at
-https://www.kernel.org/pub/linux/docs/man-pages/man-pages-posix/man-pages-posix-2013-a.tar.gz
-and
-https://www.kernel.org/pub/linux/docs/man-pages/man-pages-posix/man-pages-posix-2013-a.tar.xz
-
-Please note that all pages carry the following disclaimer:
-
-    In the event of any discrepancy between this version and the original 
-    IEEE and The Open Group Standard, the original IEEE and The Open 
-    Group Standard is the referee document. The original Standard can 
-    be obtained online at http://www.unix.org/online.html .
-
-    Any typographical or formatting errors that appear in this page are
-    most likely to have been introduced during the conversion of the 
-    source files to man page format. To report such errors, see 
-    https://www.kernel.org/doc/man-pages/reporting_bugs.html .
-
-Thanks,
-
-Michael
-
---
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
