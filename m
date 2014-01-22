@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaAVPZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:25:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38180 "EHLO mx2.suse.de"
+	id S1756041AbaAVPZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:25:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38184 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755223AbaAVPZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:25:14 -0500
-Date: Wed, 22 Jan 2014 16:25:09 +0100 (CET)
+	id S1755223AbaAVPZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 10:25:23 -0500
+Date: Wed, 22 Jan 2014 16:25:20 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID for 3.14
-Message-ID: <alpine.LNX.2.00.1401221554250.27143@pobox.suse.cz>
+Subject: [GIT] trivial for 3.14
+Message-ID: <alpine.LNX.2.00.1401221601020.27143@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,117 +24,190 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
 
 to receive
 
 
-
-- quite some work on hid-sony driver in order to have DualShock 4 device
-  properly supported, from Frank Praznik
-
-- fixed support for suspending I2C conntected devices, from Mika 
-  Westerberg
-
-- regression fix for 0xff05 usage on Microsoft Ergonomy, from Jiri kosina
-
-- support for Synaptics HD touchscreen, from AceLan Kao
-
-- workaround for USB 3.0 problem for logitech-dj connected devices, from 
-  Benjamin Tisssoires
-
-- support for Logitech Dual Action pads, from Vitaly Katraew
-
-- quite a few other assorted fixes and device ID additions
+- usual rocket science stuff from trivial.git
 
 
 
+You are going to get an easy-to-fix conflict in 
+drivers/gpu/drm/qxl/Kconfig, please let me know if you want me to prepare 
+a branch with this sorted out for you to pull.
 
-Thanks!
-
-
-AceLan Kao (3):
-      HID: usbhid: merge the sis quirk
-      HID: usbhid: quirk for Synaptics HD touchscreen
-      HID: usbhid: quirk for Synaptics Quad HD touchscreen
-
-Adam Cozzette (1):
-      HID: usbkbd: fix inconsistent debugging output
+Alan (2):
+      vio: remove dangly makefile bits
+      mkregtable: Fix sscanf handling
 
 Antonio Ospite (1):
-      HID: debug: add labels for some new buttons
+      drivers/gpu/drm/qxl/Kconfig: reformat the help text
 
-Benjamin Tissoires (1):
-      HID: input: fix input sysfs path for hid devices
+Ben Hutchings (1):
+      DocBook: Make mandocs parallel-safe
 
-Benjamin Tisssoires (1):
-      HID: logitech-dj: Fix USB 3.0 issue
+David E. Narvaez (1):
+      doc: Fix typo in USB Gadget Documentation
 
-Emanuel Krenz (1):
-      HID: add support for SiS multitouch panel in the touch monitor LG 23ET83V
+Emilio López (1):
+      drivers: fix typo in DEVTMPFS_MOUNT Kconfig help text
 
-Frank Praznik (10):
-      HID: sony: Add force-feedback support for the Dualshock 4
-      HID: sony: Add LED controls for the Dualshock 4
-      HID: sony: Rename worker function
-      HID: sony: Use separate identifiers for USB and Bluetooth connected Dualshock 4 controllers.
-      HID: sony: Use standard output reports instead of raw reports to send data to the Dualshock 4.
-      HID: sony: Fix spacing in the device definitions.
-      HID: sony: Map gyroscopes and accelerometers to axes
-      HID: sony: Cache the output report for the Dualshock 4
-      HID: sony: Add annotated HID descriptor for the Dualshock 4
-      HID: sony: Use colors for the Dualshock 4 LED names
+Fam Zheng (1):
+      slab: struct kmem_cache is protected by slab_mutex
 
-Jiri Kosina (3):
-      HID: microsoft: no fallthrough in MS ergonomy 0xff05 usage
-      HID: remove SIS entries from hid_have_special_driver[]
-      HID: hidraw: make comment more accurate and nicer
+Geert Uytterhoeven (3):
+      asm-generic: uaccess: Spelling s/a ny/any/
+      thermal: rcar: comment spelling
+      of/Kconfig: Spelling s/one/once/
 
-Julia Lawall (1):
-      HID: sony: fix error return code
+Krzysztof Ha³asa (1):
+      IXP4xx: remove '1 &&' from a condition check in ixp4xx_restart()
 
-Kharlamov Alexey (1):
-      HID: hid-holtek-mouse: add new a070 mouse
+Laszlo Papp (1):
+      doc: driver-model/platform.txt: fix a typo
 
-Mika Westerberg (1):
-      HID: i2c-hid: disable interrupt on suspend
+Li Zhong (2):
+      Fix comment typo for alloc_netdev_mqs()
+      neighbour.h: fix comment
 
-Olivier Gay (1):
-      HID: logitech-dj: add HIDRAW dependency in Kconfig
+Masanari Iida (5):
+      treewide: Fix typo in Kconfig
+      drm: fix typos in comment in /gpu/drm/exynos
+      treewide: Fix typos in printk
+      treewide: fix comments and printk msgs
+      sched: Fix warning on make htmldocs caused by wait.h
 
-Srinivas Pandruvada (1):
-      HID: hid-sensor-hub: Fix buggy report descriptors
+Paul Gortmaker (1):
+      Kconfig: fix spelling in CONTEXT_TRACKING_FORCE help text
 
-Sven Eckelmann (5):
-      HID: sony: Rename rumble_* functions/variables to state_*
-      HID: sony: Use BIT(x) macro to define quirks constants
-      HID: sony: Rename buzz_* functions to sony_led_*
-      HID: sony: Move LED data to the main structure
-      HID: sony: Add LED support for Sixaxis/Dualshock3 USB
+Pavel Machek (1):
+      lp5523, lp8501: comment improvements
 
-Vitaly Katraew (1):
-      HID: add support for Logitech Dual Action gamepads
+Qiang Huang (1):
+      cgroup, doc: make cgroup_disable doc more accurate
 
-Wanlong Gao (1):
-      HID: usbhid: fix sis quirk
+Randy Dunlap (1):
+      scripts/kernel-doc: make unknown function prototype a Warning instead of an Error
 
- drivers/hid/Kconfig             |    1 +
- drivers/hid/hid-core.c          |    5 +-
- drivers/hid/hid-debug.c         |    5 +-
- drivers/hid/hid-holtek-mouse.c  |    3 +
- drivers/hid/hid-ids.h           |   15 +-
- drivers/hid/hid-input.c         |    2 +-
- drivers/hid/hid-lg.c            |    2 +
- drivers/hid/hid-logitech-dj.c   |    8 +
- drivers/hid/hid-microsoft.c     |    1 +
- drivers/hid/hid-multitouch.c    |    7 +-
- drivers/hid/hid-sensor-hub.c    |   45 +++
- drivers/hid/hid-sony.c          |  594 +++++++++++++++++++++++++++++++--------
- drivers/hid/hidraw.c            |   27 ++-
- drivers/hid/i2c-hid/i2c-hid.c   |    2 +
- drivers/hid/usbhid/hid-quirks.c |    9 +-
- drivers/hid/usbhid/usbkbd.c     |    2 +-
- 16 files changed, 592 insertions(+), 136 deletions(-)
+Richard Weinberger (1):
+      Documentation: Update x86_64/boot-options.txt
+
+Rob Landley (1):
+      Documentation: update /proc/uptime field description
+
+Robert P. J. Day (2):
+      DocBook: include !Emm/util.c in kernel-api to include, kzfree and more
+      work around xmlto bug in htmldocs
+
+Sachin Kamat (3):
+      PM / devfreq: Fix trivial typo in exynos4_bus.c
+      mtd: onenand: fix comment header
+      arm: fix comment header and macro name
+
+Sankha Narayan Guria (1):
+      staging: usbip: Remove double initialization of msg_namelen variable
+
+Silvan Jegen (1):
+      doc: Fix trivial spelling mistake in efi-stub.txt
+
+Stefan Raspl (1):
+      documentation: Add links to TRACE_EVENT documentation
+
+Stefan Weil (2):
+      doc: Fix typo (acces_process_vm -> access_process_vm)
+      Documentation: Fix size parameter for snprintf
+
+Viresh Kumar (1):
+      tracepoint: comment fix "binay" -> "binary"
+
+Xishi Qiu (2):
+      doc: fix some typos in documentations
+      doc: fix some typos
+
+ZHAO Gang (1):
+      doc: Add "*.svg" to DocBook/.gitignore
+
+ Documentation/DocBook/.gitignore              |    1 +
+ Documentation/DocBook/Makefile                |    5 +++--
+ Documentation/DocBook/kernel-api.tmpl         |    1 +
+ Documentation/IRQ-domain.txt                  |    2 +-
+ Documentation/driver-model/platform.txt       |    2 +-
+ Documentation/efi-stub.txt                    |    2 +-
+ Documentation/email-clients.txt               |    2 +-
+ Documentation/filesystems/Locking             |    2 +-
+ Documentation/filesystems/proc.txt            |    2 +-
+ Documentation/io-mapping.txt                  |    2 +-
+ Documentation/kernel-parameters.txt           |    9 ++++++++-
+ Documentation/laptops/hpfall.c                |    2 +-
+ Documentation/md.txt                          |    2 +-
+ Documentation/rfkill.txt                      |    2 +-
+ Documentation/rt-mutex-design.txt             |    2 +-
+ Documentation/static-keys.txt                 |    4 ++--
+ Documentation/usb/gadget_multi.txt            |    2 +-
+ Documentation/x86/x86_64/boot-options.txt     |   23 -----------------------
+ arch/arm/mach-at91/Kconfig.non_dt             |    2 +-
+ arch/arm/mach-imx/mach-pca100.c               |    2 +-
+ arch/arm/mach-ixp4xx/common.c                 |    2 +-
+ arch/arm64/kvm/handle_exit.c                  |    2 +-
+ arch/mips/ralink/cevt-rt3352.c                |    2 +-
+ arch/mips/ralink/timer.c                      |    2 +-
+ arch/powerpc/platforms/52xx/mpc52xx_lpbfifo.c |    2 +-
+ arch/powerpc/platforms/powernv/opal-flash.c   |    4 ++--
+ arch/x86/Kconfig                              |    2 +-
+ drivers/base/Kconfig                          |    2 +-
+ drivers/block/Makefile                        |    1 -
+ drivers/cdrom/Makefile                        |    1 -
+ drivers/char/Makefile                         |    1 -
+ drivers/char/msm_smd_pkt.c                    |    2 +-
+ drivers/devfreq/exynos/exynos4_bus.c          |    2 +-
+ drivers/devfreq/exynos/exynos5_bus.c          |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c      |    4 ++--
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c      |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_g2d.c       |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_gem.c       |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_gem.h       |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c       |    4 ++--
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c       |    2 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h       |    4 ++--
+ drivers/gpu/drm/qxl/Kconfig                   |    8 +++++---
+ drivers/gpu/drm/radeon/mkregtable.c           |    2 +-
+ drivers/i2c/busses/i2c-exynos5.c              |    2 +-
+ drivers/i2c/busses/i2c-stu300.c               |    2 +-
+ drivers/iio/adc/twl6030-gpadc.c               |    2 +-
+ drivers/isdn/hisax/hfc4s8s_l1.c               |    2 +-
+ drivers/isdn/mISDN/Kconfig                    |    2 +-
+ drivers/leds/leds-lp5523.c                    |   10 +++++++++-
+ drivers/leds/leds-lp8501.c                    |    2 +-
+ drivers/media/platform/ti-vpe/vpdma.c         |    4 ++--
+ drivers/misc/fsa9480.c                        |    2 +-
+ drivers/misc/mei/nfc.c                        |    2 +-
+ drivers/mtd/onenand/samsung.h                 |    2 --
+ drivers/net/wan/lmc/lmc_main.c                |    2 +-
+ drivers/net/wireless/libertas/cmdresp.c       |    2 +-
+ drivers/of/Kconfig                            |    2 +-
+ drivers/scsi/Kconfig                          |    4 ++--
+ drivers/scsi/qla2xxx/qla_nx2.c                |    2 +-
+ drivers/scsi/qla4xxx/ql4_83xx.c               |    2 +-
+ drivers/staging/usbip/usbip_common.c          |    1 -
+ drivers/thermal/rcar_thermal.c                |    2 +-
+ drivers/tty/serial/crisv10.c                  |    2 +-
+ drivers/usb/serial/kobil_sct.c                |    2 +-
+ drivers/video/udlfb.c                         |    2 +-
+ drivers/xen/Kconfig                           |    2 +-
+ fs/btrfs/tests/free-space-tests.c             |    4 ++--
+ include/asm-generic/uaccess.h                 |    2 +-
+ include/linux/amba/sp810.h                    |    8 +++-----
+ include/linux/slab_def.h                      |    2 +-
+ include/linux/tracepoint.h                    |    2 +-
+ include/linux/wait.h                          |    4 ++--
+ include/uapi/linux/neighbour.h                |    2 +-
+ init/Kconfig                                  |    2 +-
+ net/core/dev.c                                |    2 +-
+ net/netfilter/ipset/Kconfig                   |    2 +-
+ net/nfc/digital_dep.c                         |    2 +-
+ net/nfc/hci/llc_shdlc.c                       |    2 +-
+ 79 files changed, 105 insertions(+), 116 deletions(-)
 
 -- 
 Jiri Kosina
