@@ -1,147 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964AbaAVFCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 00:02:04 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:9331 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750719AbaAVFCB (ORCPT
+	id S1751815AbaAVFEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 00:04:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45289 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaAVFED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 00:02:01 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097h186068hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h1155h)
-Message-ID: <52DF5125.3040909@freescale.com>
-Date: Wed, 22 Jan 2014 13:03:33 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Wed, 22 Jan 2014 00:04:03 -0500
+Date: Wed, 22 Jan 2014 00:02:15 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Steven Noonan <steven@uplinklabs.net>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
+        george.dunlap@eu.citrix.com, dario.faggioli@citrix.com,
+        Elena Ufimtseva <ufimtseva@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
+Message-ID: <20140122050215.GC9931@konrad-lan.dumpdata.com>
+References: <20140121232708.GA29787@amazon.com>
+ <20140122014908.GG18164@kroah.com>
+ <CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
+ <20140122032045.GA22182@falcon.amazon.com>
 MIME-Version: 1.0
-To: <jg1.han@samsung.com>
-CC: <linux-fbdev@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        <plagnioj@jcrosoft.com>, <tomi.valkeinen@ti.com>
-Subject: Re:[PATCH v2] backlight: turn backlight on/off when necessary
-References: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com> <CA+8Hj810rwNCaiF8vEp9QXGufLp3=AdgF60gcTNfkd7C7pawgw@mail.gmail.com>
-In-Reply-To: <CA+8Hj810rwNCaiF8vEp9QXGufLp3=AdgF60gcTNfkd7C7pawgw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122032045.GA22182@falcon.amazon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping...
+On Tue, Jan 21, 2014 at 07:20:45PM -0800, Steven Noonan wrote:
+> On Tue, Jan 21, 2014 at 06:47:07PM -0800, Linus Torvalds wrote:
+> > On Tue, Jan 21, 2014 at 5:49 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
 
-Regards,
-Liu Ying
+Adding extra folks to the party.
+> > >
+> > > Odds are this also shows up in 3.13, right?
+> 
+> Reproduced using 3.13 on the PV guest:
+> 
+> 	[  368.756763] BUG: Bad page map in process mp  pte:80000004a67c6165 pmd:e9b706067
+> 	[  368.756777] page:ffffea001299f180 count:0 mapcount:-1 mapping:          (null) index:0x0
+> 	[  368.756781] page flags: 0x2fffff80000014(referenced|dirty)
+> 	[  368.756786] addr:00007fd1388b7000 vm_flags:00100071 anon_vma:ffff880e9ba15f80 mapping:          (null) index:7fd1388b7
+> 	[  368.756792] CPU: 29 PID: 618 Comm: mp Not tainted 3.13.0-ec2 #1
+> 	[  368.756795]  ffff880e9b718958 ffff880e9eaf3cc0 ffffffff814d8748 00007fd1388b7000
+> 	[  368.756803]  ffff880e9eaf3d08 ffffffff8116d289 0000000000000000 0000000000000000
+> 	[  368.756809]  ffff880e9b7065b8 ffffea001299f180 00007fd1388b8000 ffff880e9eaf3e30
+> 	[  368.756815] Call Trace:
+> 	[  368.756825]  [<ffffffff814d8748>] dump_stack+0x45/0x56
+> 	[  368.756833]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
+> 	[  368.756837]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
+> 	[  368.756842]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
+> 	[  368.756847]  [<ffffffff81175dac>] unmap_region+0xac/0x120
+> 	[  368.756852]  [<ffffffff81176379>] ? vma_rb_erase+0x1c9/0x210
+> 	[  368.756856]  [<ffffffff81177f10>] do_munmap+0x280/0x370
+> 	[  368.756860]  [<ffffffff81178041>] vm_munmap+0x41/0x60
+> 	[  368.756864]  [<ffffffff81178f32>] SyS_munmap+0x22/0x30
+> 	[  368.756869]  [<ffffffff814e70ed>] system_call_fastpath+0x1a/0x1f
+> 	[  368.756872] Disabling lock debugging due to kernel taint
+> 	[  368.760084] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:0 val:-1
+> 	[  368.760091] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:1 val:1
+> 
+> > 
+> > Probably. I don't have a Xen PV setup to test with (and very little
+> > interest in setting one up).. And I have a suspicion that it might not
+> > be so much about Xen PV, as perhaps about the kind of hardware.
+> > 
+> > I suspect the issue has something to do with the magic _PAGE_NUMA
+> > tie-in with _PAGE_PRESENT. And then mprotect(PROT_NONE) ends up
+> > removing the _PAGE_PRESENT bit, and now the crazy numa code is
+> > confused.
+> > 
+> > The whole _PAGE_NUMA thing is a f*cking horrible hack, and shares the
+> > bit with _PAGE_PROTNONE, which is why it then has that tie-in to
+> > _PAGE_PRESENT.
+> > 
+> > Adding Andrea to the Cc, because he's the author of that horridness.
+> > Putting Steven's test-case here as an attachement for Andrea, maybe
+> > that makes him go "Ahh, yes, silly case".
+> > 
+> > Also added Kirill, because he was involved the last _PAGE_NUMA debacle.
+> > 
+> > Andrea, you can find the thread on lkml, but it boils down to commit
+> > 1667918b6483 (backported to 3.12.7 as 3d792d616ba4) breaking the
+> > attached test-case (but apparently only under Xen PV). There it
+> > apparently causes a "BUG: Bad page map .." error.
 
-On 01/20/2014 12:52 PM, Liu Ying wrote:
-> We don't have to turn backlight on/off everytime a blanking
-> or unblanking event comes because the backlight status may
-> have already been what we want. Another thought is that one
-> backlight device may be shared by multiple framebuffers. We
-> don't hope blanking one of the framebuffers may turn the
-> backlight off for all the other framebuffers, since they are
-> likely being active to display something. This patch adds
-> some logics to record each framebuffer's backlight usage to
-> determine the backlight device use count and whether the
-> backlight should be turned on or off. To be more specific,
-> only one unblank operation on a certain blanked framebuffer
-> may increase the backlight device's use count by one, while
-> one blank operation on a certain unblanked framebuffer may
-> decrease the use count by one, because the userspace is
-> likely to unblank a unblanked framebuffer or blank a blanked
-> framebuffer.
-> 
-> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
-> ---
-> v1 can be found at https://lkml.org/lkml/2013/5/30/139
-> 
-> v1->v2:
-> * Make the commit message be more specific about the condition
->   in which backlight device use count can be increased/decreased.
-> * Correct the setting for bd->props.fb_blank.
-> 
->  drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
->  include/linux/backlight.h           |    6 ++++++
->  2 files changed, 27 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-> index 5d05555..42044be 100644
-> --- a/drivers/video/backlight/backlight.c
-> +++ b/drivers/video/backlight/backlight.c
-> @@ -34,13 +34,15 @@ static const char *const backlight_types[] = {
->                            defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
->  /* This callback gets called when something important happens inside a
->   * framebuffer driver. We're looking if that important event is blanking,
-> - * and if it is, we're switching backlight power as well ...
-> + * and if it is and necessary, we're switching backlight power as well ...
->   */
->  static int fb_notifier_callback(struct notifier_block *self,
->                                 unsigned long event, void *data)
->  {
->         struct backlight_device *bd;
->         struct fb_event *evdata = data;
-> +       int node = evdata->info->node;
-> +       int fb_blank = 0;
-> 
->         /* If we aren't interested in this event, skip it immediately ... */
->         if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
-> @@ -51,12 +53,24 @@ static int fb_notifier_callback(struct notifier_block *self,
->         if (bd->ops)
->                 if (!bd->ops->check_fb ||
->                     bd->ops->check_fb(bd, evdata->info)) {
-> -                       bd->props.fb_blank = *(int *)evdata->data;
-> -                       if (bd->props.fb_blank == FB_BLANK_UNBLANK)
-> -                               bd->props.state &= ~BL_CORE_FBBLANK;
-> -                       else
-> -                               bd->props.state |= BL_CORE_FBBLANK;
-> -                       backlight_update_status(bd);
-> +                       fb_blank = *(int *)evdata->data;
-> +                       if (fb_blank == FB_BLANK_UNBLANK &&
-> +                           !bd->fb_bl_on[node]) {
-> +                               bd->fb_bl_on[node] = true;
-> +                               if (!bd->use_count++) {
-> +                                       bd->props.state &= ~BL_CORE_FBBLANK;
-> +                                       bd->props.fb_blank = FB_BLANK_UNBLANK;
-> +                                       backlight_update_status(bd);
-> +                               }
-> +                       } else if (fb_blank != FB_BLANK_UNBLANK &&
-> +                                  bd->fb_bl_on[node]) {
-> +                               bd->fb_bl_on[node] = false;
-> +                               if (!(--bd->use_count)) {
-> +                                       bd->props.state |= BL_CORE_FBBLANK;
-> +                                       bd->props.fb_blank = FB_BLANK_POWERDOWN;
-> +                                       backlight_update_status(bd);
-> +                               }
-> +                       }
->                 }
->         mutex_unlock(&bd->ops_lock);
->         return 0;
-> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-> index 5f9cd96..7264742 100644
-> --- a/include/linux/backlight.h
-> +++ b/include/linux/backlight.h
-> @@ -9,6 +9,7 @@
->  #define _LINUX_BACKLIGHT_H
-> 
->  #include <linux/device.h>
-> +#include <linux/fb.h>
->  #include <linux/mutex.h>
->  #include <linux/notifier.h>
-> 
-> @@ -104,6 +105,11 @@ struct backlight_device {
->         struct list_head entry;
-> 
->         struct device dev;
-> +
-> +       /* Multiple framebuffers may share one backlight device */
-> +       bool fb_bl_on[FB_MAX];
-> +
-> +       int use_count;
->  };
-> 
->  static inline void backlight_update_status(struct backlight_device *bd)
-> --
-> 1.7.9.5
+I *think* it is due to the fact that pmd_numa and pte_numa is getting the _raw_
+value of PMDs and PTEs. That is - it does not use the pvops interface
+and instead reads the values directly from the page-table. Since the
+page-table is also manipulated by the hypervisor - there are certain
+flags it also sets to do its business. It might be that it uses
+_PAGE_GLOBAL as well - and Linux picks up on that. If it was using
+pte_flags that would invoke the pvops interface.
 
+Elena, Dariof and George, you guys had been looking at this a bit deeper
+than I have. Does the Xen hypervisor use the _PAGE_GLOBAL for PV guests?
+
+This not-compiled-totally-bad-patch might shed some light on what I was
+thinking _could_ fix this issue - and IS NOT A FIX - JUST A HACK.
+It does not fix it for PMDs naturally (as there are no PMD paravirt ops
+for that).
+
+The other question is - how is AutoNUMA running when it is not enabled?
+Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
+turned on?
+
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index ce563be..9fa7088 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -370,12 +370,15 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ 		unsigned long pfn = mfn_to_pfn(mfn);
+ 
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
++		/* No AutoNUMA for PV. TODO If Linux sees the PTE having
++		 * said bit, just igore it. */
++		if (flags & _PAGE_NUMA)
++			flags = flags & ~_PAGE_NUMA;
+ 		if (unlikely(pfn == ~0))
+ 			val = flags & ~_PAGE_PRESENT;
+ 		else
+ 			val = ((pteval_t)pfn << PAGE_SHIFT) | flags;
+ 	}
+-
+ 	return val;
+ }
+ 
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index db09234..a8bc07d 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -644,7 +644,7 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ #ifndef pte_numa
+ static inline int pte_numa(pte_t pte)
+ {
+-	return (pte_flags(pte) &
++	return (pte_val(pte) &
+ 		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
+ }
+ #endif
