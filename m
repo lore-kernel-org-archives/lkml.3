@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaAVG00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:26:26 -0500
-Received: from mga14.intel.com ([143.182.124.37]:33268 "EHLO mga14.intel.com"
+	id S1754558AbaAVG1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:27:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17231 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaAVG0Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:26:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,698,1384329600"; 
-   d="scan'208";a="462667505"
-From: "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: RE: [PATCH] cpufreq: Align all CPUs to the same frequency if using
- shared clock
-Thread-Topic: [PATCH] cpufreq: Align all CPUs to the same frequency if using
- shared clock
-Thread-Index: AQHPFnLkmoIEnd0u3UmWxfIRHgMuSJqOuuow//+TAICAAWHWgIAAmKfA
-Date: Wed, 22 Jan 2014 06:26:20 +0000
-Message-ID: <630F9443351D2B4BB7EC6BAE6B6B08342549CF6A@SHSMSX104.ccr.corp.intel.com>
-References: <1390273543-18032-1-git-send-email-zhuangzhi.li@intel.com>
-	<CAKohponL_R8M40BJa3X+++1yDtw5KRvk88w8kVfA+_D+poK08A@mail.gmail.com>
-	<630F9443351D2B4BB7EC6BAE6B6B08342549C5DC@SHSMSX104.ccr.corp.intel.com>
-	<CAKohpo=ng-B6kLdWxBn_cNsWNVsYaNAD-ZzQLLOfkbj+FDg_fg@mail.gmail.com>
- <CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
-In-Reply-To: <CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750873AbaAVG1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 01:27:42 -0500
+Date: Wed, 22 Jan 2014 01:27:30 -0500
+From: Dave Jones <davej@redhat.com>
+To: jack@suse.cz
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: fanotify use after free.
+Message-ID: <20140122062730.GA25601@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, jack@suse.cz,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jan,
 
+since yesterdays changes, on boot I see a flood of messages from slub debug during boot..
 
-> -----Original Message-----
-> From: Viresh Kumar [mailto:viresh.kumar@linaro.org]
-> Sent: Wednesday, January 22, 2014 1:18 PM
-> To: Li, Zhuangzhi
-> Cc: Rafael J. Wysocki; cpufreq@vger.kernel.org; linux-pm@vger.kernel.org;
-> Linux Kernel Mailing List; Liu, Chuansheng
-> Subject: Re: [PATCH] cpufreq: Align all CPUs to the same frequency if using
-> shared clock
-> 
-> On 21 January 2014 13:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 21 January 2014 12:56, Li, Zhuangzhi <zhuangzhi.li@intel.com> wrote:
-> >> Thanks for reviewing.
-> >
-> > Its my job :)
-> >
-> >> Sorry for make you misunderstanding, on our x86 platform, we want all the
-> CPUs share one policy by setting CPUFREQ_SHARED_TYPE_ALL, not share one
-> HW clock line.
-> >
-> > I see.. Then probably your patch makes sense. But it is obviously not
-> > required for every platform that exists today.
-> >
-> > Please update it to do it only for drivers that have set
-> > CPUFREQ_SHARED_TYPE_ALL..
-> 
-> One more thing, who has set different frequencies to these cores?
-> I hope kernel hasn't ?
-> 
-> In that case, probably you are fixing a bootloader bug in kernel?
-> What about doing this in bootloader then?
-I don't think it's a real bug in bootloader, the bootloader can set CPUs to different frequencies according to actually requirements(Power saving first or Performance first),
-the CPUs freq policy are initialized in kernel, if the kernel want to share one CPU policy(using CPUFREQ_SHARED_TYPE_ALL type), it should ensure all CPUs frequencies aligned first,
-don't depend on the bootloader CPUs Pre-states, then the kernel can have better compatibility.
+=============================================================================
+BUG fanotify_event_info (Not tainted): Poison overwritten
+-----------------------------------------------------------------------------
 
-If the kernel uses CPUFREQ_SHARED_TYPE_ALL policy, the patch can ensure these:
-1. If all CPUs are in the same P-state, it does nothing when cpufreq registering
-2. If the CPUs are in different P-states, all the other CPUs are aligned once to current frequency of CPU0 according to the present policy.
-> 
-> --
-> virehs
+Disabling lock debugging due to kernel taint
+INFO: 0xffff880247e45bc8-0xffff880247e45bcb. First byte 0x0 instead of 0x6b
+INFO: Allocated in fanotify_handle_event+0x136/0x390 age=0 cpu=0 pid=293
+ __slab_alloc+0x456/0x565
+ kmem_cache_alloc+0x1fe/0x260
+ fanotify_handle_event+0x136/0x390
+ send_to_group+0xd3/0x1c0
+ fsnotify+0x1c8/0x340
+ open_exec+0xe2/0x120
+ load_elf_binary+0x7b7/0x18e0
+ search_binary_handler+0x94/0x1b0
+ do_execve_common.isra.26+0x5d7/0x7d0
+ SyS_execve+0x36/0x50
+ stub_execve+0x69/0xa0
+INFO: Freed in fanotify_free_event+0x2e/0x40 age=0 cpu=3 pid=290
+ __slab_free+0x4a/0x382
+ kmem_cache_free+0x1c9/0x210
+ fanotify_free_event+0x2e/0x40
+ fsnotify_destroy_event+0x21/0x30
+ fanotify_read+0x39e/0x5e0
+ vfs_read+0x9b/0x160
+ SyS_read+0x58/0xb0
+ tracesys+0xdd/0xe2
+INFO: Slab 0xffffea00091f9100 objects=20 used=20 fp=0x          (null) flags=0x20000000004080
+INFO: Object 0xffff880247e45b90 @offset=7056 fp=0xffff880247e44000
+
+Bytes b4 ffff880247e45b80: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+Object ffff880247e45b90: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff880247e45ba0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff880247e45bb0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff880247e45bc0: 6b 6b 6b 6b 6b 6b 6b 6b 00 00 00 00 6b 6b 6b a5  kkkkkkkk....kkk.
+Redzone ffff880247e45bd0: bb bb bb bb bb bb bb bb                          ........
+Padding ffff880247e45d10: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+CPU: 0 PID: 293 Comm: mount Tainted: G    B        3.13.0+ #28 
+ ffff880247e45b90 000000008c7fe87c ffff8800874cbb28 ffffffff9c710632
+ ffff88024a776ac0 ffff8800874cbb68 ffffffff9c194dad 0000000000000008
+ ffff880200000001 ffff880247e45bcc ffff88024a776ac0 000000000000006b
+Call Trace:
+ [<ffffffff9c710632>] dump_stack+0x4e/0x7a
+ [<ffffffff9c194dad>] print_trailer+0x14d/0x200
+ [<ffffffff9c19505f>] check_bytes_and_report+0xcf/0x110
+ [<ffffffff9c196037>] check_object+0x1d7/0x250
+ [<ffffffff9c1f4ae6>] ? fanotify_handle_event+0x136/0x390
+ [<ffffffff9c70ead7>] alloc_debug_processing+0x76/0x118
+ [<ffffffff9c70f77d>] __slab_alloc+0x456/0x565
+ [<ffffffff9c1f4ae6>] ? fanotify_handle_event+0x136/0x390
+ [<ffffffff9c1ccea4>] ? mntput+0x24/0x40
+ [<ffffffff9c1b5dc9>] ? terminate_walk+0x69/0x70
+ [<ffffffff9c1ba6fe>] ? do_last+0x25e/0x1390
+ [<ffffffff9c1b6cf8>] ? inode_permission+0x18/0x50
+ [<ffffffff9c1f4ae6>] ? fanotify_handle_event+0x136/0x390
+ [<ffffffff9c1980fe>] kmem_cache_alloc+0x1fe/0x260
+ [<ffffffff9c1f4ae6>] fanotify_handle_event+0x136/0x390
+ [<ffffffff9c1bb8fd>] ? path_openat+0xcd/0x6a0
+ [<ffffffff9c1f0e63>] send_to_group+0xd3/0x1c0
+ [<ffffffff9c1f0fdf>] ? fsnotify+0x8f/0x340
+ [<ffffffff9c1f1118>] fsnotify+0x1c8/0x340
+ [<ffffffff9c1a9b4f>] do_sys_open+0x19f/0x230
+ [<ffffffff9c1a9bfe>] SyS_open+0x1e/0x20
+ [<ffffffff9c723764>] tracesys+0xdd/0xe2
+FIX fanotify_event_info: Restoring 0xffff880247e45bc8-0xffff880247e45bcb=0x6b
+
