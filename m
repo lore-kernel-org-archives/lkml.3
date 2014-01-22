@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaAVEyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 23:54:31 -0500
-Received: from ozlabs.org ([203.10.76.45]:49189 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806AbaAVEy0 convert rfc822-to-8bit (ORCPT
+	id S1753716AbaAVE64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 23:58:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47234 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaAVE6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 23:54:26 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Cc: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] scripts/gcc-version.sh: handle CC="gcc -m32"
-In-Reply-To: <871u07v9zu.fsf@rustcorp.com.au>
-References: <87d2l5ji06.fsf@rustcorp.com.au> <52C6EF1C.9070809@suse.cz> <52C71EDA.6090706@suse.cz> <87k3e1x4ho.fsf@rustcorp.com.au> <52D7FBF7.2070508@suse.cz> <871u07v9zu.fsf@rustcorp.com.au>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 22 Jan 2014 15:09:11 +1030
-Message-ID: <87eh40sk9c.fsf@rustcorp.com.au>
+	Tue, 21 Jan 2014 23:58:55 -0500
+Date: Tue, 21 Jan 2014 20:59:37 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
+Message-ID: <20140122045937.GB23869@kroah.com>
+References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
+ <20140119173712.GA26481@kroah.com>
+ <CAPtuhTikj38yKy-=uF7O+VFG_N4AWee23f9woemM318fM3V4VQ@mail.gmail.com>
+ <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
+ <CAEjAshozB4S0ZGqEn41ROfZwGTV+_GZRRTZ8cssi0VdH8Uhr_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEjAshozB4S0ZGqEn41ROfZwGTV+_GZRRTZ8cssi0VdH8Uhr_w@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
-> Michal Marek <mmarek@suse.cz> writes:
->>> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
->>> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
->>> kernel/bounds.c:1:0: error: CPU you selected does not support x86-64 instruction set
->>>  /*
->>>  ^
->>> kernel/bounds.c:1:0: warning: -mregparm is ignored in 64-bit mode [enabled by default]
->>> make[1]: *** [kernel/bounds.s] Error 1
->>> make: *** [prepare0] Error 2
+On Wed, Jan 22, 2014 at 12:05:57PM +0900, SeongJae Park wrote:
+> Dear Greg, Mike,
+> 
+> May I ask your answer or other opinion, please?
 
-Sorry, ignore this report.
+It's the middle of the merge window, it's not time for new development,
+or much time for free-time for me, sorry.  Feel free to fix it the best
+way you know how.
 
-In case anyone else hits this: was resolved by installing more 32 bit headers
-(Ubuntu's libc6-dev-i386 package, in this case).
-
-Thanks,
-Rusty.
+greg k-h
