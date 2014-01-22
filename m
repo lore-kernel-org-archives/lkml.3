@@ -1,214 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaAVUSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 15:18:54 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:53674 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307AbaAVUSw (ORCPT
+	id S1756156AbaAVUTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:19:40 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58355 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaAVUTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 15:18:52 -0500
+	Wed, 22 Jan 2014 15:19:38 -0500
+Date: Wed, 22 Jan 2014 20:19:32 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140122201932.GD17314@sirena.org.uk>
+References: <1389900750-27625-1-git-send-email-nm@ti.com>
+ <20140121185553.GW17314@sirena.org.uk>
+ <52DED341.3030503@ti.com>
+ <20140121215624.GC17314@sirena.org.uk>
+ <52DEF56C.1000209@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <52DFD5DB.6060603@iogearbox.net>
-References: <20140121232708.GA29787@amazon.com>
-	<20140122014908.GG18164@kroah.com>
-	<CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
-	<20140122032045.GA22182@falcon.amazon.com>
-	<20140122050215.GC9931@konrad-lan.dumpdata.com>
-	<20140122072914.GA9283@orcus.uplinklabs.net>
-	<52DFD5DB.6060603@iogearbox.net>
-Date: Wed, 22 Jan 2014 15:18:50 -0500
-Message-ID: <CAEr7rXhJf1tf2KUErsGgUyYNUpVwLYD=fKUf8aPm0Dcg21MuNQ@mail.gmail.com>
-Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: Daniel Borkmann <borkmann@iogearbox.net>
-Cc: Steven Noonan <steven@uplinklabs.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        George Dunlap <george.dunlap@eu.citrix.com>,
-        Dario Faggioli <dario.faggioli@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M7C8deoQiHu/TN9U"
+Content-Disposition: inline
+In-Reply-To: <52DEF56C.1000209@ti.com>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: ti-abb: Add support for interleaved LDO
+ registers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 9:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
-> On 01/22/2014 08:29 AM, Steven Noonan wrote:
->>
->> On Wed, Jan 22, 2014 at 12:02:15AM -0500, Konrad Rzeszutek Wilk wrote:
->>>
->>> On Tue, Jan 21, 2014 at 07:20:45PM -0800, Steven Noonan wrote:
->>>>
->>>> On Tue, Jan 21, 2014 at 06:47:07PM -0800, Linus Torvalds wrote:
->>>>>
->>>>> On Tue, Jan 21, 2014 at 5:49 PM, Greg Kroah-Hartman
->>>>> <gregkh@linuxfoundation.org> wrote:
->>>
->>>
->>> Adding extra folks to the party.
->>>>>>
->>>>>>
->>>>>> Odds are this also shows up in 3.13, right?
->>>>
->>>>
->>>> Reproduced using 3.13 on the PV guest:
->>>>
->>>>         [  368.756763] BUG: Bad page map in process mp
->>>> pte:80000004a67c6165 pmd:e9b706067
->>>>         [  368.756777] page:ffffea001299f180 count:0 mapcount:-1
->>>> mapping:          (null) index:0x0
->>>>         [  368.756781] page flags: 0x2fffff80000014(referenced|dirty)
->>>>         [  368.756786] addr:00007fd1388b7000 vm_flags:00100071
->>>> anon_vma:ffff880e9ba15f80 mapping:          (null) index:7fd1388b7
->>>>         [  368.756792] CPU: 29 PID: 618 Comm: mp Not tainted 3.13.0-ec2
->>>> #1
->>>>         [  368.756795]  ffff880e9b718958 ffff880e9eaf3cc0
->>>> ffffffff814d8748 00007fd1388b7000
->>>>         [  368.756803]  ffff880e9eaf3d08 ffffffff8116d289
->>>> 0000000000000000 0000000000000000
->>>>         [  368.756809]  ffff880e9b7065b8 ffffea001299f180
->>>> 00007fd1388b8000 ffff880e9eaf3e30
->>>>         [  368.756815] Call Trace:
->>>>         [  368.756825]  [<ffffffff814d8748>] dump_stack+0x45/0x56
->>>>         [  368.756833]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
->>>>         [  368.756837]  [<ffffffff8116eae3>]
->>>> unmap_single_vma+0x583/0x890
->>>>         [  368.756842]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
->>>>         [  368.756847]  [<ffffffff81175dac>] unmap_region+0xac/0x120
->>>>         [  368.756852]  [<ffffffff81176379>] ? vma_rb_erase+0x1c9/0x210
->>>>         [  368.756856]  [<ffffffff81177f10>] do_munmap+0x280/0x370
->>>>         [  368.756860]  [<ffffffff81178041>] vm_munmap+0x41/0x60
->>>>         [  368.756864]  [<ffffffff81178f32>] SyS_munmap+0x22/0x30
->>>>         [  368.756869]  [<ffffffff814e70ed>]
->>>> system_call_fastpath+0x1a/0x1f
->>>>         [  368.756872] Disabling lock debugging due to kernel taint
->>>>         [  368.760084] BUG: Bad rss-counter state mm:ffff880e9d079680
->>>> idx:0 val:-1
->>>>         [  368.760091] BUG: Bad rss-counter state mm:ffff880e9d079680
->>>> idx:1 val:1
->>>>
->>>>>
->>>>> Probably. I don't have a Xen PV setup to test with (and very little
->>>>> interest in setting one up).. And I have a suspicion that it might not
->>>>> be so much about Xen PV, as perhaps about the kind of hardware.
->>>>>
->>>>> I suspect the issue has something to do with the magic _PAGE_NUMA
->>>>> tie-in with _PAGE_PRESENT. And then mprotect(PROT_NONE) ends up
->>>>> removing the _PAGE_PRESENT bit, and now the crazy numa code is
->>>>> confused.
->>>>>
->>>>> The whole _PAGE_NUMA thing is a f*cking horrible hack, and shares the
->>>>> bit with _PAGE_PROTNONE, which is why it then has that tie-in to
->>>>> _PAGE_PRESENT.
->>>>>
->>>>> Adding Andrea to the Cc, because he's the author of that horridness.
->>>>> Putting Steven's test-case here as an attachement for Andrea, maybe
->>>>> that makes him go "Ahh, yes, silly case".
->>>>>
->>>>> Also added Kirill, because he was involved the last _PAGE_NUMA debacle.
->>>>>
->>>>> Andrea, you can find the thread on lkml, but it boils down to commit
->>>>> 1667918b6483 (backported to 3.12.7 as 3d792d616ba4) breaking the
->>>>> attached test-case (but apparently only under Xen PV). There it
->>>>> apparently causes a "BUG: Bad page map .." error.
->>>
->>>
->>> I *think* it is due to the fact that pmd_numa and pte_numa is getting the
->>> _raw_
->>> value of PMDs and PTEs. That is - it does not use the pvops interface
->>> and instead reads the values directly from the page-table. Since the
->>> page-table is also manipulated by the hypervisor - there are certain
->>> flags it also sets to do its business. It might be that it uses
->>> _PAGE_GLOBAL as well - and Linux picks up on that. If it was using
->>> pte_flags that would invoke the pvops interface.
->>>
->>> Elena, Dariof and George, you guys had been looking at this a bit deeper
->>> than I have. Does the Xen hypervisor use the _PAGE_GLOBAL for PV guests?
->>>
->>> This not-compiled-totally-bad-patch might shed some light on what I was
->>> thinking _could_ fix this issue - and IS NOT A FIX - JUST A HACK.
->>> It does not fix it for PMDs naturally (as there are no PMD paravirt ops
->>> for that).
->>
->>
->> Unfortunately the Totally Bad Patch seems to make no difference. I am
->> still able to repro the issue:
 
-Steven, do you use numa=fake on boot cmd line for pv guest?
+--M7C8deoQiHu/TN9U
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I had similar issue on pv guest. Let me check if the fix that resolved
-this for me will help with 3.13.
+On Tue, Jan 21, 2014 at 04:32:12PM -0600, Nishanth Menon wrote:
 
+> The other alternative will be to use reg-names and map individual
+> registers (there are just setup and control registers to deal with per
+> abb instance). That will coexist with other pinctrl, bandgap and other
+> drivers which are not based off syscon.
 
->
->
-> Maybe this one is also related to this BUG here (cc'ed people investigating
-> this one) ...
->
->   https://lkml.org/lkml/2014/1/10/427
->
-> ... not sure, though.
->
->
->>         [  346.374929] BUG: Bad page map in process mp
->> pte:80000004ae928065 pmd:e993f9067
->>         [  346.374942] page:ffffea0012ba4a00 count:0 mapcount:-1 mapping:
->> (null) index:0x0
->>         [  346.374946] page flags: 0x2fffff80000014(referenced|dirty)
->>         [  346.374951] addr:00007f06a9bbb000 vm_flags:00100071
->> anon_vma:ffff880e9939fe00 mapping:          (null) index:7f06a9bbb
->>         [  346.374956] CPU: 29 PID: 609 Comm: mp Not tainted 3.13.0-ec2+
->> #1
->>         [  346.374960]  ffff880e9cc38da8 ffff880e991a3cc0 ffffffff814d8768
->> 00007f06a9bbb000
->>         [  346.374967]  ffff880e991a3d08 ffffffff8116d289 0000000000000000
->> 0000000000000000
->>         [  346.374972]  ffff880e993f9dd8 ffffea0012ba4a00 00007f06a9bbc000
->> ffff880e991a3e30
->>         [  346.374979] Call Trace:
->>         [  346.374988]  [<ffffffff814d8768>] dump_stack+0x45/0x56
->>         [  346.374996]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
->>         [  346.375000]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
->>         [  346.375006]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
->>         [  346.375011]  [<ffffffff81175dbc>] unmap_region+0xac/0x120
->>         [  346.375016]  [<ffffffff81176389>] ? vma_rb_erase+0x1c9/0x210
->>         [  346.375021]  [<ffffffff81177f20>] do_munmap+0x280/0x370
->>         [  346.375025]  [<ffffffff81178051>] vm_munmap+0x41/0x60
->>         [  346.375029]  [<ffffffff81178f42>] SyS_munmap+0x22/0x30
->>         [  346.375034]  [<ffffffff814e712d>]
->> system_call_fastpath+0x1a/0x1f
->>         [  346.375037] Disabling lock debugging due to kernel taint
->>         [  346.380082] BUG: Bad rss-counter state mm:ffff880e9d22bc00
->> idx:0 val:-1
->>         [  346.380088] BUG: Bad rss-counter state mm:ffff880e9d22bc00
->> idx:1 val:1
->>
->> This dump doesn't look dramatically different, either.
->>
->>>
->>> The other question is - how is AutoNUMA running when it is not enabled?
->>> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
->>> turned on?
->>
->>
->> Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
->> mean not enabled at runtime?
->>
->> [1]
->> http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
+Yes, I suspect that's going to be a lot easier to deploy given that
+there are existing drivers using the current non-syscon setup.  I'm
+totally fine with that approach.
 
+--M7C8deoQiHu/TN9U
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Elena
+iQIcBAEBAgAGBQJS4CfQAAoJELSic+t+oim9yCkP/26nhSpmqHzgZBj7ol+IB99E
+bSYbdzaFVD24DueizieloBTdGu0FdBhEvMf4VCC3B8JxrI2Zw9A6Y20b2PHBQu39
+JuHP6QoNbAWso7OGuiXsNXAmbdZOgarSKahrwhH4hPskYy4E2hL+lWeqoJoyHq08
+MMPtMFdkga767Ebj6S4JeMLDMDic0YtamctWe4dh14EHDO0TfGawOdUMSEQZFZ2M
+Vhe8LD0rz4m9fmj8MWSc3xTzO3XH7CUT6FJQ6fU1RVNkjoXsd9qEr8XsRd5rm2Nf
+CsIYalH/SSZ0vWCPOPDy1YOjuUm2bFdo8Fv1zRJQqi5DspXccpp4vzOFUIfuu9f7
+IEckLIe97X1O2sUoYQld7DBW1UcTIdGzfZkhnsVNwHPNMfo1/YchUaRpNR6cPFxd
+mcWoZP9BZgGs8KT1sw2dfLCJnMLYGdgxXWce3P6x7TrJ4WoQrI0FOACBUNMX/QOj
+6eVaO95/18GqNgsDFIoIGz/9OSKi2ak2Lzy97VlqGuhYfkTW/mm7kwp2MRF8Z1OK
+/zWzm6XFlGn3+Mlo38ogZNmlxrkifaSfRMoBcDMBwQbzv8Ufy9whEO4ax+SqAaWW
+zAbsa2CdEda1/9GuHq+Xw7wMQ93f7rXvrnX0PYmHL4QsoUSMLZd0dh+H3sbLtink
+yMpsSQJJX+1YZ2Lee5k7
+=9y0b
+-----END PGP SIGNATURE-----
+
+--M7C8deoQiHu/TN9U--
