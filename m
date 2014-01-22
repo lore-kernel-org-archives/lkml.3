@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaAVVEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:04:20 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:36967 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886AbaAVVES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:04:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=nApRWNVGaGsVHgssGfoZ4KQzaKkAdZzM
-	mvfuFi7ufWYTewxgSj/coYb3pNg/j/8XGJ9SUz4/21dJGr5tiqioCbOhTB6nCjB8
-	k3I9KCoaQQ//G85M4Z52qgDWSIy54XDLPbUXEwAAjLkdreM2Jr7lyj1RtFHn4cPW
-	XkLosEeO0h4=
-From: Junio C Hamano <gitster@pobox.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: Vicent =?utf-8?Q?Mart=C3=AD?= <tanoku@gmail.com>,
-        Stefan =?utf-8?Q?N?= =?utf-8?Q?=C3=A4we?= 
-	<stefan.naewe@atlas-elektronik.com>,
-        Javier Domingo Cansino <javierdo1@gmail.com>,
-        "git\@vger.kernel.org" <git@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.9-rc0
-References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com>
-	<xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
-	<CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
-	<52DFE882.2040605@atlas-elektronik.com>
-	<xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
-	<CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
-	<xmqqlhy7yjjp.fsf@gitster.dls.corp.google.com>
-	<20140122203030.GB14211@milliways>
-Date: Wed, 22 Jan 2014 13:04:02 -0800
-In-Reply-To: <20140122203030.GB14211@milliways> (Ken Moffat's message of "Wed,
-	22 Jan 2014 20:30:30 +0000")
-Message-ID: <xmqq61pbybi5.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755426AbaAVVE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:04:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41840 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520AbaAVVET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 16:04:19 -0500
+Date: Wed, 22 Jan 2014 13:04:06 -0800
+From: tip-bot for Magnus Damm <tipbot@zytor.com>
+Message-ID: <tip-43881ec7a88a3d3b2fd6da58168173e135b41fba@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        damm@opensource.se, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        damm@opensource.se, tglx@linutronix.de
+In-Reply-To: <20131204120556.29642.27021.sendpatchset@w520>
+References: <20131204120556.29642.27021.sendpatchset@w520>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irqchip: renesas-irqc: Enable mask on suspend
+Git-Commit-ID: 43881ec7a88a3d3b2fd6da58168173e135b41fba
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: C08A0C60-83A8-11E3-BDB2-1B26802839F8-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 13:04:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ken Moffat <zarniwhoop@ntlworld.com> writes:
+Commit-ID:  43881ec7a88a3d3b2fd6da58168173e135b41fba
+Gitweb:     http://git.kernel.org/tip/43881ec7a88a3d3b2fd6da58168173e135b41fba
+Author:     Magnus Damm <damm@opensource.se>
+AuthorDate: Wed, 4 Dec 2013 21:05:56 +0900
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 22 Jan 2014 21:48:55 +0100
 
->  I note that all of these *are* still available at googlecode for
-> the moment : https://code.google.com/p/git-core/downloads/list
+irqchip: renesas-irqc: Enable mask on suspend
 
-As I said, Cgc is not the ony download site.  The end of
+Now when lazy interrupt disable has been enabled in the driver
+then extend the code to set IRQCHIP_MASK_ON_SUSPEND which tells
+the core that only IRQs marked as wakeups need to stay enabled
+during Suspend-to-RAM.
 
-    http://git-blame.blogspot.com/p/git-public-repositories.html
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Cc: rob.herring@calxeda.com
+Cc: grant.likely@secretlab.ca
+Cc: horms@verge.net.au
+Link: http://lkml.kernel.org/r/20131204120556.29642.27021.sendpatchset@w520
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/irqchip/irq-renesas-irqc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-lists the two sites that currently have the material.  I may replace
-Cgc with something else (and add it/them to the list), but in the
-meantime I do not think k.org will go out of business in anytime
-soon, so...
-
-
-
-
+diff --git a/drivers/irqchip/irq-renesas-irqc.c b/drivers/irqchip/irq-renesas-irqc.c
+index 8fdd7d6..082d95c 100644
+--- a/drivers/irqchip/irq-renesas-irqc.c
++++ b/drivers/irqchip/irq-renesas-irqc.c
+@@ -213,7 +213,7 @@ static int irqc_probe(struct platform_device *pdev)
+ 	irq_chip->irq_mask = irqc_irq_disable;
+ 	irq_chip->irq_unmask = irqc_irq_enable;
+ 	irq_chip->irq_set_type = irqc_irq_set_type;
+-	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
++	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
+ 
+ 	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+ 					      p->number_of_irqs,
