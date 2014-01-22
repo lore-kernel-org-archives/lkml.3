@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaAVWd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:33:28 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:36587 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaAVWd1 (ORCPT
+	id S1756031AbaAVWdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:33:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43184 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845AbaAVWdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:33:27 -0500
-Date: Thu, 23 Jan 2014 02:33:25 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
-        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
- fail in 3.12 after exceeding vm_max_map_count
-Message-ID: <20140122223325.GA30637@moon>
-References: <20140122190816.GB4963@suse.de>
- <20140122191928.GQ1574@moon>
+	Wed, 22 Jan 2014 17:33:35 -0500
+Date: Wed, 22 Jan 2014 14:33:25 -0800
+From: tip-bot for David Cohen <tipbot@zytor.com>
+Message-ID: <tip-48102ca7fb2856dde2c75fbd37db45ba630f2967@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1390429369-13761-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1390429369-13761-1-git-send-email-david.a.cohen@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/intel-mid] x86, intel-mid: Add missing 'void'
+  to functions without arguments
+Git-Commit-ID: 48102ca7fb2856dde2c75fbd37db45ba630f2967
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140122191928.GQ1574@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 14:33:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 11:19:28PM +0400, Cyrill Gorcunov wrote:
-> > commit. Test case was simple -- try and open the large file described in
-> > the bug. I did not investigate the patch itself as I'm just reporting
-> > the results of the bisection. If I had to guess, I'd say that VMA
-> > merging has been affected.
-> 
-> Thanks a lot for report, Mel! I'm investigating...
+Commit-ID:  48102ca7fb2856dde2c75fbd37db45ba630f2967
+Gitweb:     http://git.kernel.org/tip/48102ca7fb2856dde2c75fbd37db45ba630f2967
+Author:     David Cohen <david.a.cohen@linux.intel.com>
+AuthorDate: Wed, 22 Jan 2014 14:22:49 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 22 Jan 2014 14:30:02 -0800
 
-Mel, here is a quick fix for bring merging back (just in case if you
-have a minute to test it and confirm the merging were affected). It
-seems I've lost setting up vma-softdirty bit somewhere and procedure
-which tests vma flags mathcing fails, will continue investigating/testing
-tomorrow.
+x86, intel-mid: Add missing 'void' to functions without arguments
+
+This patch adds missing 'void' to functions that doesn't receive
+arguments.
+
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Link: http://lkml.kernel.org/r/1390429369-13761-1-git-send-email-david.a.cohen@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- mm/mmap.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/x86/platform/intel-mid/mfld.c | 6 +++---
+ arch/x86/platform/intel-mid/mrfl.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.git/mm/mmap.c
-===================================================================
---- linux-2.6.git.orig/mm/mmap.c
-+++ linux-2.6.git/mm/mmap.c
-@@ -893,8 +893,18 @@ again:			remove_next = 1 + (end > next->
- static inline int is_mergeable_vma(struct vm_area_struct *vma,
- 			struct file *file, unsigned long vm_flags)
- {
-+	/*
-+	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
-+	 * match the flags but dirty bit -- just mark merged one as
-+	 * a dirty then.
-+	 */
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
-+		return 0;
-+#else
- 	if (vma->vm_flags ^ vm_flags)
- 		return 0;
-+#endif
- 	if (vma->vm_file != file)
- 		return 0;
- 	if (vma->vm_ops && vma->vm_ops->close)
-@@ -1082,7 +1092,11 @@ static int anon_vma_compatible(struct vm
- 	return a->vm_end == b->vm_start &&
- 		mpol_equal(vma_policy(a), vma_policy(b)) &&
- 		a->vm_file == b->vm_file &&
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
-+#else
- 		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
-+#endif
- 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
+diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
+index 88b06fc..23381d2 100644
+--- a/arch/x86/platform/intel-mid/mfld.c
++++ b/arch/x86/platform/intel-mid/mfld.c
+@@ -58,18 +58,18 @@ static unsigned long __init mfld_calibrate_tsc(void)
+ 	return 0;
  }
  
+-static void __init penwell_arch_setup()
++static void __init penwell_arch_setup(void)
+ {
+ 	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
+ 	pm_power_off = mfld_power_off;
+ }
+ 
+-void *get_penwell_ops()
++void *get_penwell_ops(void)
+ {
+ 	return &penwell_ops;
+ }
+ 
+-void *get_cloverview_ops()
++void *get_cloverview_ops(void)
+ {
+ 	return &penwell_ops;
+ }
+diff --git a/arch/x86/platform/intel-mid/mrfl.c b/arch/x86/platform/intel-mid/mrfl.c
+index 28b636a..aaca917 100644
+--- a/arch/x86/platform/intel-mid/mrfl.c
++++ b/arch/x86/platform/intel-mid/mrfl.c
+@@ -97,7 +97,7 @@ static struct intel_mid_ops tangier_ops = {
+ 	.arch_setup = tangier_arch_setup,
+ };
+ 
+-void *get_tangier_ops()
++void *get_tangier_ops(void)
+ {
+ 	return &tangier_ops;
+ }
