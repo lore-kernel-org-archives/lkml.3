@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaAVVdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:33:22 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:51599 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaAVVdU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:33:20 -0500
+	id S1755348AbaAVVdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:33:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:46969 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752663AbaAVVda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 16:33:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,702,1384329600"; 
+   d="scan'208";a="335985428"
+Date: Wed, 22 Jan 2014 13:38:40 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com
+Subject: Re: randconfig build error with next-20140122, in
+ arch/x86/platform/intel-mid/intel-mid.c
+Message-ID: <20140122213839.GA26480@psi-dev26.jf.intel.com>
+References: <CA+r1ZhgAbZH19kbVfKgeVJ0tPqGpJ86b10GAYaGVgDn2Q58Dyg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140122152239.GA11404@stefanha-thinkpad.redhat.com>
-References: <CAMrG31x0H1OjtNfdcXq2EqZ20XPHCX8qvrQSSuMqR=hsttYmXQ@mail.gmail.com>
- <20140122152239.GA11404@stefanha-thinkpad.redhat.com>
-From: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
-Date: Wed, 22 Jan 2014 19:32:58 -0200
-Message-ID: <CAMrG31w_M27m2D09_69giqJk_Hy3YnA4Vq91Yhphpvb0u2sNAw@mail.gmail.com>
-Subject: Re: kvm virtio ethernet ring on guest side over high throughput
- (packet per second)
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, jasowang@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+r1ZhgAbZH19kbVfKgeVJ0tPqGpJ86b10GAYaGVgDn2Q58Dyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you so much Stefan for the help and cc'ing Michael & Jason.
-Like you advised yesterday on IRC, today we are making some tests with
-the application setting TCP_NODELAY in the socket options.
+Hi,
 
-So we will try that and get back to you with further information.
-In the mean time, maybe showing what options the vms are using while running !
+On Wed, Jan 22, 2014 at 11:45:42AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> In file included from arch/x86/platform/intel-mid/intel-mid.c:38:0:
+> arch/x86/platform/intel-mid/intel_mid_weak_decls.h:17:25: error:
+> expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before
+> ‘get_penwell_ops’
+>  extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
+>                          ^
+> arch/x86/platform/intel-mid/intel_mid_weak_decls.h:18:25: error:
+> expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before
+> ‘get_cloverview_ops’
+>  extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
+>                          ^
+> In file included from arch/x86/platform/intel-mid/intel-mid.c:30:0:
+> /home/jim/linux/arch/x86/include/asm/intel-mid.h:74:15: error:
+> ‘get_penwell_ops’ undeclared here (not in a function)
+>      [cpuid] = get_##cpuname##_ops
+>                ^
+> /home/jim/linux/arch/x86/include/asm/intel-mid.h:84:2: note: in
+> expansion of macro ‘DECLARE_INTEL_MID_OPS_INIT’
+>   DECLARE_INTEL_MID_OPS_INIT(penwell, INTEL_MID_CPU_CHIP_PENWELL), \
+>   ^
+> arch/x86/platform/intel-mid/intel-mid.c:66:45: note: in expansion of
+> macro ‘INTEL_MID_OPS_INIT’
+>  static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
+>                                              ^
+> /home/jim/linux/arch/x86/include/asm/intel-mid.h:74:15: error:
+> ‘get_cloverview_ops’ undeclared here (not in a function)
+>      [cpuid] = get_##cpuname##_ops
+>                ^
+> /home/jim/linux/arch/x86/include/asm/intel-mid.h:85:2: note: in
+> expansion of macro ‘DECLARE_INTEL_MID_OPS_INIT’
+>   DECLARE_INTEL_MID_OPS_INIT(cloverview, INTEL_MID_CPU_CHIP_CLOVERVIEW), \
+>   ^
+> arch/x86/platform/intel-mid/intel-mid.c:66:45: note: in expansion of
+> macro ‘INTEL_MID_OPS_INIT’
+>  static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
+>                                              ^
+> make[3]: *** [arch/x86/platform/intel-mid/intel-mid.o] Error 1
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-/usr/bin/kvm -S -M pc-1.0 -cpu
-core2duo,+lahf_lm,+rdtscp,+pdpe1gb,+aes,+popcnt,+x2apic,+sse4.2,+sse4.1,+dca,+xtpr,+cx16,+tm2,+est,+vmx,+ds_cpl,+pbe,+tm,+ht,+ss,+acpi,+ds
--enable-kvm -m 32768 -smp 8,sockets=1,cores=6,threads=2 -name
-instance-00000254 -uuid d25b1b20-409e-4d7f-bd92-2ef4073c7c2b
--nodefconfig -nodefaults -chardev
-socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000254.monitor,server,nowait
--mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc
--no-shutdown -kernel /var/lib/nova/instances/instance-00000254/kernel
--initrd /var/lib/nova/instances/instance-00000254/ramdisk -append
-root=/dev/vda console=ttyS0 -drive
-file=/var/lib/nova/instances/instance-00000254/disk,if=none,id=drive-virtio-disk0,format=qcow2,cache=writethrough
--device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0
--netdev tap,fd=19,id=hostnet0 -device
-virtio-net-pci,netdev=hostnet0,id=net0,mac=fa:16:3e:27:d4:6d,bus=pci.0,addr=0x3
--chardev file,id=charserial0,path=/var/lib/nova/instances/instance-00000254/console.log
--device isa-serial,chardev=charserial0,id=serial0 -chardev
-pty,id=charserial1 -device isa-serial,chardev=charserial1,id=serial1
--usb -device usb-tablet,id=input0 -vnc 0.0.0.0:4 -k en-us -vga cirrus
--device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+I just acked a patch fixing this problem. Please, consider apply this as
+fix:
+https://lkml.org/lkml/2014/1/22/327
 
-best regards
-
-
-Alejandro Comisario
-#melicloud CloudBuilders
-Arias 3751, Piso 7 (C1430CRG)
-Ciudad de Buenos Aires - Argentina
-Cel: +549(11) 15-3770-1857
-Tel : +54(11) 4640-8443
-
-
-On Wed, Jan 22, 2014 at 12:22 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> On Tue, Jan 21, 2014 at 04:06:05PM -0200, Alejandro Comisario wrote:
->
-> CCed Michael Tsirkin and Jason Wang who work on KVM networking.
->
->> Hi guys, we had in the past when using physical servers, several
->> throughput issues regarding the throughput of our APIS, in our case we
->> measure this with packets per seconds, since we dont have that much
->> bandwidth (Mb/s) since our apis respond lots of packets very small
->> ones (maximum response of 3.5k and avg response of 1.5k), when we
->> where using this physical servers, when we reach throughput capacity
->> (due to clients tiemouts) we touched the ethernet ring configuration
->> and we made the problem dissapear.
->>
->> Today with kvm and over 10k virtual instances, when we want to
->> increase the throughput of KVM instances, we bumped with the fact that
->> when using virtio on guests, we have a max configuration of the ring
->> of 256 TX/RX, and from the host side the atached vnet has a txqueuelen
->> of 500.
->>
->> What i want to know is, how can i tune the guest to support more
->> packets per seccond if i know that's my bottleneck?
->
-> I suggest investigating performance in a systematic way.  Set up a
-> benchmark that saturates the network.  Post the details of the benchmark
-> and the results that you are seeing.
->
-> Then, we can discuss how to investigate the root cause of the bottleneck.
->
->> * does virtio exposes more packets to configure in the virtual ethernet's ring ?
->
-> No, ring size is hardcoded in QEMU (on the host).
->
->> * does the use of vhost_net helps me with increasing packets per
->> second and not only bandwidth?
->
-> vhost_net is generally the most performant network option.
->
->> does anyone has to struggle with this before and knows where i can look into ?
->> there's LOOOOOOOOOOOOOOOTS of information about networking performance
->> tuning of kvm, but nothing related to increase throughput in pps
->> capacity.
->>
->> This is a couple of configurations that we are having right now on the
->> compute nodes:
->>
->> * 2x1Gb bonded interfaces (want to know the more than 20 models we are
->> using, just ask for it)
->> * Multi queue interfaces, pined via irq to different cores
->> * Linux bridges,  no VLAN, no open-vswitch
->> * ubuntu 12.04 kernel 3.2.0-[40-48]
+Br, David Cohen
