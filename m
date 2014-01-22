@@ -1,111 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbaAVI3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 03:29:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217AbaAVI26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 03:28:58 -0500
-Message-ID: <52DF813C.6080807@redhat.com>
-Date: Wed, 22 Jan 2014 09:28:44 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754770AbaAVI3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 03:29:22 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:43748 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191AbaAVI3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 03:29:19 -0500
+Message-ID: <52DF815D.50104@linaro.org>
+Date: Wed, 22 Jan 2014 09:29:17 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, tj@kernel.org, kishon@ti.com
-CC: sergei.shtylyov@cogentembedded.com, b.zolnierkie@samsung.com,
-        arnd@arndb.de, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] ata: ahci_platform: Add PHY support and OMAP support
-References: <1390228888-5537-1-git-send-email-rogerq@ti.com> <52DD5368.5020301@redhat.com> <52DE3132.3000007@ti.com> <52DE6114.20601@ti.com> <52DE7D5D.8070307@redhat.com> <52DF7D2C.1080802@ti.com>
-In-Reply-To: <52DF7D2C.1080802@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>, svaidy@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, benh@kernel.crashing.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        tuukka.tikkanen@linaro.org
+Subject: Re: [PATCH V2] cpuidle/governors: Fix logic in selection of idle
+ states
+References: <20140117043351.21531.14192.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140117043351.21531.14192.stgit@preeti.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 01/22/2014 09:11 AM, Roger Quadros wrote:
-> Hi,
+On 01/17/2014 05:33 AM, Preeti U Murthy wrote:
+> The cpuidle governors today are not handling scenarios where no idle state
+> can be chosen. Such scenarios coud arise if the user has disabled all the
+> idle states at runtime or the latency requirement from the cpus is very strict.
 >
-> On 01/21/2014 03:59 PM, Hans de Goede wrote:
->> Hi,
->>
->> On 01/21/2014 12:59 PM, Roger Quadros wrote:
->>> On 01/21/2014 10:34 AM, Roger Quadros wrote:
->>>> On 01/20/2014 06:48 PM, Hans de Goede wrote:
->>>>> Hi,
->>>>>
->>>>> On 01/20/2014 03:41 PM, Roger Quadros wrote:
->>>>>> Hi,
->>>>>>
->>>>>> Some platforms have a PHY hooked up to the SATA controller.
->>>>>> The PHY needs to be initialized and powered up for SATA to work.
->>>>>> We do that using the Generic PHY framework in PATCH 3.
->>>>>>
->>>>>> In order to support SATA on the OMAP platforms we need to runtime
->>>>>> resume the device before use. PATCH 4 takes care of that.
->>>>>
->>>>> Thanks for keeping me in the loop on this. I'm afraid this conflicts
->>>>> quite a bit with my recent ahci_platform.c work, not a big problem
->>>>> really, the series can go in either way.
->>>>>
->>>>> Your phy support will slot nicely into the new ahci_platform_get_resources
->>>>> and ahci_platform_enable_resources functions my refactoring introduces,
->>>>> looking at it from this pov it might be better / easier to rebase your series
->>>>> on top of the v4 of my series I've just send.
->>>>>
->>>>> Which brings me to one comment about your series why are you not doing phy_exit
->>>>> and phy_init on suspend resp. resume ? The phy can use quite a bit of power,
->>>>> if the phy init / exit end up in ahci_platform_enable_resources /
->>>>> ahci_platform_disable_resources, this will happen automatically for better or
->>>>> worse. So it would be good to test if this would work or not ...
->>>>
->>>> Right. Bartlomiej had pointed this out earlier, but I just wasn't very sure about it.
->>>>
->>>> Is it sufficient to just call phy_power_off() in suspend and phy_power_on() in resume?
->>>> Or do we call phy_exit() and phy_init() respectively as well.
->>>>
->>>> Kishon, any suggestions?
->>>
->>> OK. Answering my own question.
->>>
->>> On OMAP platform we power down the phy in phy_power_off() and idle the DPLL in phy_exit(),
->>> so my guess is both should be called in suspend() to save the most power.
->>
->> Right, this would also match nicely with putting both the phy_init and the phy_power_on call
->> in ahci_platform_enable_resources in ahci_platform.c as it looks after v4 of my ahci_platform
->> rework patch-set, see:
->> https://github.com/jwrdegoede/linux-sunxi/blob/sunxi-devel/drivers/ata/ahci_platform.c
->>
->> If this goes there it will be automatically called on both probe and resume (and the counterparts
->> should go to ahci_platform_disable_resources, which will be called on suspend and remove).
->>
->> As said before I don't really have a preference for in which order these patches go upstream,
->> but can you please check that calling phy_poweroff + phy_exit on suspend and undo on resume
->> does not cause issues ?  If it does I need to rethink how things will work after my refactoring,
->> because currently all the clks / optional regulator and now also optional phy get en/disabled in
->> one go through ahci_platform_en/disable_resources.
+> The menu governor returns 0th index of the idle state table when no other
+> idle state is suitable. This is even when the idle state corresponding to this
+> index is disabled or the latency requirement is strict and the exit_latency
+> of the lowest idle state is also not acceptable. Hence this patch
+> fixes this logic in the menu governor by defaulting to an idle state index
+> of -1 unless any other state is suitable.
 >
-> I too don't have any preference of the upstream path. Maybe i'll repost this series based on your v4 an then you can include them in your series if you like.
+> The ladder governor needs a few more fixes in addition to that required in the
+> menu governor. When the ladder governor decides to demote the idle state of a
+> CPU, it does not check if the lower idle states are enabled. Add this logic
+> in addition to the logic where it chooses an index of -1 if it can neither
+> promote or demote the idle state of a cpu nor can it choose the current idle
+> state.
+>
+> The cpuidle_idle_call() will return back if the governor decides upon not
+> entering any idle state. However it cannot return an error code because all
+> archs have the logic today that if the call to cpuidle_idle_call() fails, it
+> means that the cpuidle driver failed to *function*; for instance due to
+> errors during registration. As a result they end up deciding upon a
+> default idle state on their own, which could very well be a deep idle state.
+> This is incorrect in cases where no idle state is suitable.
+>
+> Besides for the scenario that this patch is addressing, the call actually
+> succeeds. Its just that no idle state is thought to be suitable by the governors.
+> Under such a circumstance return success code without entering any idle
+> state.
+>
+> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>
+> Changes from V1:https://lkml.org/lkml/2014/1/14/26
+>
+> 1. Change the return code to success from -EINVAL due to the reason mentioned
+> in the changelog.
+> 2. Add logic that the patch is addressing in the ladder governor as well.
+> 3. Added relevant comments and removed redundant logic as suggested in the
+> above thread.
+> ---
+>
+>   drivers/cpuidle/cpuidle.c          |   15 +++++-
+>   drivers/cpuidle/governors/ladder.c |   98 ++++++++++++++++++++++++++----------
+>   drivers/cpuidle/governors/menu.c   |    7 +--
+>   3 files changed, 89 insertions(+), 31 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index a55e68f..831b664 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
+>
+>   	/* ask the governor for the next state */
+>   	next_state = cpuidle_curr_governor->select(drv, dev);
+> +
+> +	dev->last_residency = 0;
+>   	if (need_resched()) {
+> -		dev->last_residency = 0;
 
-As indicated doing things in that order has my preference as rebase-conflict resolution should be a lot
-easier that way then the other way around. So if you could do that, that would be great.
+Why do you need to do this change ? ^^^^^
 
-> BTW why is your series still RFC at v4?
+>   		/* give the governor an opportunity to reflect on the outcome */
+>   		if (cpuidle_curr_governor->reflect)
+>   			cpuidle_curr_governor->reflect(dev, next_state);
+> @@ -140,6 +141,18 @@ int cpuidle_idle_call(void)
+>   		return 0;
+>   	}
+>
+> +	/* Unlike in the need_resched() case, we return here because the
+> +	 * governor did not find a suitable idle state. However idle is still
+> +	 * in progress as we are not asked to reschedule. Hence we return
+> +	 * without enabling interrupts.
 
-It was not RFC at v1 and v2, it became RFC at v3 because at that point it included changes which would
-also impact ahci_imx, and I did not have hardware to verify those changes. The wandboard I ordered
-for this has arrived yesterday, so my next version should not be RFC anymore :)
+That will lead to a WARN.
 
-> As far as OMAP platform is concerned, calling phy_power_off() + phy_exit() shouldn't be a problem for suspend.
-> Not sure about other platforms as we can't really know for sure what they do in phy_exit().
+> +	 * NOTE: The return code should still be success, since the verdict of this
+> +	 * call is "do not enter any idle state" and not a failed call due to
+> +	 * errors.
+> +	 */
+> +	if (next_state < 0)
+> +		return 0;
+> +
 
-Good, after the rework my patch-series does, platforms which need something else can always override
-the ahci_platform_disable_resources behavior (by doing that part themselves) while still using other parts
-of ahci_platform.c as is, that is the whole idea of the rework.
+Returning from here breaks the symmetry of the trace.
 
-Thanks & Regards,
+>   	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>
+>   	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+> diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+> index 9f08e8c..f495f57 100644
+> --- a/drivers/cpuidle/governors/ladder.c
+> +++ b/drivers/cpuidle/governors/ladder.c
+> @@ -58,6 +58,36 @@ static inline void ladder_do_selection(struct ladder_device *ldev,
+>   	ldev->last_state_idx = new_idx;
+>   }
+>
+> +static int can_promote(struct ladder_device *ldev, int last_idx,
+> +				int last_residency)
+> +{
+> +	struct ladder_device_state *last_state;
+> +
+> +	last_state = &ldev->states[last_idx];
+> +	if (last_residency > last_state->threshold.promotion_time) {
+> +		last_state->stats.promotion_count++;
+> +		last_state->stats.demotion_count = 0;
+> +		if (last_state->stats.promotion_count >= last_state->threshold.promotion_count)
+> +			return 1;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int can_demote(struct ladder_device *ldev, int last_idx,
+> +			int last_residency)
+> +{
+> +	struct ladder_device_state *last_state;
+> +
+> +	last_state = &ldev->states[last_idx];
+> +	if (last_residency < last_state->threshold.demotion_time) {
+> +		last_state->stats.demotion_count++;
+> +		last_state->stats.promotion_count = 0;
+> +		if (last_state->stats.demotion_count >= last_state->threshold.demotion_count)
+> +			return 1;
+> +	}
+> +	return 0;
+> +}
+> +
+>   /**
+>    * ladder_select_state - selects the next state to enter
+>    * @drv: cpuidle driver
+> @@ -73,29 +103,33 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+>
+>   	/* Special case when user has set very strict latency requirement */
+>   	if (unlikely(latency_req == 0)) {
+> -		ladder_do_selection(ldev, last_idx, 0);
+> -		return 0;
+> +		if (last_idx >= 0)
+> +			ladder_do_selection(ldev, last_idx, -1);
+> +		goto out;
+>   	}
+>
+> -	last_state = &ldev->states[last_idx];
+> -
+> -	if (drv->states[last_idx].flags & CPUIDLE_FLAG_TIME_VALID) {
+> -		last_residency = cpuidle_get_last_residency(dev) - \
+> -					 drv->states[last_idx].exit_latency;
+> +	if (last_idx >= 0) {
+> +		if (drv->states[last_idx].flags & CPUIDLE_FLAG_TIME_VALID) {
+> +			last_residency = cpuidle_get_last_residency(dev) - \
+> +						 drv->states[last_idx].exit_latency;
+> +		} else {
+> +			last_state = &ldev->states[last_idx];
+> +			last_residency = last_state->threshold.promotion_time + 1;
+> +		}
+>   	}
+> -	else
+> -		last_residency = last_state->threshold.promotion_time + 1;
+>
+>   	/* consider promotion */
+>   	if (last_idx < drv->state_count - 1 &&
+>   	    !drv->states[last_idx + 1].disabled &&
+>   	    !dev->states_usage[last_idx + 1].disable &&
+> -	    last_residency > last_state->threshold.promotion_time &&
+>   	    drv->states[last_idx + 1].exit_latency <= latency_req) {
+> -		last_state->stats.promotion_count++;
+> -		last_state->stats.demotion_count = 0;
+> -		if (last_state->stats.promotion_count >= last_state->threshold.promotion_count) {
+> -			ladder_do_selection(ldev, last_idx, last_idx + 1);
+> +		if (last_idx >= 0) {
+> +			if (can_promote(ldev, last_idx, last_residency)) {
+> +				ladder_do_selection(ldev, last_idx, last_idx + 1);
+> +				return last_idx + 1;
+> +			}
+> +		} else {
+> +			ldev->last_state_idx = last_idx + 1;
+>   			return last_idx + 1;
+>   		}
+>   	}
+> @@ -107,26 +141,36 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+>   	    drv->states[last_idx].exit_latency > latency_req)) {
+>   		int i;
+>
+> -		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
+> -			if (drv->states[i].exit_latency <= latency_req)
+> +		for (i = last_idx - 1; i >= CPUIDLE_DRIVER_STATE_START; i--) {
+> +			if (drv->states[i].exit_latency <= latency_req &&
+> +				!(drv->states[i].disabled || dev->states_usage[i].disable))
+>   				break;
+>   		}
+> -		ladder_do_selection(ldev, last_idx, i);
+> -		return i;
+> +		if (i >= 0) {
+> +			ladder_do_selection(ldev, last_idx, i);
+> +			return i;
+> +		}
+> +		goto out;
+>   	}
+>
+> -	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
+> -	    last_residency < last_state->threshold.demotion_time) {
+> -		last_state->stats.demotion_count++;
+> -		last_state->stats.promotion_count = 0;
+> -		if (last_state->stats.demotion_count >= last_state->threshold.demotion_count) {
+> -			ladder_do_selection(ldev, last_idx, last_idx - 1);
+> -			return last_idx - 1;
+> +	if (last_idx > CPUIDLE_DRIVER_STATE_START) {
+> +		int i = last_idx - 1;
+> +
+> +		if (can_demote(ldev, last_idx, last_residency) &&
+> +			!(drv->states[i].disabled || dev->states_usage[i].disable)) {
+> +			ladder_do_selection(ldev, last_idx, i);
+> +			return i;
+>   		}
+> +		/* We come here when the last_idx is still a suitable idle state, just that
+> +		 * promotion or demotion is not ideal.
+> +		 */
+> +		ldev->last_state_idx = last_idx;
+> +		return last_idx;
+>   	}
+>
+> -	/* otherwise remain at the current state */
+> -	return last_idx;
+> +	/* we come here if no idle state is suitable */
+> +out:	ldev->last_state_idx = -1;
+> +	return ldev->last_state_idx;
+>   }
+>
+>   /**
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index cf7f2f0..e9f17ce 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -297,12 +297,12 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>   		data->needs_update = 0;
+>   	}
+>
+> -	data->last_state_idx = 0;
+> +	data->last_state_idx = -1;
+>   	data->exit_us = 0;
+>
+>   	/* Special case when user has set very strict latency requirement */
+>   	if (unlikely(latency_req == 0))
+> -		return 0;
+> +		return data->last_state_idx;
+>
+>   	/* determine the expected residency time, round up */
+>   	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+> @@ -368,7 +368,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>   /**
+>    * menu_reflect - records that data structures need update
+>    * @dev: the CPU
+> - * @index: the index of actual entered state
+> + * @index: the index of actual entered state or -1 if no idle state is
+> + * suitable.
+>    *
+>    * NOTE: it's important to be fast here because this operation will add to
+>    *       the overall exit latency.
+>
 
-Hans
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
