@@ -1,82 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaAVNnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:43:14 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:60451 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755676AbaAVNnK (ORCPT
+	id S1755859AbaAVNoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 08:44:22 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40128 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604AbaAVNoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:43:10 -0500
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 2/6] staging/lustre/libcfs: remove cfs_curproc_groups_nr
-Date: Wed, 22 Jan 2014 21:40:36 +0800
-Message-Id: <1390398040-31088-2-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390398040-31088-1-git-send-email-bergwolf@gmail.com>
-References: <1390398040-31088-1-git-send-email-bergwolf@gmail.com>
+	Wed, 22 Jan 2014 08:44:21 -0500
+Date: Wed, 22 Jan 2014 07:44:18 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: Allow stealing of controlling ttys within user
+ namespaces
+Message-ID: <20140122134418.GA26725@thinkpad-t410>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jiri Slaby <jslaby@suse.cz>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	linux-kernel@vger.kernel.org
+References: <1390335754-32202-1-git-send-email-seth.forshee@canonical.com>
+ <877g9t0w11.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877g9t0w11.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-no user.
+On Tue, Jan 21, 2014 at 03:12:26PM -0800, Eric W. Biederman wrote:
+> Seth Forshee <seth.forshee@canonical.com> writes:
+> 
+> > root is allowed to steal ttys from other sessions, but it
+> > requires system-wide CAP_SYS_ADMIN and therefore is not possible
+> > for root within a user namespace. This should be allowed so long
+> > as the process doing the stealing is privileged towards the
+> > session leader which currently owns the tty.
+> >
+> > Update the tty code to only require CAP_SYS_ADMIN in the
+> > namespace of the target session leader when stealing a tty. Fall
+> > back to using init_user_ns to preserve the existing behavior for
+> > system-wide root.
+> >
+> > Cc: stable@vger.kernel.org # 3.8+
+> 
+> This is not a regression of any form, nor is it obviously correct so
+> this does not count as a stable material.
+> 
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > ---
+> >  drivers/tty/tty_io.c | 14 +++++++++++++-
+> >  1 file changed, 13 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> > index c74a00a..1c47f16 100644
+> > --- a/drivers/tty/tty_io.c
+> > +++ b/drivers/tty/tty_io.c
+> > @@ -2410,7 +2410,19 @@ static int tiocsctty(struct tty_struct *tty, int arg)
+> >  		 * This tty is already the controlling
+> >  		 * tty for another session group!
+> >  		 */
+> > -		if (arg == 1 && capable(CAP_SYS_ADMIN)) {
+> > +		struct user_namespace *ns = &init_user_ns;
+> > +		struct task_struct *p;
+> > +
+> > +		read_lock(&tasklist_lock);
+> > +		do_each_pid_task(tty->session, PIDTYPE_SID, p) {
+> > +			if (p->signal->leader) {
+> > +				ns = task_cred_xxx(p, user_ns);
+> > +				break;
+> > +			}
+> > +		} while_each_pid_task(tty->session, PIDTYPE_SID, p);
+> > +		read_unlock(&tasklist_lock);
+> 
+> Ugh.  That appears to be both racy (what protects the user_ns from going
+> away?) and a possibly allowing revoking a tty from a more privileged processes tty.
+> 
+> However I do see a form that can easily verify we won't revoke a tty from a
+> more privileged process.
+> 
+> 		if (arg == 1) {
+>                 	struct user_namespace *user_ns;
+> 			read_lock(&tasklist_lock);
+> 			do_each_pid_task(tty->session, PIDTYPE_SID, p) {
+>                                 rcu_read_lock();
+> 				user_ns = task_cred_xxx(p, user_ns);
+> 				if (!ns_capable(user_ns, CAP_SYS_ADMIN)) {
+>                                         rcu_read_unlock();
+>                                         read_unlock(&task_list_lock);
+>                                 	ret = -EPERM;
+>                                         goto out_unlock;
+> 				}
+>                                 rcu_read_unlock();
+> 			}
+>                         /* Don't drop the the tasklist_lock before
+>                          * stealing the tasks or the set of tasks can
+>                          * change, and we only have permission for this set
+>                          * of tasks.
+>                          */
+>   			/*
+>   			 * Steal it away
+>   			 */
+>                          session_clear_tty(tty->session);
+>                          read_unlock(&task_list_lock);
+> 		} else {
+>                 	ret = -EPERM;
+> 			goto out_unlock;
+>                 }
+> 
+> My code above is ugly and could use some cleaning up but it should be
+> correct with respect to this issue.
 
-Cc: Andreas Dilger <andreas.dilger@intel.com>
-Signed-off-by: Peng Tao <bergwolf@gmail.com>
----
- .../staging/lustre/include/linux/libcfs/curproc.h  |    7 -------
- .../lustre/lustre/libcfs/linux/linux-curproc.c     |   11 -----------
- 2 files changed, 18 deletions(-)
+Thanks for the review. I'm not sure about the correctness of checking
+all processes in the session versus just the session leader, since the
+leader is the only task that really owns the tty in the sense of being
+able to set and clear it for the session. But most of the time all the
+tasks will be in the same namespace anyway.
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/curproc.h b/drivers/staging/lustre/include/linux/libcfs/curproc.h
-index 507d16b..9e52393 100644
---- a/drivers/staging/lustre/include/linux/libcfs/curproc.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/curproc.h
-@@ -44,13 +44,6 @@
- #define __LIBCFS_CURPROC_H__
- 
- /*
-- * Portable API to access common characteristics of "current" UNIX process.
-- *
-- * Implemented in portals/include/libcfs/<os>/
-- */
--int    cfs_curproc_groups_nr(void);
--
--/*
-  * Plus, platform-specific constant
-  *
-  * CFS_CURPROC_COMM_MAX,
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-index a2ef64c..0137062 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-@@ -55,16 +55,6 @@
-  * for Linux kernel.
-  */
- 
--int    cfs_curproc_groups_nr(void)
--{
--	int nr;
--
--	task_lock(current);
--	nr = current_cred()->group_info->ngroups;
--	task_unlock(current);
--	return nr;
--}
--
- /* Currently all the CFS_CAP_* defines match CAP_* ones. */
- #define cfs_cap_pack(cap) (cap)
- #define cfs_cap_unpack(cap) (cap)
-@@ -292,7 +282,6 @@ out:
- }
- EXPORT_SYMBOL(cfs_get_environ);
- 
--EXPORT_SYMBOL(cfs_curproc_groups_nr);
- EXPORT_SYMBOL(cfs_cap_raise);
- EXPORT_SYMBOL(cfs_cap_lower);
- EXPORT_SYMBOL(cfs_cap_raised);
--- 
-1.7.9.5
+I'm about to start testing a modified version of the above, and I'll
+send and updated patch once I've finished.
+
+Thanks,
+Seth
 
