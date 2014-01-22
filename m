@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbaAVJSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 04:18:07 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:55897 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140AbaAVJSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 04:18:01 -0500
+	id S1754725AbaAVJTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 04:19:03 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:53185 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754581AbaAVJS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 04:18:57 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'walt'" <w41ter@gmail.com>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst [NEW HARDWARE]
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst [NEW HARDWARE]
+Thread-Index: AQHPELhlWPjDYPI+s0G+DC1zL1oFlJqEeIcAgABE3oCABEGkcIAB9dCAgAKL5bCAAHTLAIABApzggADQpQCAALrOYA==
+Date: Wed, 22 Jan 2014 09:17:18 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D4637FB@AcuExch.aculab.com>
+References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com>
+ <20140114172056.GB12126@xanatos> <52D5ABBD.7090202@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D45EDA3@AcuExch.aculab.com>
+ <52DAE2BF.7020208@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D45FF6C@AcuExch.aculab.com>
+ <20140120181442.GA5545@xanatos>
+ <063D6719AE5E284EB5DD2968C1650D6D4609BF@AcuExch.aculab.com>
+ <52DEEF88.8090709@gmail.com>
+In-Reply-To: <52DEEF88.8090709@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=oWrX2SF5GWYoGzC+cuZeOx_wappTFfOy9vCpBush+BQ@mail.gmail.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
-	<1390339396-3479-69-git-send-email-paul.gortmaker@windriver.com>
-	<CAKohpo=oWrX2SF5GWYoGzC+cuZeOx_wappTFfOy9vCpBush+BQ@mail.gmail.com>
-Date: Wed, 22 Jan 2014 04:17:59 -0500
-Message-ID: <CAP=VYLodPTc4Cum+bqwA927g11-BNOtSo=fs_UKt+jFEc3ABKw@mail.gmail.com>
-Subject: Re: [PATCH 68/73] drivers/cpufreq: delete non-required instances of <linux/init.h>
-From: Paul Gortmaker <paul.gortmaker@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0M9JDAl015457
 
-On 1/21/14, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 22 January 2014 02:53, Paul Gortmaker <paul.gortmaker@windriver.com>
-> wrote:
->> None of these files are actually using any __init type directives
->> and hence don't need to include <linux/init.h>.  Most are just a
->> left over from __devinit and __cpuinit removal, or simply due to
->> code getting copied from one driver to the next.
->>
->> Cc: Kevin Hilman <khilman@deeprootsystems.com>
->> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
->> Cc: Viresh Kumar <viresh.kumar@linaro.org>
->> Cc: cpufreq@vger.kernel.org
->> Cc: linux-pm@vger.kernel.org
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->> ---
->>  drivers/cpufreq/omap-cpufreq.c    | 1 -
->>  drivers/cpufreq/powernow-k8.c     | 1 -
->>  drivers/cpufreq/s3c2412-cpufreq.c | 1 -
->>  drivers/cpufreq/s3c2440-cpufreq.c | 1 -
->>  drivers/cpufreq/spear-cpufreq.c   | 1 -
->>  drivers/cpufreq/speedstep-lib.c   | 1 -
->>  6 files changed, 6 deletions(-)
->
-> We have discussed this in past where I pointed out this file is required
-> by stuff like module_init, what happened to that query ?
+From: walt
+> On 01/21/2014 01:51 AM, David Laight wrote:
+> > From: Sarah Sharp
+> >> On Mon, Jan 20, 2014 at 11:21:14AM +0000, David Laight wrote:
+> > ...
+> >>> A guess...
+> >>>
+> >>> In queue_bulk_sg_tx() try calling xhci_v1_0_td_remainder() instead
+> >>> of xhci_td_remainder().
+> >>
+> David, I tried the one-liner below, which changed nothing AFAICS, but
+> then I'm not sure it's the change you intended:
+...
+>  		/* Set the TRB length, TD size, and interrupter fields. */
+> -		if (xhci->hci_version < 0x100) {
+> +		if (xhci->hci_version > 0x100) {
+>  			remainder = xhci_td_remainder(
+>  					urb->transfer_buffer_length -
+>  					running_total);
 
-Patch 31/73 relocates module_init and similar macros to
-module.h so that is no longer an implicit dependency.
+So my wild guess wasn't right.
+Can't win them all.
 
-https://lkml.org/lkml/2014/1/21/488
+	David
 
-Thanks,
-Paul
---
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
