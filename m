@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaAVWlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:41:01 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:46982 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaAVWk6 (ORCPT
+	id S1755579AbaAVWp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:45:58 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37279 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaAVWp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:40:58 -0500
+	Wed, 22 Jan 2014 17:45:56 -0500
+Message-ID: <52E04A21.3050101@mit.edu>
+Date: Wed, 22 Jan 2014 14:45:53 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com>
-References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com> <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 22 Jan 2014 14:40:09 -0800
-Message-ID: <CAGVrzcbPyaSe0aEHt157kz=quvsrBCPOUriCVG27fJfasa45jg@mail.gmail.com>
-Subject: Re: [PATCH v5 7/8] ARM: brcmstb: gic: add compatible string for
- Broadcom Brahma15
-To: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Mel Gorman <mgorman@suse.de>, Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
+        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
+ fail in 3.12 after exceeding vm_max_map_count
+References: <20140122190816.GB4963@suse.de>
+In-Reply-To: <20140122190816.GB4963@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On 01/22/2014 11:08 AM, Mel Gorman wrote:
+> Cyrill,
+> 
+> Gimp is broken due to a kernel bug included in 3.12. It cannot open
+> large files without failing memory allocations due to exceeding
+> vm.max_map_count. The relevant bugzilla entries are
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=67651
+> https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
+> 
+> They include details on how to reproduce the issue. In my case, a
+> failure shows messages like this
+> 
+> 	(gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
+> 
+> 	(file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+> 	xinit: connection to X server lost
+> 
+> 	waiting for X server to shut down
+> 	/usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+> 
+> X-related junk is there was because I was using a headless server and
+> xinit directly to launch gimp to reproduce the bug.
+> 
+> Automated bisection using mmtests (https://github.com/gormanm/mmtests)
+> and the configuration file configs/config-global-dhp__gimp-simple (needs
+> local web server with a copy of the image file) identified the following
+> commit. Test case was simple -- try and open the large file described in
+> the bug. I did not investigate the patch itself as I'm just reporting
+> the results of the bisection. If I had to guess, I'd say that VMA
+> merging has been affected.
+> 
+> d9104d1ca9662498339c0de975b4666c30485f4e is the first bad commit
+> commit d9104d1ca9662498339c0de975b4666c30485f4e
+> Author: Cyrill Gorcunov <gorcunov@gmail.com>
+> Date:   Wed Sep 11 14:22:24 2013 -0700
+> 
+>     mm: track vma changes with VM_SOFTDIRTY bit
+>     
+>     Pavel reported that in case if vma area get unmapped and then mapped (or
+>     expanded) in-place, the soft dirty tracker won't be able to recognize this
+>     situation since it works on pte level and ptes are get zapped on unmap,
+>     loosing soft dirty bit of course.
+>     
+>     So to resolve this situation we need to track actions on vma level, there
+>     VM_SOFTDIRTY flag comes in.  When new vma area created (or old expanded)
+>     we set this bit, and keep it here until application calls for clearing
+>     soft dirty bit.
+>     
+>     Thus when user space application track memory changes now it can detect if
+>     vma area is renewed.
 
-2014/1/21 Marc Carino <marc.ceeeee@gmail.com>:
-> Document the Broadcom Brahma B15 GIC implementation as compatible
-> with the ARM GIC standard.
->
-> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Presumably some path is failing to set VM_SOFTDIRTY, thus preventing mms
+from being merged.
 
-Do not we also need to update drivers/irqchip/irq-gic.c to look for
-this compatible property? Alternatively should the example DTS contain
-the following:
+That being said, this could cause vma blowups for programs that are
+actually using this thing.
 
-compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
-
-> ---
->  Documentation/devicetree/bindings/arm/gic.txt |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> index 3dfb0c0..d7409fd 100644
-> --- a/Documentation/devicetree/bindings/arm/gic.txt
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -15,6 +15,7 @@ Main node required properties:
->         "arm,cortex-a9-gic"
->         "arm,cortex-a7-gic"
->         "arm,arm11mp-gic"
-> +       "brcm,brahma-b15-gic"
->  - interrupt-controller : Identifies the node as an interrupt controller
->  - #interrupt-cells : Specifies the number of cells needed to encode an
->    interrupt source.  The type shall be a <u32> and the value shall be 3.
-> --
-> 1.7.1
->
-
-
-
--- 
-Florian
+--Andy
