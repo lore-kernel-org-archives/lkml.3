@@ -1,105 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaAVFFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 00:05:50 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40299 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaAVFFs (ORCPT
+	id S1752265AbaAVFJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 00:09:49 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26900 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaAVFJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 00:05:48 -0500
-MIME-Version: 1.0
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Tue, 21 Jan 2014 23:05:27 -0600
-Message-ID: <CA+BWVUQq4UNwSsAUZaimqnV3DZqPRQ==wx+X2XSojhwVzvpUZg@mail.gmail.com>
-Subject: RE: [PATCH] Add HID's to hid-microsoft driver of Surface Type/Touch
- Cover 2 to fix bug
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jan 2014 00:09:47 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-14-52df529a4f4b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Liu Ying'" <Ying.Liu@freescale.com>
+Cc: linux-fbdev@vger.kernel.org,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'DRI mailing list'" <dri-devel@lists.freedesktop.org>,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com>
+ <CA+8Hj810rwNCaiF8vEp9QXGufLp3=AdgF60gcTNfkd7C7pawgw@mail.gmail.com>
+ <52DF5125.3040909@freescale.com>
+In-reply-to: <52DF5125.3040909@freescale.com>
+Subject: Re: [PATCH v2] backlight: turn backlight on/off when necessary
+Date: Wed, 22 Jan 2014 14:09:45 +0900
+Message-id: <000501cf1730$2ac77ee0$80567ca0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8XLxde/kfv+ccARLG4JtP1aR7ERwAAIK2A
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t8zQ91ZQfeDDJ5vE7S48vU9m8XlhZdY
+	LU70fWC1uLxrDpvFuocvmCzWz7/FZvHkiYkDu8e/w/1MHq8u3GHxuN99nMmjb8sqRo/jN7Yz
+	eXzeJBfAFsVlk5Kak1mWWqRvl8CVsfNfA2NBl07F0UmrWBoYj8h2MXJySAiYSDRM+sgKYYtJ
+	XLi3nq2LkYtDSGAZo8SjPzNZYIp6V/1hgUhMZ5SYffI6M4Tzi1Gi/UQXE0gVm4CaxJcvh9lB
+	bBEBdYljhxcxgRQxC9xilLi/oAeqfQOjxOpXG4AWcnBwCuhKPL6RDdIgLOAu0TjtEDOIzSKg
+	KrH1xlM2EJtXwFZizvFbULagxI/J98BOYhbQkli/8zgThC0vsXnNW2aQkRJAix/91YW4wUji
+	3Jq3UCUiEvtevGMEOUFC4Cu7xIMPh1ghdglIfJt8iAWiV1Zi0wFmiI8lJQ6uuMEygVFiFpLN
+	s5BsnoVk8ywkKxYwsqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECInk3h2Mtw9YH2JMBlo/
+	kVlKNDkfmAjySuINjc2MLExNTI2NzC3NSBNWEudNepgUJCSQnliSmp2aWpBaFF9UmpNafIiR
+	iYNTqoFR12ib7L0bwt8rKncvXfFEJjEtvWdVTL7y0bgza2Y7vtB7e122LS901v9t/Jas+36w
+	2RVanZjDkR6+jtdlmtXqr6Znj226Lun29HLzmfPBfRGLHk1sm8vJs+FE1OM3LnlTC4qdQmdq
+	n9Xo7wj+03BqX7e04DOB8JTVwf2BX19IerHGL5/Hd26ZEktxRqKhFnNRcSIAlrcVk/oCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t9jQd1ZQfeDDG5v57G48vU9m8XlhZdY
+	LU70fWC1uLxrDpvFuocvmCzWz7/FZvHkiYkDu8e/w/1MHq8u3GHxuN99nMmjb8sqRo/jN7Yz
+	eXzeJBfAFtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
+	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPnvwbGgi6diqOT
+	VrE0MB6R7WLk5JAQMJHoXfWHBcIWk7hwbz1bFyMXh5DAdEaJ2SevM0M4vxgl2k90MYFUsQmo
+	SXz5cpgdxBYRUJc4dngRE0gRs8AtRon7C3pYIDo2MEqsfrWBtYuRg4NTQFfi8Y1skAZhAXeJ
+	xmmHmEFsFgFVia03nrKB2LwCthJzjt+CsgUlfky+B3YSs4CWxPqdx5kgbHmJzWveMoOMlABa
+	/OivLsQNRhLn1ryFKhGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFec
+	mFtcmpeul5yfu4kRnCaeSe9gXNVgcYhRgINRiYc3YNe9ICHWxLLiytxDjBIczEoivIeeAYV4
+	UxIrq1KL8uOLSnNSiw8xJgM9OpFZSjQ5H5jC8kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgk
+	kJ5YkpqdmlqQWgSzhYmDU6qBMULdf55w8/uIC23lWcKVFlVXt2juKWxjZ569srDUdhF/xGZl
+	l1ltiS7/t1ne1hQoD/CZfbjg6YyyKaHXbMtCOHdvabvSuPDsqTPOYiKNy55lvjzqsmCuocGH
+	e52/fFh01hvZ7fm47p2CROG1/L3TF0UdM355aVeDVfmT6IXclxX/TWjbtm5urxJLcUaioRZz
+	UXEiAAkeYFVXAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Benjamin,
+On Wednesday, January 22, 2014 2:04 PM, Liu Ying wrote:
+> 
+> Ping...
+> 
+> Regards,
+> Liu Ying
 
->>
->> Hi,
->>
->> Thanks for reminding me of hid_have_special_driver[]. I noticed that
->> this device has the HID_DG_CONTACTID and in the comment of the
->> hid_have_sepcial_driver[]
->>
->> * Please note that for multitouch devices (driven by hid-multitouch driver),
->> * there is a proper autodetection and autoloading in place (based on presence
->> * of HID_DG_CONTACTID), so those devices don't need to be added to this list,
->> * as we are doing the right thing in hid_scan_usage().
->>
->> This device should not be driven by hid-multitouch as it does not
->> handle keyboard/mouse input devices.
->> I submitted a new patch below with it added. I believe it should still
->> be part of this array, in case this kind of implementation is
->> fixed/updated.
->
-> This implementation is perfectly fine (I am referring to the "fixed/updated"):
-> - if your device should be driven by hid-multitouch, then you _don't_
-> add it to hid_have_special_driver
-> - if your device should not be driven by hid-multitouch, then you
-> _need_ to add it to hid_have_special_driver.
->
-> Adding the device to hid_have_special_driver prevents the detection of
-> the group HID_GRP_MULTITOUCH, so you will not end with a race between
-> hid-multitouch and your special hid driver.
->
+Please, don't send the ping within 2 days.
+It is not a good practice. You sent the v1 patch 6 months ago.
+However, why I should review the patch within 2 days?
+Please wait.
 
-Thanks for clearing that up. I understand the proper use of this array
-now, under this circumstance and am glad to know that there will be no
-race when added.
+Best regards,
+Jingoo Han
 
->>
->> From 291742873dcf181faf9657b41279487f31302c73 Mon Sep 17 00:00:00 2001
->> From: Reyad Attiyat <reyad.attiyat@gmail.com>
->> Date: Tue, 21 Jan 2014 01:22:25 -0600
->> Subject: [PATCH 1/1] Added in HID's for Microsoft Surface Type/Touch cover 2.
->>  This is to fix bug 64811 where this device is detected as a multitouch device
->>
->
-> You are missing a commit message here (the first message you sent
-> would fit perfectly here).
->
+> 
+> On 01/20/2014 12:52 PM, Liu Ying wrote:
+> > We don't have to turn backlight on/off everytime a blanking
+> > or unblanking event comes because the backlight status may
+> > have already been what we want. Another thought is that one
+> > backlight device may be shared by multiple framebuffers. We
+> > don't hope blanking one of the framebuffers may turn the
+> > backlight off for all the other framebuffers, since they are
+> > likely being active to display something. This patch adds
+> > some logics to record each framebuffer's backlight usage to
+> > determine the backlight device use count and whether the
+> > backlight should be turned on or off. To be more specific,
+> > only one unblank operation on a certain blanked framebuffer
+> > may increase the backlight device's use count by one, while
+> > one blank operation on a certain unblanked framebuffer may
+> > decrease the use count by one, because the userspace is
+> > likely to unblank a unblanked framebuffer or blank a blanked
+> > framebuffer.
+> >
+> > Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> > ---
+> > v1 can be found at https://lkml.org/lkml/2013/5/30/139
+> >
+> > v1->v2:
+> > * Make the commit message be more specific about the condition
+> >   in which backlight device use count can be increased/decreased.
+> > * Correct the setting for bd->props.fb_blank.
+> >
+> >  drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
+> >  include/linux/backlight.h           |    6 ++++++
+> >  2 files changed, 27 insertions(+), 7 deletions(-)
+> >
+> > diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> > index 5d05555..42044be 100644
+> > --- a/drivers/video/backlight/backlight.c
+> > +++ b/drivers/video/backlight/backlight.c
+> > @@ -34,13 +34,15 @@ static const char *const backlight_types[] = {
+> >                            defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
+> >  /* This callback gets called when something important happens inside a
+> >   * framebuffer driver. We're looking if that important event is blanking,
+> > - * and if it is, we're switching backlight power as well ...
+> > + * and if it is and necessary, we're switching backlight power as well ...
+> >   */
+> >  static int fb_notifier_callback(struct notifier_block *self,
+> >                                 unsigned long event, void *data)
+> >  {
+> >         struct backlight_device *bd;
+> >         struct fb_event *evdata = data;
+> > +       int node = evdata->info->node;
+> > +       int fb_blank = 0;
+> >
+> >         /* If we aren't interested in this event, skip it immediately ... */
+> >         if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
+> > @@ -51,12 +53,24 @@ static int fb_notifier_callback(struct notifier_block *self,
+> >         if (bd->ops)
+> >                 if (!bd->ops->check_fb ||
+> >                     bd->ops->check_fb(bd, evdata->info)) {
+> > -                       bd->props.fb_blank = *(int *)evdata->data;
+> > -                       if (bd->props.fb_blank == FB_BLANK_UNBLANK)
+> > -                               bd->props.state &= ~BL_CORE_FBBLANK;
+> > -                       else
+> > -                               bd->props.state |= BL_CORE_FBBLANK;
+> > -                       backlight_update_status(bd);
+> > +                       fb_blank = *(int *)evdata->data;
+> > +                       if (fb_blank == FB_BLANK_UNBLANK &&
+> > +                           !bd->fb_bl_on[node]) {
+> > +                               bd->fb_bl_on[node] = true;
+> > +                               if (!bd->use_count++) {
+> > +                                       bd->props.state &= ~BL_CORE_FBBLANK;
+> > +                                       bd->props.fb_blank = FB_BLANK_UNBLANK;
+> > +                                       backlight_update_status(bd);
+> > +                               }
+> > +                       } else if (fb_blank != FB_BLANK_UNBLANK &&
+> > +                                  bd->fb_bl_on[node]) {
+> > +                               bd->fb_bl_on[node] = false;
+> > +                               if (!(--bd->use_count)) {
+> > +                                       bd->props.state |= BL_CORE_FBBLANK;
+> > +                                       bd->props.fb_blank = FB_BLANK_POWERDOWN;
+> > +                                       backlight_update_status(bd);
+> > +                               }
+> > +                       }
+> >                 }
+> >         mutex_unlock(&bd->ops_lock);
+> >         return 0;
+> > diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+> > index 5f9cd96..7264742 100644
+> > --- a/include/linux/backlight.h
+> > +++ b/include/linux/backlight.h
+> > @@ -9,6 +9,7 @@
+> >  #define _LINUX_BACKLIGHT_H
+> >
+> >  #include <linux/device.h>
+> > +#include <linux/fb.h>
+> >  #include <linux/mutex.h>
+> >  #include <linux/notifier.h>
+> >
+> > @@ -104,6 +105,11 @@ struct backlight_device {
+> >         struct list_head entry;
+> >
+> >         struct device dev;
+> > +
+> > +       /* Multiple framebuffers may share one backlight device */
+> > +       bool fb_bl_on[FB_MAX];
+> > +
+> > +       int use_count;
+> >  };
+> >
+> >  static inline void backlight_update_status(struct backlight_device *bd)
+> > --
+> > 1.7.9.5
 
-Sorry about that, I'm new to submitting patches to these mailing lists.
-
-> Other than that, I played a little with the report descriptor pointed
-> in the bugzilla.
->
-> I think I will be able to handle this touch cover in hid-multitouch,
-> but that would require more testings/debugging. Microsoft seems to
-> have implemented an indirect (dual) touchpad here, but until we know
-> which mode we should put it into, it's going to be tricky to set it up
-> correctly.
->
-> One last thing, in the bugzilla, in the comment 2 you say: "I still
-> have issues with the type cover 2 even with this fix". Are you still
-> experiencing those disconnection? If so, maybe we should switch to
-> hid-multitouch at some point.
->
-I tried some patches that I think you posted to hid-input about hid-multitouch.
-The patches added in support for function callbacks to allow for a
-generic protocol.
-This worked after I changed mt_input_mapping() to set the protocol to
-mt_protocol_generic
-
-851     * such as Mouse that might have the same GenericDesktop usages. */
-852     if (field->application != HID_DG_TOUCHSCREEN &&
-853         field->application != HID_DG_PEN &&
-854         field->application != HID_DG_TOUCHPAD)
-855                td->protocols[report_id] = mt_protocol_generic;
-
-I still experience the disconnects with both of these solutions. Do
-you have any idea what could cause this?
-It seems to happen when I'm typing fast or holding a key. I'm guessing
-the only way to fix this properly is
-to snoop USB packets in Windows to see how the device is handled there.
-Another bug is the device stays on, lit,  in standby mode.
-
-What do you think is the best solution to take? By that I mean should
-I keep the patch as part of hid-microsoft?
