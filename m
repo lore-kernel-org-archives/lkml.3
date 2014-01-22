@@ -1,75 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaAVNVZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:21:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22058 "EHLO mx1.redhat.com"
+	id S1755642AbaAVNVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 08:21:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35641 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755612AbaAVNVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:21:05 -0500
-Date: Wed, 22 Jan 2014 14:20:18 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
-        Arun Sharma <asharma@fb.com>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 00/24] perf tools: Add support to accumulate hist
- periods (v6)
-Message-ID: <20140122132018.GC1132@krava.brq.redhat.com>
-References: <1389677157-30513-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389677157-30513-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755599AbaAVNUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 08:20:47 -0500
+Subject: Re: [PATCH v6 7/8] x86: patch all traced function calls using the
+ int3-based framework
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+In-Reply-To: <20140115104741.2d78cee4@gandalf.local.home>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	 <1386690140-19941-8-git-send-email-pmladek@suse.cz>
+	 <20140115104741.2d78cee4@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Jan 2014 14:20:45 +0100
+Message-ID: <1390396845.16203.58.camel@pathway.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 02:25:33PM +0900, Namhyung Kim wrote:
-> Hello,
+On Wed, 2014-01-15 at 10:47 -0500, Steven Rostedt wrote:
+> On Tue, 10 Dec 2013 16:42:19 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
 > 
-> This is a new attempt to implement cumulative hist period report.
-> This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-> rewrote it from scratch.
+> > 
+> > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> > index 03abf9abf681..e5c02af3a8cc 100644
+> > --- a/arch/x86/kernel/alternative.c
+> > +++ b/arch/x86/kernel/alternative.c
+> > @@ -613,7 +613,7 @@ void __kprobes text_poke_or_die(void *addr, const void *opcode, size_t len)
+> >   * responsible for setting the patched code read-write. This is more effective
+> >   * only when you patch many addresses at the same time.
+> >   */
+> > -static int text_poke_part(void *addr, const void *opcode, size_t len)
+> > +static int notrace text_poke_part(void *addr, const void *opcode, size_t len)
 > 
-> This patchset is based on my previous patchset [2] but I think it's
-> almost independent so that it can be applied separately.
-> 
-> Please see the patch 03/24.  I refactored functions that add hist
-> entries with struct hist_entry_iter.  While I converted all functions
-> carefully, it'd be better anyone can test and confirm that I didn't
-> mess up something - especially for branch stack and mem stuff.
-> 
-> This patchset basically adds period in a sample to every node in the
-> callchain.  A hist_entry now has an additional fields to keep the
-> cumulative period if --children option is given on perf report.
-> 
-> I changed the option as a separate --children and added a new
-> "Children" column (and renamed the default "Overhead" column into
-> "Self").  The output will be sorted by children (cumulative) overhead
-> for now.  The reason I changed to the --children is that I still think
-> it's much different from other --call-graph options.  The --call-graph
-> option will take care of it even with --children option.
-> 
-> I know that the UI should be changed also to be more flexible as Ingo
-> requested, but I'd like to do this first and then move to work on the
-> next.  I also added a new config option to enable it by default.
-> 
->  * changes in v6:
->   - separate struct hist_iter_ops (Jiri)
->   - check iter->he before calling ->add_entry_cb (Jiri)
->   - fix locking issue on perf top (Jiri)
+> I can understand why you want to not trace any of these, but again, I
+> hate using notrace unless it is absolutely necessary. That's what the
+> set_ftrace_notrace is for. If you don't want to trace it, simply tell
+> the kernel not to.
 
-I have changes on top of this patchset and all looks great, I was
-just going throught this again and wanted to send my ack, but it
-no longer merges to the acme's perf/core.
+I removed "notrace" from all locations, except for "poke_int3_handler".
+Then I tried to switch between 7 tracers, enable and disable tracing,
+and repeated this 100 times. It slowed down from:
 
-Could you please send updated version, and I'll finish the
-review.. I promise ;-)
+real    3m25.837s    3m29.280s    3m27.408s
+user    0m0.004s     0m0.004s     0m0.000s
+sys     0m3.532s     0m3.460s     0m3.416s
 
-thanks,
-jirka
+to 
+
+real    5m23.294s    5m24.944s    5m28.056s
+user    0m0.004s     0m0.004s	  0m0.004s
+sys     0m3.076s     0m3.180s	  0m3.396s
+
+It means a change by 60%. As you know indeed, the reason is that the
+functions used during patching are called via the int3 handler once the
+breakpoint is added.
+
+I thought about patching these functions separately, e.g. using separate
+list or extra filters with two round patching. But I think that it is
+not worth the extra complexity.
+
+I agree that it might be worth to keep the functions traceable. So, if
+the slowness is acceptable for you, I am fine with it as well.
+
+> >  {
+> >  	int ret;
+> >  
+> > @@ -662,7 +662,7 @@ static void *bp_int3_handler, *bp_int3_addr;
+> >  static size_t bp_int3_len;
+> >  static void *(*bp_int3_is_handled)(const unsigned long ip);
+> >  
+> > -int poke_int3_handler(struct pt_regs *regs)
+> > +int notrace poke_int3_handler(struct pt_regs *regs)
+> >  {
+> >  	/* bp_patching_in_progress */
+> >  	smp_rmb();
+[...]
+> > @@ -192,44 +162,10 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+> >  	old = ftrace_nop_replace();
+> >  	new = ftrace_call_replace(ip, addr);
+> >  
+> > -	/* Should only be called when module is loaded */
+> > -	return ftrace_modify_code_direct(rec->ip, old, new);
+> > +	return ftrace_modify_code(ip, old, new);
+> >  }
+> >  
+> >  /*
+> > - * The modifying_ftrace_code is used to tell the breakpoint
+> > - * handler to call ftrace_int3_handler(). If it fails to
+> > - * call this handler for a breakpoint added by ftrace, then
+> > - * the kernel may crash.
+> > - *
+> > - * As atomic_writes on x86 do not need a barrier, we do not
+> > - * need to add smp_mb()s for this to work. It is also considered
+> > - * that we can not read the modifying_ftrace_code before
+> > - * executing the breakpoint. That would be quite remarkable if
+> > - * it could do that. Here's the flow that is required:
+> > - *
+> > - *   CPU-0                          CPU-1
+> > - *
+> > - * atomic_inc(mfc);
+> > - * write int3s
+> > - *				<trap-int3> // implicit (r)mb
+> > - *				if (atomic_read(mfc))
+> > - *					call ftrace_int3_handler()
+> > - *
+> > - * Then when we are finished:
+> > - *
+> > - * atomic_dec(mfc);
+> > - *
+> > - * If we hit a breakpoint that was not set by ftrace, it does not
+> > - * matter if ftrace_int3_handler() is called or not. It will
+> > - * simply be ignored. But it is crucial that a ftrace nop/caller
+> > - * breakpoint is handled. No other user should ever place a
+> > - * breakpoint on an ftrace nop/caller location. It must only
+> > - * be done by this code.
+> > - */
+> 
+> The above is a nice comment. It should be copied over to the
+> alternative.c file for the explanation of bp_patching_in_progress.
+
+Well, text_poke is using barriers instead of the atomic variable. I
+think that the barriers have two functions in text_poke stuff:
+
+1) make sure that "bp_patching_in_progress" is enabled before the
+breakpoint is added; it means that "poke_int3_handler" is opened to
+handle the address before the related trap happens.
+
+2) make sure that the variables, e.g. bp_int3_handler, bp_int3_add, have
+correct values before they are accessed in "poke_int3_handler".
+
+I think that the atomic variable has only the 1st function. It does not
+solve synchronization of the other variables. I thin that it was not a
+problem in ftrace because it patched almost static list of addresses
+but it might be problem in the generic text_poke_bp.
+
+> > -atomic_t modifying_ftrace_code __read_mostly;
+> > -
+> > -/*
+> >   * Should never be called:
+> >   *  As it is only called by __ftrace_replace_code() which is called by
+> >   *  ftrace_replace_code() that x86 overrides, and by ftrace_update_code()
+
+
+Best Regards,
+Petr
+
+
