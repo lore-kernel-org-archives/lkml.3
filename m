@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaAVWp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:45:58 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37279 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaAVWp4 (ORCPT
+	id S1756086AbaAVWtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:49:06 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:45103 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaAVWtE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:45:56 -0500
-Message-ID: <52E04A21.3050101@mit.edu>
-Date: Wed, 22 Jan 2014 14:45:53 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Mel Gorman <mgorman@suse.de>, Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
-        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
- fail in 3.12 after exceeding vm_max_map_count
-References: <20140122190816.GB4963@suse.de>
-In-Reply-To: <20140122190816.GB4963@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jan 2014 17:49:04 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] 6lowpan: add a license to 6lowpan_iphc module
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1390418724-9804-1-git-send-email-ydroneaud@opteya.com>
+Date: Wed, 22 Jan 2014 14:49:09 -0800
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
+        Alexander Aring <alex.aring@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <54C711A5-F3BA-4327-B070-3DBE884543D1@holtmann.org>
+References: <1390418724-9804-1-git-send-email-ydroneaud@opteya.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 11:08 AM, Mel Gorman wrote:
-> Cyrill,
-> 
-> Gimp is broken due to a kernel bug included in 3.12. It cannot open
-> large files without failing memory allocations due to exceeding
-> vm.max_map_count. The relevant bugzilla entries are
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=67651
-> https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
-> 
-> They include details on how to reproduce the issue. In my case, a
-> failure shows messages like this
-> 
-> 	(gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
-> 
-> 	(file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
-> 	xinit: connection to X server lost
-> 
-> 	waiting for X server to shut down
-> 	/usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
-> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
-> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
-> 
-> X-related junk is there was because I was using a headless server and
-> xinit directly to launch gimp to reproduce the bug.
-> 
-> Automated bisection using mmtests (https://github.com/gormanm/mmtests)
-> and the configuration file configs/config-global-dhp__gimp-simple (needs
-> local web server with a copy of the image file) identified the following
-> commit. Test case was simple -- try and open the large file described in
-> the bug. I did not investigate the patch itself as I'm just reporting
-> the results of the bisection. If I had to guess, I'd say that VMA
-> merging has been affected.
-> 
-> d9104d1ca9662498339c0de975b4666c30485f4e is the first bad commit
-> commit d9104d1ca9662498339c0de975b4666c30485f4e
-> Author: Cyrill Gorcunov <gorcunov@gmail.com>
-> Date:   Wed Sep 11 14:22:24 2013 -0700
-> 
->     mm: track vma changes with VM_SOFTDIRTY bit
->     
->     Pavel reported that in case if vma area get unmapped and then mapped (or
->     expanded) in-place, the soft dirty tracker won't be able to recognize this
->     situation since it works on pte level and ptes are get zapped on unmap,
->     loosing soft dirty bit of course.
->     
->     So to resolve this situation we need to track actions on vma level, there
->     VM_SOFTDIRTY flag comes in.  When new vma area created (or old expanded)
->     we set this bit, and keep it here until application calls for clearing
->     soft dirty bit.
->     
->     Thus when user space application track memory changes now it can detect if
->     vma area is renewed.
+Hi Yann,
 
-Presumably some path is failing to set VM_SOFTDIRTY, thus preventing mms
-from being merged.
+> Since commit 8df8c56a5abc, 6lowpan_iphc is a module of its own.
+> 
+> Unfortunately, it lacks some infrastructure to behave like a
+> good kernel citizen:
+> 
+>  kernel: 6lowpan_iphc: module license 'unspecified' taints kernel.
+>  kernel: Disabling lock debugging due to kernel taint
+> 
+> This patch adds the basic MODULE_LICENSE(); with GPL license:
+> the code was copied from net/ieee802154/6lowpan.c which is GPL
+> and the module exports symbol with EXPORT_SYMBOL_GPL();.
+> 
+> Cc: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+> Cc: Alexander Aring <alex.aring@gmail.com>
+> Cc: Marcel Holtmann <marcel@holtmann.org>
+> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> ---
+> net/ieee802154/6lowpan_iphc.c | 3 +++
+> 1 file changed, 3 insertions(+)
+> 
+> diff --git a/net/ieee802154/6lowpan_iphc.c b/net/ieee802154/6lowpan_iphc.c
+> index e14fe8b2c054..860aa2d445ba 100644
+> --- a/net/ieee802154/6lowpan_iphc.c
+> +++ b/net/ieee802154/6lowpan_iphc.c
+> @@ -52,6 +52,7 @@
+> 
+> #include <linux/bitops.h>
+> #include <linux/if_arp.h>
+> +#include <linux/module.h>
+> #include <linux/netdevice.h>
+> #include <net/ipv6.h>
+> #include <net/af_ieee802154.h>
+> @@ -797,3 +798,5 @@ int lowpan_header_compress(struct sk_buff *skb, struct net_device *dev,
+> 	return 0;
+> }
+> EXPORT_SYMBOL_GPL(lowpan_header_compress);
+> +
+> +MODULE_LICENSE("GPL”);
 
-That being said, this could cause vma blowups for programs that are
-actually using this thing.
+looks good to me.
 
---Andy
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+
+Regards
+
+Marcel
+
