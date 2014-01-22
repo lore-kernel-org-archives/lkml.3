@@ -1,160 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaAVOaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:30:18 -0500
-Received: from www62.your-server.de ([213.133.104.62]:53800 "EHLO
-	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996AbaAVOaM (ORCPT
+	id S1755730AbaAVObB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:31:01 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:45209 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528AbaAVObA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:30:12 -0500
-Message-ID: <52DFD5DB.6060603@iogearbox.net>
-Date: Wed, 22 Jan 2014 15:29:47 +0100
-From: Daniel Borkmann <borkmann@iogearbox.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 22 Jan 2014 09:31:00 -0500
 MIME-Version: 1.0
-To: Steven Noonan <steven@uplinklabs.net>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
-        george.dunlap@eu.citrix.com, dario.faggioli@citrix.com,
-        Elena Ufimtseva <ufimtseva@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>,
+In-Reply-To: <20140122150959.78cf2827@ipc1.ka-ro>
+References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
+	<20140122150959.78cf2827@ipc1.ka-ro>
+Date: Wed, 22 Jan 2014 23:31:00 +0900
+Message-ID: <CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
+Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect use
+ of prandom_bytes_state()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
-References: <20140121232708.GA29787@amazon.com> <20140122014908.GG18164@kroah.com> <CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com> <20140122032045.GA22182@falcon.amazon.com> <20140122050215.GC9931@konrad-lan.dumpdata.com> <20140122072914.GA9283@orcus.uplinklabs.net>
-In-Reply-To: <20140122072914.GA9283@orcus.uplinklabs.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: borkmann@iogearbox.net
+        Huang Shijie <b32955@freescale.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 08:29 AM, Steven Noonan wrote:
-> On Wed, Jan 22, 2014 at 12:02:15AM -0500, Konrad Rzeszutek Wilk wrote:
->> On Tue, Jan 21, 2014 at 07:20:45PM -0800, Steven Noonan wrote:
->>> On Tue, Jan 21, 2014 at 06:47:07PM -0800, Linus Torvalds wrote:
->>>> On Tue, Jan 21, 2014 at 5:49 PM, Greg Kroah-Hartman
->>>> <gregkh@linuxfoundation.org> wrote:
->>
->> Adding extra folks to the party.
->>>>>
->>>>> Odds are this also shows up in 3.13, right?
->>>
->>> Reproduced using 3.13 on the PV guest:
->>>
->>> 	[  368.756763] BUG: Bad page map in process mp  pte:80000004a67c6165 pmd:e9b706067
->>> 	[  368.756777] page:ffffea001299f180 count:0 mapcount:-1 mapping:          (null) index:0x0
->>> 	[  368.756781] page flags: 0x2fffff80000014(referenced|dirty)
->>> 	[  368.756786] addr:00007fd1388b7000 vm_flags:00100071 anon_vma:ffff880e9ba15f80 mapping:          (null) index:7fd1388b7
->>> 	[  368.756792] CPU: 29 PID: 618 Comm: mp Not tainted 3.13.0-ec2 #1
->>> 	[  368.756795]  ffff880e9b718958 ffff880e9eaf3cc0 ffffffff814d8748 00007fd1388b7000
->>> 	[  368.756803]  ffff880e9eaf3d08 ffffffff8116d289 0000000000000000 0000000000000000
->>> 	[  368.756809]  ffff880e9b7065b8 ffffea001299f180 00007fd1388b8000 ffff880e9eaf3e30
->>> 	[  368.756815] Call Trace:
->>> 	[  368.756825]  [<ffffffff814d8748>] dump_stack+0x45/0x56
->>> 	[  368.756833]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
->>> 	[  368.756837]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
->>> 	[  368.756842]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
->>> 	[  368.756847]  [<ffffffff81175dac>] unmap_region+0xac/0x120
->>> 	[  368.756852]  [<ffffffff81176379>] ? vma_rb_erase+0x1c9/0x210
->>> 	[  368.756856]  [<ffffffff81177f10>] do_munmap+0x280/0x370
->>> 	[  368.756860]  [<ffffffff81178041>] vm_munmap+0x41/0x60
->>> 	[  368.756864]  [<ffffffff81178f32>] SyS_munmap+0x22/0x30
->>> 	[  368.756869]  [<ffffffff814e70ed>] system_call_fastpath+0x1a/0x1f
->>> 	[  368.756872] Disabling lock debugging due to kernel taint
->>> 	[  368.760084] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:0 val:-1
->>> 	[  368.760091] BUG: Bad rss-counter state mm:ffff880e9d079680 idx:1 val:1
->>>
->>>>
->>>> Probably. I don't have a Xen PV setup to test with (and very little
->>>> interest in setting one up).. And I have a suspicion that it might not
->>>> be so much about Xen PV, as perhaps about the kind of hardware.
->>>>
->>>> I suspect the issue has something to do with the magic _PAGE_NUMA
->>>> tie-in with _PAGE_PRESENT. And then mprotect(PROT_NONE) ends up
->>>> removing the _PAGE_PRESENT bit, and now the crazy numa code is
->>>> confused.
->>>>
->>>> The whole _PAGE_NUMA thing is a f*cking horrible hack, and shares the
->>>> bit with _PAGE_PROTNONE, which is why it then has that tie-in to
->>>> _PAGE_PRESENT.
->>>>
->>>> Adding Andrea to the Cc, because he's the author of that horridness.
->>>> Putting Steven's test-case here as an attachement for Andrea, maybe
->>>> that makes him go "Ahh, yes, silly case".
->>>>
->>>> Also added Kirill, because he was involved the last _PAGE_NUMA debacle.
->>>>
->>>> Andrea, you can find the thread on lkml, but it boils down to commit
->>>> 1667918b6483 (backported to 3.12.7 as 3d792d616ba4) breaking the
->>>> attached test-case (but apparently only under Xen PV). There it
->>>> apparently causes a "BUG: Bad page map .." error.
->>
->> I *think* it is due to the fact that pmd_numa and pte_numa is getting the _raw_
->> value of PMDs and PTEs. That is - it does not use the pvops interface
->> and instead reads the values directly from the page-table. Since the
->> page-table is also manipulated by the hypervisor - there are certain
->> flags it also sets to do its business. It might be that it uses
->> _PAGE_GLOBAL as well - and Linux picks up on that. If it was using
->> pte_flags that would invoke the pvops interface.
->>
->> Elena, Dariof and George, you guys had been looking at this a bit deeper
->> than I have. Does the Xen hypervisor use the _PAGE_GLOBAL for PV guests?
->>
->> This not-compiled-totally-bad-patch might shed some light on what I was
->> thinking _could_ fix this issue - and IS NOT A FIX - JUST A HACK.
->> It does not fix it for PMDs naturally (as there are no PMD paravirt ops
->> for that).
+2014/1/22 Lothar Waﬂmann <LW@karo-electronics.de>:
+> Hi,
 >
-> Unfortunately the Totally Bad Patch seems to make no difference. I am
-> still able to repro the issue:
+> Is anyone taking care of this?
+>
+> Lothar Waﬂmann wrote:
+>> When using prandom_bytes_state() it is critical to use the same block
+>> size in all invocations that are to produce the same random sequence.
+>> Otherwise the state of the PRNG will be out of sync if the blocksize
+>> is not divisible by 4.
+>> This leads to bogus verification errors in several tests which use
+>> different block sizes to initialize the buffer for writing and
+>> comparison.
+>>
+>> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+>> ---
+>>  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
+>>  1 files changed, 12 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
+>> index 2e9e2d1..72c7359 100644
+>> --- a/drivers/mtd/tests/oobtest.c
+>> +++ b/drivers/mtd/tests/oobtest.c
+>> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
+>>       int err = 0;
+>>       loff_t addr = ebnum * mtd->erasesize;
+>>       size_t len = mtd->ecclayout->oobavail * pgcnt;
+>> +     int i;
+>> +
+>> +     for (i = 0; i < pgcnt; i++)
+>> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
+>> +                             use_len);
+>> +     if (len % use_len)
+>> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
+>> +                             len % use_len);
+>>
+>> -     prandom_bytes_state(&rnd_state, writebuf, len);
+>>       ops.mode      = MTD_OPS_AUTO_OOB;
+>>       ops.len       = 0;
+>>       ops.retlen    = 0;
 
-Maybe this one is also related to this BUG here (cc'ed people investigating
-this one) ...
+I would rather fix the use of prandom_bytes_state() in write_eraseblock()
+than fix in verify_eraseblock_in_one_go().
 
-   https://lkml.org/lkml/2014/1/10/427
+>> @@ -594,7 +601,10 @@ static int __init mtd_oobtest_init(void)
+>>               if (bbt[i] || bbt[i + 1])
+>>                       continue;
+>>               prandom_bytes_state(&rnd_state, writebuf,
+>> -                                     mtd->ecclayout->oobavail * 2);
+>> +                                     mtd->ecclayout->oobavail);
+>> +             prandom_bytes_state(&rnd_state,
+>> +                                     writebuf + mtd->ecclayout->oobavail,
+>> +                                     mtd->ecclayout->oobavail);
+>>               addr = (i + 1) * mtd->erasesize - mtd->writesize;
+>>               ops.mode      = MTD_OPS_AUTO_OOB;
+>>               ops.len       = 0;
 
-... not sure, though.
-
-> 	[  346.374929] BUG: Bad page map in process mp  pte:80000004ae928065 pmd:e993f9067
-> 	[  346.374942] page:ffffea0012ba4a00 count:0 mapcount:-1 mapping:          (null) index:0x0
-> 	[  346.374946] page flags: 0x2fffff80000014(referenced|dirty)
-> 	[  346.374951] addr:00007f06a9bbb000 vm_flags:00100071 anon_vma:ffff880e9939fe00 mapping:          (null) index:7f06a9bbb
-> 	[  346.374956] CPU: 29 PID: 609 Comm: mp Not tainted 3.13.0-ec2+ #1
-> 	[  346.374960]  ffff880e9cc38da8 ffff880e991a3cc0 ffffffff814d8768 00007f06a9bbb000
-> 	[  346.374967]  ffff880e991a3d08 ffffffff8116d289 0000000000000000 0000000000000000
-> 	[  346.374972]  ffff880e993f9dd8 ffffea0012ba4a00 00007f06a9bbc000 ffff880e991a3e30
-> 	[  346.374979] Call Trace:
-> 	[  346.374988]  [<ffffffff814d8768>] dump_stack+0x45/0x56
-> 	[  346.374996]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
-> 	[  346.375000]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
-> 	[  346.375006]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
-> 	[  346.375011]  [<ffffffff81175dbc>] unmap_region+0xac/0x120
-> 	[  346.375016]  [<ffffffff81176389>] ? vma_rb_erase+0x1c9/0x210
-> 	[  346.375021]  [<ffffffff81177f20>] do_munmap+0x280/0x370
-> 	[  346.375025]  [<ffffffff81178051>] vm_munmap+0x41/0x60
-> 	[  346.375029]  [<ffffffff81178f42>] SyS_munmap+0x22/0x30
-> 	[  346.375034]  [<ffffffff814e712d>] system_call_fastpath+0x1a/0x1f
-> 	[  346.375037] Disabling lock debugging due to kernel taint
-> 	[  346.380082] BUG: Bad rss-counter state mm:ffff880e9d22bc00 idx:0 val:-1
-> 	[  346.380088] BUG: Bad rss-counter state mm:ffff880e9d22bc00 idx:1 val:1
->
-> This dump doesn't look dramatically different, either.
->
->>
->> The other question is - how is AutoNUMA running when it is not enabled?
->> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
->> turned on?
->
-> Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
-> mean not enabled at runtime?
->
-> [1] http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
+The same goes for this.  I would rather fix prandom_bytes_state() when
+writing OOBs.
