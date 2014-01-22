@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaAVTB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:01:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46044 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaAVTBz (ORCPT
+	id S1753398AbaAVTCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:02:09 -0500
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:23052 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260AbaAVTCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:01:55 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH RFC 3/4] ARM: init: add support for reserved memory defined by device tree
-Date: Wed, 22 Jan 2014 12:58:51 -0600
-Message-Id: <1390417133-6650-4-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1390417133-6650-1-git-send-email-joshc@codeaurora.org>
-References: <1390417133-6650-1-git-send-email-joshc@codeaurora.org>
+	Wed, 22 Jan 2014 14:02:07 -0500
+Message-ID: <52E015AA.6010104@emulex.com>
+Date: Wed, 22 Jan 2014 14:02:02 -0500
+From: James Smart <james.smart@emulex.com>
+Reply-To: <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        <lsf-pc@lists.linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [LSF/MM TOPIC] [ATTEND] scsi-mq
+References: <1389827148.5567.597.camel@haakon3.risingtidesystems.com> <52D808FD.9010007@dev.mellanox.co.il>
+In-Reply-To: <52D808FD.9010007@dev.mellanox.co.il>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+James,
 
-Enable reserved memory initialization from device tree.
+I'd like to attend to participate in the  EH, MQ, and T10 PI RDMA 
+discussions.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- arch/arm/mm/init.c | 3 +++
- 1 file changed, 3 insertions(+)
+-- james s
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 403ba90..5efe0b4 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -17,6 +17,7 @@
- #include <linux/nodemask.h>
- #include <linux/initrd.h>
- #include <linux/of_fdt.h>
-+#include <linux/of_reserved_mem.h>
- #include <linux/highmem.h>
- #include <linux/gfp.h>
- #include <linux/memblock.h>
-@@ -323,6 +324,8 @@ void __init arm_memblock_init(struct meminfo *mi,
- 	if (mdesc->reserve)
- 		mdesc->reserve();
- 
-+	early_init_dt_scan_reserved_mem();
-+
- 	/*
- 	 * reserve memory for DMA contigouos allocations,
- 	 * must come from DMA area inside low memory
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+
+
+On 1/16/2014 11:29 AM, Sagi Grimberg wrote:
+> On 1/16/2014 1:05 AM, Nicholas A. Bellinger wrote:
+>> Hi all,
+>>
+>> I'd like to discuss the current state of scsi-mq prototype code.
+>>
+>> And now that blk-mq is upstream for v3.13, exploring the remaining TODO
+>> items towards an initial scsi-mq merge sometime before 2015 is upon us.
+>>
+>> The benefits of scsi-mq remain unchanged:
+>>
+>>    - Utilizes blk-mq's native per-cpu primitive + NUMA local friendly
+>>      queuing of pre-allocated struct request descriptor memory
+>>    - Eliminates all fast-path memory allocations in SCSI-core +
+>>      optionally the underlying SCSI LLDs
+>>    - Avoids fast-path Scsi_Host->host_lock + request_queue->queue_lock
+>>      accesses in submission + completion paths
+>>
+>> These benefits have been discussed in greater detail in [1], and the
+>> latest alpha quality code is available at [2] below.
+>>
+>> The current TODO items include:
+>>
+>>   - A plan for per device SCSI error handling
+>>   - Proper scsi_device->sdev_gendev reference counting
+>>   - Queuing fairness across multiple scsi-mq devices per host
+>>   - Support for > 1 nr_hw_queues + conversion of qla2xxx + lpfc
+>>     LLDs that support native hardware multiqueue
+>>
+>> Thank you,
+>>
+>> --nab
+>>
+>> References:
+>>
+>> [1]:
+>> [ATTEND] scsi-mq prototype discussion
+>> http://marc.info/?l=linux-scsi&m=137358831329753&w=2
+>>
+>> [2]:
+>> scsi-mq WIP updated to v3.13-rc3
+>> http://marc.info/?l=linux-scsi&m=138782535731722&w=2
+>>
+>
+> +1
+> I would be happy to join this discussion, I think it is also important 
+> to think about the interaction with iSCSI and LLDs.
+>
+> Sagi.
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
