@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaAVTTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:19:33 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:37224 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179AbaAVTTa (ORCPT
+	id S1755701AbaAVTTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:19:53 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:48150 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845AbaAVTTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:19:30 -0500
-Date: Wed, 22 Jan 2014 23:19:28 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
-        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
- fail in 3.12 after exceeding vm_max_map_count
-Message-ID: <20140122191928.GQ1574@moon>
-References: <20140122190816.GB4963@suse.de>
+	Wed, 22 Jan 2014 14:19:51 -0500
+X-Auth-Info: PMZ3B1MRCNWJuJQLYHDoC+lMoAgVl3/0ct7/UR/AfoQ=
+Date: Wed, 22 Jan 2014 20:19:47 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH 4/5] spi: Check that Quad/Dual is half duplex
+Message-ID: <20140122191947.GQ20094@book.gsilab.sittig.org>
+References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
+ <1390317009-8292-4-git-send-email-geert@linux-m68k.org>
+ <20140121182130.GM17314@sirena.org.uk>
+ <CAMuHMdWW1EsHe0u0o8XZuG4AzPKRqKL7ET5Ac2NkbeLRfW_foQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140122190816.GB4963@suse.de>
+In-Reply-To: <CAMuHMdWW1EsHe0u0o8XZuG4AzPKRqKL7ET5Ac2NkbeLRfW_foQ@mail.gmail.com>
+Organization: DENX Software Engineering GmbH
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 07:08:16PM +0000, Mel Gorman wrote:
-> Cyrill,
+On Tue, Jan 21, 2014 at 21:06 +0100, Geert Uytterhoeven wrote:
 > 
-> Gimp is broken due to a kernel bug included in 3.12. It cannot open
-> large files without failing memory allocations due to exceeding
-> vm.max_map_count. The relevant bugzilla entries are
+> On Tue, Jan 21, 2014 at 7:21 PM, Mark Brown <broonie@kernel.org> wrote:
+> > On Tue, Jan 21, 2014 at 04:10:08PM +0100, Geert Uytterhoeven wrote:
+> >> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> >> Quad and Dual SPI Transfers use all available data lines
+> >> (incl. MOSI/MISO), hence they must be half duplex. Add a
+> >> check that verify that.
+> >
+> > This is surprising to me - I had expected that there would be
+> > extra signals that would be used for these modes, not that
+> > the opposite direction data line would be one of the ones
+> > being reused.  On the other hand if this is what all the
+> > flash chips do then it would seem reasonable that controllers
+> > do the same.  Can you clarify please?
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=67651
-> https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
-> 
-> They include details on how to reproduce the issue. In my case, a
-> failure shows messages like this
-> 
-> 	(gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
-> 
-> 	(file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
-> 	xinit: connection to X server lost
-> 
-> 	waiting for X server to shut down
-> 	/usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
-> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
-> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
-> 
-> X-related junk is there was because I was using a headless server and
-> xinit directly to launch gimp to reproduce the bug.
-> 
-> Automated bisection using mmtests (https://github.com/gormanm/mmtests)
-> and the configuration file configs/config-global-dhp__gimp-simple (needs
-> local web server with a copy of the image file) identified the following
-> commit. Test case was simple -- try and open the large file described in
-> the bug. I did not investigate the patch itself as I'm just reporting
-> the results of the bisection. If I had to guess, I'd say that VMA
-> merging has been affected.
+> Dual SPI works by aggregating the MOSI and MISO lines for 2-bit
+> unidirectional transfers.
+> Quad SPI aggregates MOSI, MISO, and 2 additional lines for 4-bit
+> unidirectional transfers.
 
-Thanks a lot for report, Mel! I'm investigating...
+Does it help to only use the MOSI/MISO names for single data line
+transfers, and to explicitly mention the fact that multi data
+line transfers change the signals' meaning to "IO0 .. IO3", and
+that these "IOn" lines are used in half duplex ways?
+
+> Hence Dual SPI uses the traditional 4-wire wiring, while Quad
+> SPI uses 6-wire.
+
+Be careful!  Just because the number of wires is identical, I
+would not want to refer to it as "the traditional 4-wire wiring"
+in the dual data line case.  Strictly speaking it's not that you
+connect MISO+MOSI with MISO+MOSI, insted you connect IO0+IO1 with
+IO0+IO1.  It just happens that the same pins are re-used, while
+the signals do change their meaning.
+
+Now add unidirectional transmitters (amplifiers and/or level
+shifters) to the picture instead of mere wires, and you cannot
+run all modes across these connections any longer as you may
+assume at the moment.
+
+IO2 and IO3 in quad data line mode do change the meaning of the
+pins which they re-purpose, too (that's write protect and hold
+usually).  Which is why the features of the SPI controller and
+the flash chip alone may not be sufficient to determine which
+modes are available, as the board may add constraints as well.
+
+> SPI FLASH chips handle it this way, and the Renesas QSPI
+> controller in the r8a7790/7791 SoCs, too.
+> 
+> Typically the first transfer in a message is a Single Transfer
+> (e.g. read data command), while subsequent transfers can be
+> Dual or Quad Transfers (e.g.  the actual data read from the
+> FLASH).
+
+Please note that subsequent transfers may be single data line
+transfers as well. :)
+
+
+BTW am I trying to be strict about the above implicit assumption
+of "dual/quad" meaning the number of data lines.  To not confuse
+them with dual data rate transfers, which are orthogonal to the
+number of data lines in use, and are available in chips as well
+(see the S25FL256S data sheet that was referenced in the Quad-SPI
+discussion earlier).
+
+Let's be clear from the beginning, to not have to cleanup or
+guess afterwards.
+
+
+virtually yours
+Gerhard Sittig
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
