@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448AbaAVExM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 23:53:12 -0500
-Received: from mail-gg0-f169.google.com ([209.85.161.169]:42289 "EHLO
-	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaAVExL (ORCPT
+	id S1754248AbaAVEyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 23:54:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:49189 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751806AbaAVEy0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 23:53:11 -0500
-Date: Tue, 21 Jan 2014 20:53:07 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: oom_kill: revert 3% system memory bonus for privileged
- tasks
-In-Reply-To: <20140116070709.GM6963@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1401212050340.8512@chino.kir.corp.google.com>
-References: <20140115234308.GB4407@cmpxchg.org> <alpine.DEB.2.02.1401151614480.15665@chino.kir.corp.google.com> <20140116070709.GM6963@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 21 Jan 2014 23:54:26 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Cc: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] scripts/gcc-version.sh: handle CC="gcc -m32"
+In-Reply-To: <871u07v9zu.fsf@rustcorp.com.au>
+References: <87d2l5ji06.fsf@rustcorp.com.au> <52C6EF1C.9070809@suse.cz> <52C71EDA.6090706@suse.cz> <87k3e1x4ho.fsf@rustcorp.com.au> <52D7FBF7.2070508@suse.cz> <871u07v9zu.fsf@rustcorp.com.au>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 22 Jan 2014 15:09:11 +1030
+Message-ID: <87eh40sk9c.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014, Johannes Weiner wrote:
+Rusty Russell <rusty@rustcorp.com.au> writes:
+> Michal Marek <mmarek@suse.cz> writes:
+>>> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
+>>> gcc: warning: ‘-mcpu=’ is deprecated; use ‘-mtune=’ or ‘-march=’ instead
+>>> kernel/bounds.c:1:0: error: CPU you selected does not support x86-64 instruction set
+>>>  /*
+>>>  ^
+>>> kernel/bounds.c:1:0: warning: -mregparm is ignored in 64-bit mode [enabled by default]
+>>> make[1]: *** [kernel/bounds.s] Error 1
+>>> make: *** [prepare0] Error 2
 
-> > Unfortunately, I think this could potentially be too much of a bonus.  On 
-> > your same 32GB machine, if a root process is using 18GB and a user process 
-> > is using 14GB, the user process ends up getting selected while the current 
-> > discount of 3% still selects the root process.
-> > 
-> > I do like the idea of scaling this bonus depending on points, however.  I 
-> > think it would be better if we could scale the discount but also limit it 
-> > to some sane value.
-> 
-> I just reverted to the /= 4 because we had that for a long time and it
-> seemed to work.  I don't really mind either way as long as we get rid
-> of that -3%.  Do you have a suggestion?
-> 
+Sorry, ignore this report.
 
-How about simply using 3% of the root process's points so that root 
-processes get some bonus compared to non-root processes with the same 
-memory usage and it's scaled to the usage rather than amount of available 
-memory?
+In case anyone else hits this: was resolved by installing more 32 bit headers
+(Ubuntu's libc6-dev-i386 package, in this case).
 
-So rather than points /= 4, we do
-
-	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
-		points -= (points * 3) / 100;
-
-instead.  Sound good?
+Thanks,
+Rusty.
