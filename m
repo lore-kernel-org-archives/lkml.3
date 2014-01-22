@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaAVJwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 04:52:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaAVJwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 04:52:10 -0500
-Date: Wed, 22 Jan 2014 17:52:19 +0800
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org
-Subject: [BUG] sched_clock: wrong printk time stamp
-Message-ID: <20140122095219.GA6114@dhcp-16-126.nay.redhat.com>
+	id S1755050AbaAVJym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 04:54:42 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:36429 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785AbaAVJyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 04:54:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+	<CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
+	<CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
+	<201401211335.16885.arnd@arndb.de>
+	<CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
+Date: Wed, 22 Jan 2014 10:54:34 +0100
+Message-ID: <CACRpkdbCQ3UHUJ5TLYqD9svOiuFBK9ManepiJ745PiU9fHjpFA@mail.gmail.com>
+Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Chen-Yu Tsai <wens@csie.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jan 21, 2014 at 3:53 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Jan 21, 2014 at 9:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Tuesday 21 January 2014, Linus Walleij wrote:
 
-With today's Linus tree, the printk time is very odd, see below
-qemu/efi boot log:
-[    0.000000] ACPI: FACS 000000001f9e4000 000040
-[    0.000000] ACPI: APIC 000000001f9dd000 000078 (v01 OVMF   OVMFEDK2 20130221 OVMF 00000099)
-[    0.000000] ACPI: SSDT 000000001f9db000 000057 (v01 REDHAT OVMF     00000001 INTL 20120913)
-[    0.000000] ACPI: Local APIC address 0xfee00000
-[    0.000000] Reserving 128MB of memory at 320MB for crashkernel (System RAM: 510MB)
-[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
-[    0.000000] kvm-clock: cpu 0, msr 0:1f801001, boot clock
-[ 1592.120520]  [ffffea0000000000-ffffea00007fffff] PMD -> [ffff880013800000-ffff880013ffffff] on node 0
-[ 1592.120526] Zone ranges:
-[ 1592.121922]   DMA      [mem 0x00001000-0x00ffffff]
-[ 1592.124493]   DMA32    [mem 0x01000000-0xffffffff]
-[ 1592.127056]   Normal   empty
-[ 1592.128581] Movable zone start for each node
+>>> As discussed earlier in this thread I'm not sure the con_id is
+>>> suitable for labelling GPIOs. It'd be better to have a proper name
+>>> specified in DT/ACPI instead.
+>>
+>> +1
+>
+> I wonder why you guys prefer to have the name defined in the GPIO
+> mapping. Having the driver decide the label makes it easier to look up
+> which GPIO does what in debugfs, whereas nothing prevents people to
+> name GPIOs whatever inadequate name they want in the device DT node.
+> What am I overlooking here?
 
-The previous normal log:
-[    0.000000] ACPI: FACS 000000000d5e4000 000040
-[    0.000000] ACPI: APIC 000000000d5dd000 000078 (v01 OVMF   OVMFEDK2 20130221 OVMF 00000099)
-[    0.000000] ACPI: SSDT 000000000d5db000 000057 (v01 REDHAT OVMF     00000001 INTL 20120913)
-[    0.000000] crashkernel reservation failed - No suitable area found.
-[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
-[    0.000000] kvm-clock: cpu 0, msr 0:d401001, boot clock
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[snip]
-[    0.000000] ... MAX_LOCKDEP_CHAINS:      32768
-[    0.000000] ... CHAINHASH_SIZE:          16384
-[    0.000000]  memory used by lock dependency info: 5855 kB
-[    0.000000]  per task-struct memory footprint: 1920 bytes
-[    0.000000] tsc: Detected 2793.268 MHz processor
-[    0.006666] Calibrating delay loop (skipped) preset value.. 5588.30 BogoMIPS (lpj=9310893)
-[    0.010010] pid_max: default: 32768 minimum: 301
-[    0.013381] init_memory_mapping: [mem 0x0bd94000-0x0bd95fff]
-[    0.016707] init_memory_mapping: [mem 0x0bd96000-0x0bdabfff]
-[    0.020019] init_memory_mapping: [mem 0x0bdac000-0x0bdc0fff]
-[    0.023206] init_memory_mapping: [mem 0x0d581000-0x0d5b0fff]
+The proper name of a GPIO does not come from the driver but from the
+usecase, i.e. often the name of the rail on the board where it is used.
 
+Remember GPIO are per definition general purpose, they cannot get
+any clever names from the driver. They would just be named
+"chip-foo-gpio0" thru "chip-foo-gpioN" if the driver was to name them.
 
-I bisected the problem, it results from below commit, probably
-local_irq should be still disabled?
+Using the rail name on the board is way more useful. A GPIO line
+named "HAL_SENSOR" or "MMC_CD" is actually telling us what
+that line is used for.
 
--bash-4.2$ git bisect bad
-Bisecting: 0 revisions left to test after this (roughly 0 steps)
-[ef08f0fff87630d4f67ceb09514d8b444df833f8] sched/clock: Remove local_irq_disable() from the clocks
+But such names can only come from a DT or ACPI table that has
+knowledge of how the GPIO is used on a certain system/board and
+not just from the driver.
 
-Note: for the last several build steps I need manually revert
-9ea4c380066fbe23fe0da7f4abfabc444f2467f4 or build will fail.
-
-Thanks
-Dave
+Yours,
+Linus Walleij
