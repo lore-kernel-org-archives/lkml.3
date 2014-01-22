@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaAVRxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:53:13 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:54952 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaAVRxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:53:08 -0500
-Date: Wed, 22 Jan 2014 11:53:28 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140122175328.GO18196@sgi.com>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
- <20140110202310.GB1421@node.dhcp.inet.fi>
- <20140110220155.GD3066@sgi.com>
- <20140110221010.GP31570@twins.programming.kicks-ass.net>
- <20140110223909.GA8666@sgi.com>
- <20140114154457.GD4963@suse.de>
- <20140114193801.GV10649@sgi.com>
- <20140122102621.GU4963@suse.de>
+	id S1752964AbaAVRxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:53:45 -0500
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:50718 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaAVRxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 12:53:42 -0500
+X-Greylist: delayed 72607 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Jan 2014 12:53:42 EST
+From: bsegall@google.com
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        pjt@google.com, alex.shi@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH] Revert "sched: Fix sleep time double accounting in enqueue entity"
+References: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
+	<1390376734-6800-1-git-send-email-vincent.guittot@linaro.org>
+Date: Wed, 22 Jan 2014 09:53:37 -0800
+In-Reply-To: <1390376734-6800-1-git-send-email-vincent.guittot@linaro.org>
+	(Vincent Guittot's message of "Wed, 22 Jan 2014 08:45:34 +0100")
+Message-ID: <xm26lhy7kin2.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122102621.GU4963@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 10:26:21AM +0000, Mel Gorman wrote:
-> On Tue, Jan 14, 2014 at 01:38:01PM -0600, Alex Thorlton wrote:
-> > On Tue, Jan 14, 2014 at 03:44:57PM +0000, Mel Gorman wrote:
-> > > On Fri, Jan 10, 2014 at 04:39:09PM -0600, Alex Thorlton wrote:
-> > > > On Fri, Jan 10, 2014 at 11:10:10PM +0100, Peter Zijlstra wrote:
-> > > > > We already have the information to determine if a page is shared across
-> > > > > nodes, Mel even had some prototype code to do splits under those
-> > > > > conditions.
-> > > > 
-> > > > I'm aware that we can determine if pages are shared across nodes, but I
-> > > > thought that Mel's code to split pages under these conditions had some
-> > > > performance issues.  I know I've seen the code that Mel wrote to do
-> > > > this, but I can't seem to dig it up right now.  Could you point me to
-> > > > it?
-> > > > 
-> > > 
-> > > It was a lot of revisions ago! The git branches no longer exist but the
-> > > diff from the monolithic patches is below. The baseline was v3.10 and
-> > > this will no longer apply but you'll see the two places where I added a
-> > > split_huge_page and prevented khugepaged collapsing them again. 
-> > 
-> > Thanks, Mel.  I remember seeing this code a while back when we were
-> > discussing THP/locality issues.
-> > 
-> > > At the time, the performance with it applied was much worse but it was a
-> > > 10 minute patch as a distraction. There was a range of basic problems that
-> > > had to be tackled before there was any point looking at splitting THP due
-> > > to locality. I did not pursue it further and have not revisited it since.
-> > 
-> > So, in your opinion, is this something we should look into further
-> > before moving towards the per-mm switch that I propose here? 
-> 
-> No because they have different purposes. Any potential split of THP from
-> automatic NUMA balancing context is due to it detecting that threads running
-> on CPUs on different nodes are accessing a THP. You are proposing to have
-> a per-mm flag that prevents THP being allocated in the first place. They
-> are two separate problems with decisions that are made at completely
-> different times.
+Vincent Guittot <vincent.guittot@linaro.org> writes:
 
-Makes sense.  That discussion doesn't really fit here.
+> This reverts commit 282cf499f03ec1754b6c8c945c9674b02631fb0f.
+>
+> With the current implementation, the load average statistics of a sched entity
+> change according to other activity on the CPU even if this activity is done
+> between the running window of the sched entity and have no influence on the
+> running duration of the task.
+>
+> When a task wakes up on the same CPU, we currently update last_runnable_update
+> with the return  of __synchronize_entity_decay without updating the
+> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
+> the load_contrib of the se with the rq's blocked_load_contrib before removing
+> it from the latter (with __synchronize_entity_decay) but we must keep
+> last_runnable_update unchanged for updating runnable_avg_sum/period during the
+> next update_entity_load_avg.
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Unless paul wants to squash this into a possible change to the if
+(wakeup) stuff:
+Reviewed-by: Ben Segall <bsegall@google.com>
 
-> > I
-> > personally think that it will be tough to get this to perform as well as
-> > a method that totally disables THP when requested, or a method that
-> > tries to prevent THPs from being handed out in certain situations, since
-> > we'll be doing the work of both making and splitting a THP in the case
-> > where remote accesses are made to the page.
-> > 
-> 
-> I would expect that the alternative solution to a per-mm switch is to
-> reserve the naturally aligned pages for a THP promotion. Have a threshold
-> of pages pages that must be faulted before the full THP's worth of pages
-> is allocated, zero'd and a huge pmd established. That would defer the
-> THP setup costs until it was detected that it was necessary.
-
-I have some half-finished patches that I was working on a month or so
-ago, to do exactly this (I think you were involved with some of the
-discussion, maybe?  I'd have to dig up the e-mails to be sure).  After
-cycling through numerous other methods of handling this problem, I still
-like that idea, but I think it's going to require a decent amount of
-effort to get finished.  
-
-> The per-mm THP switch is a massive hammer but not necessarily a bad one.
-
-I agree that it's a big hammer, but I suppose it's a bit more of a
-surgical strike than using the system-wide switch, and can be especially
-useful in some cases I've discussed, where madvise isn't really an
-option.
-
-> > I also think there could be some issues with over-zealously splitting
-> > pages, since it sounds like we can only determine if an access is from a
-> > remote node.  We don't have a good way of determining how many accesses
-> > are remote vs. local, or how many separate nodes are accessing a page.
-> > 
-> 
-> Indeed not, but it's a different problem. We also do not know if the
-> remote accesses are to a single page in which case splitting it would
-> have zero benefit anyway.
-
-Agreed.  There are several possible problems with that approach, but, as
-you've stated, that's a different problem, so no reason to discuss
-here :)
-
-Thanks for the input, Mel!
-
-- Alex
+>
+> ---
+>  kernel/sched/fair.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index e64b079..6d61f20 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2365,13 +2365,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>  		}
+>  		wakeup = 0;
+>  	} else {
+> -		/*
+> -		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
+> -		 * would have made count negative); we must be careful to avoid
+> -		 * double-accounting blocked time after synchronizing decays.
+> -		 */
+> -		se->avg.last_runnable_update += __synchronize_entity_decay(se)
+> -							<< 20;
+> +		__synchronize_entity_decay(se);
+>  	}
+>  
+>  	/* migrated tasks did not contribute to our blocked load */
