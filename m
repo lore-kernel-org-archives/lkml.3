@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaAVSC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:02:27 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:5258 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752531AbaAVSCV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:02:21 -0500
-From: Chris Mason <clm@fb.com>
-To: "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Thread-Topic: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Thread-Index: AQHPFx61ZXTlm16UX0ihGnyWT2seDpqRAjIAgABNLACAAAa5AIAABq0AgAAFt4CAAB0+gIAABPgAgAALu4A=
-Date: Wed, 22 Jan 2014 18:02:09 +0000
-Message-ID: <1390413819.1198.20.camel@ret.masoncoding.com>
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
-	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
-	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
-	 <20140122151913.GY4963@suse.de>
-	 <1390410233.1198.7.camel@ret.masoncoding.com>
-	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <E44B69ECB3DF564D943C1ED6AA6B2644@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1755569AbaAVSD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:03:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55731 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310AbaAVSD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:03:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,701,1384329600"; 
+   d="scan'208";a="405343639"
+Date: Wed, 22 Jan 2014 10:08:03 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Fei Yang <fei.yang@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] x86: don't add new __cpuinit users to Merrifield
+ platform code
+Message-ID: <20140122180803.GA25171@psi-dev26.jf.intel.com>
+References: <1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.77635683940025e-15 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.997696947966296
- urlsuspect_oldscore=0.997696947966296 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997696947966296 spamscore=0
- recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1401220123
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 09:21 -0800, James Bottomley wrote:
-+AD4- On Wed, 2014-01-22 at 17:02 +-0000, Chris Mason wrote:
+On Wed, Jan 22, 2014 at 12:35:25PM -0500, Paul Gortmaker wrote:
+> Commit bc20aa48bbb3068224a1c91f8332971fdb689fad ("x86, intel-mid:
+> Add Merrifield platform support")  added new instances of __cpuinit
+> usage.  We removed this a couple versions ago; we now want to remove
+> the compat no-op stubs.  Introducing new users is not what we want to
+> see at this point in time, as it will break once the stubs are gone.
+> 
+> This also fixes an out of sync __init vs. __cpuinit -- as the former
+> is real, and the latter is a no-op; hence it would have been a section
+> mismatch.
+> 
+> Cc: David Cohen <david.a.cohen@linux.intel.com>
+> Cc: Fei Yang <fei.yang@intel.com>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-+AFs- I like big sectors and I cannot lie +AF0-
+Thanks for the patch.
 
-+AD4-  
-+AD4- +AD4- I really think that if we want to make progress on this one, we need
-+AD4- +AD4- code and someone that owns it.  Nick's work was impressive, but it was
-+AD4- +AD4- mostly there for getting rid of buffer heads.  If we have a device that
-+AD4- +AD4- needs it and someone working to enable that device, we'll go forward
-+AD4- +AD4- much faster.
-+AD4- 
-+AD4- Do we even need to do that (eliminate buffer heads)?  We cope with 4k
-+AD4- sector only devices just fine today because the bh mechanisms now
-+AD4- operate on top of the page cache and can do the RMW necessary to update
-+AD4- a bh in the page cache itself which allows us to do only 4k chunked
-+AD4- writes, so we could keep the bh system and just alter the granularity of
-+AD4- the page cache.
-+AD4- 
-
-We're likely to have people mixing 4K drives and +ADw-fill in some other
-size here+AD4- on the same box.  We could just go with the biggest size and
-use the existing bh code for the sub-pagesized blocks, but I really
-hesitate to change VM fundamentals for this.
-
->From a pure code point of view, it may be less work to change it once in
-the VM.  But from an overall system impact point of view, it's a big
-change in how the system behaves just for filesystem metadata.
-
-+AD4- The other question is if the drive does RMW between 4k and whatever its
-+AD4- physical sector size, do we need to do anything to take advantage of
-+AD4- it ... as in what would altering the granularity of the page cache buy
-+AD4- us?
-
-The real benefit is when and how the reads get scheduled.  We're able to
-do a much better job pipelining the reads, controlling our caches and
-reducing write latency by having the reads done up in the OS instead of
-the drive.
-
--chris
-
+Acked-by: David Cohen <david.a.cohen@linux.intel.com>
