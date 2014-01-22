@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaAVSFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:05:12 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:1058 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752523AbaAVSFI (ORCPT
+	id S1755741AbaAVSFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:05:23 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59314 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755678AbaAVSFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:05:08 -0500
-Message-ID: <52E00800.90305@fb.com>
-Date: Wed, 22 Jan 2014 10:03:44 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 22 Jan 2014 13:05:17 -0500
+Date: Wed, 22 Jan 2014 18:04:43 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [PATCH 4/6] arm64: add EFI stub
+Message-ID: <20140122180443.GF8065@arm.com>
+References: <1389392950-22457-1-git-send-email-msalter@redhat.com>
+ <1389392950-22457-5-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 00/24] perf tools: Add support to accumulate hist periods
- (v6)
-References: <1389677157-30513-1-git-send-email-namhyung@kernel.org> <20140122132018.GC1132@krava.brq.redhat.com>
-In-Reply-To: <20140122132018.GC1132@krava.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-22_06:2014-01-22,2014-01-22,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389392950-22457-5-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/22/14 5:20 AM, Jiri Olsa wrote:
+On Fri, Jan 10, 2014 at 10:29:08PM +0000, Mark Salter wrote:
+> +ENTRY(efi_stub_entry)
+> +       stp     x29, x30, [sp, #-32]!
+> +
+> +       /*
+> +        * Call efi_entry to do the real work.
+> +        * x0 and x1 are already set up by firmware. Current runtime
+> +        * address of image is calculated and passed via *image_addr.
+> +        *
+> +        * unsigned long efi_entry(void *handle,
+> +        *                         efi_system_table_t *sys_table,
+> +        *                         unsigned long *image_addr) ;
+> +        */
+> +       adrp    x8, _text
+> +        add    x8, x8, #:lo12:_text
 
-> I have changes on top of this patchset and all looks great, I was
-> just going throught this again and wanted to send my ack, but it
-> no longer merges to the acme's perf/core.
->
-> Could you please send updated version, and I'll finish the
-> review.. I promise ;-)
+Possibly some minor whitespace corruption (or it's our email server).
 
-We've been testing v5 of this patch series and haven't found any major 
-problems on our end.
-
-Tested-By: Arun Sharma <asharma@fb.com>
-
-  -Arun
+-- 
+Catalin
