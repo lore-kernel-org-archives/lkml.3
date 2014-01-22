@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaAVGnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:43:06 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:37968 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaAVGnC (ORCPT
+	id S1752191AbaAVGy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:54:29 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:43601 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaAVGy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:43:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <630F9443351D2B4BB7EC6BAE6B6B08342549CF6A@SHSMSX104.ccr.corp.intel.com>
-References: <1390273543-18032-1-git-send-email-zhuangzhi.li@intel.com>
-	<CAKohponL_R8M40BJa3X+++1yDtw5KRvk88w8kVfA+_D+poK08A@mail.gmail.com>
-	<630F9443351D2B4BB7EC6BAE6B6B08342549C5DC@SHSMSX104.ccr.corp.intel.com>
-	<CAKohpo=ng-B6kLdWxBn_cNsWNVsYaNAD-ZzQLLOfkbj+FDg_fg@mail.gmail.com>
-	<CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
-	<630F9443351D2B4BB7EC6BAE6B6B08342549CF6A@SHSMSX104.ccr.corp.intel.com>
-Date: Wed, 22 Jan 2014 12:13:01 +0530
-Message-ID: <CAKohpokMFwvY-SMcuJf_C_gASQT-8tT8wRrQ6=YX7QQ0YwcgNg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Align all CPUs to the same frequency if using
- shared clock
+	Wed, 22 Jan 2014 01:54:26 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: davem@davemloft.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] net/ipv4: queue work on power efficient wq
+Date: Wed, 22 Jan 2014 12:23:32 +0530
+Message-Id: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 January 2014 11:56, Li, Zhuangzhi <zhuangzhi.li@intel.com> wrote:
-> I don't think it's a real bug in bootloader, the bootloader can set CPUs to different frequencies according to actually requirements(Power saving first or Performance first),
-> the CPUs freq policy are initialized in kernel, if the kernel want to share one CPU policy(using CPUFREQ_SHARED_TYPE_ALL type), it should ensure all CPUs frequencies aligned first,
-> don't depend on the bootloader CPUs Pre-states, then the kernel can have better compatibility.
->
-> If the kernel uses CPUFREQ_SHARED_TYPE_ALL policy, the patch can ensure these:
-> 1. If all CPUs are in the same P-state, it does nothing when cpufreq registering
-> 2. If the CPUs are in different P-states, all the other CPUs are aligned once to current frequency of CPU0 according to the present policy.
+Workqueue used in ipv4 layer have no real dependency of scheduling these on the
+cpu which scheduled them.
 
-I thought, as you are asking kernel to keep same freq on all of them,
-then same should be true for bootloaders.
+On a idle system, it is observed that an idle cpu wakes up many times just to
+service this work. It would be better if we can schedule it on a cpu which the
+scheduler believes to be the most appropriate one.
 
-Otherwise it was okay.
+This patch replaces normal workqueues with power efficient versions. This
+doesn't change existing behavior of code unless CONFIG_WQ_POWER_EFFICIENT is
+enabled.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Initial support for power-efficient workqueues was added here:
+https://lkml.org/lkml/2013/4/24/215
+
+ net/ipv4/devinet.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index 646023b..ac2dff3 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -474,7 +474,7 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
+ 	inet_hash_insert(dev_net(in_dev->dev), ifa);
+ 
+ 	cancel_delayed_work(&check_lifetime_work);
+-	schedule_delayed_work(&check_lifetime_work, 0);
++	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work, 0);
+ 
+ 	/* Send message first, then call notifier.
+ 	   Notifier will trigger FIB update, so that
+@@ -684,7 +684,8 @@ static void check_lifetime(struct work_struct *work)
+ 	if (time_before(next_sched, now + ADDRCONF_TIMER_FUZZ_MAX))
+ 		next_sched = now + ADDRCONF_TIMER_FUZZ_MAX;
+ 
+-	schedule_delayed_work(&check_lifetime_work, next_sched - now);
++	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work,
++			next_sched - now);
+ }
+ 
+ static void set_ifa_lifetime(struct in_ifaddr *ifa, __u32 valid_lft,
+@@ -842,7 +843,8 @@ static int inet_rtm_newaddr(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		ifa = ifa_existing;
+ 		set_ifa_lifetime(ifa, valid_lft, prefered_lft);
+ 		cancel_delayed_work(&check_lifetime_work);
+-		schedule_delayed_work(&check_lifetime_work, 0);
++		queue_delayed_work(system_power_efficient_wq,
++				&check_lifetime_work, 0);
+ 		rtmsg_ifa(RTM_NEWADDR, ifa, nlh, NETLINK_CB(skb).portid);
+ 		blocking_notifier_call_chain(&inetaddr_chain, NETDEV_UP, ifa);
+ 	}
+@@ -2322,7 +2324,7 @@ void __init devinet_init(void)
+ 	register_gifconf(PF_INET, inet_gifconf);
+ 	register_netdevice_notifier(&ip_netdev_notifier);
+ 
+-	schedule_delayed_work(&check_lifetime_work, 0);
++	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work, 0);
+ 
+ 	rtnl_af_register(&inet_af_ops);
+ 
+-- 
+1.7.12.rc2.18.g61b472e
+
