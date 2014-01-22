@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaAVGLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:11:24 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38652 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaAVGLW (ORCPT
+	id S1752664AbaAVGXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:23:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28681 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaAVGXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:11:22 -0500
-Message-ID: <52DF6100.4060402@parallels.com>
-Date: Wed, 22 Jan 2014 10:11:12 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Wed, 22 Jan 2014 01:23:10 -0500
+Date: Tue, 21 Jan 2014 22:22:55 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, David Turner <novalis@novalis.org>,
+        Mark Harris <mhlk@osj.us>, Andreas Dilger <adilger@dilger.ca>,
+        Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
+Message-ID: <20140122062255.GA8973@birch.djwong.org>
+References: <1383808590.23882.13.camel@chiang>
+ <20131107160341.GA3850@quack.suse.cz>
+ <1383864864.23882.33.camel@chiang>
+ <20131107231445.GG2054@quack.suse.cz>
+ <1383866807.23882.41.camel@chiang>
+ <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
+ <1383981551.8994.27.camel@chiang>
+ <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
+ <1384070214.8994.47.camel@chiang>
+ <20131112003018.GA30281@thunk.org>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <devel@openvz.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <dchinner@redhat.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 1/3] mm: vmscan: shrink_slab: rename max_pass -> freeable
-References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com> <alpine.DEB.2.02.1401211420460.1666@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401211420460.1666@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112003018.GA30281@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 02:22 AM, David Rientjes wrote:
-> On Fri, 17 Jan 2014, Vladimir Davydov wrote:
->
->> The name `max_pass' is misleading, because this variable actually keeps
->> the estimate number of freeable objects, not the maximal number of
->> objects we can scan in this pass, which can be twice that. Rename it to
->> reflect its actual meaning.
->>
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Michal Hocko <mhocko@suse.cz>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: Dave Chinner <dchinner@redhat.com>
->> Cc: Glauber Costa <glommer@gmail.com>
-> This doesn't compile on linux-next:
->
-> mm/vmscan.c: In function ‘shrink_slab_node’:
-> mm/vmscan.c:300:23: error: ‘max_pass’ undeclared (first use in this function)
-> mm/vmscan.c:300:23: note: each undeclared identifier is reported only once for each function it appears in
->
-> because of b01fa2357bca ("mm: vmscan: shrink all slab objects if tight on 
-> memory") from an author with a name remarkably similar to yours.
+On Mon, Nov 11, 2013 at 07:30:18PM -0500, Theodore Ts'o wrote:
+> On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
+> > b. Use Andreas's encoding, which is incompatible with pre-1970 files
+> > written on 64-bit systems.
+> >
+> > I don't care about currently-existing post-2038 files, because I believe
+> > that nobody has a valid reason to have such files.  However, I do
+> > believe that pre-1970 files are probably important to someone.
+> > 
+> > Despite this, I prefer option (b), because I think the simplicity is
+> > valuable, and because I hate to give up date ranges (even ones that I
+> > think we'll "never" need). Option (b) is not actually lossy, because we
+> > could correct pre-1970 files with e2fsck; under Andreas's encoding,
+> > their dates would be in the far future (and thus cannot be legitimate).
+> > 
+> > Would a patch that does (b) be accepted?  I would accompany it with a
+> > patch to e2fsck (which I assume would also go to the ext4 developers
+> > mailing list?).
+> 
+> I agree, I think this is the best way to go.  I'm going to drop your
+> earlier patch, and wait for an updated patch from you.  It may miss
+> this merge window, but as Andreas has pointed out, we still have a few
+> years to get this right.  :-)
 
-Oh, sorry. I thought it hadn't been committed there yet.
+Just out of curiosity, did this (updated patch) ever happen?
 
-> Could you rebase this series on top of your previous work that is already in -mm?
-
-Sure.
-
-Thanks.
+--D
+> 
+> Thanks!!
+> 
+> 					- Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
