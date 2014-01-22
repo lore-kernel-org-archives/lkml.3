@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbaAVOLT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:11:19 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:53763 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaAVOLM convert rfc822-to-8bit (ORCPT
+	id S1755576AbaAVOLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:11:36 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:37762 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348AbaAVOLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:11:12 -0500
-Date: Wed, 22 Jan 2014 15:09:59 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Shijie <b32955@freescale.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect
- use of prandom_bytes_state()
-Message-ID: <20140122150959.78cf2827@ipc1.ka-ro>
-In-Reply-To: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
-References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Jan 2014 09:11:34 -0500
+From: Jean Pihet <jean.pihet@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>
+Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH v5 0/4] perf: AARCH64 arch support
+Date: Wed, 22 Jan 2014 15:11:15 +0100
+Message-Id: <1390399879-5109-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add AARCH64 specific support. This includes the following:
+- AARCH64 perf registers definition and hooks,
+- compat mode registers use, i.e. profiling a 32-bit binary on
+   a 64-bit system,
+- unwinding using the dwarf information from the .debug_frame
+   section of the ELF binary,
+- unwinding using the frame pointer information; in 64-bit and
+   compat modes.
 
-Is anyone taking care of this?
+Note: support for unwinding using the dwarf information in compat
+mode requires some changes to the libunwind code. Those changes
+have been submitted on the libunwind ML and are in discussion.
 
-Lothar Waßmann wrote:
-> When using prandom_bytes_state() it is critical to use the same block
-> size in all invocations that are to produce the same random sequence.
-> Otherwise the state of the PRNG will be out of sync if the blocksize
-> is not divisible by 4.
-> This leads to bogus verification errors in several tests which use
-> different block sizes to initialize the buffer for writing and
-> comparison.
-> 
-> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> ---
->  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
->  1 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
-> index 2e9e2d1..72c7359 100644
-> --- a/drivers/mtd/tests/oobtest.c
-> +++ b/drivers/mtd/tests/oobtest.c
-> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
->  	int err = 0;
->  	loff_t addr = ebnum * mtd->erasesize;
->  	size_t len = mtd->ecclayout->oobavail * pgcnt;
-> +	int i;
-> +
-> +	for (i = 0; i < pgcnt; i++)
-> +		prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> +				use_len);
-> +	if (len % use_len)
-> +		prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> +				len % use_len);
->  
-> -	prandom_bytes_state(&rnd_state, writebuf, len);
->  	ops.mode      = MTD_OPS_AUTO_OOB;
->  	ops.len       = 0;
->  	ops.retlen    = 0;
-> @@ -594,7 +601,10 @@ static int __init mtd_oobtest_init(void)
->  		if (bbt[i] || bbt[i + 1])
->  			continue;
->  		prandom_bytes_state(&rnd_state, writebuf,
-> -					mtd->ecclayout->oobavail * 2);
-> +					mtd->ecclayout->oobavail);
-> +		prandom_bytes_state(&rnd_state,
-> +					writebuf + mtd->ecclayout->oobavail,
-> +					mtd->ecclayout->oobavail);
->  		addr = (i + 1) * mtd->erasesize - mtd->writesize;
->  		ops.mode      = MTD_OPS_AUTO_OOB;
->  		ops.len       = 0;
+Tested on ARMv7, ARMv8 and x86_64 platforms. The compat mode has been
+tested on ARMv8 using statically built 32-bit binaries.
 
+
+Jean Pihet (4):
+  ARM64: perf: add support for perf registers API
+  ARM64: perf: wire up perf_regs and unwind support
+  ARM64: perf: add support for frame pointer unwinding in compat mode
+  ARM64: perf: support dwarf unwinding in compat mode
+
+ arch/arm64/Kconfig                        |  2 +
+ arch/arm64/include/asm/compat.h           |  2 +-
+ arch/arm64/include/asm/ptrace.h           |  3 +-
+ arch/arm64/include/uapi/asm/Kbuild        |  1 +
+ arch/arm64/include/uapi/asm/perf_regs.h   | 40 ++++++++++++++
+ arch/arm64/kernel/Makefile                |  1 +
+ arch/arm64/kernel/perf_event.c            | 75 +++++++++++++++++++++++---
+ arch/arm64/kernel/perf_regs.c             | 44 ++++++++++++++++
+ tools/perf/arch/arm64/Makefile            |  7 +++
+ tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
+ tools/perf/arch/arm64/util/dwarf-regs.c   | 80 ++++++++++++++++++++++++++++
+ tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
+ tools/perf/config/Makefile                |  8 ++-
+ 13 files changed, 422 insertions(+), 11 deletions(-)
+ create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
+ create mode 100644 arch/arm64/kernel/perf_regs.c
+ create mode 100644 tools/perf/arch/arm64/Makefile
+ create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
+ create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
+ create mode 100644 tools/perf/arch/arm64/util/unwind.c
 
 -- 
-___________________________________________________________
+1.7.11.7
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
