@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaAVWkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:40:45 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45795 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751548AbaAVWko (ORCPT
+	id S1755582AbaAVWlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:41:01 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46982 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaAVWk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:40:44 -0500
-Date: Wed, 22 Jan 2014 22:40:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: Jean-Francois Moine <moinejf@free.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Wed, 22 Jan 2014 17:40:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com>
+References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com> <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 22 Jan 2014 14:40:09 -0800
+Message-ID: <CAGVrzcbPyaSe0aEHt157kz=quvsrBCPOUriCVG27fJfasa45jg@mail.gmail.com>
+Subject: Re: [PATCH v5 7/8] ARM: brcmstb: gic: add compatible string for
+ Broadcom Brahma15
+To: Marc Carino <marc.ceeeee@gmail.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 16/24] drm/i2c: tda998x: add DT documentation
-Message-ID: <20140122224039.GM15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195844.0c975b90@armhf> <CAOesGMi96wkHM8jfHNVnM7RJyW2vVoP6FT4YyYzKp-kfc0jTuQ@mail.gmail.com> <20140120105410.15705f32@armhf> <CAOesGMhngiw+f8bkfB9C4COTPksXg_ZsYA-p1r5WJ6FZuBE3KQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMhngiw+f8bkfB9C4COTPksXg_ZsYA-p1r5WJ6FZuBE3KQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:17:56AM -0800, Olof Johansson wrote:
-> Ok, this is a classic case where the binding should describe how
-> things are configured/wired up instead of hardcoding a register value
-> like this. From the data sheet there seems to be a _lot_ of settings,
-> so selecting the needed subset for now might be acceptable (and go
-> with defaults on the rest).
+Hi Marc,
 
-The issue is not that simple, because the register is kind of backwards.
+2014/1/21 Marc Carino <marc.ceeeee@gmail.com>:
+> Document the Broadcom Brahma B15 GIC implementation as compatible
+> with the ARM GIC standard.
+>
+> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-Rather than describing what is on each nibble of the input bus, you
-specify how each nibble of the internal bus maps to the external world.
-The internal bus is mostly fixed as to which nibbles are red, green and
-blue (there is internal support for swapping red/blue on the internal
-bus, but we don't use that - it just adds extra unnecessary headaches
-to the mapping.)
+Do not we also need to update drivers/irqchip/irq-gic.c to look for
+this compatible property? Alternatively should the example DTS contain
+the following:
 
-The way I ended up describing it in platform data was via the individual
-nibble settings for the register:
+compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
 
-        .swap_a = 2,
-        .swap_b = 3,
-        .swap_c = 4,
-        .swap_d = 5,
-        .swap_e = 0,
-        .swap_f = 1,
+> ---
+>  Documentation/devicetree/bindings/arm/gic.txt |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index 3dfb0c0..d7409fd 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -15,6 +15,7 @@ Main node required properties:
+>         "arm,cortex-a9-gic"
+>         "arm,cortex-a7-gic"
+>         "arm,arm11mp-gic"
+> +       "brcm,brahma-b15-gic"
+>  - interrupt-controller : Identifies the node as an interrupt controller
+>  - #interrupt-cells : Specifies the number of cells needed to encode an
+>    interrupt source.  The type shall be a <u32> and the value shall be 3.
+> --
+> 1.7.1
+>
 
-which gives you a way to refer back to the data sheet.  There's also the
-control whether the nibble is bit-big-endian or bit-little-endian.
 
-So basically, swap_a controls which nibble of the input bus is mapped to
-the internal bus bits 23:20, and mirror_a whether it's bit 0123 -> 0123
-or 0123 -> 3210.
-
-This means it's possible to tell the chip that each nibble of the interal
-bus comes from the same four pins!
-
-If we want to describe what each nibble set on the input pins does, it's
-going to make for some complex code to convert that from "forward" notation
-(which we'll have to invent) to the "reverse" notation that the chip needs.
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Florian
