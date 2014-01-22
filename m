@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaAVNwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:52:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56149 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbaAVNwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:52:45 -0500
-Date: Wed, 22 Jan 2014 14:51:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
-        rob@landley.net
-Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
-Message-ID: <20140122135159.GQ31570@twins.programming.kicks-ass.net>
-References: <20140120112442.GA8907@austad.us>
- <52DD1377.5090201@gmail.com>
- <20140120131616.GB8907@austad.us>
- <52DD2711.9080504@unitn.it>
- <20140121102016.GA12002@austad.us>
- <52DE5B7F.8020900@unitn.it>
- <20140121123334.GJ30183@twins.programming.kicks-ass.net>
- <52DE6D21.1080602@unitn.it>
- <20140121135559.GK30183@twins.programming.kicks-ass.net>
- <52DFC196.7020301@unitn.it>
+	id S1755304AbaAVOBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:01:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36463 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755209AbaAVOBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 09:01:45 -0500
+Date: Wed, 22 Jan 2014 15:01:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: kernfs: lockdep complains about kernfs_addrm_ctx
+Message-ID: <alpine.LNX.2.00.1401221456080.27143@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DFC196.7020301@unitn.it>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 02:03:18PM +0100, Luca Abeni wrote:
-> >At which point I feel obliged to mention the work Jim did on statistical
-> >bounded tardiness and a potential future option:
-> >SCHED_FLAG_DL_AVG_RUNTIME, where we would allow tasks to somewhat exceed
-> >their runtime budget provided that they meet their budget on average.
+Hi Tejun,
 
-> I think I read the paper your refer to, and if I remember well it was about
-> an analysis technique (using some math from queuing theory to get estimations
-> of the average response time, and then using Tchebysheff to transform this result
-> in a probabilistic real-time guarantee)... If I understand well, it does not
-> require modifications to the scheduling algorithm (the paper presents a multiprocessor
-> reservation-based scheduling algorithm, but the presented analysis applies to every
-> reservation-based algorithm, including SCHED_DEADLINE without modifications).
-> Am I misunderstanding something?
+booting with current Linus' tree (df32e43a5) gives me this:
 
-I must admit to not actually having read that paper; Jim talked me
-through the result at some time, but yes that sounds about right.
+ INFO: trying to register non-static key.
+ the code is fine but needs lockdep annotation.
+ turning off the locking correctness validator.
+ CPU: 1 PID: 105 Comm: udevd Not tainted 3.13.0-03477-gdf32e43 #1
+ Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+  0000000000000000 ffff880037ad3468 ffffffff8159701b ffff880037ad34e8
+  ffffffff8109e317 0000000000000000 ffff880037ad4fd0 ffff880037ad34e8
+  0000000000000000 ffff880037ad34b8 ffffffff00000000 0000000000000002
+ Call Trace:
+  [<ffffffff8159701b>] dump_stack+0x72/0x87
+  [<ffffffff8109e317>] register_lock_class+0x497/0x4c0
+  [<ffffffff810a1c2d>] __lock_acquire+0x7d/0x600
+  [<ffffffff810a0cdd>] ? trace_hardirqs_on_caller+0x13d/0x1e0
+  [<ffffffff810a22a1>] lock_acquire+0xf1/0x120
+  [<ffffffff81215460>] ? kernfs_addrm_finish+0x30/0x50
+  [<ffffffff81214cf9>] kernfs_deactivate+0xe9/0x130
+  [<ffffffff81215460>] ? kernfs_addrm_finish+0x30/0x50
+  [<ffffffff81215460>] kernfs_addrm_finish+0x30/0x50
+  [<ffffffff812154d8>] kernfs_remove_by_name_ns+0x58/0xb0
+  [<ffffffff810a0d8d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffff81213081>] remove_files+0x41/0x80
+  [<ffffffff81213106>] sysfs_remove_group+0x46/0xb0
+  [<ffffffff812131a3>] sysfs_remove_groups+0x33/0x50
+  [<ffffffff813e3fe3>] device_remove_attrs+0x63/0x90
+  [<ffffffff813e413e>] device_del+0x12e/0x1f0
+  [<ffffffff813e421d>] device_unregister+0x1d/0x60
+  [<ffffffff81472d0a>] i2c_del_adapter+0x1ea/0x2b0
+  [<ffffffffa01e2ff9>] intel_sdvo_init+0x1f9/0x6b0 [i915]
+  [<ffffffff810a0cdd>] ? trace_hardirqs_on_caller+0x13d/0x1e0
+  [<ffffffff810a0d8d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffffa0202dad>] ? gen4_read32+0x4d/0xd0 [i915]
+  [<ffffffffa01c8550>] intel_setup_outputs+0x630/0x7a0 [i915]
+  [<ffffffffa01cb490>] intel_modeset_init+0x380/0x480 [i915]
+  [<ffffffffa01881d2>] i915_load_modeset_init+0xb2/0x230 [i915]
+  [<ffffffffa018a410>] i915_driver_load+0x6b0/0x9a0 [i915]
+  [<ffffffffa014418a>] drm_dev_register+0xba/0x210 [drm]
+  [<ffffffffa014661d>] drm_get_pci_dev+0x9d/0x140 [drm]
+  [<ffffffffa018662c>] i915_pci_probe+0x3c/0x80 [i915]
+  [<ffffffff81326419>] local_pci_probe+0x49/0xa0
+  [<ffffffff81326539>] __pci_device_probe+0xc9/0xf0
+  [<ffffffff813e2ab4>] ? get_device+0x14/0x20
+  [<ffffffff813267b6>] pci_device_probe+0x36/0x60
+  [<ffffffff813e7329>] really_probe+0x79/0x350
+  [<ffffffff813e7654>] driver_probe_device+0x54/0xb0
+  [<ffffffff813e774b>] __driver_attach+0x9b/0xa0
+  [<ffffffff813e76b0>] ? driver_probe_device+0xb0/0xb0
+  [<ffffffff813e548b>] bus_for_each_dev+0x8b/0xb0
+  [<ffffffff813e6fdc>] driver_attach+0x1c/0x20
+  [<ffffffff813e6977>] bus_add_driver+0x137/0x250
+  [<ffffffff813e7c88>] driver_register+0x58/0x110
+  [<ffffffff813268c2>] __pci_register_driver+0x62/0x70
+  [<ffffffffa01467cc>] drm_pci_init+0x10c/0x120 [drm]
+  [<ffffffffa00bb000>] ? 0xffffffffa00bafff
+  [<ffffffffa00bb05d>] i915_init+0x5d/0x6b [i915]
+  [<ffffffff81000302>] do_one_initcall+0x132/0x190
+  [<ffffffff810438e3>] ? set_memory_nx+0x43/0x50
+  [<ffffffff810d2ded>] ? set_section_ro_nx+0x7d/0x80
+  [<ffffffff810d323b>] do_init_module+0x7b/0x200
+  [<ffffffff810d5585>] load_module+0x595/0x5e0
+  [<ffffffff810d33c0>] ? do_init_module+0x200/0x200
+  [<ffffffff810d577b>] SyS_init_module+0x9b/0xc0
+  [<ffffffff815a5222>] system_call_fastpath+0x16/0x1b
 
-The only thing we need to do is enforce some 'avg' on the input
-(scheduling parameters) such that we are guaranteed an avg on the output
-(tardiness).
+I have started to look into the kernfs code now to debug this, but as I 
+haven't been following it closely during the review phase, it might take 
+some time before I familiarize myself with it; hence sending this as a 
+heads-up.
 
-And we must enforce the input because we cannot trust userspace to
-actually do what it says; if it were to go overboard we'd loose all
-bounds.
-
-> Anyway, I'll propose a documentation patch adding this paper to the references
-> (and if you agree I can also add some other references to probabilistic guarantees).
-
-Right, something for the future though.
-
-> The SCHED_FLAG_DL_AVG_RUNTIME idea also looks interesting.
-
-Right, like said above, because we cannot trust userspace we must
-enforce that the input is indeed a bounded avg, otherwise the guarantees
-do not hold.
-
-> >Another possibly extension; one proposed by Ingo; is to demote tasks to
-> >SCHED_OTHER once they exceed their budget instead of the full block they
-> >get now -- we could possibly call this SCHED_FLAG_DL_CBS_SOFT or such.
-
-> I think something similar to this was mentioned in the original "resource kernels"
-> paper by Rajkumar and others... It is in general very useful.
-
-Right, esp. so when we allow unpriv. access to SCHED_DEADLINE, more on
-that below.
-
-> Another extension I implemented "locally" (but I never submitted patches because
-> it is "dangerous" and potentially controversial) is the original CBS behaviour:
-> when a task is depleted, do not make it unschedulable, but just postpone its
-> scheduling deadline (decreasing its priority) and immediately recharge the
-> runtime. This still preserves temporal isolation between SCHED_DEADLINE tasks,
-> but can cause starvation of non-SCHED_DEADLINE tasks (and this is why I say this
-> is dangerous and can be controversial), but can be useful in some situations.
-
-Right, we could actually implement that but always require CAP_ADMIN if
-set.
-
-We should also again talk about what it would take to allow
-unprivileged access to SCHED_DEADLINE. The things I can remember are the
-obvious cap on utilization and a minimum period -- the latter so that we
-don't DoS the system with a metric ton of tiny tasks.
-
-But I seem to remember there were a few other issues.
-
-> 
-> >And of course SCHED_FLAG_DL_CBS_SIGNAL, where the task gets a signal
-> >delivered if it exceeded the runtime -- I think some of the earlier
-> >patches had things like this, no?
-> I've seen this in some patchset, but I do not remember when. I think some of
-> the "advanced features" have been removed from the first submission.
-
-Exactly, so. Now that we have the simple stuff settled, we can again
-look at the more advanced features if there's potential users.
+-- 
+Jiri Kosina
+SUSE Labs
