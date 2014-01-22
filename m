@@ -1,189 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084AbaAVKPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:15:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55223 "EHLO arroyo.ext.ti.com"
+	id S1754455AbaAVKV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:21:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805AbaAVKO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:14:59 -0500
-Message-ID: <52DF9A07.7030808@ti.com>
-Date: Wed, 22 Jan 2014 15:44:31 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752549AbaAVKV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:21:57 -0500
+Message-ID: <52DF9BBE.1040802@redhat.com>
+Date: Wed, 22 Jan 2014 11:21:50 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <george.cherian@ti.com>, Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>,
+To: "hpa@zytor.com" <hpa@zytor.com>
+CC: "Liu, Jinsong" <jinsong.liu@intel.com>,
+        "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v4 2/2] usb: dwc3: adapt dwc3 core to use Generic PHY
- Framework
-References: <1385373690-12170-1-git-send-email-kishon@ti.com>	<1390299099-14764-1-git-send-email-kishon@ti.com>	<1390299099-14764-2-git-send-email-kishon@ti.com>	<52DE7D75.4040302@ti.com> <CAFp+6iFkgD8x4DozhQdRSx=KLWGwR5pOsCxrVgWbcnCMTFT-sg@mail.gmail.com> <52DF7A78.5030700@ti.com>
-In-Reply-To: <52DF7A78.5030700@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: Re: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+References: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 January 2014 01:29 PM, Roger Quadros wrote:
-> On 01/22/2014 08:04 AM, Vivek Gautam wrote:
->> Hi,
->>
->>
->> On Tue, Jan 21, 2014 at 7:30 PM, Roger Quadros <rogerq@ti.com> wrote:
->>> Hi Kishon,
->>>
->>> On 01/21/2014 12:11 PM, Kishon Vijay Abraham I wrote:
->>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
->>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
->>>> phy_power_on() and phy_power_off().
->>>>
->>>> However using the old USB phy library wont be removed till the PHYs of all
->>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>> Changes from v3:
->>>> * avoided using quirks
->>>>
->>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
->>>>  drivers/usb/dwc3/core.c                        |   60 ++++++++++++++++++++++++
->>>>  drivers/usb/dwc3/core.h                        |    7 +++
->>>>  3 files changed, 71 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> index e807635..471366d 100644
->>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> @@ -6,11 +6,13 @@ Required properties:
->>>>   - compatible: must be "snps,dwc3"
->>>>   - reg : Address and length of the register set for the device
->>>>   - interrupts: Interrupts used by the dwc3 controller.
->>>> +
->>>> +Optional properties:
->>>>   - usb-phy : array of phandle for the PHY device.  The first element
->>>>     in the array is expected to be a handle to the USB2/HS PHY and
->>>>     the second element is expected to be a handle to the USB3/SS PHY
->>>> -
->>>> -Optional properties:
->>>> + - phys: from the *Generic PHY* bindings
->>>> + - phy-names: from the *Generic PHY* bindings
->>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
->>>>
->>>>  This is usually a subnode to DWC3 glue to which it is connected.
->>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->>>> index e009d4e..036d589 100644
->>>> --- a/drivers/usb/dwc3/core.c
->>>> +++ b/drivers/usb/dwc3/core.c
->>>> @@ -82,6 +82,11 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
->>>>
->>>>       usb_phy_init(dwc->usb2_phy);
->>>>       usb_phy_init(dwc->usb3_phy);
->>>> +     if (dwc->usb2_generic_phy)
->>>> +             phy_init(dwc->usb2_generic_phy);
->>>
->>> What if phy_init() fails? You need to report and fail. Same applies for all PHY apis in this patch.
->>>
->>>> +     if (dwc->usb3_generic_phy)
->>>> +             phy_init(dwc->usb3_generic_phy);
->>>> +
->>>>       mdelay(100);
->>>>
->>>>       /* Clear USB3 PHY reset */
->>>> @@ -343,6 +348,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
->>>>  {
->>>>       usb_phy_shutdown(dwc->usb2_phy);
->>>>       usb_phy_shutdown(dwc->usb3_phy);
->>>> +     if (dwc->usb2_generic_phy)
->>>> +             phy_exit(dwc->usb2_generic_phy);
->>>> +     if (dwc->usb3_generic_phy)
->>>> +             phy_exit(dwc->usb3_generic_phy);
->>>> +
->>>>  }
->>>>
->>>>  #define DWC3_ALIGN_MASK              (16 - 1)
->>>> @@ -433,6 +443,32 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>               }
->>>>       }
->>>>
->>>> +     dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
->>>> +     if (IS_ERR(dwc->usb2_generic_phy)) {
->>>> +             ret = PTR_ERR(dwc->usb2_generic_phy);
->>>> +             if (ret == -ENOSYS || ret == -ENODEV) {
->>>> +                     dwc->usb2_generic_phy = NULL;
->>>> +             } else if (ret == -EPROBE_DEFER) {
->>>> +                     return ret;
->>>> +             } else {
->>>> +                     dev_err(dev, "no usb2 phy configured\n");
->>>> +                     return ret;
->>>> +             }
->>>> +     }
->>>> +
->>>> +     dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
->>>> +     if (IS_ERR(dwc->usb3_generic_phy)) {
->>>> +             ret = PTR_ERR(dwc->usb3_generic_phy);
->>>> +             if (ret == -ENOSYS || ret == -ENODEV) {
->>>> +                     dwc->usb3_generic_phy = NULL;
->>>> +             } else if (ret == -EPROBE_DEFER) {
->>>> +                     return ret;
->>>> +             } else {
->>>> +                     dev_err(dev, "no usb3 phy configured\n");
->>>> +                     return ret;
->>>> +             }
->>>> +     }
->>>> +
->>>>       dwc->xhci_resources[0].start = res->start;
->>>>       dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
->>>>                                       DWC3_XHCI_REGS_END;
->>>> @@ -482,6 +518,11 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>       usb_phy_set_suspend(dwc->usb2_phy, 0);
->>>>       usb_phy_set_suspend(dwc->usb3_phy, 0);
->>>>
->>>> +     if (dwc->usb2_generic_phy)
->>>> +             phy_power_on(dwc->usb2_generic_phy);
->>>> +     if (dwc->usb3_generic_phy)
->>>> +             phy_power_on(dwc->usb3_generic_phy);
->>>> +
->>>
->>> Is it OK to power on the phy before phy_init()?
->>
->> Isn't phy_init() being done before phy_power_on() in the
->> core_soft_reset() in this patch ?
->> Isn't that what you want here ?
->>
->>>
->>> I suggest to move phy_init() from core_soft_reset() to here, just before phy_power_on().
->>
->> core_soft_reset() is called before phy_power_on() itself from
->> dwc3_core_init(), right ?
->> will moving the phy_inti() here make nay difference ?
-> 
-> You are right. This part is fine then.
+Il 21/01/2014 19:59, Liu, Jinsong ha scritto:
+> From 3155a190ce6ebb213e6c724240f4e6620ba67a9d Mon Sep 17 00:00:00 2001
+> From: Liu Jinsong <jinsong.liu@intel.com>
+> Date: Fri, 13 Dec 2013 02:32:03 +0800
+> Subject: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+>
+> EBX of cpuid(0xD, 0) is dynamic per XCR0 features enable/disable.
+> Bit 63 of XCR0 is reserved for future expansion.
+>
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
 
-Yeah.. it was fixed in one of the earlier patches which got merged.
+Peter, can I have your acked-by on this?
 
-commit 3088f1085d1c08f31f02db26796555a66cdf7ca1
-Author: Kishon Vijay Abraham I <kishon@ti.com>
-Date:   Mon Nov 25 15:31:21 2013 +0530
-
-    usb: dwc3: invoke phy_resume after phy_init
-
-    usb_phy_set_suspend(phy, 0) is called before usb_phy_init. Fix it.
-
-    Reported-by: Roger Quadros <rogerq@ti.com>
-    Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-Cheers,
-Kishon
-> 
-> cheers,
-> -roger
-> 
+> ---
+>  arch/x86/include/asm/xsave.h |    2 ++
+>  arch/x86/kvm/cpuid.c         |    6 +++---
+>  arch/x86/kvm/x86.c           |    7 +++++--
+>  3 files changed, 10 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+> index 5547389..f6c4e85 100644
+> --- a/arch/x86/include/asm/xsave.h
+> +++ b/arch/x86/include/asm/xsave.h
+> @@ -13,6 +13,8 @@
+>  #define XSTATE_BNDCSR	0x10
+>
+>  #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
+> +/* Bit 63 of XCR0 is reserved for future expansion */
+> +#define XSTATE_EXTEND_MASK	(~(XSTATE_FPSSE | (1 << 63)))
+>
+>  #define FXSAVE_SIZE	512
+>
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index c697625..2d661e6 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -28,7 +28,7 @@ static u32 xstate_required_size(u64 xstate_bv)
+>  	int feature_bit = 0;
+>  	u32 ret = XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET;
+>
+> -	xstate_bv &= ~XSTATE_FPSSE;
+> +	xstate_bv &= XSTATE_EXTEND_MASK;
+>  	while (xstate_bv) {
+>  		if (xstate_bv & 0x1) {
+>  		        u32 eax, ebx, ecx, edx;
+> @@ -74,8 +74,8 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
+>  		vcpu->arch.guest_supported_xcr0 =
+>  			(best->eax | ((u64)best->edx << 32)) &
+>  			host_xcr0 & KVM_SUPPORTED_XCR0;
+> -		vcpu->arch.guest_xstate_size =
+> -			xstate_required_size(vcpu->arch.guest_supported_xcr0);
+> +		vcpu->arch.guest_xstate_size = best->ebx =
+> +			xstate_required_size(vcpu->arch.xcr0);
+>  	}
+>
+>  	kvm_pmu_cpuid_update(vcpu);
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 21ef1ba..1657ca2 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -576,13 +576,13 @@ static void kvm_put_guest_xcr0(struct kvm_vcpu *vcpu)
+>
+>  int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+>  {
+> -	u64 xcr0;
+> +	u64 xcr0 = xcr;
+> +	u64 old_xcr0 = vcpu->arch.xcr0;
+>  	u64 valid_bits;
+>
+>  	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
+>  	if (index != XCR_XFEATURE_ENABLED_MASK)
+>  		return 1;
+> -	xcr0 = xcr;
+>  	if (!(xcr0 & XSTATE_FP))
+>  		return 1;
+>  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+> @@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+>
+>  	kvm_put_guest_xcr0(vcpu);
+>  	vcpu->arch.xcr0 = xcr0;
+> +
+> +	if ((xcr0 ^ old_xcr0) & XSTATE_EXTEND_MASK)
+> +		kvm_update_cpuid(vcpu);
+>  	return 0;
+>  }
+>
+>
 
