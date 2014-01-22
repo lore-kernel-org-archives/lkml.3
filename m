@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaAVTG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:06:26 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58276 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985AbaAVTGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:06:25 -0500
-Date: Wed, 22 Jan 2014 19:06:14 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Message-ID: <20140122190614.GV17314@sirena.org.uk>
-References: <20140115113551.0eb13409@armhf>
- <20140115165137.5fec601b@armhf>
+	id S1752985AbaAVTIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:08:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41940 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788AbaAVTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 14:08:23 -0500
+Date: Wed, 22 Jan 2014 19:08:16 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
+        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to fail in
+ 3.12 after exceeding vm_max_map_count
+Message-ID: <20140122190816.GB4963@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5CROkWtElhX9+YmA"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140115165137.5fec601b@armhf>
-X-Cookie: We have DIFFERENT amounts of HAIR --
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/8] ASoC: simple-card: simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Cyrill,
 
---5CROkWtElhX9+YmA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Gimp is broken due to a kernel bug included in 3.12. It cannot open
+large files without failing memory allocations due to exceeding
+vm.max_map_count. The relevant bugzilla entries are
 
-On Wed, Jan 15, 2014 at 04:51:37PM +0100, Jean-Francois Moine wrote:
-> The DT values are copied to the non-DT structure before being moved to
-> the card structure.
-> Set directly the DT values in the card and move the non-DT copy to the
-> non-DT sequence.
+https://bugzilla.kernel.org/show_bug.cgi?id=67651
+https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
 
-Applied, thanks.  Every patch in this series seems to have the same
-subject line - please don't do that, it makes things harder to work
-with.
+They include details on how to reproduce the issue. In my case, a
+failure shows messages like this
 
---5CROkWtElhX9+YmA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	(gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+	(file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+	xinit: connection to X server lost
 
-iQIcBAEBAgAGBQJS4BajAAoJELSic+t+oim9oJUP/36y2RnsohSJvR4JIx+YrQ29
-acY2v4b0MCUda0SjNBoZo69eHPOAOML5XTTSWc28Z0m0luZL6Jon/ZWilVW6Mret
-A4tAmWxPfqFCnhonP6dzo8iFN3KQX91wNlNrIo9FsbNQeU/37vuHSU+O/h9CqxlJ
-UGkKdXCVM4ozw97ocrUWq0UpZrvihXZ3tCrMxCltceAm/it9Bp7Q+JiWti3J4E9Z
-rdteE/VTcGWJ/Q2UY3Qm6wuEYXYrrCF6vwNMdgZp9Gf5Q6cpiKVnOaXnl96hRITQ
-VmqfyXRSTZgGKzYS47FEZaxWhtEaCthngsUiOVPGZFyQPNQl2GsUPLXan2TpPBht
-nl9CAC6cHrx07uvuLts2aC7ay4lrJsnmKr5JaPSCFPq5ufJteJDi43oolL0dYKjR
-xr5XPQ93hM2AQXBEbnU3qxz+4w03psNu1TgtYUUuo20Ayb5QQC26Q0x0H5p43Ngc
-MXbpBpISYXWjLGR41znMeifROrIJ8OcB6EWTfldDOEuIzcgk3d5EZXht5aec3Hhs
-6IiqsjQtoCmGg19uWJD7ty2E0srYvz8/K2Fi7sWsPsMW4AGfqit0vs8dst64zZ0N
-J5vpSiMqlfULtpi7JmXZuphngIxx12kELLGoiFPi6TTQgBjkui/RTGbKB0bQL1Ts
-8bK5gLJbKdp/cnHZcAGr
-=PR2l
------END PGP SIGNATURE-----
+	waiting for X server to shut down
+	/usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
 
---5CROkWtElhX9+YmA--
+X-related junk is there was because I was using a headless server and
+xinit directly to launch gimp to reproduce the bug.
+
+Automated bisection using mmtests (https://github.com/gormanm/mmtests)
+and the configuration file configs/config-global-dhp__gimp-simple (needs
+local web server with a copy of the image file) identified the following
+commit. Test case was simple -- try and open the large file described in
+the bug. I did not investigate the patch itself as I'm just reporting
+the results of the bisection. If I had to guess, I'd say that VMA
+merging has been affected.
+
+d9104d1ca9662498339c0de975b4666c30485f4e is the first bad commit
+commit d9104d1ca9662498339c0de975b4666c30485f4e
+Author: Cyrill Gorcunov <gorcunov@gmail.com>
+Date:   Wed Sep 11 14:22:24 2013 -0700
+
+    mm: track vma changes with VM_SOFTDIRTY bit
+    
+    Pavel reported that in case if vma area get unmapped and then mapped (or
+    expanded) in-place, the soft dirty tracker won't be able to recognize this
+    situation since it works on pte level and ptes are get zapped on unmap,
+    loosing soft dirty bit of course.
+    
+    So to resolve this situation we need to track actions on vma level, there
+    VM_SOFTDIRTY flag comes in.  When new vma area created (or old expanded)
+    we set this bit, and keep it here until application calls for clearing
+    soft dirty bit.
+    
+    Thus when user space application track memory changes now it can detect if
+    vma area is renewed.
+    
+    Reported-by: Pavel Emelyanov <xemul@parallels.com>
+    Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+    Cc: Andy Lutomirski <luto@amacapital.net>
+    Cc: Matt Mackall <mpm@selenic.com>
+    Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+    Cc: Marcelo Tosatti <mtosatti@redhat.com>
+    Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+    Cc: Rob Landley <rob@landley.net>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+-- 
+Mel Gorman
+SUSE Labs
