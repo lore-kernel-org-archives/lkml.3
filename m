@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaAVVRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:17:44 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:54588 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaAVVRn (ORCPT
+	id S1753555AbaAVVVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:21:23 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45719 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752408AbaAVVVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:17:43 -0500
-Date: Wed, 22 Jan 2014 22:17:40 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        dyoung@redhat.com
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140122211740.GA391@x4>
-References: <20140122122609.GA392@x4>
- <20140122123022.GN31570@twins.programming.kicks-ass.net>
- <20140122131456.GA389@x4>
- <52DFD50E.800@oracle.com>
- <20140122183538.GA389@x4>
- <20140122184253.GN30183@twins.programming.kicks-ass.net>
- <20140122190905.GA391@x4>
- <20140122191254.GA390@x4>
- <20140122201605.GU11314@laptop.programming.kicks-ass.net>
- <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+	Wed, 22 Jan 2014 16:21:22 -0500
+Date: Wed, 22 Jan 2014 21:21:07 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 02/24] drm/i2c: tda998x: check more I/O errors
+Message-ID: <20140122212107.GF15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195838.348f8d6d@armhf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140119195838.348f8d6d@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.01.22 at 22:08 +0100, Peter Zijlstra wrote:
-> > 
-> > I think its the right region to look through. My current suspect is the
-> > linear continuity fit with the initial 'random' multiplier.
-> > 
-> > That initial 'random' multiplier can get us quite high, and we'll fit
-> > the function to match that but continue at a sane rate.
-> > 
-> > I'll try and prod a little more later this evening as time permits.
+On Sun, Jan 19, 2014 at 07:58:38PM +0100, Jean-Francois Moine wrote:
+> This patch adds more error checking inn I2C I/O functions.
+> In case of I/O error, this permits to avoid writing in bad controller
+> pages, a bad chipset detection or looping when getting the EDID.
 > 
-> Does this cure things?
+> Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-Yes. Thanks Peter.
+Thanks.
+
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
 -- 
-Markus
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
