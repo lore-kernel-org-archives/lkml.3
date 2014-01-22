@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaAVFSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 00:18:37 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:54906 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaAVFSa (ORCPT
+	id S1752549AbaAVFU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 00:20:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35560 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaAVFUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 00:18:30 -0500
+	Wed, 22 Jan 2014 00:20:55 -0500
+Date: Wed, 22 Jan 2014 05:20:53 +0000
+From: Joel Becker <jlbec@evilplan.org>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [LSF/MM TOPIC] really large storage sectors - going beyond 4096
+ bytes
+Message-ID: <20140122052052.GM10565@ZenIV.linux.org.uk>
+Mail-Followup-To: Ric Wheeler <rwheeler@redhat.com>,
+	linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+	linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+	lsf-pc@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+References: <20131220093022.GV11295@suse.de>
+ <52DF353D.6050300@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=ng-B6kLdWxBn_cNsWNVsYaNAD-ZzQLLOfkbj+FDg_fg@mail.gmail.com>
-References: <1390273543-18032-1-git-send-email-zhuangzhi.li@intel.com>
-	<CAKohponL_R8M40BJa3X+++1yDtw5KRvk88w8kVfA+_D+poK08A@mail.gmail.com>
-	<630F9443351D2B4BB7EC6BAE6B6B08342549C5DC@SHSMSX104.ccr.corp.intel.com>
-	<CAKohpo=ng-B6kLdWxBn_cNsWNVsYaNAD-ZzQLLOfkbj+FDg_fg@mail.gmail.com>
-Date: Wed, 22 Jan 2014 10:48:27 +0530
-Message-ID: <CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Align all CPUs to the same frequency if using
- shared clock
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52DF353D.6050300@redhat.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 January 2014 13:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 21 January 2014 12:56, Li, Zhuangzhi <zhuangzhi.li@intel.com> wrote:
->> Thanks for reviewing.
->
-> Its my job :)
->
->> Sorry for make you misunderstanding, on our x86 platform, we want all the CPUs share one policy by setting CPUFREQ_SHARED_TYPE_ALL, not share one HW clock line.
->
-> I see.. Then probably your patch makes sense. But it is
-> obviously not required for every platform that exists today.
->
-> Please update it to do it only for drivers that have set
-> CPUFREQ_SHARED_TYPE_ALL..
+On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> One topic that has been lurking forever at the edges is the current
+> 4k limitation for file system block sizes. Some devices in
+> production today and others coming soon have larger sectors and it
+> would be interesting to see if it is time to poke at this topic
+> again.
+> 
+> LSF/MM seems to be pretty much the only event of the year that most
+> of the key people will be present, so should be a great topic for a
+> joint session.
 
-One more thing, who has set different frequencies to these cores?
-I hope kernel hasn't ?
+Oh yes, I want in on this.  We handle 4k/16k/64k pages "seamlessly," and
+we would want to do the same for larger sectors.  In theory, our code
+should handle it with the appropriate defines updated.
 
-In that case, probably you are fixing a bootloader bug in kernel?
-What about doing this in bootloader then?
+Joel
 
---
-virehs
+-- 
