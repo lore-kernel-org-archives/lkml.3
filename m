@@ -1,197 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaAVKMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:12:32 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:32852 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419AbaAVKMa (ORCPT
+	id S1754941AbaAVKOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:14:24 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:65112 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaAVKOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:12:30 -0500
-Message-ID: <52DF9989.5050008@dev.mellanox.co.il>
-Date: Wed, 22 Jan 2014 12:12:25 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 05:14:22 -0500
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@kernel.org>
-Subject: Re: [PATCH-v2 12/17] target/file: Add DIF protection init/format
- support
-References: <1390099480-29013-1-git-send-email-nab@daterainc.com>	 <1390099480-29013-13-git-send-email-nab@daterainc.com>	 <52DBC592.6010405@dev.mellanox.co.il> <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140122140402.20163da276690810a1040909@canb.auug.org.au>
+References: <20140122140402.20163da276690810a1040909@canb.auug.org.au>
+Date: Wed, 22 Jan 2014 11:06:25 +0100
+Message-ID: <CAKMK7uF+p96YtDo3NG4nBV5S5gYXk55p5KUOxsb+PMY+MH_Zyw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the drm-intel tree with the drm tree
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/22/2014 12:28 AM, Nicholas A. Bellinger wrote:
-> On Sun, 2014-01-19 at 14:31 +0200, Sagi Grimberg wrote:
->> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
->>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>
->>> This patch adds support for DIF protection init/format support into
->>> the FILEIO backend.
->>>
->>> It involves using a seperate $FILE.protection for storing PI that is
->>> opened via fd_init_prot() using the common pi_prot_type attribute.
->>> The actual formatting of the protection is done via fd_format_prot()
->>> using the common pi_prot_format attribute, that will populate the
->>> initial PI data based upon the currently configured pi_prot_type.
->>>
->>> Based on original FILEIO code from Sagi.
->> Nice! see comments below...
->>
->>> v1 changes:
->>>     - Fix sparse warnings in fd_init_format_buf (Fengguang)
->>>
->>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
->>> Cc: Christoph Hellwig <hch@lst.de>
->>> Cc: Hannes Reinecke <hare@suse.de>
->>> Cc: Sagi Grimberg <sagig@mellanox.com>
->>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
->>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
->>> ---
->>>    drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
->>>    drivers/target/target_core_file.h |    4 ++
->>>    2 files changed, 141 insertions(+)
->>>
->>> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
->>> index 0e34cda..119d519 100644
->>> --- a/drivers/target/target_core_file.c
->>> +++ b/drivers/target/target_core_file.c
->>> @@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
->>>    		       dev->dev_attrib.block_size);
->>>    }
->>>    
->>> +static int fd_init_prot(struct se_device *dev)
->>> +{
->>> +	struct fd_dev *fd_dev = FD_DEV(dev);
->>> +	struct file *prot_file, *file = fd_dev->fd_file;
->>> +	struct inode *inode;
->>> +	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
->>> +	char buf[FD_MAX_DEV_PROT_NAME];
->>> +
->>> +	if (!file) {
->>> +		pr_err("Unable to locate fd_dev->fd_file\n");
->>> +		return -ENODEV;
->>> +	}
->>> +
->>> +	inode = file->f_mapping->host;
->>> +	if (S_ISBLK(inode->i_mode)) {
->>> +		pr_err("FILEIO Protection emulation only supported on"
->>> +		       " !S_ISBLK\n");
->>> +		return -ENOSYS;
->>> +	}
->>> +
->>> +	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
->>> +		flags &= ~O_DSYNC;
->>> +
->>> +	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
->>> +		 fd_dev->fd_dev_name);
->>> +
->>> +	prot_file = filp_open(buf, flags, 0600);
->>> +	if (IS_ERR(prot_file)) {
->>> +		pr_err("filp_open(%s) failed\n", buf);
->>> +		ret = PTR_ERR(prot_file);
->>> +		return ret;
->>> +	}
->>> +	fd_dev->fd_prot_file = prot_file;
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
->>> +			       u32 unit_size, u32 *ref_tag, u16 app_tag,
->>> +			       bool inc_reftag)
->>> +{
->>> +	unsigned char *p = buf;
->>> +	int i;
->>> +
->>> +	for (i = 0; i < unit_size; i += dev->prot_length) {
->>> +		*((u16 *)&p[0]) = 0xffff;
->>> +		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
->>> +		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
->>> +
->>> +		if (inc_reftag)
->>> +			(*ref_tag)++;
->>> +
->>> +		p += dev->prot_length;
->>> +	}
->>> +}
->>> +
->>> +static int fd_format_prot(struct se_device *dev)
->>> +{
->>> +	struct fd_dev *fd_dev = FD_DEV(dev);
->>> +	struct file *prot_fd = fd_dev->fd_prot_file;
->>> +	sector_t prot_length, prot;
->>> +	unsigned char *buf;
->>> +	loff_t pos = 0;
->>> +	u32 ref_tag = 0;
->>> +	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
->>> +	int rc, ret = 0, size, len;
->>> +	bool inc_reftag = false;
->>> +
->>> +	if (!dev->dev_attrib.pi_prot_type) {
->>> +		pr_err("Unable to format_prot while pi_prot_type == 0\n");
->>> +		return -ENODEV;
->>> +	}
->>> +	if (!prot_fd) {
->>> +		pr_err("Unable to locate fd_dev->fd_prot_file\n");
->>> +		return -ENODEV;
->>> +	}
->>> +
->>> +	switch (dev->dev_attrib.pi_prot_type) {
->> redundant - see below.
->>> +	case TARGET_DIF_TYPE3_PROT:
->>> +		ref_tag = 0xffffffff;
->>> +		break;
->>> +	case TARGET_DIF_TYPE2_PROT:
->>> +	case TARGET_DIF_TYPE1_PROT:
->>> +		inc_reftag = true;
->>> +		break;
->>> +	default:
->>> +		break;
->>> +	}
->>> +
->>> +	buf = vzalloc(unit_size);
->>> +	if (!buf) {
->>> +		pr_err("Unable to allocate FILEIO prot buf\n");
->>> +		return -ENOMEM;
->>> +	}
->>> +
->>> +	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
->>> +	size = prot_length;
->>> +
->>> +	pr_debug("Using FILEIO prot_length: %llu\n",
->>> +		 (unsigned long long)prot_length);
->>> +
->>> +	for (prot = 0; prot < prot_length; prot += unit_size) {
->>> +
->>> +		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
->>> +				   inc_reftag);
->> I didn't send you my latest patches (my fault...).T10-PI format should
->> only place
->> escape values throughout the protection file (fill it with 0xff). so I
->> guess in this case
->> fd_init_formast_buf() boils down to memset(buf, 0xff, unit_size) once
->> before the loop
->> and just loop until prot_length writing buf, no need to address
->> apptag/reftag...
-> Yeah, was thinking about just formatting with escape values as mentioned
-> above, but thought it might be useful to keep around for pre-populating
-> values apptag + reftag values for testing purposes.
->
-> --nab
->
+Hi Stephen,
 
-OK, but maybe it is better to do that under some debug configuration 
-rather then always do that.
+On Wed, Jan 22, 2014 at 4:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Today's linux-next merge of the drm-intel tree got a conflict in
+> drivers/gpu/drm/i915/i915_irq.c between commit abca9e454498 ("drm: Pass
+> 'flags' from the caller to .get_scanout_position()") from the drm tree
+> and commit d59a63ad8234 ("drm/i915: Add intel_get_crtc_scanline()") from
+> the drm-intel tree.
+>
+> I fixed it up (I think - see below) and can carry the fix as necessary
+> (no action is required).
 
-Sagi.
+Oops, this patch escaped - it's only for 3.15. I've shuffled my
+branches around now for the merge window so this should not pop up in
+your -next tree again until 3.15 starts.
+
+Yours, Daniel
+
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/gpu/drm/i915/i915_irq.c
+> index 17d8fcb1b6f7,ffb56a9db9cc..000000000000
+> --- a/drivers/gpu/drm/i915/i915_irq.c
+> +++ b/drivers/gpu/drm/i915/i915_irq.c
+> @@@ -649,8 -675,9 +649,9 @@@ static bool ilk_pipe_in_vblank_locked(s
+>   }
+>
+>   static int i915_get_crtc_scanoutpos(struct drm_device *dev, int pipe,
+>  -                                  int *vpos, int *hpos,
+>  +                                  unsigned int flags, int *vpos, int *hpos,
+> -                                   ktime_t *stime, ktime_t *etime)
+> +                                   ktime_t *stime, ktime_t *etime,
+> +                                   bool adjust)
+>   {
+>         struct drm_i915_private *dev_priv = dev->dev_private;
+>         struct drm_crtc *crtc = dev_priv->pipe_to_crtc_mapping[pipe];
+> @@@ -788,6 -786,24 +791,24 @@@
+>         return ret;
+>   }
+>
+> + static int i915_get_scanout_position(struct drm_device *dev, int pipe,
+> +                                    int *vpos, int *hpos,
+> +                                    ktime_t *stime, ktime_t *etime)
+> + {
+>  -      return i915_get_crtc_scanoutpos(dev, pipe, vpos, hpos,
+> ++      return i915_get_crtc_scanoutpos(dev, pipe, 0, vpos, hpos,
+> +                                       stime, etime, true);
+> + }
+> +
+> + int intel_get_crtc_scanline(struct drm_crtc *crtc)
+> + {
+> +       int vpos = 0, hpos = 0;
+> +
+>  -      i915_get_crtc_scanoutpos(crtc->dev, to_intel_crtc(crtc)->pipe,
+> ++      i915_get_crtc_scanoutpos(crtc->dev, to_intel_crtc(crtc)->pipe, 0,
+> +                                &vpos, &hpos, NULL, NULL, false);
+> +
+> +       return vpos;
+> + }
+> +
+>   static int i915_get_vblank_timestamp(struct drm_device *dev, int pipe,
+>                               int *max_error,
+>                               struct timeval *vblank_time,
+
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
