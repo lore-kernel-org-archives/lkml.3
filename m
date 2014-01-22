@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984AbaAVO67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:58:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755342AbaAVO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:58:57 -0500
-Message-ID: <52DFDCA6.1050204@redhat.com>
-Date: Wed, 22 Jan 2014 09:58:46 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com> <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com> <20140122143452.GW4963@suse.de>
-In-Reply-To: <20140122143452.GW4963@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755989AbaAVO71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:59:27 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:25820 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaAVO7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 09:59:24 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f796d000005a13-50-52dfdccae424
+Content-transfer-encoding: 8BIT
+Message-id: <1390402760.18340.6.camel@AMDC1943>
+Subject: Re: [PATCH RESEND] cpufreq: exynos: Fix build error of no type of
+ module_init
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Date: Wed, 22 Jan 2014 15:59:20 +0100
+In-reply-to: <CAKohpo=2wR+Sqwxj4koH0rvuk29BkNyAZgN0RR7bVH+3uqpB1Q@mail.gmail.com>
+References: <1390400476-22951-1-git-send-email-k.kozlowski@samsung.com>
+ <CAKohpo=2wR+Sqwxj4koH0rvuk29BkNyAZgN0RR7bVH+3uqpB1Q@mail.gmail.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xK7qn7twPMtj+lM/iadMPdoveBVfZ
+	LM42vWG3ePNwM6PFpsfXWC0u75rDZvG59wijxYzz+5gszpy+xGqxfsZrFouNXz0cuD3uXNvD
+	5rF5Sb3HlqvtLB59W1YxenzeJBfAGsVlk5Kak1mWWqRvl8CVcXyNbsFtkYr5nxcwNTDuEuxi
+	5OSQEDCRaGq4wAxhi0lcuLeerYuRi0NIYCmjxMfX8xhBErwCghI/Jt9j6WLk4GAWkJc4cikb
+	JMwsoC4xad4isF4hgc+MEid3KEKU60vsW3GBBcQWFoiQ6Li0BsxmEzCW2Lx8CRvIGBEBLYmX
+	N1NBVjELNLFIvHk3G6yGRUBV4vzShawgNZwCwRJ984IgzuljlOh4Mp8R4k4lid3tnewTGAVm
+	IbluFsJ1s5Bct4CReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSAx82cG4+JjVIUYBDkYl
+	Ht7AXfeChFgTy4orcw8xSnAwK4nwpl6+HyTEm5JYWZValB9fVJqTWnyIkYmDU6qB0avBQ0zj
+	7CXXvy2u292Pr1N7Gzj72ZnPbSV8TffZXXr26oiEbQg4czdx35nlb5u7yuwU125sVHrVsrSn
+	04mnpvLFQevO07H7hUIFl8WEyi19cvB2F9fb39o/ZIs6RdY2Tda7tn/S3Y+zvvVNVlyvfIV7
+	2e9nAguuT2a458gyR2vHxtzTF+KyjiuxFGckGmoxFxUnAgCqQWdPXwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 09:34 AM, Mel Gorman wrote:
-> On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
->> On 01/22/2014 04:34 AM, Mel Gorman wrote:
->>> On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
->>>> One topic that has been lurking forever at the edges is the current
->>>> 4k limitation for file system block sizes. Some devices in
->>>> production today and others coming soon have larger sectors and it
->>>> would be interesting to see if it is time to poke at this topic
->>>> again.
->>>>
->>> Large block support was proposed years ago by Christoph Lameter
->>> (http://lwn.net/Articles/232757/). I think I was just getting started
->>> in the community at the time so I do not recall any of the details. I do
->>> believe it motivated an alternative by Nick Piggin called fsblock though
->>> (http://lwn.net/Articles/321390/). At the very least it would be nice to
->>> know why neither were never merged for those of us that were not around
->>> at the time and who may not have the chance to dive through mailing list
->>> archives between now and March.
->>>
->>> FWIW, I would expect that a show-stopper for any proposal is requiring
->>> high-order allocations to succeed for the system to behave correctly.
->>>
->> I have a somewhat hazy memory of Andrew warning us that touching
->> this code takes us into dark and scary places.
->>
-> That is a light summary. As Andrew tends to reject patches with poor
-> documentation in case we forget the details in 6 months, I'm going to guess
-> that he does not remember the details of a discussion from 7ish years ago.
-> This is where Andrew swoops in with a dazzling display of his eidetic
-> memory just to prove me wrong.
->
-> Ric, are there any storage vendor that is pushing for this right now?
-> Is someone working on this right now or planning to? If they are, have they
-> looked into the history of fsblock (Nick) and large block support (Christoph)
-> to see if they are candidates for forward porting or reimplementation?
-> I ask because without that person there is a risk that the discussion
-> will go as follows
->
-> Topic leader: Does anyone have an objection to supporting larger block
-> 	sizes than the page size?
-> Room: Send patches and we'll talk.
->
+On Wed, 2014-01-22 at 20:12 +0530, Viresh Kumar wrote:
+> On 22 January 2014 19:51, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> > Add missing include to fix build error:
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_init’ [-Werror=implicit-int]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: data definition has no type or storage class [enabled by default]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: error: type defaults to ‘int’ in declaration of ‘module_exit’ [-Werror=implicit-int]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: parameter names (without types) in function declaration [enabled by default]
+> > drivers/cpufreq/exynos-cpufreq.c:292:1: warning: ‘exynos_cpufreq_platdrv_init’ defined but not used [-Wunused-function]
+> > cc1: some warnings being treated as errors
+> > make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
+> > make[1]: *** [drivers/cpufreq] Error 2
+> >
+> > Build error happens on gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
+> > and was introduced by commit d568b6f71df1 (cpufreq: exynos: Convert
+> > exynos-cpufreq to platform driver).
+> >
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Cc: Lukasz Majewski <l.majewski@samsung.com>
+> > Cc: Tomasz Figa <t.figa@samsung.com>
+> > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  drivers/cpufreq/exynos-cpufreq.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+> > index fcd2914d081a..fa54c2b88dd7 100644
+> > --- a/drivers/cpufreq/exynos-cpufreq.c
+> > +++ b/drivers/cpufreq/exynos-cpufreq.c
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/regulator/consumer.h>
+> >  #include <linux/cpufreq.h>
+> >  #include <linux/suspend.h>
+> > +#include <linux/module.h>
+> >  #include <linux/platform_device.h>
+> 
+> I am surprised how that patch went through then? And nothing was
+> reported by kbuild for it..
 
-I will have to see if I can get a storage vendor to make a public statement, but 
-there are vendors hoping to see this land in Linux in the next few years. I 
-assume that anyone with a shipping device will have to at least emulate the 4KB 
-sector size for years to come, but that there might be a significant performance 
-win for platforms that can do a larger block.
+Hi,
 
-Note that windows seems to suffer from the exact same limitation, so we are not 
-alone here with the vm page size/fs block size entanglement....
+A little more explanation from my side: the build error actually happens
+only on next/master, not Linus' tree.
 
-ric
+Mentioned commit which changes the driver to platform driver is in
+mainline since 3.12-rc2 so it seems this is not the cause of the build
+error. I think I need to find first the real cause of this build error.
+
+Best regards,
+Krzysztof
+
+
 
