@@ -1,192 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaAVKqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:46:33 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27878
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751773AbaAVKqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:46:30 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h1155h)
-Message-ID: <52DFA1DE.6030709@freescale.com>
-Date: Wed, 22 Jan 2014 18:47:58 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1755181AbaAVKxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:53:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35380 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773AbaAVKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:53:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,698,1384329600"; 
+   d="scan'208";a="468946492"
+Date: Wed, 22 Jan 2014 13:00:11 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Chen-Yu Tsai <wens@csie.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH RFC 4/6] net: rfkill: gpio: add device tree support
+Message-ID: <20140122110011.GU18029@intel.com>
+References: <1389941251-32692-1-git-send-email-wens@csie.org>
+ <CAAVeFuLP4MkfXGG1FMauvUw_J63zRXdhGwxqYy5W98L1wCQNbw@mail.gmail.com>
+ <CACRpkdYiy+sya6NqRfAmsrFOXvaa3qX=qjRuTDW1vZVSaG1+Gg@mail.gmail.com>
+ <201401211335.16885.arnd@arndb.de>
+ <CAAVeFuKFfAvSPYLmvWV5jjT-peZFJ8sJ2bbh4F=JAYoWLhjZpA@mail.gmail.com>
+ <CACRpkdZbb=eO8YRtMn6hW0vn97PkHUo88e_o61DEC8=wPY3_PQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Jani Nikula <jani.nikula@linux.intel.com>
-CC: <jg1.han@samsung.com>, <linux-fbdev@vger.kernel.org>,
-        <tomi.valkeinen@ti.com>, <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH v2] backlight: turn backlight on/off when necessary
-References: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com> <87sisg5pfo.fsf@intel.com>
-In-Reply-To: <87sisg5pfo.fsf@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZbb=eO8YRtMn6hW0vn97PkHUo88e_o61DEC8=wPY3_PQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 05:35 PM, Jani Nikula wrote:
-> On Mon, 20 Jan 2014, Liu Ying <Ying.Liu@freescale.com> wrote:
->> We don't have to turn backlight on/off everytime a blanking
->> or unblanking event comes because the backlight status may
->> have already been what we want. Another thought is that one
->> backlight device may be shared by multiple framebuffers. We
->> don't hope blanking one of the framebuffers may turn the
->> backlight off for all the other framebuffers, since they are
->> likely being active to display something. This patch adds
->> some logics to record each framebuffer's backlight usage to
->> determine the backlight device use count and whether the
->> backlight should be turned on or off. To be more specific,
->> only one unblank operation on a certain blanked framebuffer
->> may increase the backlight device's use count by one, while
->> one blank operation on a certain unblanked framebuffer may
->> decrease the use count by one, because the userspace is
->> likely to unblank a unblanked framebuffer or blank a blanked
->> framebuffer.
->>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->> v1 can be found at https://lkml.org/lkml/2013/5/30/139
->>
->> v1->v2:
->> * Make the commit message be more specific about the condition
->>   in which backlight device use count can be increased/decreased.
->> * Correct the setting for bd->props.fb_blank.
->>
->>  drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
->>  include/linux/backlight.h           |    6 ++++++
->>  2 files changed, 27 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
->> index 5d05555..42044be 100644
->> --- a/drivers/video/backlight/backlight.c
->> +++ b/drivers/video/backlight/backlight.c
->> @@ -34,13 +34,15 @@ static const char *const backlight_types[] = {
->>  			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
->>  /* This callback gets called when something important happens inside a
->>   * framebuffer driver. We're looking if that important event is blanking,
->> - * and if it is, we're switching backlight power as well ...
->> + * and if it is and necessary, we're switching backlight power as well ...
->>   */
->>  static int fb_notifier_callback(struct notifier_block *self,
->>  				unsigned long event, void *data)
->>  {
->>  	struct backlight_device *bd;
->>  	struct fb_event *evdata = data;
->> +	int node = evdata->info->node;
->> +	int fb_blank = 0;
->>  
->>  	/* If we aren't interested in this event, skip it immediately ... */
->>  	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
->> @@ -51,12 +53,24 @@ static int fb_notifier_callback(struct notifier_block *self,
->>  	if (bd->ops)
->>  		if (!bd->ops->check_fb ||
->>  		    bd->ops->check_fb(bd, evdata->info)) {
->> -			bd->props.fb_blank = *(int *)evdata->data;
->> -			if (bd->props.fb_blank == FB_BLANK_UNBLANK)
->> -				bd->props.state &= ~BL_CORE_FBBLANK;
->> -			else
->> -				bd->props.state |= BL_CORE_FBBLANK;
->> -			backlight_update_status(bd);
->> +			fb_blank = *(int *)evdata->data;
->> +			if (fb_blank == FB_BLANK_UNBLANK &&
->> +			    !bd->fb_bl_on[node]) {
->> +				bd->fb_bl_on[node] = true;
->> +				if (!bd->use_count++) {
->> +					bd->props.state &= ~BL_CORE_FBBLANK;
->> +					bd->props.fb_blank = FB_BLANK_UNBLANK;
->> +					backlight_update_status(bd);
->> +				}
->> +			} else if (fb_blank != FB_BLANK_UNBLANK &&
->> +				   bd->fb_bl_on[node]) {
->> +				bd->fb_bl_on[node] = false;
->> +				if (!(--bd->use_count)) {
->> +					bd->props.state |= BL_CORE_FBBLANK;
->> +					bd->props.fb_blank = FB_BLANK_POWERDOWN;
+On Wed, Jan 22, 2014 at 10:58:38AM +0100, Linus Walleij wrote:
+> On Tue, Jan 21, 2014 at 3:53 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> 
+> > The good (or bad, rather) thing about DT is that we can do whatever we
+> > please with the new bindings: decide which name or which index
+> > (doesn't matter here) a GPIO should have. However we don't have this
+> > control over ACPI, where nothing guarantees that the same index will
+> > be used for the same GPIO function.
+> 
+> It's not like ACPI will impose some tables on us and expect us to
+> use them as-is no matter how crazy they are. Then indeed the whole
+> idea of unifying ACPI and DT accessors would be moot and it would
+> only work by mistake or as a good joke.
 
-Looking at the patch again, I think we should set fb_blank to bd->props.fb_blank here to minimize the logic change.
-I'll do more test for this and provide v3 if necessary.
+With the current ACPI version we really don't have much of a choice here.
+Only way we can distinguish between a set of GPIOs is to use index and hope
+that the vendor puts the GPIOs in the table in same order that the driver
+expects :-(
 
->> +					backlight_update_status(bd);
->> +				}
->> +			}
-> 
-> Anything backlight worries me a little, and there are actually three
-> changes bundled into one patch here:
-> 
-> 1. Changing bd->props.state and bd->props.fb_blank only when use_count
->    changes from 0->1 or 1->0.
-> 
-> 2. Calling backlight_update_status() only with the above change, and not
->    on all notifier callbacks.
-> 
-> 3. Setting bd->props.fb_blank always to either FB_BLANK_UNBLANK or
->    FB_BLANK_POWERDOWN instead of *(int *)evdata->data.
-> 
-> The rationale in the commit message seems plausible, and AFAICT the code
-> does what it says on the box, so for that (and for that alone) you can
-> have my
-> 
-> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+This is going to get a bit better when ACPI gets properties (like Arnd
+commented already) as then we can get the correct index based on a name in
+a table. However, it still requires the vendor to use naming that is
+suitable for Linux driver in question.
 
-Thanks for your review.
+> The situation with ACPI is just like with DT, it is assumed that the
+> author of these tables also look at the Linux kernel drivers to figure
+> out what argument goes where and we can influence them.
 
-The backlight on my board is driving two separate display interfaces.
-Instead of applying this patch to my kernel tree every time I upgrade it, I chose to send it to folks for review.
-
-As the essential idea of this patch looks reasonable to me, I hope change could be done in other drivers in case this patch regresses them.
-
-Liu Ying
-
-> 
-> *BUT* it would be laborous to figure out whether this change in
-> behaviour might regress some drivers. I'm just punting on that. And that
-> brings us back to the three changes above - in a bisect POV it might be
-> helpful to split the patch up. Up to the maintainers.
-> 
-> HTH,
-> Jani.
-> 
-> 
->>  		}
->>  	mutex_unlock(&bd->ops_lock);
->>  	return 0;
->> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
->> index 5f9cd96..7264742 100644
->> --- a/include/linux/backlight.h
->> +++ b/include/linux/backlight.h
->> @@ -9,6 +9,7 @@
->>  #define _LINUX_BACKLIGHT_H
->>  
->>  #include <linux/device.h>
->> +#include <linux/fb.h>
->>  #include <linux/mutex.h>
->>  #include <linux/notifier.h>
->>  
->> @@ -104,6 +105,11 @@ struct backlight_device {
->>  	struct list_head entry;
->>  
->>  	struct device dev;
->> +
->> +	/* Multiple framebuffers may share one backlight device */
->> +	bool fb_bl_on[FB_MAX];
->> +
->> +	int use_count;
->>  };
->>  
->>  static inline void backlight_update_status(struct backlight_device *bd)
->> -- 
->> 1.7.9.5
->>
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-> 
-
+I certainly hope, now that Android is becoming more and more important,
+that the vendors will actually check what the Linux drivers expect and
+populate the tables with such information that is suitable for both ACPI
+and DT enabled driver.
