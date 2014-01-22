@@ -1,68 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaAVKKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:10:23 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42511 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751773AbaAVKKW (ORCPT
+	id S1754861AbaAVKMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:12:32 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:32852 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419AbaAVKMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:10:22 -0500
-Message-ID: <52DF990B.4060703@arm.com>
-Date: Wed, 22 Jan 2014 10:10:19 +0000
-From: Chris Redpath <Chris.Redpath@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 05:12:30 -0500
+Message-ID: <52DF9989.5050008@dev.mellanox.co.il>
+Date: Wed, 22 Jan 2014 12:12:25 +0200
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "mingo@kernel.org" <mingo@kernel.org>, "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] sched: fix sched_entity avg statistics update
-References: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1390320738-4555-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@kernel.org>
+Subject: Re: [PATCH-v2 12/17] target/file: Add DIF protection init/format
+ support
+References: <1390099480-29013-1-git-send-email-nab@daterainc.com>	 <1390099480-29013-13-git-send-email-nab@daterainc.com>	 <52DBC592.6010405@dev.mellanox.co.il> <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1390343288.5567.782.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/01/14 16:12, Vincent Guittot wrote:
-> With the current implementation, the load average statistics of a sched entity
-> change according to other activity on the CPU even if this activity is done
-> between the running window of the sched entity and have no influence on the
-> running duration of the task.
+On 1/22/2014 12:28 AM, Nicholas A. Bellinger wrote:
+> On Sun, 2014-01-19 at 14:31 +0200, Sagi Grimberg wrote:
+>> On 1/19/2014 4:44 AM, Nicholas A. Bellinger wrote:
+>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>
+>>> This patch adds support for DIF protection init/format support into
+>>> the FILEIO backend.
+>>>
+>>> It involves using a seperate $FILE.protection for storing PI that is
+>>> opened via fd_init_prot() using the common pi_prot_type attribute.
+>>> The actual formatting of the protection is done via fd_format_prot()
+>>> using the common pi_prot_format attribute, that will populate the
+>>> initial PI data based upon the currently configured pi_prot_type.
+>>>
+>>> Based on original FILEIO code from Sagi.
+>> Nice! see comments below...
+>>
+>>> v1 changes:
+>>>     - Fix sparse warnings in fd_init_format_buf (Fengguang)
+>>>
+>>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+>>> Cc: Christoph Hellwig <hch@lst.de>
+>>> Cc: Hannes Reinecke <hare@suse.de>
+>>> Cc: Sagi Grimberg <sagig@mellanox.com>
+>>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+>>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+>>> ---
+>>>    drivers/target/target_core_file.c |  137 +++++++++++++++++++++++++++++++++++++
+>>>    drivers/target/target_core_file.h |    4 ++
+>>>    2 files changed, 141 insertions(+)
+>>>
+>>> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+>>> index 0e34cda..119d519 100644
+>>> --- a/drivers/target/target_core_file.c
+>>> +++ b/drivers/target/target_core_file.c
+>>> @@ -700,6 +700,140 @@ static sector_t fd_get_blocks(struct se_device *dev)
+>>>    		       dev->dev_attrib.block_size);
+>>>    }
+>>>    
+>>> +static int fd_init_prot(struct se_device *dev)
+>>> +{
+>>> +	struct fd_dev *fd_dev = FD_DEV(dev);
+>>> +	struct file *prot_file, *file = fd_dev->fd_file;
+>>> +	struct inode *inode;
+>>> +	int ret, flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
+>>> +	char buf[FD_MAX_DEV_PROT_NAME];
+>>> +
+>>> +	if (!file) {
+>>> +		pr_err("Unable to locate fd_dev->fd_file\n");
+>>> +		return -ENODEV;
+>>> +	}
+>>> +
+>>> +	inode = file->f_mapping->host;
+>>> +	if (S_ISBLK(inode->i_mode)) {
+>>> +		pr_err("FILEIO Protection emulation only supported on"
+>>> +		       " !S_ISBLK\n");
+>>> +		return -ENOSYS;
+>>> +	}
+>>> +
+>>> +	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE)
+>>> +		flags &= ~O_DSYNC;
+>>> +
+>>> +	snprintf(buf, FD_MAX_DEV_PROT_NAME, "%s.protection",
+>>> +		 fd_dev->fd_dev_name);
+>>> +
+>>> +	prot_file = filp_open(buf, flags, 0600);
+>>> +	if (IS_ERR(prot_file)) {
+>>> +		pr_err("filp_open(%s) failed\n", buf);
+>>> +		ret = PTR_ERR(prot_file);
+>>> +		return ret;
+>>> +	}
+>>> +	fd_dev->fd_prot_file = prot_file;
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static void fd_init_format_buf(struct se_device *dev, unsigned char *buf,
+>>> +			       u32 unit_size, u32 *ref_tag, u16 app_tag,
+>>> +			       bool inc_reftag)
+>>> +{
+>>> +	unsigned char *p = buf;
+>>> +	int i;
+>>> +
+>>> +	for (i = 0; i < unit_size; i += dev->prot_length) {
+>>> +		*((u16 *)&p[0]) = 0xffff;
+>>> +		*((__be16 *)&p[2]) = cpu_to_be16(app_tag);
+>>> +		*((__be32 *)&p[4]) = cpu_to_be32(*ref_tag);
+>>> +
+>>> +		if (inc_reftag)
+>>> +			(*ref_tag)++;
+>>> +
+>>> +		p += dev->prot_length;
+>>> +	}
+>>> +}
+>>> +
+>>> +static int fd_format_prot(struct se_device *dev)
+>>> +{
+>>> +	struct fd_dev *fd_dev = FD_DEV(dev);
+>>> +	struct file *prot_fd = fd_dev->fd_prot_file;
+>>> +	sector_t prot_length, prot;
+>>> +	unsigned char *buf;
+>>> +	loff_t pos = 0;
+>>> +	u32 ref_tag = 0;
+>>> +	int unit_size = FDBD_FORMAT_UNIT_SIZE * dev->dev_attrib.block_size;
+>>> +	int rc, ret = 0, size, len;
+>>> +	bool inc_reftag = false;
+>>> +
+>>> +	if (!dev->dev_attrib.pi_prot_type) {
+>>> +		pr_err("Unable to format_prot while pi_prot_type == 0\n");
+>>> +		return -ENODEV;
+>>> +	}
+>>> +	if (!prot_fd) {
+>>> +		pr_err("Unable to locate fd_dev->fd_prot_file\n");
+>>> +		return -ENODEV;
+>>> +	}
+>>> +
+>>> +	switch (dev->dev_attrib.pi_prot_type) {
+>> redundant - see below.
+>>> +	case TARGET_DIF_TYPE3_PROT:
+>>> +		ref_tag = 0xffffffff;
+>>> +		break;
+>>> +	case TARGET_DIF_TYPE2_PROT:
+>>> +	case TARGET_DIF_TYPE1_PROT:
+>>> +		inc_reftag = true;
+>>> +		break;
+>>> +	default:
+>>> +		break;
+>>> +	}
+>>> +
+>>> +	buf = vzalloc(unit_size);
+>>> +	if (!buf) {
+>>> +		pr_err("Unable to allocate FILEIO prot buf\n");
+>>> +		return -ENOMEM;
+>>> +	}
+>>> +
+>>> +	prot_length = (dev->transport->get_blocks(dev) + 1) * dev->prot_length;
+>>> +	size = prot_length;
+>>> +
+>>> +	pr_debug("Using FILEIO prot_length: %llu\n",
+>>> +		 (unsigned long long)prot_length);
+>>> +
+>>> +	for (prot = 0; prot < prot_length; prot += unit_size) {
+>>> +
+>>> +		fd_init_format_buf(dev, buf, unit_size, &ref_tag, 0xffff,
+>>> +				   inc_reftag);
+>> I didn't send you my latest patches (my fault...).T10-PI format should
+>> only place
+>> escape values throughout the protection file (fill it with 0xff). so I
+>> guess in this case
+>> fd_init_formast_buf() boils down to memset(buf, 0xff, unit_size) once
+>> before the loop
+>> and just loop until prot_length writing buf, no need to address
+>> apptag/reftag...
+> Yeah, was thinking about just formatting with escape values as mentioned
+> above, but thought it might be useful to keep around for pre-populating
+> values apptag + reftag values for testing purposes.
 >
-> When a task wakes up on the same CPU, we currently update last_runnable_update
-> with the return  of __synchronize_entity_decay without updating the
-> runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
-> the load_contrib of the se with the rq's blocked_load_contrib before removing
-> it from the latter (with __synchronize_entity_decay) but we must keep
-> last_runnable_update unchanged for updating runnable_avg_sum/period during the
-> next update_entity_load_avg.
->
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->   kernel/sched/fair.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index e64b079..5b0ef90 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2370,8 +2370,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->   		 * would have made count negative); we must be careful to avoid
->   		 * double-accounting blocked time after synchronizing decays.
->   		 */
-> -		se->avg.last_runnable_update += __synchronize_entity_decay(se)
-> -							<< 20;
-> +		__synchronize_entity_decay(se);
->   	}
->
->   	/* migrated tasks did not contribute to our blocked load */
+> --nab
 >
 
-I've noticed this problem too. It becomes more apparent if you are 
-closely inspecting load signals and comparing against ideal signals 
-generated from task runtime traces. IMO it should be fixed.
+OK, but maybe it is better to do that under some debug configuration 
+rather then always do that.
 
+Sagi.
