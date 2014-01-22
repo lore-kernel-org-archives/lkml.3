@@ -1,51 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaAVMYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:24:51 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:59775 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaAVMYu (ORCPT
+	id S1755411AbaAVMZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:25:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59101 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaAVMZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:24:50 -0500
+	Wed, 22 Jan 2014 07:25:36 -0500
+Date: Wed, 22 Jan 2014 04:25:24 -0800
+From: tip-bot for David Woodhouse <tipbot@zytor.com>
+Message-ID: <tip-1c678da3bd1339299ab667af68cad5032367fb1c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
+In-Reply-To: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com>
+References: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/build] x86: Remove duplication of 16-bit CFLAGS
+Git-Commit-ID: 1c678da3bd1339299ab667af68cad5032367fb1c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8vcvTRpP-cE6SKd1KgWgzSbOXvSNW+5Jh8wqOfr1za4SQ@mail.gmail.com>
-References: <CA+V-a8vcvTRpP-cE6SKd1KgWgzSbOXvSNW+5Jh8wqOfr1za4SQ@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 22 Jan 2014 17:54:29 +0530
-Message-ID: <CA+V-a8uy6wM8nS993VeezJGOaoqM5GRsJE7FrKe7=bhD6nZhXw@mail.gmail.com>
-Subject: Re: Kconfig errors
-To: Russell King <rmk+kernel@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Cc: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 04:25:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Commit-ID:  1c678da3bd1339299ab667af68cad5032367fb1c
+Gitweb:     http://git.kernel.org/tip/1c678da3bd1339299ab667af68cad5032367fb1c
+Author:     David Woodhouse <David.Woodhouse@intel.com>
+AuthorDate: Wed, 8 Jan 2014 11:21:20 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 22 Jan 2014 04:21:45 -0800
 
-On Fri, Jan 17, 2014 at 1:07 PM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
-> Hi,
->
-> On Linux-next branch I see following errors for davinci_all_defconfig
-> & da8xx_omapl_defconfig configs,
->
-> arch/arm/Kconfig:1966:error: recursive dependency detected!
-> arch/arm/Kconfig:1966:    symbol ZBOOT_ROM depends on AUTO_ZRELADDR
-> arch/arm/Kconfig:2154:    symbol AUTO_ZRELADDR is selected by ZBOOT_ROM
-> #
-> # configuration written to .config
-> #
->
-I am seeing this errors on linux-next, with your recent patch,
-"[PATCH] Fix select-induced Kconfig warning for ZBOOT_ROM"
-and strangely I see that AUTO_ZRELADDR doesnt select ZBOOT_ROM
-but still an error.
+x86: Remove duplication of 16-bit CFLAGS
 
-Note: For the davinci configs CONFIG_AUTO_ZRELADDR is not set and
-CONFIG_ZBOOT_ROM_TEXT=0x0, CONFIG_ZBOOT_ROM_BSS=0x0
+Define them once in arch/x86/Makefile instead of twice.
 
-Regards,
---Prabhakar Lad
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/1389180083-23249-1-git-send-email-David.Woodhouse@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Makefile             | 14 ++++++++++++++
+ arch/x86/boot/Makefile        | 15 +--------------
+ arch/x86/realmode/rm/Makefile | 17 ++---------------
+ 3 files changed, 17 insertions(+), 29 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 57d0215..83e67d5 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -11,6 +11,20 @@ else
+         KBUILD_DEFCONFIG := $(ARCH)_defconfig
+ endif
+ 
++# How to compile the 16-bit code.  Note we always compile for -march=i386;
++# that way we can complain to the user if the CPU is insufficient.
++REALMODE_CFLAGS	:= -m32 -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
++		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
++		   -include $(srctree)/arch/x86/boot/code16gcc.h \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
++		   $(call cc-option, -ffreestanding) \
++		   $(call cc-option, -fno-toplevel-reorder,\
++		   $(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-stack-protector) \
++		   $(call cc-option, -mpreferred-stack-boundary=2)
++export REALMODE_CFLAGS
++
+ # BITS is used as extension for files which are available in a 32 bit
+ # and a 64 bit version to simplify shared Makefiles.
+ # e.g.: obj-y += foo_$(BITS).o
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index d9c1195..7c2b0a1 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -51,20 +51,7 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 
+ # ---------------------------------------------------------------------------
+ 
+-# How to compile the 16-bit code.  Note we always compile for -march=i386,
+-# that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
+-		   -DDISABLE_BRANCH_PROFILING \
+-		   -Wall -Wstrict-prototypes \
+-		   -march=i386 -mregparm=3 \
+-		   -include $(srctree)/$(src)/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse \
+-		   $(call cc-option, -ffreestanding) \
+-		   $(call cc-option, -fno-toplevel-reorder,\
+-		   $(call cc-option, -fno-unit-at-a-time)) \
+-		   $(call cc-option, -fno-stack-protector) \
+-		   $(call cc-option, -mpreferred-stack-boundary=2)
++KBUILD_CFLAGS	:= $(USERINCLUDE) $(REALMODE_CFLAGS) -D_SETUP
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 9cac825..3497f14 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -64,20 +64,7 @@ $(obj)/realmode.relocs: $(obj)/realmode.elf FORCE
+ 
+ # ---------------------------------------------------------------------------
+ 
+-# How to compile the 16-bit code.  Note we always compile for -march=i386,
+-# that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
+-		   -I$(srctree)/arch/x86/boot \
+-		   -DDISABLE_BRANCH_PROFILING \
+-		   -Wall -Wstrict-prototypes \
+-		   -march=i386 -mregparm=3 \
+-		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse \
+-		   $(call cc-option, -ffreestanding) \
+-		   $(call cc-option, -fno-toplevel-reorder,\
+-		   $(call cc-option, -fno-unit-at-a-time)) \
+-		   $(call cc-option, -fno-stack-protector) \
+-		   $(call cc-option, -mpreferred-stack-boundary=2)
++KBUILD_CFLAGS	:= $(LINUXINCLUDE) $(REALMODE_CFLAGS) -D_SETUP -D_WAKEUP \
++		   -I$(srctree)/arch/x86/boot
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
