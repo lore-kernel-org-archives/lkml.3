@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaAVA7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 19:59:40 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:60728 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaAVA7g (ORCPT
+	id S1754857AbaAVBCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 20:02:44 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:56673 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509AbaAVBCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 19:59:36 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1390343886-25852-1-git-send-email-syin@broadcom.com>
-References: <1390343886-25852-1-git-send-email-syin@broadcom.com>
-Date: Tue, 21 Jan 2014 16:59:35 -0800
-Message-ID: <CAOesGMj7wXJ+DfXzk0U1pusKqZShq+KJdPY8hh=Ffj7KDti4_Q@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Rename Broadcom Capri pinctrl driver
-From: Olof Johansson <olof@lixom.net>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Jan 2014 20:02:38 -0500
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: netdev@vger.kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next v4 2/3] net: introduce reciprocal_scale helper and convert users
+Date: Wed, 22 Jan 2014 02:02:29 +0100
+Message-Id: <1390352550-4511-3-git-send-email-hannes@stressinduktion.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1390352550-4511-1-git-send-email-hannes@stressinduktion.org>
+References: <1390352550-4511-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Daniel Borkmann <dborkman@redhat.com>
 
+As David Laight suggests, we shouldn't necessarily call this
+reciprocal_divide() when users didn't requested a reciprocal_value();
+lets keep the basic idea and call it reciprocal_scale(). More
+background information on this topic can be found in [1].
 
-On Tue, Jan 21, 2014 at 2:38 PM, Sherman Yin <syin@broadcom.com> wrote:
-> To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
-> driver and its related CONFIG option are renamed to bcm281xx.
->
-> Devicetree compatible string and binding documentation use
-> "brcm,bcm11351-pinctrl" to match the machine binding here:
-> Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
->
-> This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
-> and BCM28155 SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Matt Porter <mporter@linaro.org>
-> ---
->  ...capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} |    8 +-
->  arch/arm/boot/dts/bcm11351.dtsi                    |    2 +-
->  arch/arm/configs/bcm_defconfig                     |    2 +-
->  drivers/pinctrl/Kconfig                            |    8 +-
->  drivers/pinctrl/Makefile                           |    2 +-
->  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1521 ++++++++++----------
->  6 files changed, 775 insertions(+), 768 deletions(-)
->  rename Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} (98%)
->  rename drivers/pinctrl/{pinctrl-capri.c => pinctrl-bcm281xx.c} (25%)
->
-> diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
-> similarity index 98%
-> rename from Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
-> rename to Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
-> index 9e9e9ef..c119deb 100644
-> --- a/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
-> +++ b/Documentation/devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt
-> @@ -1,4 +1,4 @@
-> -Broadcom Capri Pin Controller
-> +Broadcom BCM281xx Pin Controller
->
->  This is a pin controller for the Broadcom BCM281xx SoC family, which includes
->  BCM11130, BCM11140, BCM11351, BCM28145, and BCM28155 SoCs.
-> @@ -7,14 +7,14 @@ BCM11130, BCM11140, BCM11351, BCM28145, and BCM28155 SoCs.
->
->  Required Properties:
->
-> -- compatible:  Must be "brcm,capri-pinctrl".
-> +- compatible:  Must be "brcm,bcm11351-pinctrl"
+Joint work with Hannes Frederic Sowa.
 
-Since the original binding is queued for 3.14 (I believe?), if this
-rename isn't merged for 3.14 then you will still need to accept the
-old compatible string (binding). You can document it as deprecated,
-but the driver needs to still probe with it.
+  [1] http://homepage.cs.uiowa.edu/~jones/bcd/divide.html
 
+Suggested-by: David Laight <david.laight@aculab.com>
+Cc: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+---
+ include/linux/kernel.h | 19 +++++++++++++++++++
+ include/net/codel.h    |  4 +---
+ net/packet/af_packet.c |  3 +--
+ 3 files changed, 21 insertions(+), 5 deletions(-)
 
--Olof
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index ecb8754..03d8a6b 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -193,6 +193,25 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
+ 
++/**
++ * reciprocal_scale - "scale" a value into range [0, ep_ro)
++ * @val: value
++ * @ep_ro: right open interval endpoint
++ *
++ * Perform a "reciprocal multiplication" in order to "scale" a value into
++ * range [0, ep_ro), where the upper interval endpoint is right-open.
++ * This is useful, e.g. for accessing a index of an array containing
++ * ep_ro elements, for example. Think of it as sort of modulus, only that
++ * the result isn't that of modulo. ;) Note that if initial input is a
++ * small value, then result will return 0.
++ *
++ * Return: a result based on val in interval [0, ep_ro).
++ */
++static inline u32 reciprocal_scale(u32 val, u32 ep_ro)
++{
++	return (u32)(((u64) val * ep_ro) >> 32);
++}
++
+ #if defined(CONFIG_MMU) && \
+ 	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
+ void might_fault(void);
+diff --git a/include/net/codel.h b/include/net/codel.h
+index 3b04ff5..fe0eab3 100644
+--- a/include/net/codel.h
++++ b/include/net/codel.h
+@@ -46,7 +46,6 @@
+ #include <linux/skbuff.h>
+ #include <net/pkt_sched.h>
+ #include <net/inet_ecn.h>
+-#include <linux/reciprocal_div.h>
+ 
+ /* Controlling Queue Delay (CoDel) algorithm
+  * =========================================
+@@ -211,10 +210,9 @@ static codel_time_t codel_control_law(codel_time_t t,
+ 				      codel_time_t interval,
+ 				      u32 rec_inv_sqrt)
+ {
+-	return t + reciprocal_divide(interval, rec_inv_sqrt << REC_INV_SQRT_SHIFT);
++	return t + reciprocal_scale(interval, rec_inv_sqrt << REC_INV_SQRT_SHIFT);
+ }
+ 
+-
+ static bool codel_should_drop(const struct sk_buff *skb,
+ 			      struct Qdisc *sch,
+ 			      struct codel_vars *vars,
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index df3cbdd..9734616 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -88,7 +88,6 @@
+ #include <linux/virtio_net.h>
+ #include <linux/errqueue.h>
+ #include <linux/net_tstamp.h>
+-#include <linux/reciprocal_div.h>
+ #include <linux/percpu.h>
+ #ifdef CONFIG_INET
+ #include <net/inet_common.h>
+@@ -1262,7 +1261,7 @@ static unsigned int fanout_demux_hash(struct packet_fanout *f,
+ 				      struct sk_buff *skb,
+ 				      unsigned int num)
+ {
+-	return reciprocal_divide(skb->rxhash, num);
++	return reciprocal_scale(skb->rxhash, num);
+ }
+ 
+ static unsigned int fanout_demux_lb(struct packet_fanout *f,
+-- 
+1.8.4.2
+
