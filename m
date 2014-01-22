@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaAVDbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:31:10 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:49343 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaAVDbH (ORCPT
+	id S1755141AbaAVDbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:31:15 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:56644 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985AbaAVDbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:31:07 -0500
+	Tue, 21 Jan 2014 22:31:11 -0500
 From: Marc Carino <marc.ceeeee@gmail.com>
 To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
 Cc: Florian Fainelli <f.fainelli@gmail.com>,
@@ -14,81 +14,72 @@ Cc: Florian Fainelli <f.fainelli@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v5 0/8] ARM: brcmstb: Add Broadcom STB SoC support
-Date: Tue, 21 Jan 2014 19:30:44 -0800
-Message-Id: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com>
+Subject: [PATCH v5 3/8] ARM: brcmstb: add debug UART for earlyprintk support
+Date: Tue, 21 Jan 2014 19:30:47 -0800
+Message-Id: <1390361452-3124-4-git-send-email-marc.ceeeee@gmail.com>
 X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com>
+References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains the board support package for the
-Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-minimal set of code needed for a BCM7445-based board to boot
-the Linux kernel.
+Add the UART definitions needed to support earlyprintk on brcmstb machines.
 
-These changes heavily leverage the OF/devicetree framework.
+Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ arch/arm/Kconfig.debug |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-v5:
-- rebased to v3.13 tag
-- make UART DT node a child of 'rdb' node
-- fix ordering of debug UART entries
-
-v4:
-- make a reboot driver and put it in the drivers folder
-- rework DT bindings to leverage 'syscon'
-- rework BSP code to use 'syscon' for all register mappings
-- misc. tweaks per suggestions from v3
-
-v3:
-- rebased to v3.13-rc8
-- switched to using 'multi_v7_defconfig'
-- eliminated dependence on compile-time peripheral register access
-- moved DT node iomap out from 'init_early'
-- misc. minor cleanups from mailing-list discussion for v2
-
-v2:
-- rebased to v3.13-rc1
-- moved implementation to 'mach-bcm' folder
-- added CPU init for B15
-
-v1:
-- initial submission
-
-[1] http://www.broadcom.com/products/Cable/Cable-Set-Top-Box-Solutions/BCM7445
-
-Marc Carino (8):
-  ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
-  power: reset: Add reboot driver for brcmstb
-  ARM: brcmstb: add debug UART for earlyprintk support
-  ARM: do CPU-specific init for Broadcom Brahma15 cores
-  ARM: brcmstb: add CPU binding for Broadcom Brahma15
-  ARM: brcmstb: add misc. DT bindings for brcmstb
-  ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
-  ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
-
- .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++
- Documentation/devicetree/bindings/arm/cpus.txt     |    1 +
- Documentation/devicetree/bindings/arm/gic.txt      |    1 +
- arch/arm/Kconfig.debug                             |   16 +-
- arch/arm/boot/dts/bcm7445.dts                      |  111 +++++++
- arch/arm/configs/multi_v7_defconfig                |    1 +
- arch/arm/mach-bcm/Kconfig                          |   14 +
- arch/arm/mach-bcm/Makefile                         |    4 +
- arch/arm/mach-bcm/brcmstb.c                        |  110 +++++++
- arch/arm/mach-bcm/brcmstb.h                        |   38 +++
- arch/arm/mach-bcm/headsmp-brcmstb.S                |   34 ++
- arch/arm/mach-bcm/hotplug-brcmstb.c                |  334 ++++++++++++++++++++
- arch/arm/mm/proc-v7.S                              |   11 +
- drivers/power/reset/Kconfig                        |   10 +
- drivers/power/reset/Makefile                       |    1 +
- drivers/power/reset/brcmstb-reboot.c               |  120 +++++++
- 16 files changed, 900 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
- create mode 100644 arch/arm/boot/dts/bcm7445.dts
- create mode 100644 arch/arm/mach-bcm/brcmstb.c
- create mode 100644 arch/arm/mach-bcm/brcmstb.h
- create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
- create mode 100644 arch/arm/mach-bcm/hotplug-brcmstb.c
- create mode 100644 drivers/power/reset/brcmstb-reboot.c
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 5765abf..666afd7 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -94,6 +94,17 @@ choice
+ 		depends on ARCH_BCM2835
+ 		select DEBUG_UART_PL01X
+ 
++	config DEBUG_BRCMSTB_UART
++		bool "Use BRCMSTB UART for low-level debug"
++		depends on ARCH_BRCMSTB
++		select DEBUG_UART_8250
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the first serial port on these devices.
++
++		  If you have a Broadcom STB chip and would like early print
++		  messages to appear over the UART, select this option.
++
+ 	config DEBUG_CLPS711X_UART1
+ 		bool "Kernel low-level debugging messages via UART1"
+ 		depends on ARCH_CLPS711X
+@@ -1008,6 +1019,7 @@ config DEBUG_UART_PHYS
+ 	default 0xd4018000 if DEBUG_MMP_UART3
+ 	default 0xe0000000 if ARCH_SPEAR13XX
+ 	default 0xf0000be0 if ARCH_EBSA110
++	default 0xf0406b00 if DEBUG_BRCMSTB_UART
+ 	default 0xf1012000 if DEBUG_MVEBU_UART_ALTERNATE
+ 	default 0xf1012000 if ARCH_DOVE || ARCH_KIRKWOOD || ARCH_MV78XX0 || \
+ 				ARCH_ORION5X
+@@ -1040,6 +1052,7 @@ config DEBUG_UART_VIRT
+ 	default 0xf8090000 if DEBUG_VEXPRESS_UART0_RS1
+ 	default 0xfb009000 if DEBUG_REALVIEW_STD_PORT
+ 	default 0xfb10c000 if DEBUG_REALVIEW_PB1176_PORT
++	default 0xfc406b00 if DEBUG_BRCMSTB_UART
+ 	default 0xfd000000 if ARCH_SPEAR3XX || ARCH_SPEAR6XX
+ 	default 0xfd000000 if ARCH_SPEAR13XX
+ 	default 0xfd012000 if ARCH_MV78XX0
+@@ -1091,7 +1104,8 @@ config DEBUG_UART_8250_WORD
+ 	default y if DEBUG_PICOXCELL_UART || DEBUG_SOCFPGA_UART || \
+ 		ARCH_KEYSTONE || \
+ 		DEBUG_DAVINCI_DMx_UART0 || DEBUG_DAVINCI_DA8XX_UART1 || \
+-		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1
++		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1 || \
++		DEBUG_BRCMSTB_UART
+ 
+ config DEBUG_UART_8250_FLOW_CONTROL
+ 	bool "Enable flow control for 8250 UART"
+-- 
+1.7.1
 
