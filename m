@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaAVRsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:48:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35852 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695AbaAVRsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:48:13 -0500
-Date: Wed, 22 Jan 2014 18:47:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bitops: fix signedness of compile-time hweight
- implementations
-Message-ID: <20140122174754.GS31570@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1312180459580.30198@tamien>
- <alpine.DEB.2.02.1401221718500.4071@utopia.booyaka.com>
+	id S1755337AbaAVRsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:48:38 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50872 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755184AbaAVRse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 12:48:34 -0500
+Date: Wed, 22 Jan 2014 12:47:44 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/9] mm + fs: prepare for non-page entries in page cache
+ radix trees
+Message-ID: <20140122174744.GC4407@cmpxchg.org>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-6-git-send-email-hannes@cmpxchg.org>
+ <20140113020132.GO1992@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1401221718500.4071@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140113020132.GO1992@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 05:19:58PM +0000, Paul Walmsley wrote:
-> Hi Peter, hpa, Arnd,
-> 
-> On Wed, 18 Dec 2013, Paul Walmsley wrote:
-> 
+On Mon, Jan 13, 2014 at 11:01:32AM +0900, Minchan Kim wrote:
+> On Fri, Jan 10, 2014 at 01:10:39PM -0500, Johannes Weiner wrote:
+> > shmem mappings already contain exceptional entries where swap slot
+> > information is remembered.
 > > 
-> > Enabling '-Wsign-compare' compiler warnings on code that includes
-> > include/linux/bitops.h can generate the following warning:
+> > To be able to store eviction information for regular page cache,
+> > prepare every site dealing with the radix trees directly to handle
+> > entries other than pages.
 > > 
-> > In file included from include/linux/kernel.h:10:0,
-> >                  from <random filename>:48:
-> > include/linux/bitops.h: In function ‘hweight_long’:
-> > include/linux/bitops.h:77:26: error: signed and unsigned type in conditional
-> > expression [-Werror=sign-compare]
+> > The common lookup functions will filter out non-page entries and
+> > return NULL for page cache holes, just as before.  But provide a raw
+> > version of the API which returns non-page entries as well, and switch
+> > shmem over to use it.
 > > 
-> > (converted to an error with -Werror)
-> > 
-> > This is due to the use of the logical negation operator '!' in the
-> > __const_hweight8 macro in include/asm-generic/bitops/const_hweight.h.
-> > The use of that operator here results in a signed value.
-> > 
-> > Fix by explicitly casting the __const_hweight8 macro expansion to
-> > 'unsigned int'.  While here, clean up several checkpatch.pl warnings.
-> > 
-> > Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> > Intended for v3.14.
-> 
-> Ping.  Just checking to see if you have any comments on this one, or if 
-> you're planning to send it upstream for v3.14.
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-I'm not sure through which tree to send it, but just I've queued it so
-it doesn't get lost again.
+Thanks, Minchan!
 
-Also, it didn't apply as is for some reason, hit it on the head with a
-hammer though.
+> > @@ -890,6 +973,73 @@ repeat:
+> >  EXPORT_SYMBOL(find_or_create_page);
+> >  
+> >  /**
+> > + * __find_get_pages - gang pagecache lookup
+> > + * @mapping:	The address_space to search
+> > + * @start:	The starting page index
+> > + * @nr_pages:	The maximum number of pages
+> > + * @pages:	Where the resulting pages are placed
+> 
+> where is @indices?
+
+Fixed :)
+
+> > @@ -894,6 +894,53 @@ EXPORT_SYMBOL(__pagevec_lru_add);
+> >  
+> >  /**
+> >   * pagevec_lookup - gang pagecache lookup
+> 
+>       __pagevec_lookup?
+> 
+> > + * @pvec:	Where the resulting entries are placed
+> > + * @mapping:	The address_space to search
+> > + * @start:	The starting entry index
+> > + * @nr_pages:	The maximum number of entries
+> 
+>       missing @indices?
+> 
+> > + *
+> > + * pagevec_lookup() will search for and return a group of up to
+> > + * @nr_pages pages and shadow entries in the mapping.  All entries are
+> > + * placed in @pvec.  pagevec_lookup() takes a reference against actual
+> > + * pages in @pvec.
+> > + *
+> > + * The search returns a group of mapping-contiguous entries with
+> > + * ascending indexes.  There may be holes in the indices due to
+> > + * not-present entries.
+> > + *
+> > + * pagevec_lookup() returns the number of entries which were found.
+> 
+>       __pagevec_lookup
+
+Yikes, all three fixed.
+
+> > @@ -22,6 +22,22 @@
+> >  #include <linux/cleancache.h>
+> >  #include "internal.h"
+> >  
+> > +static void clear_exceptional_entry(struct address_space *mapping,
+> > +				    pgoff_t index, void *entry)
+> > +{
+> > +	/* Handled by shmem itself */
+> > +	if (shmem_mapping(mapping))
+> > +		return;
+> > +
+> > +	spin_lock_irq(&mapping->tree_lock);
+> > +	/*
+> > +	 * Regular page slots are stabilized by the page lock even
+> > +	 * without the tree itself locked.  These unlocked entries
+> > +	 * need verification under the tree lock.
+> > +	 */
+> 
+> Could you explain why repeated spin_lock with irq disabled isn't problem
+> in truncation path?
+
+To modify the cache tree, we have to take the IRQ-safe tree_lock, this
+is no different than removing a page (see truncate_complete_page).
