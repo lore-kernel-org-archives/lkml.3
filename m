@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaAVK2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:28:16 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50640 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaAVK2O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:28:14 -0500
-Date: Wed, 22 Jan 2014 11:27:57 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] sched_clock: wrong printk time stamp
-Message-ID: <20140122102757.GI31570@twins.programming.kicks-ass.net>
-References: <20140122095219.GA6114@dhcp-16-126.nay.redhat.com>
+	id S1755104AbaAVKb7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:31:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56455 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516AbaAVKb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:31:56 -0500
+Message-ID: <52DF9E04.9030404@zytor.com>
+Date: Wed, 22 Jan 2014 02:31:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122095219.GA6114@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "Liu, Jinsong" <jinsong.liu@intel.com>,
+        "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: Re: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+References: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com> <52DF9BBE.1040802@redhat.com>
+In-Reply-To: <52DF9BBE.1040802@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 05:52:19PM +0800, Dave Young wrote:
-> Hi,
+On 01/22/2014 02:21 AM, Paolo Bonzini wrote:
+> Il 21/01/2014 19:59, Liu, Jinsong ha scritto:
+>> From 3155a190ce6ebb213e6c724240f4e6620ba67a9d Mon Sep 17 00:00:00 2001
+>> From: Liu Jinsong <jinsong.liu@intel.com>
+>> Date: Fri, 13 Dec 2013 02:32:03 +0800
+>> Subject: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
+>>
+>> EBX of cpuid(0xD, 0) is dynamic per XCR0 features enable/disable.
+>> Bit 63 of XCR0 is reserved for future expansion.
+>>
+>> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
 > 
-> With today's Linus tree, the printk time is very odd, see below
+> Peter, can I have your acked-by on this?
+> 
 
-please follow the thread here:
+Yes.
 
-lkml.kernel.org/r/52DEF495.2020304@oracle.com
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+
