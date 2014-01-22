@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaAVLmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 06:42:24 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44801 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754176AbaAVLmW (ORCPT
+	id S1755393AbaAVLod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 06:44:33 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42533 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528AbaAVLoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 06:42:22 -0500
-Date: Wed, 22 Jan 2014 11:42:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: kexec@lists.infradead.org, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Geng Hui <hui.geng@huawei.com>,
-        linux-mm@kvack.org, Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: Premit ioremap() to map reserved pages
-Message-ID: <20140122114215.GZ15937@n2100.arm.linux.org.uk>
-References: <1390389916-8711-1-git-send-email-wangnan0@huawei.com> <1390389916-8711-2-git-send-email-wangnan0@huawei.com>
+	Wed, 22 Jan 2014 06:44:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390389916-8711-2-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <loom.20140122T122840-441@post.gmane.org>
+References: <loom.20140122T122840-441@post.gmane.org>
+Date: Wed, 22 Jan 2014 12:44:31 +0100
+Message-ID: <CAFLxGvxpE3+DNT9q2WN6BjB4uiTYuWyswrfW0JKWkCAUBJ3+Ow@mail.gmail.com>
+Subject: Re: ADC continous mode
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: shravan <shravanec2011@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 07:25:14PM +0800, Wang Nan wrote:
-> This patch relaxes the restriction set by commit 309caa9cc, which
-> prohibit ioremap() on all kernel managed pages.
-> 
-> Other architectures, such as x86 and (some specific platforms of) powerpc,
-> allow such mapping.
-> 
-> ioremap() pages is an efficient way to avoid arm's mysterious cache control.
-> This feature will be used for arm kexec support to ensure copied data goes into
-> RAM even without cache flushing, because we found that flush_cache_xxx can't
-> reliably flush code to memory.
+On Wed, Jan 22, 2014 at 12:29 PM, shravan <shravanec2011@gmail.com> wrote:
+> Hi experts,
+> i am new to this area,
+> I am using amstrong 3.8.13 kernel in BBB
 
-Yes, let's bypass the check and allow this in violation of the
-architecture specification by allowing mapping the same memory with
-different types, which leads to unpredictable behaviour.  Yes, that's
-a very good idea, because what we want to do is far more important than
-following the requirements of the architecture.
+As the BBB 3.8.x kernel contains gazillions of patches you better
+ask the creators of the BSP.
 
-So... NAK.
+> at first i loaded the device tree as below,
+>
+>  echo cape-bone-iio > /sys/devices/bone_capemgr.*/slots
+>
+> then i used analog pins however i am getting the fixed values that is values
+> are not varying continously as i vary input analog voltage
+>
+> if i go to this path
+> /sys/devices/ocp.2/44e0d000.tscadc/tiadc/iio:device0
+>
+> and then ls -al gives me
+>
+> total 0
+> drwxr-xr-x 3 root root    0 Jan  1 03:24 .
+> drwxr-xr-x 4 root root    0 Jan  1 03:24 ..
+> -r--r--r-- 1 root root 4096 Jan  1 03:27 dev
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage0_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage1_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage2_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage3_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage4_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage5_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage6_raw
+> -rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage7_raw
+> -r--r--r-- 1 root root 4096 Jan  1 03:25 name
+> drwxr-xr-x 2 root root    0 Jan  1 03:27 power
+> lrwxrwxrwx 1 root root    0 Jan  1 03:27 subsystem -> ../../../../../bus/iio
+> -rw-r--r-- 1 root root 4096 Jan  1 03:24 uevent
+>
+> there is no mode directory and buffer directory in list . please help to
+> configure ADC In continous mode.
+>
+> Thanks
+> shravankumar
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Yes, flush_cache_xxx() doesn't flush back to physical RAM, that's not
-what it's defined to do - it's defined that it flushes enough of the
-cache to ensure that page table updates are safe (such as when tearing
-down a page mapping.)  So it's hardly surprising that doesn't work.
 
-If you want to be able to have DMA access to memory, then you need to
-use an API which has been designed for that purpose, and if there isn't
-one, then you need to discuss your requirements, rather than trying to
-hack around the problem.
-
-The issue here will be that the APIs we currently have for DMA become
-extremely expensive when you want to deal with (eg) all system RAM.
-Or, there's flush_cache_all() which should flush all levels of cache
-in the system, and thus push all data back to RAM.
-
-Now, why are you copying your patches to the stable people?  That makes
-no sense - they haven't been reviewed and they haven't been integrated
-into an existing kernel.  So, they don't meet the basic requirements
-for stable tree submission...
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Thanks,
+//richard
