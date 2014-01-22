@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671AbaAVEmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 23:42:42 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:18328 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaAVEmi (ORCPT
+	id S1753448AbaAVExM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 23:53:12 -0500
+Received: from mail-gg0-f169.google.com ([209.85.161.169]:42289 "EHLO
+	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaAVExL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 23:42:38 -0500
-Message-ID: <52DF4C38.7040003@hp.com>
-Date: Tue, 21 Jan 2014 23:42:32 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 21 Jan 2014 23:53:11 -0500
+Date: Tue, 21 Jan 2014 20:53:07 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: oom_kill: revert 3% system memory bonus for privileged
+ tasks
+In-Reply-To: <20140116070709.GM6963@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1401212050340.8512@chino.kir.corp.google.com>
+References: <20140115234308.GB4407@cmpxchg.org> <alpine.DEB.2.02.1401151614480.15665@chino.kir.corp.google.com> <20140116070709.GM6963@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger
- than long as atomic in x86
-References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com> <1389761047-47566-4-git-send-email-Waiman.Long@hp.com> <20140120150316.GG30183@twins.programming.kicks-ass.net> <52DE9410.6090500@hp.com> <20140121153958.GA31570@twins.programming.kicks-ass.net> <52DE9BB0.5070909@hp.com> <CA+55aFzyww_kwU36jYk=LUtxzPUU76xgnQEOUTqGMFNe80sOZA@mail.gmail.com>
-In-Reply-To: <CA+55aFzyww_kwU36jYk=LUtxzPUU76xgnQEOUTqGMFNe80sOZA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 07:31 PM, Linus Torvalds wrote:
-> On Tue, Jan 21, 2014 at 8:09 AM, Waiman Long<waiman.long@hp.com>  wrote:
->> include/linux/compiler.h:
->>
->> #ifndef __native_word
->> # ifdef __arch_native_word(t)
->> #  define __native_word(t)      __arch_native_word(t)
->> # else
->> #  define __native_word(t) (sizeof(t) == sizeof(int) || sizeof(t) == siizeof(long))
->> # endif
->> #endif
-> Do we even really need this?
->
-> I'd suggest removing it entirely. You might want to retain the whole
->
->    compiletime_assert_atomic_type()
->
-> thing on purely the alpha side, but then it's all inside just the
-> alpha code, without any need for this "native_word" thing.
->
-> And if somebody tries to do a "smp_store_release()" on a random
-> structure or union, do we care? We're not some nanny state that wants
-> to give nice warnings for insane code.
->
->                Linus
+On Thu, 16 Jan 2014, Johannes Weiner wrote:
 
-That sounds good to me too. Peter, what do you think about this?
+> > Unfortunately, I think this could potentially be too much of a bonus.  On 
+> > your same 32GB machine, if a root process is using 18GB and a user process 
+> > is using 14GB, the user process ends up getting selected while the current 
+> > discount of 3% still selects the root process.
+> > 
+> > I do like the idea of scaling this bonus depending on points, however.  I 
+> > think it would be better if we could scale the discount but also limit it 
+> > to some sane value.
+> 
+> I just reverted to the /= 4 because we had that for a long time and it
+> seemed to work.  I don't really mind either way as long as we get rid
+> of that -3%.  Do you have a suggestion?
+> 
 
--Longman
+How about simply using 3% of the root process's points so that root 
+processes get some bonus compared to non-root processes with the same 
+memory usage and it's scaled to the usage rather than amount of available 
+memory?
+
+So rather than points /= 4, we do
+
+	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+		points -= (points * 3) / 100;
+
+instead.  Sound good?
