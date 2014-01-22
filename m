@@ -1,56 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaAVL61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 06:58:27 -0500
-Received: from trinity.fluff.org ([89.16.178.74]:53021 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755161AbaAVL60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 06:58:26 -0500
-X-Greylist: delayed 1028 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Jan 2014 06:58:26 EST
-Date: Wed, 22 Jan 2014 11:40:58 +0000
-From: Ben Dooks <ben@trinity.fluff.org>
-To: Dimitris Papastamos <Dimitris.Papastamos@Wolfsonmicro.com>
-Cc: Mark Brown <broonie@kernel.org>, Daniel Matuschek <daniel@matuschek.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8804: Allow control of master
- clock divider in PLL generation
-Message-ID: <20140122114058.GB16359@trinity.fluff.org>
-References: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
- <20140117005437.GQ17314@sirena.org.uk>
- <634C081ADD030F4A829AD09D85144F253611607A04@EXCMB2.wolfsonmicro.main>
+	id S1755383AbaAVL7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 06:59:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53219 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161AbaAVL7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 06:59:51 -0500
+Date: Wed, 22 Jan 2014 12:59:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122115918.GG3694@twins.programming.kicks-ass.net>
+References: <20131212140835.729222186@infradead.org>
+ <20131212141655.362219382@infradead.org>
+ <52DEF495.2020304@oracle.com>
+ <20140122104532.GJ31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <634C081ADD030F4A829AD09D85144F253611607A04@EXCMB2.wolfsonmicro.main>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+In-Reply-To: <20140122104532.GJ31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 10:35:10AM +0000, Dimitris Papastamos wrote:
-> > Charles (or someone else from Wolfson), you commented on previous
-> > versions of this - are you still OK with it?
-> 
-> Looks good to me.
-> 
-> Privacy & Confidentiality Notice
-> -------------------------------------------------
-> This message and any attachments contain privileged and confidential information that is intended solely for the person(s) to whom it is addressed. If you are not an intended recipient you must not: read; copy; distribute; discuss; take any action in or make any reliance upon the contents of this message; nor open or read any attachment. If you have received this message in error, please notify us as soon as possible on the following telephone number and destroy this message including any attachments. Thank you.
+On Wed, Jan 22, 2014 at 11:45:32AM +0100, Peter Zijlstra wrote:
+> Ho humm.
 
-Shouldn't be posting them to public lists then.
+OK, so I had me a ponder; does the below fix things for you and David?
+I've only done a boot test on real proper hardware :-)
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+---
+ kernel/sched/clock.c | 42 +++++++++++++++++++++++++++++++++---------
+ 1 file changed, 33 insertions(+), 9 deletions(-)
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
-
+diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+index 6bd6a6731b21..6bbcd97f4532 100644
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -77,35 +77,45 @@ __read_mostly int sched_clock_running;
+ 
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+ static struct static_key __sched_clock_stable = STATIC_KEY_INIT;
++static int __sched_clock_stable_early;
+ 
+ int sched_clock_stable(void)
+ {
+-	if (static_key_false(&__sched_clock_stable))
+-		return false;
+-	return true;
++	return static_key_false(&__sched_clock_stable);
+ }
+ 
+ void set_sched_clock_stable(void)
+ {
++	__sched_clock_stable_early = 1;
++
++	smp_mb(); /* matches sched_clock_init() */
++
++	if (!sched_clock_running)
++		return;
++
+ 	if (!sched_clock_stable())
+-		static_key_slow_dec(&__sched_clock_stable);
++		static_key_slow_inc(&__sched_clock_stable);
+ }
+ 
+ static void __clear_sched_clock_stable(struct work_struct *work)
+ {
+ 	/* XXX worry about clock continuity */
+ 	if (sched_clock_stable())
+-		static_key_slow_inc(&__sched_clock_stable);
++		static_key_slow_dec(&__sched_clock_stable);
+ }
+ 
+ static DECLARE_WORK(sched_clock_work, __clear_sched_clock_stable);
+ 
+ void clear_sched_clock_stable(void)
+ {
+-	if (keventd_up())
+-		schedule_work(&sched_clock_work);
+-	else
+-		__clear_sched_clock_stable(&sched_clock_work);
++	__sched_clock_stable_early = 0;
++
++	smp_mb(); /* matches sched_clock_init() */
++
++	if (!sched_clock_running)
++		return;
++
++	schedule_work(&sched_clock_work);
+ }
+ 
+ struct sched_clock_data {
+@@ -140,6 +150,20 @@ void sched_clock_init(void)
+ 	}
+ 
+ 	sched_clock_running = 1;
++
++	/*
++	 * Ensure that it is impossible to not do a static_key update.
++	 *
++	 * Either {set,clear}_sched_clock_stable() must see sched_clock_running
++	 * and do the update, or we must see their __sched_clock_stable_early
++	 * and do the update, or both.
++	 */
++	smp_mb(); /* matches {set,clear}_sched_clock_stable() */
++
++	if (__sched_clock_stable_early)
++		set_sched_clock_stable();
++	else
++		clear_sched_clock_stable();
+ }
+ 
+ /*
