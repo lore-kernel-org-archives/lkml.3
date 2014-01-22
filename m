@@ -1,63 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaAVSg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:36:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37358 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaAVSgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:36:25 -0500
-Date: Wed, 22 Jan 2014 19:35:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v9 6/6] MCS Lock: Allow architecture specific asm files
- to be used for contended case
-Message-ID: <20140122183539.GM30183@twins.programming.kicks-ass.net>
-References: <cover.1390320729.git.tim.c.chen@linux.intel.com>
- <1390347382.3138.67.camel@schen9-DESK>
+	id S1755445AbaAVSgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:36:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:41586 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752338AbaAVSgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:36:46 -0500
+X-IronPort-AV: E=Sophos;i="4.95,701,1384300800"; 
+   d="scan'208";a="95439182"
+Message-ID: <52E00FB7.3040508@citrix.com>
+Date: Wed, 22 Jan 2014 18:36:39 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390347382.3138.67.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
+ mapping
+References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 03:36:22PM -0800, Tim Chen wrote:
-> diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
-> index 8b19a80..24027ce 100644
-> --- a/arch/powerpc/include/asm/Kbuild
-> +++ b/arch/powerpc/include/asm/Kbuild
-> @@ -1,6 +1,8 @@
->  
-> +generic-y += +=
->  generic-y += clkdev.h
-> +generic-y += mcs_spinlock.h
->  generic-y += preempt.h
->  generic-y += rwsem.h
->  generic-y += trace_clock.h
-> -generic-y += vtime.h
-> +generic-y += vtime.hgeneric-y
+On 22/01/14 16:39, Stefano Stabellini wrote:
+> On Tue, 21 Jan 2014, Zoltan Kiss wrote:
+>> @@ -121,7 +125,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+>>   		pfn = m2p_find_override_pfn(mfn, ~0);
+>>   	}
+>>
+>> -	/*
+>> +	/*
+>
+> Spurious change?
+It removes a stray space from the original code. Not necessary, but if 
+it's there, I think we can keep it.
 
-Something went funny there, fixed it.
+>> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+>> index 2ae8699..0060178 100644
+>> --- a/arch/x86/xen/p2m.c
+>> +++ b/arch/x86/xen/p2m.c
+>> @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long mfn)
+>>
+>>   /* Add an MFN override for a particular page */
+>>   int m2p_add_override(unsigned long mfn, struct page *page,
+>> -		struct gnttab_map_grant_ref *kmap_op)
+>> +		struct gnttab_map_grant_ref *kmap_op, unsigned long pfn)
+>
+> Do we really need to add another additional parameter to
+> m2p_add_override?
+> I would just let m2p_add_override and m2p_remove_override call
+> page_to_pfn again. It is not that expensive.
+Yes, because that page_to_pfn can return something different. That's why 
+the v2 patches failed.
+
+>> @@ -933,20 +924,15 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>>   }
+>>   EXPORT_SYMBOL_GPL(m2p_add_override);
+>>   int m2p_remove_override(struct page *page,
+>> -		struct gnttab_map_grant_ref *kmap_op)
+>> +			struct gnttab_map_grant_ref *kmap_op,
+>> +			unsigned long pfn,
+>> +			unsigned long mfn)
+>
+> Same here
+Same as above.
+
+>> @@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>>   		} else {
+>>   			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>>   		}
+>> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>> -				       &kmap_ops[i] : NULL);
+>> +		pfn = page_to_pfn(pages[i]);
+>> +
+>> +		WARN_ON(PagePrivate(pages[i]));
+>> +		SetPagePrivate(pages[i]);
+>> +		set_page_private(pages[i], mfn);
+>> +
+>> +		pages[i]->index = pfn_to_mfn(pfn);
+>> +		if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+>> +			return -ENOMEM;
+>
+> goto out
+And ret = -ENOMEM
+>
+>
+>> +		if (m2p_override)
+>> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>> +					       &kmap_ops[i] : NULL, pfn);
+>>   		if (ret)
+>>   			goto out;
+>>   	}
+>> @@ -937,17 +951,34 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>>   	if (lazy)
+>>   		arch_leave_lazy_mmu_mode();
+>>
+>> -	return ret;
+>> +	return 0;
+>
+> We are loosing the error code possibly returned by m2p_add_override and
+> the previous check.
+I'll fix that. Also in unmap.
+
+		return ret;
+>> @@ -958,17 +989,32 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>>   			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+>>   					INVALID_P2M_ENTRY);
+>>   		}
+>> -		return ret;
+>> +		return 0;
+>>   	}
+>>
+>> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>> +	if (m2p_override &&
+>> +	    !in_interrupt() &&
+>> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>>   		arch_enter_lazy_mmu_mode();
+>>   		lazy = true;
+>>   	}
+>>
+>>   	for (i = 0; i < count; i++) {
+>> -		ret = m2p_remove_override(pages[i], kmap_ops ?
+>> -				       &kmap_ops[i] : NULL);
+>> +		pfn = page_to_pfn(pages[i]);
+>> +		mfn = get_phys_to_machine(pfn);
+>> +		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+>> +			return -EINVAL;
+>
+> goto out
+And ret = -EINVAL
+
+The above are the the result of the fact that I've based this originally 
+on 3.10, where the out label haven't existed. I'll send the next version 
+when the tests pass.
+
+Zoli
