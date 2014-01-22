@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622AbaAVNFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:05:05 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25324 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153AbaAVNFC (ORCPT
+	id S932114AbaAVNJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 08:09:41 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:55009 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462AbaAVNJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:05:02 -0500
-Message-ID: <52DFC1BA.8030001@huawei.com>
-Date: Wed, 22 Jan 2014 21:03:54 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Vaibhav Bedia <vaibhav.bedia@gmail.com>
-CC: <kexec@lists.infradead.org>, <stable@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Geng Hui <hui.geng@huawei.com>,
-        <linux-mm@kvack.org>, Eric Biederman <ebiederm@xmission.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+	Wed, 22 Jan 2014 08:09:37 -0500
+Date: Wed, 22 Jan 2014 14:09:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] ARM: kexec: copying code to ioremapped area
-References: <1390389916-8711-1-git-send-email-wangnan0@huawei.com>	<1390389916-8711-3-git-send-email-wangnan0@huawei.com> <CANacCWz2DdLvns9htszpwWnASrYGXQt+tHMsw4aBbjoyw-DmeQ@mail.gmail.com>
-In-Reply-To: <CANacCWz2DdLvns9htszpwWnASrYGXQt+tHMsw4aBbjoyw-DmeQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger
+ than long as atomic in x86
+Message-ID: <20140122130933.GB9429@gmail.com>
+References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
+ <1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
+ <20140120150316.GG30183@twins.programming.kicks-ass.net>
+ <52DE9410.6090500@hp.com>
+ <20140121153958.GA31570@twins.programming.kicks-ass.net>
+ <52DE9BB0.5070909@hp.com>
+ <CA+55aFzyww_kwU36jYk=LUtxzPUU76xgnQEOUTqGMFNe80sOZA@mail.gmail.com>
+ <20140122080155.GE31570@twins.programming.kicks-ass.net>
+ <20140122120917.GA8894@gmail.com>
+ <20140122121339.GM31570@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122121339.GM31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/22 20:56, Vaibhav Bedia wrote:
-> On Wed, Jan 22, 2014 at 6:25 AM, Wang Nan <wangnan0@huawei.com <mailto:wangnan0@huawei.com>> wrote:
-> 
->     ARM's kdump is actually corrupted (at least for omap4460), mainly because of
->     cache problem: flush_icache_range can't reliably ensure the copied data
->     correctly goes into RAM. After mmu turned off and jump to the trampoline, kexec
->     always failed due to random undef instructions.
-> 
->     This patch use ioremap to make sure the destnation of all memcpy() is
->     uncachable memory, including copying of target kernel and trampoline.
-> 
-> 
-> AFAIK ioremap on RAM in forbidden in ARM and device memory that ioremap()
-> ends up creating is not meant for executable code.
-> 
-> Doesn't this trigger the WARN_ON() in _arm_ioremap_pfn_caller)?
 
-This patch is depend on the previous one:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-ARM: Premit ioremap() to map reserved pages
+> On Wed, Jan 22, 2014 at 01:09:17PM +0100, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Tue, Jan 21, 2014 at 04:31:56PM -0800, Linus Torvalds wrote:
+> > > > And if somebody tries to do a "smp_store_release()" on a random
+> > > > structure or union, do we care? We're not some nanny state that wants
+> > > > to give nice warnings for insane code.
+> > > 
+> > > Hurm, and here I thought warning on insane code was a good idea :/
+> > 
+> > There's a level of insanity that is best cured through Darwin Awards?
+> 
+> Yeah, but who will clean up after them? :-)
 
-However, Russell is opposed to it.
+Birds, insects, bacteria?
 
+Thanks,
 
+	Ingo
