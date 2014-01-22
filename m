@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaAVDPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:15:13 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:41501 "EHLO fpa01n0.fpasia.hk"
+	id S1755164AbaAVDUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:20:32 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:56881 "EHLO fpa01n0.fpasia.hk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805AbaAVDPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:15:09 -0500
+	id S1753338AbaAVDU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 22:20:26 -0500
 From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-To: linus.walleij@linaro.org
-Cc: linux-kernel@vger.kernel.org, linux-arm@lists.infradead.org,
-        mpa@pengutronix.de, Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH 2/2 v2] imx27: pinctrl: fix offset calculation in imx_read_2bit
-Date: Wed, 22 Jan 2014 11:14:52 +0800
-Message-Id: <1390360492-29126-2-git-send-email-chris.ruehl@gtsys.com.hk>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Subject: [PATCH 2/2] net: dm9000: Only call PHY reset for TYPE-B on shutdown
+Date: Wed, 22 Jan 2014 11:20:13 +0800
+Message-Id: <1390360813-29185-2-git-send-email-chris.ruehl@gtsys.com.hk>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1390360492-29126-1-git-send-email-chris.ruehl@gtsys.com.hk>
-References: <1390360492-29126-1-git-send-email-chris.ruehl@gtsys.com.hk>
+In-Reply-To: <1390360813-29185-1-git-send-email-chris.ruehl@gtsys.com.hk>
+References: <1390360813-29185-1-git-send-email-chris.ruehl@gtsys.com.hk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The offset for the 2bit register calculate wrong, this patch
-fixes the problem. The debugfs printout for oconf, iconfa, iconfb
-now shows the real values.
+Unconditional call of PHY reset can triggers a fault to detect
+the link for DM9000A on reboot, only a hard reset can solve it.
+This patch check the version of the chip and call the PHY reset
+only for the B version of the chip.
 
 Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 ---
- drivers/pinctrl/pinctrl-imx1-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/davicom/dm9000.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-imx1-core.c b/drivers/pinctrl/pinctrl-imx1-core.c
-index 8dfc3dc..59a16b6 100644
---- a/drivers/pinctrl/pinctrl-imx1-core.c
-+++ b/drivers/pinctrl/pinctrl-imx1-core.c
-@@ -139,7 +139,7 @@ static int imx1_read_2bit(struct imx1_pinctrl *ipctl, unsigned int pin_id,
- 		u32 reg_offset)
- {
- 	void __iomem *reg = imx1_mem(ipctl, pin_id) + reg_offset;
--	int offset = pin_id % 16;
-+	int offset = (pin_id % 16) * 2;
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index 0349b91..55a2e9c 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -1333,7 +1333,8 @@ dm9000_shutdown(struct net_device *dev)
+ 	board_info_t *db = netdev_priv(dev);
  
- 	/* Use the next register if the pin's port pin number is >=16 */
- 	if (pin_id % 32 >= 16)
+ 	/* RESET device */
+-	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET);	/* PHY RESET */
++	if (db->type == TYPE_DM9000B)
++		dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET);	/* PHY RESET */
+ 	iow(db, DM9000_GPR, 0x01);	/* Power-Down PHY */
+ 	iow(db, DM9000_IMR, IMR_PAR);	/* Disable all interrupt */
+ 	iow(db, DM9000_RCR, 0x00);	/* Disable RX */
 -- 
 1.7.10.4
 
