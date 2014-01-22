@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaAVXZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:25:14 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:40331 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaAVXZM convert rfc822-to-8bit (ORCPT
+	id S1753462AbaAVX1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:27:25 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45840 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752539AbaAVX1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:25:12 -0500
+	Wed, 22 Jan 2014 18:27:24 -0500
+Date: Wed, 22 Jan 2014 23:27:16 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 18/24] drm/i2c: tda998x: fix the ENABLE_SPACE
+	register
+Message-ID: <20140122232716.GO15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195845.086be909@armhf>
 MIME-Version: 1.0
-In-Reply-To: <20140122164115.211a819d@ipc1.ka-ro>
-References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
-	<20140122150959.78cf2827@ipc1.ka-ro>
-	<CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
-	<20140122164115.211a819d@ipc1.ka-ro>
-Date: Thu, 23 Jan 2014 08:25:11 +0900
-Message-ID: <CAC5umyjU5xoFJ1piLoWGciT=Y+H3-nqr38FGVMR-vdKhkOO-Qw@mail.gmail.com>
-Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect use
- of prandom_bytes_state()
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Shijie <b32955@freescale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140119195845.086be909@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/23 Lothar Waﬂmann <LW@karo-electronics.de>:
-> Hi,
->
-> Akinobu Mita wrote:
->> 2014/1/22 Lothar Waﬂmann <LW@karo-electronics.de>:
->> > Hi,
->> >
->> > Is anyone taking care of this?
->> >
->> > Lothar Waﬂmann wrote:
->> >> When using prandom_bytes_state() it is critical to use the same block
->> >> size in all invocations that are to produce the same random sequence.
->> >> Otherwise the state of the PRNG will be out of sync if the blocksize
->> >> is not divisible by 4.
->> >> This leads to bogus verification errors in several tests which use
->> >> different block sizes to initialize the buffer for writing and
->> >> comparison.
->> >>
->> >> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
->> >> ---
->> >>  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
->> >>  1 files changed, 12 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
->> >> index 2e9e2d1..72c7359 100644
->> >> --- a/drivers/mtd/tests/oobtest.c
->> >> +++ b/drivers/mtd/tests/oobtest.c
->> >> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
->> >>       int err = 0;
->> >>       loff_t addr = ebnum * mtd->erasesize;
->> >>       size_t len = mtd->ecclayout->oobavail * pgcnt;
->> >> +     int i;
->> >> +
->> >> +     for (i = 0; i < pgcnt; i++)
->> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
->> >> +                             use_len);
->> >> +     if (len % use_len)
->> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
->> >> +                             len % use_len);
->> >>
->> >> -     prandom_bytes_state(&rnd_state, writebuf, len);
->> >>       ops.mode      = MTD_OPS_AUTO_OOB;
->> >>       ops.len       = 0;
->> >>       ops.retlen    = 0;
->>
->> I would rather fix the use of prandom_bytes_state() in write_eraseblock()
->> than fix in verify_eraseblock_in_one_go().
->>
-> Why and how?
+On Sun, Jan 19, 2014 at 07:58:45PM +0100, Jean-Francois Moine wrote:
+> This patch fixes the ENABLE_SPACE register, the value of which was
+> inverted.
+> 
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-I thought that it could reduce calls of prandom_bytes_state() and
-it makes code simpler than increasing calls.
+I've researched the change to PLL_SERIAL_2, and this is correct.  I think
+your change to REG_ENABLE_SPACE is also correct.  This looks like a bug
+fix to me, so maybe consider having it applied to previous kernel
+versions as well?
 
-> write_whole_device() (which calls write_eraseblock()) is used multiple
-> times with different verification methods (all blocks in one go or each
-> block individually).
-> If prandom_state_bytes() in write_eraseblock() would be changed, that
-> function would have to know, how the block are going to be checked
-> lateron to know how to set up the writebuffer.
+Also... please try putting yourself in the position of a reviewer of your
+own patches - read the patch and then read the description, and ask whether
+the description is adequate for the patch... the description talks just
+about the ENABLE_SPACE register.  But what about the PLL_SERIAL_2 register
+changes?  They're *totally* not described.
 
-Instead of calling prandom_bytes_state() in the for loop in
-write_eraseblock(), call prandom_bytes_state() at once before going
-into the loop and use correct offset in writebuf in the loop.
-Although, we also need to fix verify_eraseblock() in the same way.
+Hence...
 
-Doesn't that fix this problem?
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+and no acked-by.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
