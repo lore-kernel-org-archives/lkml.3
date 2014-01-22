@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162AbaAVPRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:17:53 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57476 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932142AbaAVPRv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:17:51 -0500
-Date: Wed, 22 Jan 2014 15:17:49 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro
- CLOCKSOURCE_ACPI_DECLARE
-Message-ID: <20140122151749.GA1519@e106331-lin.cambridge.arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <52DCE790.6080809@linaro.org>
- <20140122114616.GB15591@e106331-lin.cambridge.arm.com>
- <3140612.0s75qS6VKb@wuerfel>
+	id S1755911AbaAVPTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:19:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754704AbaAVPTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 10:19:17 -0500
+Date: Wed, 22 Jan 2014 15:19:13 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Message-ID: <20140122151913.GY4963@suse.de>
+References: <20131220093022.GV11295@suse.de>
+ <52DF353D.6050300@redhat.com>
+ <20140122093435.GS4963@suse.de>
+ <52DFD168.8080001@redhat.com>
+ <20140122143452.GW4963@suse.de>
+ <52DFDCA6.1050204@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <3140612.0s75qS6VKb@wuerfel>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52DFDCA6.1050204@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 02:56:05PM +0000, Arnd Bergmann wrote:
-> On Wednesday 22 January 2014 11:46:16 Mark Rutland wrote:
-> > On Mon, Jan 20, 2014 at 09:08:32AM +0000, Hanjun Guo wrote:
-> > > On 2014-1-17 22:21, Arnd Bergmann wrote:
-> > > > On Friday 17 January 2014, Hanjun Guo wrote:
-> > > >>
-> > > >> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> > > >>
-> > > >> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
-> > > >> name from the ACPI timer table is matched with all the registered
-> > > >> timer controllers and matching initialisation routine is invoked.
-> > > > 
-> > > > I wouldn't anticipate this infrastructure to be required. Shouldn't all
-> > > > ARMv8 machines have an architected timer?
-> > > 
-> > > I not sure of this, could anyone can give some guidance? if only arch
-> > > timer is available for ARM64, this will make thing very simple.
-> > 
-> > All ARMv8 systems should have an architected timer.
-> > 
-> > However, they may also have other timers (e.g. global timers for use
-> > when CPUs are in low power states and their local architected timers
-> > aren't active).
+On Wed, Jan 22, 2014 at 09:58:46AM -0500, Ric Wheeler wrote:
+> On 01/22/2014 09:34 AM, Mel Gorman wrote:
+> >On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
+> >>On 01/22/2014 04:34 AM, Mel Gorman wrote:
+> >>>On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> >>>>One topic that has been lurking forever at the edges is the current
+> >>>>4k limitation for file system block sizes. Some devices in
+> >>>>production today and others coming soon have larger sectors and it
+> >>>>would be interesting to see if it is time to poke at this topic
+> >>>>again.
+> >>>>
+> >>>Large block support was proposed years ago by Christoph Lameter
+> >>>(http://lwn.net/Articles/232757/). I think I was just getting started
+> >>>in the community at the time so I do not recall any of the details. I do
+> >>>believe it motivated an alternative by Nick Piggin called fsblock though
+> >>>(http://lwn.net/Articles/321390/). At the very least it would be nice to
+> >>>know why neither were never merged for those of us that were not around
+> >>>at the time and who may not have the chance to dive through mailing list
+> >>>archives between now and March.
+> >>>
+> >>>FWIW, I would expect that a show-stopper for any proposal is requiring
+> >>>high-order allocations to succeed for the system to behave correctly.
+> >>>
+> >>I have a somewhat hazy memory of Andrew warning us that touching
+> >>this code takes us into dark and scary places.
+> >>
+> >That is a light summary. As Andrew tends to reject patches with poor
+> >documentation in case we forget the details in 6 months, I'm going to guess
+> >that he does not remember the details of a discussion from 7ish years ago.
+> >This is where Andrew swoops in with a dazzling display of his eidetic
+> >memory just to prove me wrong.
+> >
+> >Ric, are there any storage vendor that is pushing for this right now?
+> >Is someone working on this right now or planning to? If they are, have they
+> >looked into the history of fsblock (Nick) and large block support (Christoph)
+> >to see if they are candidates for forward porting or reimplementation?
+> >I ask because without that person there is a risk that the discussion
+> >will go as follows
+> >
+> >Topic leader: Does anyone have an objection to supporting larger block
+> >	sizes than the page size?
+> >Room: Send patches and we'll talk.
+> >
 > 
-> But all other timers could be regular platform drivers I suppose. No
-> need for special infrastructure for those.
+> I will have to see if I can get a storage vendor to make a public
+> statement, but there are vendors hoping to see this land in Linux in
+> the next few years.
 
-Except for the fact that some timers / clocksources that we already have
-in 32-bit land will likely be reused in 64-bit SoC designs. People will
-want to use the same driver for both 32-bit and 64-bit kernels, and thus
-we need CLOCKSOURCE_OF_DECLARE in 64-bit kernels.
+What about the second and third questions -- is someone working on this
+right now or planning to? Have they looked into the history of fsblock
+(Nick) and large block support (Christoph) to see if they are candidates
+for forward porting or reimplementation?
 
-Those platforms which will have ACPI will likely reuse existing timer IP
-blocks, and will want to make minimal changes to the driver, which will
-likely be using CLOCKSOURCE_OF_DECLARE. We can't change these to
-platform drivers or we can break existing systems because the timers
-will be registered too late.
+Don't get me wrong, I'm interested in the topic but I severely doubt I'd
+have the capacity to research the background of this in advance. It's also
+unlikely that I'd work on it in the future without throwing out my current
+TODO list. In an ideal world someone will have done the legwork in advance
+of LSF/MM to help drive the topic.
 
-I don't see how we can share drivers between 32-bit and 64-bit kernels
-without sharing a common driver model, and I think it makes sense to
-have some uniformity across drivers (i.e. always use
-CLOCKSOURCE_*_DECLARE rather than sometimes using platform drivers).
-
-Thanks,
-Mark.
+-- 
+Mel Gorman
+SUSE Labs
