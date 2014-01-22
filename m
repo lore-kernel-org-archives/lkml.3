@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaAVW1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:27:15 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45783 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755579AbaAVW1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:27:13 -0500
-Date: Wed, 22 Jan 2014 22:27:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 15/24] drm/i2c: tda998x: use irq for connection
-	status and EDID read
-Message-ID: <20140122222705.GL15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195843.7ae9753d@armhf>
+	id S1756108AbaAVW2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:28:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:20582 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196AbaAVW2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 17:28:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,702,1384329600"; 
+   d="scan'208";a="405410196"
+Date: Wed, 22 Jan 2014 14:33:14 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Fei Yang <fei.yang@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] x86: don't add new __cpuinit users to Merrifield
+ platform code
+Message-ID: <20140122223314.GD6519@psi-dev26.jf.intel.com>
+References: <1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com>
+ <20140122180803.GA25171@psi-dev26.jf.intel.com>
+ <20140122180936.GB25171@psi-dev26.jf.intel.com>
+ <52E044E5.1090108@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140119195843.7ae9753d@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52E044E5.1090108@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 19, 2014 at 07:58:43PM +0100, Jean-Francois Moine wrote:
-> This patch adds the optional treatment of the tda998x IRQ.
+On Wed, Jan 22, 2014 at 02:23:33PM -0800, H. Peter Anvin wrote:
+> On 01/22/2014 10:09 AM, David Cohen wrote:
+> > On Wed, Jan 22, 2014 at 10:08:03AM -0800, David Cohen wrote:
+> >> On Wed, Jan 22, 2014 at 12:35:25PM -0500, Paul Gortmaker wrote:
+> >>> Commit bc20aa48bbb3068224a1c91f8332971fdb689fad ("x86, intel-mid:
+> >>> Add Merrifield platform support")  added new instances of __cpuinit
+> >>> usage.  We removed this a couple versions ago; we now want to remove
+> >>> the compat no-op stubs.  Introducing new users is not what we want to
+> >>> see at this point in time, as it will break once the stubs are gone.
+> >>>
+> >>> This also fixes an out of sync __init vs. __cpuinit -- as the former
+> >>> is real, and the latter is a no-op; hence it would have been a section
+> >>> mismatch.
+> >>>
+> >>> Cc: David Cohen <david.a.cohen@linux.intel.com>
+> >>> Cc: Fei Yang <fei.yang@intel.com>
+> >>> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> >>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> >>
+> >> Thanks for the patch.
+> >>
+> >> Acked-by: David Cohen <david.a.cohen@linux.intel.com>
+> > 
+> > Grr... wrong acked version :)
+> > I'm getting back this ack.
 > 
-> The interrupt function is used to know the display connection status
-> without polling and to speedup reading the EDID.
+> ?!  I don't see any other version?
+
+I misread mrfl and mfld. There is another version for mfld only :)
+
+My ack is indeed valid here. Sorry for my misunderstanding.
+
+Br, David
+
 > 
-> The interrupt number may be defined either in the DT or at encoder set
-> config time for non-DT boards.
+> 	-hpa
 > 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
-> v3
->     - remarks from Russell King
-> 	- move the setting of the wq_edid_wait flag before asking the
-> 	  device to read the EDID
-> 	  Thanks about this bug fix, but I don't see the other problem:
-> 	  there is no reason for the read_edid_block function to be
-> 	  called more than once...
-
-It will happen whenever DRM asks the connector for the modes.  However,
-since the read process is triggered each time, I think this is fine.
-
-> 	- use '0' as 'no irq'
-> 	- remove the useless delay after irq init
-
-Some further comments...
-
-> @@ -720,6 +787,10 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
->  		priv->audio_port = p->audio_cfg;
->  		priv->audio_format = p->audio_format;
->  	}
-> +
-> +	priv->irq = p->irq;
-> +	if (p->irq)
-> +		tda_irq_init(priv);
-
-If we're going to do it this way, this should probably release the IRQ if
-there was one before re-claiming it, just in case this function gets called
-more than once by some driver using it.
-
-The alternative is, as I said before, to use the infrastructure which is
-already there, namely setting the interrupt via struct i2c_client's
-irq member.  Yes, that doesn't satisfy Sebastian's comment about using
-a GPIO, but there's no sign of GPIO usage in here at the moment anyway.
-So we might as well use what's already provided.
-
-That would then avoid the need to deal with IRQ changes etc in
-tda998x_encoder_set_config().
-
-In any case, I've tested this patch in both non-IRQ and IRQ modes, and it
-appears to work - but I'd like the suggestion above before I provide any
-attributations.
-
-Thanks.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
