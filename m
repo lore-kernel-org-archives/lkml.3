@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbaAVLfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 06:35:12 -0500
-Received: from plane.gmane.org ([80.91.229.3]:53517 "EHLO plane.gmane.org"
+	id S1755297AbaAVLgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 06:36:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35072 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176AbaAVLfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 06:35:10 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: shravan <shravanec2011@gmail.com>
-Subject: ADC continous mode
-Date: Wed, 22 Jan 2014 11:29:32 +0000 (UTC)
-Message-ID: <loom.20140122T122840-441@post.gmane.org>
-Mime-Version: 1.0
+	id S1754528AbaAVLgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 06:36:44 -0500
+Date: Wed, 22 Jan 2014 12:36:30 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: Weird plugin paths in perf and perf.so binaries with 3.14 merge
+ window
+Message-ID: <20140122113630.GA1132@krava.brq.redhat.com>
+References: <CA+5PVA7LcDe5Y2RePTFbLdSHd85WhHcHHnFw2mBycfFRJ2m-FQ@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 61.12.19.99 (Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/28.0.1500.71 Chrome/28.0.1500.71 Safari/537.36)
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7LcDe5Y2RePTFbLdSHd85WhHcHHnFw2mBycfFRJ2m-FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi experts,
-i am new to this area,
-I am using amstrong 3.8.13 kernel in BBB
-at first i loaded the device tree as below,
+On Tue, Jan 21, 2014 at 03:02:43PM -0500, Josh Boyer wrote:
+> Hi All,
+> 
+> I went to build Linux v3.13-737-g7fe67a1 in Fedora this morning and it
+> resulted in RPM complaining that the perf and perf.so binaries had
+> strings in them that matched the RPM_BUILD_ROOT string.  That fails
+> the RPM build.
+> 
+> Looking over the logs, I see that the traceevent plugins are getting a
+> rather weird -DPLUGIN_DIR define passed to them.  E.g.:
+> 
+> gcc -c -g -Wall   -I. -I
+> /home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/../../include
+>  '-DPLUGIN_DIR="/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64//usr//usr/lib64/traceevent/plugins"'
+>  -D_GNU_SOURCE -std=gnu99 -fPIC
+> /home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/parse-filter.c
+> -o parse-filter.o
+> 
+> We're building perf like so:
+> 
+> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+> all
+> 
+> and installing it via:
+> 
+> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+> install-bin
+> 
+> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+> install-python_ext
+> 
+> This has worked for all the builds up until this point.
+> 
+> Somehow the perf and perf.so binaries are getting the string being
+> passed via -DPLUGIN_DIR into them, likely through the libtraceevent.a
+> link.  I'm pretty sure that (1) the string being passed is totally
+> broken and should be "/usr/lib64/traceevent/plugins" and (2) that I
+> haven't come close to deciphering how to fix this.
+> 
+> So, could you please look this over and see where the define is
+> getting messed up?
 
- echo cape-bone-iio > /sys/devices/bone_capemgr.*/slots
+hi,
+just get to this.. checking
 
-then i used analog pins however i am getting the fixed values that is values 
-are not varying continously as i vary input analog voltage
-
-if i go to this path
-/sys/devices/ocp.2/44e0d000.tscadc/tiadc/iio:device0
-
-and then ls -al gives me
-
-total 0
-drwxr-xr-x 3 root root    0 Jan  1 03:24 .
-drwxr-xr-x 4 root root    0 Jan  1 03:24 ..
--r--r--r-- 1 root root 4096 Jan  1 03:27 dev
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage0_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage1_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage2_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage3_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage4_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage5_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage6_raw
--rw-r--r-- 1 root root 4096 Jan  1 03:27 in_voltage7_raw
--r--r--r-- 1 root root 4096 Jan  1 03:25 name
-drwxr-xr-x 2 root root    0 Jan  1 03:27 power
-lrwxrwxrwx 1 root root    0 Jan  1 03:27 subsystem -> ../../../../../bus/iio
--rw-r--r-- 1 root root 4096 Jan  1 03:24 uevent
-
-there is no mode directory and buffer directory in list . please help to 
-configure ADC In continous mode. 
-
-Thanks 
-shravankumar
-
+jirka
