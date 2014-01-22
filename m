@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaAVSKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:10:14 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:32976 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaAVSKM (ORCPT
+	id S1755562AbaAVSKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:10:30 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33804 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752845AbaAVSK1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:10:12 -0500
-Message-ID: <1390414208.2866.11.camel@j-VirtualBox>
-Subject: Re: [PATCH 2/2] sched: add statistic for rq->max_idle_balance_cost
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        daniel.lezcano@linaro.org, Mike Galbraith <efault@gmx.de>,
-        wangyun@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 22 Jan 2014 10:10:08 -0800
-In-Reply-To: <20140122160901.GW13532@twins.programming.kicks-ass.net>
-References: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>
-	 <1390282399-17091-2-git-send-email-alex.shi@linaro.org>
-	 <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>
-	 <52DF802D.4030608@linaro.org>
-	 <20140122160901.GW13532@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 Jan 2014 13:10:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=jnF5sP
+	4itRC9xHjE1qXMJweEG38MZzN25bS7s7kGQrKXyKiZCZxvJ5GXpdE8LyjvbFukHO
+	IUaQP+zcaYQkT1+L0qNQH4KvQ/BnVouUkG786RCgVuRk6Vv0UTlO8qjJVZqw8yBu
+	GietZhoj297Svn1cyTa/gMpBzw2MIBNWYmZvc=
+From: Junio C Hamano <gitster@pobox.com>
+To: Vicent =?utf-8?Q?Mart=C3=AD?= <tanoku@gmail.com>
+Cc: Stefan =?utf-8?Q?N=C3=A4we?= <stefan.naewe@atlas-elektronik.com>,
+        Javier Domingo Cansino <javierdo1@gmail.com>,
+        "git\@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.9-rc0
+References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com>
+	<xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
+	<CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
+	<52DFE882.2040605@atlas-elektronik.com>
+	<xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
+	<CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
+Date: Wed, 22 Jan 2014 10:10:18 -0800
+In-Reply-To: <CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
+	("Vicent =?utf-8?Q?Mart=C3=AD=22's?= message of "Wed, 22 Jan 2014 18:26:23
+ +0100")
+Message-ID: <xmqqlhy7yjjp.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 750812D6-8390-11E3-B8BB-1B26802839F8-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 17:09 +0100, Peter Zijlstra wrote:
-> On Wed, Jan 22, 2014 at 04:24:13PM +0800, Alex Shi wrote:
-> > From: Alex Shi <alex.shi@linaro.org>
-> > Date: Tue, 21 Jan 2014 13:28:55 +0800
-> > Subject: [RFC PATCH] sched: add statistic for rq->max_idle_balance_cost
-> > 
-> > It's useful to track this value in debug mode.
-> > 
-> > Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> > ---
-> >  kernel/sched/debug.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> > index 1e43e70..f5c529a 100644
-> > --- a/kernel/sched/debug.c
-> > +++ b/kernel/sched/debug.c
-> > @@ -315,6 +315,7 @@ do {									\
-> >  	P(sched_goidle);
-> >  #ifdef CONFIG_SMP
-> >  	P64(avg_idle);
-> > +	P64(max_idle_balance_cost);
-> >  #endif
-> >   	P(ttwu_count);
-> 
-> Not also the per-sd value in sd_alloc_ctl_domain_table() ?
+Vicent Martí <tanoku@gmail.com> writes:
 
-Yeah, tracking the sd->max_newidle_lb_cost can also be useful.
+>> Do these consume CPU every time somebody asks for a tarball?  That
+>> might be considered "wrong" depending on the view.
+>
+> No, our infrastructure caches frequently requested tarballs so they
+> don't have to be regenerated on the fly.
 
-
+Thanks.  That is certainly good enough for consumers, and better
+than having to manually create and upload for me ;-)
