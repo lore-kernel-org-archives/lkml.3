@@ -1,153 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaAVTSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:18:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11617 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755279AbaAVTSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:18:36 -0500
-Date: Wed, 22 Jan 2014 20:18:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Michel Lespinasse <walken@google.com>, ego@linux.vnet.ibm.com,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: Deadlock between cpu_hotplug_begin and cpu_add_remove_lock
-Message-ID: <20140122191820.GA32127@redhat.com>
-References: <20140122055239.GA29418@iris.ozlabs.ibm.com> <52DF81B0.7020700@linux.vnet.ibm.com> <52DF8C59.1090702@linux.vnet.ibm.com>
+	id S1755579AbaAVTTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:19:33 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:37224 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179AbaAVTTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 14:19:30 -0500
+Date: Wed, 22 Jan 2014 23:19:28 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
+        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
+ fail in 3.12 after exceeding vm_max_map_count
+Message-ID: <20140122191928.GQ1574@moon>
+References: <20140122190816.GB4963@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52DF8C59.1090702@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140122190816.GB4963@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22, Srivatsa S. Bhat wrote:
->
-> Wait a min, that _will_ actually work for all cases because I have provided
-> an option to invoke _any_ arbitrary function as the "setup" routine.
+On Wed, Jan 22, 2014 at 07:08:16PM +0000, Mel Gorman wrote:
+> Cyrill,
+> 
+> Gimp is broken due to a kernel bug included in 3.12. It cannot open
+> large files without failing memory allocations due to exceeding
+> vm.max_map_count. The relevant bugzilla entries are
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=67651
+> https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
+> 
+> They include details on how to reproduce the issue. In my case, a
+> failure shows messages like this
+> 
+> 	(gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
+> 
+> 	(file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+> 	xinit: connection to X server lost
+> 
+> 	waiting for X server to shut down
+> 	/usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+> 	/usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+> 
+> X-related junk is there was because I was using a headless server and
+> xinit directly to launch gimp to reproduce the bug.
+> 
+> Automated bisection using mmtests (https://github.com/gormanm/mmtests)
+> and the configuration file configs/config-global-dhp__gimp-simple (needs
+> local web server with a copy of the image file) identified the following
+> commit. Test case was simple -- try and open the large file described in
+> the bug. I did not investigate the patch itself as I'm just reporting
+> the results of the bisection. If I had to guess, I'd say that VMA
+> merging has been affected.
 
-And probably the generic solution makes sense. I am not sure I actually
-understand the semantics of register_allcpu_notifier(), but the problem
-it tries to solve looks clear/valid.
-
-But as for a quick fix for raid5_alloc_percpu(), can't it simply call
-register_cpu_notifier() before get_online_cpus/for_each_present_cpu ?
-
-This probably means that raid456_cpu_notify() should be modified because
-it obviously can be called before get_online_cpus(). Hmm, it already
-has safe_put_page(), so this looks really simple? Something like below,
-although of course I can miss easily something.
-
-Oleg.
-
-
---- x/drivers/md/raid5.c
-+++ x/drivers/md/raid5.c
-@@ -5542,6 +5542,24 @@ static void free_conf(struct r5conf *con
- 	kfree(conf);
- }
- 
-+static int alloc_xxx(struct r5conf *conf, struct raid5_percpu *percpu)
-+{
-+	if (conf->level == 6 && !percpu->spare_page)
-+		percpu->spare_page = alloc_page(GFP_KERNEL);
-+	if (!percpu->scribble)
-+		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
-+
-+	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
-+		safe_put_page(percpu->spare_page);
-+		kfree(percpu->scribble);
-+		pr_err("%s: failed memory allocation for cpu%ld\n",
-+		       __func__, cpu);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
- 			      void *hcpu)
-@@ -5553,19 +5571,8 @@ static int raid456_cpu_notify(struct not
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		if (conf->level == 6 && !percpu->spare_page)
--			percpu->spare_page = alloc_page(GFP_KERNEL);
--		if (!percpu->scribble)
--			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--
--		if (!percpu->scribble ||
--		    (conf->level == 6 && !percpu->spare_page)) {
--			safe_put_page(percpu->spare_page);
--			kfree(percpu->scribble);
--			pr_err("%s: failed memory allocation for cpu%ld\n",
--			       __func__, cpu);
-+		if (alloc_xxx(conf, percpu))
- 			return notifier_from_errno(-ENOMEM);
--		}
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -5585,39 +5592,27 @@ static int raid5_alloc_percpu(struct r5c
- {
- 	unsigned long cpu;
- 	struct page *spare_page;
--	struct raid5_percpu __percpu *allcpus;
- 	void *scribble;
--	int err;
-+	int err = 0;
- 
--	allcpus = alloc_percpu(struct raid5_percpu);
--	if (!allcpus)
-+	conf->percpu = alloc_percpu(struct raid5_percpu);
-+	if (!conf->percpu)
- 		return -ENOMEM;
--	conf->percpu = allcpus;
- 
--	get_online_cpus();
--	err = 0;
--	for_each_present_cpu(cpu) {
--		if (conf->level == 6) {
--			spare_page = alloc_page(GFP_KERNEL);
--			if (!spare_page) {
--				err = -ENOMEM;
--				break;
--			}
--			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
--		}
--		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--		if (!scribble) {
--			err = -ENOMEM;
--			break;
--		}
--		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
--	}
- #ifdef CONFIG_HOTPLUG_CPU
- 	conf->cpu_notify.notifier_call = raid456_cpu_notify;
- 	conf->cpu_notify.priority = 0;
--	if (err == 0)
--		err = register_cpu_notifier(&conf->cpu_notify);
-+	err = register_cpu_notifier(&conf->cpu_notify);
-+	if (err)
-+		return err;
- #endif
-+
-+	get_online_cpus();
-+	for_each_present_cpu(cpu) {
-+		err = alloc_xxx(conf, per_cpu_ptr(conf->percpu, cpu));
-+		if (err)
-+			break;
-+	}
- 	put_online_cpus();
- 
- 	return err;
-
+Thanks a lot for report, Mel! I'm investigating...
