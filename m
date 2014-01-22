@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaAVWaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:30:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43164 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaAVWah (ORCPT
+	id S1755209AbaAVWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:32:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28712 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280AbaAVWc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:30:37 -0500
-Date: Wed, 22 Jan 2014 14:30:26 -0800
-From: tip-bot for Paul Gortmaker <tipbot@zytor.com>
-Message-ID: <tip-47683f7fe5d2abd71bf08b42060bcf95e0ad668f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fei.yang@intel.com, david.a.cohen@linux.intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fei.yang@intel.com, david.a.cohen@linux.intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com, paul.gortmaker@windriver.com
-In-Reply-To: <1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/intel-mid] x86: Don'
- t add new __cpuinit users to Merrifield platform code
-Git-Commit-ID: 47683f7fe5d2abd71bf08b42060bcf95e0ad668f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Jan 2014 17:32:26 -0500
+Message-ID: <52E046BA.2060701@oracle.com>
+Date: Wed, 22 Jan 2014 17:31:22 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 14:30:32 -0800 (PST)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+References: <20131212140835.729222186@infradead.org> <20131212141655.362219382@infradead.org> <52DEF495.2020304@oracle.com> <20140122171454.GR31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140122171454.GR31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  47683f7fe5d2abd71bf08b42060bcf95e0ad668f
-Gitweb:     http://git.kernel.org/tip/47683f7fe5d2abd71bf08b42060bcf95e0ad668f
-Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
-AuthorDate: Wed, 22 Jan 2014 12:35:25 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 22 Jan 2014 14:28:57 -0800
+On 01/22/2014 12:14 PM, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 05:28:37PM -0500, Sasha Levin wrote:
+>> 	[    0.000000] Initmem setup node 30 [mem 0x12ee000000-0x138dffffff]
+>> 	[    0.000000]   NODE_DATA [mem 0xcfa42000-0xcfa72fff]
+>> 	[    0.000000]     NODE_DATA(30) on node 1
+>> 	[    0.000000] Initmem setup node 31 [mem 0x138e000000-0x142fffffff]
+>> 	[    0.000000]   NODE_DATA [mem 0xcfa11000-0xcfa41fff]
+>> 	[    0.000000]     NODE_DATA(31) on node 1
+>> 	[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+>> 	[    0.000000] kvm-clock: cpu 0, msr 0:cf991001, boot clock
+>> 	[133538.294040] Zone ranges:
+>> 	[133538.294338]   DMA      [mem 0x00001000-0x00ffffff]
+>> 	[133538.294804]   DMA32    [mem 0x01000000-0xffffffff]
+>> 	[133538.295223]   Normal   [mem 0x100000000-0x142fffffff]
+>> 	[133538.295670] Movable zone start for each node
+>
+> OK, took me a while to fiddle with KVM and all the various muck around
+> that to reproduce. But I can confirm the below does fix the issue for
+> me.
+>
+> I'm hoping to not have to re-introcude the kevents_up() check, but I
+> need to figure out what hardware triggered that and test again.
+>
+> ---
+> Subject: sched/clock: Fixup early sched_clock initialization
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed, 22 Jan 2014 12:59:18 +0100
+>
+> The code would assume sched_clock_stable() and switch to !stable
+> later, this switch brings a discontinuity in time.
+>
+> The discontinuity on switching from stable to unstable was always
+> present, but previously we would set stable/unstable before
+> initializing TSC and usually stick to the one we start out with.
+>
+> So the static_key bits brought an extra switch where there previously
+> wasn't one.
+>
+> Things are further complicated by the fact that we cannot use
+> static_key as early as we usually call set_sched_clock_stable().
+>
+> Fix things by tracking the stable state in a regular variable and only
+> set the static_key to the right state on sched_clock_init(), which is
+> ran right after late_time_init->tsc_init().
+>
+> Before this we would not be using the TSC anyway.
+>
+> Fixes: 35af99e646c7 ("sched/clock, x86: Use a static_key for sched_clock_stable")
+> Cc: jacob.jun.pan@linux.intel.com
+> Cc: Mike Galbraith <bitbucket@online.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: hpa@zytor.com
+> Cc: paulmck@linux.vnet.ibm.com
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: lenb@kernel.org
+> Cc: rjw@rjwysocki.net
+> Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> Cc: rui.zhang@intel.com
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Reported-by: dyoung@redhat.com
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/20140122115918.GG3694@twins.programming.kicks-ass.net
 
-x86: Don't add new __cpuinit users to Merrifield platform code
+The patch fixes the problem for me.
 
-Commit bc20aa48bbb3068224a1c91f8332971fdb689fad ("x86, intel-mid:
-Add Merrifield platform support")  added new instances of __cpuinit
-usage.  We removed this a couple versions ago; we now want to remove
-the compat no-op stubs.  Introducing new users is not what we want to
-see at this point in time, as it will break once the stubs are gone.
 
-This also fixes an out of sync __init vs. __cpuinit -- as the former
-is real, and the latter is a no-op; hence it would have been a section
-mismatch.
+Thanks,
+Sasha
 
-Cc: Fei Yang <fei.yang@intel.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Acked-by: David Cohen <david.a.cohen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1390412125-19439-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h | 2 +-
- arch/x86/platform/intel-mid/mrfl.c                 | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-index 41fe17d..46aa25c 100644
---- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-@@ -16,4 +16,4 @@
-  */
- extern void *get_penwell_ops(void) __attribute__((weak));
- extern void *get_cloverview_ops(void) __attribute__((weak));
--extern void * __init get_tangier_ops(void) __attribute__((weak));
-+extern void *get_tangier_ops(void) __attribute__((weak));
-diff --git a/arch/x86/platform/intel-mid/mrfl.c b/arch/x86/platform/intel-mid/mrfl.c
-index 09d1015..28b636a 100644
---- a/arch/x86/platform/intel-mid/mrfl.c
-+++ b/arch/x86/platform/intel-mid/mrfl.c
-@@ -97,7 +97,7 @@ static struct intel_mid_ops tangier_ops = {
- 	.arch_setup = tangier_arch_setup,
- };
- 
--void * __cpuinit get_tangier_ops()
-+void *get_tangier_ops()
- {
- 	return &tangier_ops;
- }
