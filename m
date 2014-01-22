@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaAVS3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:29:45 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44149 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973AbaAVS3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:29:44 -0500
-From: Christopher Covington <cov@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCH] ARM: hw_breakpoint: Add ARMv8 support
-Date: Wed, 22 Jan 2014 13:29:25 -0500
-Message-Id: <1390415365-17230-1-git-send-email-cov@codeaurora.org>
-X-Mailer: git-send-email 1.8.1.1
+	id S1753136AbaAVSbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:31:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37168 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788AbaAVSbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:31:41 -0500
+Date: Wed, 22 Jan 2014 19:31:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: uninline rcu_lock_acquire/etc ?
+Message-ID: <20140122183125.GA31289@redhat.com>
+References: <20140120181942.GA20783@redhat.com> <20140120182019.GA26515@redhat.com> <20140121141022.GX31570@twins.programming.kicks-ass.net> <20140121173534.GA25642@redhat.com> <20140121184310.GA24702@redhat.com> <20140121193909.GA17497@redhat.com> <20140122035440.GW10038@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122035440.GW10038@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the trivial support necessary to get hardware breakpoints
-working for GDB on ARMv8 simulators running in AArch32 mode.
+On 01/21, Paul E. McKenney wrote:
+>
+> On Tue, Jan 21, 2014 at 08:39:09PM +0100, Oleg Nesterov wrote:
+> > On 01/21, Oleg Nesterov wrote:
+> > >
+> > > But I agreed that the code looks simpler with bitfields, so perhaps
+> > > this patch is better.
+> >
+> > Besides, I guess the major offender is rcu...
+> >
+> > Paul, can't we do something like below? Saves 19.5 kilobytes,
+> >
+> > 	-       5255131 2974376 10125312        18354819        1181283 vmlinux
+> > 	+	5235227 2970344 10125312        18330883        117b503 vmlinux
+> >
+> > probably we can also uninline rcu_lockdep_assert()...
+>
+> Looks mostly plausible, some questions inline below.
 
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
----
- arch/arm/include/asm/hw_breakpoint.h | 1 +
- arch/arm/kernel/hw_breakpoint.c      | 1 +
- 2 files changed, 2 insertions(+)
+Thanks!
 
-diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
-index eef55ea..8e427c7 100644
---- a/arch/arm/include/asm/hw_breakpoint.h
-+++ b/arch/arm/include/asm/hw_breakpoint.h
-@@ -51,6 +51,7 @@ static inline void decode_ctrl_reg(u32 reg,
- #define ARM_DEBUG_ARCH_V7_ECP14	3
- #define ARM_DEBUG_ARCH_V7_MM	4
- #define ARM_DEBUG_ARCH_V7_1	5
-+#define ARM_DEBUG_ARCH_V8	6
- 
- /* Breakpoint */
- #define ARM_BREAKPOINT_EXECUTE	0
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 3d44660..45fbcaf 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -257,6 +257,7 @@ static int enable_monitor_mode(void)
- 		break;
- 	case ARM_DEBUG_ARCH_V7_ECP14:
- 	case ARM_DEBUG_ARCH_V7_1:
-+	case ARM_DEBUG_ARCH_V8:
- 		ARM_DBG_WRITE(c0, c2, 2, (dscr | ARM_DSCR_MDBGEN));
- 		isb();
- 		break;
--- 
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by the Linux Foundation.
+> >  static inline void rcu_read_lock(void)
+> >  {
+> > -	__rcu_read_lock();
+> >  	__acquire(RCU);
+> > -	rcu_lock_acquire(&rcu_lock_map);
+> > -	rcu_lockdep_assert(rcu_is_watching(),
+> > -			   "rcu_read_lock() used illegally while idle");
+> > +	__rcu_read_lock();
+> > +	rcu_lock_acquire();
+>
+> Not sure why __rcu_read_lock() needs to be in any particular order
+> with respect to the sparse __acquire(RCU), but should work either way.
+> Same question about the other reorderings of similar statements.
+
+I did this unconsciously and for no reason, will revert this accidental
+change.
+
+> >  static inline void rcu_read_lock_sched(void)
+> >  {
+> > -	preempt_disable();
+> >  	__acquire(RCU_SCHED);
+> > -	rcu_lock_acquire(&rcu_sched_lock_map);
+> > +	preempt_disable();
+> > +	rcu_lock_acquire_sched();
+> >  	rcu_lockdep_assert(rcu_is_watching(),
+> >  			   "rcu_read_lock_sched() used illegally while idle");
+>
+> The above pair of lines (rcu_lockdep_assert()) should also be removed,
+> correct?
+
+yes, sure, thanks,
+
+> > @@ -862,8 +867,8 @@ static inline void rcu_read_lock_sched(void)
+> >  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+> >  static inline notrace void rcu_read_lock_sched_notrace(void)
+> >  {
+> > -	preempt_disable_notrace();
+> >  	__acquire(RCU_SCHED);
+> > +	preempt_disable_notrace();
+>
+> I cannot help repeating myself on this one...  ;-)
+>
+> Why the change in order?
+
+see above ;)
+
+> > --- a/kernel/rcu/update.c
+> > +++ b/kernel/rcu/update.c
+> > @@ -333,4 +333,47 @@ static int __init check_cpu_stall_init(void)
+> >  }
+> >  early_initcall(check_cpu_stall_init);
+> >
+> > +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
+> > +
+> > +static void ck_rcu_is_watching(const char *message)
+> > +{
+> > +	rcu_lockdep_assert(rcu_is_watching(), message);
+> > +}
+> > +
+> > +void rcu_lock_acquire(void)
+> > +{
+> > +	__rcu_lock_acquire(&rcu_lock_map, _RET_IP_);
+> > +	ck_rcu_is_watching("rcu_read_lock() used illegally while idle");
+> > +}
+> > +
+> > +void rcu_lock_release(void)
+> > +{
+> > +	ck_rcu_is_watching("rcu_read_unlock() used illegally while idle");
+> > +	__rcu_lock_release(&rcu_lock_map, _RET_IP_);
+> > +}
+> > ...
+
+Also, this all should be exported. And I think cleanuped somehow.
+
+Oleg.
 
