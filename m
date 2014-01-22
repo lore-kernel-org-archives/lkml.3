@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaAVT7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:59:48 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:53644 "EHLO
+	id S1754257AbaAVUBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 15:01:18 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:53647 "EHLO
 	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753786AbaAVT7r (ORCPT
+	with ESMTP id S1752358AbaAVUBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:59:47 -0500
-Date: Wed, 22 Jan 2014 20:59:40 +0100
+	Wed, 22 Jan 2014 15:01:17 -0500
+Date: Wed, 22 Jan 2014 21:01:13 +0100
 From: Wim Van Sebroeck <wim@iguana.be>
-To: naresh.bhat@linaro.org
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] watchdog: Add sp805_wdt depends on ARM64
-Message-ID: <20140122195940.GW5647@spo001.leaseweb.com>
-References: <1390394643-25443-1-git-send-email-naresh.bhat@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, arnd@arndb.de,
+        linux@roeck-us.net
+Subject: Re: [PATCH] watchdog: mach-moxart: add restart handler
+Message-ID: <20140122200113.GA7490@spo001.leaseweb.com>
+References: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390394643-25443-1-git-send-email-naresh.bhat@linaro.org>
+In-Reply-To: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
 User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naresh,
+Hi Jonas,
 
-> From: Naresh Bhat <naresh.bhat@linaro.org>
+> mach-moxart lacks a separate register for reset; as a workaround,
+> add a function that can be hooked to arm_pm_restart.
 > 
-> Add sp805_wdt depends on ARM64.
-> 
-> Signed-off-by: Naresh Bhat <naresh.bhat@linaro.org>
-> ---
->  drivers/watchdog/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 5be6e91..2385124 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -109,7 +109,7 @@ config WM8350_WATCHDOG
->  
->  config ARM_SP805_WATCHDOG
->  	tristate "ARM SP805 Watchdog"
-> -	depends on ARM && ARM_AMBA
-> +	depends on (ARM || ARM64) && ARM_AMBA
->  	select WATCHDOG_CORE
->  	help
->  	  ARM Primecell SP805 Watchdog timer. This will reboot your system when
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
 Added to linux-watchdog-next.
+
+> ---
+> 
+> Notes:
+>     During review of this driver, the restart handler for moxart was
+>     removed, and moved to platform code under arch/arm/mach-moxart/.
+>     
+>     Since then, new considerations arrived,
+>     see replies from Arnd and Guenter:
+>     
+>     "[PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files"
+>     http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/219175.html
+>     
+>     I can move this to a new power/restart driver, but first, I want to
+>     hear what Wim or others think.
+>     
+>     Until there is a better solution, my motivation is that this uses
+>     the watchdog. The way I see it, the problem is that there is no
+>     separate register for reset, this was always a workaround for that.
+>     
+>     Applies to next-20131218
+
+Will review this again after the merge window is over.
 
 Kind regards,
 Wim.
