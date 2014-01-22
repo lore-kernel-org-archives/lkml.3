@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaAVR0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 12:26:46 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:37562 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841AbaAVR0o convert rfc822-to-8bit (ORCPT
+	id S1753040AbaAVRa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 12:30:29 -0500
+Received: from smtprelay0130.hostedemail.com ([216.40.44.130]:39728 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752295AbaAVRa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 12:26:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
-References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com> <xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
- <CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
- <52DFE882.2040605@atlas-elektronik.com> <xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
-From: =?UTF-8?Q?Vicent_Mart=C3=AD?= <tanoku@gmail.com>
-Date: Wed, 22 Jan 2014 18:26:23 +0100
-Message-ID: <CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Git v1.9-rc0
-To: Junio C Hamano <gitster@pobox.com>
-Cc: =?UTF-8?B?U3RlZmFuIE7DpHdl?= <stefan.naewe@atlas-elektronik.com>,
-        Javier Domingo Cansino <javierdo1@gmail.com>,
-        "git@vger.kernel.org" <git@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Jan 2014 12:30:28 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2194:2198:2199:2200:2393:2525:2553:2561:2564:2682:2685:2689:2693:2828:2859:2861:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6117:76
+X-HE-Tag: smash74_77f0105f8d243
+X-Filterd-Recvd-Size: 3120
+Message-ID: <1390411823.31946.63.camel@joe-AO722>
+Subject: Re: [tip:core/urgent] MAINTAINERS: Restore "L:
+ linux-kernel@vger.kernel.org" entries
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, alan@linux.intel.com,
+        acme@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Date: Wed, 22 Jan 2014 09:30:23 -0800
+In-Reply-To: <20140122160917.GI17314@sirena.org.uk>
+References: <tip-62f45f9a202c318fd5fb43cd40ef687b7dd2825f@git.kernel.org>
+	 <1390325069.2472.78.camel@joe-AO722> <20140122122728.GA8882@gmail.com>
+	 <1390395744.31946.45.camel@joe-AO722>
+	 <20140122160917.GI17314@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 5:11 PM, Junio C Hamano <gitster@pobox.com> wrote:
-> Stefan Näwe <stefan.naewe@atlas-elektronik.com> writes:
->
->> Am 22.01.2014 13:53, schrieb Javier Domingo Cansino:
->>> Will there be any change on how tarballs are distributed, taking into
->>> account that Google will be shutting down Google Code Downloads
->>> section[1][2]?
->>>
->>
->> Am I missing something or what's wrong with this:
->>
->>   https://github.com/gitster/git/archive/v1.9-rc0.tar.gz
->>
->> or any
->>
->>   https://github.com/gitster/git/archive/$TAG.tar.gz
->>
->> ??
->
-> Do these consume CPU every time somebody asks for a tarball?  That
-> might be considered "wrong" depending on the view.
+On Wed, 2014-01-22 at 16:09 +0000, Mark Brown wrote:
+> On Wed, Jan 22, 2014 at 05:02:24AM -0800, Joe Perches wrote:
+> > So I think the rule should be either every section has
+> > an lkml entry or no section does.
+[]
+> The other option is that we just don't worry if people CC lkml or not -
+> for things with a dedicated list it's not super critical that people CC
+> to lkml
 
-No, our infrastructure caches frequently requested tarballs so they
-don't have to be regenerated on the fly. If you would prefer to
-distribute a different version of the tarball for the release (e.g.
-one with a different filename or folder structure), you can upload it
-directly to the release page of the tag:
+true
 
-    https://github.com/gitster/git/releases/tag/v1.9-rc0
+> and in practice doing so would make it even harder to work with
+> than it is at the minute.
 
-We'll automatically mirror your release to S3 and serve it from there.
-You can also go ahead and edit the release page with the changelog
-you've posted in this email thread to make it more user friendly.
+How?  What is "it" here?
 
-WE WILL SERVE YOUR RELEASES, JUNIO
+> If they want to do so that's fine and it
+> shouldn't be a problem but at this point it's questionable if this is
+> something that we actively want to encourge.
+> 
+> In practice this is exactly what's been happening for years anyway so
+> it's not something I'd expect to be controversial.
 
-BECAUSE WE LOVE YOU
+Perhaps the biggest benefit of cc'ing lkml is
+a centralized repository of proposed patches in
+https://patchwork.kernel.org/project/LKML/list/
 
--vmg
+A secondary benefit (sometimes it's just a bother)
+is that you get a smallish readership that comments
+on semi-frequent code defects and style nits that
+enhances overall code quality.
+
+But today, many patches do not hit lkml at all.
+
+netdev, many of the specific arch types, staging,
+etc, have separate lists and many patches aren't
+cc'd to lkml.
+
+Maybe that's not a bad thing.  Dunno.
+
+I can't think of an easy way to figure out how
+often emailed patches are using lists generated by
+get_maintainer so I've no idea if this matters.
+
+Perhaps the best argument to cc lkml is still this:
+
+https://lkml.org/lkml/2009/5/27/44
+
+On Tue, 2009-05-26 at 23:00 -0700, Andrew Morton wrote:
+> Most subsystem maintainers shed patches like a hobo does dandruff.  If
+> it is cc'ed to lkml then there is a decent chance that I will see it
+> and will un-lose it.
+> 
+> This happens probably 100 or more times per kernel release.
+
+cheers, Joe
+
