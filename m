@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaAVO10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:27:26 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:65097 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaAVO1U (ORCPT
+	id S1755631AbaAVO1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:27:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33547 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476AbaAVO1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Jan 2014 09:27:20 -0500
+Message-ID: <52DFD50E.800@oracle.com>
+Date: Wed, 22 Jan 2014 09:26:22 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1390317009-8292-4-git-send-email-geert@linux-m68k.org>
-References: <1390317009-8292-1-git-send-email-geert@linux-m68k.org>
-	<1390317009-8292-4-git-send-email-geert@linux-m68k.org>
-Date: Wed, 22 Jan 2014 15:27:19 +0100
-X-Google-Sender-Auth: -kCojkB1dB-tDcAuKl89vCeAzDs
-Message-ID: <CAMuHMdUUL9RHRz3P-44PUj1APHAK5-uZ6YUN8TY9CGEm=VvMmg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] spi: Check that Quad/Dual is half duplex
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+References: <20131212140835.729222186@infradead.org> <20131212141655.362219382@infradead.org> <52DEF495.2020304@oracle.com> <20140122104532.GJ31570@twins.programming.kicks-ass.net> <20140122120048.GB389@x4> <20140122120757.GL31570@twins.programming.kicks-ass.net> <20140122122609.GA392@x4> <20140122123022.GN31570@twins.programming.kicks-ass.net> <20140122131456.GA389@x4>
+In-Reply-To: <20140122131456.GA389@x4>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 4:10 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Quad and Dual SPI Transfers use all available data lines (incl. MOSI/MISO),
-> hence they must be half duplex. Add a check that verify that.
+On 01/22/2014 08:14 AM, Markus Trippelsdorf wrote:
+> On 2014.01.22 at 13:30 +0100, Peter Zijlstra wrote:
+>> >On Wed, Jan 22, 2014 at 01:26:09PM +0100, Markus Trippelsdorf wrote:
+>>> > >On 2014.01.22 at 13:07 +0100, Peter Zijlstra wrote:
+>>>> > > >On Wed, Jan 22, 2014 at 01:00:48PM +0100, Markus Trippelsdorf wrote:
+>>>>> > > > >FYI it happens on real hardware on my machine:
+>>>>> > > > >...
+>>>>> > > > >[    0.000000] Hierarchical RCU implementation.
+>>>>> > > > >[    0.000000] NR_IRQS:4352 nr_irqs:712 16
+>>>>> > > > >[    0.000000] spurious 8259A interrupt: IRQ7.
+>>>>> > > > >[    0.000000] Console: colour VGA+ 80x25
+>>>>> > > > >[    0.000000] console [tty0] enabled
+>>>>> > > > >[    0.000000] hpet clockevent registered
+>>>>> > > > >[    0.000000] tsc: Fast TSC calibration using PIT
+>>>>> > > > >[    0.003333] tsc: Detected 3210.681 MHz processor
+>>>>> > > > >[   60.375238] Calibrating delay loop (skipped), value calculated using timer frequency.. 6423.91 BogoMIPS (lpj=10702270)
+>>>>> > > > >[   60.375240] pid_max: default: 32768 minimum: 301
+>>>>> > > > >[   60.375259] Mount-cache hash table entries: 256
+>>>>> > > > >[   60.375373] tseg: 0000000000
+>>>>> > > > >[   60.375377] CPU: Physical Processor ID: 0
+>>>>> > > > >[   60.375377] CPU: Processor Core ID: 0
+>>>>> > > > >[   60.375378] mce: CPU supports 6 MCE banks
+>>>>> > > > >[   60.375382] LVT offset 0 assigned for vector 0xf9
+>>>>> > > > >[   60.375384] process: using AMD E400 aware idle routine
+>>>>> > > > >[   60.375386] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
+>>>> > > >
+>>>> > > >Should have always happened like that I think. From the log it looks
+>>>> > > >like the moment we switch from jiffies to actual TSC in
+>>>> > > >arch/x86/kernel/tsc.c:sched_clock().
+>>>> > > >
+>>>> > > >I don't think I changed the logic there, just switched from a condition
+>>>> > > >to a jump_label.
+>>> > >
+>>> > >Well, v3.13 was fine. So it's definitely a regression. But it may be
+>>> > >another issue. I will try to bisect later.
+>> >
+>> >OK, weird, I'll see if I can spot anything.
+> Unfortunately the issue is unbisectable (but the remaining commits are
+> all yours):
 
-Actually this is valid if SPI_LOOP is also set. Will send an update.
+I've actually bisected it previously by fixing the build errors manually, and that took me
+to this patch you see in the subject line :)
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Sasha
