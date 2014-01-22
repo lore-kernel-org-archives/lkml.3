@@ -1,31 +1,36 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbaATABZ (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 19 Jan 2014 19:01:25 -0500
-Received: from zimbra1.oabpb.org.br ([70.38.75.233]:51954 "EHLO
-	cl-t153-303cl.privatedns.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752195AbaATABV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jan 2014 19:01:21 -0500
-X-Greylist: delayed 8544 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Jan 2014 19:01:21 EST
-Content-Type: text/plain; charset=US-ASCII
+	id S1755261AbaAVKsV (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 22 Jan 2014 05:48:21 -0500
+Received: from ukmrpl004.threembb.net ([217.171.128.38]:36641 "HELO
+	ukmrpl004.it.hutchison3g.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755209AbaAVKsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:48:16 -0500
+Reply-To: <lisscollins@bk.ru>
+From: "lisa" <lissacollins@bk.ru>
+Subject: Hello
+Date: Wed, 22 Jan 2014 09:23:36 -0000
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Apply For A 2% Loan Today 
-To: Recipients <allynson@zimbra.oabpb.org.br>
-From: allynson@zimbra.oabpb.org.br
-Date: Sun, 19 Jan 2014 02:17:25 +0530
-Reply-To: williamloancompany110@gmail.com
-Message-Id: <20140118194739.631DC1C64F86@cl-t153-303cl.privatedns.com>
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <139038261579013149@ukmrpl004>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Apply for a loan today at low interest rate for more info fill the form
-below
-Full Name:
-Amount to borrow
-Duration:
-Purpose :
-Country of Residence:
-Mobile No:
+Could I have 5mins of your time to discuss a life changingmatter with you?
+
+
+
+
+
+
+
+
+
