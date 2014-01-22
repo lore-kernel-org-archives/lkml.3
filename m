@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaAVIYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 03:24:21 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:39033 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaAVIYS (ORCPT
+	id S1753814AbaAVI04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 03:26:56 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:64497 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaAVI0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 03:24:18 -0500
-Message-ID: <52DF802D.4030608@linaro.org>
-Date: Wed, 22 Jan 2014 16:24:13 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 22 Jan 2014 03:26:51 -0500
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        daniel.lezcano@linaro.org, Mike Galbraith <efault@gmx.de>,
-        wangyun@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] sched: add statistic for rq->max_idle_balance_cost
-References: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>	<1390282399-17091-2-git-send-email-alex.shi@linaro.org> <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>
-In-Reply-To: <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+	<1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
+Date: Wed, 22 Jan 2014 09:26:50 +0100
+Message-ID: <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
+Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 03:43 PM, Jason Low wrote:
-> On Mon, Jan 20, 2014 at 9:33 PM, Alex Shi <alex.shi@linaro.org> wrote:
->> It's useful to track this value in debug mode.
->>
->> Signed-off-by: Alex Shi <alex.shi@linaro.org>
->> ---
->>  kernel/sched/debug.c | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
->> index 1e43e70..f5c529a 100644
->> --- a/kernel/sched/debug.c
->> +++ b/kernel/sched/debug.c
->> @@ -315,6 +315,7 @@ do {                                                                        \
->>         P(sched_goidle);
->>  #ifdef CONFIG_SMP
->>         P64(avg_idle);
->> +       p64(max_idle_balance_cost);
-> 
-> Hi Alex,
-> 
-> Does this need to be P64(max_idle_balance_cost)?
-> 
+On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
 
-Ops, this letter lay in my Drafts box.
+> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
+> name from the ACPI timer table is matched with all the registered
+> timer controllers and matching initialisation routine is invoked.
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 
-Yes, thanks for fix!
+Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
+to TIMER_OF_DECLARE() and I think this macro, if needed, should
+be named TIMER_ACPI_DECLARE().
 
-===
+The reason is that "clocksource" is a Linux-internal name and this
+macro pertains to the hardware name in respective system
+description type.
 
->From 173417f3646ac1c6ac83809b51d0471591cbc8f0 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@linaro.org>
-Date: Tue, 21 Jan 2014 13:28:55 +0800
-Subject: [RFC PATCH] sched: add statistic for rq->max_idle_balance_cost
+> +#ifdef CONFIG_ACPI
+> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
+> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
+> +               __used __section(__clksrc_acpi_table)                   \
+> +                = { .id = compat,                              \
+> +                    .driver_data = (kernel_ulong_t)fn }
+> +#else
+> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
+> +#endif
 
-It's useful to track this value in debug mode.
+This hammers down the world to compile one binary for ACPI
+and one binary for device tree. Maybe that's fine, I don't know.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- kernel/sched/debug.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 1e43e70..f5c529a 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -315,6 +315,7 @@ do {									\
- 	P(sched_goidle);
- #ifdef CONFIG_SMP
- 	P64(avg_idle);
-+	P64(max_idle_balance_cost);
- #endif
-  	P(ttwu_count);
--- 
-1.8.1.2
-
-
-
--- 
-Thanks
-    Alex
+Yours,
+Linus Walleij
