@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaAVNCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 08:02:36 -0500
-Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:45696 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755153AbaAVNC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 08:02:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6117:6119:6248:6691:7652:7903:7974:8527:10004:10400:10848:11232:11658:11914:12114:12517:12519:12679:12740:13069:13160:13161:13163:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.
-X-HE-Tag: work04_6c756c772df3c
-X-Filterd-Recvd-Size: 2288
-Message-ID: <1390395744.31946.45.camel@joe-AO722>
-Subject: Re: [tip:core/urgent] MAINTAINERS: Restore "L:
- linux-kernel@vger.kernel.org" entries
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com, alan@linux.intel.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Wed, 22 Jan 2014 05:02:24 -0800
-In-Reply-To: <20140122122728.GA8882@gmail.com>
-References: <tip-62f45f9a202c318fd5fb43cd40ef687b7dd2825f@git.kernel.org>
-	 <1390325069.2472.78.camel@joe-AO722> <20140122122728.GA8882@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1755592AbaAVNDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 08:03:30 -0500
+Received: from mail2.unitn.it ([193.205.206.22]:53486 "EHLO mail2.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755153AbaAVND2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 08:03:28 -0500
+Message-ID: <52DFC196.7020301@unitn.it>
+Date: Wed, 22 Jan 2014 14:03:18 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+References: <1390214440-2711-1-git-send-email-juri.lelli@gmail.com> <20140120112442.GA8907@austad.us> <52DD1377.5090201@gmail.com> <20140120131616.GB8907@austad.us> <52DD2711.9080504@unitn.it> <20140121102016.GA12002@austad.us> <52DE5B7F.8020900@unitn.it> <20140121123334.GJ30183@twins.programming.kicks-ass.net> <52DE6D21.1080602@unitn.it> <20140121135559.GK30183@twins.programming.kicks-ass.net>
+In-Reply-To: <20140121135559.GK30183@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-22 at 13:27 +0100, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-[]
-> You have cut out my main argument from you reply and have ignored it:
- 
-Not ignored.  Threaded email works fine.
+Hi,
 
-Your main argument is that some people don't cc lkml
-because section entries don't specify it explicitly.
+On 01/21/2014 02:55 PM, Peter Zijlstra wrote:
+> On Tue, Jan 21, 2014 at 01:50:41PM +0100, Luca Abeni wrote:
+>> On 01/21/2014 01:33 PM, Peter Zijlstra wrote:
+>
+>>>> - During the execution of a job, the task might invoke a blocking system call,
+>>>>    and block... When it wakes up, it is still in the same job (decoding the same
+>>>>    video frame), and not in a different one.
+>>>> This is (IMHO) where all the confusion comes from.
+>>>
+>>> I would strongly urge you not to use that as an example, because its
+>>> dead wrong design. An RT thread (be it RR,FIFO or DL) should _NEVER_ do
+>>> blocking IO.
+>> Well, but it does happen in reality :)
+>
+> Yeah, I know, my point was more about not encouraging people to do this
+> by explicitly mentioning it.
+Ok, got the point. I was not planning to add this example to the documentation
+anyway, so I think there is no problem :)
 
-My main argument, which you elided, is that some people
-will not cc lkml because they will see some sections
-with L: entries with lkml and others without, and will
-therefore _not_ cc lkml instead.
 
-So I think the rule should be either every section has
-an lkml entry or no section does.
+>> On the other hand, I agree with you that a hard real-time task should be designed
+>> not to do things like this. But SCHED_DEADLINE is flexible enough to be used on
+>> many different kinds of tasks (hard real-time, soft real-time, etc...).
+>
+> At which point I feel obliged to mention the work Jim did on statistical
+> bounded tardiness and a potential future option:
+> SCHED_FLAG_DL_AVG_RUNTIME, where we would allow tasks to somewhat exceed
+> their runtime budget provided that they meet their budget on average.
+I think I read the paper your refer to, and if I remember well it was about
+an analysis technique (using some math from queuing theory to get estimations
+of the average response time, and then using Tchebysheff to transform this result
+in a probabilistic real-time guarantee)... If I understand well, it does not
+require modifications to the scheduling algorithm (the paper presents a multiprocessor
+reservation-based scheduling algorithm, but the presented analysis applies to every
+reservation-based algorithm, including SCHED_DEADLINE without modifications).
+Am I misunderstanding something?
 
-Pick one.
+Anyway, I'll propose a documentation patch adding this paper to the references
+(and if you agree I can also add some other references to probabilistic guarantees).
 
-Mixing styles just causes a different type of error.
+The SCHED_FLAG_DL_AVG_RUNTIME idea also looks interesting.
 
-> Which is not a very honest way to conduct discussions :-(
-[]
-> > MAINTAINERS already says:
-> 
-> That's irrelevant really, reality tells us that good people are 
-> looking at the entries and are using them as-is. For such things 
-> technology should adapt to people, not the other way around.
+> Another possibly extension; one proposed by Ingo; is to demote tasks to
+> SCHED_OTHER once they exceed their budget instead of the full block they
+> get now -- we could possibly call this SCHED_FLAG_DL_CBS_SOFT or such.
+I think something similar to this was mentioned in the original "resource kernels"
+paper by Rajkumar and others... It is in general very useful.
 
-If you are going to complain about "honesty in
-argumentation", try it yourself.
+Another extension I implemented "locally" (but I never submitted patches because
+it is "dangerous" and potentially controversial) is the original CBS behaviour:
+when a task is depleted, do not make it unschedulable, but just postpone its
+scheduling deadline (decreasing its priority) and immediately recharge the
+runtime. This still preserves temporal isolation between SCHED_DEADLINE tasks,
+but can cause starvation of non-SCHED_DEADLINE tasks (and this is why I say this
+is dangerous and can be controversial), but can be useful in some situations.
 
-Be an exemplar.
 
-Describing a previous change as being made for
-intuitions sake when it wasn't, isn't.
+> And of course SCHED_FLAG_DL_CBS_SIGNAL, where the task gets a signal
+> delivered if it exceeded the runtime -- I think some of the earlier
+> patches had things like this, no?
+I've seen this in some patchset, but I do not remember when. I think some of
+the "advanced features" have been removed from the first submission.
 
-cheers, Joe
 
+>>> On the other subject; I wouldn't actually mind if it grew into a proper
+>>> (academic or not) summary of deadline scheduling theory and how it
+>>> applies.
+>>>
+>>> Sure, refer to actual papers for all the proofs and such, but it would
+>>> be very good to go over all the bits and pieces that make up the system.
+>>>
+>>> So cover the periodic, sporadic and aperiodic model like henr_k
+>>> suggested, please do cover the job/instance idiom as it is used all over
+>>> the place.
+>> Ok... My point was that it would be better (IMHO) to first explain how
+>> sched_deadline works (and no notion of job/instance, etc is needed for this),
+>> and then explain how this applies to the real-time task model (and here, of
+>> course all the formal notation can be introduced).
+>>
+>> Do you think this can be reasonable?
+>
+> Sure, I think that's reasonable.
+Ok, good. I am already working on this together with Juri.
+
+
+
+			Thanks,
+				Luca
