@@ -1,184 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaAVM0C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:26:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59132 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431AbaAVMZt (ORCPT
+	id S932128AbaAVM0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:26:15 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:38423 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097AbaAVM0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:25:49 -0500
-Date: Wed, 22 Jan 2014 04:25:13 -0800
-From: tip-bot for Michael Davidson <tipbot@zytor.com>
-Message-ID: <tip-214a88768d34079b70e0f2ba37b91a3b717fddbb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, md@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, md@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20140121203223.GA12649@www.outflux.net>
-References: <20140121203223.GA12649@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, relocs: Add manual debug mode
-Git-Commit-ID: 214a88768d34079b70e0f2ba37b91a3b717fddbb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Jan 2014 07:26:11 -0500
+Date: Wed, 22 Jan 2014 13:26:09 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140122122609.GA392@x4>
+References: <20131212140835.729222186@infradead.org>
+ <20131212141655.362219382@infradead.org>
+ <52DEF495.2020304@oracle.com>
+ <20140122104532.GJ31570@twins.programming.kicks-ass.net>
+ <20140122120048.GB389@x4>
+ <20140122120757.GL31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 04:25:22 -0800 (PST)
+In-Reply-To: <20140122120757.GL31570@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  214a88768d34079b70e0f2ba37b91a3b717fddbb
-Gitweb:     http://git.kernel.org/tip/214a88768d34079b70e0f2ba37b91a3b717fddbb
-Author:     Michael Davidson <md@google.com>
-AuthorDate: Tue, 21 Jan 2014 12:32:23 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 22 Jan 2014 04:21:45 -0800
+On 2014.01.22 at 13:07 +0100, Peter Zijlstra wrote:
+> On Wed, Jan 22, 2014 at 01:00:48PM +0100, Markus Trippelsdorf wrote:
+> > FYI it happens on real hardware on my machine:
+> > ...
+> > [    0.000000] Hierarchical RCU implementation.
+> > [    0.000000] NR_IRQS:4352 nr_irqs:712 16
+> > [    0.000000] spurious 8259A interrupt: IRQ7.
+> > [    0.000000] Console: colour VGA+ 80x25
+> > [    0.000000] console [tty0] enabled
+> > [    0.000000] hpet clockevent registered
+> > [    0.000000] tsc: Fast TSC calibration using PIT
+> > [    0.003333] tsc: Detected 3210.681 MHz processor
+> > [   60.375238] Calibrating delay loop (skipped), value calculated using timer frequency.. 6423.91 BogoMIPS (lpj=10702270)
+> > [   60.375240] pid_max: default: 32768 minimum: 301
+> > [   60.375259] Mount-cache hash table entries: 256
+> > [   60.375373] tseg: 0000000000
+> > [   60.375377] CPU: Physical Processor ID: 0
+> > [   60.375377] CPU: Processor Core ID: 0
+> > [   60.375378] mce: CPU supports 6 MCE banks
+> > [   60.375382] LVT offset 0 assigned for vector 0xf9
+> > [   60.375384] process: using AMD E400 aware idle routine
+> > [   60.375386] Last level iTLB entries: 4KB 512, 2MB 16, 4MB 8
+> 
+> Should have always happened like that I think. From the log it looks
+> like the moment we switch from jiffies to actual TSC in
+> arch/x86/kernel/tsc.c:sched_clock().
+> 
+> I don't think I changed the logic there, just switched from a condition
+> to a jump_label.
 
-x86, relocs: Add manual debug mode
+Well, v3.13 was fine. So it's definitely a regression. But it may be
+another issue. I will try to bisect later.
 
-Improve the debuggability of relocations output. When trying to compare
-the output between different linkers, it's handy to be able to see the
-section names in output.
-
-Signed-off-by: Michael Davidson <md@google.com>
-Link: http://lkml.kernel.org/r/20140121203223.GA12649@www.outflux.net
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/tools/relocs.c        | 30 +++++++++++++++++++++++++++++-
- arch/x86/tools/relocs.h        |  7 ++++---
- arch/x86/tools/relocs_common.c | 16 ++++++++++++----
- 3 files changed, 45 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
-index f7bab68..9c2ab06 100644
---- a/arch/x86/tools/relocs.c
-+++ b/arch/x86/tools/relocs.c
-@@ -1015,6 +1015,29 @@ static void emit_relocs(int as_text, int use_real_mode)
- 	}
- }
- 
-+/*
-+ * As an aid to debugging problems with different linkers
-+ * print summary information about the relocs.
-+ * Since different linkers tend to emit the sections in
-+ * different orders we use the section names in the output.
-+ */
-+static int do_reloc_info(struct section *sec, Elf_Rel *rel, ElfW(Sym) *sym,
-+				const char *symname)
-+{
-+	printf("%s\t%s\t%s\t%s\n",
-+		sec_name(sec->shdr.sh_info),
-+		rel_type(ELF_R_TYPE(rel->r_info)),
-+		symname,
-+		sec_name(sym->st_shndx));
-+	return 0;
-+}
-+
-+static void print_reloc_info(void)
-+{
-+	printf("reloc section\treloc type\tsymbol\tsymbol section\n");
-+	walk_relocs(do_reloc_info);
-+}
-+
- #if ELF_BITS == 64
- # define process process_64
- #else
-@@ -1022,7 +1045,8 @@ static void emit_relocs(int as_text, int use_real_mode)
- #endif
- 
- void process(FILE *fp, int use_real_mode, int as_text,
--	     int show_absolute_syms, int show_absolute_relocs)
-+	     int show_absolute_syms, int show_absolute_relocs,
-+	     int show_reloc_info)
- {
- 	regex_init(use_real_mode);
- 	read_ehdr(fp);
-@@ -1040,5 +1064,9 @@ void process(FILE *fp, int use_real_mode, int as_text,
- 		print_absolute_relocs();
- 		return;
- 	}
-+	if (show_reloc_info) {
-+		print_reloc_info();
-+		return;
-+	}
- 	emit_relocs(as_text, use_real_mode);
- }
-diff --git a/arch/x86/tools/relocs.h b/arch/x86/tools/relocs.h
-index 07cdb1e..f595906 100644
---- a/arch/x86/tools/relocs.h
-+++ b/arch/x86/tools/relocs.h
-@@ -29,8 +29,9 @@ enum symtype {
- };
- 
- void process_32(FILE *fp, int use_real_mode, int as_text,
--		int show_absolute_syms, int show_absolute_relocs);
-+		int show_absolute_syms, int show_absolute_relocs,
-+		int show_reloc_info);
- void process_64(FILE *fp, int use_real_mode, int as_text,
--		int show_absolute_syms, int show_absolute_relocs);
--
-+		int show_absolute_syms, int show_absolute_relocs,
-+		int show_reloc_info);
- #endif /* RELOCS_H */
-diff --git a/arch/x86/tools/relocs_common.c b/arch/x86/tools/relocs_common.c
-index 44d3968..acab636 100644
---- a/arch/x86/tools/relocs_common.c
-+++ b/arch/x86/tools/relocs_common.c
-@@ -11,12 +11,13 @@ void die(char *fmt, ...)
- 
- static void usage(void)
- {
--	die("relocs [--abs-syms|--abs-relocs|--text|--realmode] vmlinux\n");
-+	die("relocs [--abs-syms|--abs-relocs|--reloc-info|--text|--realmode]" \
-+	    " vmlinux\n");
- }
- 
- int main(int argc, char **argv)
- {
--	int show_absolute_syms, show_absolute_relocs;
-+	int show_absolute_syms, show_absolute_relocs, show_reloc_info;
- 	int as_text, use_real_mode;
- 	const char *fname;
- 	FILE *fp;
-@@ -25,6 +26,7 @@ int main(int argc, char **argv)
- 
- 	show_absolute_syms = 0;
- 	show_absolute_relocs = 0;
-+	show_reloc_info = 0;
- 	as_text = 0;
- 	use_real_mode = 0;
- 	fname = NULL;
-@@ -39,6 +41,10 @@ int main(int argc, char **argv)
- 				show_absolute_relocs = 1;
- 				continue;
- 			}
-+			if (strcmp(arg, "--reloc-info") == 0) {
-+				show_reloc_info = 1;
-+				continue;
-+			}
- 			if (strcmp(arg, "--text") == 0) {
- 				as_text = 1;
- 				continue;
-@@ -67,10 +73,12 @@ int main(int argc, char **argv)
- 	rewind(fp);
- 	if (e_ident[EI_CLASS] == ELFCLASS64)
- 		process_64(fp, use_real_mode, as_text,
--			   show_absolute_syms, show_absolute_relocs);
-+			   show_absolute_syms, show_absolute_relocs,
-+			   show_reloc_info);
- 	else
- 		process_32(fp, use_real_mode, as_text,
--			   show_absolute_syms, show_absolute_relocs);
-+			   show_absolute_syms, show_absolute_relocs,
-+			   show_reloc_info);
- 	fclose(fp);
- 	return 0;
- }
+-- 
+Markus
