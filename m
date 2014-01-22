@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaAVTEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:04:04 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:55490 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673AbaAVTDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:03:47 -0500
-X-IronPort-AV: E=Sophos;i="4.95,701,1384300800"; 
-   d="scan'208";a="95452172"
-Message-ID: <52E015F5.70408@citrix.com>
-Date: Wed, 22 Jan 2014 19:03:17 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755946AbaAVTEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:04:45 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58269 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755847AbaAVTEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 14:04:43 -0500
+Date: Wed, 22 Jan 2014 19:04:30 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Message-ID: <20140122190430.GU17314@sirena.org.uk>
+References: <20140115113551.0eb13409@armhf>
+ <20140115165133.507595c9@armhf>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
- mapping
-References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com> <52E00FB7.3040508@citrix.com> <alpine.DEB.2.02.1401221848080.21510@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1401221848080.21510@kaball.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l2vDcU+jBoWlRij1"
+Content-Disposition: inline
+In-Reply-To: <20140115165133.507595c9@armhf>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/8] ASoC: simple-card: simplify code
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/14 18:50, Stefano Stabellini wrote:
-> On Wed, 22 Jan 2014, Zoltan Kiss wrote:
->> On 22/01/14 16:39, Stefano Stabellini wrote:
->>> On Tue, 21 Jan 2014, Zoltan Kiss wrote:
->>>> @@ -121,7 +125,7 @@ static inline unsigned long mfn_to_pfn(unsigned long
->>>> mfn)
->>>>    		pfn = m2p_find_override_pfn(mfn, ~0);
->>>>    	}
->>>>
->>>> -	/*
->>>> +	/*
->>>
->>> Spurious change?
->> It removes a stray space from the original code. Not necessary, but if it's
->> there, I think we can keep it.
->
-> Usually cosmetic changes are done in a separate patch, or at the very
-> least they are mentioned in the commit message.
-Ok, I'll mention it.
->
->
->>>> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
->>>> index 2ae8699..0060178 100644
->>>> --- a/arch/x86/xen/p2m.c
->>>> +++ b/arch/x86/xen/p2m.c
->>>> @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long mfn)
->>>>
->>>>    /* Add an MFN override for a particular page */
->>>>    int m2p_add_override(unsigned long mfn, struct page *page,
->>>> -		struct gnttab_map_grant_ref *kmap_op)
->>>> +		struct gnttab_map_grant_ref *kmap_op, unsigned long pfn)
->>>
->>> Do we really need to add another additional parameter to
->>> m2p_add_override?
->>> I would just let m2p_add_override and m2p_remove_override call
->>> page_to_pfn again. It is not that expensive.
->> Yes, because that page_to_pfn can return something different. That's why the
->> v2 patches failed.
->
-> I am really curious: how can page_to_pfn return something different?
-> I don't think is supposed to happen.
-You call set_phys_to_machine before calling m2p* functions.
 
-Zoli
+--l2vDcU+jBoWlRij1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jan 15, 2014 at 04:51:33PM +0100, Jean-Francois Moine wrote:
+
+> The check of the mandatory fields is done for DT in its specific sequence.
+> Move the global check to the non-DT sequence.
+
+Applied, thanks.
+
+--l2vDcU+jBoWlRij1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS4BY7AAoJELSic+t+oim9I20QAJA2R3yahk4plEkY/Rg/It6i
+iQM8Fg8N8dsm7/T9twTt5X0n68XcGMsAndHXI463Xu0RQ9XItF01tbtIAJv5VH4L
+mxwchj8UEa2EUM0YhsmKx7Je9E5UTQMixi5xrLLH3vzsqBzOR1ybZHyX9WeTuAxj
+9W5UK1zHeHoYTN0iZZm5TiBOZWqvD/LabktD+Y91I71a9+Bys3u9SFLaMpMhDpXq
+iniRZzHpaX7mB78IQ0G/afOFX0CqAwV5wVOZyuWJqvRtihuja+kugxZiK2BKaV6n
+H+3h0L7Ev5oIz40ZLyRp7FR6nUL8a4aFFhs1xBKDVEKC79+mRYgIoLcS+RTlYanG
+u+JEnk0mT3yfP8EbRh+mh1AAkvG0qRpwlBgCSQINZwVM7vjaBIuV5URVNUkZYoAb
+dC/8Wcc7Mw7ZP2VYaDANT+StpEcwsBGsitI0am02xU+OzY72hNici/S4PkPoFimR
+NsdyH3HWJ7waHSh8/WTAiYRjgLPh3uwuimZJ4TRGqN4Zjf5HM5tue+LgiB9diMMn
+fVLp82Mqj+L/XWha9xULxmfFXdT5ATJa16nGNEo39VUPIvgZuWcj+STUqycNv/Fp
+W13zWGvmOBhAj6xO1NV6Z3ffykSQ6dc0XG1NO88teOzLX96Zcr7VtSTCVf/dndc7
+x/J47J7Z/nVPRNcW8KPt
+=sxni
+-----END PGP SIGNATURE-----
+
+--l2vDcU+jBoWlRij1--
