@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaAVTM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 14:12:58 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:36500 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaAVTM4 (ORCPT
+	id S1754828AbaAVTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 14:15:28 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36772 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313AbaAVTP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 14:12:56 -0500
-Date: Wed, 22 Jan 2014 20:12:54 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        dyoung@redhat.com
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140122191254.GA390@x4>
-References: <20140122104532.GJ31570@twins.programming.kicks-ass.net>
- <20140122120048.GB389@x4>
- <20140122120757.GL31570@twins.programming.kicks-ass.net>
- <20140122122609.GA392@x4>
- <20140122123022.GN31570@twins.programming.kicks-ass.net>
- <20140122131456.GA389@x4>
- <52DFD50E.800@oracle.com>
- <20140122183538.GA389@x4>
- <20140122184253.GN30183@twins.programming.kicks-ass.net>
- <20140122190905.GA391@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122190905.GA391@x4>
+	Wed, 22 Jan 2014 14:15:27 -0500
+Message-ID: <1390418113.3540.23.camel@canaries32-MCP7A>
+Subject: Re: staging: vt6656: device.h Remove typedef enum
+ __device_init_type.
+From: Malcolm Priestley <tvboxspy@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 22 Jan 2014 19:15:13 +0000
+In-Reply-To: <1390356108.31946.20.camel@joe-AO722>
+References: <20140121002130.38BFD660F3F@gitolite.kernel.org>
+	 <20140121151643.GA19358@redhat.com> <20140122015753.GA20560@kroah.com>
+	 <1390356108.31946.20.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.01.22 at 20:09 +0100, Markus Trippelsdorf wrote:
-> On 2014.01.22 at 19:42 +0100, Peter Zijlstra wrote:
-> > On Wed, Jan 22, 2014 at 07:35:38PM +0100, Markus Trippelsdorf wrote:
-> > 
-> > > >FYI it happens on real hardware on my machine:
-> > 
-> > > >[   60.375384] process: using AMD E400 aware idle routine
-> > 
-> > > But this is a different issue. I've bisected it to:
+On Tue, 2014-01-21 at 18:01 -0800, Joe Perches wrote:
+> On Tue, 2014-01-21 at 17:57 -0800, Greg KH wrote:
+> > On Tue, Jan 21, 2014 at 10:16:43AM -0500, Dave Jones wrote:
+> > > On Tue, Jan 21, 2014 at 12:21:30AM +0000, Linux Kernel wrote:
+> > >  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=302433daf47aeb7d21d66e55fb84d6a8fffd4aed
+> > >  > Commit:     302433daf47aeb7d21d66e55fb84d6a8fffd4aed
+> > >  > Parent:     a72f8beeedc97b776799a1a80c04eb5312980c9b
+> > >  > Author:     Malcolm Priestley <tvboxspy@gmail.com>
+> > >  > AuthorDate: Sun Nov 3 17:40:51 2013 +0000
+> > >  > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > >  > CommitDate: Mon Nov 11 16:31:00 2013 -0800
+> > >  > 
+> > >  >     staging: vt6656: device.h Remove typedef enum __device_init_type.
+> > >  >     
+> > >  >     Since typedef enum __device_init_type is only ever called
+> > >  >     in one state.
+> > >  >     
+> > >  >     Remove the typedef from main_usb.c:device_init_registers and
+> > >  >     replace with macro values. The other values may be needed later.
+> > >  >     
+> > >  >     Apply cold value to sInitCmd.byInitClass.
+> > >  >     
+> > >  >     Remove if braces and correct formatting within.
 > > > 
-> > > commit 20d1c86a57762f0a33a78988e3fc8818316badd4
-> > > Author: Peter Zijlstra <peterz@infradead.org>
-> > > Date:   Fri Nov 29 15:40:29 2013 +0100
+> > >  ...
 > > > 
-> > >     sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs
+> > >  >  	/* load power table */
+> > >  >  	for (ii = 0; ii < 14; ii++) {
+> > >  > -            pDevice->abyCCKPwrTbl[ii] = pDevice->abyEEPROM[ii + EEP_OFS_CCK_PWR_TBL];
+> > >  > -            if (pDevice->abyCCKPwrTbl[ii] == 0)
+> > >  > -                pDevice->abyCCKPwrTbl[ii] = pDevice->byCCKPwr;
+> > >  > -            pDevice->abyOFDMPwrTbl[ii] = pDevice->abyEEPROM[ii + EEP_OFS_OFDM_PWR_TBL];
+> > >  > -            if (pDevice->abyOFDMPwrTbl[ii] == 0)
+> > >  > -                pDevice->abyOFDMPwrTbl[ii] = pDevice->byOFDMPwrG;
+> > >  > -        }
+> > >  > +		pDevice->abyCCKPwrTbl[ii] =
+> > >  > +			pDevice->abyEEPROM[ii + EEP_OFS_CCK_PWR_TBL];
+> > >  > +
+> > >  > +		if (pDevice->abyCCKPwrTbl[ii] == 0)
+> > >  > +			pDevice->abyCCKPwrTbl[ii] = pDevice->byCCKPwr;
+> > >  > +			pDevice->abyOFDMPwrTbl[ii] =
+> > >  > +				pDevice->abyEEPROM[ii + EEP_OFS_OFDM_PWR_TBL];
+> > >  > +		if (pDevice->abyOFDMPwrTbl[ii] == 0)
+> > >  > +			pDevice->abyOFDMPwrTbl[ii] = pDevice->byOFDMPwrG;
+> > >  > +	}
 > > > 
-> > > Reverting the commit "fixes" the issue:
+> > > Wrong indentation of the pDevice->abyOFDMPwrTbl[ii] assignment.
+> > > Wrapping this to 80 columns has actually made this less readable imo.
+Thanks Dave
+
 > > 
-> > Hurm..
+> > Good catch, I'll fix that up after 3.14-rc1 is out, thanks for finding
+> > it.
 > 
-> Turns out the fix is simple:
+> It'd also be nice to eventually do away with the
+> semi-Hungarian notation aby, p, by, etc prefixes
+> and camelcase naming.
+> 
+I am slowly working through it by function.
 
-No. It isn't. I've tested the wrong kernel. Please ignore.
+There is still a lot of dead code.
 
-Thanks.
 
--- 
-Markus
+
