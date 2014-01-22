@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaAVMZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 07:25:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59125 "EHLO
+	id S932088AbaAVM0C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 07:26:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59132 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaAVMZp (ORCPT
+	with ESMTP id S1755431AbaAVMZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 07:25:45 -0500
-Date: Wed, 22 Jan 2014 04:25:34 -0800
-From: tip-bot for David Woodhouse <tipbot@zytor.com>
-Message-ID: <tip-9b3965f7401b0cc3ed2c228085a4c13b1c9243b1@git.kernel.org>
+	Wed, 22 Jan 2014 07:25:49 -0500
+Date: Wed, 22 Jan 2014 04:25:13 -0800
+From: tip-bot for Michael Davidson <tipbot@zytor.com>
+Message-ID: <tip-214a88768d34079b70e0f2ba37b91a3b717fddbb@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
+        keescook@chromium.org, md@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
-In-Reply-To: <1389180083-23249-2-git-send-email-David.Woodhouse@intel.com>
-References: <1389180083-23249-2-git-send-email-David.Woodhouse@intel.com>
+        keescook@chromium.org, md@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140121203223.GA12649@www.outflux.net>
+References: <20140121203223.GA12649@www.outflux.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, boot: Use __attribute__((used))
-  to ensure videocard structs are emitted
-Git-Commit-ID: 9b3965f7401b0cc3ed2c228085a4c13b1c9243b1
+Subject: [tip:x86/build] x86, relocs: Add manual debug mode
+Git-Commit-ID: 214a88768d34079b70e0f2ba37b91a3b717fddbb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,43 +29,156 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 04:25:40 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 22 Jan 2014 04:25:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9b3965f7401b0cc3ed2c228085a4c13b1c9243b1
-Gitweb:     http://git.kernel.org/tip/9b3965f7401b0cc3ed2c228085a4c13b1c9243b1
-Author:     David Woodhouse <David.Woodhouse@intel.com>
-AuthorDate: Wed, 8 Jan 2014 11:21:21 +0000
+Commit-ID:  214a88768d34079b70e0f2ba37b91a3b717fddbb
+Gitweb:     http://git.kernel.org/tip/214a88768d34079b70e0f2ba37b91a3b717fddbb
+Author:     Michael Davidson <md@google.com>
+AuthorDate: Tue, 21 Jan 2014 12:32:23 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Wed, 22 Jan 2014 04:21:45 -0800
 
-x86, boot: Use __attribute__((used)) to ensure videocard structs are emitted
+x86, relocs: Add manual debug mode
 
-It looks like GCC will always emit an object that is marked with an
-explicit section, although the documentation doesn't say that and we
-possibly shouldn't be relying on it.
+Improve the debuggability of relocations output. When trying to compare
+the output between different linkers, it's handy to be able to see the
+section names in output.
 
-Clang does *not* do so, so add __attribute__((used)) to make sure.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Link: http://lkml.kernel.org/r/1389180083-23249-2-git-send-email-David.Woodhouse@intel.com
+Signed-off-by: Michael Davidson <md@google.com>
+Link: http://lkml.kernel.org/r/20140121203223.GA12649@www.outflux.net
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/boot/video.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/tools/relocs.c        | 30 +++++++++++++++++++++++++++++-
+ arch/x86/tools/relocs.h        |  7 ++++---
+ arch/x86/tools/relocs_common.c | 16 ++++++++++++----
+ 3 files changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/boot/video.h b/arch/x86/boot/video.h
-index ff339c5..0bb2549 100644
---- a/arch/x86/boot/video.h
-+++ b/arch/x86/boot/video.h
-@@ -80,7 +80,7 @@ struct card_info {
- 	u16 xmode_n;		/* Size of unprobed mode range */
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index f7bab68..9c2ab06 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -1015,6 +1015,29 @@ static void emit_relocs(int as_text, int use_real_mode)
+ 	}
+ }
+ 
++/*
++ * As an aid to debugging problems with different linkers
++ * print summary information about the relocs.
++ * Since different linkers tend to emit the sections in
++ * different orders we use the section names in the output.
++ */
++static int do_reloc_info(struct section *sec, Elf_Rel *rel, ElfW(Sym) *sym,
++				const char *symname)
++{
++	printf("%s\t%s\t%s\t%s\n",
++		sec_name(sec->shdr.sh_info),
++		rel_type(ELF_R_TYPE(rel->r_info)),
++		symname,
++		sec_name(sym->st_shndx));
++	return 0;
++}
++
++static void print_reloc_info(void)
++{
++	printf("reloc section\treloc type\tsymbol\tsymbol section\n");
++	walk_relocs(do_reloc_info);
++}
++
+ #if ELF_BITS == 64
+ # define process process_64
+ #else
+@@ -1022,7 +1045,8 @@ static void emit_relocs(int as_text, int use_real_mode)
+ #endif
+ 
+ void process(FILE *fp, int use_real_mode, int as_text,
+-	     int show_absolute_syms, int show_absolute_relocs)
++	     int show_absolute_syms, int show_absolute_relocs,
++	     int show_reloc_info)
+ {
+ 	regex_init(use_real_mode);
+ 	read_ehdr(fp);
+@@ -1040,5 +1064,9 @@ void process(FILE *fp, int use_real_mode, int as_text,
+ 		print_absolute_relocs();
+ 		return;
+ 	}
++	if (show_reloc_info) {
++		print_reloc_info();
++		return;
++	}
+ 	emit_relocs(as_text, use_real_mode);
+ }
+diff --git a/arch/x86/tools/relocs.h b/arch/x86/tools/relocs.h
+index 07cdb1e..f595906 100644
+--- a/arch/x86/tools/relocs.h
++++ b/arch/x86/tools/relocs.h
+@@ -29,8 +29,9 @@ enum symtype {
  };
  
--#define __videocard struct card_info __attribute__((section(".videocards")))
-+#define __videocard struct card_info __attribute__((used,section(".videocards")))
- extern struct card_info video_cards[], video_cards_end[];
+ void process_32(FILE *fp, int use_real_mode, int as_text,
+-		int show_absolute_syms, int show_absolute_relocs);
++		int show_absolute_syms, int show_absolute_relocs,
++		int show_reloc_info);
+ void process_64(FILE *fp, int use_real_mode, int as_text,
+-		int show_absolute_syms, int show_absolute_relocs);
+-
++		int show_absolute_syms, int show_absolute_relocs,
++		int show_reloc_info);
+ #endif /* RELOCS_H */
+diff --git a/arch/x86/tools/relocs_common.c b/arch/x86/tools/relocs_common.c
+index 44d3968..acab636 100644
+--- a/arch/x86/tools/relocs_common.c
++++ b/arch/x86/tools/relocs_common.c
+@@ -11,12 +11,13 @@ void die(char *fmt, ...)
  
- int mode_defined(u16 mode);	/* video.c */
+ static void usage(void)
+ {
+-	die("relocs [--abs-syms|--abs-relocs|--text|--realmode] vmlinux\n");
++	die("relocs [--abs-syms|--abs-relocs|--reloc-info|--text|--realmode]" \
++	    " vmlinux\n");
+ }
+ 
+ int main(int argc, char **argv)
+ {
+-	int show_absolute_syms, show_absolute_relocs;
++	int show_absolute_syms, show_absolute_relocs, show_reloc_info;
+ 	int as_text, use_real_mode;
+ 	const char *fname;
+ 	FILE *fp;
+@@ -25,6 +26,7 @@ int main(int argc, char **argv)
+ 
+ 	show_absolute_syms = 0;
+ 	show_absolute_relocs = 0;
++	show_reloc_info = 0;
+ 	as_text = 0;
+ 	use_real_mode = 0;
+ 	fname = NULL;
+@@ -39,6 +41,10 @@ int main(int argc, char **argv)
+ 				show_absolute_relocs = 1;
+ 				continue;
+ 			}
++			if (strcmp(arg, "--reloc-info") == 0) {
++				show_reloc_info = 1;
++				continue;
++			}
+ 			if (strcmp(arg, "--text") == 0) {
+ 				as_text = 1;
+ 				continue;
+@@ -67,10 +73,12 @@ int main(int argc, char **argv)
+ 	rewind(fp);
+ 	if (e_ident[EI_CLASS] == ELFCLASS64)
+ 		process_64(fp, use_real_mode, as_text,
+-			   show_absolute_syms, show_absolute_relocs);
++			   show_absolute_syms, show_absolute_relocs,
++			   show_reloc_info);
+ 	else
+ 		process_32(fp, use_real_mode, as_text,
+-			   show_absolute_syms, show_absolute_relocs);
++			   show_absolute_syms, show_absolute_relocs,
++			   show_reloc_info);
+ 	fclose(fp);
+ 	return 0;
+ }
