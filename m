@@ -1,104 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaAVPmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:42:14 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:56012 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaAVPmM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:42:12 -0500
-Date: Wed, 22 Jan 2014 16:41:15 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Shijie <b32955@freescale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect
- use of prandom_bytes_state()
-Message-ID: <20140122164115.211a819d@ipc1.ka-ro>
-In-Reply-To: <CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
-References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
-	<20140122150959.78cf2827@ipc1.ka-ro>
-	<CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756010AbaAVPmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:42:22 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:59734 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148AbaAVPmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 10:42:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=p/nLHAFa5HavCXucX21tYqSgzsQYiRCt
+	QmNVyNnQsXJtDl+7DppRs2xt0UhiKNwrq2COvFgG4meFukwF/+Hk/tGxPxsnl3oD
+	1u4LofecasG8Z4FjE23l8tSqHHVWPRdtJqa81MmDSQj+DWpO3H/ZolkHkqd1tgmK
+	sBmRKsVj/yo=
+From: Junio C Hamano <gitster@pobox.com>
+To: Javier Domingo Cansino <javierdo1@gmail.com>
+Cc: "git\@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.9-rc0
+References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com>
+	<xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
+	<CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
+Date: Wed, 22 Jan 2014 07:42:12 -0800
+In-Reply-To: <CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
+	(Javier Domingo Cansino's message of "Wed, 22 Jan 2014 13:53:26
+	+0100")
+Message-ID: <xmqqk3dsyqej.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: C429E156-837B-11E3-B748-1B26802839F8-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Javier Domingo Cansino <javierdo1@gmail.com> writes:
 
-Akinobu Mita wrote:
-> 2014/1/22 Lothar Waßmann <LW@karo-electronics.de>:
-> > Hi,
-> >
-> > Is anyone taking care of this?
-> >
-> > Lothar Waßmann wrote:
-> >> When using prandom_bytes_state() it is critical to use the same block
-> >> size in all invocations that are to produce the same random sequence.
-> >> Otherwise the state of the PRNG will be out of sync if the blocksize
-> >> is not divisible by 4.
-> >> This leads to bogus verification errors in several tests which use
-> >> different block sizes to initialize the buffer for writing and
-> >> comparison.
-> >>
-> >> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> >> ---
-> >>  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
-> >>  1 files changed, 12 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
-> >> index 2e9e2d1..72c7359 100644
-> >> --- a/drivers/mtd/tests/oobtest.c
-> >> +++ b/drivers/mtd/tests/oobtest.c
-> >> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
-> >>       int err = 0;
-> >>       loff_t addr = ebnum * mtd->erasesize;
-> >>       size_t len = mtd->ecclayout->oobavail * pgcnt;
-> >> +     int i;
-> >> +
-> >> +     for (i = 0; i < pgcnt; i++)
-> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> >> +                             use_len);
-> >> +     if (len % use_len)
-> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> >> +                             len % use_len);
-> >>
-> >> -     prandom_bytes_state(&rnd_state, writebuf, len);
-> >>       ops.mode      = MTD_OPS_AUTO_OOB;
-> >>       ops.len       = 0;
-> >>       ops.retlen    = 0;
-> 
-> I would rather fix the use of prandom_bytes_state() in write_eraseblock()
-> than fix in verify_eraseblock_in_one_go().
-> 
-Why and how?
-write_whole_device() (which calls write_eraseblock()) is used multiple
-times with different verification methods (all blocks in one go or each
-block individually).
-If prandom_state_bytes() in write_eraseblock() would be changed, that
-function would have to know, how the block are going to be checked
-lateron to know how to set up the writebuffer.
+> Will there be any change on how tarballs are distributed, taking into
+> account that Google will be shutting down Google Code Downloads
+> section[1][2]?
 
-Dto. for mtd_write_oob()
-
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Aside from the obvious "we won't be able to use something that is no
+longer offered"?  They are not the only download site even now, so...
