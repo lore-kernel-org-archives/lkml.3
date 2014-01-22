@@ -1,467 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613AbaAVXto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:49:44 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:49354 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaAVXtl (ORCPT
+	id S1755967AbaAVXuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:50:00 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:40322 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806AbaAVXt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:49:41 -0500
+	Wed, 22 Jan 2014 18:49:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140122164100.GE15937@n2100.arm.linux.org.uk>
-References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
-	<20140122164100.GE15937@n2100.arm.linux.org.uk>
-Date: Wed, 22 Jan 2014 15:49:39 -0800
-Message-ID: <CACUGKYPakuAGOWb+RetqNhEBvRP-+Pmtu2_4a2zuV0bFR0QJRA@mail.gmail.com>
-Subject: Re: Internal error: Oops: 17 [#1] ARM
-From: John Tobias <john.tobias.ph@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng <b29396@freescale.com>
+Date: Wed, 22 Jan 2014 15:49:56 -0800
+Message-ID: <CAADnVQKeOZNBFdyfLdfmZ5+wqBoV9JVU98sKzWvqRM7r1PNMFA@mail.gmail.com>
+Subject: Re: might_sleep warning in filemap_fault()
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+still see the following lockdep trace on 3.10.27
+looks like false positive?
 
-Just to confirm that the error I posted previously exist in 3.13
-released. Just be noted that some patches related to eMMC/sdhci has
-been applied in order to boot the 3.13 on my board.
-Addition to that, I was getting additional errors (please see below):
-- It happened during the reboot.
-
-Cc'ng Dong Aisheng.
-
-
-
-[   11.229139] Unable to handle kernel NULL pointer dereference at
-virtual address 00000000
-[   11.237244] pgd = 80004000
-[   11.239956] [00000000] *pgd=00000000
-[   11.243555] Internal error: Oops: 17 [#1] ARM
-[   11.247917] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(PO)
-[   11.253561] CPU: 0 PID: 37 Comm: mmcqd/0 Tainted: P           O 3.13.0 #5
-[   11.260355] task: bfb00000 ti: bfb6e000 task.ti: bfb6e000
-[   11.265766] PC is at sg_next+0xc/0x34
-[   11.269440] LR is at sdhci_send_command+0x990/0xf50
-[   11.274323] pc : [<802a3874>]    lr : [<803a2bc8>]    psr: 200f0093
-[   11.274323] sp : bfb6fd20  ip : bfb6fd30  fp : bfb6fd2c
-[   11.285803] r10: 00000003  r9 : bfa67440  r8 : bf957010
-[   11.291030] r7 : 808487bc  r6 : 600f0013  r5 : bfb43d4c  r4 : bfb43ce4
-[   11.297560] r3 : 81784e62  r2 : 00000000  r1 : bfb6a800  r0 : 00000000
-[   11.304091] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
-Segment kernel
-[   11.311490] Control: 10c53c7d  Table: beeec059  DAC: 00000015
-[   11.317239] Process mmcqd/0 (pid: 37, stack limit = 0xbfb6e238)
-[   11.323162] Stack: (0xbfb6fd20 to 0xbfb70000)
-[   11.327530] fd20: bfb6fd8c bfb6fd30 803a2bc8 802a3874 00000002
-00000000 bfb6fd5c bfb6fd48
-[   11.335713] fd40: 8001d1d0 00000002 80e04788 80845840 bfb6fd8c
-bfb6a800 803a7558 8001d190
-[   11.343896] fd60: 803a7418 bfa67000 bfb43c6c bfa67470 600f0013
-bfa67440 0000002d bfa67000
-[   11.352079] fd80: bfb6fdb4 bfb6fd90 803a3a48 803a2244 bfb43c6c
-bfa67000 8089fed0 bfb43d4c
-[   11.360262] fda0: bfb6fe7c bfb43ec0 bfb6fdec bfb6fdb8 8038d3e0
-803a388c bfb6fdd4 bfb6fdc8
-[   11.368444] fdc0: 8005b7c4 bfa673d8 bfb43e18 00000000 00000001
-bfb43d8c 00000001 bfb6fe7c
-[   11.376626] fde0: bfb6fe3c bfb6fdf0 8038e538 8038d2c4 bfb6fe3c
-bfb43da0 8039d0a4 00000000
-[   11.384809] fe00: bfb00000 8005344c bfb6fe08 bfb6fe08 bfb6fe34
-bfbfc000 bfb43c24 bfb6a000
-[   11.392992] fe20: bfb44b60 bfb43c68 bfb6a000 bfb43c6c bfb6feac
-bfb6fe40 8039e214 8038e278
-[   11.401175] fe40: bfb44b60 bfb43c24 bfb6fe74 bfb6fe58 80292194
-80276c0c bfb4fc00 bef024c0
-[   11.409357] fe60: 00000000 00000000 00000000 bfb6fe78 bfb43c00
-bfbfc000 00000002 00000080
-[   11.417541] fe80: 00000000 bfb6a000 bfbfc000 00000000 00000000
-bfb43c24 bfb43c00 bfa67000
-[   11.425724] fea0: bfb6feec bfb6feb0 8039edc0 8039e158 00000000
-122c8000 bfb6fed4 bfb6fec8
-[   11.433908] fec0: 8005b7c4 bfb44b60 bfb6e000 00000000 122c8000
-00000001 bfbfc000 bfb43c24
-[   11.442091] fee0: bfb6ff24 bfb6fef0 8039f830 8039ebf0 bfb6e030
-bfb43c2c 8039f780 bfb51a80
-[   11.450273] ff00: 00000000 bfb43c24 8039f780 00000000 00000000
-00000000 bfb6ffac bfb6ff28
-[   11.458456] ff20: 80043658 8039f78c bfb6ff44 00000000 8005b7c4
-bfb43c24 00000000 00000001
-[   11.466639] ff40: dead4ead ffffffff ffffffff 808a8990 00000000
-00000000 807239a4 bfb6ff5c
-[   11.474822] ff60: bfb6ff5c 00000000 00000001 dead4ead ffffffff
-ffffffff 808a8990 00000000
-[   11.483006] ff80: 00000000 807239a4 bfb6ff88 bfb6ff88 bfb51a80
-80043574 00000000 00000000
-[   11.491188] ffa0: 00000000 bfb6ffb0 8000f348 80043580 00000000
-00000000 00000000 00000000
-[   11.499370] ffc0: 00000000 00000000 00000000 00000000 00000000
-00000000 00000000 00000000
-[   11.507552] ffe0: 00000000 00000000 00000000 00000000 00000013
-00000000 55055703 d17847e7
-[   11.515729] Backtrace:
-[   11.518203] [<802a3868>] (sg_next+0x0/0x34) from [<803a2bc8>]
-(sdhci_send_command+0x990/0xf50)
-[   11.526826] [<803a2238>] (sdhci_send_command+0x0/0xf50) from
-[<803a3a48>] (sdhci_request+0x1c8/0x278)
-[   11.536056] [<803a3880>] (sdhci_request+0x0/0x278) from
-[<8038d3e0>] (mmc_start_request+0x128/0x24c)
-[   11.545190]  r9:bfb43ec0 r8:bfb6fe7c r7:bfb43d4c r6:8089fed0 r5:bfa67000
-r4:bfb43c6c
-[   11.553118] [<8038d2b8>] (mmc_start_request+0x0/0x24c) from
-[<8038e538>] (mmc_start_req+0x2cc/0x378)
-[   11.562251]  r8:bfb6fe7c r7:00000001 r6:bfb43d8c r5:00000001 r4:00000000
-[   11.569033] [<8038e26c>] (mmc_start_req+0x0/0x378) from
-[<8039e214>] (mmc_blk_issue_rw_rq+0xc8/0xa98)
-[   11.578261] [<8039e14c>] (mmc_blk_issue_rw_rq+0x0/0xa98) from
-[<8039edc0>] (mmc_blk_issue_rq+0x1dc/0x4cc)
-[   11.587836] [<8039ebe4>] (mmc_blk_issue_rq+0x0/0x4cc) from
-[<8039f830>] (mmc_queue_thread+0xb0/0x14c)
-[   11.597069] [<8039f780>] (mmc_queue_thread+0x0/0x14c) from
-[<80043658>] (kthread+0xe4/0xf8)
-[   11.605433] [<80043574>] (kthread+0x0/0xf8) from [<8000f348>]
-(ret_from_fork+0x14/0x20)
-[   11.613439]  r7:00000000 r6:00000000 r5:80043574 r4:bfb51a80
-[   11.619164] Code: e89da800 e1a0c00d e92dd800 e24cb004 (e5903000)
-[   11.625266] ---[ end trace e52024b248222184 ]---
-[   11.629889] Kernel panic - not syncing: Fatal exception
-[   32.238311] BUG: spinlock lockup suspected on CPU#0, mmcqd/0/37
-[   32.244246]  lock: 0xbfa67470, .magic: dead4ead, .owner:
-mmcqd/0/37, .owner_cpu: 0
-[   32.251825] CPU: 0 PID: 37 Comm: mmcqd/0 Tainted: P      D    O 3.13.0 #5
-[   32.258616] Backtrace:
-[   32.261096] [<80012ef8>] (dump_backtrace+0x0/0x118) from
-[<80013238>] (show_stack+0x20/0x24)
-[   32.269536]  r6:3b4181c0 r5:bfa67470 r4:bfb00000 r3:00000000
-[   32.275265] [<80013218>] (show_stack+0x0/0x24) from [<805b4cdc>]
-(dump_stack+0x24/0x28)
-[   32.283287] [<805b4cb8>] (dump_stack+0x0/0x28) from [<805b2680>]
-(spin_dump+0x94/0x9c)
-[   32.291215] [<805b25ec>] (spin_dump+0x0/0x9c) from [<800603fc>]
-(do_raw_spin_lock+0x118/0x14c)
-[   32.299827]  r5:00000000 r4:3b4181c0
-[   32.303442] [<800602e4>] (do_raw_spin_lock+0x0/0x14c) from
-[<805bb8a0>] (_raw_spin_lock_irqsave+0x58/0x64)
-[   32.313109] [<805bb848>] (_raw_spin_lock_irqsave+0x0/0x64) from
-[<803a4c40>] (sdhci_timeout_timer+0x24/0xd0)
-[   32.322936]  r6:bfb6f918 r5:bfa67470 r4:bfa67440
-[   32.327612] [<803a4c1c>] (sdhci_timeout_timer+0x0/0xd0) from
-[<8002ef6c>] (call_timer_fn+0x94/0x17c)
-[   32.336745]  r6:bfb6f918 r5:bfa67528 r4:80898454 r3:00000000
-[   32.342471] [<8002eed8>] (call_timer_fn+0x0/0x17c) from
-[<8002f594>] (run_timer_softirq+0x1b0/0x258)
-[   32.351614] [<8002f3e4>] (run_timer_softirq+0x0/0x258) from
-[<80027bd0>] (__do_softirq+0x148/0x314)
-[   32.360666] [<80027a88>] (__do_softirq+0x0/0x314) from [<800281b8>]
-(irq_exit+0xc8/0x110)
-[   32.368852] [<800280f0>] (irq_exit+0x0/0x110) from [<8000fc64>]
-(handle_IRQ+0x4c/0x94)
-[   32.376770]  r4:80872034 r3:00000120
-[   32.380384] [<8000fc18>] (handle_IRQ+0x0/0x94) from [<800085a0>]
-(gic_handle_irq+0x3c/0x64)
-[   32.388736]  r6:bfb6fa68 r5:80842e64 r4:c080e10c r3:000000a0
-[   32.394461] [<80008564>] (gic_handle_irq+0x0/0x64) from
-[<80013d84>] (__irq_svc+0x44/0x58)
-[   32.402729] Exception stack(0xbfb6fa68 to 0xbfb6fab0)
-[   32.407789] fa60:                   000355f9 ffffffff 000025ed
-80295740 00000048 80871ff4
-[   32.415974] fa80: 00002580 00002648 00000001 808a6448 808a5fc4
-bfb6fad4 bfb6fab0 bfb6fab0
-[   32.424154] faa0: 805b145c 80295770 200f0113 ffffffff
-[   32.429207]  r7:bfb6fa9c r6:ffffffff r5:200f0113 r4:80295770
-[   32.434937] [<805b1294>] (panic+0x0/0x1dc) from [<800135c8>]
-(die+0x38c/0x3a0)
-[   32.442160]  r3:00000001 r2:00000000 r1:00000001 r0:80720a90
-[   32.447879]  r7:bfb6e000
-[   32.450438] [<8001323c>] (die+0x0/0x3a0) from [<805b1284>]
-(__do_kernel_fault.part.11+0x74/0x84)
-[   32.459239] [<805b1210>] (__do_kernel_fault.part.11+0x0/0x84) from
-[<80019d8c>] (do_page_fault+0x1cc/0x3d4)
-[   32.468981]  r7:00000017 r3:bfb6fcd8
-[   32.472594] [<80019bc0>] (do_page_fault+0x0/0x3d4) from
-[<80008440>] (do_DataAbort+0x48/0xa8)
-[   32.481127] [<800083f8>] (do_DataAbort+0x0/0xa8) from [<80013d1c>]
-(__dabt_svc+0x3c/0x60)
-[   32.489307] Exception stack(0xbfb6fcd8 to 0xbfb6fd20)
-[   32.494362] fcc0:
-    00000000 bfb6a800
-[   32.502545] fce0: 00000000 81784e62 bfb43ce4 bfb43d4c 600f0013
-808487bc bf957010 bfa67440
-[   32.510730] fd00: 00000003 bfb6fd2c bfb6fd30 bfb6fd20 803a2bc8
-802a3874 200f0093 ffffffff
-[   32.518908]  r8:bf957010 r7:bfb6fd0c r6:ffffffff r5:200f0093 r4:802a3874
-[   32.525696] [<802a3868>] (sg_next+0x0/0x34) from [<803a2bc8>]
-(sdhci_send_command+0x990/0xf50)
-[   32.534317] [<803a2238>] (sdhci_send_command+0x0/0xf50) from
-[<803a3a48>] (sdhci_request+0x1c8/0x278)
-[   32.543548] [<803a3880>] (sdhci_request+0x0/0x278) from
-[<8038d3e0>] (mmc_start_request+0x128/0x24c)
-[   32.552681]  r9:bfb43ec0 r8:bfb6fe7c r7:bfb43d4c r6:8089fed0 r5:bfa67000
-r4:bfb43c6c
-[   32.560605] [<8038d2b8>] (mmc_start_request+0x0/0x24c) from
-[<8038e538>] (mmc_start_req+0x2cc/0x378)
-[   32.569738]  r8:bfb6fe7c r7:00000001 r6:bfb43d8c r5:00000001 r4:00000000
-[   32.576520] [<8038e26c>] (mmc_start_req+0x0/0x378) from
-[<8039e214>] (mmc_blk_issue_rw_rq+0xc8/0xa98)
-[   32.585749] [<8039e14c>] (mmc_blk_issue_rw_rq+0x0/0xa98) from
-[<8039edc0>] (mmc_blk_issue_rq+0x1dc/0x4cc)
-[   32.595324] [<8039ebe4>] (mmc_blk_issue_rq+0x0/0x4cc) from
-[<8039f830>] (mmc_queue_thread+0xb0/0x14c)
-[   32.604556] [<8039f780>] (mmc_queue_thread+0x0/0x14c) from
-[<80043658>] (kthread+0xe4/0xf8)
-[   32.612916] [<80043574>] (kthread+0x0/0xf8) from [<8000f348>]
-(ret_from_fork+0x14/0x20)
-[   32.620922]  r7:00000000 r6:00000000 r5:80043574 r4:bfb51a80
-[   32.626642] mmc0: Timeout waiting for hardware interrupt.
-[   32.632066] Unable to handle kernel NULL pointer dereference at
-virtual address 0000000c
-[   32.640161] pgd = 80004000
-[   32.642871] [0000000c] *pgd=00000000
-[   32.646468] Internal error: Oops: 17 [#2] ARM
-[   32.650830] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(PO)
-[   32.656474] CPU: 0 PID: 37 Comm: mmcqd/0 Tainted: P      D    O 3.13.0 #5
-[   32.663266] task: bfb00000 ti: bfb6e000 task.ti: bfb6e000
-[   32.668674] PC is at arm_dma_sync_sg_for_cpu+0x44/0x8c
-[   32.673817] LR is at arm_dma_sync_sg_for_cpu+0x68/0x8c
-[   32.678961] pc : [<80018f7c>]    lr : [<80018fa0>]    psr: 800f0193
-[   32.678961] sp : bfb6f870  ip : bfb6f870  fp : bfb6f894
-[   32.690442] r10: bfa67440  r9 : 00000002  r8 : bf957010
-[   32.695670] r7 : 600f0013  r6 : 808487bc  r5 : 00000002  r4 : 00000000
-[   32.702199] r3 : 81784e62  r2 : 0003bdf8  r1 : 81009000  r0 : 00000000
-[   32.708732] Flags: Nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
-Segment kernel
-[   32.716130] Control: 10c53c7d  Table: beeec059  DAC: 00000015
-[   32.721878] Process mmcqd/0 (pid: 37, stack limit = 0xbfb6e238)
-[   32.727800] Stack: (0xbfb6f870 to 0xbfb70000)
-[   32.732164] f860:                                     bfa67440
-bfb43d4c 600f0113 bfb6e000
-[   32.740348] f880: 00000100 00000002 bfb6f8dc bfb6f898 803a3d70
-80018f44 00000000 bfa67440
-[   32.748533] f8a0: bfb6f8cc bfb6f8b0 805b27a8 800651e4 807765b4
-bfa67440 bfa67470 600f0113
-[   32.756717] f8c0: bfb6e000 00000100 803a4c1c bfa67440 bfb6f8fc
-bfb6f8e0 803a4ca0 803a3b04
-[   32.764902] f8e0: 00000000 80898454 bfa67528 bfb6f918 bfb6f954
-bfb6f900 8002ef6c 803a4c28
-[   32.773086] f900: 00000002 00000000 8002eed8 800a657c 808a6a80
-bfa67440 80e1030c 00000000
-[   32.781271] f920: 00000000 80776904 8005b7c4 808a6a80 bfa67528
-808a6908 00000000 bfb6f970
-[   32.789455] f940: 803a4c1c bfa67440 bfb6f9a4 bfb6f958 8002f594
-8002eee4 808a76b0 808a74b0
-[   32.797639] f960: 808a72b0 8084c550 00200200 80898454 bfb6f970
-bfb6f970 bfb6e000 00000001
-[   32.805823] f980: 00000004 808a6908 808a6904 bfb6e000 808a6448
-00000001 bfb6fa0c bfb6f9a8
-[   32.814007] f9a0: 80027bd0 8002f3f0 805bb750 800602f0 00208840
-8084ab98 ffff931d 8084c550
-[   32.822191] f9c0: bfb6e028 808a68c0 0000000a 80852688 00000004
-00000100 808a6900 808983f0
-[   32.830375] f9e0: c080e100 bfb6e010 00000057 00000000 c080e100
-00000001 808a6448 808a5fc4
-[   32.838560] fa00: bfb6fa24 bfb6fa10 800281b8 80027a94 00000120
-80872034 bfb6fa44 bfb6fa28
-[   32.846744] fa20: 8000fc64 800280fc 000000a0 c080e10c 80842e64
-bfb6fa68 bfb6fa64 bfb6fa48
-[   32.854928] fa40: 800085a0 8000fc24 80295770 200f0113 ffffffff
-bfb6fa9c bfb6fad4 bfb6fa68
-[   32.863112] fa60: 80013d84 80008570 000355f9 ffffffff 000025ed
-80295740 00000048 80871ff4
-[   32.871296] fa80: 00002580 00002648 00000001 808a6448 808a5fc4
-bfb6fad4 bfb6fab0 bfb6fab0
-[   32.879480] faa0: 805b145c 80295770 200f0113 ffffffff 80847c88
-0000000b 80847c88 bfb6fadc
-[   32.887664] fac0: 00000001 bfb6e000 bfb6fb6c bfb6fae8 800135c8
-805b12a4 80720a90 00000001
-[   32.895848] fae0: 00000000 00000001 bfb6e238 0000000b 00000000
-00000008 00000000 807209e4
-[   32.904032] fb00: 600f0193 807209ec 65b00000 61643938 20303038
-30613165 64303063 32396520
-[   32.912218] fb20: 30386464 32652030 30626334 28203430 30393565
-30303033 80002029 805b2774
-[   32.920403] fb40: 80796d74 00000000 00000017 00000000 bfb6fcd8
-00000000 bfb00000 00000003
-[   32.928587] fb60: bfb6fb84 bfb6fb70 805b1284 80013248 bfb6fcd8
-00000017 bfb6fc24 bfb6fb88
-[   32.936771] fb80: 80019d8c 805b121c 80058e68 800a669c c0804730
-a00f0193 80848d94 bfa67440
-[   32.944956] fba0: bfb6fbbc bfb6fbb0 80058f30 80058e48 bfb6fbd4
-bfb6fbc0 805bba30 80058f28
-[   32.953140] fbc0: 80848d90 80842050 bfb6fbec bfb6fbd8 8001d1d0
-803a4030 00000000 bfa67470
-[   32.961324] fbe0: 00000000 bfa67440 c080e100 bfb6e030 00000000
-bfa67470 00000000 00000017
-[   32.969508] fc00: 80019bc0 808488ac 00000000 bfb6fcd8 bfa67440
-00000003 bfb6fcd4 bfb6fc28
-[   32.977692] fc20: 80008440 80019bcc 00000000 00000000 00000000
-8001d284 bfb6fc94 bfb6fc48
-[   32.985876] fc40: 8005df6c 8005ba94 00000002 00000080 00000000
-8001d284 00000000 bfb00000
-[   32.994060] fc60: bfb6e000 805bba30 a00f0093 bfa67440 bfb6fc9c
-bfb6fc80 80058e68 800a669c
-[   33.002244] fc80: c0804730 bfb00000 bfb6e000 80013d14 bfb6fd0c
-bf957010 bfb6fcc4 bfb6fca8
-[   33.010428] fca0: 80058e68 800a669c 803a2bc8 802a3874 200f0093
-802a3874 200f0093 ffffffff
-[   33.018612] fcc0: bfb6fd0c bf957010 bfb6fd2c bfb6fcd8 80013d1c
-80008404 00000000 bfb6a800
-[   33.026796] fce0: 00000000 81784e62 bfb43ce4 bfb43d4c 600f0013
-808487bc bf957010 bfa67440
-[   33.034980] fd00: 00000003 bfb6fd2c bfb6fd30 bfb6fd20 803a2bc8
-802a3874 200f0093 ffffffff
-[   33.043164] fd20: bfb6fd8c bfb6fd30 803a2bc8 802a3874 00000002
-00000000 bfb6fd5c bfb6fd48
-[   33.051348] fd40: 8001d1d0 00000002 80e04788 80845840 bfb6fd8c
-bfb6a800 803a7558 8001d190
-[   33.059532] fd60: 803a7418 bfa67000 bfb43c6c bfa67470 600f0013
-bfa67440 0000002d bfa67000
-[   33.067716] fd80: bfb6fdb4 bfb6fd90 803a3a48 803a2244 bfb43c6c
-bfa67000 8089fed0 bfb43d4c
-[   33.075900] fda0: bfb6fe7c bfb43ec0 bfb6fdec bfb6fdb8 8038d3e0
-803a388c bfb6fdd4 bfb6fdc8
-[   33.084085] fdc0: 8005b7c4 bfa673d8 bfb43e18 00000000 00000001
-bfb43d8c 00000001 bfb6fe7c
-[   33.092269] fde0: bfb6fe3c bfb6fdf0 8038e538 8038d2c4 bfb6fe3c
-bfb43da0 8039d0a4 00000000
-[   33.100453] fe00: bfb00000 8005344c bfb6fe08 bfb6fe08 bfb6fe34
-bfbfc000 bfb43c24 bfb6a000
-[   33.108637] fe20: bfb44b60 bfb43c68 bfb6a000 bfb43c6c bfb6feac
-bfb6fe40 8039e214 8038e278
-[   33.116821] fe40: bfb44b60 bfb43c24 bfb6fe74 bfb6fe58 80292194
-80276c0c bfb4fc00 bef024c0
-[   33.125005] fe60: 00000000 00000000 00000000 bfb6fe78 bfb43c00
-bfbfc000 00000002 00000080
-[   33.133189] fe80: 00000000 bfb6a000 bfbfc000 00000000 00000000
-bfb43c24 bfb43c00 bfa67000
-[   33.141373] fea0: bfb6feec bfb6feb0 8039edc0 8039e158 00000000
-122c8000 bfb6fed4 bfb6fec8
-[   33.149557] fec0: 8005b7c4 bfb44b60 bfb6e000 00000000 122c8000
-00000001 bfbfc000 bfb43c24
-[   33.157741] fee0: bfb6ff24 bfb6fef0 8039f830 8039ebf0 bfb6e030
-bfb43c2c 8039f780 bfb51a80
-[   33.165926] ff00: 00000000 bfb43c24 8039f780 00000000 00000000
-00000000 bfb6ffac bfb6ff28
-[   33.174109] ff20: 80043658 8039f78c bfb6ff44 00000000 8005b7c4
-bfb43c24 00000000 00000001
-[   33.182293] ff40: dead4ead ffffffff ffffffff 808a8990 00000000
-00000000 807239a4 bfb6ff5c
-[   33.190477] ff60: bfb6ff5c 00000000 00000001 dead4ead ffffffff
-ffffffff 808a8990 00000000
-[   33.198662] ff80: 00000000 807239a4 bfb6ff88 bfb6ff88 bfb51a80
-80043574 00000000 00000000
-[   33.206846] ffa0: 00000000 bfb6ffb0 8000f348 80043580 00000000
-00000000 00000000 00000000
-[   33.215029] ffc0: 00000000 00000000 00000000 00000000 00000000
-00000000 00000000 00000000
-[   33.223212] ffe0: 00000000 00000000 00000000 00000000 00000013
-00000000 55055703 d17847e7
-[   33.231390] Backtrace:
-[   33.233862] [<80018f38>] (arm_dma_sync_sg_for_cpu+0x0/0x8c) from
-[<803a3d70>] (sdhci_finish_data+0x278/0x380)
-[   33.243779]  r9:00000002 r8:00000100 r7:bfb6e000 r6:600f0113 r5:bfb43d4c
-r4:bfa67440
-[   33.251706] [<803a3af8>] (sdhci_finish_data+0x0/0x380) from
-[<803a4ca0>] (sdhci_timeout_timer+0x84/0xd0)
-[   33.261197] [<803a4c1c>] (sdhci_timeout_timer+0x0/0xd0) from
-[<8002ef6c>] (call_timer_fn+0x94/0x17c)
-[   33.270330]  r6:bfb6f918 r5:bfa67528 r4:80898454 r3:00000000
-[   33.276056] [<8002eed8>] (call_timer_fn+0x0/0x17c) from
-[<8002f594>] (run_timer_softirq+0x1b0/0x258)
-[   33.285197] [<8002f3e4>] (run_timer_softirq+0x0/0x258) from
-[<80027bd0>] (__do_softirq+0x148/0x314)
-[   33.294248] [<80027a88>] (__do_softirq+0x0/0x314) from [<800281b8>]
-(irq_exit+0xc8/0x110)
-[   33.302435] [<800280f0>] (irq_exit+0x0/0x110) from [<8000fc64>]
-(handle_IRQ+0x4c/0x94)
-[   33.310353]  r4:80872034 r3:00000120
-[   33.313965] [<8000fc18>] (handle_IRQ+0x0/0x94) from [<800085a0>]
-(gic_handle_irq+0x3c/0x64)
-[   33.322317]  r6:bfb6fa68 r5:80842e64 r4:c080e10c r3:000000a0
-[   33.328040] [<80008564>] (gic_handle_irq+0x0/0x64) from
-[<80013d84>] (__irq_svc+0x44/0x58)
-[   33.336306] Exception stack(0xbfb6fa68 to 0xbfb6fab0)
-[   33.341365] fa60:                   000355f9 ffffffff 000025ed
-80295740 00000048 80871ff4
-[   33.349548] fa80: 00002580 00002648 00000001 808a6448 808a5fc4
-bfb6fad4 bfb6fab0 bfb6fab0
-[   33.357728] faa0: 805b145c 80295770 200f0113 ffffffff
-[   33.362781]  r7:bfb6fa9c r6:ffffffff r5:200f0113 r4:80295770
-[   33.368513] [<805b1294>] (panic+0x0/0x1dc) from [<800135c8>]
-(die+0x38c/0x3a0)
-[   33.375738]  r3:00000001 r2:00000000 r1:00000001 r0:80720a90
-[   33.381456]  r7:bfb6e000
-[   33.384012] [<8001323c>] (die+0x0/0x3a0) from [<805b1284>]
-(__do_kernel_fault.part.11+0x74/0x84)
-[   33.392808] [<805b1210>] (__do_kernel_fault.part.11+0x0/0x84) from
-[<80019d8c>] (do_page_fault+0x1cc/0x3d4)
-[   33.402549]  r7:00000017 r3:bfb6fcd8
-[   33.406163] [<80019bc0>] (do_page_fault+0x0/0x3d4) from
-[<80008440>] (do_DataAbort+0x48/0xa8)
-[   33.414694] [<800083f8>] (do_DataAbort+0x0/0xa8) from [<80013d1c>]
-(__dabt_svc+0x3c/0x60)
-[   33.422874] Exception stack(0xbfb6fcd8 to 0xbfb6fd20)
-[   33.427928] fcc0:
-    00000000 bfb6a800
-[   33.436113] fce0: 00000000 81784e62 bfb43ce4 bfb43d4c 600f0013
-808487bc bf957010 bfa67440
-[   33.444297] fd00: 00000003 bfb6fd2c bfb6fd30 bfb6fd20 803a2bc8
-802a3874 200f0093 ffffffff
-[   33.452475]  r8:bf957010 r7:bfb6fd0c r6:ffffffff r5:200f0093 r4:802a3874
-[   33.459263] [<802a3868>] (sg_next+0x0/0x34) from [<803a2bc8>]
-(sdhci_send_command+0x990/0xf50)
-[   33.467883] [<803a2238>] (sdhci_send_command+0x0/0xf50) from
-[<803a3a48>] (sdhci_request+0x1c8/0x278)
-[   33.477112] [<803a3880>] (sdhci_request+0x0/0x278) from
-[<8038d3e0>] (mmc_start_request+0x128/0x24c)
-[   33.486247]  r9:bfb43ec0 r8:bfb6fe7c r7:bfb43d4c r6:8089fed0 r5:bfa67000
-r4:bfb43c6c
-[   33.494172] [<8038d2b8>] (mmc_start_request+0x0/0x24c) from
-[<8038e538>] (mmc_start_req+0x2cc/0x378)
-[   33.503307]  r8:bfb6fe7c r7:00000001 r6:bfb43d8c r5:00000001 r4:00000000
-[   33.510087] [<8038e26c>] (mmc_start_req+0x0/0x378) from
-[<8039e214>] (mmc_blk_issue_rw_rq+0xc8/0xa98)
-[   33.519313] [<8039e14c>] (mmc_blk_issue_rw_rq+0x0/0xa98) from
-[<8039edc0>] (mmc_blk_issue_rq+0x1dc/0x4cc)
-[   33.528887] [<8039ebe4>] (mmc_blk_issue_rq+0x0/0x4cc) from
-[<8039f830>] (mmc_queue_thread+0xb0/0x14c)
-[   33.538116] [<8039f780>] (mmc_queue_thread+0x0/0x14c) from
-[<80043658>] (kthread+0xe4/0xf8)
-[   33.546476] [<80043574>] (kthread+0x0/0xf8) from [<8000f348>]
-(ret_from_fork+0x14/0x20)
-[   33.554480]  r7:00000000 r6:00000000 r5:80043574 r4:bfb51a80
-[   33.560205] Code: 01a06003 e3570000 d89dabf0 e3a05000 (e594100c)
-[   33.566306] ---[ end trace e52024b248222185 ]--
+[ 2247.964877] ------------[ cut here ]------------
+[ 2247.964882] WARNING: at kernel/lockdep.c:2740 lockdep_trace_alloc+0xdd/0xe0()
+[ 2247.964883] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+[ 2247.964884] Modules linked in: ...
+[ 2247.964936] CPU: 0 PID: 27902 Comm: llc_lockdep Tainted: GF
+ O 3.10.27+ #39
+[ 2247.964937] Hardware name: System manufacturer System Product
+Name/P8Z77 WS, BIOS 3007 07/26/2012
+[ 2247.964938]  0000000000000009 ffff88077332f308 ffffffff81717565
+ffff88077332f348
+[ 2247.964940]  ffffffff81058530 0000000000022010 0000000000000096
+0000000000000000
+[ 2247.964942]  0000000000000000 0000000000000003 0000000000000002
+ffff88077332f3a8
+[ 2247.964945] Call Trace:
+[ 2247.964948]  [<ffffffff81717565>] dump_stack+0x19/0x1b
+[ 2247.964951]  [<ffffffff81058530>] warn_slowpath_common+0x70/0xa0
+[ 2247.964952]  [<ffffffff81058616>] warn_slowpath_fmt+0x46/0x50
+[ 2247.964954]  [<ffffffff810c115d>] lockdep_trace_alloc+0xdd/0xe0
+[ 2247.964956]  [<ffffffff8114c53c>] __alloc_pages_nodemask+0x7c/0x920
+[ 2247.964959]  [<ffffffff81013061>] ? math_state_restore+0x41/0x150
+[ 2247.964962]  [<ffffffff8101b910>] ? __kernel_fpu_end+0x10/0x30
+[ 2247.964966]  [<ffffffffa04fa85f>] ? cbc_decrypt+0x9f/0xe0 [aesni_intel]
+[ 2247.964967]  [<ffffffff810bb34d>] ? trace_hardirqs_off+0xd/0x10
+[ 2247.964969]  [<ffffffff810c0c97>] ? debug_check_no_locks_freed+0xe7/0x180
+[ 2247.964971]  [<ffffffff8115e411>] ? kzfree+0x31/0x40
+[ 2247.964974]  [<ffffffff811435c5>] ? find_get_page+0x5/0xf0
+[ 2247.964976]  [<ffffffff811880d8>] alloc_pages_current+0xb8/0x180
+[ 2247.964978]  [<ffffffff8114356f>] __page_cache_alloc+0xaf/0xd0
+[ 2247.964980]  [<ffffffff81143eef>] grab_cache_page_write_begin+0x7f/0xf0
+[ 2247.964983]  [<ffffffff8124faf4>] ext4_da_write_begin+0x104/0x2b0
+[ 2247.964984]  [<ffffffff811435c5>] ? find_get_page+0x5/0xf0
+[ 2247.964987]  [<ffffffff81142c5e>] generic_file_buffered_write+0x11e/0x280
+[ 2247.964989]  [<ffffffff81144b2d>] __generic_file_aio_write+0x1cd/0x3d0
+[ 2247.964991]  [<ffffffff8171bb6c>] ? mutex_lock_nested+0x27c/0x370
+[ 2247.964993]  [<ffffffff81144d87>] ? generic_file_aio_write+0x57/0xd0
+[ 2247.964995]  [<ffffffff81144d9a>] generic_file_aio_write+0x6a/0xd0
+[ 2247.964997]  [<ffffffff81247009>] ext4_file_write+0xa9/0x440
+[ 2247.965000]  [<ffffffff8137ac2d>] ? do_raw_spin_unlock+0x5d/0xb0
+[ 2247.965002]  [<ffffffff8171f05b>] ? _raw_spin_unlock+0x2b/0x40
+[ 2247.965004]  [<ffffffff8116b1e8>] ? follow_page_mask+0x218/0x580
+[ 2247.965007]  [<ffffffff81168139>] ? spin_unlock+0x9/0x10
+[ 2247.965008]  [<ffffffff8116b4a5>] ? follow_page_mask+0x4d5/0x580
+[ 2247.965011]  [<ffffffff811aacf0>] do_sync_write+0x80/0xb0
+[ 2247.965014]  [<ffffffff812084a9>] dump_write+0x59/0x70
+[ 2247.965016]  [<ffffffff81200fcb>] elf_core_dump+0x149b/0x1660
+[ 2247.965017]  [<ffffffff81200537>] ? elf_core_dump+0xa07/0x1660
+[ 2247.965020]  [<ffffffff81209329>] do_coredump+0xb39/0xfb0
+[ 2247.965022]  [<ffffffff8106ce47>] ? __send_signal+0x187/0x420
+[ 2247.965025]  [<ffffffff8106f1f7>] get_signal_to_deliver+0x267/0x650
+[ 2247.965027]  [<ffffffff810123a7>] do_signal+0x57/0x970
+[ 2247.965028]  [<ffffffff810bb34d>] ? trace_hardirqs_off+0xd/0x10
+[ 2247.965031]  [<ffffffff811065d9>] ? __acct_update_integrals+0x99/0x110
+[ 2247.965033]  [<ffffffff817121e0>] ? printk+0x61/0x63
+[ 2247.965035]  [<ffffffff811423a6>] ? user_exit+0x56/0xb0
+[ 2247.965037]  [<ffffffff810c0add>] ? trace_hardirqs_on_caller+0x10d/0x1d0
+[ 2247.965039]  [<ffffffff81012d48>] do_notify_resume+0x88/0xb0
+[ 2247.965041]  [<ffffffff8171f6fb>] retint_signal+0x4d/0x92
+[ 2247.965042] ---[ end trace 6709608ef3de895e ]---
 
 
-Regards,
-
-john
-
-On Wed, Jan 22, 2014 at 8:41 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jan 22, 2014 at 08:23:36AM -0800, John Tobias wrote:
->> Hello all,
->>
->> I am using 3.13-rc1 kernel on iMX6SL processor. My filesystem is in
->> eMMC running SDR50.
->> Is anyone here encountered these problem and if there's any existing
->> patch that I can get?.
+On Mon, Dec 9, 2013 at 6:38 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> Hi,
 >
-> How reproducable is this?  I notice you're using 3.13-rc1 too, it could
-> be the bug has already been fixed in a later kernel version.  -rc1
-> kernels are really the "fresh after lots of new feature merging" kernels
-> which should always be expected to be rather buggy.
+> seeing the following trace on 3.10.xx kernels, including 3.10.23.
+> 3.12.4 and 3.13rc2 are fine.
+> Is there a patch waiting to be backported?
 >
-> Linux kernel "release candidates" are not "we think this is going to be
-> a final kernel, please test it" but -rc1 marks the end of the new
-> feature merging and the beginning of the stablisation phase.
->
+> [   96.393807] llc[2903]: segfault at 8 ip 0000000000692da7 sp
+> 00007fff1a6baf30 error 4 in llc[400000+7f8000]
+> [   96.394304] BUG: sleeping function called from invalid context at
+> include/linux/pagemap.h:375
+> [   96.394306] in_atomic(): 0, irqs_disabled(): 1, pid: 2903, name: llc
+> [   96.394307] 1 lock held by llc/2903:
+> [   96.394308]  #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff81205033>]
+> do_coredump+0xf83/0x1110
+> [   96.394314] irq event stamp: 68216
+> [   96.394315] hardirqs last  enabled at (68215): [<ffffffff816864a1>]
+> __mutex_unlock_slowpath+0xd1/0x180
+> [   96.394318] hardirqs last disabled at (68216): [<ffffffff81002b55>]
+> math_state_restore+0x35/0x150
+> [   96.394320] softirqs last  enabled at (65780): [<ffffffff8104f663>]
+> __do_softirq+0x183/0x3f0
+> [   96.394322] softirqs last disabled at (65761): [<ffffffff8104fa85>]
+> irq_exit+0xb5/0xc0
+> [   96.394325] CPU: 1 PID: 2903 Comm: llc Not tainted 3.10.1 #31
+> [   96.394326] Hardware name: System manufacturer System Product
+> Name/P8Z77 WS, BIOS 3007 07/26/2012
+> [   96.394327]  ffffffff819fcac9 ffff8807f5ec96e8 ffffffff81682103
+> ffff8807f5ec9718
+> [   96.394329]  ffffffff81081e60 00000000000007fa 00000000000007fa
+> ffff8807f5fe6f00
+> [   96.394331]  ffff880809bc81e0 ffff8807f5ec9788 ffffffff8114149e
+> 0000000000000006
+> [   96.394333] Call Trace:
+> [   96.394335]  [<ffffffff81682103>] dump_stack+0x19/0x1b
+> [   96.394338]  [<ffffffff81081e60>] __might_sleep+0x180/0x230
+> [   96.394340]  [<ffffffff8114149e>] filemap_fault+0xce/0x470
+> [   96.394342]  [<ffffffff81165dbe>] __do_fault+0x6e/0x470
+> [   96.394344]  [<ffffffff81168a9f>] handle_pte_fault+0x8f/0x8b0
+> [   96.394346]  [<ffffffff81169ac0>] handle_mm_fault+0x210/0x300
+> [   96.394348]  [<ffffffff81169e1e>] __get_user_pages+0x19e/0x5c0
+> [   96.394349]  [<ffffffff8116a285>] get_dump_page+0x45/0x60
+> [   96.394351]  [<ffffffff811fe371>] elf_core_dump+0x16b1/0x1930
+> [   96.394353]  [<ffffffff811fd6cc>] ? elf_core_dump+0xa0c/0x1930
+> [   96.394356]  [<ffffffff811a2f0f>] ? __sb_start_write+0xef/0x1c0
+> [   96.394358]  [<ffffffff81205033>] ? do_coredump+0xf83/0x1110
+> [   96.394359]  [<ffffffff81205033>] ? do_coredump+0xf83/0x1110
+> [   96.394361]  [<ffffffff81204ce9>] do_coredump+0xc39/0x1110
+> [   96.394364]  [<ffffffff8105fc02>] get_signal_to_deliver+0x2b2/0x930
+> [   96.394366]  [<ffffffff81002387>] do_signal+0x57/0x5a0
+> [   96.394368]  [<ffffffff8168df6b>] ? __do_page_fault+0x50b/0x570
+> [   96.394370]  [<ffffffff81060434>] ? __set_current_blocked+0x34/0x60
+> [   96.394372]  [<ffffffff8167d1f9>] ? printk+0x61/0x63
+> [   96.394374]  [<ffffffff810b9495>] ? trace_hardirqs_on_caller+0x105/0x1d0
+> [   96.394376]  [<ffffffff810b956d>] ? trace_hardirqs_on+0xd/0x10
+> [   96.394378]  [<ffffffff8168a10d>] ? retint_signal+0x11/0x84
+> [   96.394380]  [<ffffffff81002935>] do_notify_resume+0x65/0x80
+> [   96.394382]  [<ffffffff813349de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [   96.394384]  [<ffffffff8168a142>] retint_signal+0x46/0x84
+> [   96.394386] ------------[ cut here ]------------
+> [   96.394388] WARNING: at kernel/lockdep.c:2740 lockdep_trace_alloc+0xc5/0xd0()
+> [   96.394389] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+> [   96.394390] Modules linked in: bridge stp llc vhost_net macvtap
+> macvlan dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi
+> kvm_intel kvm ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw
+> gf128mul glue_helper aes_x86_64 hid_generic eeepc_wmi asus_wmi
+> sparse_keymap mxm_wmi led_class dm_multipath microcode usbhid hid
+> parport_pc ppdev psmouse e1000e lpc_ich firewire_ohci mfd_core igb
+> firewire_core crc_itu_t dca ptp pps_core binfmt_misc wmi lp parport
+> video
+> [   96.394411] CPU: 1 PID: 2903 Comm: llc Not tainted 3.10.1 #31
+> [   96.394412] Hardware name: System manufacturer System Product
+> Name/P8Z77 WS, BIOS 3007 07/26/2012
+> [   96.394413]  0000000000000009 ffff8807f5ec9328 ffffffff81682103
+> ffff8807f5ec9368
+> [   96.394415]  ffffffff81045d80 0000000000000082 0000000000000096
+> 0000000000000000
+> [   96.394416]  0000000000000000 0000000000000003 0000000000000002
+> ffff8807f5ec93c8
+> [   96.394418] Call Trace:
+> [   96.394420]  [<ffffffff81682103>] dump_stack+0x19/0x1b
+> [   96.394422]  [<ffffffff81045d80>] warn_slowpath_common+0x70/0xa0
+> [   96.394424]  [<ffffffff81045e66>] warn_slowpath_fmt+0x46/0x50
+> [   96.394426]  [<ffffffff810b9ac5>] lockdep_trace_alloc+0xc5/0xd0
+> [   96.394428]  [<ffffffff81148a7c>] __alloc_pages_nodemask+0x7c/0xa80
+> [   96.394430]  [<ffffffff8168a142>] ? retint_signal+0x46/0x84
+> [   96.394432]  [<ffffffff810b47e4>] ? __lock_is_held+0x54/0x80
+> [   96.394434]  [<ffffffff8132c0cb>] ? radix_tree_lookup_element+0xeb/0x190
+> [   96.394437]  [<ffffffff81185098>] alloc_pages_current+0xb8/0x180
+> [   96.394439]  [<ffffffff8113ecff>] __page_cache_alloc+0xaf/0xd0
+> [   96.394441]  [<ffffffff8113fb6f>] grab_cache_page_write_begin+0x7f/0xf0
+> [   96.394443]  [<ffffffff8124fd82>] ext4_da_write_begin+0x92/0x3a0
+> [   96.394445]  [<ffffffff8113e32e>] generic_file_buffered_write+0x11e/0x2a0
+> [   96.394447]  [<ffffffff811407bd>] __generic_file_aio_write+0x1cd/0x3d0
+> [   96.394449]  [<ffffffff816862cf>] ? mutex_lock_nested+0x27f/0x380
+> [   96.394451]  [<ffffffff81140a2a>] generic_file_aio_write+0x6a/0xd0
+> [   96.394453]  [<ffffffff81245cf9>] ext4_file_write+0xa9/0x450
+> [   96.394455]  [<ffffffff81689bdb>] ? _raw_spin_unlock+0x2b/0x50
+> [   96.394456]  [<ffffffff81168681>] ? follow_page_mask+0x261/0x4e0
+> [   96.394458]  [<ffffffff81165809>] ? spin_unlock+0x9/0x10
+> [   96.394459]  [<ffffffff81168866>] ? follow_page_mask+0x446/0x4e0
+> [   96.394461]  [<ffffffff8119fcb0>] do_sync_write+0x80/0xb0
+> [   96.394463]  [<ffffffff81203d09>] dump_write+0x59/0x70
+> [   96.394465]  [<ffffffff811fe3e4>] elf_core_dump+0x1724/0x1930
+> [   96.394467]  [<ffffffff811fd6cc>] ? elf_core_dump+0xa0c/0x1930
+> [   96.394469]  [<ffffffff811a2f0f>] ? __sb_start_write+0xef/0x1c0
+> [   96.394471]  [<ffffffff81205033>] ? do_coredump+0xf83/0x1110
+> [   96.394472]  [<ffffffff81205033>] ? do_coredump+0xf83/0x1110
+> [   96.394474]  [<ffffffff81204ce9>] do_coredump+0xc39/0x1110
+> [   96.394476]  [<ffffffff8105fc02>] get_signal_to_deliver+0x2b2/0x930
+> [   96.394479]  [<ffffffff81002387>] do_signal+0x57/0x5a0
+> [   96.394480]  [<ffffffff8168df6b>] ? __do_page_fault+0x50b/0x570
+> [   96.394482]  [<ffffffff81060434>] ? __set_current_blocked+0x34/0x60
+> [   96.394483]  [<ffffffff8167d1f9>] ? printk+0x61/0x63
+> [   96.394485]  [<ffffffff810b9495>] ? trace_hardirqs_on_caller+0x105/0x1d0
+> [   96.394487]  [<ffffffff810b956d>] ? trace_hardirqs_on+0xd/0x10
+> [   96.394488]  [<ffffffff8168a10d>] ? retint_signal+0x11/0x84
+> [   96.394490]  [<ffffffff81002935>] do_notify_resume+0x65/0x80
+> [   96.394492]  [<ffffffff813349de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [   96.394493]  [<ffffffff8168a142>] retint_signal+0x46/0x84
+> [   96.394495] ---[ end trace 254c0cab3bbaa900 ]---
 > --
-> FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-> in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-> Estimate before purchase was "up to 13.2Mbit".
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
