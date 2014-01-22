@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372AbaAVOD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:03:27 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:51358 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209AbaAVODY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:03:24 -0500
+	id S1755399AbaAVOFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:05:45 -0500
+Received: from ring0.de ([91.143.88.219]:49832 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549AbaAVOFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 09:05:42 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Wed, 22 Jan 2014 15:05:14 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Anton Vorontsov <anton@enomsg.org>,
+        kernel list <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCHv3] dt: binding documentation for bq2415x charger
+Message-ID: <20140122140513.GB17251@earth.universe>
+References: <1389393286-15263-1-git-send-email-sre@debian.org>
+ <1389401268-15069-1-git-send-email-sre@debian.org>
+ <20140121204803.GA853@earth.universe>
+ <CALT56yOZ5qCoS-xwFV7sqE1LATQUFckOkQa7dd24Foq7A4Xv2g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140122130211.GB1132@krava.brq.redhat.com>
-References: <CA+5PVA7LcDe5Y2RePTFbLdSHd85WhHcHHnFw2mBycfFRJ2m-FQ@mail.gmail.com>
-	<CA+5PVA5SWV-pWxfisAVXB-PkARqRsHiaWOne2sXiG7r1D5M6Rg@mail.gmail.com>
-	<20140122130211.GB1132@krava.brq.redhat.com>
-Date: Wed, 22 Jan 2014 09:03:21 -0500
-X-Google-Sender-Auth: SnlHoBaL-x9iPuWhj9Z5y29PvoI
-Message-ID: <CA+5PVA5QjRbkK2zScYvDj5FcvJ5iTmDWsp3Bhvndv-FYmeQwag@mail.gmail.com>
-Subject: Re: [PATCH] perf tests: Add install prefix tests
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="vGgW1X5XWziG23Ko"
+Content-Disposition: inline
+In-Reply-To: <CALT56yOZ5qCoS-xwFV7sqE1LATQUFckOkQa7dd24Foq7A4Xv2g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 8:02 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Tue, Jan 21, 2014 at 07:58:41PM -0500, Josh Boyer wrote:
->> On Tue, Jan 21, 2014 at 3:02 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> > Hi All,
->> >
->> > I went to build Linux v3.13-737-g7fe67a1 in Fedora this morning and it
->> > resulted in RPM complaining that the perf and perf.so binaries had
->>
->
-> SNIP
->
->> I'm not sure why DESTDIR is included in the -DPLUGIN_DIR definition in
->> tools/lib/traceevent/Makefile, nor why $(prefix) is in plugindir_SQ in
->> tools/perf/config/Makefile.
->>
->> josh
->>
->> diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
->> index 56d52a3..005c9cc 100644
->> --- a/tools/lib/traceevent/Makefile
->> +++ b/tools/lib/traceevent/Makefile
->> @@ -63,7 +63,7 @@ endif
->>  endif
->>
->>  ifeq ($(set_plugin_dir),1)
->> -PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
->> +PLUGIN_DIR = -DPLUGIN_DIR="$(plugin_dir)"
->>  PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
->
-> hi,
-> this one needs to stay, otherwise perf have wrong path
-> to load plugins from..
 
-Hm.  Are you sure?  I believe I tested with just the $(prefix) removed
-below and it still failed the RPM build.  If DESTDIR is included in
-what is passed as DPLUGIN_DIR, it will include the buildroot path in
-the binaries, but when the RPM is installed it does not install to the
-buildroot path.  E.g. you will have:
+--vGgW1X5XWziG23Ko
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--DPLUGIN_DIR="/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64//usr/lib64/traceevent/plugins"
+On Wed, Jan 22, 2014 at 04:07:25PM +0400, Dmitry Eremin-Solenikov wrote:
+> On Wed, Jan 22, 2014 at 12:48 AM, Sebastian Reichel <sre@ring0.de> wrote:
+> >> Add devicetree binding documentation for bq2415x charger.
+> >> [...]
+> >
+> > I've seen, that you just sent a pull request for the power supply
+> > tree. Can you please add this patch [0] and send another pull
+> > request? It should go into the kernel together with the bq2415x DT
+> > support patch!
+>=20
+> If that is fine with you, I will add this to a 'fixes' branch and
+> send a pull request somewhere near -rc2/-rc3. Agreed?
 
-but the plugins will be installed to /usr/lib64/traceevent/plugins by
-RPM.  I'll try again with just the libdir fix, but I'm fairly sure
-what I've said above is correct.  At least in terms of how RPMs are
-built.
+Sounds fine to me.
 
-josh
+-- Sebastian
+
+--vGgW1X5XWziG23Ko
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCAAGBQJS39AZAAoJENju1/PIO/qaU0cP/iPOHi56n+CRCaJlzohlrSH7
+2pk8kX0fCxY1Ob9GQzAase2pzs7FyCHAucejJ09GAupFOy2x9X2pqe+MzgxU+2Vv
+Q4PCZsHpGv4gthL2orl8rwchO5NWDpqqXk+vUOqBBEZhQqiWWBWssmpQDpdXc5+t
+vdQ03fA586SAuy4ooGWFMlOx+NB9uNp3Zy+cAkmPlIuLyuFQML3aTtfQ8sGyC/T7
+Zor0aTqwvhbjtHuueSrOuow4P2KvlDoOWwv1+dyZojdfQgVuhVpjvwb0bKg9muw+
+fhra+RPX3UEN2Rp81QmvcByXCZPJfCw0iBwkFaUBADNEP6R6mYRzzSaXaXfh4Asv
+WKRlYyaoki2vh7a55DQhk7LLlkzC8n+kLnKOCJIJfV2FLhm1sHkI4HIDtIpRRbpJ
+/RlmrAfeDrkKOUxT+RQuObs5N/x/z6J4lF4tkkBMf0Fstd+SuEucQHMHNi8UfRX+
+JjPlcEXS+AlZ09jCeqk41QKKG5gi/Fg7SzUMakIFhssld1VuEJzzru1J6arO4jgl
+gt0gPzlRxem9uqcpbW2+BsHaHQ6zM8eahBeZjdGnkP9/TisOa6ur381tXtJiOTp/
+RKhvS/bxgbvK52IFxTp183fp2CMafKHU5q6xKiJ+9c2DErZ8UVVRcxHNz/1s4UAE
+5wFY6qpcLjmS6bpdwR5l
+=KSCn
+-----END PGP SIGNATURE-----
+
+--vGgW1X5XWziG23Ko--
