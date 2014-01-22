@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaAVGy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:54:29 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:43601 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaAVGy0 (ORCPT
+	id S1752549AbaAVGyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:54:40 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34290 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285AbaAVGyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:54:26 -0500
+	Wed, 22 Jan 2014 01:54:31 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: davem@davemloft.net
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 1/2] net/ipv4: queue work on power efficient wq
-Date: Wed, 22 Jan 2014 12:23:32 +0530
-Message-Id: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+Subject: [PATCH 2/2] net/neighbour: queue work on power efficient wq
+Date: Wed, 22 Jan 2014 12:23:33 +0530
+Message-Id: <faa5b965e81fcb4c3261561e58a8ab1194ecf562.1390373223.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+References: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+In-Reply-To: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
+References: <c24546776d8ec32afd1c084dd1d2a72fc96c6519.1390373223.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workqueue used in ipv4 layer have no real dependency of scheduling these on the
-cpu which scheduled them.
+Workqueue used in neighbour layer have no real dependency of scheduling these on
+the cpu which scheduled them.
 
 On a idle system, it is observed that an idle cpu wakes up many times just to
 service this work. It would be better if we can schedule it on a cpu which the
@@ -32,54 +36,32 @@ enabled.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Initial support for power-efficient workqueues was added here:
-https://lkml.org/lkml/2013/4/24/215
+ net/core/neighbour.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
- net/ipv4/devinet.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 646023b..ac2dff3 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -474,7 +474,7 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
- 	inet_hash_insert(dev_net(in_dev->dev), ifa);
- 
- 	cancel_delayed_work(&check_lifetime_work);
--	schedule_delayed_work(&check_lifetime_work, 0);
-+	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work, 0);
- 
- 	/* Send message first, then call notifier.
- 	   Notifier will trigger FIB update, so that
-@@ -684,7 +684,8 @@ static void check_lifetime(struct work_struct *work)
- 	if (time_before(next_sched, now + ADDRCONF_TIMER_FUZZ_MAX))
- 		next_sched = now + ADDRCONF_TIMER_FUZZ_MAX;
- 
--	schedule_delayed_work(&check_lifetime_work, next_sched - now);
-+	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work,
-+			next_sched - now);
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index f8012fe..b9e9e0d 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -828,7 +828,7 @@ out:
+ 	 * ARP entry timeouts range from 1/2 BASE_REACHABLE_TIME to 3/2
+ 	 * BASE_REACHABLE_TIME.
+ 	 */
+-	schedule_delayed_work(&tbl->gc_work,
++	queue_delayed_work(system_power_efficient_wq, &tbl->gc_work,
+ 			      NEIGH_VAR(&tbl->parms, BASE_REACHABLE_TIME) >> 1);
+ 	write_unlock_bh(&tbl->lock);
  }
+@@ -1565,7 +1565,8 @@ static void neigh_table_init_no_netlink(struct neigh_table *tbl)
  
- static void set_ifa_lifetime(struct in_ifaddr *ifa, __u32 valid_lft,
-@@ -842,7 +843,8 @@ static int inet_rtm_newaddr(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		ifa = ifa_existing;
- 		set_ifa_lifetime(ifa, valid_lft, prefered_lft);
- 		cancel_delayed_work(&check_lifetime_work);
--		schedule_delayed_work(&check_lifetime_work, 0);
-+		queue_delayed_work(system_power_efficient_wq,
-+				&check_lifetime_work, 0);
- 		rtmsg_ifa(RTM_NEWADDR, ifa, nlh, NETLINK_CB(skb).portid);
- 		blocking_notifier_call_chain(&inetaddr_chain, NETDEV_UP, ifa);
- 	}
-@@ -2322,7 +2324,7 @@ void __init devinet_init(void)
- 	register_gifconf(PF_INET, inet_gifconf);
- 	register_netdevice_notifier(&ip_netdev_notifier);
- 
--	schedule_delayed_work(&check_lifetime_work, 0);
-+	queue_delayed_work(system_power_efficient_wq, &check_lifetime_work, 0);
- 
- 	rtnl_af_register(&inet_af_ops);
- 
+ 	rwlock_init(&tbl->lock);
+ 	INIT_DEFERRABLE_WORK(&tbl->gc_work, neigh_periodic_work);
+-	schedule_delayed_work(&tbl->gc_work, tbl->parms.reachable_time);
++	queue_delayed_work(system_power_efficient_wq, &tbl->gc_work,
++			tbl->parms.reachable_time);
+ 	setup_timer(&tbl->proxy_timer, neigh_proxy_process, (unsigned long)tbl);
+ 	skb_queue_head_init_class(&tbl->proxy_queue,
+ 			&neigh_table_proxy_queue_class);
 -- 
 1.7.12.rc2.18.g61b472e
 
