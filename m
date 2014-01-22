@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaAVDGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:06:20 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:48007 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419AbaAVDGS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:06:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
-References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
- <20140119173712.GA26481@kroah.com> <CAPtuhTikj38yKy-=uF7O+VFG_N4AWee23f9woemM318fM3V4VQ@mail.gmail.com>
- <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
-From: SeongJae Park <sj38.park@gmail.com>
-Date: Wed, 22 Jan 2014 12:05:57 +0900
-Message-ID: <CAEjAshozB4S0ZGqEn41ROfZwGTV+_GZRRTZ8cssi0VdH8Uhr_w@mail.gmail.com>
-Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754983AbaAVDJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:09:16 -0500
+Received: from ozlabs.org ([203.10.76.45]:51236 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698AbaAVDJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 22:09:14 -0500
+Date: Wed, 22 Jan 2014 14:09:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlZpbGxlIFN5cmrDpGzDpCI=?= 
+	<ville.syrjala@linux.intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with the drm tree
+Message-Id: <20140122140908.c57e7336c70156e30eda2a18@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg, Mike,
+--Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-May I ask your answer or other opinion, please?
+Hi all,
 
-On Mon, Jan 20, 2014 at 5:07 PM, SeongJae Park <sj38.park@gmail.com> wrote:
-> On Mon, Jan 20, 2014 at 4:47 PM, Mike Turquette <mturquette@linaro.org> wrote:
->> On Sun, Jan 19, 2014 at 9:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> On Sun, Jan 19, 2014 at 02:55:07PM +0900, SeongJae Park wrote:
->>>> Following build comes while modprobe process:
->>>> > ERROR: "__clk_get_hw" [drivers/clk/clk-max77686.ko] undefined!
->>>> > make[2]: *** [__modpost] Error 1
->>>> > make[1]: *** [modules] Error 2
->>>>
->>>> Export the symbol to fix it and for other part's usecase.
->>>>
->>>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
->>>> ---
->>>>  drivers/clk/clk.c | 1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->>>> index 2b38dc9..3883fba 100644
->>>> --- a/drivers/clk/clk.c
->>>> +++ b/drivers/clk/clk.c
->>>> @@ -575,6 +575,7 @@ struct clk_hw *__clk_get_hw(struct clk *clk)
->>>>  {
->>>>       return !clk ? NULL : clk->hw;
->>>>  }
->>>> +EXPORT_SYMBOL_GPL(__clk_get_hw);
->>>
->>> __ functions should usually only be for "internal" use, why does this
->>> get exported to modules?  Why not just put it in a .h file?
->>
->> It was originally used only within the clock core but it is sensible
->> for hardware-specific clock drivers to use this as well. I plan to
->> audit all of the double-underscore functions in
->> include/linux/clk-provider.h for 3.15.
->>
->> Regards,
->> Mike
->>
-> Thank you very much for answering about it, Mike.
->
-> I agree Greg's indication and think Mike's explanation is reasonable.
->
-> So, I think it would be better to just export the symbol now
-> because it would be easier for future functions renaming and
-> similar issues were solved in this way in past:
-> https://lkml.org/lkml/2013/4/15/50
->
-> Or, maybe I can change the client code of __clk_get_hw to not use the function.
->
-> What do you think would be better to fix this build error? Or, do you
-> have better idea?
-> I will respect your opinion.
->
-> Thanks and Regards.
-> SeongJae Park.
->
->>>
->>> greg k-h
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_display.c between commit c326c0a9c98c
+("drm/i915: Call drm_calc_timestamping_constants() earlier") from the drm
+tree and commit bbee18af2a25 ("drm/i915: Prepare to track new pipe config
+per pipe") from the drm-intel tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/i915/intel_display.c
+index 14b024becb91,e1d3ae1212a7..000000000000
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@@ -9660,14 -9705,7 +9703,15 @@@ static int __intel_set_mode(struct drm_
+  		/* mode_set/enable/disable functions rely on a correct pipe
+  		 * config. */
+  		to_intel_crtc(crtc)->config =3D *pipe_config;
++ 		to_intel_crtc(crtc)->new_config =3D &to_intel_crtc(crtc)->config;
+ +
+ +		/*
+ +		 * Calculate and store various constants which
+ +		 * are later needed by vblank and swap-completion
+ +		 * timestamping. They are derived from true hwmode.
+ +		 */
+ +		drm_calc_timestamping_constants(crtc,
+ +						&pipe_config->adjusted_mode);
+  	}
+ =20
+  	/* Only after disabling all output pipelines that will be changed can we
+
+--Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS3zZYAAoJEMDTa8Ir7ZwVRSoP/R0gK1HqFim6I3tSfaNMgbXa
+IPKQkMDCPx6Fm+rhrcZJXKjIjBUk1p0VE3laDemUQANJAoxWD4uAvibeCuslw2rC
+l+hTRWxnkoB5xfVsAdHKu3YVi5e4Y1txTCr7D1f8JVHZ1cuN/Rt/wgdY7ehamt02
+6NmiPJMOHXkL5zSxlRw+bSgoK+ew3MJ14icYjUsu7d+2TNOSMOaOT5++B2x+1I1W
+SO8S8rS9ghrhb6s5Hak69XfRsUwubOrpAUIa7QAMfHP6c2dhVxly5vZfXei65sqM
+SUPnNJ7lNfc4aMVcsc7G50gfmRFQgPIZwb1WAJlKIILfCiedmz6FKe4Wy2Q3D3dA
++ViMMI4Kh5SoAXTPp7HQzTGzY3siAGKwiFYcgVCQY/pnzIopXhftiErvjOqVnAq+
+huWkALLKzDcjGn1g9HW2Z0sTC0avM6/EPAqqHqAAIrLrAaNch64X74Yygpd6YDaT
+jqOQJv20+ky17L90L03XcQ42pZgGqX6mLO7iPtKnkbH59BgOQEfbEcs2S1AcKO3h
+Fbiiwej77huNjd04QiiR2xPl1DTWv1CBnpct2BcLJBowI9dQ1fHbURtrm7erdZVw
+tgXB9WlbuKk4a/Q/G+HxWgZwsUyziATzOFaFth1TYGT7FEnD0DgYqSVe955pz4cz
+x4yee5ODdO1x8bysFknS
+=+D0N
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K--
