@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaAVKV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:21:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752549AbaAVKV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:21:57 -0500
-Message-ID: <52DF9BBE.1040802@redhat.com>
-Date: Wed, 22 Jan 2014 11:21:50 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754785AbaAVKZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:25:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50576 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaAVKZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 05:25:02 -0500
+Date: Wed, 22 Jan 2014 11:24:35 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Bisected] qemu hangs on current git
+Message-ID: <20140122102435.GH31570@twins.programming.kicks-ass.net>
+References: <20140121215119.GA389@x4>
+ <20140122085035.GA390@x4>
+ <20140122093755.GA388@x4>
 MIME-Version: 1.0
-To: "hpa@zytor.com" <hpa@zytor.com>
-CC: "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: Re: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
-References: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350149E30B@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122093755.GA388@x4>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/01/2014 19:59, Liu, Jinsong ha scritto:
-> From 3155a190ce6ebb213e6c724240f4e6620ba67a9d Mon Sep 17 00:00:00 2001
-> From: Liu Jinsong <jinsong.liu@intel.com>
-> Date: Fri, 13 Dec 2013 02:32:03 +0800
-> Subject: [PATCH v3 1/4] KVM/X86: Fix xsave cpuid exposing bug
->
-> EBX of cpuid(0xD, 0) is dynamic per XCR0 features enable/disable.
-> Bit 63 of XCR0 is reserved for future expansion.
->
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+On Wed, Jan 22, 2014 at 10:37:55AM +0100, Markus Trippelsdorf wrote:
+> git bisect points to:
+> 
+> commit 8cb75e0c4ec9786b81439761eac1d18d4a931af3
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Wed Nov 20 12:22:37 2013 +0100
+> 
+>     sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+> 
 
-Peter, can I have your acked-by on this?
+No idea why kvm would go funny on that, real hardware runs fine.
 
-> ---
->  arch/x86/include/asm/xsave.h |    2 ++
->  arch/x86/kvm/cpuid.c         |    6 +++---
->  arch/x86/kvm/x86.c           |    7 +++++--
->  3 files changed, 10 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-> index 5547389..f6c4e85 100644
-> --- a/arch/x86/include/asm/xsave.h
-> +++ b/arch/x86/include/asm/xsave.h
-> @@ -13,6 +13,8 @@
->  #define XSTATE_BNDCSR	0x10
->
->  #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
-> +/* Bit 63 of XCR0 is reserved for future expansion */
-> +#define XSTATE_EXTEND_MASK	(~(XSTATE_FPSSE | (1 << 63)))
->
->  #define FXSAVE_SIZE	512
->
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index c697625..2d661e6 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -28,7 +28,7 @@ static u32 xstate_required_size(u64 xstate_bv)
->  	int feature_bit = 0;
->  	u32 ret = XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET;
->
-> -	xstate_bv &= ~XSTATE_FPSSE;
-> +	xstate_bv &= XSTATE_EXTEND_MASK;
->  	while (xstate_bv) {
->  		if (xstate_bv & 0x1) {
->  		        u32 eax, ebx, ecx, edx;
-> @@ -74,8 +74,8 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
->  		vcpu->arch.guest_supported_xcr0 =
->  			(best->eax | ((u64)best->edx << 32)) &
->  			host_xcr0 & KVM_SUPPORTED_XCR0;
-> -		vcpu->arch.guest_xstate_size =
-> -			xstate_required_size(vcpu->arch.guest_supported_xcr0);
-> +		vcpu->arch.guest_xstate_size = best->ebx =
-> +			xstate_required_size(vcpu->arch.xcr0);
->  	}
->
->  	kvm_pmu_cpuid_update(vcpu);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 21ef1ba..1657ca2 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -576,13 +576,13 @@ static void kvm_put_guest_xcr0(struct kvm_vcpu *vcpu)
->
->  int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
->  {
-> -	u64 xcr0;
-> +	u64 xcr0 = xcr;
-> +	u64 old_xcr0 = vcpu->arch.xcr0;
->  	u64 valid_bits;
->
->  	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
->  	if (index != XCR_XFEATURE_ENABLED_MASK)
->  		return 1;
-> -	xcr0 = xcr;
->  	if (!(xcr0 & XSTATE_FP))
->  		return 1;
->  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-> @@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
->
->  	kvm_put_guest_xcr0(vcpu);
->  	vcpu->arch.xcr0 = xcr0;
-> +
-> +	if ((xcr0 ^ old_xcr0) & XSTATE_EXTEND_MASK)
-> +		kvm_update_cpuid(vcpu);
->  	return 0;
->  }
->
->
+You're running a !PREEMPT kernel, right? Does the below make any
+difference?
 
+---
+ include/linux/preempt.h | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 59749fc48328..de83b4eb1642 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -134,7 +134,6 @@ do { \
+ #undef preempt_check_resched
+ #endif
+ 
+-#ifdef CONFIG_PREEMPT
+ #define preempt_set_need_resched() \
+ do { \
+ 	set_preempt_need_resched(); \
+@@ -144,10 +143,6 @@ do { \
+ 	if (tif_need_resched()) \
+ 		set_preempt_need_resched(); \
+ } while (0)
+-#else
+-#define preempt_set_need_resched() do { } while (0)
+-#define preempt_fold_need_resched() do { } while (0)
+-#endif
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
