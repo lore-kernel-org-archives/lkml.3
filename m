@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaAVGXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 01:23:15 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28681 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaAVGXK (ORCPT
+	id S1754248AbaAVG00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 01:26:26 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33268 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaAVG0Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 01:23:10 -0500
-Date: Tue, 21 Jan 2014 22:22:55 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, David Turner <novalis@novalis.org>,
-        Mark Harris <mhlk@osj.us>, Andreas Dilger <adilger@dilger.ca>,
-        Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
-Message-ID: <20140122062255.GA8973@birch.djwong.org>
-References: <1383808590.23882.13.camel@chiang>
- <20131107160341.GA3850@quack.suse.cz>
- <1383864864.23882.33.camel@chiang>
- <20131107231445.GG2054@quack.suse.cz>
- <1383866807.23882.41.camel@chiang>
- <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
- <1383981551.8994.27.camel@chiang>
- <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
- <1384070214.8994.47.camel@chiang>
- <20131112003018.GA30281@thunk.org>
+	Wed, 22 Jan 2014 01:26:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,698,1384329600"; 
+   d="scan'208";a="462667505"
+From: "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: RE: [PATCH] cpufreq: Align all CPUs to the same frequency if using
+ shared clock
+Thread-Topic: [PATCH] cpufreq: Align all CPUs to the same frequency if using
+ shared clock
+Thread-Index: AQHPFnLkmoIEnd0u3UmWxfIRHgMuSJqOuuow//+TAICAAWHWgIAAmKfA
+Date: Wed, 22 Jan 2014 06:26:20 +0000
+Message-ID: <630F9443351D2B4BB7EC6BAE6B6B08342549CF6A@SHSMSX104.ccr.corp.intel.com>
+References: <1390273543-18032-1-git-send-email-zhuangzhi.li@intel.com>
+	<CAKohponL_R8M40BJa3X+++1yDtw5KRvk88w8kVfA+_D+poK08A@mail.gmail.com>
+	<630F9443351D2B4BB7EC6BAE6B6B08342549C5DC@SHSMSX104.ccr.corp.intel.com>
+	<CAKohpo=ng-B6kLdWxBn_cNsWNVsYaNAD-ZzQLLOfkbj+FDg_fg@mail.gmail.com>
+ <CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
+In-Reply-To: <CAKohpokHi=yuGJm2Nf-TAMVhGQ8Do02j+s6z3eenKRzoW8pv7g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112003018.GA30281@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 07:30:18PM -0500, Theodore Ts'o wrote:
-> On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
-> > b. Use Andreas's encoding, which is incompatible with pre-1970 files
-> > written on 64-bit systems.
+
+
+> -----Original Message-----
+> From: Viresh Kumar [mailto:viresh.kumar@linaro.org]
+> Sent: Wednesday, January 22, 2014 1:18 PM
+> To: Li, Zhuangzhi
+> Cc: Rafael J. Wysocki; cpufreq@vger.kernel.org; linux-pm@vger.kernel.org;
+> Linux Kernel Mailing List; Liu, Chuansheng
+> Subject: Re: [PATCH] cpufreq: Align all CPUs to the same frequency if using
+> shared clock
+> 
+> On 21 January 2014 13:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > On 21 January 2014 12:56, Li, Zhuangzhi <zhuangzhi.li@intel.com> wrote:
+> >> Thanks for reviewing.
 > >
-> > I don't care about currently-existing post-2038 files, because I believe
-> > that nobody has a valid reason to have such files.  However, I do
-> > believe that pre-1970 files are probably important to someone.
-> > 
-> > Despite this, I prefer option (b), because I think the simplicity is
-> > valuable, and because I hate to give up date ranges (even ones that I
-> > think we'll "never" need). Option (b) is not actually lossy, because we
-> > could correct pre-1970 files with e2fsck; under Andreas's encoding,
-> > their dates would be in the far future (and thus cannot be legitimate).
-> > 
-> > Would a patch that does (b) be accepted?  I would accompany it with a
-> > patch to e2fsck (which I assume would also go to the ext4 developers
-> > mailing list?).
+> > Its my job :)
+> >
+> >> Sorry for make you misunderstanding, on our x86 platform, we want all the
+> CPUs share one policy by setting CPUFREQ_SHARED_TYPE_ALL, not share one
+> HW clock line.
+> >
+> > I see.. Then probably your patch makes sense. But it is obviously not
+> > required for every platform that exists today.
+> >
+> > Please update it to do it only for drivers that have set
+> > CPUFREQ_SHARED_TYPE_ALL..
 > 
-> I agree, I think this is the best way to go.  I'm going to drop your
-> earlier patch, and wait for an updated patch from you.  It may miss
-> this merge window, but as Andreas has pointed out, we still have a few
-> years to get this right.  :-)
+> One more thing, who has set different frequencies to these cores?
+> I hope kernel hasn't ?
+> 
+> In that case, probably you are fixing a bootloader bug in kernel?
+> What about doing this in bootloader then?
+I don't think it's a real bug in bootloader, the bootloader can set CPUs to different frequencies according to actually requirements(Power saving first or Performance first),
+the CPUs freq policy are initialized in kernel, if the kernel want to share one CPU policy(using CPUFREQ_SHARED_TYPE_ALL type), it should ensure all CPUs frequencies aligned first,
+don't depend on the bootloader CPUs Pre-states, then the kernel can have better compatibility.
 
-Just out of curiosity, did this (updated patch) ever happen?
-
---D
+If the kernel uses CPUFREQ_SHARED_TYPE_ALL policy, the patch can ensure these:
+1. If all CPUs are in the same P-state, it does nothing when cpufreq registering
+2. If the CPUs are in different P-states, all the other CPUs are aligned once to current frequency of CPU0 according to the present policy.
 > 
-> Thanks!!
-> 
-> 					- Ted
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> virehs
