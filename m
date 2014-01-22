@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209AbaAVWc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:32:28 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28712 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280AbaAVWc0 (ORCPT
+	id S1755868AbaAVWd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:33:28 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36587 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336AbaAVWd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:32:26 -0500
-Message-ID: <52E046BA.2060701@oracle.com>
-Date: Wed, 22 Jan 2014 17:31:22 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 22 Jan 2014 17:33:27 -0500
+Date: Thu, 23 Jan 2014 02:33:25 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
+        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
+ fail in 3.12 after exceeding vm_max_map_count
+Message-ID: <20140122223325.GA30637@moon>
+References: <20140122190816.GB4963@suse.de>
+ <20140122191928.GQ1574@moon>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-References: <20131212140835.729222186@infradead.org> <20131212141655.362219382@infradead.org> <52DEF495.2020304@oracle.com> <20140122171454.GR31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140122171454.GR31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122191928.GQ1574@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 12:14 PM, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 05:28:37PM -0500, Sasha Levin wrote:
->> 	[    0.000000] Initmem setup node 30 [mem 0x12ee000000-0x138dffffff]
->> 	[    0.000000]   NODE_DATA [mem 0xcfa42000-0xcfa72fff]
->> 	[    0.000000]     NODE_DATA(30) on node 1
->> 	[    0.000000] Initmem setup node 31 [mem 0x138e000000-0x142fffffff]
->> 	[    0.000000]   NODE_DATA [mem 0xcfa11000-0xcfa41fff]
->> 	[    0.000000]     NODE_DATA(31) on node 1
->> 	[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
->> 	[    0.000000] kvm-clock: cpu 0, msr 0:cf991001, boot clock
->> 	[133538.294040] Zone ranges:
->> 	[133538.294338]   DMA      [mem 0x00001000-0x00ffffff]
->> 	[133538.294804]   DMA32    [mem 0x01000000-0xffffffff]
->> 	[133538.295223]   Normal   [mem 0x100000000-0x142fffffff]
->> 	[133538.295670] Movable zone start for each node
->
-> OK, took me a while to fiddle with KVM and all the various muck around
-> that to reproduce. But I can confirm the below does fix the issue for
-> me.
->
-> I'm hoping to not have to re-introcude the kevents_up() check, but I
-> need to figure out what hardware triggered that and test again.
->
-> ---
-> Subject: sched/clock: Fixup early sched_clock initialization
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 22 Jan 2014 12:59:18 +0100
->
-> The code would assume sched_clock_stable() and switch to !stable
-> later, this switch brings a discontinuity in time.
->
-> The discontinuity on switching from stable to unstable was always
-> present, but previously we would set stable/unstable before
-> initializing TSC and usually stick to the one we start out with.
->
-> So the static_key bits brought an extra switch where there previously
-> wasn't one.
->
-> Things are further complicated by the fact that we cannot use
-> static_key as early as we usually call set_sched_clock_stable().
->
-> Fix things by tracking the stable state in a regular variable and only
-> set the static_key to the right state on sched_clock_init(), which is
-> ran right after late_time_init->tsc_init().
->
-> Before this we would not be using the TSC anyway.
->
-> Fixes: 35af99e646c7 ("sched/clock, x86: Use a static_key for sched_clock_stable")
-> Cc: jacob.jun.pan@linux.intel.com
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: hpa@zytor.com
-> Cc: paulmck@linux.vnet.ibm.com
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: lenb@kernel.org
-> Cc: rjw@rjwysocki.net
-> Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> Cc: rui.zhang@intel.com
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Reported-by: dyoung@redhat.com
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/20140122115918.GG3694@twins.programming.kicks-ass.net
+On Wed, Jan 22, 2014 at 11:19:28PM +0400, Cyrill Gorcunov wrote:
+> > commit. Test case was simple -- try and open the large file described in
+> > the bug. I did not investigate the patch itself as I'm just reporting
+> > the results of the bisection. If I had to guess, I'd say that VMA
+> > merging has been affected.
+> 
+> Thanks a lot for report, Mel! I'm investigating...
 
-The patch fixes the problem for me.
+Mel, here is a quick fix for bring merging back (just in case if you
+have a minute to test it and confirm the merging were affected). It
+seems I've lost setting up vma-softdirty bit somewhere and procedure
+which tests vma flags mathcing fails, will continue investigating/testing
+tomorrow.
+---
+ mm/mmap.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-
-Thanks,
-Sasha
-
+Index: linux-2.6.git/mm/mmap.c
+===================================================================
+--- linux-2.6.git.orig/mm/mmap.c
++++ linux-2.6.git/mm/mmap.c
+@@ -893,8 +893,18 @@ again:			remove_next = 1 + (end > next->
+ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 			struct file *file, unsigned long vm_flags)
+ {
++	/*
++	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
++	 * match the flags but dirty bit -- just mark merged one as
++	 * a dirty then.
++	 */
++#ifdef CONFIG_MEM_SOFT_DIRTY
++	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
++		return 0;
++#else
+ 	if (vma->vm_flags ^ vm_flags)
+ 		return 0;
++#endif
+ 	if (vma->vm_file != file)
+ 		return 0;
+ 	if (vma->vm_ops && vma->vm_ops->close)
+@@ -1082,7 +1092,11 @@ static int anon_vma_compatible(struct vm
+ 	return a->vm_end == b->vm_start &&
+ 		mpol_equal(vma_policy(a), vma_policy(b)) &&
+ 		a->vm_file == b->vm_file &&
++#ifdef CONFIG_MEM_SOFT_DIRTY
++		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
++#else
+ 		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
++#endif
+ 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
+ }
+ 
