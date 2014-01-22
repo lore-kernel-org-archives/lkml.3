@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932AbaAVPD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 10:03:58 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:55869 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212AbaAVPDw (ORCPT
+	id S1755828AbaAVPFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 10:05:54 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:38684 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704AbaAVPFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 10:03:52 -0500
-Date: Wed, 22 Jan 2014 15:10:49 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H.J. Lu" <hjl.tools@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Will Deacon <will.deacon@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/8] Update kernel uabi header files for x32
-Message-ID: <20140122151049.GA18727@1n450.cable.virginmedia.net>
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
- <52DEA933.6080907@zytor.com>
+	Wed, 22 Jan 2014 10:05:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DEA933.6080907@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK2H+ee8MgXdm3eTzrkvo=R-=8U_0LOmEAKMnKga8KU04jmgCg@mail.gmail.com>
+References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
+	<CAH=mFZzmcp5amS-JsNApWiwgYqs70M==FUA6KoxH+oLdbZihcg@mail.gmail.com>
+	<CAK2H+ee8MgXdm3eTzrkvo=R-=8U_0LOmEAKMnKga8KU04jmgCg@mail.gmail.com>
+Date: Wed, 22 Jan 2014 20:35:50 +0530
+Message-ID: <CAH=mFZzLEQ5MAAmwB3tdcM+DxWQho9C6h1Ho7NhKe6JMnOhyVg@mail.gmail.com>
+Subject: Re: Help Needed
+From: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 09:06:59AM -0800, H. Peter Anvin wrote:
-> On 12/27/2013 02:14 PM, H.J. Lu wrote:
-> > X32 uses the same kernel system call interface as x86-64 for many
-> > system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
-> > x32.  Where long or unsigned long are used in struct types for such
-> > system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
-> > long for all ABIs other than x32.  I am submitting 8 patches to replace
-> > long or unsigned long with __kernel_[u]long_t so that those struct types
-> > can be used with x32 system calls.
-> > 
-> > H.J. Lu (8):
-> >   Use __kernel_long_t in struct timex
-> >   Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
-> >   Use __kernel_ulong_t in uapi struct ipc64_perm
-> >   Use __kernel_long_t in struct msgbuf
-> >   Use __kernel_ulong_t in struct msqid64_ds
-> >   Use __kernel_ulong_t in x86 struct semid64_ds
-> >   Use __kernel_ulong_t in shmid64_ds/shminfo64/shm_info
-> >   Use __kernel_long_t in struct mq_attr
-> > 
-> 
-> As Catalin indirectly pointed out, I had made a followup to the wrong
-> version of the patchset (because I commented to Christoph's feedback.)
-> This is threaded to the proper version (without unnecessary #if
-> __BITS_PER_LONG.)
+The grub file is /boot/grub/grub.cfg. The newly built kernel is
+reflected in grub.cfg. But, the grub doesn't display this new kernel
+at the boot time. I tried few tips from the web. It is no help. That
+is why I sought help from this forum.
 
->From an arm64 ILP32 perspective (though still work in progress), the
-patches look fine. We'll continue the trend with similar changes to
-generic semid64_ds.
-
-In case the series is not committed yet:
-
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+On Wed, Jan 22, 2014 at 8:25 PM, Mark Knecht <markknecht@gmail.com> wrote:
+> On Wed, Jan 22, 2014 at 6:34 AM, Madhusudhan Rao Sripalle
+> <madhu.sripalle@gmail.com> wrote:
+>> Thanks to Randy and Ryan for the responses. The pointers are really
+>> helpful. Currently I am facing an issue with Ubuntu's grub not
+>> displaying the newly built kernel.
+>>
+>> Existing kernel on the ubuntu system is 3.2.0-23-generic. While the
+>> new one is 3.11.10. The Grub has/displays fedora and ubuntu each one
+>> and their corresponding recovery modes. On building and installing
+>> 3.11.10 on Ubuntu's, the newly built kernel doesn't show up in grub at
+>> the boot time. Kindly help. Updating grub also doesn't help.
+>>
+>> -Madhu
+>
+> There are likely a lot of resources on the web to more complete
+> instructions but roughly speaking:
+>
+> 1) Mount /boot
+> 2) Copy your new kernel binary to /boot. I.e. cp
+> arch/x86_64/boot/bzImage /boot/bzImage-#####
+> 3) Edit /boot/grub/grub.conf to add the new kernel in the list of options
+>
+> HTH,
+> Mark
