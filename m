@@ -1,89 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaAVDJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:09:16 -0500
-Received: from ozlabs.org ([203.10.76.45]:51236 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698AbaAVDJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:09:14 -0500
-Date: Wed, 22 Jan 2014 14:09:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlZpbGxlIFN5cmrDpGzDpCI=?= 
-	<ville.syrjala@linux.intel.com>
-Subject: linux-next: manual merge of the drm-intel tree with the drm tree
-Message-Id: <20140122140908.c57e7336c70156e30eda2a18@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K"
+	id S1755032AbaAVDLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:11:19 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:25480 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752819AbaAVDLR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 22:11:17 -0500
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jan 2014 22:11:16 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtUIADs031J5LKVw/2dsb2JhbABagwuDObN0hVCBERd0giUBAQEDAQ4sHA8UBQsIAw4KCSUPBSUDIROHfQfCXhcWjmkHgySBFASTeoQnkhmDQSg
+Date: Wed, 22 Jan 2014 14:06:07 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20140122030607.GB27606@dastard>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+ <20140117000517.GB18112@dastard>
+ <20140120231737.GS6963@cmpxchg.org>
+ <20140121030358.GN18112@dastard>
+ <20140121055017.GT6963@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121055017.GT6963@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 21, 2014 at 12:50:17AM -0500, Johannes Weiner wrote:
+> On Tue, Jan 21, 2014 at 02:03:58PM +1100, Dave Chinner wrote:
+> > On Mon, Jan 20, 2014 at 06:17:37PM -0500, Johannes Weiner wrote:
+> > > On Fri, Jan 17, 2014 at 11:05:17AM +1100, Dave Chinner wrote:
+> > > > On Fri, Jan 10, 2014 at 01:10:43PM -0500, Johannes Weiner wrote:
+> > > > > +static struct shrinker workingset_shadow_shrinker = {
+> > > > > +	.count_objects = count_shadow_nodes,
+> > > > > +	.scan_objects = scan_shadow_nodes,
+> > > > > +	.seeks = DEFAULT_SEEKS * 4,
+> > > > > +	.flags = SHRINKER_NUMA_AWARE,
+> > > > > +};
+> > > > 
+> > > > Can you add a comment explaining how you calculated the .seeks
+> > > > value? It's important to document the weighings/importance
+> > > > we give to slab reclaim so we can determine if it's actually
+> > > > acheiving the desired balance under different loads...
+> > > 
+> > > This is not an exact science, to say the least.
+> > 
+> > I know, that's why I asked it be documented rather than be something
+> > kept in your head.
+> > 
+> > > The shadow entries are mostly self-regulated, so I don't want the
+> > > shrinker to interfere while the machine is just regularly trimming
+> > > caches during normal operation.
+> > > 
+> > > It should only kick in when either a) reclaim is picking up and the
+> > > scan-to-reclaim ratio increases due to mapped pages, dirty cache,
+> > > swapping etc. or b) the number of objects compared to LRU pages
+> > > becomes excessive.
+> > > 
+> > > I think that is what most shrinkers with an elevated seeks value want,
+> > > but this translates very awkwardly (and not completely) to the current
+> > > cost model, and we should probably rework that interface.
+> > > 
+> > > "Seeks" currently encodes 3 ratios:
+> > > 
+> > >   1. the cost of creating an object vs. a page
+> > > 
+> > >   2. the expected number of objects vs. pages
+> > 
+> > It doesn't encode that at all. If it did, then the default value
+> > wouldn't be "2".
+> >
+> > >   3. the cost of reclaiming an object vs. a page
+> > 
+> > Which, when you consider #3 in conjunction with #1, the actual
+> > intended meaning of .seeks is "the cost of replacing this object in
+> > the cache compared to the cost of replacing a page cache page."
+> 
+> But what it actually seems to do is translate scan rate from LRU pages
+> to scan rate in another object pool.  The actual replacement cost
+> varies based on hotness of each set, an in-use object is more
+> expensive to replace than a cold page and vice versa, the dentry and
+> inode shrinkers reflect this by rotating hot objects and refusing to
+> actually reclaim items while they are in active use.
 
-Hi all,
+Right, but so does the page cache when the page referenced bit is
+seen by the LRU scanner. That's a scanned page, so what is passed to
+shrink_slab is a ratio of pages scanned vs pages eligible for
+reclaim. IOWs, the fact that the slab caches rotate rather than
+reclaim is irrelevant - what matters is the same proportional
+pressure is applied to the slab cache that was applied to the page
+cache....
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit c326c0a9c98c
-("drm/i915: Call drm_calc_timestamping_constants() earlier") from the drm
-tree and commit bbee18af2a25 ("drm/i915: Prepare to track new pipe config
-per pipe") from the drm-intel tree.
+> So I am having a hard time deriving a meaningful value out of this
+> definition for my usecase because I want to push back objects based on
+> reclaim efficiency (scan rate vs. reclaim rate).  The other shrinkers
+> with non-standard seek settings reek of magic number as well, which
+> suggests I am not alone with this.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Right, which is exactly why I'm asking you to document it. I've got
+no idea how other subsystems have come up with their magic numbers
+because they are not documented, and so it's just about impossible
+to determine what the author of the code really needed and hence the
+best way to improve the interface is difficult to determine.
 
---=20
+> I wonder if we can come up with a better interface that allows both
+> traditional cache shrinkers with their own aging, as well as object
+> pools that want to push back based on reclaim efficiency.
+
+We probably can, though I'd prefer we don't end up with some
+alternative algorithm that is specific to a single shrinker.
+
+So, how do we measure page cache reclaim efficiency? How can that be
+communicated to a shrinker? how can we tell a shrinker what measure
+to use? How do we tell shrinker authors what measure to use?  How do
+we translate that new method useful scan count information?
+
+> > > but they are not necessarily correlated.  How I would like to
+> > > configure the shadow shrinker instead is:
+> > > 
+> > >   o scan objects when reclaim efficiency is down to 75%, because they
+> > >     are more valuable than use-once cache but less than workingset
+> > > 
+> > >   o scan objects when the ratio between them and the number of pages
+> > >     exceeds 1/32 (one shadow entry for each resident page, up to 64
+> > >     entries per shrinkable object, assume 50% packing for robustness)
+> > > 
+> > >   o as the expected balance between objects and lru pages is 1:32,
+> > >     reclaim one object for every 32 reclaimed LRU pages, instead of
+> > >     assuming that number of scanned pages corresponds meaningfully to
+> > >     number of objects to scan.
+> > 
+> > You're assuming that every radix tree node has a full population of
+> > pages. This only occurs on sequential read and write workloads, and
+> > so isn't going tobe true for things like mapped executables or any
+> > semi-randomly accessed data set...
+> 
+> No, I'm assuming 50% population on average for that reason.  I don't
+> know how else I could assign a fixed value to a variable object.
+
+Ok, I should have say "fixed population", not "full population". Do
+you have any stats on the typical mapping tree radix node population
+on running systems?
+
+> > > "4" just doesn't have the same ring to it.
+> > 
+> > Right, but you still haven't explained how you came to the value of
+> > "4"....
+> 
+> It's a complete magic number.  The tests I ran suggested lower numbers
+> throw out shadow entries prematurely, whereas higher numbers thrash
+> the working set while there are plenty radix tree nodes present.
+
+That, at minimum, needs to be in a comment so that people have some
+idea of how the magic number biases behaviour. ;)
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/i915/intel_display.c
-index 14b024becb91,e1d3ae1212a7..000000000000
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@@ -9660,14 -9705,7 +9703,15 @@@ static int __intel_set_mode(struct drm_
-  		/* mode_set/enable/disable functions rely on a correct pipe
-  		 * config. */
-  		to_intel_crtc(crtc)->config =3D *pipe_config;
-+ 		to_intel_crtc(crtc)->new_config =3D &to_intel_crtc(crtc)->config;
- +
- +		/*
- +		 * Calculate and store various constants which
- +		 * are later needed by vblank and swap-completion
- +		 * timestamping. They are derived from true hwmode.
- +		 */
- +		drm_calc_timestamping_constants(crtc,
- +						&pipe_config->adjusted_mode);
-  	}
- =20
-  	/* Only after disabling all output pipelines that will be changed can we
-
---Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS3zZYAAoJEMDTa8Ir7ZwVRSoP/R0gK1HqFim6I3tSfaNMgbXa
-IPKQkMDCPx6Fm+rhrcZJXKjIjBUk1p0VE3laDemUQANJAoxWD4uAvibeCuslw2rC
-l+hTRWxnkoB5xfVsAdHKu3YVi5e4Y1txTCr7D1f8JVHZ1cuN/Rt/wgdY7ehamt02
-6NmiPJMOHXkL5zSxlRw+bSgoK+ew3MJ14icYjUsu7d+2TNOSMOaOT5++B2x+1I1W
-SO8S8rS9ghrhb6s5Hak69XfRsUwubOrpAUIa7QAMfHP6c2dhVxly5vZfXei65sqM
-SUPnNJ7lNfc4aMVcsc7G50gfmRFQgPIZwb1WAJlKIILfCiedmz6FKe4Wy2Q3D3dA
-+ViMMI4Kh5SoAXTPp7HQzTGzY3siAGKwiFYcgVCQY/pnzIopXhftiErvjOqVnAq+
-huWkALLKzDcjGn1g9HW2Z0sTC0avM6/EPAqqHqAAIrLrAaNch64X74Yygpd6YDaT
-jqOQJv20+ky17L90L03XcQ42pZgGqX6mLO7iPtKnkbH59BgOQEfbEcs2S1AcKO3h
-Fbiiwej77huNjd04QiiR2xPl1DTWv1CBnpct2BcLJBowI9dQ1fHbURtrm7erdZVw
-tgXB9WlbuKk4a/Q/G+HxWgZwsUyziATzOFaFth1TYGT7FEnD0DgYqSVe955pz4cz
-x4yee5ODdO1x8bysFknS
-=+D0N
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_Jan_2014_14_09_08_+1100_FoM7x0L4JZZkNM_K--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
