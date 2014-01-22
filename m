@@ -1,136 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070AbaAVKqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 05:46:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50927 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419AbaAVKqH (ORCPT
+	id S1755184AbaAVKqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 05:46:33 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27878
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751773AbaAVKqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 05:46:07 -0500
-Date: Wed, 22 Jan 2014 11:45:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        dyoung@redhat.com
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140122104532.GJ31570@twins.programming.kicks-ass.net>
-References: <20131212140835.729222186@infradead.org>
- <20131212141655.362219382@infradead.org>
- <52DEF495.2020304@oracle.com>
+	Wed, 22 Jan 2014 05:46:30 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h1155h)
+Message-ID: <52DFA1DE.6030709@freescale.com>
+Date: Wed, 22 Jan 2014 18:47:58 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DEF495.2020304@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jani Nikula <jani.nikula@linux.intel.com>
+CC: <jg1.han@samsung.com>, <linux-fbdev@vger.kernel.org>,
+        <tomi.valkeinen@ti.com>, <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH v2] backlight: turn backlight on/off when necessary
+References: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com> <87sisg5pfo.fsf@intel.com>
+In-Reply-To: <87sisg5pfo.fsf@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 05:28:37PM -0500, Sasha Levin wrote:
-> On 12/12/2013 09:08 AM, Peter Zijlstra wrote:
+On 01/22/2014 05:35 PM, Jani Nikula wrote:
+> On Mon, 20 Jan 2014, Liu Ying <Ying.Liu@freescale.com> wrote:
+>> We don't have to turn backlight on/off everytime a blanking
+>> or unblanking event comes because the backlight status may
+>> have already been what we want. Another thought is that one
+>> backlight device may be shared by multiple framebuffers. We
+>> don't hope blanking one of the framebuffers may turn the
+>> backlight off for all the other framebuffers, since they are
+>> likely being active to display something. This patch adds
+>> some logics to record each framebuffer's backlight usage to
+>> determine the backlight device use count and whether the
+>> backlight should be turned on or off. To be more specific,
+>> only one unblank operation on a certain blanked framebuffer
+>> may increase the backlight device's use count by one, while
+>> one blank operation on a certain unblanked framebuffer may
+>> decrease the use count by one, because the userspace is
+>> likely to unblank a unblanked framebuffer or blank a blanked
+>> framebuffer.
+>>
+>> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+>> ---
+>> v1 can be found at https://lkml.org/lkml/2013/5/30/139
+>>
+>> v1->v2:
+>> * Make the commit message be more specific about the condition
+>>   in which backlight device use count can be increased/decreased.
+>> * Correct the setting for bd->props.fb_blank.
+>>
+>>  drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
+>>  include/linux/backlight.h           |    6 ++++++
+>>  2 files changed, 27 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+>> index 5d05555..42044be 100644
+>> --- a/drivers/video/backlight/backlight.c
+>> +++ b/drivers/video/backlight/backlight.c
+>> @@ -34,13 +34,15 @@ static const char *const backlight_types[] = {
+>>  			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
+>>  /* This callback gets called when something important happens inside a
+>>   * framebuffer driver. We're looking if that important event is blanking,
+>> - * and if it is, we're switching backlight power as well ...
+>> + * and if it is and necessary, we're switching backlight power as well ...
+>>   */
+>>  static int fb_notifier_callback(struct notifier_block *self,
+>>  				unsigned long event, void *data)
+>>  {
+>>  	struct backlight_device *bd;
+>>  	struct fb_event *evdata = data;
+>> +	int node = evdata->info->node;
+>> +	int fb_blank = 0;
+>>  
+>>  	/* If we aren't interested in this event, skip it immediately ... */
+>>  	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
+>> @@ -51,12 +53,24 @@ static int fb_notifier_callback(struct notifier_block *self,
+>>  	if (bd->ops)
+>>  		if (!bd->ops->check_fb ||
+>>  		    bd->ops->check_fb(bd, evdata->info)) {
+>> -			bd->props.fb_blank = *(int *)evdata->data;
+>> -			if (bd->props.fb_blank == FB_BLANK_UNBLANK)
+>> -				bd->props.state &= ~BL_CORE_FBBLANK;
+>> -			else
+>> -				bd->props.state |= BL_CORE_FBBLANK;
+>> -			backlight_update_status(bd);
+>> +			fb_blank = *(int *)evdata->data;
+>> +			if (fb_blank == FB_BLANK_UNBLANK &&
+>> +			    !bd->fb_bl_on[node]) {
+>> +				bd->fb_bl_on[node] = true;
+>> +				if (!bd->use_count++) {
+>> +					bd->props.state &= ~BL_CORE_FBBLANK;
+>> +					bd->props.fb_blank = FB_BLANK_UNBLANK;
+>> +					backlight_update_status(bd);
+>> +				}
+>> +			} else if (fb_blank != FB_BLANK_UNBLANK &&
+>> +				   bd->fb_bl_on[node]) {
+>> +				bd->fb_bl_on[node] = false;
+>> +				if (!(--bd->use_count)) {
+>> +					bd->props.state |= BL_CORE_FBBLANK;
+>> +					bd->props.fb_blank = FB_BLANK_POWERDOWN;
+
+Looking at the patch again, I think we should set fb_blank to bd->props.fb_blank here to minimize the logic change.
+I'll do more test for this and provide v3 if necessary.
+
+>> +					backlight_update_status(bd);
+>> +				}
+>> +			}
 > 
-> This patch seems to be causing an issue with booting a KVM guest. It seems that it
-> causes the time to go random during early boot process:
+> Anything backlight worries me a little, and there are actually three
+> changes bundled into one patch here:
 > 
-> 	[    0.000000] Initmem setup node 30 [mem 0x12ee000000-0x138dffffff]
-> 	[    0.000000]   NODE_DATA [mem 0xcfa42000-0xcfa72fff]
-> 	[    0.000000]     NODE_DATA(30) on node 1
-> 	[    0.000000] Initmem setup node 31 [mem 0x138e000000-0x142fffffff]
-> 	[    0.000000]   NODE_DATA [mem 0xcfa11000-0xcfa41fff]
-> 	[    0.000000]     NODE_DATA(31) on node 1
-> 	[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
-> 	[    0.000000] kvm-clock: cpu 0, msr 0:cf991001, boot clock
-> 	[133538.294040] Zone ranges:
-> 	[133538.294338]   DMA      [mem 0x00001000-0x00ffffff]
-> 	[133538.294804]   DMA32    [mem 0x01000000-0xffffffff]
-> 	[133538.295223]   Normal   [mem 0x100000000-0x142fffffff]
-> 	[133538.295670] Movable zone start for each node
+> 1. Changing bd->props.state and bd->props.fb_blank only when use_count
+>    changes from 0->1 or 1->0.
 > 
-> Looking at the code, initially I though that the problem is with:
+> 2. Calling backlight_update_status() only with the above change, and not
+>    on all notifier callbacks.
 > 
-> 	+void set_sched_clock_stable(void)
-> 	+{
-> 	+       if (!sched_clock_stable())
-> 	+               static_key_slow_dec(&__sched_clock_stable);
-> 	+}
-> 	+
-> 	+void clear_sched_clock_stable(void)
-> 	+{
-> 	+       /* XXX worry about clock continuity */
-> 	+       if (sched_clock_stable())
-> 	+               static_key_slow_inc(&__sched_clock_stable);
-> 	+}
+> 3. Setting bd->props.fb_blank always to either FB_BLANK_UNBLANK or
+>    FB_BLANK_POWERDOWN instead of *(int *)evdata->data.
 > 
-> I think the jump label inc/dec is reversed here. We would want to inc
-> it when enabling and dec when disabling, no?
-
-I got terribly confused with that static_key trainwreck. I know I
-definitely got it wrong a few times.
-
-I helped write the jump label stuff, but the current interface is
-horrible, I really couldn't figure out what is what anymore :-(
-
-The current code seems to work for me in that my machine ends up with
-sched_clock_stable() == true and when I call clear_sched_clock_stable()
-it returns false and nothing explodes.
-
-> However, trying to reverse the two didn't help. I was still seeing the
-> same odd behaviour.
-
-I got a crash when I flipped the inc and dec ;-)
-
-> I tried doing a simple conversion to using a simple var like before,
-> which looks like this:
-
-<snip>
-
-> This has corrected the issue:
+> The rationale in the commit message seems plausible, and AFAICT the code
+> does what it says on the box, so for that (and for that alone) you can
+> have my
 > 
-> 	[    0.000000] Initmem setup node 31 [mem 0x138e000000-0x142fffffff]
-> 	[    0.000000]   NODE_DATA [mem 0xcfa11000-0xcfa41fff]
-> 	[    0.000000]     NODE_DATA(31) on node 1
-> 	[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
-> 	[    0.000000] kvm-clock: cpu 0, msr 0:cf991001, boot clock
-> 	[    0.000000] Zone ranges:
-> 	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-> 	[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-> 	[    0.000000]   Normal   [mem 0x100000000-0x142fffffff]
-> 	[    0.000000] Movable zone start for each node
-> 	[    0.000000] Early memory node ranges
-> 		[ timing is correct for the rest of the boot]
+> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+
+Thanks for your review.
+
+The backlight on my board is driving two separate display interfaces.
+Instead of applying this patch to my kernel tree every time I upgrade it, I chose to send it to folks for review.
+
+As the essential idea of this patch looks reasonable to me, I hope change could be done in other drivers in case this patch regresses them.
+
+Liu Ying
+
 > 
-> At this point, I thought that there's something up with jump labels
-> being used this early (?) and tried compiling with
-> CONFIG_JUMP_LABELS=n, this didn't solve the issue.
+> *BUT* it would be laborous to figure out whether this change in
+> behaviour might regress some drivers. I'm just punting on that. And that
+> brings us back to the three changes above - in a bisect POV it might be
+> helpful to split the patch up. Up to the maintainers.
 > 
-> This makes me thing there's something different related to jumplabels
-> we're missing, as the no-jumplabel config should be very similar to
-> the patch I did above, I just can't figure out what it is.
+> HTH,
+> Jani.
+> 
+> 
+>>  		}
+>>  	mutex_unlock(&bd->ops_lock);
+>>  	return 0;
+>> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+>> index 5f9cd96..7264742 100644
+>> --- a/include/linux/backlight.h
+>> +++ b/include/linux/backlight.h
+>> @@ -9,6 +9,7 @@
+>>  #define _LINUX_BACKLIGHT_H
+>>  
+>>  #include <linux/device.h>
+>> +#include <linux/fb.h>
+>>  #include <linux/mutex.h>
+>>  #include <linux/notifier.h>
+>>  
+>> @@ -104,6 +105,11 @@ struct backlight_device {
+>>  	struct list_head entry;
+>>  
+>>  	struct device dev;
+>> +
+>> +	/* Multiple framebuffers may share one backlight device */
+>> +	bool fb_bl_on[FB_MAX];
+>> +
+>> +	int use_count;
+>>  };
+>>  
+>>  static inline void backlight_update_status(struct backlight_device *bd)
+>> -- 
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> 
 
-Does this kvm thing have sched_clock_stable==true ever? My machine ends
-up setting set_sched_clock_stable() very early indeed, in
-early_init_intel().
-
-I suspect what happens is that the way I wrote it; the jump_label is
-true per boot, so sched_clock_stable() == true. My initial
-set_sched_clock_stable() call then does nothing as the state is already
-good.
-
-KVM doesn't do this and runs with sched_clock_stable()==true for a
-while, detects the TSC really isn't stable and calls
-clear_sched_clock_stable() and you get this jump in time.
-
-Now the next patch 'fixes' this patch by adding a workqueue to delay the
-actual jump_label poke; that fixed a few wierd lockdep errors.
-
-But the above is still obviously wrong for machines that do not call
-set_sched_clock_stable() on boot.
-
-Ho humm.
