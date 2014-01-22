@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaAVOse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 09:48:34 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:46985 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528AbaAVOsc (ORCPT
+	id S1755597AbaAVOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 09:54:09 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:59596 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455AbaAVOyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 09:48:32 -0500
-Date: Wed, 22 Jan 2014 15:48:24 +0100
-From: Rob Schroer <sulamiification@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Joe Perches <joe@perches.com>, linux-input@vger.kernel.org,
+	Wed, 22 Jan 2014 09:54:04 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hid/wacom: fixed coding style issues
-Message-ID: <20140122144824.GA15985@hal9k.fritz.box>
-References: <20140121195153.GA4198@fedora.fritz.box>
- <20140121200645.GC29615@core.coreip.homeip.net>
- <20140121202944.GA4554@fedora.fritz.box>
- <20140121211823.GD29615@core.coreip.homeip.net>
- <1390339554.31946.6.camel@joe-AO722>
- <20140121224203.GA12427@fedora.fritz.box>
- <20140122064045.GA4143@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140122064045.GA4143@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v2] tty: Allow stealing of controlling ttys within user namespaces
+Date: Wed, 22 Jan 2014 08:53:51 -0600
+Message-Id: <1390402431-6371-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:40:45PM -0800, Dmitry Torokhov wrote:
-> I think this should be
->
-> 	error = kstrtoint(buf, 10, &new_speed);
-> 	if (error)
-> 		return error;
->
+root is allowed to steal ttys from other sessions, but it
+requires system-wide CAP_SYS_ADMIN and therefore is not possible
+for root within a user namespace. This should be allowed so long
+as the process doing the stealing is privileged towards the
+session which currently owns the tty.
 
-I just lost my SSD/branch, so here is a fresh patch for mainline:
+Update this code to only require CAP_SYS_ADMIN in the user
+namespaces of the target session's tasks, allowing the tty to be
+stolen from sessions whose tasks are in the same or lesser
+privileged user namespaces.
 
-Fixed some coding style issues, removed unessecary spaces, added
-linebreaks, converted an occurence of sscanf to kstrtoint.
-
-Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/hid/hid-wacom.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/tty/tty_io.c | 31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 60c75dc..c7f9d1c 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -77,8 +77,8 @@ static void wacom_scramble(__u8 *image)
- 	__u16 mask;
- 	__u16 s1;
- 	__u16 s2;
--	__u16 r1 ;
--	__u16 r2 ;
-+	__u16 r1;
-+	__u16 r2;
- 	__u16 r;
- 	__u8 buf[256];
- 	int i, w, x, y, z;
-@@ -336,7 +336,8 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c74a00a..558e6dc 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2410,17 +2410,32 @@ static int tiocsctty(struct tty_struct *tty, int arg)
+ 		 * This tty is already the controlling
+ 		 * tty for another session group!
+ 		 */
+-		if (arg == 1 && capable(CAP_SYS_ADMIN)) {
+-			/*
+-			 * Steal it away
+-			 */
+-			read_lock(&tasklist_lock);
+-			session_clear_tty(tty->session);
+-			read_unlock(&tasklist_lock);
+-		} else {
++		struct user_namespace *user_ns;
++		struct task_struct *p;
++
++		if (arg != 1) {
+ 			ret = -EPERM;
+ 			goto unlock;
+ 		}
++
++		read_lock(&tasklist_lock);
++		do_each_pid_task(tty->session, PIDTYPE_SID, p) {
++			rcu_read_lock();
++			user_ns = task_cred_xxx(p, user_ns);
++			if (!ns_capable(user_ns, CAP_SYS_ADMIN)) {
++				rcu_read_unlock();
++				read_unlock(&tasklist_lock);
++				ret = -EPERM;
++				goto unlock;
++			}
++			rcu_read_unlock();
++		} while_each_pid_task(tty->session, PIDTYPE_SID, p);
++
++		/*
++		 * Steal it away
++		 */
++		session_clear_tty(tty->session);
++		read_unlock(&tasklist_lock);
+ 	}
+ 	proc_set_tty(current, tty);
+ unlock:
+-- 
+1.8.3.2
 
- 	switch (hdev->product) {
- 	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
--		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
-+		rep_data[0] = 0x03;
-+		rep_data[1] = 0x00;
- 		limit = 3;
- 		do {
- 			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-@@ -403,9 +404,11 @@ static ssize_t wacom_store_speed(struct device *dev,
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	int new_speed;
-+	int error;
-
--	if (sscanf(buf, "%1d", &new_speed ) != 1)
--		return -EINVAL;
-+	error = kstrtoint(buf, 10, &new_speed);
-+	if (error)
-+		return error;
-
- 	if (new_speed == 0 || new_speed == 1) {
- 		wacom_set_features(hdev, new_speed);
---
-1.8.4.2
-
---
-Robin
