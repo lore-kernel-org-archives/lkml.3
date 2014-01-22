@@ -1,35 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbaAVDEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 22:04:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155AbaAVDEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 22:04:34 -0500
-Message-ID: <52DF353D.6050300@redhat.com>
-Date: Tue, 21 Jan 2014 22:04:29 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754789AbaAVDGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 22:06:20 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:48007 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419AbaAVDGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jan 2014 22:06:18 -0500
 MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: [LSF/MM TOPIC] really large storage sectors - going beyond 4096 bytes
-References: <20131220093022.GV11295@suse.de>
-In-Reply-To: <20131220093022.GV11295@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
+References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
+ <20140119173712.GA26481@kroah.com> <CAPtuhTikj38yKy-=uF7O+VFG_N4AWee23f9woemM318fM3V4VQ@mail.gmail.com>
+ <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Wed, 22 Jan 2014 12:05:57 +0900
+Message-ID: <CAEjAshozB4S0ZGqEn41ROfZwGTV+_GZRRTZ8cssi0VdH8Uhr_w@mail.gmail.com>
+Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One topic that has been lurking forever at the edges is the current 4k 
-limitation for file system block sizes. Some devices in production today and 
-others coming soon have larger sectors and it would be interesting to see if it 
-is time to poke at this topic again.
+Dear Greg, Mike,
 
-LSF/MM seems to be pretty much the only event of the year that most of the key 
-people will be present, so should be a great topic for a joint session.
+May I ask your answer or other opinion, please?
 
-Ric
-
+On Mon, Jan 20, 2014 at 5:07 PM, SeongJae Park <sj38.park@gmail.com> wrote:
+> On Mon, Jan 20, 2014 at 4:47 PM, Mike Turquette <mturquette@linaro.org> wrote:
+>> On Sun, Jan 19, 2014 at 9:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> On Sun, Jan 19, 2014 at 02:55:07PM +0900, SeongJae Park wrote:
+>>>> Following build comes while modprobe process:
+>>>> > ERROR: "__clk_get_hw" [drivers/clk/clk-max77686.ko] undefined!
+>>>> > make[2]: *** [__modpost] Error 1
+>>>> > make[1]: *** [modules] Error 2
+>>>>
+>>>> Export the symbol to fix it and for other part's usecase.
+>>>>
+>>>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+>>>> ---
+>>>>  drivers/clk/clk.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>>>> index 2b38dc9..3883fba 100644
+>>>> --- a/drivers/clk/clk.c
+>>>> +++ b/drivers/clk/clk.c
+>>>> @@ -575,6 +575,7 @@ struct clk_hw *__clk_get_hw(struct clk *clk)
+>>>>  {
+>>>>       return !clk ? NULL : clk->hw;
+>>>>  }
+>>>> +EXPORT_SYMBOL_GPL(__clk_get_hw);
+>>>
+>>> __ functions should usually only be for "internal" use, why does this
+>>> get exported to modules?  Why not just put it in a .h file?
+>>
+>> It was originally used only within the clock core but it is sensible
+>> for hardware-specific clock drivers to use this as well. I plan to
+>> audit all of the double-underscore functions in
+>> include/linux/clk-provider.h for 3.15.
+>>
+>> Regards,
+>> Mike
+>>
+> Thank you very much for answering about it, Mike.
+>
+> I agree Greg's indication and think Mike's explanation is reasonable.
+>
+> So, I think it would be better to just export the symbol now
+> because it would be easier for future functions renaming and
+> similar issues were solved in this way in past:
+> https://lkml.org/lkml/2013/4/15/50
+>
+> Or, maybe I can change the client code of __clk_get_hw to not use the function.
+>
+> What do you think would be better to fix this build error? Or, do you
+> have better idea?
+> I will respect your opinion.
+>
+> Thanks and Regards.
+> SeongJae Park.
+>
+>>>
+>>> greg k-h
