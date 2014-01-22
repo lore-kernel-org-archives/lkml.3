@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510AbaAVC10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jan 2014 21:27:26 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45019 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690AbaAVC1Y (ORCPT
+	id S1754715AbaAVC2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jan 2014 21:28:13 -0500
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:60525 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004AbaAVC2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jan 2014 21:27:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <1390348085.5027.18.camel@smoke>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <1390339396-3479-11-git-send-email-paul.gortmaker@windriver.com> <1390348085.5027.18.camel@smoke>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 21 Jan 2014 21:26:52 -0500
-X-Google-Sender-Auth: gRnKHXtjkxbR7iuToVrU7vdFt0I
-Message-ID: <CAP=VYLp5UiVJYxtpAcptoqdvgYD_Z=5CMBxmKekXEeSSBgFS9Q@mail.gmail.com>
-Subject: Re: [PATCH 10/73] powerpc: use device_initcall for registering rtc devices
-To: Geoff Levand <geoff@infradead.org>
-Cc: linux-arch <linux-arch@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Jan 2014 21:28:09 -0500
+From: Jamie Liu <jamieliu@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>,
+        Hugh Dickins <hughd@google.com>
+Cc: Minchan Kim <minchan@kernel.org>, Akinobu Mita <akinobu.mita@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jamie Liu <jamieliu@google.com>
+Subject: [PATCH] swap: do not skip lowest_bit in scan_swap_map() scan loop
+Date: Tue, 21 Jan 2014 18:21:16 -0800
+Message-Id: <1390357276-16521-1-git-send-email-jamieliu@google.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 6:48 PM, Geoff Levand <geoff@infradead.org> wrote:
-> Hi Paul,
->
-> On Tue, 2014-01-21 at 16:22 -0500, Paul Gortmaker wrote:
->> Currently these two RTC devices are in core platform code
->> where it is not possible for them to be modular.  It will
->> never be modular, so using module_init as an alias for
->> __initcall can be somewhat misleading.
->>
->>  arch/powerpc/kernel/time.c        | 2 +-
->>  arch/powerpc/platforms/ps3/time.c | 3 +--
->>  2 files changed, 2 insertions(+), 3 deletions(-)
->
-> I tested the PS3 part of this patch and it seems to work OK.
->
-> Acked-by: Geoff Levand <geoff@infradead.org>
+In the second half of scan_swap_map()'s scan loop, offset is set to
+si->lowest_bit and then incremented before entering the loop for the
+first time, causing si->swap_map[si->lowest_bit] to be skipped.
 
-Thanks Geoff for the review and testing; I'll add the ack.
+Signed-off-by: Jamie Liu <jamieliu@google.com>
+---
+ mm/swapfile.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Paul.
---
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 612a7c9..6635081 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -616,7 +616,7 @@ scan:
+ 		}
+ 	}
+ 	offset = si->lowest_bit;
+-	while (++offset < scan_base) {
++	while (offset < scan_base) {
+ 		if (!si->swap_map[offset]) {
+ 			spin_lock(&si->lock);
+ 			goto checks;
+@@ -629,6 +629,7 @@ scan:
+ 			cond_resched();
+ 			latency_ration = LATENCY_LIMIT;
+ 		}
++		offset++;
+ 	}
+ 	spin_lock(&si->lock);
+ 
+-- 
+1.8.5.3
 
->
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
