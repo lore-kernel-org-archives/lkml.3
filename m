@@ -1,121 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbaAVHlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 02:41:07 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:36085 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568AbaAVHkx (ORCPT
+	id S1752819AbaAVHqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 02:46:46 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:41836 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaAVHqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 02:40:53 -0500
-Message-ID: <52DF75FD.5080304@linaro.org>
-Date: Wed, 22 Jan 2014 15:40:45 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: top-down balance purpose discussion -- resend
-References: <52DE7E6A.90401@linaro.org> <20140121145708.GY31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140121145708.GY31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jan 2014 02:46:44 -0500
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, pjt@google.com, bsegall@google.com, alex.shi@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH] Revert "sched: Fix sleep time double accounting in enqueue entity"
+Date: Wed, 22 Jan 2014 08:45:34 +0100
+Message-Id: <1390376734-6800-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
+References: <CAPM31RLjHnn=Ma7peuDUqK75bANw7Mb-UT-1QmzG0c8LAObQ8g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 10:57 PM, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 10:04:26PM +0800, Alex Shi wrote:
->>
->> Current scheduler load balance is bottom-up mode, each CPU need
->> initiate the balance by self.
->>
->> 1, Like in a integrate computer system, it has smt/core/cpu/numa, 4
->> level scheduler domains. If there is just 2 tasks in whole system that
->> both running on cpu0. Current load balance need to pull task to another
->> smt in smt domain, then pull task to another core, then pull task to
->> another cpu, finally pull task to another numa. Totally it is need 4
->> times task moving to get system balance.
-> 
-> Except the idle load balancer, and esp. the newidle can totally by-pass
-> this.
-> 
-> If you do the packing right in the newidle pass, you'd get there in 1
-> step.
+This reverts commit 282cf499f03ec1754b6c8c945c9674b02631fb0f.
 
-It give me a huge pressure to argue with you a great experts. I am
-waiting and very appreciate for any comments and corrections. :)
+With the current implementation, the load average statistics of a sched entity
+change according to other activity on the CPU even if this activity is done
+between the running window of the sched entity and have no influence on the
+running duration of the task.
 
-Yes, a newidle will kindly relief this. but it can not eliminate it. If
-a newidle happens on another numa group. It just needs 1 step. But if it
-happens on another smt group, it still needs 4 steps. So generally, we
-still need one more steps before well balance.
+When a task wakes up on the same CPU, we currently update last_runnable_update
+with the return  of __synchronize_entity_decay without updating the
+runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
+the load_contrib of the se with the rq's blocked_load_contrib before removing
+it from the latter (with __synchronize_entity_decay) but we must keep
+last_runnable_update unchanged for updating runnable_avg_sum/period during the
+next update_entity_load_avg.
 
-In this example, if a newidle is in the same smallest group, maybe we
-should wakeup a remotest cpu in system/llc to avoid extra task moving in
-near future for best performance.
-And for power saving, maybe we'd better kick the task to smallest group,
-then let the remote cpu group idle.
-But for current newidle, it's impossible to do this because newidle is
-also bottom-up mode.
-> 
->> Generally, the task moving complexity is
->> 	O(nm log n),  n := nr_cpus, m := nr_tasks
->>
->> There is a excellent summary and explanation for this in
->> kernel/sched/fair.c:4605
-> 
-> Which is a perfectly fine scheme for a busy system.
-> 
->> Another weakness of current LB is that every cpu need to get the other
->> cpus' load info repeatedly and try to figure out busiest sched
->> group/queue on every sched domain level. But it just waste time, since
->> it may not conduct a task moving. One of reasons is that cpu can only
->> pull task, not pushing.
-> 
-> This doesn't make sense.. and in fact, we do a limited amount of 3rd
-> party movements.
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 
-Yes, but the 3rd party movements is too limited, just for task pinned.
-> 
-> Whatever you do, you have to repeat the information gathering anyhow,
-> because it constantly changes.
-> 
+---
+ kernel/sched/fair.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-Yes, it is good to collection the load info once for once balance. but
-if the balance cpu is busiest cpu, current balance still keep collecting
-every group load info from bottom to up, and then do nothing on this
-imbalance system. This is bad.
-
-> Trying to serialize that doesn't make any kind of sense. The only thing
-> you want is that the system converges.
-
-Sorry, would you like to give a bit more details of 'serialize' is no sense?
-> 
-> Skipped the rest because it seems build on a fundament I don't agree
-> with. That 4 move thing is just silly for an idle system, and we
-> shouldn't do that.
-> 
-> I also very much do not want a single CPU balancing the entire system,
-> that's the anti-thesis of scalable.
-
-Sorry. IMHO, single cpu is possible to handle 1000 cpu balancing. And it
-is far more scalable than every cpu do balance in system, since there is
-only one cpu need to pick other cpu load info.
-
-BTW, there is no organize among all cpus' balancing currently. That's a
-a bit mess. Like if 2 cpus in a small cpu group just do balance for
-whole system at the same time, then both of them think self group is
-light and want more load. then they have the chance to over pull load to
-self group. That is bad. And single balancing has no such problem.
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e64b079..6d61f20 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2365,13 +2365,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 		}
+ 		wakeup = 0;
+ 	} else {
+-		/*
+-		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
+-		 * would have made count negative); we must be careful to avoid
+-		 * double-accounting blocked time after synchronizing decays.
+-		 */
+-		se->avg.last_runnable_update += __synchronize_entity_decay(se)
+-							<< 20;
++		__synchronize_entity_decay(se);
+ 	}
+ 
+ 	/* migrated tasks did not contribute to our blocked load */
 -- 
-Thanks
-    Alex
+1.7.9.5
+
