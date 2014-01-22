@@ -1,144 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaAVSgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 13:36:48 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:41586 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338AbaAVSgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 13:36:46 -0500
-X-IronPort-AV: E=Sophos;i="4.95,701,1384300800"; 
-   d="scan'208";a="95439182"
-Message-ID: <52E00FB7.3040508@citrix.com>
-Date: Wed, 22 Jan 2014 18:36:39 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755495AbaAVShm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 13:37:42 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:65073 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752338AbaAVShh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 13:37:37 -0500
+From: Chris Mason <clm@fb.com>
+To: "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Topic: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Thread-Index: AQHPFx61ZXTlm16UX0ihGnyWT2seDpqRAjIAgABNLACAAAa5AIAABq0AgAAFt4CAAB0+gIAABPgAgAALu4CAAALjgIAABusA
+Date: Wed, 22 Jan 2014 18:37:13 +0000
+Message-ID: <1390415924.1198.36.camel@ret.masoncoding.com>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>
+	 <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>
+	 <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>
+	 <20140122151913.GY4963@suse.de>
+	 <1390410233.1198.7.camel@ret.masoncoding.com>
+	 <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+	 <1390413819.1198.20.camel@ret.masoncoding.com>
+	 <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <3E76E571D8C3C544B1DE84151ADDE147@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
- mapping
-References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-22_07:2014-01-22,2014-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.77635683940025e-15 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997696947966296
+ urlsuspect_oldscore=0.997696947966296 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997696947966296 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401220131
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/14 16:39, Stefano Stabellini wrote:
-> On Tue, 21 Jan 2014, Zoltan Kiss wrote:
->> @@ -121,7 +125,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
->>   		pfn = m2p_find_override_pfn(mfn, ~0);
->>   	}
->>
->> -	/*
->> +	/*
->
-> Spurious change?
-It removes a stray space from the original code. Not necessary, but if 
-it's there, I think we can keep it.
+On Wed, 2014-01-22 at 10:13 -0800, James Bottomley wrote:
++AD4- On Wed, 2014-01-22 at 18:02 +-0000, Chris Mason wrote:
 
->> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
->> index 2ae8699..0060178 100644
->> --- a/arch/x86/xen/p2m.c
->> +++ b/arch/x86/xen/p2m.c
->> @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long mfn)
->>
->>   /* Add an MFN override for a particular page */
->>   int m2p_add_override(unsigned long mfn, struct page *page,
->> -		struct gnttab_map_grant_ref *kmap_op)
->> +		struct gnttab_map_grant_ref *kmap_op, unsigned long pfn)
->
-> Do we really need to add another additional parameter to
-> m2p_add_override?
-> I would just let m2p_add_override and m2p_remove_override call
-> page_to_pfn again. It is not that expensive.
-Yes, because that page_to_pfn can return something different. That's why 
-the v2 patches failed.
++AD4-  
++AD4- +AD4- We're likely to have people mixing 4K drives and +ADw-fill in some other
++AD4- +AD4- size here+AD4- on the same box.  We could just go with the biggest size and
++AD4- +AD4- use the existing bh code for the sub-pagesized blocks, but I really
++AD4- +AD4- hesitate to change VM fundamentals for this.
++AD4- 
++AD4- If the page cache had a variable granularity per device, that would cope
++AD4- with this.  It's the variable granularity that's the VM problem.
 
->> @@ -933,20 +924,15 @@ int m2p_add_override(unsigned long mfn, struct page *page,
->>   }
->>   EXPORT_SYMBOL_GPL(m2p_add_override);
->>   int m2p_remove_override(struct page *page,
->> -		struct gnttab_map_grant_ref *kmap_op)
->> +			struct gnttab_map_grant_ref *kmap_op,
->> +			unsigned long pfn,
->> +			unsigned long mfn)
->
-> Same here
-Same as above.
+Agreed.  But once we go variable granularity we're basically talking the
+large order allocation problem.
 
->> @@ -927,8 +931,18 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->>   		} else {
->>   			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
->>   		}
->> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
->> -				       &kmap_ops[i] : NULL);
->> +		pfn = page_to_pfn(pages[i]);
->> +
->> +		WARN_ON(PagePrivate(pages[i]));
->> +		SetPagePrivate(pages[i]);
->> +		set_page_private(pages[i], mfn);
->> +
->> +		pages[i]->index = pfn_to_mfn(pfn);
->> +		if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
->> +			return -ENOMEM;
->
-> goto out
-And ret = -ENOMEM
->
->
->> +		if (m2p_override)
->> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
->> +					       &kmap_ops[i] : NULL, pfn);
->>   		if (ret)
->>   			goto out;
->>   	}
->> @@ -937,17 +951,34 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->>   	if (lazy)
->>   		arch_leave_lazy_mmu_mode();
->>
->> -	return ret;
->> +	return 0;
->
-> We are loosing the error code possibly returned by m2p_add_override and
-> the previous check.
-I'll fix that. Also in unmap.
++AD4- 
++AD4- +AD4- From a pure code point of view, it may be less work to change it once in
++AD4- +AD4- the VM.  But from an overall system impact point of view, it's a big
++AD4- +AD4- change in how the system behaves just for filesystem metadata.
++AD4- 
++AD4- Agreed, but only if we don't do RMW in the buffer cache ... which may be
++AD4- a good reason to keep it.
++AD4- 
++AD4- +AD4- +AD4- The other question is if the drive does RMW between 4k and whatever its
++AD4- +AD4- +AD4- physical sector size, do we need to do anything to take advantage of
++AD4- +AD4- +AD4- it ... as in what would altering the granularity of the page cache buy
++AD4- +AD4- +AD4- us?
++AD4- +AD4- 
++AD4- +AD4- The real benefit is when and how the reads get scheduled.  We're able to
++AD4- +AD4- do a much better job pipelining the reads, controlling our caches and
++AD4- +AD4- reducing write latency by having the reads done up in the OS instead of
++AD4- +AD4- the drive.
++AD4- 
++AD4- I agree with all of that, but my question is still can we do this by
++AD4- propagating alignment and chunk size information (i.e. the physical
++AD4- sector size) like we do today.  If the FS knows the optimal I/O patterns
++AD4- and tries to follow them, the odd cockup won't impact performance
++AD4- dramatically.  The real question is can the FS make use of this layout
++AD4- information +ACo-without+ACo- changing the page cache granularity?  Only if you
++AD4- answer me +ACI-no+ACI- to this do I think we need to worry about changing page
++AD4- cache granularity.
 
-		return ret;
->> @@ -958,17 +989,32 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->>   			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
->>   					INVALID_P2M_ENTRY);
->>   		}
->> -		return ret;
->> +		return 0;
->>   	}
->>
->> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->> +	if (m2p_override &&
->> +	    !in_interrupt() &&
->> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->>   		arch_enter_lazy_mmu_mode();
->>   		lazy = true;
->>   	}
->>
->>   	for (i = 0; i < count; i++) {
->> -		ret = m2p_remove_override(pages[i], kmap_ops ?
->> -				       &kmap_ops[i] : NULL);
->> +		pfn = page_to_pfn(pages[i]);
->> +		mfn = get_phys_to_machine(pfn);
->> +		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
->> +			return -EINVAL;
->
-> goto out
-And ret = -EINVAL
+Can it mostly work?  I think the answer is yes.  If not we'd have a lot
+of miserable people on top of raid5/6 right now.  We can always make a
+generic r/m/w engine in DM that supports larger sectors transparently.
 
-The above are the the result of the fact that I've based this originally 
-on 3.10, where the out label haven't existed. I'll send the next version 
-when the tests pass.
++AD4- 
++AD4- Realistically, if you look at what the I/O schedulers output on a
++AD4- standard (spinning rust) workload, it's mostly large transfers.
++AD4- Obviously these are misalgned at the ends, but we can fix some of that
++AD4- in the scheduler.  Particularly if the FS helps us with layout.  My
++AD4- instinct tells me that we can fix 99+ACU- of this with layout on the FS +- io
++AD4- schedulers ... the remaining 1+ACU- goes to the drive as needing to do RMW
++AD4- in the device, but the net impact to our throughput shouldn't be that
++AD4- great.
 
-Zoli
+There are a few workloads where the VM and the FS would team up to make
+this fairly miserable
+
+Small files.  Delayed allocation fixes a lot of this, but the VM doesn't
+realize that fileA, fileB, fileC, and fileD all need to be written at
+the same time to avoid RMW.  Btrfs and MD have setup plugging callbacks
+to accumulate full stripes as much as possible, but it still hurts.
+
+Metadata.  These writes are very latency sensitive and we'll gain a lot
+if the FS is explicitly trying to build full sector IOs.
+
+I do agree that its very likely these drives are going to silently rmw
+in the background for us.
+
+Circling back to what we might talk about at the conference, Ric do you
+have any ideas on when these drives might hit the wild?
+
+-chris
+
