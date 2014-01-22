@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaAVVlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:41:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39753 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaAVVlo (ORCPT
+	id S1754965AbaAVVmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:42:04 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45764 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752786AbaAVVmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:41:44 -0500
-Date: Wed, 22 Jan 2014 22:41:33 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Cc: peter.chen@freescale.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: Regression on next-20140116 [Was: [PATCH 3/3 v4] usb: chipidea:
- hw_phymode_configure moved before ci_usb_phy_init]
-Message-ID: <20140122214133.GP26766@pengutronix.de>
-References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
- <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk>
- <20140122094951.GO26766@pengutronix.de>
+	Wed, 22 Jan 2014 16:42:01 -0500
+Date: Wed, 22 Jan 2014 21:41:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 13/24] drm/i2c: tda998x: fix a NULL pointer
+	dereference
+Message-ID: <20140122214154.GK15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195843.59810a46@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140122094951.GO26766@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140119195843.59810a46@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Jan 19, 2014 at 07:58:43PM +0100, Jean-Francois Moine wrote:
+> This patch fixes a NULL pointer dereference when the set_config
+> function has not been called (priv->params == NULL).
 
-On Wed, Jan 22, 2014 at 10:49:51AM +0100, Uwe Kleine-König wrote:
-> On Tue, Dec 03, 2013 at 04:01:50PM +0800, Chris Ruehl wrote:
-> > usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
-> > hw_phymode_configure configures the PORTSC registers and allow the
-> > following phy_inits to operate on the right parameters. This fix a problem
-> > where the UPLI (ISP1504) could not detected, because the Viewport was not
-> > available and read the viewport return 0's only.
-> This patch (or a later revision of it to be more exact) made it into
-> mainline as cd0b42c2a6d2.
-> 
-> On an i.MX27 based machine I'm hitting an oops (see below) on
-> next-20140116 + a few patches. (I didn't switch to 3.13+ yet, as I think
-> not everything I need has landed there.) The oops goes away (and still
-> better, lsusb reports my connected devices instead of "unable to
-> initialize libusb: -99") when I do at least one of the following:
-> 
->  - set CONFIG_USB_CHIPIDEA=y instead of =m
->  - revert commit
->       cd0b42c2a6d2 (usb: chipidea: put hw_phymode_configure before ci_usb_phy_init)
-I debugged that a bit further and the problem is that
-hw_phymode_configure depends on the phy's clk being enabled (i.e.
-usb_ipg_gate) and this is only enforced in ci_usb_phy_init (via
-usb_phy_init -> usb_gen_phy_init). When CONFIG_USB_CHIPIDEA=y the init
-call to disable all unused clocks wasn't run yet and so the clock is
-still on as this is the boot default.
+No, that's not what this patch is doing.  Maybe you could enlighten me
+how priv->params could ever be NULL when that is _not_ a pointer?  That's
+completely impossible as it isn't a pointer.
 
-Considering that it's already late today and that I don't know the
-chipidea driver I'm sure there are people who can come up with a better
-patch with less effort than me. Any volunteers?
+If you tried "priv->params = NULL" the C compiler would barf on it.
 
-Best regards
-Uwe
+I suspect you've misunderstood the code, and this change isn't actually
+necessary.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
