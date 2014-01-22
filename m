@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098AbaAVXwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 18:52:39 -0500
-Received: from fieldses.org ([174.143.236.118]:37773 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaAVXwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 18:52:37 -0500
-Date: Wed, 22 Jan 2014 18:52:33 -0500
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: shaobingqing <shaobingqing@bwstor.com.cn>,
-        Dr Fields James Bruce <bfields@redhat.com>,
-        "Miller David S." <davem@davemloft.net>,
-        linuxnfs <linux-nfs@vger.kernel.org>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SUNRPC: Allow one callback request to be received from
- two sk_buff
-Message-ID: <20140122235233.GA17155@fieldses.org>
-References: <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
- <1390259843.2501.2.camel@leira.trondhjem.org>
- <CALrKORrZ3Kcuqc1RajQKkZcot0yiswh4VR_WuXHqfRTjn9oGQQ@mail.gmail.com>
- <1BFACA51-087E-4945-851A-FBF0F108604C@primarydata.com>
+	id S1754965AbaAVXxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 18:53:24 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:55941 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaAVXxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 18:53:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1BFACA51-087E-4945-851A-FBF0F108604C@primarydata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+References: <20140122120757.GL31570@twins.programming.kicks-ass.net>
+	<20140122122609.GA392@x4>
+	<20140122123022.GN31570@twins.programming.kicks-ass.net>
+	<20140122131456.GA389@x4>
+	<52DFD50E.800@oracle.com>
+	<20140122183538.GA389@x4>
+	<20140122184253.GN30183@twins.programming.kicks-ass.net>
+	<20140122190905.GA391@x4>
+	<20140122191254.GA390@x4>
+	<20140122201605.GU11314@laptop.programming.kicks-ass.net>
+	<20140122210814.GC9481@laptop.programming.kicks-ass.net>
+Date: Wed, 22 Jan 2014 18:53:22 -0500
+X-Google-Sender-Auth: Mb6ZaDsxQ4R6X3mdWiOLigxj_jw
+Message-ID: <CA+5PVA7FBcO3KbvM1vPJVtpdWN6jaSGF9LJW89iY_Uio9aM8ZQ@mail.gmail.com>
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Dave Young <dyoung@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 08:35:36AM -0700, Trond Myklebust wrote:
-> 
-> On Jan 21, 2014, at 3:08, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
-> 
-> > 2014/1/21 Trond Myklebust <trond.myklebust@primarydata.com>:
-> >> On Mon, 2014-01-20 at 14:59 +0800, shaobingqing wrote:
-> >>> In current code, there only one struct rpc_rqst is prealloced. If one
-> >>> callback request is received from two sk_buff, the xprt_alloc_bc_request
-> >>> would be execute two times with the same transport->xid. The first time
-> >>> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
-> >>> bit of transport->tcp_flags will not be cleared. The second time
-> >>> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
-> >>> pointer will be returned, then xprt_force_disconnect occur. I think one
-> >>> callback request can be allowed to be received from two sk_buff.
-> >>> 
-> >>> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
-> >>> ---
-> >>> net/sunrpc/xprtsock.c |   11 +++++++++--
-> >>> 1 files changed, 9 insertions(+), 2 deletions(-)
-> >>> 
-> >>> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> >>> index ee03d35..606950d 100644
-> >>> --- a/net/sunrpc/xprtsock.c
-> >>> +++ b/net/sunrpc/xprtsock.c
-> >>> @@ -1271,8 +1271,13 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
-> >>>      struct sock_xprt *transport =
-> >>>                              container_of(xprt, struct sock_xprt, xprt);
-> >>>      struct rpc_rqst *req;
-> >>> +     static struct rpc_rqst *req_partial;
-> >>> +
-> >>> +     if (req_partial == NULL)
-> >>> +             req = xprt_alloc_bc_request(xprt);
-> >>> +     else if (req_partial->rq_xid == transport->tcp_xid)
-> >>> +             req = req_partial;
-> >> 
-> >> What happens here if req_partial->rq_xid != transport->tcp_xid? AFAICS,
-> >> req will be undefined. Either way, you cannot use a static variable for
-> >> storage here: that isn't re-entrant.
-> > 
-> > Because metadata sever only have one slot for backchannel request,
-> > req_partial->rq_xid == transport->tcp_xid always happens, if the callback
-> > request just being splited in two sk_buffs. But req_partial->rq_xid !=
-> > transport->tcp_xid may also happens in some special cases, such as
-> > retransmission occurs?
-> 
-> If the server retransmits, then it is broken. The NFSv4.1 protocol does not allow it to retransmit unless the connection breaks.
+On Wed, Jan 22, 2014 at 4:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>> I think its the right region to look through. My current suspect is the
+>> linear continuity fit with the initial 'random' multiplier.
+>>
+>> That initial 'random' multiplier can get us quite high, and we'll fit
+>> the function to match that but continue at a sane rate.
+>>
+>> I'll try and prod a little more later this evening as time permits.
+>
+> Does this cure things?
 
-shaobingqing, are you actually seeing retransmission?  (If so, are we
-setting up the callback client wrong?)
+This seems to correct the time jump I was seeing on my i7 box as well.
 
---b.
+josh
 
-> 
-> > If one callback request is splited in two sk_buffs, xs_tcp_read_callback
-> > will be execute two times. The req_partial should be a static variable,
-> > because  the second execution of xs_tcp_read_callback should use
-> > the rpc_rqst allocated for the first execution, which saves information
-> > copies from the first sk_buff.
-> 
-> No! This is a multi-threaded/process environment which can support multiple connection. It is a bug to use a static variable.
-> 
+>
+> ---
+>  arch/x86/kernel/tsc.c | 11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index a3acbac2ee72..bb04148c5fe0 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -237,7 +237,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+>  /* XXX surely we already have this someplace in the kernel?! */
+>  #define DIV_ROUND(n, d) (((n) + ((d) / 2)) / (d))
+>
+> -static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+> +static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu, bool origin)
+>  {
+>         unsigned long long tsc_now, ns_now;
+>         struct cyc2ns_data *data;
+> @@ -252,7 +252,10 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+>         data = cyc2ns_write_begin(cpu);
+>
+>         rdtscll(tsc_now);
+> -       ns_now = cycles_2_ns(tsc_now);
+> +       if (origin)
+> +               ns_now = 0;
+> +       else
+> +               ns_now = cycles_2_ns(tsc_now);
+>
+>         /*
+>          * Compute a new multiplier as per the above comment and ensure our
+> @@ -926,7 +929,7 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+>                         mark_tsc_unstable("cpufreq changes");
+>         }
+>
+> -       set_cyc2ns_scale(tsc_khz, freq->cpu);
+> +       set_cyc2ns_scale(tsc_khz, freq->cpu, false);
+>
+>         return 0;
+>  }
+> @@ -1199,7 +1202,7 @@ void __init tsc_init(void)
+>          */
+>         for_each_possible_cpu(cpu) {
+>                 cyc2ns_init(cpu);
+> -               set_cyc2ns_scale(cpu_khz, cpu);
+> +               set_cyc2ns_scale(cpu_khz, cpu, true);
+>         }
+>
+>         if (tsc_disabled > 0)
 > --
-> Trond Myklebust
-> Linux NFS client maintainer
-> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
