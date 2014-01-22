@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaAVLA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 06:00:27 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:40068 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600AbaAVLAY convert rfc822-to-8bit (ORCPT
+	id S1755208AbaAVLDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 06:03:43 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59440 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaAVLDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 06:00:24 -0500
-Date: Wed, 22 Jan 2014 11:00:18 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain
- look-up
-Message-ID: <20140122110018.GB24288@e102568-lin.cambridge.arm.com>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
- <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
- <20140116163409.GD25540@e102568-lin.cambridge.arm.com>
- <52DD5DC5.3000908@samsung.com>
-MIME-Version: 1.0
-In-Reply-To: <52DD5DC5.3000908@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 22 Jan 2014 11:00:19.0589 (UTC) FILETIME=[23BD0350:01CF1761]
-X-MC-Unique: 114012211002007601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Wed, 22 Jan 2014 06:03:39 -0500
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus <torvalds@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: [RFC PATCH V5] mm readahead: Fix readahead fail for no local memory and limit readahead pages
+Date: Wed, 22 Jan 2014 16:23:45 +0530
+Message-Id: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012211-9332-0000-0000-000002D8BC9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 05:32:53PM +0000, Tomasz Figa wrote:
-> Hi Lorenzo,
-> 
-> On 16.01.2014 17:34, Lorenzo Pieralisi wrote:
-> > Hi Tomasz,
-> >
-> > thank you for posting this series. I would like to use the DT bindings
-> > for power domains in the bindings for C-states on ARM:
-> >
-> > http://comments.gmane.org/gmane.linux.power-management.general/41012
-> >
-> > and in particular link a given C-state to a given power domain so that the
-> > kernel will have a way to actually check what devices are lost upon C-state
-> > entry (and for devices I also mean CPU peripheral like PMUs, GIC CPU IF,
-> > caches and possibly cpus, all of them already represented with DT nodes).
-> >
-> > I have a remark:
-> >
-> > -  Can we group device nodes under a single power-domain-parent so that
-> >     all devices defined under that parent won't have to re-define a
-> >     power-domain property (a property like interrupt-parent, so to speak)
-> >
-> > What do you think ?
-> 
-> Hmm, I can see potential benefits of such construct on platforms with 
-> clear hierarchy of devices, but to make sure I'm getting it correctly, 
-> is the following what you have in mind?
-> 
-> soc-domain-x@12340000 {
-> 	compatible = "...";
-> 	reg = <...>;
-> 	power-domain-parent = <&power_domains DOMAIN_X>;
-> 
-> 	device@1000 {
-> 		compatible = "...";
-> 		// inherits power-domain = <&power_domains DOMAIN_X>
-> 	};
-> 
-> 	device@2000 {
-> 		compatible = "...";
-> 		// inherits power-domain = <&power_domains DOMAIN_X>
-> 	};
-> };
+max_sane_readahead returns zero on the cpu having no local memory
+node. Fix that by returning a sanitized number of pages viz.,
+minimum of (requested pages, 4k)
 
-Yes, exactly, it could avoid duplicated data. I still have an issue
-with nodes that are per-cpu but define just one node (eg PMU), since
-a CPU might belong in a power-domain on its own (ie one power domain
-per-CPU) and basically this means that arch-timers, PMU & company should
-link to multiple power domains, ie one per CPU or we find a way to define
-a power domain as "banked".
+Result:
+fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
+32GB* 4G RAM  numa machine ( 12 iterations) yielded
 
-I need to think about this a bit more, thanks for your feedback.
+Kernel     Avg      Stddev
+base      7.2963    1.10 %
+patched   7.2972    1.18 %
 
-Lorenzo
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ Changes in V5:
+ - Drop the 4k limit for normal readahead. (Jan Kara)
+
+ Changes in V4:
+ - Check for total node memory to decide whether we don't
+   have local memory (jan Kara)
+ - Add 4k page limit on readahead for normal and remote readahead (Linus)
+   (Linus suggestion was 16MB limit).
+
+ Changes in V3:
+ - Drop iterating over numa nodes that calculates total free pages (Linus)
+
+ Agree that we do not have control on allocation for readahead on a
+ particular numa node and hence for remote readahead we can not further
+ sanitize based on potential free pages of that node. and also we do
+ not want to itererate through all nodes to find total free pages.
+
+ Suggestions and comments welcome
+
+ mm/readahead.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 7cdbb44..9d2afd0 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -237,14 +237,32 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+ 	return ret;
+ }
+ 
++#define MAX_REMOTE_READAHEAD   4096UL
+ /*
+  * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+  * sensible upper limit.
+  */
+ unsigned long max_sane_readahead(unsigned long nr)
+ {
+-	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+-		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
++	unsigned long local_free_page;
++	int nid;
++
++	nid = numa_node_id();
++	if (node_present_pages(nid)) {
++		/*
++		 * We sanitize readahead size depending on free memory in
++		 * the local node.
++		 */
++		local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
++				 + node_page_state(nid, NR_FREE_PAGES);
++		return min(nr, local_free_page / 2);
++	}
++	/*
++	 * Readahead onto remote memory is better than no readahead when local
++	 * numa node does not have memory. We limit the readahead to 4k
++	 * pages though to avoid trashing page cache.
++	 */
++	return min(nr, MAX_REMOTE_READAHEAD);
+ }
+ 
+ /*
+-- 
+1.7.11.7
 
