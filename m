@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaAVWtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 17:49:06 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:45103 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaAVWtE convert rfc822-to-8bit (ORCPT
+	id S1753473AbaAVWvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 17:51:37 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45812 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752985AbaAVWvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 17:49:04 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] 6lowpan: add a license to 6lowpan_iphc module
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1390418724-9804-1-git-send-email-ydroneaud@opteya.com>
-Date: Wed, 22 Jan 2014 14:49:09 -0800
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        Alexander Aring <alex.aring@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <54C711A5-F3BA-4327-B070-3DBE884543D1@holtmann.org>
-References: <1390418724-9804-1-git-send-email-ydroneaud@opteya.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-X-Mailer: Apple Mail (2.1827)
+	Wed, 22 Jan 2014 17:51:35 -0500
+Date: Wed, 22 Jan 2014 22:51:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 17/24] drm/i2c: tda998x: get a better status of the
+	connection
+Message-ID: <20140122225127.GN15937@n2100.arm.linux.org.uk>
+References: <cover.1390153344.git.moinejf@free.fr> <20140119195844.202f021b@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140119195844.202f021b@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yann,
+On Sun, Jan 19, 2014 at 07:58:44PM +0100, Jean-Francois Moine wrote:
+> This patch refines the connection status testing both bits RXSENS and
+> HPD of the CEC register giving the connection level.
 
-> Since commit 8df8c56a5abc, 6lowpan_iphc is a module of its own.
-> 
-> Unfortunately, it lacks some infrastructure to behave like a
-> good kernel citizen:
-> 
->  kernel: 6lowpan_iphc: module license 'unspecified' taints kernel.
->  kernel: Disabling lock debugging due to kernel taint
-> 
-> This patch adds the basic MODULE_LICENSE(); with GPL license:
-> the code was copied from net/ieee802154/6lowpan.c which is GPL
-> and the module exports symbol with EXPORT_SYMBOL_GPL();.
-> 
-> Cc: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-> Cc: Alexander Aring <alex.aring@gmail.com>
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> ---
-> net/ieee802154/6lowpan_iphc.c | 3 +++
-> 1 file changed, 3 insertions(+)
-> 
-> diff --git a/net/ieee802154/6lowpan_iphc.c b/net/ieee802154/6lowpan_iphc.c
-> index e14fe8b2c054..860aa2d445ba 100644
-> --- a/net/ieee802154/6lowpan_iphc.c
-> +++ b/net/ieee802154/6lowpan_iphc.c
-> @@ -52,6 +52,7 @@
-> 
-> #include <linux/bitops.h>
-> #include <linux/if_arp.h>
-> +#include <linux/module.h>
-> #include <linux/netdevice.h>
-> #include <net/ipv6.h>
-> #include <net/af_ieee802154.h>
-> @@ -797,3 +798,5 @@ int lowpan_header_compress(struct sk_buff *skb, struct net_device *dev,
-> 	return 0;
-> }
-> EXPORT_SYMBOL_GPL(lowpan_header_compress);
-> +
-> +MODULE_LICENSE("GPL”);
+Can you explain why this is necessary?
 
-looks good to me.
+I believe this is not necessary for the following reason:
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+HDMI cables are required to mate in a certain order:
+- First to mate is the shell.
+- Second are all pins with the exception of the +5V line.
+- Third is the +5V line.
 
-Regards
+Sinks are not permitted to assert the HPD line until the EDID memory is
+ready to be read, and +5V is indicated from the source.
 
-Marcel
+Hence, HPD will not be asserted until the connector is fully mated, and
+there are receivers available on the line.
 
+This doesn't indicate whether the sink is powered and able to display
+a picture - it merely means that the sink is present and valid EDID is
+available to be read.  That's all that we really need here.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
