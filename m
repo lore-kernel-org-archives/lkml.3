@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaAVViM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 16:38:12 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:39871 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486AbaAVViH (ORCPT
+	id S1753160AbaAVVlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 16:41:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39753 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaAVVlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 16:38:07 -0500
+	Wed, 22 Jan 2014 16:41:44 -0500
+Date: Wed, 22 Jan 2014 22:41:33 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Cc: peter.chen@freescale.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: Regression on next-20140116 [Was: [PATCH 3/3 v4] usb: chipidea:
+ hw_phymode_configure moved before ci_usb_phy_init]
+Message-ID: <20140122214133.GP26766@pengutronix.de>
+References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk>
+ <20140122094951.GO26766@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1390272375-28728-1-git-send-email-wangyijing@huawei.com>
-References: <1390272375-28728-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 22 Jan 2014 14:37:45 -0700
-Message-ID: <CAErSpo4_VCVHcq2cs_HP-_0kFSnUWsxsr6Y1iiR==3XLNaVc2w@mail.gmail.com>
-Subject: Re: [PATCH v4] ACPI: Fix acpi_evaluate_object() return value check
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140122094951.GO26766@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 7:46 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Since acpi_evaluate_object() returns acpi_status and not plain int,
-> ACPI_FAILURE() should be used for checking its return value.
->
-> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
-> v3->v4: Fix spell error, add Jani Nikula reviewed-by.
-> v2->v3: Fix compile error pointed out by Hanjun.
-> v1->v2: Add CC to related subsystem MAINTAINERS
-> ---
->  drivers/gpu/drm/i915/intel_acpi.c              |   24 ++++++++++++++----------
->  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    9 +++++----
->  drivers/gpu/drm/nouveau/nouveau_acpi.c         |   23 +++++++++++++----------
->  drivers/pci/pci-label.c                        |    9 ++++++---
+Hello,
 
-For the drivers/pci/pci-label.c part,
+On Wed, Jan 22, 2014 at 10:49:51AM +0100, Uwe Kleine-König wrote:
+> On Tue, Dec 03, 2013 at 04:01:50PM +0800, Chris Ruehl wrote:
+> > usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
+> > hw_phymode_configure configures the PORTSC registers and allow the
+> > following phy_inits to operate on the right parameters. This fix a problem
+> > where the UPLI (ISP1504) could not detected, because the Viewport was not
+> > available and read the viewport return 0's only.
+> This patch (or a later revision of it to be more exact) made it into
+> mainline as cd0b42c2a6d2.
+> 
+> On an i.MX27 based machine I'm hitting an oops (see below) on
+> next-20140116 + a few patches. (I didn't switch to 3.13+ yet, as I think
+> not everything I need has landed there.) The oops goes away (and still
+> better, lsusb reports my connected devices instead of "unable to
+> initialize libusb: -99") when I do at least one of the following:
+> 
+>  - set CONFIG_USB_CHIPIDEA=y instead of =m
+>  - revert commit
+>       cd0b42c2a6d2 (usb: chipidea: put hw_phymode_configure before ci_usb_phy_init)
+I debugged that a bit further and the problem is that
+hw_phymode_configure depends on the phy's clk being enabled (i.e.
+usb_ipg_gate) and this is only enforced in ci_usb_phy_init (via
+usb_phy_init -> usb_gen_phy_init). When CONFIG_USB_CHIPIDEA=y the init
+call to disable all unused clocks wasn't run yet and so the clock is
+still on as this is the boot default.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Considering that it's already late today and that I don't know the
+chipidea driver I'm sure there are people who can come up with a better
+patch with less effort than me. Any volunteers?
 
-> +       status = acpi_evaluate_object(handle, "_DSM", &input, &output);
-> +       if (ACPI_FAILURE(status)) {
-> +               DRM_DEBUG_DRIVER("failed to evaluate _DSM: %s\n",
-> +                               acpi_format_exception(status));
+Best regards
+Uwe
 
-It's too bad there isn't an easy way to produce more informative error
-messages, e.g., by including a namespace path or something.  A message
-like:
-
-    failed to evaluate _DSM: A requested entity is not found
-
-is only useful if there's enough context to figure out what's going on.
-
-Bjorn
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
