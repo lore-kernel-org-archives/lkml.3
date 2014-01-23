@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374AbaAWTZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:25:29 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:50417 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932111AbaAWTZZ (ORCPT
+	id S932390AbaAWT0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:26:12 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:48665 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231AbaAWT0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:25:25 -0500
-From: Feng Kan <fkan@apm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V4 5/5] Documentation: power: reset: Add documentation for generic SYSCON reboot driver
-Date: Thu, 23 Jan 2014 11:20:01 -0800
-Message-Id: <1390504801-24483-6-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1390504801-24483-1-git-send-email-fkan@apm.com>
-References: <1390504801-24483-1-git-send-email-fkan@apm.com>
+	Thu, 23 Jan 2014 14:26:07 -0500
+From: Curt Brune <curt@cumulusnetworks.com>
+To: Wolfram Sang <wsa@the-dreams.de>, Laszlo Papp <lpapp@kde.org>
+Cc: Thomas De Schampheleire <patrickdepinguin@gmail.com>,
+        gregkh@linuxfoundation.org,
+        Shrijeet Mukherjee <shm@cumulusnetworks.com>,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        curt@cumulusnetworks.com
+Subject: [PATCH v2 2/2] Add at24 based EEPROMs to the eeprom_dev hardware class
+Date: Thu, 23 Jan 2014 11:16:02 -0800
+Message-Id: <1390504562-20333-2-git-send-email-curt@cumulusnetworks.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for generic SYSCON reboot driver.
+During device instantiation have the at24 driver add the new device to
+the eeprom_dev hardware class.  The functionality is enabled by
+CONFIG_EEPROM_CLASS.
 
-Signed-off-by: Feng Kan <fkan@apm.com>
+Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
 ---
- .../bindings/power/reset/syscon-reboot.txt         |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+ drivers/misc/eeprom/at24.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-new file mode 100644
-index 0000000..e9eb1fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-@@ -0,0 +1,16 @@
-+Generic SYSCON mapped register reset driver
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index d87f77f..07782ea 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -22,10 +22,14 @@
+ #include <linux/jiffies.h>
+ #include <linux/of.h>
+ #include <linux/i2c.h>
+ #include <linux/platform_data/at24.h>
+ 
++#ifdef CONFIG_EEPROM_CLASS
++#include <linux/eeprom_class.h>
++#endif
 +
-+Required properties:
-+- compatible: should contain "syscon-reboot"
-+- regmap: this is phandle to the register map node 
-+- offset: offset in the register map for the reboot register
-+- mask: the reset value written to the reboot register
+ /*
+  * I2C EEPROMs from most vendors are inexpensive and mostly interchangeable.
+  * Differences between different vendor product lines (like Atmel AT24C or
+  * MicroChip 24LC, etc) won't much matter for typical read/write access.
+  * There are also I2C RAM chips, likewise interchangeable. One example
+@@ -66,10 +70,13 @@ struct at24_data {
+ 
+ 	u8 *writebuf;
+ 	unsigned write_max;
+ 	unsigned num_addresses;
+ 
++#ifdef CONFIG_EEPROM_CLASS
++	struct device *eeprom_dev;
++#endif
+ 	/*
+ 	 * Some chips tie up multiple I2C addresses; dummy devices reserve
+ 	 * them for us, and we'll use them with SMBus calls.
+ 	 */
+ 	struct i2c_client *client[];
+@@ -619,10 +626,19 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	err = sysfs_create_bin_file(&client->dev.kobj, &at24->bin);
+ 	if (err)
+ 		goto err_clients;
+ 
++#ifdef CONFIG_EEPROM_CLASS
++	at24->eeprom_dev = eeprom_device_register(&client->dev);
++	if (IS_ERR(at24->eeprom_dev)) {
++		dev_err(&client->dev, "error registering eeprom device.\n");
++		err = PTR_ERR(at24->eeprom_dev);
++		goto err_clients;
++	}
++#endif
 +
-+Examples:
+ 	i2c_set_clientdata(client, at24);
+ 
+ 	dev_info(&client->dev, "%zu byte %s EEPROM, %s, %u bytes/write\n",
+ 		at24->bin.size, client->name,
+ 		writable ? "writable" : "read-only", at24->write_max);
+@@ -656,10 +672,14 @@ static int at24_remove(struct i2c_client *client)
+ 	sysfs_remove_bin_file(&client->dev.kobj, &at24->bin);
+ 
+ 	for (i = 1; i < at24->num_addresses; i++)
+ 		i2c_unregister_device(at24->client[i]);
+ 
++#ifdef CONFIG_EEPROM_CLASS
++	eeprom_device_unregister(at24->eeprom_dev);
++#endif
 +
-+reboot {
-+   compatible = "syscon-reboot";
-+   regmap = <&regmapnode>;
-+   offset = <0x0>;
-+   mask = <0x1>;
-+};
+ 	return 0;
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+ 
 -- 
-1.7.6.1
+1.7.10.4
 
