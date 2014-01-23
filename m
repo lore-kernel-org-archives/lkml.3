@@ -1,127 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaAWMnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 07:43:47 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:43289 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668AbaAWMnn (ORCPT
+	id S1752798AbaAWMsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 07:48:17 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33002 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaAWMsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 07:43:43 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: devicetree@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/3 RESEND] input: tc3589x-keypad: support probing from device tree
-Date: Thu, 23 Jan 2014 13:43:36 +0100
-Message-Id: <1390481016-23938-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.4.2
+	Thu, 23 Jan 2014 07:48:15 -0500
+Date: Thu, 23 Jan 2014 13:47:53 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
+ accept task state bitmask
+Message-ID: <20140123124753.GT30183@twins.programming.kicks-ass.net>
+References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
+ <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
+ <20140120113415.GE30183@twins.programming.kicks-ass.net>
+ <20140121221852.GT9037@kmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140121221852.GT9037@kmo>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement device tree probing for the tc3589x keypad driver.
-This is modeled on the STMPE keypad driver and tested on the
-Ux500 TVK1281618 UIB.
+On Tue, Jan 21, 2014 at 02:18:52PM -0800, Kent Overstreet wrote:
+> > I do not get the comment near prepare to wait -- why does it matter if
+> > percpu_ida_free() flips a cpus_have_tags bit?
+> 
+> Did I write that comment? It is a crappy comment...
+> 
+> Ok, in userspace we'd be using condition variables here, but this is the kernel
+> so we need to carefully order putting ourselves on a waitlist, and checking the
+> condition that determines whether we wait, and on the wakeup end changing things
+> that affect that condition and doing the wakeup. steal_tags() is checking the
+> condition that goes with the prepare_to_wait(), that's all.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v2->v3:
-- Use two local u32 variables to avoid weirdness in u8 casting
-  of the resulting values to the pointers.
-ChangeLog v1->v2:
-- Fix rows/columns binding to read two u32's insead of two
-  u8 /bits/ as noted by Mark Rutland.
----
- drivers/input/keyboard/tc3589x-keypad.c | 66 ++++++++++++++++++++++++++++++++-
- 1 file changed, 64 insertions(+), 2 deletions(-)
+How about something like so?
 
-diff --git a/drivers/input/keyboard/tc3589x-keypad.c b/drivers/input/keyboard/tc3589x-keypad.c
-index 208de7cbb7fa..7f36e7addb86 100644
---- a/drivers/input/keyboard/tc3589x-keypad.c
-+++ b/drivers/input/keyboard/tc3589x-keypad.c
-@@ -297,6 +297,65 @@ static void tc3589x_keypad_close(struct input_dev *input)
- 	tc3589x_keypad_disable(keypad);
+---
+ lib/percpu_ida.c | 126 ++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 70 insertions(+), 56 deletions(-)
+
+diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
+index 9d054bf91d0f..fc13d70b5b5e 100644
+--- a/lib/percpu_ida.c
++++ b/lib/percpu_ida.c
+@@ -68,6 +68,8 @@ static inline void steal_tags(struct percpu_ida *pool,
+ 	unsigned cpus_have_tags, cpu = pool->cpu_last_stolen;
+ 	struct percpu_ida_cpu *remote;
+ 
++	lockdep_assert_held(&pool->lock);
++
+ 	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
+ 	     cpus_have_tags * pool->percpu_max_size > pool->nr_tags / 2;
+ 	     cpus_have_tags--) {
+@@ -105,19 +107,7 @@ static inline void steal_tags(struct percpu_ida *pool,
+ 	}
  }
  
-+#ifdef CONFIG_OF
-+static const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct tc3589x_keypad_platform_data *plat;
-+	u32 cols, rows;
-+	u32 debounce_ms;
-+	int proplen;
-+
-+	if (!np)
-+		return ERR_PTR(-ENODEV);
-+
-+	plat = devm_kzalloc(dev, sizeof(*plat), GFP_KERNEL);
-+	if (!plat)
-+		return ERR_PTR(-ENOMEM);
-+
-+	of_property_read_u32(np, "keypad,num-columns", &cols);
-+	of_property_read_u32(np, "keypad,num-rows", &rows);
-+	plat->kcol = (u8) cols;
-+	plat->krow = (u8) rows;
-+	if (!plat->krow || !plat->kcol ||
-+	     plat->krow > TC_KPD_ROWS || plat->kcol > TC_KPD_COLUMNS) {
-+		dev_err(dev,
-+			"keypad columns/rows not properly specified (%ux%u)\n",
-+			plat->kcol, plat->krow);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	if (!of_get_property(np, "linux,keymap", &proplen)) {
-+		dev_err(dev, "property linux,keymap not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	plat->no_autorepeat = of_property_read_bool(np, "linux,no-autorepeat");
-+	plat->enable_wakeup = of_property_read_bool(np, "linux,wakeup");
-+
-+	/* The custom delay format is ms/16 */
-+	of_property_read_u32(np, "debounce-delay-ms", &debounce_ms);
-+	if (debounce_ms)
-+		plat->debounce_period = debounce_ms * 16;
-+	else
-+		plat->debounce_period = TC_KPD_DEBOUNCE_PERIOD;
-+
-+	plat->settle_time = TC_KPD_SETTLE_TIME;
-+	/* FIXME: should be property of the IRQ resource? */
-+	plat->irqtype = IRQF_TRIGGER_FALLING;
-+
-+	return plat;
-+}
-+#else
-+static inline const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
-+
- static int tc3589x_keypad_probe(struct platform_device *pdev)
+-/*
+- * Pop up to IDA_PCPU_BATCH_MOVE IDs off the global freelist, and push them onto
+- * our percpu freelist:
+- */
+-static inline void alloc_global_tags(struct percpu_ida *pool,
+-				     struct percpu_ida_cpu *tags)
+-{
+-	move_tags(tags->freelist, &tags->nr_free,
+-		  pool->freelist, &pool->nr_free,
+-		  min(pool->nr_free, pool->percpu_batch_size));
+-}
+-
+-static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
++static inline int alloc_local_tag(struct percpu_ida_cpu *tags)
  {
- 	struct tc3589x *tc3589x = dev_get_drvdata(pdev->dev.parent);
-@@ -307,8 +366,11 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
+ 	int tag = -ENOSPC;
  
- 	plat = tc3589x->pdata->keypad;
- 	if (!plat) {
--		dev_err(&pdev->dev, "invalid keypad platform data\n");
--		return -EINVAL;
-+		plat = tc3589x_keypad_of_probe(&pdev->dev);
-+		if (IS_ERR(plat)) {
-+			dev_err(&pdev->dev, "invalid keypad platform data\n");
-+			return PTR_ERR(plat);
+@@ -129,6 +119,50 @@ static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
+ 	return tag;
+ }
+ 
++static inline int
++__alloc_global_tag(struct percpu_ida *pool, struct percpu_ida_cpu *tags)
++{
++	int tag = -ENOSPC;
++
++	spin_lock(&pool->lock);
++
++	if (!tags->nr_free) {
++		/*
++		 * Move tags from the global-, onto our percpu-freelist.
++		 */
++		move_tags(tags->freelist, &tags->nr_free,
++			  pool->freelist, &pool->nr_free,
++			  min(pool->nr_free, pool->percpu_batch_size));
++	}
++
++	if (!tags->nr_free)
++		steal_tags(pool, tags);
++
++	if (tags->nr_free) {
++		tag = tags->freelist[--tags->nr_free];
++		if (tags->nr_free) {
++			cpumask_set_cpu(smp_processor_id(),
++					&pool->cpus_have_tags);
 +		}
++	}
++
++	spin_unlock(&pool->lock);
++
++	return tag;
++}
++
++static inline int alloc_global_tag(struct percpu_ida *pool)
++{
++	unsigned long flags;
++	int tag;
++
++	local_irq_safe(flags);
++	tag = __alloc_global_tag(pool, this_cpu_ptr(pool->tag_cpu));
++	local_irq_restore(flags);
++
++	return tag;
++}
++
+ /**
+  * percpu_ida_alloc - allocate a tag
+  * @pool: pool to allocate from
+@@ -147,61 +181,34 @@ static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
+  *
+  * Will not fail if passed __GFP_WAIT.
+  */
+-int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
++int percpu_ida_alloc(struct percpu_ida *pool, int state)
+ {
+-	DEFINE_WAIT(wait);
+ 	struct percpu_ida_cpu *tags;
+ 	unsigned long flags;
+-	int tag;
++	int tag, ret = -ENOSPC;
+ 
+ 	local_irq_save(flags);
+ 	tags = this_cpu_ptr(pool->tag_cpu);
+ 
+-	/* Fastpath */
+ 	tag = alloc_local_tag(tags);
+-	if (likely(tag >= 0)) {
+-		local_irq_restore(flags);
+-		return tag;
+-	}
++	if (unlikely(tag < 0))
++		tag = __alloc_global_tag(pool, tags);
+ 
+-	while (1) {
+-		spin_lock(&pool->lock);
+-
+-		/*
+-		 * prepare_to_wait() must come before steal_tags(), in case
+-		 * percpu_ida_free() on another cpu flips a bit in
+-		 * cpus_have_tags
+-		 *
+-		 * global lock held and irqs disabled, don't need percpu lock
+-		 */
+-		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
+-
+-		if (!tags->nr_free)
+-			alloc_global_tags(pool, tags);
+-		if (!tags->nr_free)
+-			steal_tags(pool, tags);
+-
+-		if (tags->nr_free) {
+-			tag = tags->freelist[--tags->nr_free];
+-			if (tags->nr_free)
+-				cpumask_set_cpu(smp_processor_id(),
+-						&pool->cpus_have_tags);
+-		}
+-
+-		spin_unlock(&pool->lock);
+-		local_irq_restore(flags);
++	local_irq_restore(flags);
+ 
+-		if (tag >= 0 || !(gfp & __GFP_WAIT))
+-			break;
++	if (likely(tag >= 0))
++		return tag;
+ 
+-		schedule();
++	if (state != TASK_RUNNING) {
++		ret = ___wait_event(pool->wait,
++				(tag = alloc_global_tag(pool)) >= 0,
++				state, 0, 0, schedule());
+ 
+-		local_irq_save(flags);
+-		tags = this_cpu_ptr(pool->tag_cpu);
++		if (tag >= 0)
++			ret = tag;
  	}
  
- 	irq = platform_get_irq(pdev, 0);
--- 
-1.8.4.2
-
+-	finish_wait(&pool->wait, &wait);
+-	return tag;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(percpu_ida_alloc);
+ 
+@@ -235,12 +242,19 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
+ 		wake_up(&pool->wait);
+ 	}
+ 
++	/*
++	 * No point in waking when 1 < n < max_size free, because steal_tags()
++	 * will assume max_size per set bit, having more free will not make it
++	 * more or less likely it will visit this cpu.
++	 */
++
+ 	if (nr_free == pool->percpu_max_size) {
+ 		spin_lock(&pool->lock);
+ 
+ 		/*
+-		 * Global lock held and irqs disabled, don't need percpu
+-		 * lock
++		 * Global lock held and irqs disabled, don't need percpu lock
++		 * because everybody accessing remote @tags will hold
++		 * pool->lock -- steal_tags().
+ 		 */
+ 		if (tags->nr_free == pool->percpu_max_size) {
+ 			move_tags(pool->freelist, &pool->nr_free,
