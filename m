@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaAWBmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 20:42:14 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46094 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaAWBmM (ORCPT
+	id S1753496AbaAWBqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:46:18 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:39919 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaAWBqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 20:42:12 -0500
+	Wed, 22 Jan 2014 20:46:17 -0500
+Date: Wed, 22 Jan 2014 17:46:13 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        angus.clark@st.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v4 00/36] mtd: st_spi_fsm: Add new driver
+Message-ID: <20140123014613.GX8919@ld-irv-0074>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+ <20140108143316.GA14575@lee--X1>
+ <20140122125049.GA8586@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <20140122235233.GA17155@fieldses.org>
-References: <1390201154-20815-1-git-send-email-shaobingqing@bwstor.com.cn>
-	<1390259843.2501.2.camel@leira.trondhjem.org>
-	<CALrKORrZ3Kcuqc1RajQKkZcot0yiswh4VR_WuXHqfRTjn9oGQQ@mail.gmail.com>
-	<1BFACA51-087E-4945-851A-FBF0F108604C@primarydata.com>
-	<20140122235233.GA17155@fieldses.org>
-Date: Thu, 23 Jan 2014 09:42:11 +0800
-X-Google-Sender-Auth: bMVylRGmWUPi0MkmBbRxYVRtpQk
-Message-ID: <CALrKORrNnd+LOE_8Y7zRXbnbGVHV02pJdAZ5B+VPVS72w71zBQ@mail.gmail.com>
-Subject: Re: [PATCH] SUNRPC: Allow one callback request to be received from
- two sk_buff
-From: shaobingqing <shaobingqing@bwstor.com.cn>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Dr Fields James Bruce <bfields@redhat.com>,
-        "Miller David S." <davem@davemloft.net>,
-        linuxnfs <linux-nfs@vger.kernel.org>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122125049.GA8586@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/23 J. Bruce Fields <bfields@fieldses.org>:
-> On Tue, Jan 21, 2014 at 08:35:36AM -0700, Trond Myklebust wrote:
->>
->> On Jan 21, 2014, at 3:08, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
->>
->> > 2014/1/21 Trond Myklebust <trond.myklebust@primarydata.com>:
->> >> On Mon, 2014-01-20 at 14:59 +0800, shaobingqing wrote:
->> >>> In current code, there only one struct rpc_rqst is prealloced. If one
->> >>> callback request is received from two sk_buff, the xprt_alloc_bc_request
->> >>> would be execute two times with the same transport->xid. The first time
->> >>> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
->> >>> bit of transport->tcp_flags will not be cleared. The second time
->> >>> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
->> >>> pointer will be returned, then xprt_force_disconnect occur. I think one
->> >>> callback request can be allowed to be received from two sk_buff.
->> >>>
->> >>> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
->> >>> ---
->> >>> net/sunrpc/xprtsock.c |   11 +++++++++--
->> >>> 1 files changed, 9 insertions(+), 2 deletions(-)
->> >>>
->> >>> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
->> >>> index ee03d35..606950d 100644
->> >>> --- a/net/sunrpc/xprtsock.c
->> >>> +++ b/net/sunrpc/xprtsock.c
->> >>> @@ -1271,8 +1271,13 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
->> >>>      struct sock_xprt *transport =
->> >>>                              container_of(xprt, struct sock_xprt, xprt);
->> >>>      struct rpc_rqst *req;
->> >>> +     static struct rpc_rqst *req_partial;
->> >>> +
->> >>> +     if (req_partial == NULL)
->> >>> +             req = xprt_alloc_bc_request(xprt);
->> >>> +     else if (req_partial->rq_xid == transport->tcp_xid)
->> >>> +             req = req_partial;
->> >>
->> >> What happens here if req_partial->rq_xid != transport->tcp_xid? AFAICS,
->> >> req will be undefined. Either way, you cannot use a static variable for
->> >> storage here: that isn't re-entrant.
->> >
->> > Because metadata sever only have one slot for backchannel request,
->> > req_partial->rq_xid == transport->tcp_xid always happens, if the callback
->> > request just being splited in two sk_buffs. But req_partial->rq_xid !=
->> > transport->tcp_xid may also happens in some special cases, such as
->> > retransmission occurs?
->>
->> If the server retransmits, then it is broken. The NFSv4.1 protocol does not allow it to retransmit unless the connection breaks.
->
-> shaobingqing, are you actually seeing retransmission?  (If so, are we
-> setting up the callback client wrong?)
-No, not actually. Here I just see that one client can receive two
-callback requests with the same xid.
->
-> --b.
->
->>
->> > If one callback request is splited in two sk_buffs, xs_tcp_read_callback
->> > will be execute two times. The req_partial should be a static variable,
->> > because  the second execution of xs_tcp_read_callback should use
->> > the rpc_rqst allocated for the first execution, which saves information
->> > copies from the first sk_buff.
->>
->> No! This is a multi-threaded/process environment which can support multiple connection. It is a bug to use a static variable.
->>
->> --
->> Trond Myklebust
->> Linux NFS client maintainer
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi Lee,
+
+On Wed, Jan 22, 2014 at 12:50:49PM +0000, Lee Jones wrote:
+> > Version 4:
+> >   Tended to Brian's previous review comments
+> >     - Checkpatch acceptance
+> >     - MODULE_DEVICE_TABLE() name slip correction
+> >     - Timeout issue(s) resolved
+> >     - Potential infinite loop mitigated
+> >     - Code clarity suggests heeded
+> >     - Duplication with MTD core code removed
+> >     - Upgraded to using ROUND_UP() helper
+> >     - Moved non-shared header code into main driver
+> >     - Relocated dynamic msg sequence stores into main struct
+> >     - Averted adaption of static (table) data
+> >     - Basic whitespace/spelling/data type/dev_err suggestions accepted
+> > 
+> > Version 3:
+> >   Okay, this thing should be fully functional now. Identify a chip
+> >   based on it's JEDEC ID, Read, Write, Erase (all or by sector).
+> >   Support for various chip quirks added too.
+> >  
+> > Version 2:
+> >   The first bunch of these patches have been on the MLs before, but
+> >   didn't receive a great deal of attention for the most part. We are
+> >   a little more featureful this time however. We can now successfully
+> >   setup and configure the N25Q256. We still can't read/write/erase
+> >   it though. I'll start work on that next week and will provide it in
+> >   the next instalment.
+> >  
+> > Version 1:
+> >   First stab at getting this thing Mainlined. It doesn't do a great deal
+> >   yet, but we are able to initialise the device and dynamically set it up
+> >   correctly based on an extracted JEDEC ID.
+> > 
+> >  Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
+> >  arch/arm/boot/dts/stih416-b2105.dts              |   14 +
+> >  arch/arm/boot/dts/stih416-pinctrl.dtsi           |   12 +
+> >  drivers/mtd/devices/Kconfig                      |    8 +
+> >  drivers/mtd/devices/Makefile                     |    1 +
+> >  drivers/mtd/devices/serial_flash_cmds.h          |   81 ++++
+> >  drivers/mtd/devices/st_spi_fsm.c                 | 2124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  7 files changed, 2266 insertions(+)
+> 
+> Can you confirm receipt of this set, or would you like me to resend?
+
+Well, I personally have the patch set but haven't had a chance to review
+it. Can you resend with MTD in the CC, since we haven't had any comments
+anyway? I believe MTD people are much less likely to look at it if you
+forget the CC :)
+
+You can just title it [PATCH RESEND v4 X/Y], possibly with a LKML
+link back to the original v4, if you want to help avoid confusion.
+
+Brian
