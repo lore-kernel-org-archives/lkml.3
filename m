@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaAWAoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:44:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38512 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159AbaAWAoJ convert rfc822-to-8bit (ORCPT
+	id S1753849AbaAWA4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:56:31 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53179 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbaAWA4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:44:09 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <52D3FF0E02000078001131A5@nat28.tlf.novell.com>
-References: <1389608052-7139-1-git-send-email-olaf@aepfle.de> <52D3DAEE0200007800112FD4@nat28.tlf.novell.com> <20140113120131.GA15623@aepfle.de> <52D3EB5F02000078001130B5@nat28.tlf.novell.com> <1389618054.13654.57.camel@kazak.uk.xensource.com> <52D3F535020000780011311B@nat28.tlf.novell.com> <52D3EE14.3080609@citrix.com> <52D3FF0E02000078001131A5@nat28.tlf.novell.com>
+	Wed, 22 Jan 2014 19:56:30 -0500
+Date: Thu, 23 Jan 2014 01:56:26 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [GIT PULL] tick: A few more cleanups
+Message-ID: <20140123005624.GC24093@localhost.localdomain>
+References: <1389886912-4783-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check from blkfront_setup_discard
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 13 Jan 2014 10:57:54 -0500
-To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>
-CC: boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>, Ian Campbell <Ian.Campbell@citrix.com>,
-        xen-devel@lists.xen.org
-Message-ID: <9498309b-dd60-413f-9ab7-8e6ec6c9bcfa@email.android.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389886912-4783-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Beulich <JBeulich@suse.com> wrote:
->>>> On 13.01.14 at 14:45, David Vrabel <david.vrabel@citrix.com> wrote:
->> On 13/01/14 13:16, Jan Beulich wrote:
->>>>>> On 13.01.14 at 14:00, Ian Campbell <Ian.Campbell@citrix.com>
->wrote:
->>>> On Mon, 2014-01-13 at 12:34 +0000, Jan Beulich wrote:
->>>>>>>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
->>>>>> On Mon, Jan 13, Jan Beulich wrote:
->>>>>>
->>>>>>> You can't do this in one go - the first two and the last one may
->be
->>>>>>> set independently (and are independent in their meaning), and
->>>>>>> hence need to be queried independently (xenbus_gather() fails
->>>>>>> on the first absent value).
->>>>>>
->>>>>> Yes, thats the purpose. Since the properties are required its an
->all or
->>>>>> nothing thing. If they are truly optional then blkif.h should be
->updated
->>>>>> to say that.
->>>>>
->>>>> They _are_ optional.
->>>>
->>>> But is it true that either they are all present or they are all
->absent?
->>> 
->>> No, it's not. discard-secure is independent of the other two (but
->>> those other two are tied together).
->> 
->> Can we have a patch to blkif.h that clarifies this?
->> 
->> e.g.,
->> 
->> feature-discard
->> 
->>    ...
->> 
->>    discard-granularity and discard-offset must also be present if
->>    feature-discard is enabled
->
->It would be "may" here too afaict. But I'll defer to Konrad, who
->has done more work in this area...
->
->Jan
->
->>    discard-secure may also be present if feature-discard is enabled.
->> 
->> David
->
->
->
->
->_______________________________________________
->Xen-devel mailing list
->Xen-devel@lists.xen.org
->http://lists.xen.org/xen-devel
+On Thu, Jan 16, 2014 at 04:41:48PM +0100, Frederic Weisbecker wrote:
+> Ingo,
+> 
+> Please pull the timers/core branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	timers/core
+> 
+> HEAD: 8fe8ff09ce3b5750e1f3e45a1f4a81d59c7ff1f1
+> 
+> ----
+> Nothing very exiting, just a bunch of non-critical cleanups for the next merge window:
+> 
+> 1) Make the IRQ tick APIs naming more symetric
+> 
+> 2) Optimize a bit jiffies_lock code coverage
+> 
+> 3) Whitespace fixes from Alex Shi
+> 
+> 4) Fix overflow in scheduler tick max deferment calculation. Given the
+> current 1 second max limitation, this bug shouldn't happen in mainline.
+> It's rather to prepare for making this value tunable. Or simply in case
+> we change the current constant.
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (2):
+>       tick: Rename tick_check_idle() to tick_irq_enter()
+>       nohz: Get timekeeping max deferment outside jiffies_lock
+> 
+> Alex Shi (1):
+>       nohz_full: fix code style issue of tick_nohz_full_stop_tick
+> 
+> Kevin Hilman (1):
+>       sched/nohz: Fix overflow error in scheduler_tick_max_deferment()
+> 
 
-It is all 'may'. If there is just 'feature-discard' without any other options that is OK.
+Ping.
 
+> 
+>  include/linux/jiffies.h  |  6 ++++++
+>  include/linux/tick.h     |  6 +++---
+>  kernel/sched/core.c      |  2 +-
+>  kernel/softirq.c         |  2 +-
+>  kernel/time/tick-sched.c | 27 ++++++++++++++-------------
+>  5 files changed, 25 insertions(+), 18 deletions(-)
