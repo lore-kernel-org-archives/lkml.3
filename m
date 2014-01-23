@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351AbaAWUqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:46:40 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:51752 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131AbaAWUpn (ORCPT
+	id S1755059AbaAWUsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:48:22 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:50767 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751783AbaAWUsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:45:43 -0500
-X-IronPort-AV: E=Sophos;i="4.95,708,1384329600"; 
-   d="scan'208";a="10693650"
-From: Sherman Yin <syin@broadcom.com>
-To: Mark Brown <broonie@kernel.org>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sherman Yin <syin@broadcom.com>
-Subject: [PATCH v2 3/4] Update bcm_defconfig with new pinctrl CONFIG
-Date: Thu, 23 Jan 2014 12:44:46 -0800
-Message-ID: <1390509887-19278-4-git-send-email-syin@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390509887-19278-1-git-send-email-syin@broadcom.com>
-References: <1390343886-25852-1-git-send-email-syin@broadcom.com>
- <1390509887-19278-1-git-send-email-syin@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 23 Jan 2014 15:48:21 -0500
+Date: Thu, 23 Jan 2014 14:48:18 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Mel Gorman <mgorman@suse.de>
+cc: Ric Wheeler <rwheeler@redhat.com>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+In-Reply-To: <20140122151913.GY4963@suse.de>
+Message-ID: <alpine.DEB.2.10.1401231447500.8031@nuc>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com> <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com> <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com> <20140122151913.GY4963@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
-driver and its related CONFIG option are renamed to bcm281xx.
+On Wed, 22 Jan 2014, Mel Gorman wrote:
 
-This commit updates the defconfig that enables the pinctrl driver.
+> Don't get me wrong, I'm interested in the topic but I severely doubt I'd
+> have the capacity to research the background of this in advance. It's also
+> unlikely that I'd work on it in the future without throwing out my current
+> TODO list. In an ideal world someone will have done the legwork in advance
+> of LSF/MM to help drive the topic.
 
-Signed-off-by: Sherman Yin <syin@broadcom.com>
-Reviewed-by: Matt Porter <mporter@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/configs/bcm_defconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index bede511..53d6d47 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -126,4 +126,4 @@ CONFIG_CRC_ITU_T=y
- CONFIG_CRC7=y
- CONFIG_XZ_DEC=y
- CONFIG_AVERAGE=y
--CONFIG_PINCTRL_CAPRI=y
-+CONFIG_PINCTRL_BCM281XX=y
--- 
-1.7.9.5
+I can give an overview of the history and the challenges of the approaches
+if needed.
 
