@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaAWM4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 07:56:11 -0500
-Received: from imap.thunk.org ([74.207.234.97]:51029 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753690AbaAWM4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 07:56:06 -0500
-Date: Thu, 23 Jan 2014 07:55:50 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, Chris Mason <clm@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Message-ID: <20140123125550.GB6853@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>, Chris Mason <clm@fb.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	"linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-	"mgorman@suse.de" <mgorman@suse.de>,
-	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-	"lsf-pc@lists.linux-foundation.org" <lsf-pc@lists.linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>
-References: <1390410233.1198.7.camel@ret.masoncoding.com>
- <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
- <1390413819.1198.20.camel@ret.masoncoding.com>
- <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
- <52E00B28.3060609@redhat.com>
- <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
- <52E0106B.5010604@redhat.com>
- <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>
- <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
- <20140123083558.GQ13997@dastard>
+	id S1753300AbaAWM6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 07:58:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33380 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaAWM6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 07:58:47 -0500
+Date: Thu, 23 Jan 2014 13:58:22 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
+        bsegall@google.com, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH 3/9] sched: Move idle_stamp up to the core
+Message-ID: <20140123125822.GX31570@twins.programming.kicks-ass.net>
+References: <20140121111754.580142558@infradead.org>
+ <20140121112258.410353740@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140123083558.GQ13997@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20140121112258.410353740@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 07:35:58PM +1100, Dave Chinner wrote:
-> > 
-> > I expect it would be relatively simple to get large blocksizes working
-> > on powerpc with 64k PAGE_SIZE.  So before diving in and doing huge
-> > amounts of work, perhaps someone can do a proof-of-concept on powerpc
-> > (or ia64) with 64k blocksize.
+On Tue, Jan 21, 2014 at 12:17:57PM +0100, Peter Zijlstra wrote:
+> From: Daniel Lezcano <daniel.lezcano@linaro.org>
 > 
-> Reality check: 64k block sizes on 64k page Linux machines has been
-> used in production on XFS for at least 10 years. It's exactly the
-> same case as 4k block size on 4k page size - one page, one buffer
-> head, one filesystem block.
+> The idle_balance modifies the idle_stamp field of the rq, making this
+> information to be shared across core.c and fair.c. As we can know if the
+> cpu is going to idle or not with the previous patch, let's encapsulate the
+> idle_stamp information in core.c by moving it up to the caller. The
+> idle_balance function returns true in case a balancing occured and the cpu
+> won't be idle, false if no balance happened and the cpu is going idle.
+> 
+> Cc: alex.shi@linaro.org
+> Cc: peterz@infradead.org
+> Cc: mingo@kernel.org
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1389949444-14821-3-git-send-email-daniel.lezcano@linaro.org
+> ---
+>  kernel/sched/core.c  |    2 +-
+>  kernel/sched/fair.c  |   14 ++++++--------
+>  kernel/sched/sched.h |    2 +-
+>  3 files changed, 8 insertions(+), 10 deletions(-)
+> 
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2680,7 +2680,7 @@ static void __sched __schedule(void)
+>  	pre_schedule(rq, prev);
+>  
+>  	if (unlikely(!rq->nr_running))
+> -		idle_balance(rq);
+> +		rq->idle_stamp = idle_balance(rq) ? 0 : rq_clock(rq);
 
-This is true for ext4 as well.  Block size == page size support is
-pretty easy; the hard part is when block size > page size, due to
-assumptions in the VM layer that requires that FS system needs to do a
-lot of extra work to fudge around.  So the real problem comes with
-trying to support 64k block sizes on a 4k page architecture, and can
-we do it in a way where every single file system doesn't have to do
-their own specific hacks to work around assumptions made in the VM
-layer.
+OK, spotted a problem here..
 
-Some of the problems include handling the case where you get someone
-dirties a single block in a sparse page, and the FS needs to manually
-fault in the other 56k pages around that single page.  Or the VM not
-understanding that page eviction needs to be done in chunks of 64k so
-we don't have part of the block evicted but not all of it, etc.
+So previously idle_stamp was set _before_ actually doing idle_balance(),
+and that was RIGHT, because that way we include the cost of actually
+doing idle_balance() into the idle time.
 
-					- Ted
+By not including the cost of idle_balance() you underestimate the 'idle'
+time in that if idle_balance() filled the entire idle time we account 0
+idle, even though we had 'plenty' of time to run the entire thing.
+
+This leads to not running idle_balance() even though we have the time
+for it.
+
+So we very much want something like:
+
+
+  if (!rq->nr_running)
+  	rq->idle_stamp = rq_clock(rq);
+
+  p = pick_next_task(rq, prev);
+
+  if (!is_idle_task(p))
+  	rq->idle_stamp = 0;
+
+
