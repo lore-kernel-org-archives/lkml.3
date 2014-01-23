@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaAWQqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:46:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39276 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaAWQq2 (ORCPT
+	id S1753693AbaAWQrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:47:06 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:60166 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624AbaAWQrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:46:28 -0500
-Date: Thu, 23 Jan 2014 17:46:07 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
- accept task state bitmask
-Message-ID: <20140123164607.GL3694@twins.programming.kicks-ass.net>
-References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
- <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
- <20140120113415.GE30183@twins.programming.kicks-ass.net>
- <20140121221852.GT9037@kmo>
- <20140123124753.GT30183@twins.programming.kicks-ass.net>
- <20140123132829.GE889@kmo-pixel>
- <20140123135003.GU30183@twins.programming.kicks-ass.net>
- <20140123135539.GF889@kmo-pixel>
- <20140123154312.GX30183@twins.programming.kicks-ass.net>
- <20140123162254.GK3694@twins.programming.kicks-ass.net>
+	Thu, 23 Jan 2014 11:47:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123162254.GK3694@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com>
+References: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com>
+Date: Thu, 23 Jan 2014 17:47:02 +0100
+X-Google-Sender-Auth: V9zYDi7IxHjx7GQzao6oxZ_PBdk
+Message-ID: <CAMuHMdU0FRi4=YejN+3TLJCwcptHVaaGFTLPyuwzO4NH9=-cUw@mail.gmail.com>
+Subject: Re: spidev: fix hang when transfer_one_message fails
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 05:22:54PM +0100, Peter Zijlstra wrote:
-> On Thu, Jan 23, 2014 at 05:28:29AM -0800, Kent Overstreet wrote:
-> > pool->lock is also going to be fairly badly contended in the worst case,
-> > and that can get real bad real fast... now that I think about it we
-> > probably want to avoid the __alloc_global_tag() double call just because
-> > of that, pool->lock is going to be quite a bit more contended than the
-> > waitlist lock just because fo the amount of work done under it.
+On Mon, Jan 6, 2014 at 12:39 AM,  <danielfsantos@att.net> wrote:
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -735,7 +735,9 @@ static void spi_pump_messages(struct kthread_work *work)
+>         ret = master->transfer_one_message(master, master->cur_msg);
+>         if (ret) {
+>                 dev_err(&master->dev,
+> -                       "failed to transfer one message from queue\n");
+> +                       "failed to transfer one message from queue: %d\n", ret);
+> +               master->cur_msg->status = ret;
 
-> Now everything modifying percpu_ida_cpu state holds
-> percpu_ida_cpu::lock
+This crashes with drivers using the generic spi_transfer_one_message(),
+which always calls spi_finalize_current_message(), which zeroes
+master->cur_msg:
 
-Almost that.
+spi_master spi0: failed to transfer one message from queue: -110
+spi_pump_messages:748 master = ef3d8c00
+spi_pump_messages:749 master->cur_msg =   (null)
+Unable to handle kernel NULL pointer dereference at virtual address 00000020
+pgd = c0004000
+[00000020] *pgd=00000000
+Internal error: Oops: 817 [#1] SMP ARM
+Modules linked in:
+CPU: 1 PID: 30 Comm: spi0 Not tainted
+3.13.0-koelsch-00403-gecb6e4e65dea-dirty #274
+task: ef250bc0 ti: ef3f0000 task.ti: ef3f0000
+PC is at spi_pump_messages+0x22c/0x288
+LR is at irq_work_queue+0x6c/0xcc
 
----
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -51,6 +51,15 @@ static inline void move_tags(unsigned *d
- 	*dst_nr += nr;
- }
- 
-+static inline void double_lock(spinlock_t *l1, spinlock_t *l2)
-+{
-+	if (l1 > l2)
-+		swap(l1, l2);
-+
-+	spin_lock(l1);
-+	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
-+}
-+
- /*
-  * Try to steal tags from a remote cpu's percpu freelist.
-  *
-@@ -87,7 +96,7 @@ static inline void steal_tags(struct per
- 		if (remote == tags)
- 			continue;
- 
--		spin_lock(&remote->lock);
-+		double_lock(&tags->lock, &remote->lock);
- 
- 		if (remote->nr_free) {
- 			memcpy(tags->freelist,
-@@ -99,6 +108,7 @@ static inline void steal_tags(struct per
- 		}
- 
- 		spin_unlock(&remote->lock);
-+		spin_unlock(&tags->lock);
- 
- 		if (tags->nr_free)
- 			break;
+Probably your transfer_one_message() forgot to call
+spi_finalize_current_message()? Is this allowed in case of failure?
+
+ * @transfer_one_message: the subsystem calls the driver to transfer a single
+ *      message while queuing transfers that arrive in the meantime. When the
+ *      driver is finished with this message, it must call
+ *      spi_finalize_current_message() so the subsystem can issue the next
+ *      transfer
+
+Alternatively, we need a check for master->cur_msg here.
+
+> +               spi_finalize_current_message(master);
+>                 return;
+>         }
+>  }
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
