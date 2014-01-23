@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363AbaAWTNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:13:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35055 "EHLO
+	id S1753580AbaAWTGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:06:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34938 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648AbaAWTGm (ORCPT
+	with ESMTP id S1752323AbaAWTGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:42 -0500
+	Thu, 23 Jan 2014 14:06:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.12 27/27] ARM: 7938/1: OMAP4/highbank: Flush L2 cache before disabling
-Date: Thu, 23 Jan 2014 11:07:04 -0800
-Message-Id: <20140123190651.584568157@linuxfoundation.org>
+        Robert Richter <rric@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.12 02/27] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
+Date: Thu, 23 Jan 2014 11:06:39 -0800
+Message-Id: <20140123190648.954314392@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -33,51 +31,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+From: Robert Richter <rric@kernel.org>
 
-commit b25f3e1c358434bf850220e04f28eebfc45eb634 upstream.
+commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
 
-Kexec disables outer cache before jumping to reboot code, but it doesn't
-flush it explicitly. Flush is done implicitly inside of l2x0_disable().
-But some SoC's override default .disable handler and don't flush cache.
-This may lead to a corrupted memory during Kexec reboot on these
-platforms.
+On AMD family 10h we see following error messages while waking up from
+S3 for all non-boot CPUs leading to a failed IBS initialization:
 
-This patch adds cache flush inside of OMAP4 and Highbank outer_cache.disable()
-handlers to make it consistent with default l2x0_disable().
+ Enabling non-boot CPUs ...
+ smpboot: Booting Node 0 Processor 1 APIC 0x1
+ [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
+ perf: IBS APIC setup failed on cpu #1
+ process: Switch to broadcast mode on CPU1
+ CPU1 is up
+ ...
+ ACPI: Waking up from system sleep state S3
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Wang Nan <wangnan0@huawei.com>
+Reason for this is that during suspend the LVT offset for the IBS
+vector gets lost and needs to be reinialized while resuming.
+
+The offset is read from the IBSCTL msr. On family 10h the offset needs
+to be 1 as offset 0 is used for the MCE threshold interrupt, but
+firmware assings it for IBS to 0 too. The kernel needs to reprogram
+the vector. The msr is a readonly node msr, but a new value can be
+written via pci config space access. The reinitialization is
+implemented for family 10h in setup_ibs_ctl() which is forced during
+IBS setup.
+
+This patch fixes IBS setup after waking up from S3 by adding
+resume/supend hooks for the boot cpu which does the offset
+reinitialization.
+
+Marking it as stable to let distros pick up this fix.
+
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-highbank/highbank.c  |    1 +
- arch/arm/mach-omap2/omap4-common.c |    1 +
- 2 files changed, 2 insertions(+)
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   53 ++++++++++++++++++++++++++-----
+ 1 file changed, 45 insertions(+), 8 deletions(-)
 
---- a/arch/arm/mach-highbank/highbank.c
-+++ b/arch/arm/mach-highbank/highbank.c
-@@ -66,6 +66,7 @@ void highbank_set_cpu_jump(int cpu, void
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/ptrace.h>
++#include <linux/syscore_ops.h>
  
- static void highbank_l2x0_disable(void)
- {
-+	outer_flush_all();
- 	/* Disable PL310 L2 Cache controller */
- 	highbank_smc1(0x102, 0x0);
- }
---- a/arch/arm/mach-omap2/omap4-common.c
-+++ b/arch/arm/mach-omap2/omap4-common.c
-@@ -163,6 +163,7 @@ void __iomem *omap4_get_l2cache_base(voi
+ #include <asm/apic.h>
  
- static void omap4_l2x0_disable(void)
- {
-+	outer_flush_all();
- 	/* Disable PL310 L2 Cache controller */
- 	omap_smc1(0x102, 0x0);
+@@ -816,6 +817,18 @@ out:
+ 	return ret;
  }
+ 
++static void ibs_eilvt_setup(void)
++{
++	/*
++	 * Force LVT offset assignment for family 10h: The offsets are
++	 * not assigned by the BIOS for this family, so the OS is
++	 * responsible for doing it. If the OS assignment fails, fall
++	 * back to BIOS settings and try to setup this.
++	 */
++	if (boot_cpu_data.x86 == 0x10)
++		force_ibs_eilvt_setup();
++}
++
+ static inline int get_ibs_lvt_offset(void)
+ {
+ 	u64 val;
+@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
+ 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
+ }
+ 
++#ifdef CONFIG_PM
++
++static int perf_ibs_suspend(void)
++{
++	clear_APIC_ibs(NULL);
++	return 0;
++}
++
++static void perf_ibs_resume(void)
++{
++	ibs_eilvt_setup();
++	setup_APIC_ibs(NULL);
++}
++
++static struct syscore_ops perf_ibs_syscore_ops = {
++	.resume		= perf_ibs_resume,
++	.suspend	= perf_ibs_suspend,
++};
++
++static void perf_ibs_pm_init(void)
++{
++	register_syscore_ops(&perf_ibs_syscore_ops);
++}
++
++#else
++
++static inline void perf_ibs_pm_init(void) { }
++
++#endif
++
+ static int
+ perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	/*
+-	 * Force LVT offset assignment for family 10h: The offsets are
+-	 * not assigned by the BIOS for this family, so the OS is
+-	 * responsible for doing it. If the OS assignment fails, fall
+-	 * back to BIOS settings and try to setup this.
+-	 */
+-	if (boot_cpu_data.x86 == 0x10)
+-		force_ibs_eilvt_setup();
++	ibs_eilvt_setup();
+ 
+ 	if (!ibs_eilvt_valid())
+ 		goto out;
+ 
++	perf_ibs_pm_init();
+ 	get_online_cpus();
+ 	ibs_caps = caps;
+ 	/* make ibs_caps visible to other cpus: */
 
 
