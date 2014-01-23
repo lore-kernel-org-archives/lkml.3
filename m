@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaAWTGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34984 "EHLO
+	id S932173AbaAWTI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:08:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35075 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaAWTGZ (ORCPT
+	with ESMTP id S932097AbaAWTIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.12 11/27] writeback: Fix data corruption on NFS
-Date: Thu, 23 Jan 2014 11:06:48 -0800
-Message-Id: <20140123190649.861199315@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
-References: <20140123190648.720195687@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 23 Jan 2014 14:08:54 -0500
+Date: Thu, 23 Jan 2014 11:09:44 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Valentina Manea <valentina.manea.m@gmail.com>
+Cc: anthony.foiani@gmail.com, devel@driverdev.osuosl.org, navinp@cdac.in,
+        linux-usb@vger.kernel.org, ly80toro@cip.cs.fau.de,
+        josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+        firefly@lists.rosedu.org, tulinizer@gmail.com,
+        stern@rowland.harvard.edu, yacine.belkadi.1@gmail.com,
+        ke42caxa@cip.cs.fau.de
+Subject: Re: [PATCH] staging: usbip: convert usbip-host driver to
+ usb_device_driver
+Message-ID: <20140123190944.GA11639@kroah.com>
+References: <1390502206-28684-1-git-send-email-valentina.manea.m@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390502206-28684-1-git-send-email-valentina.manea.m@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jan 23, 2014 at 08:36:46PM +0200, Valentina Manea wrote:
+> This driver was previously an interface driver. Since USB/IP
+> exports a whole device, not just an interface, it would make
+> sense to be a device driver.
+> 
+> This patch also modifies the way userspace sees and uses a
+> shared device - dealing with interfaces is no longer required.
 
-------------------
+In what way is this modified?  What is now different?
 
-From: Jan Kara <jack@suse.cz>
+> --- a/drivers/usb/core/generic.c
+> +++ b/drivers/usb/core/generic.c
+> @@ -155,6 +155,7 @@ int usb_choose_configuration(struct usb_device *udev)
+>  	}
+>  	return i;
+>  }
+> +EXPORT_SYMBOL(usb_choose_configuration);
+>  
+>  static int generic_probe(struct usb_device *udev)
+>  {
+> diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+> index bb31597..fb0a555 100644
+> --- a/drivers/usb/core/message.c
+> +++ b/drivers/usb/core/message.c
+> @@ -1921,6 +1921,7 @@ free_interfaces:
+>  	usb_autosuspend_device(dev);
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL(usb_set_configuration);
+>  
+>  static LIST_HEAD(set_config_list);
+>  static DEFINE_SPINLOCK(set_config_lock);
 
-commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
+Please make both of these EXPORT_SYMBOL_GPL(), like the rest of the USB
+symbols are.
 
-Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
-a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
-mode because there we also want to wait for outstanding writeback on
-possibly clean inode. This was causing occasional data corruption issues
-on NFS because it uses sync_inode() to make sure all outstanding writes
-are flushed to the server before truncating the inode and with
-sync_inode() returning prematurely file was sometimes extended back
-by an outstanding write after it was truncated.
+thanks,
 
-So modify the test to also check for pages under writeback in
-WB_SYNC_ALL mode.
-
-Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
-Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/fs-writeback.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -510,13 +510,16 @@ writeback_single_inode(struct inode *ino
- 	}
- 	WARN_ON(inode->i_state & I_SYNC);
- 	/*
--	 * Skip inode if it is clean. We don't want to mess with writeback
--	 * lists in this function since flusher thread may be doing for example
--	 * sync in parallel and if we move the inode, it could get skipped. So
--	 * here we make sure inode is on some writeback list and leave it there
--	 * unless we have completely cleaned the inode.
-+	 * Skip inode if it is clean and we have no outstanding writeback in
-+	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
-+	 * function since flusher thread may be doing for example sync in
-+	 * parallel and if we move the inode, it could get skipped. So here we
-+	 * make sure inode is on some writeback list and leave it there unless
-+	 * we have completely cleaned the inode.
- 	 */
--	if (!(inode->i_state & I_DIRTY))
-+	if (!(inode->i_state & I_DIRTY) &&
-+	    (wbc->sync_mode != WB_SYNC_ALL ||
-+	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
- 		goto out;
- 	inode->i_state |= I_SYNC;
- 	spin_unlock(&inode->i_lock);
-
-
+greg k-h
