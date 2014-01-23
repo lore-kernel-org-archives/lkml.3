@@ -1,204 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaAWMLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 07:11:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58512 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaAWMLj (ORCPT
+	id S1752418AbaAWMMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 07:12:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22186 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331AbaAWMMq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 07:11:39 -0500
-Date: Thu, 23 Jan 2014 12:11:30 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140123121130.GE17314@sirena.org.uk>
+	Thu, 23 Jan 2014 07:12:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,705,1384329600"; 
+   d="scan'208";a="443427411"
+From: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: RE: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
+Thread-Topic: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
+Thread-Index: AQHPElnI8tI63XN3LkKqTLhJwMr9HJqSlNYA//+uZZc=
+Date: Thu, 23 Jan 2014 12:12:43 +0000
+Message-ID: <100D68C7BA14664A8938383216E40DE04061DF33@FMSMSX114.amr.corp.intel.com>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>,<20140123090133.GR13997@dastard>
+In-Reply-To: <20140123090133.GR13997@dastard>
+Accept-Language: en-CA, en-US
+Content-Language: en-CA
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.19.9.46]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/hqscKNKvKAHUg2m"
-Content-Disposition: inline
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regulator updates for v3.14 remerged
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Are you hitting the same problems with ext4 fsck that we did?  Version 1.42.8 reports spurious corruption.  From the 1.42.9 changelog:
 
---/hqscKNKvKAHUg2m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  * Fixed a regression introduced in 1.42.8 which would cause e2fsck to
+    erroneously report uninitialized extents past i_size to be invalid.
 
-The following changes since commit 7e22e91102c6b9df7c4ae2168910e19d2bb14cd6:
+________________________________________
+From: Dave Chinner [david@fromorbit.com]
+Sent: January 23, 2014 1:01 AM
+To: Wilcox, Matthew R
+Cc: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; linux-mm@kvack.org; linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
 
-  Linux 3.13-rc8 (2014-01-12 17:04:18 +0700)
+On Wed, Jan 15, 2014 at 08:24:18PM -0500, Matthew Wilcox wrote:
+> This series of patches add support for XIP to ext4.  Unfortunately,
+> it turns out to be necessary to rewrite the existing XIP support code
+> first due to races that are unfixable in the current design.
+>
+> Since v4 of this patchset, I've improved the documentation, fixed a
+> couple of warnings that a newer version of gcc emitted, and fixed a
+> bug where we would read/write the wrong address for I/Os that were not
+> aligned to PAGE_SIZE.
+>
+> I've dropped the PMD fault patch from this set since there are some
+> places where we would need to split a PMD page and there's no way to do
+> that right now.  In its place, I've added a patch which attempts to add
+> support for unwritten extents.  I'm still in two minds about this; on the
+> one hand, it's clearly a win for reads and writes.  On the other hand,
+> it adds a lot of complexity, and it probably isn't a win for pagefaults.
 
-are available in the git repository at:
+I ran this through xfstests, but ext4 in default configuration fails
+too many of the tests with filesystem corruption and other cascading
+failures on the quick group tests (generic/013, generic/070,
+generic/075, generic/091, etc)  for me to be able to tell if adding
+MOUNT_OPTIONS="-o xip" adds any problems or not....
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.14-2
+XIP definitely caused generic/001 to fail, but other than that I
+can't really tell. Still, it looks like it functions enough to be
+able to add XFS support on top of. I'll get back to you with that ;)
 
-for you to fetch changes up to 07b19808486054f356dbf3495a277f51af062b35:
+Cheers,
 
-  Merge remote-tracking branches 'regulator/topic/s2mps11', 'regulator/topic/s5m8767', 'regulator/topic/stw481x-vmmc', 'regulator/topic/tps51632', 'regulator/topic/tps62360', 'regulator/topic/tps65910', 'regulator/topic/twl' and 'regulator/topic/wm831x' into regulator-linus (2014-01-23 12:01:31 +0000)
-
-----------------------------------------------------------------
-
-regulator: Updates for v3.14
-
-A respin of the merges in the previous pull request with one extra fix.
-A quiet release for the regulator API, quite a large number of small
-improvements all over but other than the addition of new drivers for the
-AS3722 and MAX14577 there is nothing of substantial non-local impact.
-
-----------------------------------------------------------------
-Andrew Bresticker (1):
-      regulator: as3722: detect SD0 low-voltage mode
-
-Axel Lin (10):
-      regulator: lp3971: Convert to devm_regulator_register
-      regulator: lp3972: Convert to devm_regulator_register
-      mfd: pcf50633: Correct device name for pcf50633 regulator
-      regulator: as3722: Don't set min_uV/uV_step/linear_min_sel for linear_ranges
-      regulator: max14577: Add module alias to support module auto-loading
-      regulator: max77693: Add missing .owner field in regulator_desc
-      regulator: tps65910: Simplify setting enable_mask for regulators
-      regulator: act8865: Remove unneeded regulator_unregister() calls
-      regulator: act8865: Remove set_suspend_[en|dis]able implementation
-      regulator: act8865: Fix build error when !OF
-
-Charles Keepax (1):
-      regulator: arizona-micsupp: Convert to use linear ranges
-
-David Howells (1):
-      regulator: tps62360: Fix up a pointer-integer size mismatch warning
-
-Fabio Estevam (8):
-      regulator: tps51632-regulator: Fix spelling
-      regulator: pfuze100: Improve PFUZE100 entry text
-      regulator: anatop-regulator: Add MODULE_ALIAS()
-      regulator: wm831x-dcdc: Remove unneeded 'err' label
-      regulator: anatop-regulator: Remove unneeded kstrdup()
-      regulator: anatop-regulator: Remove unneeded memset()
-      regulator: pfuze100-regulator: Fix some checkpatch complaints
-      regulator: pfuze100-regulator: Improve dev_info() message
-
-Hans de Goede (1):
-      regulator: core: don't print an error when no regulator is found
-
-Jingoo Han (7):
-      regulator: mc13892: Fix checkpatch issue
-      regulator: stw481x-vmmc: use devm_regulator_register()
-      regulator: ab8500: use devm_regulator_register()
-      regulator: db8500-prcmu: use devm_regulator_register()
-      regulator: pfuze100: use devm_regulator_register()
-      regulator: core: Fix checkpatch issue
-      regulator: twl: Fix checkpatch issue
-
-Krzysztof Kozlowski (6):
-      regulator: s5m8767: Define symbol for buck control mask
-      regulator: s5m8767: Implement voltage setting for BUCK7/8 regulators
-      regulator: s5m8767: Add symbols for hard-coded DVS_RAMP register
-      regulator: s5m8767: Do not use sec_reg* regmap helpers
-      mfd: sec: Remove sec_reg* regmap helpers
-      regulator: max14577: Add regulator driver for Maxim 14577
-
-Linus Walleij (1):
-      regulator: ab8500: delete non-devicetree probe path
-
-Mark Brown (8):
-      regulator: gpio: Don't require a regulator-type property
-      regulator: gpio: Warn if an invalid regulator-type is supplied
-      Merge tag 's2mps11-build' into regulator-s5m8767 since a following patch     depend on it.
-      Merge tag 'v3.13-rc4' into regulator-pfuze100
-      Merge remote-tracking branch 'regulator/topic/core' into regulator-linus
-      Merge remote-tracking branches 'regulator/fix/pfuze100', 'regulator/fix/s5m8767', 'regulator/topic/ab8500', 'regulator/topic/act8865', 'regulator/topic/anatop', 'regulator/topic/arizona' and 'regulator/topic/as3722' into regulator-linus
-      Merge remote-tracking branches 'regulator/topic/db8500', 'regulator/topic/gpio', 'regulator/topic/lp3971', 'regulator/topic/lp3972', 'regulator/topic/max14577', 'regulator/topic/max77693', 'regulator/topic/mc13892', 'regulator/topic/pcf50633' and 'regulator/topic/pfuze100' into regulator-linus
-      Merge remote-tracking branches 'regulator/topic/s2mps11', 'regulator/topic/s5m8767', 'regulator/topic/stw481x-vmmc', 'regulator/topic/tps51632', 'regulator/topic/tps62360', 'regulator/topic/tps65910', 'regulator/topic/twl' and 'regulator/topic/wm831x' into regulator-linus
-
-Markus Pargmann (1):
-      regulator: tps65910: Add backup battery regulator
-
-Mikko Perttunen (1):
-      regulator: tps51632: Get regulator name from i2c_client
-
-Sachin Kamat (2):
-      regulator: s2mps11: Clean up redundant code
-      regulator: s5m8767: Update LDO index in s5m8767-regulator.txt
-
-Vince Hsu (1):
-      regulator: as3722: set enable time for SD0/1/6
-
-Wenyou Yang (4):
-      regulator: act8865: add PMIC act8865 driver
-      regulator: act8865: add device tree binding doc
-      regulator: act8865: fix incorrect devm_kzalloc for act8865
-      regulator: act8865: register all regulators regardless of how many are used
-
- Documentation/devicetree/bindings/mfd/tps65910.txt |   4 +-
- .../bindings/regulator/act8865-regulator.txt       |  60 ++++
- .../bindings/regulator/s5m8767-regulator.txt       |   2 +-
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- drivers/mfd/pcf50633-core.c                        |   2 +-
- drivers/mfd/sec-core.c                             |  30 --
- drivers/regulator/Kconfig                          |  17 +-
- drivers/regulator/Makefile                         |   2 +
- drivers/regulator/ab8500.c                         | 126 +-------
- drivers/regulator/act8865-regulator.c              | 349 +++++++++++++++++++++
- drivers/regulator/anatop-regulator.c               |  36 +--
- drivers/regulator/arizona-micsupp.c                |  52 +--
- drivers/regulator/as3722-regulator.c               |  34 +-
- drivers/regulator/core.c                           |  15 +-
- drivers/regulator/db8500-prcmu.c                   |  20 +-
- drivers/regulator/gpio-regulator.c                 |  17 +-
- drivers/regulator/lp3971.c                         |  43 +--
- drivers/regulator/lp3972.c                         |  41 +--
- drivers/regulator/max14577.c                       | 273 ++++++++++++++++
- drivers/regulator/max77693.c                       |   1 +
- drivers/regulator/mc13892-regulator.c              |  24 +-
- drivers/regulator/pcf50633-regulator.c             |   2 +-
- drivers/regulator/pfuze100-regulator.c             |  41 +--
- drivers/regulator/s2mps11.c                        |   2 -
- drivers/regulator/s5m8767.c                        |  99 +++---
- drivers/regulator/stw481x-vmmc.c                   |  12 +-
- drivers/regulator/tps51632-regulator.c             |  30 +-
- drivers/regulator/tps62360-regulator.c             |   2 +-
- drivers/regulator/tps65910-regulator.c             |  40 +++
- drivers/regulator/twl-regulator.c                  |   4 +-
- drivers/regulator/wm831x-dcdc.c                    |  10 +-
- include/linux/mfd/as3722.h                         |   4 +
- include/linux/mfd/samsung/core.h                   |   6 -
- include/linux/mfd/samsung/s5m8767.h                |  18 +-
- include/linux/mfd/tps65910.h                       |   5 +-
- include/linux/regulator/act8865.h                  |  53 ++++
- 36 files changed, 1017 insertions(+), 460 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/act8865-regulator.txt
- create mode 100644 drivers/regulator/act8865-regulator.c
- create mode 100644 drivers/regulator/max14577.c
- create mode 100644 include/linux/regulator/act8865.h
-
---/hqscKNKvKAHUg2m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS4QbuAAoJELSic+t+oim9ffAQAIW2L5gQTBvOm56BGgK5Hocf
-dnCMHRKeg6HptEbTB75Fe+Q1tgcfzNFnhPlcgGe0Cwnf23gjmhc9OJ+3xGteR4Nd
-B/EZsi8dF+/TCAPng4IqgrABN3qfsVKVeD3NCnwYOPdpXmxXih2Lnf4ouBTUx8JO
-V570QEUvLWwIJLNmSEjMfqC1RpjAmYkrQikTuv78pL502XDZgqufNQUPvnFuUM5b
-prZtHlULnFDcJZAPvJe6kgCvxu2AA0J1p5DFCdQ1cnStcwFILc5qqwVU8KH5+Bsd
-t+EatvC77W8nuP3A87ak7cmipIhM5lIAHb/FJqQCl/dAppvE9sURAcv2fKmnEgGp
-4KS4A3OaqP4xIMIKGOpROObmTXvICo6OgS5SPu9W8F+VmnvM22fCpD9bo+eM8tf8
-0tZ3s1cjX0+VBt4YKiSqW58w1NTzqXsjgPNjaEIUv9qSWEH7ZnOOQdanNhWtkm8s
-k4xLua6H6CpSqAXbq14KKjyjUs4uIpHiFeFyu2vqI/5ALojJxeduLVBg0D1iZvdy
-9KuOEPG7YTDJUm4PmwpzA7mGWELFqTnepTizaM2ZvQQoh9oAx0vPolVgt9lKF5Ok
-lWhRhAy7Q2doljIbWwbfrIV3KvU4JTIq6nrYLKwy9bp7YH1qZwZLR/bjx0JBnx5D
-L4TulWti6W5l3yDrXfrK
-=G3DG
------END PGP SIGNATURE-----
-
---/hqscKNKvKAHUg2m--
+Dave.
+--
+Dave Chinner
+david@fromorbit.com
