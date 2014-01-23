@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbaAWTPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:15:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35029 "EHLO
+	id S1755416AbaAWTQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:16:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaAWTGc (ORCPT
+	with ESMTP id S1752959AbaAWTGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 14:06:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 23/27] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-Date: Thu, 23 Jan 2014 11:07:00 -0800
-Message-Id: <20140123190651.092087495@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.12 22/27] md/raid5: Fix possible confusion when multiple write errors occur.
+Date: Thu, 23 Jan 2014 11:06:59 -0800
+Message-Id: <20140123190650.971999366@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -33,58 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: NeilBrown <neilb@suse.de>
 
-commit f92f455f67fef27929e6043499414605b0c94872 upstream.
+commit 1cc03eb93245e63b0b7a7832165efdc52e25b4e6 upstream.
 
-{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
-!WANT_PAGE_VIRTUAL, they're plain C functions.
+commit 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+    md: raid5 crash during degradation
 
-If someone calls them with a void *, this pointer is auto-converted to
-struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
+Fixed a crash in an overly simplistic way which could leave
+R5_WriteError or R5_MadeGood set in the stripe cache for devices
+for which it is no longer relevant.
+When those devices are removed and spares added the flags are still
+set and can cause incorrect behaviour.
 
-  drivers/md/bcache/bset.c: In function `__btree_sort':
-  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
-  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
+commit 14a75d3e07c784c004b4b44b34af996b8e4ac453
+    md/raid5: preferentially read from replacement device if possible.
 
-Convert them to static inline functions to fix this.  There are already
-plenty of users of struct page members inside <linux/mm.h>, so there's
-no reason to keep them as macros.
+Fixed the same bug if a more effective way, so we can now revert
+the original commit.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Fixes: 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mm.h |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/md/raid5.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -762,11 +762,14 @@ static __always_inline void *lowmem_page
- #endif
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3502,7 +3502,7 @@ static void analyse_stripe(struct stripe
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
  
- #if defined(WANT_PAGE_VIRTUAL)
--#define page_address(page) ((page)->virtual)
--#define set_page_address(page, address)			\
--	do {						\
--		(page)->virtual = (address);		\
--	} while(0)
-+static inline void *page_address(const struct page *page)
-+{
-+	return page->virtual;
-+}
-+static inline void set_page_address(struct page *page, void *address)
-+{
-+	page->virtual = address;
-+}
- #define page_address_init()  do { } while(0)
- #endif
- 
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3515,7 +3515,7 @@ static void analyse_stripe(struct stripe
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
 
 
