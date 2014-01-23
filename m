@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524AbaAWSpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:45:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34708 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaAWSjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753239AbaAWSjP (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Jan 2014 13:39:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaAWSjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:39:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hollmann <hollmann@in.tum.de>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 09/23] hwmon: (coretemp) Fix truncated name of alarm attributes
-Date: Thu, 23 Jan 2014 10:39:42 -0800
-Message-Id: <20140123183901.125504380@linuxfoundation.org>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.10 06/23] staging: comedi: addi_apci_1032: fix subdevice type/flags bug
+Date: Thu, 23 Jan 2014 10:39:39 -0800
+Message-Id: <20140123183900.671021050@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -29,34 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit 3f9aec7610b39521c7c69d754de7265f6994c194 upstream.
+commit 90daf69a7a3f1d1a41018c799968a0bb896d65e0 upstream.
 
-When the core number exceeds 9, the size of the buffer storing the
-alarm attribute name is insufficient and the attribute name is
-truncated. This causes libsensors to skip these attributes as the
-truncated name is not recognized.
+The SDF_CMD_READ should be one of the s->subdev_flags not part of
+the s->type.
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/coretemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/addi_apci_1032.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in
- 
- #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
- #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
--#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
-+#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
- #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -332,8 +332,8 @@ static int apci1032_auto_attach(struct c
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
 
 
