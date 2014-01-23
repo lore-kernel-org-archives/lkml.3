@@ -1,77 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaAWNyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:54:37 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45032 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaAWNyf (ORCPT
+	id S1753697AbaAWN47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:56:59 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:54224 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaAWN45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:54:35 -0500
-Date: Thu, 23 Jan 2014 14:54:32 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-Message-ID: <20140123135430.GB13345@localhost.localdomain>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
- <CALZhoSRvhqJXU=z=h30SS6USjHFe3yKLsJN9WzQr6ch0sxoN-g@mail.gmail.com>
- <CAKohpokbb3ko3sW4kuDKZSoY1qJ6apVVR3-jpv=7m5ZX__YP8Q@mail.gmail.com>
- <20140120154058.GA9436@localhost.localdomain>
- <CALZhoSTzGH+mAB-Om=3dQTgQJriDmH+is_DEAzWNN7rRpzNFuQ@mail.gmail.com>
+	Thu, 23 Jan 2014 08:56:57 -0500
+Message-ID: <52E11F9D.7040205@gmail.com>
+Date: Thu, 23 Jan 2014 14:56:45 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSTzGH+mAB-Om=3dQTgQJriDmH+is_DEAzWNN7rRpzNFuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: mtk.manpages@gmail.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (gmail)" <mtk.manpages@gmail.com>
+Subject: [PATCH] ipc: Fix 2 bugs in msgrcv() MSG_COPY implementation
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 10:07:58AM +0800, Lei Wen wrote:
-> On Mon, Jan 20, 2014 at 11:41 PM, Frederic Weisbecker
-> <fweisbec@gmail.com> wrote:
-> > On Mon, Jan 20, 2014 at 08:30:10PM +0530, Viresh Kumar wrote:
-> >> On 20 January 2014 19:29, Lei Wen <adrian.wenl@gmail.com> wrote:
-> >> > Hi Viresh,
-> >>
-> >> Hi Lei,
-> >>
-> >> > I have one question regarding unbounded workqueue migration in your case.
-> >> > You use hotplug to migrate the unbounded work to other cpus, but its cpu mask
-> >> > would still be 0xf, since cannot be changed by cpuset.
-> >> >
-> >> > My question is how you could prevent this unbounded work migrate back
-> >> > to your isolated cpu?
-> >> > Seems to me there is no such mechanism in kernel, am I understand wrong?
-> >>
-> >> These workqueues are normally queued back from workqueue handler. And we
-> >> normally queue them on the local cpu, that's the default behavior of workqueue
-> >> subsystem. And so they land up on the same CPU again and again.
-> >
-> > But for workqueues having a global affinity, I think they can be rescheduled later
-> > on the old CPUs. Although I'm not sure about that, I'm Cc'ing Tejun.
-> 
-> Agree, since worker thread is made as enterring into all cpus, it
-> cannot prevent scheduler
-> do the migration.
-> 
-> But here is one point, that I see Viresh alredy set up two cpuset with
-> scheduler load balance
-> disabled, so it should stop the task migration between those two groups? Since
-> the sched_domain changed?
-> 
-> What is more, I also did  similiar test, and find when I set two such
-> cpuset group,
-> like core 0-2 to cpuset1, core 3 to cpuset2, while hotunplug the core3
-> afterwise.
-> I find the cpuset's cpus member becomes NULL even I hotplug the core3
-> back again.
-> So is it a bug?
+Hello Stanislav, Pavel,
 
-Not sure, you may need to check cpuset internals.
+While documenting the msgrcv() MSG_COPY flag that you (Stanislaw) added 
+in commit 4a674f34ba04a002244edaf891b5da7fc1473ae8 (==> kernel 3.8), 
+I've come across a  couple of bugs in the implementation.  
+
+Could you please review/ack/nack my patch to resolve these bugs, and 
+then I'll resubmit, probably also tagging the patch for -stable.
+
+The two bugs concern MSG_COPY interactions with other flags, namely:
+
+(A) MSG_COPY + MSG_EXCEPT
+(B) MSG_COPY + !IPC_NOWAIT
+
+The bugs are distinct (and the fix for the first one is obvious), 
+however my proposed fix for both is a single-line patch, which
+is why I'm combining them in a single mail, rather than writing 
+two mails+patches. (If the fix for the second problem should be
+something other than I propose, then two patches might be needed...)
+
+===== (A) MSG_COPY + MSG_EXCEPT =====
+
+With the addition of the MSG_COPY flag, there are now two msgrcv() flags, 
+MSG_COPY and MSG_EXCEPT, that modify the meaning of the 'msgtyp' argument 
+in unrelated ways. Specifying both in the same call is a logical error 
+that is currently permitted, with the effect that MSG_COPY has priority 
+and MSG_EXCEPT is ignored. The call should give an error for this case. 
+The patch below implements that behavior.
+
+===== (B) (B) MSG_COPY + !IPC_NOWAIT =====
+
+The test code that was submitted in commit 
+3a665531a3b7c2ad2c87903b24646be6916340e4 shows MSG_COPY being used in 
+conjunction with IPC_NOWAIT. In other words, if there is no message 
+at the position 'msgtyp'. return immediately with the error in ENOMSG.
+
+What was not (fully) tested is the behavior if MSG_COPY is specified 
+*without* IPC_NOWAIT, and there is an odd behavior. If the queue contains 
+less than 'msgtyp' messages, then the call blocks until the next message
+is written to the queue. At that point, the msgrcv() call returns a copy
+of the newly added message, regardless of whether that message is at the
+ordinal position 'msgtyp'. This is clearly bogus, and problematic for 
+applications that might want to make use of the MSG_COPY flag.
+
+I see the following possible solutions to this problem:
+
+(1) Force the call to block until a message *does* appear at the position 
+    'msgtyp'.
+
+(2) If the MSG_COPY flag is specified, the kernel should implicitly add 
+    IPC_NOWAIT, so that the call fails with ENOMSG for this case.
+
+(3) If the MSG_COPY flag is specified, but IPC_NOWAIT is not, generate an 
+    error (probably, EINVAL is the right one).
+
+I do not know if any application would really want to have the functionality
+of solution (1), especially since an application can determine in advance
+the number of messages in the queue using msgctl() IPC_STAT. Obviously, this
+solution would be the most work to implement. 
+
+Solution (2) would have the effect of silently fixing any applications that 
+tried to employ broken behavior. However, it would mean that if we later 
+decided to implement solution (1), then user-space could not easily detect 
+what the kernel supports (but, since I'm somewhat doubtful that solution (1) 
+is needed, I'm not sure that this is much of a problem).
+
+Solution (3) would have the effect of informing broken applications that 
+they are doing something broken. The downside is that this would cause a
+ABI breakage for any applications that are currently employing the broken
+behavior. However:
+
+a) Those applications are almost certainly not getting the results they
+   expect.
+b) Probably, those applications don't even exist, because MSG_COPY is 
+    currently hidden behind CONFIG_CHECKPOINT_RESTORE.
+
+The upside of solution (3) is that if we later decided to implement 
+solution (1), user-space could determine what the kernel supports,
+via the error return.
+
+I think solution (3) is mildly preferable to solution (2), and
+solution (1) could still be done later if anyone really cares.
+The patch below implements solution (3).
+
+Cheers,
+
+Michael
+
+PS For anyone out there still listening, it's the usual story:
+documenting an API (and the thinking about, and the testing of the API,
+that documentation  entails) is the one of the single best ways of 
+finding bugs in the API, as  I've learned from a lot of experience. 
+Best to do that documentation before releasing the API.
+
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+
+---
+
+diff -ruNp linux-3.13/ipc/msg.c linux-3.13-msg_copy-fix/ipc/msg.c
+--- linux-3.13/ipc/msg.c	2014-01-23 14:13:22.989383573 +0100
++++ linux-3.13-msg_copy-fix/ipc/msg.c	2014-01-23 13:03:09.600538370 +0100
+@@ -885,6 +885,8 @@ long do_msgrcv(int msqid, void __user *b
+ 		return -EINVAL;
+ 
+ 	if (msgflg & MSG_COPY) {
++		if ((msgflg & MSG_EXCEPT) || !(msgflg & IPC_NOWAIT))
++			return -EINVAL;
+ 		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
+ 		if (IS_ERR(copy))
+ 			return PTR_ERR(copy);
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
