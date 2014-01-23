@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaAWVOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:14:44 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:46769 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323AbaAWVOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:14:43 -0500
-Message-ID: <1390511676.20232.54.camel@bobble.lax.corp.google.com>
-Subject: Re: Crash in elevator_dispatch_fn() (e.g. deadline_dispatch()) when
- changing elevators.
-From: Frank Mayhar <fmayhar@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Date: Thu, 23 Jan 2014 13:14:36 -0800
-In-Reply-To: <20140123185642.GA29712@htj.dyndns.org>
-References: <1389995976.20232.27.camel@bobble.lax.corp.google.com>
-	 <20140118143145.GD3640@htj.dyndns.org>
-	 <1390319905.20232.38.camel@bobble.lax.corp.google.com>
-	 <1390405618.20232.42.camel@bobble.lax.corp.google.com>
-	 <1390502313.20232.49.camel@bobble.lax.corp.google.com>
-	 <20140123185642.GA29712@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753288AbaAWVSe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:18:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbaAWVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 16:18:33 -0500
+Message-ID: <52E18720.4060008@redhat.com>
+Date: Thu, 23 Jan 2014 22:18:24 +0100
+From: Nikolay Aleksandrov <nikolay@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Zoltan Kiss <zoltan.kiss@citrix.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] bonding: Use do_div to divide 64 bit numbers
+References: <1390502838-21581-1-git-send-email-zoltan.kiss@citrix.com> <52E17F40.4040004@redhat.com>
+In-Reply-To: <52E17F40.4040004@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-23 at 13:56 -0500, Tejun Heo wrote:
-> On Thu, Jan 23, 2014 at 10:38:33AM -0800, Frank Mayhar wrote:
-> > On Wed, 2014-01-22 at 07:46 -0800, Frank Mayhar wrote:
-> > > On Tue, 2014-01-21 at 07:58 -0800, Frank Mayhar wrote:
-> > > > Replacing?  Or adding to?  Is BYPASS always set when DYING is set?  (My
-> > > > guess is not but I haven't done an exhaustive analysis.)  So the
-> > > > relevant code snippet in __elv_next_request() would be:
-> > > > 		if (unlikely(blk_queue_dying(q)) ||
-> > > > 		    unlikely(blk_queue_bypass(q)) ||
-> > > > 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
-> > > > 			return NULL;
-> > > 
-> > > FYI, I've made this change and tested it.  I can't say for certain that
-> > > it fixes the crash (since it's one of those races that's difficult to
-> > > reproduce), but it does seem to pass all the tests I've thrown at it so
-> > > far.
-> > 
-> > Um, does anyone care about this?  Tejun?  Jens?  Anyone?
-> > 
-> > This is a real crash; it would be nice if someone would weigh in.
+On 01/23/2014 09:44 PM, Nikolay Aleksandrov wrote:
+> On 01/23/2014 07:47 PM, Zoltan Kiss wrote:
+>> Nikolay Aleksandrov's recent bonding option API changes (25a9b54a and e4994612)
+>> introduced u64 as the type of downdelay and updelay. On 32 bit the division and
+>> modulo operations cause compile errors:
+>>
+>> ERROR: "__udivdi3" [drivers/net/bonding/bonding.ko] undefined!
+>> ERROR: "__umoddi3" [drivers/net/bonding/bonding.ko] undefined!
+>>
+>> This patch use the do_div macro, which guaranteed to do the right thing.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> ---
+>>  drivers/net/bonding/bond_options.c |   19 +++++++++++--------
+>>  1 file changed, 11 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
+>> index 4cee04a..4f94907 100644
+>> --- a/drivers/net/bonding/bond_options.c
+>> +++ b/drivers/net/bonding/bond_options.c
+>> @@ -18,6 +18,7 @@
+>>  #include <linux/rcupdate.h>
+>>  #include <linux/ctype.h>
+>>  #include <linux/inet.h>
+>> +#include <asm/div64.h>
+>>  #include "bonding.h"
+>>  
+>>  static struct bond_opt_value bond_mode_tbl[] = {
+>> @@ -727,19 +728,20 @@ int bond_option_miimon_set(struct bonding *bond, struct bond_opt_value *newval)
+>>  
+>>  int bond_option_updelay_set(struct bonding *bond, struct bond_opt_value *newval)
+>>  {
+>> +	u64 quotient = newval->value;
+>> +	u64 remainder = do_div(quotient, bond->params.miimon);
+> Hi Zoltan,
+> Thanks for fixing this, a few comments though:
+> bond->params.miimon can be 0 here that's why there's a check afterwards,
+> also please separate the local variable definitions from the body with a
+> new line.
+> The same applies for downdelay.
 > 
-> Yeah, we're gonna fix this and I *think* replacing dying with bypass
-> is the right thing to do as a queue is always bypassing when killed.
-> It's probably just that we're in the earlier part of the merge window
-> and I have some other things on my plate.  Will post a patch in a
-> couple days.
+> Nik
+In fact since we don't need the u64 and newval->value is limited to
+INT_MAX, can't we simply cast it to (int) and avoid the do_div entirely ?
 
-Thanks!
-
-For the record, I've seriously beaten on the change above (despite it
-maybe being redundant, it seems to do the right thing) and have seen no
-problems so far.  I've changed it to _just_ check bypass and will beat
-on that now.  If you're correct that a dying queue always has bypass set
-then I anticipate no problems.
--- 
-Frank Mayhar
-310-460-4042
+>>  	if (!bond->params.miimon) {
+>>  		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
+>>  		       bond->dev->name);
+>>  		return -EPERM;
+>>  	}
+>> -	if ((newval->value % bond->params.miimon) != 0) {
+>> +	if (remainder != 0) {
+>>  		pr_warn("%s: Warning: up delay (%llu) is not a multiple of miimon (%d), updelay rounded to %llu ms\n",
+>>  			bond->dev->name, newval->value,
+>>  			bond->params.miimon,
+>> -			(newval->value / bond->params.miimon) *
+>> -			bond->params.miimon);
+>> +			quotient * bond->params.miimon);
+>>  	}
+>> -	bond->params.updelay = newval->value / bond->params.miimon;
+>> +	bond->params.updelay = quotient;
+>>  	pr_info("%s: Setting up delay to %d.\n",
+>>  		bond->dev->name,
+>>  		bond->params.updelay * bond->params.miimon);
+>> @@ -750,19 +752,20 @@ int bond_option_updelay_set(struct bonding *bond, struct bond_opt_value *newval)
+>>  int bond_option_downdelay_set(struct bonding *bond,
+>>  			      struct bond_opt_value *newval)
+>>  {
+>> +	u64 quotient = newval->value;
+>> +	u64 remainder = do_div(quotient, bond->params.miimon);
+>>  	if (!bond->params.miimon) {
+>>  		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
+>>  		       bond->dev->name);
+>>  		return -EPERM;
+>>  	}
+>> -	if ((newval->value % bond->params.miimon) != 0) {
+>> +	if (remainder != 0) {
+>>  		pr_warn("%s: Warning: down delay (%llu) is not a multiple of miimon (%d), delay rounded to %llu ms\n",
+>>  			bond->dev->name, newval->value,
+>>  			bond->params.miimon,
+>> -			(newval->value / bond->params.miimon) *
+>> -			bond->params.miimon);
+>> +			quotient * bond->params.miimon);
+>>  	}
+>> -	bond->params.downdelay = newval->value / bond->params.miimon;
+>> +	bond->params.downdelay = quotient;
+>>  	pr_info("%s: Setting down delay to %d.\n",
+>>  		bond->dev->name,
+>>  		bond->params.downdelay * bond->params.miimon);
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
