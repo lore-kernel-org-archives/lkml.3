@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaAWRPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:15:41 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:55455 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175AbaAWRPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:15:39 -0500
+	id S1754043AbaAWRZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:25:43 -0500
+Received: from sauhun.de ([89.238.76.85]:37892 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061AbaAWRZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 12:25:41 -0500
+Date: Thu, 23 Jan 2014 18:25:34 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Curt Brune <curt@cumulusnetworks.com>,
+        Thomas De Schampheleire <patrickdepinguin@gmail.com>,
+        gregkh@linuxfoundation.org,
+        Shrijeet Mukherjee <shm@cumulusnetworks.com>, wolfram@the-dreams.de,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Add at24 based EEPROMs to the eeprom_dev hardware
+ class
+Message-ID: <20140123172534.GA2665@katana>
+References: <CAOMwXhMVgcVVWiUYbEgGcM+K5bZmKA3LO0=jZCEsyJak1TbTSA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52E14D67.4000202@hp.com>
-References: <1390426438-31252-1-git-send-email-Waiman.Long@hp.com>
-	<1390426438-31252-2-git-send-email-Waiman.Long@hp.com>
-	<20140123100751.GS30183@twins.programming.kicks-ass.net>
-	<52E14D67.4000202@hp.com>
-Date: Thu, 23 Jan 2014 09:15:38 -0800
-X-Google-Sender-Auth: DHfwhUOy8p87kL6q0YJM5iOvtX4
-Message-ID: <CA+55aFzhx6K9A62ve6E5X4juvNPewED_g1nWwq+-EY0fd0A-0g@mail.gmail.com>
-Subject: Re: [PATCH v10 1/4] qrwlock: A queue read/write lock implementation
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhMVgcVVWiUYbEgGcM+K5bZmKA3LO0=jZCEsyJak1TbTSA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 9:12 AM, Waiman Long <waiman.long@hp.com> wrote:
->
-> I thought that all atomic RMW instructions are memory barrier.
 
-On x86 they are. Not necessarily elsewhere.
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> If they are not, what kind of barrier should be added?
+Hi,
 
-smp_mb__before_atomic_xyz() and smp_mb__after_atomic_xyz() will do it,
-and are no-op (well, barriers - I don't think it matters) on x86.
+No need to quote the whole message if you reply only to a bit of it.
 
-            Linus
+> >  module_init(at24_init);
+> >
+> >  static void __exit at24_exit(void)
+> >  {
+> >         i2c_del_driver(&at24_driver);
+> >  }
+> >  module_exit(at24_exit);
+>=20
+> Couldn't you use module_i2c_driver() instead of this?
+
+He didn't write that code. It doesn't have a + at the beginning. He used
+the whole driver as context, which is highly unusual. A context of 3
+lines is usually good enough.
+
+>=20
+> >  MODULE_DESCRIPTION("Driver for most I2C EEPROMs");
+> >  MODULE_AUTHOR("David Brownell and Wolfram Sang");
+>=20
+> I would personally put your name in here if I were you, otherwise
+> David and Wolfram might get contacted by some people instead of you
+> (at least based on this).
+
+See above. He changed only 10 lines. Not enough for copyright IMO.
+
+> PS.: Fixing the broken i2c mailing list typo, and updating Wolfram's
+> address from the broken (obsolete?) version.
+
+It came through to the i2c list? What was wrong?
+
+Regards,
+
+   Wolfram
+
+
+--wac7ysb48OaltWcw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS4VCOAAoJEBQN5MwUoCm2Q+4P/0syFsu28rnYJF88Yb1p9gCs
++f5C/fWMVgG11IKKp0HvbNzdrhtUisQK5hRN+U5ofCp5gkGIb7TRncFlxiqYeuXV
+C9SzpGWBiTBxiuzkagJrsvm/JKn0e1GferpDZKEHRpdRsLXYDqXtZpbnONUE2sV9
+MEn4cYnW8CfH8+glETMokOY7Ec+1XZgwLmjaGgIa0G4ZekKQrl9DqxT5DZGNwyOo
+oAB45+l9ZcgCzT5ldrApogsBrlwqbLdTKpu35PrtOvGnGSWZHMsTCqj9RDpArg2V
+pR1m4F4quPYqV3AegsycyI8eLDC7U5OtFqA5JzSOYCvf9k6/uoz1cLbqWl1y4HWr
+144lh/aSKeVHNlD6C8PDYuIc5g6rSGRM4LaKkiowzLH2BXm77YWcxZN+24+9bsVN
+UGsjJ4GNB3VYkseq7aHp5M3Donu+3mSh75veMGUT8+r5T+msgUAXQqTABXWuPW5G
+T0bwK2aFC6+xvMLQ4RMotejhHjqxBfObuZUYoUNhSPXorzsED9zjK27DchKfO4B9
+ep8oUnne3gNRA5R5i96Xc+wKXgc6XLyLm0QZGZIKfICyRvkcdq0ySl8rkTARLyYz
+JNVzzmo6r8iyDqMLJqcM0qHA5aExjSyCIkiIG4U3hVA7dMqt09H7rA9iXBgZcVPx
+IRjuIEpGW6OBjlVOslKX
+=3TrP
+-----END PGP SIGNATURE-----
+
+--wac7ysb48OaltWcw--
