@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaAWSmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:42:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34736 "EHLO
+	id S1754898AbaAWSmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:42:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087AbaAWSjT (ORCPT
+	with ESMTP id S1753462AbaAWSjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 13:39:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Damian Nowak <spam@nowaker.net>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 17/23] md/raid10: fix bug when raid10 recovery fails to recover a block.
-Date: Thu, 23 Jan 2014 10:39:50 -0800
-Message-Id: <20140123183902.282153245@linuxfoundation.org>
+        Andrei Warkentin <andreiw@vmware.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 16/23] md: fix problem when adding device to read-only array with bitmap.
+Date: Thu, 23 Jan 2014 10:39:49 -0800
+Message-Id: <20140123183902.165598811@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -30,52 +30,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
+commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97 upstream.
 
-commit e875ecea266a543e643b19e44cf472f1412708f9
-    md/raid10 record bad blocks as needed during recovery.
+If an array is started degraded, and then the missing device
+is found it can be re-added and a minimal bitmap-based recovery
+will bring it fully up-to-date.
 
-added code to the "cannot recover this block" path to record a bad
-block rather than fail the whole recovery.
-Unfortunately this new case was placed *after* r10bio was freed rather
-than *before*, yet it still uses r10bio.
-This is will crash with a null dereference.
+If the array is read-only a recovery would not be allowed.
+But also if the array is read-only and the missing device was
+present very recently, then there could be no need for any
+recovery at all, so we simply include the device in the read-only
+array without any recovery.
 
-So move the freeing of r10bio down where it is safe.
+However... if the missing device was removed a little longer ago
+it could be missing some updates, but if a bitmap is present it will
+be conditionally accepted pending a bitmap-based update.  We don't
+currently detect this case properly and will include that old
+device into the read-only array with no recovery even though it really
+needs a recovery.
 
-Fixes: e875ecea266a543e643b19e44cf472f1412708f9
-Reported-by: Damian Nowak <spam@nowaker.net>
-URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+This patch keeps track of whether a bitmap-based-recovery is really
+needed or not in the new Bitmap_sync rdev flag.  If that is set,
+then the device will not be added to a read-only array.
+
+Cc: Andrei Warkentin <andreiw@vmware.com>
+Fixes: d70ed2e4fafdbef0800e73942482bb075c21578b
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/md.c |   18 +++++++++++++++---
+ drivers/md/md.h |    3 +++
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3198,10 +3198,6 @@ static sector_t sync_request(struct mdde
- 			if (j == conf->copies) {
- 				/* Cannot recover, so abort the recovery or
- 				 * record a bad block */
--				put_buf(r10_bio);
--				if (rb2)
--					atomic_dec(&rb2->remaining);
--				r10_bio = rb2;
- 				if (any_working) {
- 					/* problem is that there are bad blocks
- 					 * on other device(s)
-@@ -3233,6 +3229,10 @@ static sector_t sync_request(struct mdde
- 					mirror->recovery_disabled
- 						= mddev->recovery_disabled;
- 				}
-+				put_buf(r10_bio);
-+				if (rb2)
-+					atomic_dec(&rb2->remaining);
-+				r10_bio = rb2;
- 				break;
- 			}
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1118,6 +1118,7 @@ static int super_90_validate(struct mdde
+ 	rdev->raid_disk = -1;
+ 	clear_bit(Faulty, &rdev->flags);
+ 	clear_bit(In_sync, &rdev->flags);
++	clear_bit(Bitmap_sync, &rdev->flags);
+ 	clear_bit(WriteMostly, &rdev->flags);
+ 
+ 	if (mddev->raid_disks == 0) {
+@@ -1196,6 +1197,8 @@ static int super_90_validate(struct mdde
+ 		 */
+ 		if (ev1 < mddev->bitmap->events_cleared)
+ 			return 0;
++		if (ev1 < mddev->events)
++			set_bit(Bitmap_sync, &rdev->flags);
+ 	} else {
+ 		if (ev1 < mddev->events)
+ 			/* just a hot-add of a new device, leave raid_disk at -1 */
+@@ -1604,6 +1607,7 @@ static int super_1_validate(struct mddev
+ 	rdev->raid_disk = -1;
+ 	clear_bit(Faulty, &rdev->flags);
+ 	clear_bit(In_sync, &rdev->flags);
++	clear_bit(Bitmap_sync, &rdev->flags);
+ 	clear_bit(WriteMostly, &rdev->flags);
+ 
+ 	if (mddev->raid_disks == 0) {
+@@ -1686,6 +1690,8 @@ static int super_1_validate(struct mddev
+ 		 */
+ 		if (ev1 < mddev->bitmap->events_cleared)
+ 			return 0;
++		if (ev1 < mddev->events)
++			set_bit(Bitmap_sync, &rdev->flags);
+ 	} else {
+ 		if (ev1 < mddev->events)
+ 			/* just a hot-add of a new device, leave raid_disk at -1 */
+@@ -2829,6 +2835,7 @@ slot_store(struct md_rdev *rdev, const c
+ 		else
+ 			rdev->saved_raid_disk = -1;
+ 		clear_bit(In_sync, &rdev->flags);
++		clear_bit(Bitmap_sync, &rdev->flags);
+ 		err = rdev->mddev->pers->
+ 			hot_add_disk(rdev->mddev, rdev);
+ 		if (err) {
+@@ -5761,6 +5768,7 @@ static int add_new_disk(struct mddev * m
+ 			    info->raid_disk < mddev->raid_disks) {
+ 				rdev->raid_disk = info->raid_disk;
+ 				set_bit(In_sync, &rdev->flags);
++				clear_bit(Bitmap_sync, &rdev->flags);
+ 			} else
+ 				rdev->raid_disk = -1;
+ 		} else
+@@ -7694,7 +7702,8 @@ static int remove_and_add_spares(struct
+ 		if (test_bit(Faulty, &rdev->flags))
+ 			continue;
+ 		if (mddev->ro &&
+-		    rdev->saved_raid_disk < 0)
++		    ! (rdev->saved_raid_disk >= 0 &&
++		       !test_bit(Bitmap_sync, &rdev->flags)))
+ 			continue;
+ 
+ 		rdev->recovery_offset = 0;
+@@ -7775,9 +7784,12 @@ void md_check_recovery(struct mddev *mdd
+ 			 * As we only add devices that are already in-sync,
+ 			 * we can activate the spares immediately.
+ 			 */
+-			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			remove_and_add_spares(mddev, NULL);
+-			mddev->pers->spare_active(mddev);
++			/* There is no thread, but we need to call
++			 * ->spare_active and clear saved_raid_disk
++			 */
++			md_reap_sync_thread(mddev);
++			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
  		}
+ 
+--- a/drivers/md/md.h
++++ b/drivers/md/md.h
+@@ -129,6 +129,9 @@ struct md_rdev {
+ enum flag_bits {
+ 	Faulty,			/* device is known to have a fault */
+ 	In_sync,		/* device is in_sync with rest of array */
++	Bitmap_sync,		/* ..actually, not quite In_sync.  Need a
++				 * bitmap-based recovery to get fully in sync
++				 */
+ 	Unmerged,		/* device is being added to array and should
+ 				 * be considerred for bvec_merge_fn but not
+ 				 * yet for actual IO
 
 
