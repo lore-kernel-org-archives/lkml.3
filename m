@@ -1,181 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaAWDZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 22:25:46 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:37423 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaAWDZo (ORCPT
+	id S1753333AbaAWD26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 22:28:58 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64828 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394AbaAWD25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 22:25:44 -0500
+	Wed, 22 Jan 2014 22:28:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5BhZspH3FfDh+3z0xBpgxWEHK1Fa5KOYsN5og2VfGktXQ@mail.gmail.com>
+In-Reply-To: <20140123030103.GC18520@pek-lwang0-d1>
 References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
-	<20140122164100.GE15937@n2100.arm.linux.org.uk>
-	<CACUGKYPakuAGOWb+RetqNhEBvRP-+Pmtu2_4a2zuV0bFR0QJRA@mail.gmail.com>
-	<CAOMZO5BhZspH3FfDh+3z0xBpgxWEHK1Fa5KOYsN5og2VfGktXQ@mail.gmail.com>
-Date: Wed, 22 Jan 2014 19:25:42 -0800
-Message-ID: <CACUGKYMwFVKqQAVoXkE8vgzYXQXnZYtsYeHEDY20XiqcT-Drnw@mail.gmail.com>
+	<20140123030103.GC18520@pek-lwang0-d1>
+Date: Wed, 22 Jan 2014 19:28:55 -0800
+Message-ID: <CACUGKYO-k0isyOvYtRMDQoSD+QrrifzLmpMZVG9tN_cfOX5Dcw@mail.gmail.com>
 Subject: Re: Internal error: Oops: 17 [#1] ARM
 From: John Tobias <john.tobias.ph@gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dong Aisheng <b29396@freescale.com>,
+To: walimis <walimisdev@gmail.com>
+Cc: "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: multipart/mixed; boundary=001a11c26818e141d504f09acb54
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c26818e141d504f09acb54
-Content-Type: text/plain; charset=ISO-8859-1
+Hi Liming,
 
-Hi Fabio,
-
-Attached are the two patch files that I applied in the 3.13 released
-so that the kernel will detect my eMMC in DDR50.
-(let me correct my previous email, I was mentioning SDR50 but it
-should be DDR50).
-eMMC info:
-
-clock:          52000000 Hz
-actual clock:   49500000 Hz
-vdd:            21 (3.3 ~ 3.4 V)
-bus mode:       2 (push-pull)
-chip select:    0 (don't care)
-power mode:     2 (on)
-bus width:      3 (8 bits)
-timing spec:    1 (mmc high-speed)
-signal voltage: 0 (3.30 V)
-
-I reboot my device often and it shows during the reboot.
+Yes, I am using 4.8.1. I switched back to 4.7.3 and will test it again
+if I can re-produce it.
 
 Regards,
 
 john
 
-
-
-
-On Wed, Jan 22, 2014 at 6:28 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> On Wed, Jan 22, 2014 at 9:49 PM, John Tobias <john.tobias.ph@gmail.com> wrote:
->> Hello all,
+On Wed, Jan 22, 2014 at 7:01 PM, walimis <walimisdev@gmail.com> wrote:
+> On Wed, Jan 22, 2014 at 08:23:36AM -0800, John Tobias wrote:
+>>Hello all,
 >>
->> Just to confirm that the error I posted previously exist in 3.13
->> released. Just be noted that some patches related to eMMC/sdhci has
->> been applied in order to boot the 3.13 on my board.
->> Addition to that, I was getting additional errors (please see below):
->> - It happened during the reboot.
+>>I am using 3.13-rc1 kernel on iMX6SL processor. My filesystem is in
+>>eMMC running SDR50.
+>>Is anyone here encountered these problem and if there's any existing
+>>patch that I can get?.
+> hi,
+>
+> Do you use gcc 4.8.1? If so, maybe you should look at following link
+> to see whether it's a similar issue.
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
+>
+> Liming Wang
+>
 >>
->> Cc'ng Dong Aisheng.
->
-> What are the steps to reproduce this? Which SoC are you using?
->
-> Regards,
->
-> Fabio Estevam
-
---001a11c26818e141d504f09acb54
-Content-Type: application/octet-stream; name="sdhci-esdhc-imx.patch"
-Content-Disposition: attachment; filename="sdhci-esdhc-imx.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqrg6nb90
-
-LS0tIC4uLy4uL2xpbnV4LTMuMTMvZHJpdmVycy9tbWMvaG9zdC9zZGhjaS1lc2RoYy1pbXguYwky
-MDE0LTAxLTE5IDE4OjQwOjA3LjAwMDAwMDAwMCAtMDgwMAorKysgZHJpdmVycy9tbWMvaG9zdC9z
-ZGhjaS1lc2RoYy1pbXguYwkyMDE0LTAxLTIyIDE4OjUxOjA3LjA1MTI3NTUxOCAtMDgwMApAQCAt
-Mzg1LDYgKzM4NSwyMiBAQAogCQlyZXR1cm4gcmV0OwogCX0KIAorCWlmICh1bmxpa2VseShyZWcg
-PT0gU0RIQ0lfVFJBTlNGRVJfTU9ERSkpIHsKKwkJaWYgKGVzZGhjX2lzX3VzZGhjKGlteF9kYXRh
-KSkgeworCQkJdTMyIG0gPSByZWFkbChob3N0LT5pb2FkZHIgKyBFU0RIQ19NSVhfQ1RSTCk7CisJ
-CQlyZXQgPSBtICYgRVNESENfTUlYX0NUUkxfU0RIQ0lfTUFTSzsKKwkJCS8qIFN3YXAgQUMyMyBi
-aXQgKi8KKwkJCWlmIChtICYgRVNESENfTUlYX0NUUkxfQUMyM0VOKSB7CisJCQkJcmV0ICY9IH5F
-U0RIQ19NSVhfQ1RSTF9BQzIzRU47CisJCQkJcmV0IHw9IFNESENJX1RSTlNfQVVUT19DTUQyMzsK
-KwkJCX0KKwkJfSBlbHNlIHsKKwkJCXJldCA9IHJlYWR3KGhvc3QtPmlvYWRkciArIFNESENJX1RS
-QU5TRkVSX01PREUpOworCQl9CisKKwkJcmV0dXJuIHJldDsKKwl9CisKIAlyZXR1cm4gcmVhZHco
-aG9zdC0+aW9hZGRyICsgcmVnKTsKIH0KIApAQCAtNTU4LDE5ICs1NzQsMTcgQEAKIAlzdHJ1Y3Qg
-cGx0Zm1faW14X2RhdGEgKmlteF9kYXRhID0gcGx0Zm1faG9zdC0+cHJpdjsKIAlzdHJ1Y3QgZXNk
-aGNfcGxhdGZvcm1fZGF0YSAqYm9hcmRkYXRhID0gJmlteF9kYXRhLT5ib2FyZGRhdGE7CiAKLQl1
-MzIgZl9ob3N0ID0gY2xrX2dldF9yYXRlKHBsdGZtX2hvc3QtPmNsayk7Ci0KLQlpZiAoYm9hcmRk
-YXRhLT5mX21heCAmJiAoYm9hcmRkYXRhLT5mX21heCA8IGZfaG9zdCkpCisJaWYgKGJvYXJkZGF0
-YS0+Zl9tYXggJiYgKGJvYXJkZGF0YS0+Zl9tYXggPCBwbHRmbV9ob3N0LT5jbG9jaykpCiAJCXJl
-dHVybiBib2FyZGRhdGEtPmZfbWF4OwogCWVsc2UKLQkJcmV0dXJuIGZfaG9zdDsKKwkJcmV0dXJu
-IHBsdGZtX2hvc3QtPmNsb2NrOwogfQogCiBzdGF0aWMgdW5zaWduZWQgaW50IGVzZGhjX3BsdGZt
-X2dldF9taW5fY2xvY2soc3RydWN0IHNkaGNpX2hvc3QgKmhvc3QpCiB7CiAJc3RydWN0IHNkaGNp
-X3BsdGZtX2hvc3QgKnBsdGZtX2hvc3QgPSBzZGhjaV9wcml2KGhvc3QpOwogCi0JcmV0dXJuIGNs
-a19nZXRfcmF0ZShwbHRmbV9ob3N0LT5jbGspIC8gMjU2IC8gMTY7CisJcmV0dXJuIHBsdGZtX2hv
-c3QtPmNsb2NrIC8gMjU2IC8gMTY7CiB9CiAKIHN0YXRpYyBpbmxpbmUgdm9pZCBlc2RoY19wbHRm
-bV9zZXRfY2xvY2soc3RydWN0IHNkaGNpX2hvc3QgKmhvc3QsCkBAIC01NzgsNyArNTkyLDcgQEAK
-IHsKIAlzdHJ1Y3Qgc2RoY2lfcGx0Zm1faG9zdCAqcGx0Zm1faG9zdCA9IHNkaGNpX3ByaXYoaG9z
-dCk7CiAJc3RydWN0IHBsdGZtX2lteF9kYXRhICppbXhfZGF0YSA9IHBsdGZtX2hvc3QtPnByaXY7
-Ci0JdW5zaWduZWQgaW50IGhvc3RfY2xvY2sgPSBjbGtfZ2V0X3JhdGUocGx0Zm1faG9zdC0+Y2xr
-KTsKKwl1bnNpZ25lZCBpbnQgaG9zdF9jbG9jayA9IHBsdGZtX2hvc3QtPmNsb2NrOwogCWludCBw
-cmVfZGl2ID0gMjsKIAlpbnQgZGl2ID0gMTsKIAl1MzIgdGVtcCwgdmFsOwpAQCAtODA5LDYgKzgy
-Myw3IEBACiAJCXBpbmN0cmwgPSBpbXhfZGF0YS0+cGluc18xMDBtaHo7CiAJCWJyZWFrOwogCWNh
-c2UgTU1DX1RJTUlOR19VSFNfU0RSMTA0OgorCWNhc2UgTU1DX1RJTUlOR19NTUNfSFMyMDA6CiAJ
-CXBpbmN0cmwgPSBpbXhfZGF0YS0+cGluc18yMDBtaHo7CiAJCWJyZWFrOwogCWRlZmF1bHQ6CkBA
-IC04MzYsNiArODUxLDcgQEAKIAkJaW14X2RhdGEtPnVoc19tb2RlID0gU0RIQ0lfQ1RSTF9VSFNf
-U0RSNTA7CiAJCWJyZWFrOwogCWNhc2UgTU1DX1RJTUlOR19VSFNfU0RSMTA0OgorCWNhc2UgTU1D
-X1RJTUlOR19NTUNfSFMyMDA6CiAJCWlteF9kYXRhLT51aHNfbW9kZSA9IFNESENJX0NUUkxfVUhT
-X1NEUjEwNDsKIAkJYnJlYWs7CiAJY2FzZSBNTUNfVElNSU5HX1VIU19ERFI1MDoKQEAgLTk3Nyw2
-ICs5OTMsNyBAQAogCiAJcGx0Zm1faG9zdC0+Y2xrID0gaW14X2RhdGEtPmNsa19wZXI7CiAKKwlw
-bHRmbV9ob3N0LT5jbG9jayA9IGNsa19nZXRfcmF0ZShwbHRmbV9ob3N0LT5jbGspOwogCWNsa19w
-cmVwYXJlX2VuYWJsZShpbXhfZGF0YS0+Y2xrX3Blcik7CiAJY2xrX3ByZXBhcmVfZW5hYmxlKGlt
-eF9kYXRhLT5jbGtfaXBnKTsKIAljbGtfcHJlcGFyZV9lbmFibGUoaW14X2RhdGEtPmNsa19haGIp
-OwpAQCAtMTA1Myw3ICsxMDcwLDcgQEAKIAkJYnJlYWs7CiAKIAljYXNlIEVTREhDX0NEX1BFUk1B
-TkVOVDoKLQkJaG9zdC0+bW1jLT5jYXBzID0gTU1DX0NBUF9OT05SRU1PVkFCTEU7CisJCWhvc3Qt
-Pm1tYy0+Y2FwcyB8PSBNTUNfQ0FQX05PTlJFTU9WQUJMRTsKIAkJYnJlYWs7CiAKIAljYXNlIEVT
-REhDX0NEX05PTkU6Cg==
---001a11c26818e141d504f09acb54
-Content-Type: application/octet-stream; name="sdhci.patch"
-Content-Disposition: attachment; filename="sdhci.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqrg6nbg1
-
-LS0tIC4uLy4uL2xpbnV4LTMuMTMvZHJpdmVycy9tbWMvaG9zdC9zZGhjaS5jCTIwMTQtMDEtMTkg
-MTg6NDA6MDcuMDAwMDAwMDAwIC0wODAwCisrKyBkcml2ZXJzL21tYy9ob3N0L3NkaGNpLmMJMjAx
-NC0wMS0yMiAxMToyMDowNy45MjIxMjA0OTUgLTA4MDAKQEAgLTg5OCw4ICs4OTgsMTMgQEAKIAl1
-MTYgbW9kZTsKIAlzdHJ1Y3QgbW1jX2RhdGEgKmRhdGEgPSBjbWQtPmRhdGE7CiAKLQlpZiAoZGF0
-YSA9PSBOVUxMKQorCWlmIChkYXRhID09IE5VTEwpIHsKKwkJLyogY2xlYXIgQXV0byBDTUQgc2V0
-dGluZ3MgZm9yIG5vIGRhdGEgQ01EcyAqLworCQltb2RlID0gc2RoY2lfcmVhZHcoaG9zdCwgU0RI
-Q0lfVFJBTlNGRVJfTU9ERSk7CisJCXNkaGNpX3dyaXRldyhob3N0LCBtb2RlICYgfihTREhDSV9U
-Uk5TX0FVVE9fQ01EMTIgfAorCQkJCVNESENJX1RSTlNfQVVUT19DTUQyMyksIFNESENJX1RSQU5T
-RkVSX01PREUpOwogCQlyZXR1cm47CisJfQogCiAJV0FSTl9PTighaG9zdC0+ZGF0YSk7CiAKQEAg
-LTEzOTEsNiArMTM5NiwxMyBAQAogCQkJCQltbWMtPmNhcmQtPnR5cGUgPT0gTU1DX1RZUEVfTU1D
-ID8KIAkJCQkJTU1DX1NFTkRfVFVOSU5HX0JMT0NLX0hTMjAwIDoKIAkJCQkJTU1DX1NFTkRfVFVO
-SU5HX0JMT0NLOworCisJCQkJLyogSGVyZSB3ZSBuZWVkIHRvIHNldCB0aGUgaG9zdC0+bXJxIHRv
-IE5VTEwsCisJCQkJICogaW4gY2FzZSB0aGUgcGVuZGluZyBmaW5pc2hfdGFza2xldAorCQkJCSAq
-IGZpbmlzaGVzIGl0IGluY29ycmVjdGx5LgorCQkJCSAqLworCQkJCWhvc3QtPm1ycSA9IE5VTEw7
-CisKIAkJCQlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJCQkJ
-c2RoY2lfZXhlY3V0ZV90dW5pbmcobW1jLCB0dW5pbmdfb3Bjb2RlKTsKIAkJCQlzcGluX2xvY2tf
-aXJxc2F2ZSgmaG9zdC0+bG9jaywgZmxhZ3MpOwpAQCAtMTg0NSwxMiArMTg1NywxMiBAQAogCXVu
-c2lnbmVkIGxvbmcgdGltZW91dDsKIAlpbnQgZXJyID0gMDsKIAlib29sIHJlcXVpcmVzX3R1bmlu
-Z19ub251aHMgPSBmYWxzZTsKKwl1bnNpZ25lZCBsb25nIGZsYWdzOwogCiAJaG9zdCA9IG1tY19w
-cml2KG1tYyk7CiAKIAlzZGhjaV9ydW50aW1lX3BtX2dldChob3N0KTsKLQlkaXNhYmxlX2lycSho
-b3N0LT5pcnEpOwotCXNwaW5fbG9jaygmaG9zdC0+bG9jayk7CisJc3Bpbl9sb2NrX2lycXNhdmUo
-Jmhvc3QtPmxvY2ssIGZsYWdzKTsKIAogCWN0cmwgPSBzZGhjaV9yZWFkdyhob3N0LCBTREhDSV9I
-T1NUX0NPTlRST0wyKTsKIApAQCAtMTg3MCwxNSArMTg4MiwxMyBAQAogCSAgICByZXF1aXJlc190
-dW5pbmdfbm9udWhzKQogCQljdHJsIHw9IFNESENJX0NUUkxfRVhFQ19UVU5JTkc7CiAJZWxzZSB7
-Ci0JCXNwaW5fdW5sb2NrKCZob3N0LT5sb2NrKTsKLQkJZW5hYmxlX2lycShob3N0LT5pcnEpOwor
-CQlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJCXNkaGNpX3J1
-bnRpbWVfcG1fcHV0KGhvc3QpOwogCQlyZXR1cm4gMDsKIAl9CiAKIAlpZiAoaG9zdC0+b3BzLT5w
-bGF0Zm9ybV9leGVjdXRlX3R1bmluZykgewotCQlzcGluX3VubG9jaygmaG9zdC0+bG9jayk7Ci0J
-CWVuYWJsZV9pcnEoaG9zdC0+aXJxKTsKKwkJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmaG9zdC0+
-bG9jaywgZmxhZ3MpOwogCQllcnIgPSBob3N0LT5vcHMtPnBsYXRmb3JtX2V4ZWN1dGVfdHVuaW5n
-KGhvc3QsIG9wY29kZSk7CiAJCXNkaGNpX3J1bnRpbWVfcG1fcHV0KGhvc3QpOwogCQlyZXR1cm4g
-ZXJyOwpAQCAtMTk1MSwxNSArMTk2MSwxMiBAQAogCQlob3N0LT5jbWQgPSBOVUxMOwogCQlob3N0
-LT5tcnEgPSBOVUxMOwogCi0JCXNwaW5fdW5sb2NrKCZob3N0LT5sb2NrKTsKLQkJZW5hYmxlX2ly
-cShob3N0LT5pcnEpOwotCisJCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUoJmhvc3QtPmxvY2ssIGZs
-YWdzKTsKIAkJLyogV2FpdCBmb3IgQnVmZmVyIFJlYWQgUmVhZHkgaW50ZXJydXB0ICovCiAJCXdh
-aXRfZXZlbnRfaW50ZXJydXB0aWJsZV90aW1lb3V0KGhvc3QtPmJ1Zl9yZWFkeV9pbnQsCiAJCQkJ
-CShob3N0LT50dW5pbmdfZG9uZSA9PSAxKSwKIAkJCQkJbXNlY3NfdG9famlmZmllcyg1MCkpOwot
-CQlkaXNhYmxlX2lycShob3N0LT5pcnEpOwotCQlzcGluX2xvY2soJmhvc3QtPmxvY2spOworCQlz
-cGluX2xvY2tfaXJxc2F2ZSgmaG9zdC0+bG9jaywgZmxhZ3MpOwogCiAJCWlmICghaG9zdC0+dHVu
-aW5nX2RvbmUpIHsKIAkJCXByX2luZm8oRFJJVkVSX05BTUUgIjogVGltZW91dCB3YWl0aW5nIGZv
-ciAiCkBAIC0yMDM0LDggKzIwNDEsNyBAQAogCQllcnIgPSAwOwogCiAJc2RoY2lfY2xlYXJfc2V0
-X2lycXMoaG9zdCwgU0RIQ0lfSU5UX0RBVEFfQVZBSUwsIGllcik7Ci0Jc3Bpbl91bmxvY2soJmhv
-c3QtPmxvY2spOwotCWVuYWJsZV9pcnEoaG9zdC0+aXJxKTsKKwlzcGluX3VubG9ja19pcnFyZXN0
-b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJc2RoY2lfcnVudGltZV9wbV9wdXQoaG9zdCk7CiAK
-IAlyZXR1cm4gZXJyOwo=
---001a11c26818e141d504f09acb54--
+>>Regards,
+>>
+>>john
+>>
+>>[ 1552.394899] Unable to handle kernel NULL pointer dereference at
+>>virtual address 00000037
+>>[ 1552.403034] pgd = beef4000
+>>[ 1552.405855] [00000037] *pgd=bef60831, *pte=00000000, *ppte=00000000
+>>[ 1552.412245] Internal error: Oops: 17 [#1] ARM
+>>[ 1552.416627] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(O)
+>>[ 1552.422249] CPU: 0 PID: 232 Comm: commsd Tainted: G           O 3.13.0-rc1 #7
+>>[ 1552.429409] task: bfbc7500 ti: bec96000 task.ti: bec96000
+>>[ 1552.434844] PC is at lookup_fast+0x5c/0x318
+>>[ 1552.439067] LR is at mark_held_locks+0x78/0x13c
+>>[ 1552.443622] pc : [<80101184>]    lr : [<80056e48>]    psr: a00f0013
+>>[ 1552.443622] sp : bec97d88  ip : 00666e6f  fp : bec97ddc
+>>[ 1552.455124] r10: 00000000  r9 : bec97e08  r8 : 80102d94
+>>[ 1552.460370] r7 : bec97e60  r6 : bf133ac8  r5 : bec97e60  r4 : bec97e00
+>>[ 1552.466918] r3 : bee4f01d  r2 : 00000000  r1 : ffffffff  r0 : ffffffff
+>>[ 1552.473471] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+>>[ 1552.480629] Control: 10c53c7d  Table: beef4059  DAC: 00000015
+>>[ 1552.486397] Process commsd (pid: 232, stack limit = 0xbec96238)
+>>[ 1552.492341] Stack: (0xbec97d88 to 0xbec98000)
+>>[ 1552.496728] 7d80:                   80102b94 80057108 bfb95310
+>>bf133ac8 bf15f4e8 bfb95310
+>>[ 1552.504936] 7da0: c08bb14d ffffffff bee4f015 00000008 bfbc7500
+>>bec97e08 00000000 00000041
+>>[ 1552.513142] 7dc0: bec97e60 bec96020 bec96000 00000000 bec97e3c
+>>bec97de0 80102d94 80101134
+>>[ 1552.521347] 7de0: bec97df8 00000000 800d982c bec96018 00000010
+>>bec97e00 00000000 bec97e08
+>>[ 1552.529553] 7e00: 8026e25c 800d97e8 bee4f000 00000ff0 80d4e3a4
+>>00000001 bee4f000 bec97e60
+>>[ 1552.537758] 7e20: ffffff9c ffffff9c bec96000 00000000 bec97e5c
+>>bec97e40 801033bc 80102c70
+>>[ 1552.545964] 7e40: bee4f000 00000001 bec97e60 bec97f00 bec97ee4
+>>bec97e60 80105dc0 80103398
+>>[ 1552.554170] 7e60: bfb95310 bf133ac8 c08bb14d 0000000b bee4f015
+>>8005992c bfb95310 bf133398
+>>[ 1552.562375] 7e80: bf15f4e8 00000041 00000002 0000008a 00000000
+>>00000000 600f0013 bec96000
+>>[ 1552.570581] 7ea0: ffffffea bf8c1840 807b4430 80115444 801156e4
+>>8011563c 00000008 00000000
+>>[ 1552.578786] 7ec0: bec97f04 733fe4e0 00000001 ffffff9c 757e3810
+>>bec97f40 bec97efc bec97ee8
+>>[ 1552.586991] 7ee0: 80105e0c 80105d68 00000000 bc950fe0 bec97f2c
+>>bec97f00 800faf64 80105df4
+>>[ 1552.595196] 7f00: 801156e4 80115420 bec97f54 733fe4e0 733ff8f0
+>>733fe61c 000000c3 8000f504
+>>[ 1552.603402] 7f20: bec97f3c bec97f30 800fafe0 800faf1c bec97fa4
+>>bec97f40 800fb71c 800fafc4
+>>[ 1552.611608] 7f40: 8000f310 bfbc7500 733fe550 8000f458 733fe61c
+>>000000c3 bec97f84 bec97f68
+>>[ 1552.619813] 7f60: 80056f28 800a0270 733fe550 733ff8f0 733fe61c
+>>000000c3 bec97f94 bec97f88
+>>[ 1552.628019] 7f80: 80057110 80056f18 00000000 bec97f98 8000f458
+>>733fe550 00000000 bec97fa8
+>>[ 1552.636226] 7fa0: 8000f280 800fb704 733fe550 733ff8f0 757e3810
+>>733fe4e0 733fe550 00000003
+>>[ 1552.644431] 7fc0: 733fe550 733ff8f0 733fe61c 000000c3 00000000
+>>00000002 733fe92c 00000200
+>>[ 1552.652636] 7fe0: 000000c3 733fe4d8 7579b7e5 7572e276 200f0030
+>>757e3810 bfffd821 bfffdc21
+>>[ 1552.660828] Backtrace:
+>>[ 1552.663343] [<80101128>] (lookup_fast+0x0/0x318) from [<80102d94>]
+>>(path_lookupat+0x130/0x728)
+>>[ 1552.671994] [<80102c64>] (path_lookupat+0x0/0x728) from
+>>[<801033bc>] (filename_lookup.isra.40+0x30/0x70)
+>>[ 1552.681515] [<8010338c>] (filename_lookup.isra.40+0x0/0x70) from
+>>[<80105dc0>] (user_path_at_empty+0x64/0x8c)
+>>[ 1552.691361]  r7:bec97f00 r6:bec97e60 r5:00000001 r4:bee4f000
+>>[ 1552.697163] [<80105d5c>] (user_path_at_empty+0x0/0x8c) from
+>>[<80105e0c>] (user_path_at+0x24/0x2c)
+>>[ 1552.706053]  r8:bec97f40 r7:757e3810 r6:ffffff9c r5:00000001 r4:733fe4e0
+>>[ 1552.712927] [<80105de8>] (user_path_at+0x0/0x2c) from [<800faf64>]
+>>(vfs_fstatat+0x54/0xa8)
+>>[ 1552.721232] [<800faf10>] (vfs_fstatat+0x0/0xa8) from [<800fafe0>]
+>>(vfs_stat+0x28/0x2c)
+>>[ 1552.729167]  r8:8000f504 r7:000000c3 r6:733fe61c r5:733ff8f0 r4:733fe4e0
+>>[ 1552.736031] [<800fafb8>] (vfs_stat+0x0/0x2c) from [<800fb71c>]
+>>(SyS_stat64+0x24/0x40)
+>>[ 1552.743902] [<800fb6f8>] (SyS_stat64+0x0/0x40) from [<8000f280>]
+>>(ret_fast_syscall+0x0/0x48)
+>>[ 1552.752359]  r4:733fe550
+>>[ 1552.754946] Code: eb00352d e3500000 e50b0038 0a000080 (e5903038)
+>>[ 1552.761270] ---[ end trace 02679086a39365e8 ]---
+>>[ 1552.765968] Kernel panic - not syncing: Fatal exception
+>>
+>>_______________________________________________
+>>linux-arm-kernel mailing list
+>>linux-arm-kernel@lists.infradead.org
+>>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
