@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaAWPPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:15:50 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:23011 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862AbaAWPPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:15:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,706,1384300800"; 
-   d="scan'208";a="95767313"
-Date: Thu, 23 Jan 2014 15:14:40 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
- mapping
-In-Reply-To: <52E13149.1070705@citrix.com>
-Message-ID: <alpine.DEB.2.02.1401231513430.15917@kaball.uk.xensource.com>
-References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com> <52E00FB7.3040508@citrix.com> <alpine.DEB.2.02.1401221848080.21510@kaball.uk.xensource.com> <52E015F5.70408@citrix.com>
- <alpine.DEB.2.02.1401231355340.15917@kaball.uk.xensource.com> <52E13149.1070705@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932104AbaAWPQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:16:59 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:44881 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaAWPQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 10:16:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+In-Reply-To: <1390458628-30152-1-git-send-email-linux@prisktech.co.nz>
+References: <1390458628-30152-1-git-send-email-linux@prisktech.co.nz>
+Date: Thu, 23 Jan 2014 09:16:57 -0600
+Message-ID: <CAL_JsqJNHJ379QLxSoKEca33ZcFiO2TZxLWck-Ue1vAxozjY7A@mail.gmail.com>
+Subject: Re: [PATCH] serial: vt8500: Add missing binding document for
+ arch-vt8500 serial driver.
+From: Rob Herring <robherring2@gmail.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014, Zoltan Kiss wrote:
-> On 23/01/14 13:59, Stefano Stabellini wrote:
-> > On Wed, 22 Jan 2014, Zoltan Kiss wrote:
-> > > > > > > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > > > > > > index 2ae8699..0060178 100644
-> > > > > > > --- a/arch/x86/xen/p2m.c
-> > > > > > > +++ b/arch/x86/xen/p2m.c
-> > > > > > > @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long
-> > > > > > > mfn)
-> > > > > > > 
-> > > > > > >     /* Add an MFN override for a particular page */
-> > > > > > >     int m2p_add_override(unsigned long mfn, struct page *page,
-> > > > > > > -		struct gnttab_map_grant_ref *kmap_op)
-> > > > > > > +		struct gnttab_map_grant_ref *kmap_op, unsigned long
-> > > > > > > pfn)
-> > > > > > 
-> > > > > > Do we really need to add another additional parameter to
-> > > > > > m2p_add_override?
-> > > > > > I would just let m2p_add_override and m2p_remove_override call
-> > > > > > page_to_pfn again. It is not that expensive.
-> > > > > Yes, because that page_to_pfn can return something different. That's
-> > > > > why
-> > > > > the
-> > > > > v2 patches failed.
-> > > > 
-> > > > I am really curious: how can page_to_pfn return something different?
-> > > > I don't think is supposed to happen.
-> > > You call set_phys_to_machine before calling m2p* functions.
-> > 
-> > set_phys_to_machine changes the physical to machine mapping, that would
-> > be the mfn corresponding to a given pfn. It shouldn't affect the output
-> > of page_to_pfn that returns the pfn corresponding to a given struct
-> > page. The calculation of which is based on address offsets and should be
-> > static and unaffected by things like set_phys_to_machine.
-> 
-> Indeed, my mistake. The mfn is the only thing which changes, it still has to
-> be passed to m2p_remove_override. I'll send in a next version
+On Thu, Jan 23, 2014 at 12:30 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> The binding document for the vt8500/wm8xxx SoC UART driver is missing.
+> This patch adds the binding document.
+>
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
 
-Passing the mfn to m2p_remove_override is OK.
+Applied. Thanks.
+
+Rob
+
+>  .../devicetree/bindings/serial/vt8500-uart.txt     |   26 ++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/serial/vt8500-uart.txt
+>
+> diff --git a/Documentation/devicetree/bindings/serial/vt8500-uart.txt b/Documentation/devicetree/bindings/serial/vt8500-uart.txt
+> new file mode 100644
+> index 0000000..795c393
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/serial/vt8500-uart.txt
+> @@ -0,0 +1,26 @@
+> +* VIA VT8500 and WonderMedia WM8xxx UART Controller
+> +
+> +Required properties:
+> +- compatible: should be "via,vt8500-uart"
+> +
+> +- reg: base physical address of the controller and length of memory mapped
+> +       region.
+> +
+> +- interrupts: hardware interrupt number
+> +
+> +- clocks: shall be the input parent clock phandle for the clock. This should
+> +       be the 24Mhz reference clock.
+> +
+> +Aliases may be defined to ensure the correct ordering of the uarts.
+> +
+> +Example:
+> +       aliases {
+> +               serial0 = &uart0;
+> +       };
+> +
+> +       uart0: serial@d8200000 {
+> +               compatible = "via,vt8500-uart";
+> +               reg = <0xd8200000 0x1040>;
+> +               interrupts = <32>;
+> +               clocks = <&clkuart0>;
+> +       };
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
