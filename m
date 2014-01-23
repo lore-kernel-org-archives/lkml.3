@@ -1,257 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153AbaAWQXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:23:42 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:56630 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043AbaAWQXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:23:38 -0500
+	id S1752642AbaAWQ00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:26:26 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40490 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104AbaAWQ0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 11:26:24 -0500
+Message-ID: <52E142AC.4030200@ti.com>
+Date: Thu, 23 Jan 2014 10:26:20 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140122203337.GA31908@orcus.uplinklabs.net>
-References: <20140121232708.GA29787@amazon.com>
-	<20140122014908.GG18164@kroah.com>
-	<CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
-	<20140122032045.GA22182@falcon.amazon.com>
-	<20140122050215.GC9931@konrad-lan.dumpdata.com>
-	<20140122072914.GA9283@orcus.uplinklabs.net>
-	<52DFD5DB.6060603@iogearbox.net>
-	<CAEr7rXhJf1tf2KUErsGgUyYNUpVwLYD=fKUf8aPm0Dcg21MuNQ@mail.gmail.com>
-	<20140122203337.GA31908@orcus.uplinklabs.net>
-Date: Thu, 23 Jan 2014 11:23:37 -0500
-Message-ID: <CAEr7rXjge6rKzxbwy+0A6-5YhVZL9WGmaLrDYbE8H5hrtwq_4A@mail.gmail.com>
-Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Daniel Borkmann <borkmann@iogearbox.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        George Dunlap <george.dunlap@eu.citrix.com>,
-        Dario Faggioli <dario.faggioli@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@kernel.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: ti-abb: Add support for interleaved LDO registers
+References: <1389900750-27625-1-git-send-email-nm@ti.com> <20140121185553.GW17314@sirena.org.uk> <52DED341.3030503@ti.com> <20140121215624.GC17314@sirena.org.uk> <52DEF56C.1000209@ti.com> <20140122201932.GD17314@sirena.org.uk> <52E02E85.3030509@ti.com> <20140122222523.GA4999@kahuna> <20140123122959.GJ17314@sirena.org.uk> <20140123162009.GA17432@kahuna>
+In-Reply-To: <20140123162009.GA17432@kahuna>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 3:33 PM, Steven Noonan <steven@uplinklabs.net> wrote:
-> On Wed, Jan 22, 2014 at 03:18:50PM -0500, Elena Ufimtseva wrote:
->> On Wed, Jan 22, 2014 at 9:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
->> > On 01/22/2014 08:29 AM, Steven Noonan wrote:
->> >>
->> >> On Wed, Jan 22, 2014 at 12:02:15AM -0500, Konrad Rzeszutek Wilk wrote:
->> >>>
->> >>> On Tue, Jan 21, 2014 at 07:20:45PM -0800, Steven Noonan wrote:
->> >>>>
->> >>>> On Tue, Jan 21, 2014 at 06:47:07PM -0800, Linus Torvalds wrote:
->> >>>>>
->> >>>>> On Tue, Jan 21, 2014 at 5:49 PM, Greg Kroah-Hartman
->> >>>>> <gregkh@linuxfoundation.org> wrote:
->> >>>
->> >>>
->> >>> Adding extra folks to the party.
->> >>>>>>
->> >>>>>>
->> >>>>>> Odds are this also shows up in 3.13, right?
->> >>>>
->> >>>>
->> >>>> Reproduced using 3.13 on the PV guest:
->> >>>>
->> >>>>         [  368.756763] BUG: Bad page map in process mp
->> >>>> pte:80000004a67c6165 pmd:e9b706067
->> >>>>         [  368.756777] page:ffffea001299f180 count:0 mapcount:-1
->> >>>> mapping:          (null) index:0x0
->> >>>>         [  368.756781] page flags: 0x2fffff80000014(referenced|dirty)
->> >>>>         [  368.756786] addr:00007fd1388b7000 vm_flags:00100071
->> >>>> anon_vma:ffff880e9ba15f80 mapping:          (null) index:7fd1388b7
->> >>>>         [  368.756792] CPU: 29 PID: 618 Comm: mp Not tainted 3.13.0-ec2
->> >>>> #1
->> >>>>         [  368.756795]  ffff880e9b718958 ffff880e9eaf3cc0
->> >>>> ffffffff814d8748 00007fd1388b7000
->> >>>>         [  368.756803]  ffff880e9eaf3d08 ffffffff8116d289
->> >>>> 0000000000000000 0000000000000000
->> >>>>         [  368.756809]  ffff880e9b7065b8 ffffea001299f180
->> >>>> 00007fd1388b8000 ffff880e9eaf3e30
->> >>>>         [  368.756815] Call Trace:
->> >>>>         [  368.756825]  [<ffffffff814d8748>] dump_stack+0x45/0x56
->> >>>>         [  368.756833]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
->> >>>>         [  368.756837]  [<ffffffff8116eae3>]
->> >>>> unmap_single_vma+0x583/0x890
->> >>>>         [  368.756842]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
->> >>>>         [  368.756847]  [<ffffffff81175dac>] unmap_region+0xac/0x120
->> >>>>         [  368.756852]  [<ffffffff81176379>] ? vma_rb_erase+0x1c9/0x210
->> >>>>         [  368.756856]  [<ffffffff81177f10>] do_munmap+0x280/0x370
->> >>>>         [  368.756860]  [<ffffffff81178041>] vm_munmap+0x41/0x60
->> >>>>         [  368.756864]  [<ffffffff81178f32>] SyS_munmap+0x22/0x30
->> >>>>         [  368.756869]  [<ffffffff814e70ed>]
->> >>>> system_call_fastpath+0x1a/0x1f
->> >>>>         [  368.756872] Disabling lock debugging due to kernel taint
->> >>>>         [  368.760084] BUG: Bad rss-counter state mm:ffff880e9d079680
->> >>>> idx:0 val:-1
->> >>>>         [  368.760091] BUG: Bad rss-counter state mm:ffff880e9d079680
->> >>>> idx:1 val:1
->> >>>>
->> >>>>>
->> >>>>> Probably. I don't have a Xen PV setup to test with (and very little
->> >>>>> interest in setting one up).. And I have a suspicion that it might not
->> >>>>> be so much about Xen PV, as perhaps about the kind of hardware.
->> >>>>>
->> >>>>> I suspect the issue has something to do with the magic _PAGE_NUMA
->> >>>>> tie-in with _PAGE_PRESENT. And then mprotect(PROT_NONE) ends up
->> >>>>> removing the _PAGE_PRESENT bit, and now the crazy numa code is
->> >>>>> confused.
->> >>>>>
->> >>>>> The whole _PAGE_NUMA thing is a f*cking horrible hack, and shares the
->> >>>>> bit with _PAGE_PROTNONE, which is why it then has that tie-in to
->> >>>>> _PAGE_PRESENT.
->> >>>>>
->> >>>>> Adding Andrea to the Cc, because he's the author of that horridness.
->> >>>>> Putting Steven's test-case here as an attachement for Andrea, maybe
->> >>>>> that makes him go "Ahh, yes, silly case".
->> >>>>>
->> >>>>> Also added Kirill, because he was involved the last _PAGE_NUMA debacle.
->> >>>>>
->> >>>>> Andrea, you can find the thread on lkml, but it boils down to commit
->> >>>>> 1667918b6483 (backported to 3.12.7 as 3d792d616ba4) breaking the
->> >>>>> attached test-case (but apparently only under Xen PV). There it
->> >>>>> apparently causes a "BUG: Bad page map .." error.
->> >>>
->> >>>
->> >>> I *think* it is due to the fact that pmd_numa and pte_numa is getting the
->> >>> _raw_
->> >>> value of PMDs and PTEs. That is - it does not use the pvops interface
->> >>> and instead reads the values directly from the page-table. Since the
->> >>> page-table is also manipulated by the hypervisor - there are certain
->> >>> flags it also sets to do its business. It might be that it uses
->> >>> _PAGE_GLOBAL as well - and Linux picks up on that. If it was using
->> >>> pte_flags that would invoke the pvops interface.
->> >>>
->> >>> Elena, Dariof and George, you guys had been looking at this a bit deeper
->> >>> than I have. Does the Xen hypervisor use the _PAGE_GLOBAL for PV guests?
-
-It does use _PAGE_GLOBAL for guest user pages
-
->> >>>
->> >>> This not-compiled-totally-bad-patch might shed some light on what I was
->> >>> thinking _could_ fix this issue - and IS NOT A FIX - JUST A HACK.
->> >>> It does not fix it for PMDs naturally (as there are no PMD paravirt ops
->> >>> for that).
->> >>
->> >>
->> >> Unfortunately the Totally Bad Patch seems to make no difference. I am
->> >> still able to repro the issue:
+On 01/23/2014 10:20 AM, Nishanth Menon wrote:
+> On 12:29-20140123, Mark Brown wrote:
+>> On Wed, Jan 22, 2014 at 04:25:23PM -0600, Nishanth Menon wrote:
 >>
->> Steven, do you use numa=fake on boot cmd line for pv guest?
+>>> How about something like the following? If this is acceptable, I can do
+>>> a complete round of retest and ensure everything is functional on all
+>>> platforms and post it as a formal patch:
 >>
->> I had similar issue on pv guest. Let me check if the fix that resolved
->> this for me will help with 3.13.
->
-> Nope:
->
-> # cat /proc/cmdline
-> root=/dev/xvda1 ro rootwait rootfstype=ext4 nomodeset console=hvc0 earlyprintk=xen,verbose loglevel=7
+>> Looks OK from a quick scan.  It seems nothing in mainline is using the
+>> -v2 binding so it's probably OK to delete it but if it's not too much
+>> bother it might be better to keep it since I expect some downstream
+>> trees might've picked that up already.
+> True - how about the following (formal post pending comprehensive
+> testing and your feedback on approach):
+> 
+> From 35b0c999f7ef94bf92acc17e1086af22b187943a Mon Sep 17 00:00:00 2001
+> From: Nishanth Menon <nm@ti.com>
+> Date: Thu, 23 Jan 2014 10:00:22 -0600
+> Subject: [PATCH V3] regulator: ti-abb: Add support for interleaved LDO registers
+> 
+> Certain platforms such as DRA7 have quirky memory maps such as:
+> PRM_ABBLDO_DSPEVE_CTRL      0x4ae07e20
+> PRM_ABBLDO_IVA_CTRL 0x4ae07e24
+> other-registers
+> PRM_ABBLDO_DSPEVE_SETUP     0x4ae07e30
+> PRM_ABBLDO_IVA_SETUP        0x4ae07e34
+> 
+> These need the address range allocation to be either not reserved OR unique
+> allocation per register instance or use something like syscon based
+> solution.
+> 
+> By going with unique allocation per register, we are able to now have a
+> single compatible driver for all instances on all platforms which use
+> the IP block.
+> 
+> So, introduce a new "ti,abb-v3" compatible to allow for definitions
+> where explicit register definitions are provided, while maintaining
+> backward compatibility of older predefined register offsets provided
+> by "ti-abb-v1" and "ti-abb-v2".
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  .../bindings/regulator/ti-abb-regulator.txt        |    6 +-
+>  drivers/regulator/ti-abb-regulator.c               |   91 +++++++++++++-------
+>  2 files changed, 67 insertions(+), 30 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/regulator/ti-abb-regulator.txt b/Documentation/devicetree/bindings/regulator/ti-abb-regulator.txt
+> index 2e57a33..0d2dc26 100644
+> --- a/Documentation/devicetree/bindings/regulator/ti-abb-regulator.txt
+> +++ b/Documentation/devicetree/bindings/regulator/ti-abb-regulator.txt
+> @@ -4,10 +4,14 @@ Required Properties:
+>  - compatible: Should be one of:
+>    - "ti,abb-v1" for older SoCs like OMAP3
+>    - "ti,abb-v2" for newer SoCs like OMAP4, OMAP5
+> +  - "ti,abb-v3" for a generic definition where setup and control registers are
+> +     provided (example: DRA7)
+>  - reg: Address and length of the register set for the device. It contains
+>    the information of registers in the same order as described by reg-names
+>  - reg-names: Should contain the reg names
+> -  - "base-address"	- contains base address of ABB module
+> +  - "base-address"	- contains base address of ABB module (ti,abb-v1,ti,abb-v2)
+> +  - "control-address"	- contains base address of ABB module (ti,abb-v3)
+> +  - "setup-address"	- contains base address of ABB module (ti,abb-v3)
+>    - "int-address"	- contains address of interrupt register for ABB module
+>    (also see Optional properties)
+>  - #address-cell: should be 0
+> diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+> index b187b6b..134c481 100644
+> --- a/drivers/regulator/ti-abb-regulator.c
+> +++ b/drivers/regulator/ti-abb-regulator.c
+> @@ -54,8 +54,8 @@ struct ti_abb_info {
+>  
+>  /**
+>   * struct ti_abb_reg - Register description for ABB block
+> - * @setup_reg:			setup register offset from base
+> - * @control_reg:		control register offset from base
+> + * @setup_off:			setup register offset from base
+> + * @control_off:		setup register offset from base
+>   * @sr2_wtcnt_value_mask:	setup register- sr2_wtcnt_value mask
+>   * @fbb_sel_mask:		setup register- FBB sel mask
+>   * @rbb_sel_mask:		setup register- RBB sel mask
+> @@ -64,8 +64,8 @@ struct ti_abb_info {
+>   * @opp_sel_mask:		control register - mask for mode to operate
+>   */
+>  struct ti_abb_reg {
+> -	u32 setup_reg;
+> -	u32 control_reg;
+> +	u32 setup_off;
+> +	u32 control_off;
+>  
+>  	/* Setup register fields */
+>  	u32 sr2_wtcnt_value_mask;
+> @@ -83,6 +83,8 @@ struct ti_abb_reg {
+>   * @rdesc:			regulator descriptor
+>   * @clk:			clock(usually sysclk) supplying ABB block
+>   * @base:			base address of ABB block
+> + * @setup_reg:			setup register of ABB block
+> + * @control_reg:		setup register of ABB block
+>   * @int_base:			interrupt register base address
+>   * @efuse_base:			(optional) efuse base address for ABB modes
+>   * @ldo_base:			(optional) LDOVBB vset override base address
+> @@ -99,6 +101,8 @@ struct ti_abb {
+>  	struct regulator_desc rdesc;
+>  	struct clk *clk;
+>  	void __iomem *base;
+> +	void __iomem *setup_reg;
+> +	void __iomem *control_reg;
+>  	void __iomem *int_base;
+>  	void __iomem *efuse_base;
+>  	void __iomem *ldo_base;
+> @@ -118,20 +122,18 @@ struct ti_abb {
+>   * ti_abb_rmw() - handy wrapper to set specific register bits
+>   * @mask:	mask for register field
+>   * @value:	value shifted to mask location and written
+> - * @offset:	offset of register
+> - * @base:	base address
+> + * @reg:	register address
+>   *
+>   * Return: final register value (may be unused)
+>   */
+> -static inline u32 ti_abb_rmw(u32 mask, u32 value, u32 offset,
+> -			     void __iomem *base)
+> +static inline u32 ti_abb_rmw(u32 mask, u32 value, void __iomem *reg)
+>  {
+>  	u32 val;
+>  
+> -	val = readl(base + offset);
+> +	val = readl(reg);
+>  	val &= ~mask;
+>  	val |= (value << __ffs(mask)) & mask;
+> -	writel(val, base + offset);
+> +	writel(val, reg);
+>  
+>  	return val;
+>  }
+> @@ -263,21 +265,20 @@ static int ti_abb_set_opp(struct regulator_dev *rdev, struct ti_abb *abb,
+>  	if (ret)
+>  		goto out;
+>  
+> -	ti_abb_rmw(regs->fbb_sel_mask | regs->rbb_sel_mask, 0, regs->setup_reg,
+> -		   abb->base);
+> +	ti_abb_rmw(regs->fbb_sel_mask | regs->rbb_sel_mask, 0,
+> +		   abb->setup_reg);
+>  
+>  	switch (info->opp_sel) {
+>  	case TI_ABB_SLOW_OPP:
+> -		ti_abb_rmw(regs->rbb_sel_mask, 1, regs->setup_reg, abb->base);
+> +		ti_abb_rmw(regs->rbb_sel_mask, 1, abb->setup_reg);
+>  		break;
+>  	case TI_ABB_FAST_OPP:
+> -		ti_abb_rmw(regs->fbb_sel_mask, 1, regs->setup_reg, abb->base);
+> +		ti_abb_rmw(regs->fbb_sel_mask, 1, abb->setup_reg);
+>  		break;
+>  	}
+>  
+>  	/* program next state of ABB ldo */
+> -	ti_abb_rmw(regs->opp_sel_mask, info->opp_sel, regs->control_reg,
+> -		   abb->base);
+> +	ti_abb_rmw(regs->opp_sel_mask, info->opp_sel, abb->control_reg);
+>  
+>  	/*
+>  	 * program LDO VBB vset override if needed for !bypass mode
+> @@ -288,7 +289,7 @@ static int ti_abb_set_opp(struct regulator_dev *rdev, struct ti_abb *abb,
+>  		ti_abb_program_ldovbb(dev, abb, info);
+>  
+>  	/* Initiate ABB ldo change */
+> -	ti_abb_rmw(regs->opp_change_mask, 1, regs->control_reg, abb->base);
+> +	ti_abb_rmw(regs->opp_change_mask, 1, abb->control_reg);
+>  
+>  	/* Wait for ABB LDO to complete transition to new Bias setting */
+>  	ret = ti_abb_wait_txdone(dev, abb);
+> @@ -490,8 +491,8 @@ static int ti_abb_init_timings(struct device *dev, struct ti_abb *abb)
+>  	dev_dbg(dev, "%s: Clk_rate=%ld, sr2_cnt=0x%08x\n", __func__,
+>  		clk_get_rate(abb->clk), sr2_wt_cnt_val);
+>  
+> -	ti_abb_rmw(regs->sr2_wtcnt_value_mask, sr2_wt_cnt_val, regs->setup_reg,
+> -		   abb->base);
+> +	ti_abb_rmw(regs->sr2_wtcnt_value_mask, sr2_wt_cnt_val,
+> +		   abb->setup_reg);
+>  
+>  	return 0;
+>  }
+> @@ -648,8 +649,8 @@ static struct regulator_ops ti_abb_reg_ops = {
+>  /* Default ABB block offsets, IF this changes in future, create new one */
+>  static const struct ti_abb_reg abb_regs_v1 = {
+>  	/* WARNING: registers are wrongly documented in TRM */
+> -	.setup_reg		= 0x04,
+> -	.control_reg		= 0x00,
+> +	.setup_off		= 0x04,
+> +	.control_off		= 0x00,
+>  
+>  	.sr2_wtcnt_value_mask	= (0xff << 8),
+>  	.fbb_sel_mask		= (0x01 << 2),
+> @@ -661,8 +662,8 @@ static const struct ti_abb_reg abb_regs_v1 = {
+>  };
+>  
+>  static const struct ti_abb_reg abb_regs_v2 = {
+> -	.setup_reg		= 0x00,
+> -	.control_reg		= 0x04,
+> +	.setup_off		= 0x00,
+> +	.control_off		= 0x04,
+>  
+>  	.sr2_wtcnt_value_mask	= (0xff << 8),
+>  	.fbb_sel_mask		= (0x01 << 2),
+> @@ -673,9 +674,20 @@ static const struct ti_abb_reg abb_regs_v2 = {
+>  	.opp_sel_mask		= (0x03 << 0),
+>  };
+>  
+> +static const struct ti_abb_reg abb_regs_generic = {
+> +	.sr2_wtcnt_value_mask	= (0xff << 8),
+> +	.fbb_sel_mask		= (0x01 << 2),
+> +	.rbb_sel_mask		= (0x01 << 1),
+> +	.sr2_en_mask		= (0x01 << 0),
+> +
+> +	.opp_change_mask	= (0x01 << 2),
+> +	.opp_sel_mask		= (0x03 << 0),
+> +};
+> +
+>  static const struct of_device_id ti_abb_of_match[] = {
+>  	{.compatible = "ti,abb-v1", .data = &abb_regs_v1},
+>  	{.compatible = "ti,abb-v2", .data = &abb_regs_v2},
+> +	{.compatible = "ti,abb-v3", .data = &abb_regs_generic},
+>  	{ },
+>  };
+>  
+> @@ -719,14 +731,35 @@ static int ti_abb_probe(struct platform_device *pdev)
+>  	abb = devm_kzalloc(dev, sizeof(struct ti_abb), GFP_KERNEL);
+>  	if (!abb)
+>  		return -ENOMEM;
+> +	abb->regs = devm_kzalloc(dev, sizeof(struct ti_abb_reg), GFP_KERNEL);
+> +	if (!abb->regs)
+> +		return -ENOMEM;
+>  	abb->regs = match->data;
+>  
+>  	/* Map ABB resources */
+> -	pname = "base-address";
+> -	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> -	abb->base = devm_ioremap_resource(dev, res);
+> -	if (IS_ERR(abb->base))
+> -		return PTR_ERR(abb->base);
+> +	if (!abb->regs->setup_off && !abb->regs->control_off) {
+Sigh.. the check was supposed to be:
+if (abb->regs->setup_off || abb->regs->control_off) {
 
->
->>
->> >
->> >
->> > Maybe this one is also related to this BUG here (cc'ed people investigating
->> > this one) ...
->> >
->> >   https://lkml.org/lkml/2014/1/10/427
->> >
->> > ... not sure, though.
->> >
->> >
->> >>         [  346.374929] BUG: Bad page map in process mp
->> >> pte:80000004ae928065 pmd:e993f9067
->> >>         [  346.374942] page:ffffea0012ba4a00 count:0 mapcount:-1 mapping:
->> >> (null) index:0x0
->> >>         [  346.374946] page flags: 0x2fffff80000014(referenced|dirty)
->> >>         [  346.374951] addr:00007f06a9bbb000 vm_flags:00100071
->> >> anon_vma:ffff880e9939fe00 mapping:          (null) index:7f06a9bbb
->> >>         [  346.374956] CPU: 29 PID: 609 Comm: mp Not tainted 3.13.0-ec2+
->> >> #1
->> >>         [  346.374960]  ffff880e9cc38da8 ffff880e991a3cc0 ffffffff814d8768
->> >> 00007f06a9bbb000
->> >>         [  346.374967]  ffff880e991a3d08 ffffffff8116d289 0000000000000000
->> >> 0000000000000000
->> >>         [  346.374972]  ffff880e993f9dd8 ffffea0012ba4a00 00007f06a9bbc000
->> >> ffff880e991a3e30
->> >>         [  346.374979] Call Trace:
->> >>         [  346.374988]  [<ffffffff814d8768>] dump_stack+0x45/0x56
->> >>         [  346.374996]  [<ffffffff8116d289>] print_bad_pte+0x229/0x250
->> >>         [  346.375000]  [<ffffffff8116eae3>] unmap_single_vma+0x583/0x890
->> >>         [  346.375006]  [<ffffffff8116feb5>] unmap_vmas+0x65/0x90
->> >>         [  346.375011]  [<ffffffff81175dbc>] unmap_region+0xac/0x120
->> >>         [  346.375016]  [<ffffffff81176389>] ? vma_rb_erase+0x1c9/0x210
->> >>         [  346.375021]  [<ffffffff81177f20>] do_munmap+0x280/0x370
->> >>         [  346.375025]  [<ffffffff81178051>] vm_munmap+0x41/0x60
->> >>         [  346.375029]  [<ffffffff81178f42>] SyS_munmap+0x22/0x30
->> >>         [  346.375034]  [<ffffffff814e712d>]
->> >> system_call_fastpath+0x1a/0x1f
->> >>         [  346.375037] Disabling lock debugging due to kernel taint
->> >>         [  346.380082] BUG: Bad rss-counter state mm:ffff880e9d22bc00
->> >> idx:0 val:-1
->> >>         [  346.380088] BUG: Bad rss-counter state mm:ffff880e9d22bc00
->> >> idx:1 val:1
->> >>
->> >> This dump doesn't look dramatically different, either.
->> >>
->> >>>
->> >>> The other question is - how is AutoNUMA running when it is not enabled?
->> >>> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
->> >>> turned on?
->> >>
->> >>
->> >> Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
->> >> mean not enabled at runtime?
->> >>
->> >> [1]
->> >> http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
->>
->>
->>
->> --
->> Elena
+Darned.. forgot to commit! Grr... anyways.. still looking for feedback
+for the remaining.
+> +		pname = "base-address";
+> +		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> +		abb->base = devm_ioremap_resource(dev, res);
+> +		if (IS_ERR(abb->base))
+> +			return PTR_ERR(abb->base);
+> +
+> +		abb->setup_reg = abb->base + abb->regs->setup_off;
+> +		abb->control_reg = abb->base + abb->regs->control_off;
+> +
+> +	} else {
+> +		pname = "control-address";
+> +		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> +		abb->control_reg = devm_ioremap_resource(dev, res);
+> +		if (IS_ERR(abb->control_reg))
+> +			return PTR_ERR(abb->control_reg);
+> +
+> +		pname = "setup-address";
+> +		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> +		abb->setup_reg = devm_ioremap_resource(dev, res);
+> +		if (IS_ERR(abb->setup_reg))
+> +			return PTR_ERR(abb->setup_reg);
+> +	}
+>  
+>  	pname = "int-address";
+>  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> @@ -860,7 +893,7 @@ skip_opt:
+>  	platform_set_drvdata(pdev, rdev);
+>  
+>  	/* Enable the ldo if not already done by bootloader */
+> -	ti_abb_rmw(abb->regs->sr2_en_mask, 1, abb->regs->setup_reg, abb->base);
+> +	ti_abb_rmw(abb->regs->sr2_en_mask, 1, abb->setup_reg);
+>  
+>  	return 0;
+>  }
+> 
 
-I was able to reproduce this consistently, also with the latest mm
-patches from yesterday.
-Can you please try this:
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ce563be..76dcf96 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct
-*mm, unsigned long addr,
- /* Assume pteval_t is equivalent to all the other *val_t types. */
- static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if ((val & _PAGE_PRESENT) || ((val &
-(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
-                unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                unsigned long pfn = mfn_to_pfn(mfn);
-
-@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
-
- static pteval_t pte_pfn_to_mfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if ((val & _PAGE_PRESENT) || ((val &
-(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
-                unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                pteval_t flags = val & PTE_FLAGS_MASK;
-                unsigned long mfn;
+-- 
+Regards,
+Nishanth Menon
