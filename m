@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828AbaAWPIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:08:41 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:50193 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497AbaAWPIh (ORCPT
+	id S1754985AbaAWPIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:08:44 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:61672 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845AbaAWPIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:08:37 -0500
+	Thu, 23 Jan 2014 10:08:41 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org, sameo@linux.intel.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/4] mfd: max8998: Naturalise cross-architecture discrepancies
-Date: Thu, 23 Jan 2014 15:05:54 +0000
-Message-Id: <1390489556-9434-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/4] mfd: tps65217: Naturalise cross-architecture discrepancies
+Date: Thu, 23 Jan 2014 15:05:56 +0000
+Message-Id: <1390489556-9434-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1390489556-9434-1-git-send-email-lee.jones@linaro.org>
 References: <1390489556-9434-1-git-send-email-lee.jones@linaro.org>
@@ -24,58 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we compile the MAX8998 for a 64bit architecture we receive the following
+If we compile the TPS65217 for a 64bit architecture we receive the following
 warnings:
 
-  drivers/mfd/max8998.c: In function ‘max8998_i2c_get_driver_data’:
-  drivers/mfd/max8998.c:178:10:
-    warning: cast from pointer to integer of different size
-     return (int)match->data;
-            ^
+drivers/mfd/tps65217.c: In function ‘tps65217_probe’:
+drivers/mfd/tps65217.c:173:13:
+  warning: cast from pointer to integer of different size
+   chip_id = (unsigned int)match->data;
+             ^
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/max8998.c               | 6 +++---
- include/linux/mfd/max8998-private.h | 2 +-
+ drivers/mfd/tps65217.c       | 4 ++--
+ include/linux/mfd/tps65217.h | 4 ++--
  2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index f47eaa7..5d5e186 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -169,16 +169,16 @@ static struct max8998_platform_data *max8998_i2c_parse_dt_pdata(
- 	return pd;
- }
- 
--static inline int max8998_i2c_get_driver_data(struct i2c_client *i2c,
-+static inline unsigned long max8998_i2c_get_driver_data(struct i2c_client *i2c,
- 						const struct i2c_device_id *id)
+diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+index 6939ae5..3cc4c70 100644
+--- a/drivers/mfd/tps65217.c
++++ b/drivers/mfd/tps65217.c
+@@ -158,7 +158,7 @@ static int tps65217_probe(struct i2c_client *client,
  {
- 	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node) {
- 		const struct of_device_id *match;
- 		match = of_match_node(max8998_dt_match, i2c->dev.of_node);
--		return (int)match->data;
-+		return (unsigned long)match->data;
+ 	struct tps65217 *tps;
+ 	unsigned int version;
+-	unsigned int chip_id = ids->driver_data;
++	unsigned long chip_id = ids->driver_data;
+ 	const struct of_device_id *match;
+ 	bool status_off = false;
+ 	int ret;
+@@ -170,7 +170,7 @@ static int tps65217_probe(struct i2c_client *client,
+ 				"Failed to find matching dt id\n");
+ 			return -EINVAL;
+ 		}
+-		chip_id = (unsigned int)match->data;
++		chip_id = (unsigned long)match->data;
+ 		status_off = of_property_read_bool(client->dev.of_node,
+ 					"ti,pmic-shutdown-controller");
  	}
- 
--	return (int)id->driver_data;
-+	return id->driver_data;
+diff --git a/include/linux/mfd/tps65217.h b/include/linux/mfd/tps65217.h
+index a5a7f01..54b5458 100644
+--- a/include/linux/mfd/tps65217.h
++++ b/include/linux/mfd/tps65217.h
+@@ -252,7 +252,7 @@ struct tps65217_board {
+ struct tps65217 {
+ 	struct device *dev;
+ 	struct tps65217_board *pdata;
+-	unsigned int id;
++	unsigned long id;
+ 	struct regulator_desc desc[TPS65217_NUM_REGULATOR];
+ 	struct regulator_dev *rdev[TPS65217_NUM_REGULATOR];
+ 	struct regmap *regmap;
+@@ -263,7 +263,7 @@ static inline struct tps65217 *dev_to_tps65217(struct device *dev)
+ 	return dev_get_drvdata(dev);
  }
  
- static int max8998_i2c_probe(struct i2c_client *i2c,
-diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
-index 4ecb24b..d68ada5 100644
---- a/include/linux/mfd/max8998-private.h
-+++ b/include/linux/mfd/max8998-private.h
-@@ -163,7 +163,7 @@ struct max8998_dev {
- 	int ono;
- 	u8 irq_masks_cur[MAX8998_NUM_IRQ_REGS];
- 	u8 irq_masks_cache[MAX8998_NUM_IRQ_REGS];
--	int type;
-+	unsigned long type;
- 	bool wakeup;
- };
- 
+-static inline int tps65217_chip_id(struct tps65217 *tps65217)
++static inline unsigned long tps65217_chip_id(struct tps65217 *tps65217)
+ {
+ 	return tps65217->id;
+ }
 -- 
 1.8.3.2
 
