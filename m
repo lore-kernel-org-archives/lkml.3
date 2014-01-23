@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677AbaAWKcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:32:12 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:36160 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496AbaAWKcJ (ORCPT
+	id S1753814AbaAWKcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:32:23 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:45298 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660AbaAWKcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:32:09 -0500
+	Thu, 23 Jan 2014 05:32:17 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
         linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
         Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
-        olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 11/37] mtd: st_spi_fsm: Search for preferred FSM message sequence configurations
-Date: Thu, 23 Jan 2014 10:30:59 +0000
-Message-Id: <1390473085-24626-12-git-send-email-lee.jones@linaro.org>
+        olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>,
+        devicetree@vger.kernel.org
+Subject: [PATCH RESEND v4 14/37] mtd: st_spi_fsm: Add device-tree binding documentation
+Date: Thu, 23 Jan 2014 10:31:02 +0000
+Message-Id: <1390473085-24626-15-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
 References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
@@ -23,61 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we provide a means to traverse though all supplied FSM message
-sequence configurations and pick one based on our chip's capabilities.
-The first one we match will be the preferred one, as they are
-presented in order of preference.
-
+Cc: devicetree@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ Documentation/devicetree/bindings/mtd/st-fsm.txt | 26 ++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mtd/st-fsm.txt
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index a70e916..efd8fdb 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -258,6 +258,18 @@ struct stfsm_seq {
- 	uint32_t seq_cfg;
- } __packed __aligned(4);
- 
-+/* Parameters to configure a READ or WRITE FSM sequence */
-+struct seq_rw_config {
-+	uint32_t        flags;          /* flags to support config */
-+	uint8_t         cmd;            /* FLASH command */
-+	int             write;          /* Write Sequence */
-+	uint8_t         addr_pads;      /* No. of addr pads (MODE & DUMMY) */
-+	uint8_t         data_pads;      /* No. of data pads */
-+	uint8_t         mode_data;      /* MODE data */
-+	uint8_t         mode_cycles;    /* No. of MODE cycles */
-+	uint8_t         dummy_cycles;   /* No. of DUMMY cycles */
-+};
+diff --git a/Documentation/devicetree/bindings/mtd/st-fsm.txt b/Documentation/devicetree/bindings/mtd/st-fsm.txt
+new file mode 100644
+index 0000000..c248939
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mtd/st-fsm.txt
+@@ -0,0 +1,26 @@
++* ST-Microelectronics SPI FSM Serial (NOR) Flash Controller
 +
- /* SPI Flash Device Table */
- struct flash_info {
- 	char            *name;
-@@ -493,6 +505,21 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
- }
- 
-+/* Search for preferred configuration based on available flags */
-+static struct seq_rw_config *
-+stfsm_search_seq_rw_configs(struct stfsm *fsm,
-+			    struct seq_rw_config cfgs[])
-+{
-+	struct seq_rw_config *config;
-+	int flags = fsm->info->flags;
++Required properties:
++  - compatible : Should be "st,spi-fsm"
++  - reg        : Contains register's location and length.
++  - reg-names  : Should contain the reg names "spi-fsm"
++  - interrupts : The interrupt number
++  - pinctrl-0  : Standard Pinctrl phandle (see: pinctrl/pinctrl-bindings.txt)
 +
-+	for (config = cfgs; config->cmd != 0; config++)
-+		if ((config->flags & flags) == config->flags)
-+			return config;
++Optional properties:
++  - st,syscfg          : Phandle to boot-device system configuration registers
++  - st,boot-device-reg : Address of the aforementioned boot-device register(s)
++  - st,boot-device-spi : Expected boot-device value if booted via this device
 +
-+	return NULL;
-+}
++Example:
++	spifsm: spifsm@fe902000{
++	        compatible         = "st,spi-fsm";
++	        reg                =  <0xfe902000 0x1000>;
++	        reg-names          = "spi-fsm";
++	        pinctrl-0          = <&pinctrl_fsm>;
++		st,syscfg	   = <&syscfg_rear>;
++	        st,boot-device-reg = <0x958>;
++	        st,boot-device-spi = <0x1a>;
++		status = "okay";
++	};
 +
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
 -- 
 1.8.3.2
 
