@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaAWNNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:13:15 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:59364 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888AbaAWNNL (ORCPT
+	id S1753699AbaAWNQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:16:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50396 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750797AbaAWNQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:13:11 -0500
-X-IronPort-AV: E=Sophos;i="4.95,706,1384300800"; 
-   d="scan'208";a="93674915"
-Message-ID: <52E11563.1090707@citrix.com>
-Date: Thu, 23 Jan 2014 13:13:07 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 23 Jan 2014 08:16:25 -0500
+Date: Thu, 23 Jan 2014 13:16:21 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        patches@opensource.wolfsonmicro.com, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 19/73] arm: mach-s3c64xx mach-crag6410-module.c is not
+	modular
+Message-ID: <20140123131621.GD11589@opensource.wolfsonmicro.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-20-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH net-next v5 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
- instead of copy
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com> <20140122.175031.873909526743971037.davem@davemloft.net>
-In-Reply-To: <20140122.175031.873909526743971037.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390339396-3479-20-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/14 01:50, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Mon, 20 Jan 2014 21:24:20 +0000
->
->> A long known problem of the upstream netback implementation that on the TX
->> path (from guest to Dom0) it copies the whole packet from guest memory into
->> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
->> huge perfomance penalty. The classic kernel version of netback used grant
->> mapping, and to get notified when the page can be unmapped, it used page
->> destructors. Unfortunately that destructor is not an upstreamable solution.
->> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
->> problem, however it seems to be very invasive on the network stack's code,
->> and therefore haven't progressed very well.
->> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
->> know when the skb is freed up.
->
-> This series does not apply to net-next due to some other recent changes.
->
-> Please respin, thanks.
+On Tue, Jan 21, 2014 at 04:22:22PM -0500, Paul Gortmaker wrote:
+> Despite the name mach-crag6410-module.c, the code is built for
+> MACH_WLF_CRAGG_6410 -- which is bool, and hence this code is
+> either present or absent.  It will never be modular, so using
+> module_init as an alias for __initcall can be somewhat
+> misleading.
+> 
+> Fix this up now, so that we can relocate module_init from
+> init.h into module.h in the future.  If we don't do this, we'd
+> have to add module.h to obviously non-modular code, and that
+> would be a worse thing.
+> 
+> Note that direct use of __initcall is discouraged, vs. one
+> of the priority categorized subgroups.  As __initcall gets
+> mapped onto device_initcall, our use of device_initcall
+> directly in this change means that the runtime impact is
+> zero -- it will remain at level 6 in initcall ordering.
+> 
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: patches@opensource.wolfsonmicro.com
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
 
-It is already based on two predecessor patches, one which is already 
-accepted but not applied yet:
+Tested-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-[PATCH net-next v2] xen-netback: Rework rx_work_todo
-
-And the other one is hopefully will be accepted very soon:
-
-[PATCH v5] xen/grant-table: Avoid m2p_override during mapping
-
-Zoli
-
+Thanks,
+Charles
