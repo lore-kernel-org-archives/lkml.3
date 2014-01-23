@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228AbaAWI0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:26:08 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:45675 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaAWI0H (ORCPT
+	id S1756251AbaAWI06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:26:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54145 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659AbaAWI05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:26:07 -0500
+	Thu, 23 Jan 2014 03:26:57 -0500
+Date: Thu, 23 Jan 2014 09:26:30 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: [PATCH] tracing: Use task_nice() in function __update_max_tr()
+ to get the nice value of task.
+Message-ID: <20140123082630.GO30183@twins.programming.kicks-ass.net>
+References: <1390430505-17234-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+ <20140122225632.73c2fbdf@gandalf.local.home>
+ <20140122230029.638e9a53@gandalf.local.home>
+ <52E14D28.2090208@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1390360492-29126-2-git-send-email-chris.ruehl@gtsys.com.hk>
-References: <1390360492-29126-1-git-send-email-chris.ruehl@gtsys.com.hk>
-	<1390360492-29126-2-git-send-email-chris.ruehl@gtsys.com.hk>
-Date: Thu, 23 Jan 2014 09:26:06 +0100
-Message-ID: <CACRpkdbWY8Ny0wNo0tM9WWG4uB2xOKV6zvFcqJ__qbku9VRN9g@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v2] imx27: pinctrl: fix offset calculation in imx_read_2bit
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm@lists.infradead.org, Markus Pargmann <mpa@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E14D28.2090208@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 4:14 AM, Chris Ruehl <chris.ruehl@gtsys.com.hk> wrote:
+On Thu, Jan 23, 2014 at 12:11:04PM -0500, Dongsheng Yang wrote:
+> On 01/22/2014 11:00 PM, Steven Rostedt wrote:
+> >
+> >Bah, I just noticed that TASK_NICE is in kernel/sched/sched.h not
+> >include/linux/sched.h
+> >
+> >Peter, is there a reason that task_nice() is not a static inline in
+> >sched.h and have these macros there too? They only reference fields in
+> >task_struct that are already defined there. I don't see why they need
+> >to be private to kernel/sched.
+> 
+> Agree. These macros are useful to other modules out of kernel/sched.
+> But they are private to kernel/sched currently.
 
-> The offset for the 2bit register calculate wrong, this patch
-> fixes the problem. The debugfs printout for oconf, iconfa, iconfb
-> now shows the real values.
->
-> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+And the floodgates open.. _why_ would a module care about nice values?
+That's sounds just so full of wrong.
 
-Markus: this OK? I want your review tag on it.
-
-Yours,
-Linus Walleij
