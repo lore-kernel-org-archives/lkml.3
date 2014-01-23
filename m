@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaAWXFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 18:05:19 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:45911 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaAWXFQ (ORCPT
+	id S932181AbaAWXKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 18:10:41 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43501 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaAWXKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 18:05:16 -0500
-Message-ID: <52E1A028.6020309@gmail.com>
-Date: Fri, 24 Jan 2014 00:05:12 +0100
+	Thu, 23 Jan 2014 18:10:40 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] irqchip: orion: clear stale interrupts in irq_enable
-References: <1390516686-2224-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390516686-2224-4-git-send-email-sebastian.hesselbarth@gmail.com> <20140123225208.GA24778@obsidianresearch.com>
-In-Reply-To: <20140123225208.GA24778@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v2 3/3] irqchip: orion: clear stale interrupts in irq_startup
+Date: Fri, 24 Jan 2014 00:10:32 +0100
+Message-Id: <1390518632-2576-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1390516686-2224-4-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1390516686-2224-4-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 11:52 PM, Jason Gunthorpe wrote:
-> On Thu, Jan 23, 2014 at 11:38:06PM +0100, Sebastian Hesselbarth wrote:
->> Bridge IRQ_CAUSE bits are asserted regardless of the corresponding bit in
->> IRQ_MASK register. To avoid interrupt events on stale irqs, we have to clear
->> them before unmask. This installs an .irq_enable callback to ensure stale
->> irqs are cleared before initial unmask.
->
-> I'm not sure if putting this in irq_enable is correct. I think this
-> should only happen at irq_startup.
->
-> The question boils down to what is supposed to happen with this code
-> sequence:
->
-> disable_irq(..);
-> write(.. something to cause an interrupt edge ..);
-> .. synchronize ..
-> enable_irq(..);
->
-> Do we get the interrupt or not?
+Bridge IRQ_CAUSE bits are asserted regardless of the corresponding bit in
+IRQ_MASK register. To avoid interrupt events on stale irqs, we have to clear
+them before unmask. This installs an .irq_startup callback to ensure stale
+irqs are cleared before initial unmask.
 
-Jason,
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+v1->v2:
+- use .irq_startup instead of .irq_enable (Reported by Jason Gunthorpe)
 
-I get the point and actually I'd chosen .irq_enable because using
-.irq_startup didn't work. I rechecked this and now it works.. maybe
-it is getting too late for me. I'll send a v2 of this patch shortly.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/irqchip/irq-orion.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-Sebastian
-
-> I found this message from Linus long ago:
->   http://yarchive.net/comp/linux/edge_triggered_interrupts.html
->> Btw, the "disable_irq()/enable_irq()" subsystem has been written so that
->> when you disable an edge-triggered interrupt, and the edge happens while
->> the interrupt is disabled, we will re-play the interrupt at enable time.
->> Exactly so that drivers can have an easier time and don't have to
->> normally worry about whether something is edge or level-triggered.
->
-> And found this note in Documentation/DocBook/genericirq.tmpl:
->
->> This prevents losing edge interrupts on hardware which does
->> not store an edge interrupt event while the interrupt is disabled at
->> the hardware level.
->
-> So I think it is very clear that the chip driver should not discard
-> edges that happened while the interrupt was disabled.
->
-> Regards,
-> Jason
->
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+index 1f636f719065..0dfdc5c824a1 100644
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -123,6 +123,19 @@ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 	}
+ }
+ 
++/*
++ * Bridge IRQ_CAUSE is asserted regardless of IRQ_MASK register.
++ * To avoid interrupt events on stale irqs, we clear them before unmask.
++ */
++static unsigned int orion_bridge_irq_startup(struct irq_data *d)
++{
++	struct irq_chip_type *ct = irq_data_get_chip_type(d);
++
++	ct->chip.irq_ack(d);
++	ct->chip.irq_unmask(d);
++	return 0;
++}
++
+ static int __init orion_bridge_irq_init(struct device_node *np,
+ 					struct device_node *parent)
+ {
+@@ -176,6 +189,7 @@ static int __init orion_bridge_irq_init(struct device_node *np,
+ 
+ 	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
+ 	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
++	gc->chip_types[0].chip.irq_startup = orion_bridge_irq_startup;
+ 	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
+ 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
+-- 
+1.8.5.2
 
