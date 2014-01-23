@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaAWKno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:43:44 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52963 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbaAWKnl (ORCPT
+	id S1753551AbaAWKtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:49:24 -0500
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:58608
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751977AbaAWKtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:43:41 -0500
-Date: Thu, 23 Jan 2014 02:42:58 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
- in mem_cgroup_iter
-In-Reply-To: <20140122082723.GB18154@dhcp22.suse.cz>
-Message-ID: <alpine.LSU.2.11.1401230203070.1132@eggly.anvils>
-References: <20140121083454.GA1894@dhcp22.suse.cz> <1390301143-9541-1-git-send-email-mhocko@suse.cz> <1390301143-9541-2-git-send-email-mhocko@suse.cz> <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org> <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
- <20140122082723.GB18154@dhcp22.suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 23 Jan 2014 05:49:23 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] regmap: fix _regmap_update_bits()
+Date: Thu, 23 Jan 2014 17:50:24 +0800
+Message-ID: <1390470624-28400-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jan 2014, Michal Hocko wrote:
-> On Tue 21-01-14 13:18:42, Hugh Dickins wrote:
-> [...]
-> > We do have a confusing situation.  The hang goes back to 3.10 but takes
-> > two different forms, because of intervening changes: in 3.10 and 3.11
-> > mem_cgroup_iter repeatedly returns root memcg to its caller, in 3.12 and
-> > 3.13 mem_cgroup_iter repeatedly gets NULL memcg from mem_cgroup_iter_next
-> > and cannot return to its caller.
-> > 
-> > Patch 1/2 is what's needed to fix 3.10 and 3.11 (and applies correctly
-> > to 3.11, but will have to be rediffed for 3.10 because of rearrangement
-> > in between). 
-> 
-> I will backport it when it reaches stable queue.
+Since sometimes the 'config' parameter is no use, it should be NULL.
 
-Thank you.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regmap.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Testing, at home and at work, has confirmed your two patches are good.
-Greg's particular test on 3.11 gave convincing results, and I was helped
-by Linus's tree of last night (df32e43a54d0) happening to be quite quick
-to reproduce the issue on my laptop.
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c2e0021..737b874 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1958,9 +1958,11 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 
+ 	if (tmp != orig) {
+ 		ret = _regmap_write(map, reg, tmp);
+-		*change = true;
++		if (change)
++			*change = true;
+ 	} else {
+-		*change = false;
++		if (change)
++			*change = false;
+ 	}
+ 
+ 	return ret;
+@@ -1979,11 +1981,10 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		       unsigned int mask, unsigned int val)
+ {
+-	bool change;
+ 	int ret;
+ 
+ 	map->lock(map->lock_arg);
+-	ret = _regmap_update_bits(map, reg, mask, val, &change);
++	ret = _regmap_update_bits(map, reg, mask, val, NULL);
+ 	map->unlock(map->lock_arg);
+ 
+ 	return ret;
+@@ -2008,14 +2009,13 @@ EXPORT_SYMBOL_GPL(regmap_update_bits);
+ int regmap_update_bits_async(struct regmap *map, unsigned int reg,
+ 			     unsigned int mask, unsigned int val)
+ {
+-	bool change;
+ 	int ret;
+ 
+ 	map->lock(map->lock_arg);
+ 
+ 	map->async = true;
+ 
+-	ret = _regmap_update_bits(map, reg, mask, val, &change);
++	ret = _regmap_update_bits(map, reg, mask, val, NULL);
+ 
+ 	map->async = false;
+ 
+-- 
+1.8.4
 
-> 
-> > Patch 2/2 is what's needed to fix 3.12 and 3.13 (but applies
-> > correctly to neither of them because it's diffed on top of my CSS_ONLINE
-> > fix).  Patch 1/2 is correct but unnecessary in 3.12 and 3.13: I'm unclear
-> > whether Michal is claiming that it would also fix the hang in 3.12 and
-> > 3.13 if we didn't have 2/2: I doubt that, and haven't tested that.
-> 
-> Actually both patches are needed. If we had only 2/2 then we wouldn't
-> endless loop inside mem_cgroup_iter but we could still return root to
-> caller all the time because mem_cgroup_iter_load would return NULL on
-> css_tryget failure on the cached root. Or am I missing something that
-> would prevent that?
 
-In theory I agree with you; and if you're missing something, I can't see
-it either.  But in practice, all my earlier testing of 3.12 and 3.13 was
-just with 2/2, and I've tried without your 1/2 since: whereas I have hung
-on 3.12 and 3.13 a convincing number of times without 2/2, I have never
-hung on them with 2/2 without 1/2.  In practice 1/2 appears essential
-for 3.10 and 3.11, but irrelevant for 3.12 and 3.13.
-
-That could be easy to explain if there were a difference at the calling
-end, shrink_zone(), between those releases: but I don't see that.  Odd.
-Either we're both missing something, or my testing is even less reliable
-than I'd thought.  But since I certainly don't dispute 1/2, it is merely
-academic.  Though still bothersome.
-
-> 
-> > Given how Michal has diffed this patch on top of my CSS_ONLINE one
-> > (mm-memcg-iteration-skip-memcgs-not-yet-fully-initialized.patch),
-> > it would be helpful if you could mark that one also for stable 3.12+,
-> > to save us from having to rediff this one for stable.  We don't have
-> > a concrete example of a problem it solves in the vanilla kernel, but
-> > it makes more sense to include it than to exclude it.
-> 
-> Yes, I think it makes sense to queue it for 3.12+ as well because it is
-> non intrusive and potential issues would be really subtle.
-
-Before Andrew sends these all off to Linus, I should admit that there's
-probably a refinement still to come to the CSS_ONLINE one.  I'm ashamed
-to admit that I overlooked a much earlier comment from Greg Thelen, who
-suggested that a memory barrier might be required.  I think he's right,
-and I'd have liked to say exactly what and where before answering you
-now; but barriers are tricky elusive things, I've not yet decided,
-and better report back to you now on the testing result.
-
-Hugh
-
-> 
-> > (You would be right to point out that the CSS_ONLINE one fixes
-> > something that goes back to 3.10: I'm saying 3.12+ because I'm not
-> > motivated to rediff it for 3.10 and 3.11 when there's nothing to
-> > go on top; but that's not a very good reason to lie - overrule me.)
-> > 
-> > Hugh
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
