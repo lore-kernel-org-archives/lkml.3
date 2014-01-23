@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaAWKcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:32:39 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:60447 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841AbaAWKca (ORCPT
+	id S1754196AbaAWKcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:32:46 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:58176 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066AbaAWKcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:32:30 -0500
+	Thu, 23 Jan 2014 05:32:43 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
         linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
         Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
         olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 19/37] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
-Date: Thu, 23 Jan 2014 10:31:07 +0000
-Message-Id: <1390473085-24626-20-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH RESEND v4 24/37] mtd: st_spi_fsm: Supply the N25Qxxx chip specific configuration call-back
+Date: Thu, 23 Jan 2014 10:31:12 +0000
+Message-Id: <1390473085-24626-25-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
 References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
@@ -23,81 +23,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on information we can obtain though platform specific data and/or
-chip capabilities we are able to determine whether or not we can handle
-a SoC reset or not. To find out why this is important please read the
-comment provided in the patch.
+In the FSM driver we handle chip differences by providing the possibility
+of calling back into a chip specific initialisation routine. In this patch
+we provide one for the N25Qxxx series, which endeavours to setup things
+like the read, write and erase sequences, as they differ from the
+default. We also configure 32bit support and the amount of dummy cycles to
+use.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 84 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 82 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index fc23354..b21929b 100644
+index 3b56b6e..28d8ac0 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -246,6 +246,8 @@ struct stfsm {
- 
- 	uint32_t                fifo_dir_delay;
- 	bool                    booted_from_spi;
-+	bool                    reset_signal;
-+	bool                    reset_por;
+@@ -310,6 +310,8 @@ struct flash_info {
+ 	int             (*config)(struct stfsm *);
  };
  
- struct stfsm_seq {
-@@ -552,6 +554,40 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
++static int stfsm_n25q_config(struct stfsm *fsm);
++
+ static struct flash_info flash_types[] = {
+ 	/*
+ 	 * ST Microelectronics/Numonyx --
+@@ -352,9 +354,10 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_WRITE_1_2_2       |	\
+ 		   FLASH_FLAG_WRITE_1_1_4       |	\
+ 		   FLASH_FLAG_WRITE_1_4_4)
+-	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108, NULL },
++	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
++	  stfsm_n25q_config },
+ 	{ "n25q256", 0x20ba19, 0, 64 * 1024,  512,
+-	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, NULL },
++	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config },
+ 
+ 	/*
+ 	 * Spansion S25FLxxxP
+@@ -491,6 +494,8 @@ static struct seq_rw_config n25q_read4_configs[] = {
+ 	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
+ };
+ 
++static struct stfsm_seq stfsm_seq_read;		/* Dynamically populated */
++static struct stfsm_seq stfsm_seq_write;	/* Dynamically populated */
+ static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
+ 
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+@@ -833,6 +838,71 @@ static int stfsm_search_prepare_rw_seq(struct stfsm *fsm,
+ 	return 0;
  }
  
-+/*
-+ * SoC reset on 'boot-from-spi' systems
-+ *
-+ * Certain modes of operation cause the Flash device to enter a particular state
-+ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
-+ * Addr' commands).  On boot-from-spi systems, it is important to consider what
-+ * happens if a warm reset occurs during this period.  The SPIBoot controller
-+ * assumes that Flash device is in its default reset state, 24-bit address mode,
-+ * and ready to accept commands.  This can be achieved using some form of
-+ * on-board logic/controller to force a device POR in response to a SoC-level
-+ * reset or by making use of the device reset signal if available (limited
-+ * number of devices only).
-+ *
-+ * Failure to take such precautions can cause problems following a warm reset.
-+ * For some operations (e.g. ERASE), there is little that can be done.  For
-+ * other modes of operation (e.g. 32-bit addressing), options are often
-+ * available that can help minimise the window in which a reset could cause a
-+ * problem.
-+ *
-+ */
-+static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
++static int stfsm_n25q_config(struct stfsm *fsm)
 +{
-+	/* Reset signal is available on the board and supported by the device */
-+	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
-+		return true;
++	uint32_t flags = fsm->info->flags;
++	uint8_t vcr;
++	int ret = 0;
++	bool soc_reset;
 +
-+	/* Board-level logic forces a power-on-reset */
-+	if (fsm->reset_por)
-+		return true;
++	/* Configure 'READ' sequence */
++	if (flags & FLASH_FLAG_32BIT_ADDR)
++		ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_read,
++						  n25q_read4_configs);
++	else
++		ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_read,
++						  n25q_read3_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"failed to prepare READ sequence with flags [0x%08x]\n",
++			flags);
++		return ret;
++	}
 +
-+	/* Reset is not properly handled and may result in failure to reboot */
-+	return false;
++	/* Configure 'WRITE' sequence (default configs) */
++	ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_write,
++					  default_write_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"preparing WRITE sequence using flags [0x%08x] failed\n",
++			flags);
++		return ret;
++	}
++
++	/* * Configure 'ERASE_SECTOR' sequence */
++	stfsm_prepare_erasesec_seq(fsm, &stfsm_seq_erase_sector);
++
++	/* Configure 32-bit address support */
++	if (flags & FLASH_FLAG_32BIT_ADDR) {
++		stfsm_n25q_en_32bit_addr_seq(&stfsm_seq_en_32bit_addr);
++
++		soc_reset = stfsm_can_handle_soc_reset(fsm);
++		if (soc_reset || !fsm->booted_from_spi) {
++			/*
++			 * If we can handle SoC resets, we enable 32-bit
++			 * address mode pervasively
++			 */
++			stfsm_enter_32bit_addr(fsm, 1);
++		} else {
++			/*
++			 * If not, enable/disable for WRITE and ERASE
++			 * operations (READ uses special commands)
++			 */
++			fsm->configuration = (CFG_WRITE_TOGGLE_32BIT_ADDR |
++					      CFG_ERASESEC_TOGGLE_32BIT_ADDR);
++		}
++	}
++
++	/*
++	 * Configure device to use 8 dummy cycles
++	 */
++	vcr = (N25Q_VCR_DUMMY_CYCLES(8) | N25Q_VCR_XIP_DISABLED |
++	       N25Q_VCR_WRAP_CONT);
++	stfsm_wrvcr(fsm, vcr);
++
++	return 0;
 +}
 +
- /* Configure 'addr_cfg' according to addressing mode */
- static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
- 				       struct stfsm_seq *seq)
-@@ -824,6 +860,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
- 		goto boot_device_fail;
- 	}
+ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
+ {
+ 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+@@ -1075,6 +1145,16 @@ static int stfsm_probe(struct platform_device *pdev)
  
-+	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
+ 	fsm->info = info;
+ 
++	/*
++	 * Configure READ/WRITE/ERASE sequences according to platform and
++	 * device flags.
++	 */
++	if (info->config) {
++		ret = info->config(fsm);
++		if (ret)
++			return ret;
++	}
 +
-+	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
-+
- 	/* Where in the syscon the boot device information lives */
- 	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
- 	if (ret)
+ 	platform_set_drvdata(pdev, fsm);
+ 
+ 	stfsm_fetch_platform_configs(pdev);
 -- 
 1.8.3.2
 
