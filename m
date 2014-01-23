@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaAWBqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 20:46:18 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39919 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaAWBqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 20:46:17 -0500
-Date: Wed, 22 Jan 2014 17:46:13 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        angus.clark@st.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v4 00/36] mtd: st_spi_fsm: Add new driver
-Message-ID: <20140123014613.GX8919@ld-irv-0074>
-References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
- <20140108143316.GA14575@lee--X1>
- <20140122125049.GA8586@lee--X1>
+	id S1753721AbaAWBsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:48:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48709 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201AbaAWBsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 20:48:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,703,1384329600"; 
+   d="scan'208";a="443208578"
+Message-ID: <52E07379.8020405@intel.com>
+Date: Thu, 23 Jan 2014 09:42:17 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122125049.GA8586@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2 0/4] Intel MPX support
+References: <1390382866-6361-1-git-send-email-qiaowei.ren@intel.com> <20140122115321.GA8281@gmail.com> <9E0BE1322F2F2246BD820DA9FC397ADE014EC163@SHSMSX102.ccr.corp.intel.com> <20140122123059.GA8973@gmail.com>
+In-Reply-To: <20140122123059.GA8973@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On 01/22/2014 08:30 PM, Ingo Molnar wrote:
+>
+> * Ren, Qiaowei <qiaowei.ren@intel.com> wrote:
+>
+>>
+>>
+>>> -----Original Message-----
+>>> From: Ingo Molnar [mailto:mingo.kernel.org@gmail.com] On Behalf Of Ingo
+>>> Molnar
+>>> Sent: Wednesday, January 22, 2014 7:53 PM
+>>> To: Ren, Qiaowei
+>>> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
+>>> linux-kernel@vger.kernel.org; Peter Zijlstra
+>>> Subject: Re: [PATCH v2 0/4] Intel MPX support
+>>>
+>>>
+>>> * Qiaowei Ren <qiaowei.ren@intel.com> wrote:
+>>>
+>>>> Changes since v1:
+>>>>    * check to see if #BR occurred in userspace or kernel space.
+>>>>    * use generic structure and macro as much as possible when
+>>>>      decode mpx instructions.
+>>>>
+>>>> Qiaowei Ren (4):
+>>>>    x86, mpx: add documentation on Intel MPX
+>>>>    x86, mpx: hook #BR exception handler to allocate bound tables
+>>>>    x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
+>>>>    x86, mpx: extend siginfo structure to include bound violation
+>>>>      information
+>>>>
+>>>>   Documentation/x86/intel_mpx.txt    |   76 +++++++
+>>>>   arch/x86/Kconfig                   |    4 +
+>>>>   arch/x86/include/asm/mpx.h         |   63 ++++++
+>>>>   arch/x86/include/asm/processor.h   |   16 ++
+>>>>   arch/x86/kernel/Makefile           |    1 +
+>>>>   arch/x86/kernel/mpx.c              |  417
+>>> ++++++++++++++++++++++++++++++++++++
+>>>>   arch/x86/kernel/traps.c            |   61 +++++-
+>>>>   include/uapi/asm-generic/siginfo.h |    9 +-
+>>>>   include/uapi/linux/prctl.h         |    6 +
+>>>>   kernel/signal.c                    |    4 +
+>>>>   kernel/sys.c                       |   12 +
+>>>>   11 files changed, 667 insertions(+), 2 deletions(-)  create mode
+>>>> 100644 Documentation/x86/intel_mpx.txt  create mode 100644
+>>>> arch/x86/include/asm/mpx.h  create mode 100644 arch/x86/kernel/mpx.c
+>>>
+>>> Such a patch submission is absolutely inadequate!
+>>>
+>>> Please outline:
+>>>
+>>>    - a short summary of what the feature does
+>>>
+>>>    - a short description of what hardware supports it today or will
+>>>      support it in the future
+>>>
+>>>    - a short description of whether the feature needs any
+>>>      configuration from the user or it's entirely auto-enabled on
+>>>      hardware that supports it.
+>>>
+>>>    - a cost/benefit description to unrelated code: is this slowing down
+>>>      anything else?
+>>>
+>>>    - how does user-space compiler support stand, what's the expected
+>>>      status there, etc.
+>>>
+>>> Only a small fraction of that information can be found in
+>>> Documentation/x86/intel_mpx.txt. in
+>>>
+>>> I'm absolutely sick of these semi-anonymous patch submissions from Intel, so
+>>> I'm NAK-ing it until it's communicated properly.
+>>>
+>> Ok. I will add related content into this documentation.
+>
+> More importantly, put it into the 0/X mail! That's how people can
+> review such a patch set effectively.
+>
+Ok. Thanks for your feedback. I will do it.
 
-On Wed, Jan 22, 2014 at 12:50:49PM +0000, Lee Jones wrote:
-> > Version 4:
-> >   Tended to Brian's previous review comments
-> >     - Checkpatch acceptance
-> >     - MODULE_DEVICE_TABLE() name slip correction
-> >     - Timeout issue(s) resolved
-> >     - Potential infinite loop mitigated
-> >     - Code clarity suggests heeded
-> >     - Duplication with MTD core code removed
-> >     - Upgraded to using ROUND_UP() helper
-> >     - Moved non-shared header code into main driver
-> >     - Relocated dynamic msg sequence stores into main struct
-> >     - Averted adaption of static (table) data
-> >     - Basic whitespace/spelling/data type/dev_err suggestions accepted
-> > 
-> > Version 3:
-> >   Okay, this thing should be fully functional now. Identify a chip
-> >   based on it's JEDEC ID, Read, Write, Erase (all or by sector).
-> >   Support for various chip quirks added too.
-> >  
-> > Version 2:
-> >   The first bunch of these patches have been on the MLs before, but
-> >   didn't receive a great deal of attention for the most part. We are
-> >   a little more featureful this time however. We can now successfully
-> >   setup and configure the N25Q256. We still can't read/write/erase
-> >   it though. I'll start work on that next week and will provide it in
-> >   the next instalment.
-> >  
-> > Version 1:
-> >   First stab at getting this thing Mainlined. It doesn't do a great deal
-> >   yet, but we are able to initialise the device and dynamically set it up
-> >   correctly based on an extracted JEDEC ID.
-> > 
-> >  Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
-> >  arch/arm/boot/dts/stih416-b2105.dts              |   14 +
-> >  arch/arm/boot/dts/stih416-pinctrl.dtsi           |   12 +
-> >  drivers/mtd/devices/Kconfig                      |    8 +
-> >  drivers/mtd/devices/Makefile                     |    1 +
-> >  drivers/mtd/devices/serial_flash_cmds.h          |   81 ++++
-> >  drivers/mtd/devices/st_spi_fsm.c                 | 2124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  7 files changed, 2266 insertions(+)
-> 
-> Can you confirm receipt of this set, or would you like me to resend?
-
-Well, I personally have the patch set but haven't had a chance to review
-it. Can you resend with MTD in the CC, since we haven't had any comments
-anyway? I believe MTD people are much less likely to look at it if you
-forget the CC :)
-
-You can just title it [PATCH RESEND v4 X/Y], possibly with a LKML
-link back to the original v4, if you want to help avoid confusion.
-
-Brian
+Thanks,
+Qiaowei
