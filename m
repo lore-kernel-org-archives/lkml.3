@@ -1,95 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaAWE5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 23:57:53 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:39230 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311AbaAWE5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 23:57:51 -0500
-Message-ID: <52E0A19E.1040009@gtsys.com.hk>
-Date: Thu, 23 Jan 2014 12:59:10 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+	id S1751082AbaAWFGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 00:06:15 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:45573 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaAWFGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 00:06:14 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-13-52e0a343de51
+Date: Thu, 23 Jan 2014 14:07:28 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/9] mm + fs: prepare for non-page entries in page cache
+ radix trees
+Message-ID: <20140123050728.GB28732@bbox>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-6-git-send-email-hannes@cmpxchg.org>
+ <20140113020132.GO1992@bbox>
+ <20140122174744.GC4407@cmpxchg.org>
 MIME-Version: 1.0
-To: Peter Chen <peter.chen@freescale.com>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: Regression on next-20140116 [Was: [PATCH 3/3 v4] usb: chipidea:
- hw_phymode_configure moved before ci_usb_phy_init]
-References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk> <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk> <20140122094951.GO26766@pengutronix.de> <20140122214133.GP26766@pengutronix.de> <20140123012240.GA8679@shlinux1.ap.freescale.net>
-In-Reply-To: <20140123012240.GA8679@shlinux1.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122174744.GC4407@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 23, 2014 09:22 AM, Peter Chen wrote:
-> On Wed, Jan 22, 2014 at 10:41:33PM +0100, Uwe Kleine-König wrote:
->> Hello,
->>
->> On Wed, Jan 22, 2014 at 10:49:51AM +0100, Uwe Kleine-König wrote:
->>> On Tue, Dec 03, 2013 at 04:01:50PM +0800, Chris Ruehl wrote:
->>>> usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
->>>> hw_phymode_configure configures the PORTSC registers and allow the
->>>> following phy_inits to operate on the right parameters. This fix a problem
->>>> where the UPLI (ISP1504) could not detected, because the Viewport was not
->>>> available and read the viewport return 0's only.
->>> This patch (or a later revision of it to be more exact) made it into
->>> mainline as cd0b42c2a6d2.
->>>
->>> On an i.MX27 based machine I'm hitting an oops (see below) on
->>> next-20140116 + a few patches. (I didn't switch to 3.13+ yet, as I think
->>> not everything I need has landed there.) The oops goes away (and still
->>> better, lsusb reports my connected devices instead of "unable to
->>> initialize libusb: -99") when I do at least one of the following:
->>>
->>>   - set CONFIG_USB_CHIPIDEA=y instead of =m
->>>   - revert commit
->>>        cd0b42c2a6d2 (usb: chipidea: put hw_phymode_configure before ci_usb_phy_init)
->> I debugged that a bit further and the problem is that
->> hw_phymode_configure depends on the phy's clk being enabled (i.e.
->> usb_ipg_gate) and this is only enforced in ci_usb_phy_init (via
->> usb_phy_init -> usb_gen_phy_init). When CONFIG_USB_CHIPIDEA=y the init
->> call to disable all unused clocks wasn't run yet and so the clock is
->> still on as this is the boot default.
-> Hi Uwe,
-> I am a little puzzled at your platform
->
-> - Which phy you have used? ulpi phy ,internal phy or other external phy?
-> - If you use ulpi phy, why you still need to use nop phy driver?
->   Besides, according to chris patch, the ulpi can only be visited after
-> hw_phymode_configure?
-> - Do you have some hardware related operation at phy's probe? If it exists,
-> why not move it to phy->init?
->
-> Peter
-Peter,
-I think thats my fault, I send Uwe my patches which call the phy-ulpi 
-from the nop driver
-in order to get the ISP1504 running with my board.
+Hi Hannes,
 
-Its obversely wrong to call an other driver from the nop
-see:  [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support and the 
-concerns from
-Heikki (mail-list linux-usb)
+On Wed, Jan 22, 2014 at 12:47:44PM -0500, Johannes Weiner wrote:
+> On Mon, Jan 13, 2014 at 11:01:32AM +0900, Minchan Kim wrote:
+> > On Fri, Jan 10, 2014 at 01:10:39PM -0500, Johannes Weiner wrote:
+> > > shmem mappings already contain exceptional entries where swap slot
+> > > information is remembered.
+> > > 
+> > > To be able to store eviction information for regular page cache,
+> > > prepare every site dealing with the radix trees directly to handle
+> > > entries other than pages.
+> > > 
+> > > The common lookup functions will filter out non-page entries and
+> > > return NULL for page cache holes, just as before.  But provide a raw
+> > > version of the API which returns non-page entries as well, and switch
+> > > shmem over to use it.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Reviewed-by: Minchan Kim <minchan@kernel.org>
+> 
+> Thanks, Minchan!
+> 
+> > > @@ -890,6 +973,73 @@ repeat:
+> > >  EXPORT_SYMBOL(find_or_create_page);
+> > >  
+> > >  /**
+> > > + * __find_get_pages - gang pagecache lookup
+> > > + * @mapping:	The address_space to search
+> > > + * @start:	The starting page index
+> > > + * @nr_pages:	The maximum number of pages
+> > > + * @pages:	Where the resulting pages are placed
+> > 
+> > where is @indices?
+> 
+> Fixed :)
+> 
+> > > @@ -894,6 +894,53 @@ EXPORT_SYMBOL(__pagevec_lru_add);
+> > >  
+> > >  /**
+> > >   * pagevec_lookup - gang pagecache lookup
+> > 
+> >       __pagevec_lookup?
+> > 
+> > > + * @pvec:	Where the resulting entries are placed
+> > > + * @mapping:	The address_space to search
+> > > + * @start:	The starting entry index
+> > > + * @nr_pages:	The maximum number of entries
+> > 
+> >       missing @indices?
+> > 
+> > > + *
+> > > + * pagevec_lookup() will search for and return a group of up to
+> > > + * @nr_pages pages and shadow entries in the mapping.  All entries are
+> > > + * placed in @pvec.  pagevec_lookup() takes a reference against actual
+> > > + * pages in @pvec.
+> > > + *
+> > > + * The search returns a group of mapping-contiguous entries with
+> > > + * ascending indexes.  There may be holes in the indices due to
+> > > + * not-present entries.
+> > > + *
+> > > + * pagevec_lookup() returns the number of entries which were found.
+> > 
+> >       __pagevec_lookup
+> 
+> Yikes, all three fixed.
+> 
+> > > @@ -22,6 +22,22 @@
+> > >  #include <linux/cleancache.h>
+> > >  #include "internal.h"
+> > >  
+> > > +static void clear_exceptional_entry(struct address_space *mapping,
+> > > +				    pgoff_t index, void *entry)
+> > > +{
+> > > +	/* Handled by shmem itself */
+> > > +	if (shmem_mapping(mapping))
+> > > +		return;
+> > > +
+> > > +	spin_lock_irq(&mapping->tree_lock);
+> > > +	/*
+> > > +	 * Regular page slots are stabilized by the page lock even
+> > > +	 * without the tree itself locked.  These unlocked entries
+> > > +	 * need verification under the tree lock.
+> > > +	 */
+> > 
+> > Could you explain why repeated spin_lock with irq disabled isn't problem
+> > in truncation path?
+> 
+> To modify the cache tree, we have to take the IRQ-safe tree_lock, this
+> is no different than removing a page (see truncate_complete_page).
 
-Uwe we may work together on this.
+I meant we can do batch irq_[lock|unlock] part with periodic irq release
+because clear_exceptional_entry is always called with gang pagecache
+lookup.
 
-Chris
+Just a comment about optimiztation so it shouldn't be critical for merging
+and we could do in future if it's really problem for scalability.
 
->> Considering that it's already late today and that I don't know the
->> chipidea driver I'm sure there are people who can come up with a better
->> patch with less effort than me. Any volunteers?
->>
->> Best regards
->> Uwe
->>
->> -- 
->> Pengutronix e.K.                           | Uwe Kleine-König            |
->> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->>
->>
-
+-- 
+Kind regards,
+Minchan Kim
