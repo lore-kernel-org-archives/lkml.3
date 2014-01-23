@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315AbaAWOBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:01:24 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:61590 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaAWOBX (ORCPT
+	id S1753484AbaAWOHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:07:43 -0500
+Received: from smtp-out-198.synserver.de ([212.40.185.198]:1102 "EHLO
+	smtp-out-085.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752717AbaAWOHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:01:23 -0500
-Date: Thu, 23 Jan 2014 15:01:20 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lei Wen <adrian.wenl@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-Message-ID: <20140123140118.GC13345@localhost.localdomain>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
- <CALZhoSRvhqJXU=z=h30SS6USjHFe3yKLsJN9WzQr6ch0sxoN-g@mail.gmail.com>
- <CAKohpokbb3ko3sW4kuDKZSoY1qJ6apVVR3-jpv=7m5ZX__YP8Q@mail.gmail.com>
- <20140120154058.GA9436@localhost.localdomain>
- <CAKohpon=VagQfYauMfb-UH7MQCHATO5i0xDL1_3r=zzpJ4w9zw@mail.gmail.com>
+	Thu, 23 Jan 2014 09:07:41 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25836
+Message-ID: <52E12224.9060506@metafoo.de>
+Date: Thu, 23 Jan 2014 15:07:32 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpon=VagQfYauMfb-UH7MQCHATO5i0xDL1_3r=zzpJ4w9zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Srikanth Thokala <sthokal@xilinx.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>  <1390409565-4200-2-git-send-email-sthokal@xilinx.com>  <52E0FC22.8060903@metafoo.de> <1390484317.7619.81.camel@smile>  <52E11E39.6090901@metafoo.de> <1390485637.7619.88.camel@smile>
+In-Reply-To: <1390485637.7619.88.camel@smile>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 03:19:36PM +0530, Viresh Kumar wrote:
-> On 20 January 2014 21:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > But for workqueues having a global affinity, I think they can be rescheduled later
-> > on the old CPUs. Although I'm not sure about that, I'm Cc'ing Tejun.
+On 01/23/2014 03:00 PM, Andy Shevchenko wrote:
+> On Thu, 2014-01-23 at 14:50 +0100, Lars-Peter Clausen wrote:
+>> On 01/23/2014 02:38 PM, Shevchenko, Andriy wrote:
+>>> On Thu, 2014-01-23 at 12:25 +0100, Lars-Peter Clausen wrote:
+>>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+>>>
+>>> [...]
+>>>
+>>>>> +	/* Request the interrupt */
+>>>>> +	chan->irq = irq_of_parse_and_map(node, 0);
+>>>>> +	err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
+>>>>> +			       IRQF_SHARED, "xilinx-vdma-controller", chan);
+>>>>
+>>>> This is a clasic example of where to not use devm_request_irq. 'chan' is
+>>>> accessed in the interrupt handler, but if you use devm_request_irq 'chan'
+>>>> will be freed before the interrupt handler has been released, which means
+>>>> there is now a race condition where the interrupt handler can access already
+>>>> freed memory.ta
+>>>
+>>> Could you elaborate this case? As far as I understood managed resources
+>>> are a kind of stack pile. In this case you have no such condition. Where
+>>> am I wrong?
+>>
+>> The stacked stuff is only ran after the remove() function. Which means that
+>> you call dma_async_device_unregister() before the interrupt handler is
+>> freed. Another issue with the interrupt handler is a bit hidden. The driver
+>> does not call tasklet_kill in the remove function. Which it should though to
+>> make sure that the tasklet does not race against the freeing of the memory.
+>> And in order to make sure that the tasklet is not rescheduled you need to
+>> free the irq before killing the tasklet, since the interrupt handler
+>> schedules the tasklet.
 > 
-> Works queued on workqueues with WQ_UNBOUND flag set are run on any cpu
-> and is decided by scheduler, whereas works queued on workqueues with this
-> flag not set and without a cpu number mentioned while queuing work,
-> runs on local
-> CPU always.
+> So, you mean devm_request_irq() will race in any DMA driver?
 
-Ok, so it is fine to migrate the latter kind I guess?
+Most likely yes. devm_request_irq() is race condition prone for the majority
+of device driver. You have to be really careful if you want to use it.
 
 > 
-> > Also, one of the plan is to extend the sysfs interface of workqueues to override
-> > their affinity. If any of you guys want to try something there, that would be welcome.
-> > Also we want to work on the timer affinity. Perhaps we don't need a user interface
-> > for that, or maybe something on top of full dynticks to outline that we want the unbound
-> > timers to run on housekeeping CPUs only.
-> 
-> What about a quiesce option as mentioned by PeterZ? With that we can move
-> all UNBOUND timers and workqueues away. But to guarantee that we don't get
-> them queued again later we need to make similar updates in workqueue/timer
-> subsystem to disallow queuing any such stuff on such cpusets.
+> I think the proper solution is to disable all device work in
+> the .remove() and devm will care about resources.
 
-I haven't checked the details but then this quiesce option would involve
-a dependency on cpuset for any workload involving workqueues affinity. I'm
-not sure we really want this. Besides, workqueues have an existing sysfs interface
-that can be easily extended.
+As long as the interrupt handler is registered it can be called, the only
+proper solution is to make sure that the order in which resources are torn
+down is correct.
 
-Now indeed we may also want to enforce some policy to make sure that further
-created and queued workqueues are affine to a specific subset of CPUs. And then
-cpuset sounds like a good idea :)
+- Lars
