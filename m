@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426AbaAWSTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:19:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12935 "EHLO mx1.redhat.com"
+	id S932442AbaAWSTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:19:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59710 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138AbaAWSS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:18:58 -0500
-Date: Thu, 23 Jan 2014 13:18:56 -0500 (EST)
+	id S932138AbaAWSTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:19:09 -0500
+Date: Thu, 23 Jan 2014 13:19:06 -0500 (EST)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/10] atyfb: set FBINFO_READS_FAST
-In-Reply-To: <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Subject: [PATCH 5/10] atyfb: remove resolution limit 1600
+In-Reply-To: <alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1401231306220.31739@file01.intranet.prod.int.rdu2.redhat.com>
 References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -23,34 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set FBINFO_READS_FAST so that the console code uses scrolling instead of
-rewriting. This improves scrolling speed.
-
-A time to do ls -la /usr/bin:
-	original patched
-32bpp	4.9	3.6
-24bpp	4.9	2.9
-16bpp	4.9	2.1
-8bpp	4.9	1.7
+The card works fine in 1980x1080 resolution. Therefore, there is no need
+to limit the resolution to 1600 pixels.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
 ---
- drivers/video/aty/atyfb_base.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/aty/atyfb_base.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-3.13-rc1/drivers/video/aty/atyfb_base.c
+Index: linux-3.11-rc7-fast/drivers/video/aty/atyfb_base.c
 ===================================================================
---- linux-3.13-rc1.orig/drivers/video/aty/atyfb_base.c	2013-11-27 00:25:42.000000000 +0100
-+++ linux-3.13-rc1/drivers/video/aty/atyfb_base.c	2013-11-27 00:25:55.000000000 +0100
-@@ -2653,7 +2653,8 @@ static int aty_init(struct fb_info *info
- 		      FBINFO_HWACCEL_IMAGEBLIT |
- 		      FBINFO_HWACCEL_FILLRECT  |
- 		      FBINFO_HWACCEL_COPYAREA  |
--		      FBINFO_HWACCEL_YPAN;
-+		      FBINFO_HWACCEL_YPAN      |
-+		      FBINFO_READS_FAST;
+--- linux-3.11-rc7-fast.orig/drivers/video/aty/atyfb_base.c	2013-09-02 18:50:52.000000000 +0200
++++ linux-3.11-rc7-fast/drivers/video/aty/atyfb_base.c	2013-09-02 18:50:58.000000000 +0200
+@@ -862,8 +862,8 @@ static int aty_var_to_crtc(const struct 
+ 	h_sync_pol = sync & FB_SYNC_HOR_HIGH_ACT ? 0 : 1;
+ 	v_sync_pol = sync & FB_SYNC_VERT_HIGH_ACT ? 0 : 1;
  
- #ifdef CONFIG_PMAC_BACKLIGHT
- 	if (M64_HAS(G3_PB_1_1) && of_machine_is_compatible("PowerBook1,1")) {
+-	if ((xres > 1600) || (yres > 1200)) {
+-		FAIL("MACH64 chips are designed for max 1600x1200\n"
++	if ((xres > 1920) || (yres > 1200)) {
++		FAIL("MACH64 chips are designed for max 1920x1200\n"
+ 		     "select another resolution.");
+ 	}
+ 	h_sync_strt = h_disp + var->right_margin;
 
