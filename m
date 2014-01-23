@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaAWGnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 01:43:11 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53778 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756169AbaAWGm6 (ORCPT
+	id S1753337AbaAWGtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 01:49:41 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35844 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaAWGtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 01:42:58 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] MAINTAINERS: vt8500: Update maintained files for arch/vt8500
-Date: Thu, 23 Jan 2014 19:43:21 +1300
-Message-Id: <1390459401-30549-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 23 Jan 2014 01:49:40 -0500
+Message-ID: <52E0BB75.2080102@linaro.org>
+Date: Thu, 23 Jan 2014 14:49:25 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        Mike Galbraith <efault@gmx.de>, wangyun@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] sched: add statistic for rq->max_idle_balance_cost
+References: <1390282399-17091-1-git-send-email-alex.shi@linaro.org>	 <1390282399-17091-2-git-send-email-alex.shi@linaro.org>	 <CAGQ1y=4rgj8qPeKQhNTA5__VzrOQ1uCqFZrVLO3MO9MfL+6UEg@mail.gmail.com>	 <52DF802D.4030608@linaro.org>	 <20140122160901.GW13532@twins.programming.kicks-ass.net> <1390414208.2866.11.camel@j-VirtualBox>
+In-Reply-To: <1390414208.2866.11.camel@j-VirtualBox>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed maintainership of the ehci-platform.c and uhci-platform.c
-drivers. These drivers are not solely used by arch-vt8500 anymore,
-and are captured under Alan Stern's 'USB EHCI DRIVER' and
-'USB UHCI DRIVER' wildcards.
+On 01/23/2014 02:10 AM, Jason Low wrote:
+>>> > >  	P64(avg_idle);
+>>> > > +	P64(max_idle_balance_cost);
+>>> > >  #endif
+>>> > >   	P(ttwu_count);
+>> > 
+>> > Not also the per-sd value in sd_alloc_ctl_domain_table() ?
+> Yeah, tracking the sd->max_newidle_lb_cost can also be useful.
+> 
+> 
 
-Add maintainership for the VT8500's clock, irq and pinctrl drivers
-which were added/migrated quite some time ago.
+Thanks for suggestion!
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+I thought the sd->max_newidle_lb_cost keep changing. But yes, it's
+still meaningful. 
+BTW, in the pandaboard ES, sd balance cost is about 1~2ms.
+
 ---
- MAINTAINERS |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6a6e4ac..ac26897 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1341,14 +1341,15 @@ M:	Tony Prisk <linux@prisktech.co.nz>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- F:	arch/arm/mach-vt8500/
-+F:	drivers/clk/clk-vt8500.c
- F:	drivers/clocksource/vt8500_timer.c
- F:	drivers/i2c/busses/i2c-wmt.c
-+F:	drivers/irqchip/irq-vt8500.c
- F:	drivers/mmc/host/wmt-sdmmc.c
-+F:	drivers/pinctrl/vt8500/
- F:	drivers/pwm/pwm-vt8500.c
- F:	drivers/rtc/rtc-vt8500.c
- F:	drivers/tty/serial/vt8500_serial.c
--F:	drivers/usb/host/ehci-platform.c
--F:	drivers/usb/host/uhci-platform.c
- F:	drivers/video/vt8500lcdfb.*
- F:	drivers/video/wm8505fb*
- F:	drivers/video/wmt_ge_rops.*
+>From d37e712b623fb6776d0caba8e4bd06460e26b84e Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@linaro.org>
+Date: Tue, 21 Jan 2014 13:28:55 +0800
+Subject: [PATCH] sched: add statistic for newidle load balance cost
+
+Tracking rq->max_idle_balance_cost and sd->max_newidle_lb_cost
+It's useful to track these values in debug mode.
+
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/core.c  | 7 +++++--
+ kernel/sched/debug.c | 1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c3f3824..a046bc3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4293,7 +4293,7 @@ set_table_entry(struct ctl_table *entry,
+ static struct ctl_table *
+ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ {
+-	struct ctl_table *table = sd_alloc_ctl_entry(8);
++	struct ctl_table *table = sd_alloc_ctl_entry(9);
+ 
+ 	if (table == NULL)
+ 		return NULL;
+@@ -4313,7 +4313,10 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ 		sizeof(int), 0644, proc_dointvec_minmax);
+ 	set_table_entry(&table[6], "name", sd->name,
+ 		CORENAME_MAX_SIZE, 0444, proc_dostring);
+-	/* &table[7] is terminator */
++	set_table_entry(&table[7], "max_newidle_lb_cost",
++		&sd->max_newidle_lb_cost,
++		sizeof(long), 0644, proc_doulongvec_minmax);
++	/* &table[8] is terminator */
+ 
+ 	return table;
+ }
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 1e43e70..9ecd861 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -315,6 +315,7 @@ do {									\
+ 	P(sched_goidle);
+ #ifdef CONFIG_SMP
+ 	P64(avg_idle);
++	P64(max_idle_balance_cost);
+ #endif
+ 
+ 	P(ttwu_count);
 -- 
-1.7.9.5
+1.8.1.2
 
+-- 
+Thanks
+    Alex
