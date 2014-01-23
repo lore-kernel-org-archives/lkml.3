@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaAWWtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 17:49:05 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49015 "EHLO mail.skyhub.de"
+	id S932215AbaAWWtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 17:49:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8217 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826AbaAWWtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 17:49:03 -0500
-Date: Thu, 23 Jan 2014 23:48:57 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
-Message-ID: <20140123224857.GG5868@pd.tnic>
-References: <20140123221108.GL18196@sgi.com>
+	id S1751184AbaAWWte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 17:49:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,709,1384329600"; 
+   d="scan'208";a="471564229"
+Message-ID: <52E19C7D.7050603@intel.com>
+Date: Thu, 23 Jan 2014 14:49:33 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140123221108.GL18196@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Panic on 8-node system in memblock_virt_alloc_try_nid()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 04:11:08PM -0600, Alex Thorlton wrote:
-> We've been hitting the following bug in the latest kernel, during boot:
+Linus's current tree doesn't boot on an 8-node/1TB NUMA system that I
+have.  Its reboots are *LONG*, so I haven't fully bisected it, but it's
+down to a just a few commits, most of which are changes to the memblock
+code.  Since the panic is in the memblock code, it looks like a
+no-brainer.  It's almost certainly the code from Santosh or Grygorii
+that's triggering this.
 
-Can you merge
+Config and good/bad dmesg with memblock=debug are here:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git#next
+	http://sr71.net/~dave/intel/3.13/
 
-into your tree, enable CONFIG_EFI_PGT_DUMP, apply the debugging patch
-below, catch the whole dmesg and send it to me (privately is fine too)?
+Please let me know if you need it bisected further than this.
 
-Thanks.
+The remaining commits are these:
 
----
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index f35c66c5959a..07712b9b4263 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -348,7 +348,12 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
- 						_PAGE_USER));
- 		}
- 		pmd = pmd_offset(pud, phys);
--		BUG_ON(!pmd_none(*pmd));
-+		if (!pmd_none(*pmd)) {
-+			pr_err("phys: 0x%lx, PGD: 0x%lx, PUD: 0x%lx, PMD: 0x%lx\n",
-+				phys, pgd_val(*pgd), pud_val(*pud), pmd_val(*pmd));
-+			BUG();
-+		}
-+
- 		set_pmd(pmd, __pmd(phys | pgprot_val(prot)));
- 	}
- }
---
+> commit 4883e997b26ed857da8dae6a6e6aeb12830b978d
+> commit 560dca27a6b36015e4f69a4ceba0ee5be0707c17
+> commit 9a28f9dc8d10b619af9a37b1e27c41ada5415629
+> commit b6cb5bab263791d09abe88f24df6c2da53415320
+> commit cfb665864e54ee7a160750b4815bfe6b7eb13d0d
+> commit 9233d2be108f573caa21eb450411bf8fa68cadbb
+> commit 4fc0bc58cb7d983e55baa8dcbb7c1a4ee54e65be
+> commit 9e43aa2b8d1cb3137bd7e60d5fead83d0569de2b
+> commit 999c17e3de4855af4e829c0871ad32fc76a93991
+> commit 0d036e9e33df8befa9348683ba68258fee7f0a00
+> commit 8b89a1169437541a2a9b62c8f7b1a5c0ceb0fbde
+> commit bb016b84164554725899aef544331085e08cb402
+> commit c15295001aa940df4e3cf6574808a4addca9f2e5
+> commit 457ff1de2d247d9b8917c4664c2325321a35e313
+> commit c2f69cdafebb3a46e43b5ac57ca12b539a2c790f
+> commit 6782832eba5e8c87a749a41da8deda1c3ef67ba0
+> commit 9da791dfabc60218c81904c7906b45789466e68e
+> commit 098b081b50d5eb8c7e0200a4770b0bcd28eab9ce
+> commit 26f09e9b3a0696f6fe20b021901300fba26fb579
+> commit b115423357e0cda6d8f45d0c81df537d7b004020
+> commit 87029ee9390b2297dae699d5fb135b77992116e5
+> commit 79f40fab0b3a78e0e41fac79a65a9870f4b05652
+> commit 869a84e1ca163b737236dae997db4a6a1e230b9b
+> commit 10e89523bf5aade79081f501452fe7f1a16fa189
+> commit fd615c4e671979e3e362df537d6be38f8d27aa80
+> commit 5b6e529521d35e1bcaa0fe43456d1bbb335cae5d
 
--- 
-Regards/Gruss,
-    Boris.
+The oops I see is this:
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> [    0.000000] Kernel panic - not syncing: : Failed to allocate 2143289344 bytes align=0x200000 nid=0 from=0x1000000 max_addr=0x0
+> [    0.000000] 
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.13.0-slub-03995-g0dc3fd0-dirty #816
+> [    0.000000] Hardware name: FUJITSU-SV PRIMEQUEST 1800E2/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.24 09/14/2011
+> [    0.000000]  0000000001000000 ffffffff81c01ce8 ffffffff81706941 0000000000000687
+> [    0.000000]  ffffffff81a30b48 ffffffff81c01d68 ffffffff817029de 0000000000000000
+> [    0.000000]  0000000000000030 ffffffff81c01d80 ffffffff81c01d18 ffffffff81c01d68
+> [    0.000000] Call Trace:
+> [    0.000000]  [<ffffffff81706941>] dump_stack+0x4e/0x68
+> [    0.000000]  [<ffffffff817029de>] panic+0xbb/0x1cb
+> [    0.000000]  [<ffffffff81d3bef9>] memblock_virt_alloc_try_nid+0xa1/0xa1
+> [    0.000000]  [<ffffffff816ff5f9>] __earlyonly_bootmem_alloc.constprop.0+0x21/0x28
+> [    0.000000]  [<ffffffff81d3cf27>] sparse_mem_maps_populate_node+0x34/0x132
+> [    0.000000]  [<ffffffff81d3cbd3>] ? alloc_usemap_and_memmap+0x10f/0x10f
+> [    0.000000]  [<ffffffff81d3cbdc>] sparse_early_mem_maps_alloc_node+0x9/0xb
+> [    0.000000]  [<ffffffff81d3cb96>] alloc_usemap_and_memmap+0xd2/0x10f
+> [    0.000000]  [<ffffffff81d3ce29>] sparse_init+0x85/0x14f
+> [    0.000000]  [<ffffffff81d2adbb>] paging_init+0x13/0x22
+> [    0.000000]  [<ffffffff81d1b521>] setup_arch+0xb51/0xc6e
+> [    0.000000]  [<ffffffff81703150>] ? printk+0x4d/0x4f
+> [    0.000000]  [<ffffffff81d14b1a>] start_kernel+0x85/0x3db
+> [    0.000000]  [<ffffffff81d145a8>] x86_64_start_reservations+0x2a/0x2c
+> [    0.000000]  [<ffffffff81d1469a>] x86_64_start_kernel+0xf0/0xf7
