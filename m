@@ -1,170 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249AbaAWGei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 01:34:38 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53830 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaAWGeh (ORCPT
+	id S932141AbaAWGfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 01:35:41 -0500
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:40831
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751718AbaAWGfk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 01:34:37 -0500
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jan 2014 01:34:36 EST
-From: Tony Prisk <linux@prisktech.co.nz>
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] arm: vt8500: Fix gpio mux setup in vt8500_init()
-Date: Thu, 23 Jan 2014 19:28:47 +1300
-Message-Id: <1390458527-30068-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 23 Jan 2014 01:35:40 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: David Rientjes <rientjes@google.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "moinejf@free.fr" <moinejf@free.fr>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 6/8] ASoC: simple-card: add tdm slot supports
+Thread-Topic: [PATCH 6/8] ASoC: simple-card: add tdm slot supports
+Thread-Index: AQHPGAClUMEH+aXAu0Kr9scjlixeR5qR092AgAAF4XE=
+Date: Thu, 23 Jan 2014 06:35:35 +0000
+Message-ID: <a02ec2db6eb4459498ad5dbea44e511c@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
+ <1390453370-29194-7-git-send-email-Li.Xiubo@freescale.com>,<alpine.DEB.2.02.1401222210560.8088@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401222210560.8088@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 0100732B76
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(164054003)(199002)(189002)(81816001)(47976001)(47736001)(85306002)(81542001)(87936001)(81686001)(4396001)(80976001)(53806001)(76796001)(92566001)(76576001)(50986001)(79102001)(56776001)(76786001)(93136001)(81342001)(87266001)(49866001)(69226001)(74366001)(59766001)(65816001)(54316002)(85852003)(33646001)(2656002)(63696002)(56816005)(51856001)(74706001)(83072002)(47446002)(74316001)(54356001)(76482001)(74502001)(74876001)(83322001)(31966008)(19580395003)(86362001)(66066001)(80022001)(46102001)(90146001)(93516002)(74662001)(77982001)(94316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the switch to a pinctrl driver, and the dropping of the gpio driver,
-the code in vt8500_init now always fails, and drops back to LEGACY mode.
+Hi David,
 
-Update the gpio mux init code, and removing the #ifdef's and the LEGACY
-mode fallback.
+Firstly thanks for your comment.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- arch/arm/mach-vt8500/vt8500.c |   91 ++++++++++++++---------------------------
- 1 file changed, 30 insertions(+), 61 deletions(-)
+> > +asoc_simple_card_of_parse_tdm_slot(struct device_node *np,
+> > +				   struct device *dev,
+> > +				   struct asoc_simple_dai *dai,
+> > +				   const char *propname)
+> > +{
+> > +	struct asoc_simple_tdm_slot *tdm;
+> > +	u32 out_value[4];
+> > +	int ret;
+> > +
+> > +	if (!of_property_read_bool(np, propname))
+> > +		return 0;
+> > +
+> > +	tdm = devm_kzalloc(dev, sizeof(*tdm), GFP_KERNEL);
+> > +	if (!tdm)
+> > +		return -ENOMEM;
+> > +
+> > +	ret = of_property_read_u32_array(np, propname, out_value, 4);
+> > +	if (ret)
+> > +		return ret;
+> 
+> Looks like a memory leak?
+>
 
-diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
-index 4a73464..fe5243e 100644
---- a/arch/arm/mach-vt8500/vt8500.c
-+++ b/arch/arm/mach-vt8500/vt8500.c
-@@ -32,9 +32,6 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
+Using devm_ and this will be called by _probe().
+
+Please see the "Documentation/driver-model/devres.txt" for detail about
+devres.
+
  
--#define LEGACY_GPIO_BASE	0xD8110000
--#define LEGACY_PMC_BASE		0xD8130000
--
- /* Registers in GPIO Controller */
- #define VT8500_GPIO_MUX_REG	0x200
- 
-@@ -75,89 +72,61 @@ static void vt8500_power_off(void)
- void __init vt8500_init(void)
- {
- 	struct device_node *np;
--#if defined(CONFIG_FB_VT8500) || defined(CONFIG_FB_WM8505)
- 	struct device_node *fb;
--	void __iomem *gpio_base;
--#endif
-+	void __iomem *base;
- 
--#ifdef CONFIG_FB_VT8500
- 	fb = of_find_compatible_node(NULL, NULL, "via,vt8500-fb");
- 	if (fb) {
--		np = of_find_compatible_node(NULL, NULL, "via,vt8500-gpio");
--		if (np) {
--			gpio_base = of_iomap(np, 0);
--
--			if (!gpio_base)
--				pr_err("%s: of_iomap(gpio_mux) failed\n",
--								__func__);
-+		np = of_find_compatible_node(NULL, NULL, "via,vt8500-pinctrl");
-+		if (!np) {
-+			pr_err("pinctrl node required for framebuffer\n");
-+			BUG();
-+		}
- 
--			of_node_put(np);
-+		base = of_iomap(np, 0);
-+		if (base) {
-+			writel(readl(base + VT8500_GPIO_MUX_REG) | 1,
-+			       base + VT8500_GPIO_MUX_REG);
-+			iounmap(base);
- 		} else {
--			gpio_base = ioremap(LEGACY_GPIO_BASE, 0x1000);
--			if (!gpio_base)
--				pr_err("%s: ioremap(legacy_gpio_mux) failed\n",
--								__func__);
-+			pr_err("%s: of_iomap(gpio_mux) failed\n", __func__);
- 		}
--		if (gpio_base) {
--			writel(readl(gpio_base + VT8500_GPIO_MUX_REG) | 1,
--				gpio_base + VT8500_GPIO_MUX_REG);
--			iounmap(gpio_base);
--		} else
--			pr_err("%s: Could not remap GPIO mux\n", __func__);
- 
-+		of_node_put(np);
- 		of_node_put(fb);
- 	}
--#endif
- 
--#ifdef CONFIG_FB_WM8505
- 	fb = of_find_compatible_node(NULL, NULL, "wm,wm8505-fb");
- 	if (fb) {
--		np = of_find_compatible_node(NULL, NULL, "wm,wm8505-gpio");
--		if (!np)
--			np = of_find_compatible_node(NULL, NULL,
--							"wm,wm8650-gpio");
--		if (np) {
--			gpio_base = of_iomap(np, 0);
--
--			if (!gpio_base)
--				pr_err("%s: of_iomap(gpio_mux) failed\n",
--								__func__);
--
--			of_node_put(np);
-+		np = of_find_compatible_node(NULL, NULL, "wm,prizm-pinctrl");
-+		if (!np) {
-+			pr_err("pinctrl node required for framebuffer\n");
-+			BUG();
-+		}
-+
-+		base = of_iomap(np, 0);
-+		if (base) {
-+			writel(readl(base + VT8500_GPIO_MUX_REG) |
-+			       0x80000000, base + VT8500_GPIO_MUX_REG);
-+			iounmap(base);
- 		} else {
--			gpio_base = ioremap(LEGACY_GPIO_BASE, 0x1000);
--			if (!gpio_base)
--				pr_err("%s: ioremap(legacy_gpio_mux) failed\n",
--								__func__);
-+			pr_err("%s: of_iomap(gpio_mux) failed\n", __func__);
- 		}
--		if (gpio_base) {
--			writel(readl(gpio_base + VT8500_GPIO_MUX_REG) |
--				0x80000000, gpio_base + VT8500_GPIO_MUX_REG);
--			iounmap(gpio_base);
--		} else
--			pr_err("%s: Could not remap GPIO mux\n", __func__);
- 
-+		of_node_put(np);
- 		of_node_put(fb);
- 	}
--#endif
- 
- 	np = of_find_compatible_node(NULL, NULL, "via,vt8500-pmc");
- 	if (np) {
- 		pmc_base = of_iomap(np, 0);
--
--		if (!pmc_base)
--			pr_err("%s:of_iomap(pmc) failed\n", __func__);
-+		if (pmc_base)
-+			pm_power_off = &vt8500_power_off;
-+		else
-+			pr_err("%s: of_iomap(pmc) failed\n", __func__);
- 
- 		of_node_put(np);
--	} else {
--		pmc_base = ioremap(LEGACY_PMC_BASE, 0x1000);
--		if (!pmc_base)
--			pr_err("%s:ioremap(power_off) failed\n", __func__);
- 	}
--	if (pmc_base)
--		pm_power_off = &vt8500_power_off;
--	else
--		pr_err("%s: PMC Hibernation register could not be remapped, not enabling power off!\n", __func__);
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
--- 
-1.7.9.5
+> > +
+> > +	tdm->tx_mask = out_value[0];
+> > +	tdm->rx_mask = out_value[1];
+> > +	tdm->slots = out_value[2];
+> > +	tdm->slot_width = out_value[3];
+> > +
+> > +	dai->tdm = tdm;
+> > +
+> > +	return 0;
+> > +}
+> > +
+
+Thanks,
+
+Best Regards,
+Xiubo
 
