@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaAWSwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:52:38 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:57314 "EHLO thoth.sbs.de"
+	id S1753029AbaAWSyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:54:13 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:59971 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaAWSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:52:37 -0500
-Message-ID: <52E164BC.1080302@siemens.com>
-Date: Thu, 23 Jan 2014 19:51:40 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1751873AbaAWSyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:54:12 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: AMD microcode loading broken on 32 bit
+Date: Thu, 23 Jan 2014 13:54:06 -0500
+References: <52DE94A9.9060505@oracle.com> <20140121182554.GE9004@pd.tnic> <52E15AAE.4090106@oracle.com>
+In-Reply-To: <52E15AAE.4090106@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: x86: Inconsistent xAPIC synchronization in arch_irq_work_raise?
-References: <52DE6FCE.2050708@siemens.com> <20140121140113.GL30183@twins.programming.kicks-ass.net> <20140121145105.GE3694@twins.programming.kicks-ass.net> <1390346420.23634.5.camel@yhuang-dev> <20140122184325.GY20765@two.firstfloor.org>
-In-Reply-To: <20140122184325.GY20765@two.firstfloor.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201401231354.06952.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-22 19:43, Andi Kleen wrote:
->>> Huang Ying, can you explain to Jan why you do the wait afterwards?
->>
->> I borrow the code from the original MCE report event code.
->>
->> Andi, could you help us to explain it?
-> 
-> I don't recall all the details, but I believe i also just copied 
-> it from the APIC code. I don't think I did any particular ordering
-> intentionally.
+On Thursday 23 January 2014, Boris Ostrovsky wrote:
+>On 01/21/2014 01:25 PM, Borislav Petkov wrote:
+>> On Tue, Jan 21, 2014 at 12:55:53PM -0500, Boris Ostrovsky wrote:
+>>>          cat $(AMD_UCODE_PATH)/* >
+>>> 
+>>> ucode_initrd/kernel/x86/microcode/AuthenticAMD.bin
+>>> 
+>>>          (cd ucode_initrd;find . | cpio -o -H newc >
+>>> 
+>>> ../$(DISTDIR)/common/ucode_initrd.cpio)
+>>> 
+>>>          ...
+>>>          cat $(DISTDIR)/common/ucode_initrd.cpio \
+>>>          
+>>>              $(DISTDIR)/common/_initramfs.cpio.gz > \
+>>>              $(DISTDIR)/common/initramfs.cpio.gz
+>>> 
+>>> and as I just discovered, with a little twist: apparently
+>>> AMD_UCODE_PATH points to Intel microcode.
+>> 
+>> LOL!
+>> 
+>> @hpa: in case you were wondering whether Intel ucode works on AMD - it
+>> doesn't! :-)
+>> 
+>>> So we clearly screwed up on our end but I'd think that we shouldn't
+>>> crash when this happens.
+>> 
+>> Yes, we shouldn't. I'll try to reproduce it here.
+>
+>So I tried this on a "good" system and I am pretty sure this is broken.
+>I don't
+>have any microcode in initrd and I am still dying in
+>load_microcode_amd().
 
-OK, then let me summarize my current understanding so that we can derive
-a consistent usage:
+You can find the code on AMD's web site if you look carefully, or at least 
+I was able to some years ago when I built this box.  There s/b an installer 
+that lives in /etc/init.d, and the code itself normally lives in the 
+/lib/firmware/amd-ucode/ directory.
 
-The xAPIC requires us to only write to ICR (both low and high part) if
-ICR.DS is cleared - correct? ICR.DS checking as well as ICR writing must
-only work against the same CPU, naturally.
+If its working correctly you should see something resembling this in your 
+dmsg with:
+gene@coyote$ grep microcode  /var/log/dmesg
+[   22.572212] microcode: CPU0: patch_level=0x01000065
+[   22.573242] microcode: CPU0: new patch_level=0x01000083
+[   22.573256] microcode: CPU1: patch_level=0x01000065
+[   22.573263] microcode: CPU1: new patch_level=0x01000083
+[   22.573273] microcode: CPU2: patch_level=0x01000065
+[   22.573281] microcode: CPU2: new patch_level=0x01000083
+[   22.573293] microcode: CPU3: patch_level=0x01000065
+[   22.573301] microcode: CPU3: new patch_level=0x01000083
+[   22.573377] microcode: Microcode Update Driver: v2.00 
+<tigran@aivazian.fsnet.co.uk>, Peter Oruba
 
-Both __default_send_IPI_shortcut and __default_send_IPI_dest_field check
-ICR.DS first, then write, but do not wait for ICR.DS to become 0 again -
-not needed if this pattern is used consistently. Moreover,
-default_send_IPI_mask* disables interrupts around these steps, thus
-ensure atomicity. But shorthand IPI transmitters
-(default_send_IPI_allbutself, default_send_IPI_all,
-default_send_IPI_self) do not disable interrupts themselves. I didn't
-check their call sites yet, maybe it's there.
+That was from a bootup to 3.12.6, 32 bit PAE, on a quad core phenom.
 
-Next we have x86's arch_irq_work_raise which does wait-write-wait,
-either by chance or in order to work around a missing atomicity of
-wait+write somewhere else. Preemption is off, interrupts remain on.
-
-And then there is apic_icr_write, used while onlining CPUs, not only
-during boot, that runs without any protection - that's the race I
-originally stumbled over (INIT/SIPI or "just" NMI signals can end up on
-the wrong CPU).
-
-So now I'm looking for consistent locking rules (which type of lock, who
-is responsible when issuing IPIs?) and a good (ie. also efficient) way
-to apply them.
-
-Jan
-
+Cheers, Gene
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
+
+If you continually give you will continually have.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
