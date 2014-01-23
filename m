@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630AbaAWWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 17:46:09 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:64365 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941AbaAWWqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 17:46:07 -0500
-Date: Thu, 23 Jan 2014 14:45:59 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mike Waychison <mikew@google.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] firmware/google: drop 'select EFI' to avoid recursive
- dependency
-In-Reply-To: <20140123134910.144a70cc0fd4c02ba0f14de4@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401231444510.26509@chino.kir.corp.google.com>
-References: <1390473588-23367-1-git-send-email-ard.biesheuvel@linaro.org> <alpine.DEB.2.02.1401231334540.7313@chino.kir.corp.google.com> <20140123134910.144a70cc0fd4c02ba0f14de4@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755629AbaAWWtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 17:49:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49015 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbaAWWtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 17:49:03 -0500
+Date: Thu, 23 Jan 2014 23:48:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
+Message-ID: <20140123224857.GG5868@pd.tnic>
+References: <20140123221108.GL18196@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140123221108.GL18196@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014, Andrew Morton wrote:
+On Thu, Jan 23, 2014 at 04:11:08PM -0600, Alex Thorlton wrote:
+> We've been hitting the following bug in the latest kernel, during boot:
 
-> > $ ./scripts/get_maintainer.pl -f drivers/firmware/google/Kconfig
-> > linux-kernel@vger.kernel.org (open list)
-> > 
-> > I wonder why he's not listed as a recipient for patches from 
-> > get_maintainer.pl since it's clearly obvious he wrote the entire file.
-> 
-> I do wish get_maintainer was better about this.  You can apparently
-> make it dtrt with funky arguments, but --git-since and --git aren't
-> working for me.
-> 
-> get_maintainer's default output should answer the question "who do I
-> email about this file", and that ain't working :(
-> 
+Can you merge
 
-I also think it would be great if get_maintainer's output was friendlier 
-so that I can just copy a comma-separated line of "name <email>, name2 
-<email2>" into my email client.
+git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git#next
+
+into your tree, enable CONFIG_EFI_PGT_DUMP, apply the debugging patch
+below, catch the whole dmesg and send it to me (privately is fine too)?
+
+Thanks.
+
+---
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index f35c66c5959a..07712b9b4263 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -348,7 +348,12 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
+ 						_PAGE_USER));
+ 		}
+ 		pmd = pmd_offset(pud, phys);
+-		BUG_ON(!pmd_none(*pmd));
++		if (!pmd_none(*pmd)) {
++			pr_err("phys: 0x%lx, PGD: 0x%lx, PUD: 0x%lx, PMD: 0x%lx\n",
++				phys, pgd_val(*pgd), pud_val(*pud), pmd_val(*pmd));
++			BUG();
++		}
++
+ 		set_pmd(pmd, __pmd(phys | pgprot_val(prot)));
+ 	}
+ }
+--
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
