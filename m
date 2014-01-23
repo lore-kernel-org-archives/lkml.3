@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaAWTp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:45:29 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:49268 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaAWTp1 (ORCPT
+	id S1755342AbaAWTpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:45:36 -0500
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:58216 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156AbaAWTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:45:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1401231426470.7971@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com>
-	<CA+55aFxPfHmpcMH-bmRcTPUQeq5=67cKVmra6+SvT26ybvQaug@mail.gmail.com>
-	<alpine.LRH.2.02.1401231426470.7971@file01.intranet.prod.int.rdu2.redhat.com>
-Date: Thu, 23 Jan 2014 11:45:26 -0800
-X-Google-Sender-Auth: i5GAr9WjB2u67uvCrj8Sn2E-msg
-Message-ID: <CA+55aFxrZE6oxu5CxFo3mRwGdVcq3jvnn_ChoSJDFgQz45Lq_A@mail.gmail.com>
-Subject: Re: [PATCH 4/10] atyfb: set FBINFO_READS_FAST
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 Jan 2014 14:45:32 -0500
+From: Bharath Ravi <rbharath@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
+        linux-kernel@vger.kernel.org, Bharath Ravi <rbharath@google.com>
+Subject: [PATCH v2] tracing: Allow changing default ring buffer size for ftrace instances.
+Date: Thu, 23 Jan 2014 11:37:25 -0800
+Message-Id: <1390505845-10743-1-git-send-email-rbharath@google.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 11:31 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
-> Both mach64 and matrox have a hardware bitter that is faster than
-> rewriting the console - that's why FBINFO_READS_FAST improves performance
-> for them.
+It is often memory efficient to start instances off with a smaller ring
+buffer size than the current default. This is particularly true on
+systems with many cores, or when multiple ftrace instances are created,
+where the current (higher) default value results in allocation failures.
 
-My point is that I'd expect *anything* that has a hardware blitter to
-be faster than rewriting the screen.
+The global trace buffer allows initialization with a minimal (1 byte)
+size, to save memory using a "ring_buffer_expanded" flag. To allow
+instances a similar capability, trace option named "expand-new-buffers"
+is added. If set to true, ftrace instances created will be initialized
+with ring buffers of the default size. If set to false, the buffers will
+be initialized with a size of 1 byte. By default, the expand_new_buffers
+flag is true.
 
-FBINFO_READS_FAST is documented to be about "soft-copy" being faster
-than re-rendering. Which I take to be about actually doing copying in
-*software*.
+Tested: Booted into a kernel with these changes, verified reading and
+writing the new trace_option. Ensured that new ftrace instances created
+used the appropriate size while initializing their ring buffers.
 
-In particular, updatescrollmode() seems to do this right. It sets
-p->scrollmode based on whether there's an accelerated copyarea. But
-then SCROLL_PAN/WRAP_MOVE ends up re-testing FBINFO_READS_FAST,
-ignoring any hw-accelerated copy-area, and I don't quite see why..
+Signed-off-by: Bharath Ravi <rbharath@google.com>
+---
+ kernel/trace/trace.c | 13 ++++++++++---
+ kernel/trace/trace.h |  1 +
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-                Linus
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9d20cd9..c17c12f 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -410,7 +410,8 @@ static inline void trace_access_lock_init(void)
+ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
+ 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
+ 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
+-	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
++	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION |
++	TRACE_EXPAND_NEW_BUFFERS;
+ 
+ static void tracer_tracing_on(struct trace_array *tr)
+ {
+@@ -753,6 +754,7 @@ static const char *trace_options[] = {
+ 	"irq-info",
+ 	"markers",
+ 	"function-trace",
++	"expand-new-buffers",
+ 	NULL
+ };
+ 
+@@ -5930,7 +5932,7 @@ static int allocate_trace_buffers(struct trace_array *tr, int size)
+ static int new_instance_create(const char *name)
+ {
+ 	struct trace_array *tr;
+-	int ret;
++	int ret, ring_buffer_size;
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -5961,7 +5963,12 @@ static int new_instance_create(const char *name)
+ 	INIT_LIST_HEAD(&tr->systems);
+ 	INIT_LIST_HEAD(&tr->events);
+ 
+-	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
++	/* allocate memory only if buffers are to be expanded */
++	if (trace_flags & TRACE_EXPAND_NEW_BUFFERS)
++		ring_buffer_size = trace_buf_size;
++	else
++		ring_buffer_size = 1
++	if (allocate_trace_buffers(tr, ring_buffer_size) < 0)
+ 		goto out_free_tr;
+ 
+ 	tr->dir = debugfs_create_dir(name, trace_instance_dir);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index ea189e0..15ddbf4 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -888,6 +888,7 @@ enum trace_iterator_flags {
+ 	TRACE_ITER_IRQ_INFO		= 0x800000,
+ 	TRACE_ITER_MARKERS		= 0x1000000,
+ 	TRACE_ITER_FUNCTION		= 0x2000000,
++	TRACE_EXPAND_NEW_BUFFERS	= 0x4000000,
+ };
+ 
+ /*
+-- 
+1.8.5.3
+
