@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaAWSkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:40:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34749 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561AbaAWSjW (ORCPT
+	id S1754590AbaAWSku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:40:50 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58672 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429AbaAWSko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 20/23] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-Date: Thu, 23 Jan 2014 10:39:53 -0800
-Message-Id: <20140123183902.745494894@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
-References: <20140123183859.635713053@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 23 Jan 2014 13:40:44 -0500
+Date: Thu, 23 Jan 2014 18:40:22 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Message-ID: <20140123184022.GC11727@sirena.org.uk>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+ <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+ <20140120100530.GY15937@n2100.arm.linux.org.uk>
+ <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+ <20140123180423.1a62611a@www.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UPT3ojh+0CqEDtpF"
+Content-Disposition: inline
+In-Reply-To: <20140123180423.1a62611a@www.etchedpixels.co.uk>
+X-Cookie: Please ignore previous fortune.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--UPT3ojh+0CqEDtpF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+On Thu, Jan 23, 2014 at 06:04:23PM +0000, Alan Cox wrote:
 
-commit f92f455f67fef27929e6043499414605b0c94872 upstream.
+> We can then enable that config option for ARM (and in time for any other
+> architecture that turns out to need/want it). Eventually it can go away
+> (not that its exactly doing any harm if it doesnt).
 
-{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
-!WANT_PAGE_VIRTUAL, they're plain C functions.
+We'd need to leave it user selectable rather than enabling it for ARM,
+the whole reason this got noticed is that people are trying to build
+kernels that support a wider range of devices for ARM.
 
-If someone calls them with a void *, this pointer is auto-converted to
-struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
+--UPT3ojh+0CqEDtpF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  drivers/md/bcache/bset.c: In function `__btree_sort':
-  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
-  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Convert them to static inline functions to fix this.  There are already
-plenty of users of struct page members inside <linux/mm.h>, so there's
-no reason to keep them as macros.
+iQIcBAEBAgAGBQJS4WISAAoJELSic+t+oim9/IAP/iQ9FWf4Yvk5hhAuq/9JU9M7
+3jJjM/wpQ1I2n2JRu0KyE4Had9tCEdUV1gDwMbWehAP8VsbjRhouOVs0VvDggWcn
+s2VQAg0tgMmTkUsdrLagJNuJhvJqB6heXitiIvU/+GAF9IaQKV3VM1LaRSVFazCi
+uJltDTdS2+8cdO59prUK528LeE+5hYB096B9LvEuUC37jXOWlkOsA/grl0Arxc+x
+GhXCPikVYS8ecq5xSsAfLt7puSg7Uk/rf6ByHDlgtgaSlU4baqEEKEDqBu22RqPl
+/X7EadmVfzeGnUghQ2k/6suz6Igf1TdxvIa783Clq171yWpaY7Rdi7MJQ0Y2nZ5P
+YGSvvO9UEoBqca1lJjhrLwWVkH0KQbCQVBBmUTIvUMzwALOBOGUOj+GV2c/pb79D
+gHAOBOo6RBGpH4hLDAnYD/zILflehMBDsrrzkrkr1JF8MlbkqnP0MFdhF0WJDon9
+b6WmfvsyiAX+SK6WGr4Xk9gO1BuschTUoxtVFMXvxeF428c6hVWOreJvm7GWSWph
+Re8f417NlKryfw1InFQ23b5SAI+jxpn1OW+P39A9Jx+MBlGaPMx7AG0+MrvpQF4+
+K/4RBXERVR3vXUfIwQfXkVvXyaTSsrsJQVsNhXFnCClmvuDA22vIu+g8vYGj15q4
+48gdgQL5GfigXUatwXVK
+=QPQS
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/mm.h |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -766,11 +766,14 @@ static __always_inline void *lowmem_page
- #endif
- 
- #if defined(WANT_PAGE_VIRTUAL)
--#define page_address(page) ((page)->virtual)
--#define set_page_address(page, address)			\
--	do {						\
--		(page)->virtual = (address);		\
--	} while(0)
-+static inline void *page_address(const struct page *page)
-+{
-+	return page->virtual;
-+}
-+static inline void set_page_address(struct page *page, void *address)
-+{
-+	page->virtual = address;
-+}
- #define page_address_init()  do { } while(0)
- #endif
- 
-
-
+--UPT3ojh+0CqEDtpF--
