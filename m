@@ -1,130 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148AbaAWIVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:21:31 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:7633 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751139AbaAWIV3 (ORCPT
+	id S1756171AbaAWIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:22:27 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:42584 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337AbaAWIW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:21:29 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag0TAITQ4FJ5LKVw/2dsb2JhbABbgww4gwKkLgOPRYVQgQ4XdIIlAQEBBDocGAsQCAMOCgklDwUlAyETFIdwxSIWjg4PSQeEOASUPINlkhmBb4FSKIEsAQEeBg
-Date: Thu, 23 Jan 2014 19:21:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Ric Wheeler <rwheeler@redhat.com>, linux-scsi@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lsf-pc@lists.linux-foundation.org
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Message-ID: <20140123082121.GN13997@dastard>
-References: <20131220093022.GV11295@suse.de>
- <52DF353D.6050300@redhat.com>
- <20140122093435.GS4963@suse.de>
- <52DFD168.8080001@redhat.com>
- <20140122143452.GW4963@suse.de>
+	Thu, 23 Jan 2014 03:22:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122143452.GW4963@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1390349441-23853-1-git-send-email-markus.mayer@linaro.org>
+References: <1390349441-23853-1-git-send-email-markus.mayer@linaro.org>
+Date: Thu, 23 Jan 2014 09:22:25 +0100
+Message-ID: <CACRpkdYSh+h4za6tMR1WuPXRo6jPA7TM2XkCYPc-f6vwuaFwcg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: bcm281xx: Centralize register locking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Linaro Patches <patches@linaro.org>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 02:34:52PM +0000, Mel Gorman wrote:
-> On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
-> > On 01/22/2014 04:34 AM, Mel Gorman wrote:
-> > >On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
-> > >>One topic that has been lurking forever at the edges is the current
-> > >>4k limitation for file system block sizes. Some devices in
-> > >>production today and others coming soon have larger sectors and it
-> > >>would be interesting to see if it is time to poke at this topic
-> > >>again.
-> > >>
-> > >Large block support was proposed years ago by Christoph Lameter
-> > >(http://lwn.net/Articles/232757/). I think I was just getting started
-> > >in the community at the time so I do not recall any of the details. I do
-> > >believe it motivated an alternative by Nick Piggin called fsblock though
-> > >(http://lwn.net/Articles/321390/). At the very least it would be nice to
-> > >know why neither were never merged for those of us that were not around
-> > >at the time and who may not have the chance to dive through mailing list
-> > >archives between now and March.
-> > >
-> > >FWIW, I would expect that a show-stopper for any proposal is requiring
-> > >high-order allocations to succeed for the system to behave correctly.
-> > >
-> > 
-> > I have a somewhat hazy memory of Andrew warning us that touching
-> > this code takes us into dark and scary places.
-> > 
-> 
-> That is a light summary. As Andrew tends to reject patches with poor
-> documentation in case we forget the details in 6 months, I'm going to guess
-> that he does not remember the details of a discussion from 7ish years ago.
-> This is where Andrew swoops in with a dazzling display of his eidetic
-> memory just to prove me wrong.
-> 
-> Ric, are there any storage vendor that is pushing for this right now?
-> Is someone working on this right now or planning to? If they are, have they
-> looked into the history of fsblock (Nick) and large block support (Christoph)
-> to see if they are candidates for forward porting or reimplementation?
-> I ask because without that person there is a risk that the discussion
-> will go as follows
-> 
-> Topic leader: Does anyone have an objection to supporting larger block
-> 	sizes than the page size?
-> Room: Send patches and we'll talk.
+On Wed, Jan 22, 2014 at 1:10 AM, Markus Mayer <markus.mayer@linaro.org> wrote:
 
-So, from someone who was done in the trenches of the large
-filesystem block size code wars, the main objection to Christoph
-lameter's patchset was that it used high order compound pages in the
-page cache so that nothing at filesystem level needed to be changed
-to support large block sizes.
+> Rather than unlock/re-lock for every write access, unlock a GPIO when
+> it is requested and re-lock it when it is freed. As a result, the GPIO
+> helper functions no longer have to deal with unlocking and re-locking
+> the register.
+>
+> In addition, only unlock a specific GPIO rather than unlocking the
+> entire GPIO bank as before.
+>
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 
-The patch to enable XFS to use 64k block sizes with Christoph's
-patches was simply removing 5 lines of code that limited the block
-size to PAGE_SIZE. And everything just worked.
+Patch applied (for v3.15)
 
-Given that compound pages are used all over the place now and we
-also have page migration, compaction and other MM support that
-greatly improves high order memory allocation, perhaps we should
-revisit this approach.
-
-As to Nick's fsblock rewrite, he basically rewrote all the
-bufferhead head code to handle filesystem blocks larger than a page
-whilst leaving the page cache untouched. i.e. the complete opposite
-approach. The problem with this approach is that every filesystem
-needs to be re-written to use fsblocks rather than bufferheads. For
-some filesystems that isn't hard (e.g. ext2) but for filesystems
-that use bufferheads in the core of their journalling subsystems
-that's a completely different story.
-
-And for filesystems like XFS, it doesn't solve any of the problem
-with using bufferheads that we have now, so it simply introduces a
-huge amount of IO path rework and validation without providing any
-advantage from a feature or performance point of view. i.e. extent
-based filesystems mostly negate the impact of filesystem block size
-on IO performance...
-
-Realistically, if I'm going to do something in XFS to add block size
-> page size support, I'm going to do it wiht somethign XFS can track
-through it's own journal so I can add data=journal functionality
-with the same filesystem block/extent header structures used to
-track the pages in blocks larger than PAGE_SIZE. And given that we
-already have such infrastructure in XFS to support directory
-blocks larger than filesystem block size....
-
-FWIW, as to the original "large sector size" support question, XFS
-already supports sector sizes up to 32k in size. The limitation is
-actually a limitation of the journal format, so going larger than
-that would take some work...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Yours,
+Linus Walleij
