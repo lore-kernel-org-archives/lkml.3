@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaAWUoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:44:01 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:61817 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaAWUoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:44:00 -0500
+	id S1753606AbaAWUol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:44:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753201AbaAWUoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 15:44:39 -0500
+Date: Thu, 23 Jan 2014 15:44:30 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/10] framebuffer: fix cfb_copyarea
+In-Reply-To: <CAMuHMdWebQNKh4G8ZjpmZV15riHFpLiz5j1V4H+iSZ3VQp91gA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1401231539320.21686@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com> <CAMuHMdWebQNKh4G8ZjpmZV15riHFpLiz5j1V4H+iSZ3VQp91gA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140122123358.a65c42605513fc8466152801@linux-foundation.org>
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
- <20140114001115.GU1992@bbox> <CALZtONCCrckuHxgHB=GQj0tHszLAYTZZLGzFTnRkj9pvxx0dyg@mail.gmail.com>
- <20140115054208.GL1992@bbox> <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com>
- <CALZtONAaPCi8eUhSmdXSxWbeFFN=ChsfL9OurSZUsSPo-_gnfg@mail.gmail.com> <20140122123358.a65c42605513fc8466152801@linux-foundation.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 23 Jan 2014 15:43:37 -0500
-X-Google-Sender-Auth: 7uKY9FPS-OCN7bnkWQWumviSZXM
-Message-ID: <CALZtONCteZPFaAG0oXQGnmDocnVmpmxBeGzYMa3B_4QpGSgCvw@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: add writethrough option
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Weijie Yang <weijie.yang@samsung.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 3:33 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 22 Jan 2014 09:19:58 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
->
->> >>> > Acutally, I really don't know how much benefit we have that in-memory
->> >>> > swap overcomming to the real storage but if you want, zRAM with dm-cache
->> >>> > is another option rather than invent new wheel by "just having is better".
->> >>>
->> >>> I'm not sure if this patch is related to the zswap vs. zram discussions.  This
->> >>> only adds the option of using writethrough to zswap.  It's a first
->> >>> step to possibly
->> >>> making zswap work more efficiently using writeback and/or writethrough
->> >>> depending on
->> >>> the system and conditions.
->> >>
->> >> The patch size is small. Okay I don't want to be a party-pooper
->> >> but at least, I should say my thought for Andrew to help judging.
->> >
->> > Sure, I'm glad to have your suggestions.
->>
->> To give this a bump - Andrew do you have any concerns about this
->> patch?  Or can you pick this up?
->
-> I don't pay much attention to new features during the merge window,
-> preferring to shove them into a folder to look at later.  Often they
-> have bitrotted by the time -rc1 comes around.
->
-> I'm not sure that this review discussion has played out yet - is
-> Minchan happy?
 
-I think so, or at least ok enough to not block it, but please correct
-me if I am wrong, Minchan.
 
->
-> Please update the changelog so that it reflects the questions Minchan
-> asked (any reviewer question should be regarded as an inadequacy in
-> either the code commenting or the changelog - people shouldn't need to
-> ask the programmer why he did something!) and resend for -rc1?
+On Thu, 23 Jan 2014, Geert Uytterhoeven wrote:
 
-OK I'll update and resend.
+> On Thu, Jan 23, 2014 at 7:18 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> > The cfb_copyarea code was very buggy and it looks like it was written
+> > and never tried with non-8-pixel font.
+> 
+> My memory may suffer from bitrot, but I think I tested it with the Sun
+> 12x22 font. That was on big endian (PPC), though.
+
+The bug happens when the horizontal font size in bytes is not divisible by 
+(sizeof(long) / 2).
+
+Mikulas
+
+> BTW, good to see you still have a working TGA. My PPC and Alpha gear
+> died a decade ago.
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
