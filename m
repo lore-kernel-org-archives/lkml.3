@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141AbaAWGfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 01:35:41 -0500
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:40831
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751718AbaAWGfk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 01:35:40 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: David Rientjes <rientjes@google.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "moinejf@free.fr" <moinejf@free.fr>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 6/8] ASoC: simple-card: add tdm slot supports
-Thread-Topic: [PATCH 6/8] ASoC: simple-card: add tdm slot supports
-Thread-Index: AQHPGAClUMEH+aXAu0Kr9scjlixeR5qR092AgAAF4XE=
-Date: Thu, 23 Jan 2014 06:35:35 +0000
-Message-ID: <a02ec2db6eb4459498ad5dbea44e511c@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
- <1390453370-29194-7-git-send-email-Li.Xiubo@freescale.com>,<alpine.DEB.2.02.1401222210560.8088@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401222210560.8088@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.216]
-x-forefront-prvs: 0100732B76
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(164054003)(199002)(189002)(81816001)(47976001)(47736001)(85306002)(81542001)(87936001)(81686001)(4396001)(80976001)(53806001)(76796001)(92566001)(76576001)(50986001)(79102001)(56776001)(76786001)(93136001)(81342001)(87266001)(49866001)(69226001)(74366001)(59766001)(65816001)(54316002)(85852003)(33646001)(2656002)(63696002)(56816005)(51856001)(74706001)(83072002)(47446002)(74316001)(54356001)(76482001)(74502001)(74876001)(83322001)(31966008)(19580395003)(86362001)(66066001)(80022001)(46102001)(90146001)(93516002)(74662001)(77982001)(94316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1755616AbaAWGi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 01:38:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:43992 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143AbaAWGi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 01:38:28 -0500
+Date: Thu, 23 Jan 2014 17:38:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 23
+Message-Id: <20140123173821.f9f2499cc9403829eb492ae4@canb.auug.org.au>
+In-Reply-To: <20140123172109.980e620c6dd163a6946ebd14@canb.auug.org.au>
+References: <20140123172109.980e620c6dd163a6946ebd14@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__23_Jan_2014_17_38_21_+1100_dmLocjaQ3bx3gy9W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+--Signature=_Thu__23_Jan_2014_17_38_21_+1100_dmLocjaQ3bx3gy9W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Firstly thanks for your comment.
+Hi Paul,
 
-> > +asoc_simple_card_of_parse_tdm_slot(struct device_node *np,
-> > +				   struct device *dev,
-> > +				   struct asoc_simple_dai *dai,
-> > +				   const char *propname)
-> > +{
-> > +	struct asoc_simple_tdm_slot *tdm;
-> > +	u32 out_value[4];
-> > +	int ret;
-> > +
-> > +	if (!of_property_read_bool(np, propname))
-> > +		return 0;
-> > +
-> > +	tdm = devm_kzalloc(dev, sizeof(*tdm), GFP_KERNEL);
-> > +	if (!tdm)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = of_property_read_u32_array(np, propname, out_value, 4);
-> > +	if (ret)
-> > +		return ret;
-> 
-> Looks like a memory leak?
+On Thu, 23 Jan 2014 17:21:09 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
+> Changes since 20140122:
+>=20
+> The init tree lost one of its patches.
 
-Using devm_ and this will be called by _probe().
+It turns out that I merged yesterday's version of the init tree again
+today (so the fixes that went in do not appear).  Sorry about that, I
+will try to do better tomorrow.
 
-Please see the "Documentation/driver-model/devres.txt" for detail about
-devres.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- 
-> > +
-> > +	tdm->tx_mask = out_value[0];
-> > +	tdm->rx_mask = out_value[1];
-> > +	tdm->slots = out_value[2];
-> > +	tdm->slot_width = out_value[3];
-> > +
-> > +	dai->tdm = tdm;
-> > +
-> > +	return 0;
-> > +}
-> > +
+--Signature=_Thu__23_Jan_2014_17_38_21_+1100_dmLocjaQ3bx3gy9W
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Best Regards,
-Xiubo
+iQIcBAEBCAAGBQJS4LjhAAoJEMDTa8Ir7ZwVxg4P/RCjUEz0phtct1JZxC94yaF9
+ZsXOTDsYcSV4MFOvb3QU/eeVqa5cL+kVvFe9dMatAhb1FVoTunHc526VabjlxxWJ
+0kE9hQ0OLF79SM+DoLe3mzOQG+8X0wQ1OrKev+iE1ImL3qL9sSKLgvOLih1q4SrN
+7cLHNwxc8pKN2a3IjWnC+VGae2Ps2t8pP3EaMDvi1SPL75INKxNw1ROjJDChGvRZ
+A+m7aSRsLEMPZAHI2f0Wz3FV4Y3PrUJTKIJclR1/I0pdglSfltn3LKIn/AEtKPZ1
+8oV2035h3i2zMDesWS8vVQjOG5fcW0Xoju/ym70yFybvjcu9cNq2gOakbAUSzgs4
+lFVAu01dAm1w1bByAEySVBoDCeQmf8+JtfD3d73HCMrOEFR09vfv3dFxk6Ngadll
+uQPcwxGk7onOz3BCABHyO1G2DRyD4En6NY9jErBDYLpaCO8Yquhgb39rsrzIhfsh
+rAYWhEm4WlEcg3LrNNLyipFuPD37/twrWmwEGGdzSqOXtErXBhENLm6VhDToI2TX
+9nX7WxsVsoHs1y1M42VZ/Wd9t9Za75UrCbYUYXCH4Lu/EeYPVGYAf8puI3zeezv+
+LhccKA3lIjDIuWfzvbH1WXOnd0wB4dxsyZQtCT/0cE22ER1299EutoQf5WtvZiYH
+AD8ZjDC1/QUEHZBty9JT
+=4Jfj
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__23_Jan_2014_17_38_21_+1100_dmLocjaQ3bx3gy9W--
