@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaAWN1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:27:10 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40726 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaAWN1H (ORCPT
+	id S932065AbaAWN11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:27:27 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57747 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754078AbaAWN1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:27:07 -0500
-Date: Thu, 23 Jan 2014 05:28:29 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
- accept task state bitmask
-Message-ID: <20140123132829.GE889@kmo-pixel>
-References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
- <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
- <20140120113415.GE30183@twins.programming.kicks-ass.net>
- <20140121221852.GT9037@kmo>
- <20140123124753.GT30183@twins.programming.kicks-ass.net>
+	Thu, 23 Jan 2014 08:27:22 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [RFC/RFT][PATCH v2 4/6] ACPI / scan: Add bind/unbind callbacks to struct acpi_scan_handler
+Date: Thu, 23 Jan 2014 14:38:51 +0100
+Message-ID: <1549819.oukD9g3sD7@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1447517.8AFrWcAgld@vostro.rjw.lan>
+References: <5434847.aCyiWHNRe7@vostro.rjw.lan> <1447517.8AFrWcAgld@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123124753.GT30183@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 01:47:53PM +0100, Peter Zijlstra wrote:
-> On Tue, Jan 21, 2014 at 02:18:52PM -0800, Kent Overstreet wrote:
-> > > I do not get the comment near prepare to wait -- why does it matter if
-> > > percpu_ida_free() flips a cpus_have_tags bit?
-> > 
-> > Did I write that comment? It is a crappy comment...
-> > 
-> > Ok, in userspace we'd be using condition variables here, but this is the kernel
-> > so we need to carefully order putting ourselves on a waitlist, and checking the
-> > condition that determines whether we wait, and on the wakeup end changing things
-> > that affect that condition and doing the wakeup. steal_tags() is checking the
-> > condition that goes with the prepare_to_wait(), that's all.
-> 
-> How about something like so?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I like it - my only concern is that your patch has the effect of calling
-__alloc_global_tag() twice before sleeping on alloc failure - given that
-we're also doing a prepare_to_wait() I'm not concerned about touching
-the global freelist twice, but we're also calling steal_tags() twice and
-that's potentially more expensive.
+In some cases it may be necessary to perform certain setup/cleanup
+operations on a device object representing a physical device after
+it has been associated with an ACPI companion by acpi_bind_one() or
+before disassociating it from that companion by acpi_unbind_one(),
+respectively.  If there is a struct acpi_bus_type object for the
+given device's bus type, the .setup()/.cleanup() callbacks from there
+are executed for these purposes.  However, an analogous mechanism will
+be necessary for devices whose bus types don't have corresponding
+struct acpi_bus_type objects and that have specific ACPI scan handlers.
 
-It should be ok, because I expect when steal_tags() is going to fail
-most of the time it'll check the bitmap and not run the loop, but I
-think there's enough room for pathological behaviour here to sleep on
-it.
+For those devices, add new .bind() and .unbind() callbacks to struct
+acpi_scan_handler that will be executed by acpi_platform_notify()
+right after the given device has been associated with an ACPI
+comapnion and by acpi_platform_notify_remove() right before calling
+acpi_unbind_one() for that device, respectively.
 
-pool->lock is also going to be fairly badly contended in the worst case,
-and that can get real bad real fast... now that I think about it we
-probably want to avoid the __alloc_global_tag() double call just because
-of that, pool->lock is going to be quite a bit more contended than the
-waitlist lock just because fo the amount of work done under it.
+To make that work for scan handlers registering new devices in their
+.attach() callbacks, modify acpi_scan_attach_handler() to set the
+ACPI device object's handler field before calling .attach() from the
+scan handler at hand.
 
-though my old code was also calling prepare_to_wait() with pool->lock
-held, which was dumb.
+This changeset includes a fix from Mika Westerberg.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/glue.c     |   12 ++++++++++++
+ drivers/acpi/scan.c     |    9 +++++----
+ include/acpi/acpi_bus.h |    2 ++
+ 3 files changed, 19 insertions(+), 4 deletions(-)
+
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -287,6 +287,7 @@ EXPORT_SYMBOL_GPL(acpi_unbind_one);
+ static int acpi_platform_notify(struct device *dev)
+ {
+ 	struct acpi_bus_type *type = acpi_get_bus_type(dev);
++	struct acpi_device *adev;
+ 	int ret;
+ 
+ 	ret = acpi_bind_one(dev, NULL);
+@@ -303,9 +304,14 @@ static int acpi_platform_notify(struct d
+ 		if (ret)
+ 			goto out;
+ 	}
++	adev = ACPI_COMPANION(dev);
++	if (!adev)
++		goto out;
+ 
+ 	if (type && type->setup)
+ 		type->setup(dev);
++	else if (adev->handler && adev->handler->bind)
++		adev->handler->bind(dev);
+ 
+  out:
+ #if ACPI_GLUE_DEBUG
+@@ -324,11 +330,17 @@ static int acpi_platform_notify(struct d
+ 
+ static int acpi_platform_notify_remove(struct device *dev)
+ {
++	struct acpi_device *adev = ACPI_COMPANION(dev);
+ 	struct acpi_bus_type *type;
+ 
++	if (!adev)
++		return 0;
++
+ 	type = acpi_get_bus_type(dev);
+ 	if (type && type->cleanup)
+ 		type->cleanup(dev);
++	else if (adev->handler && adev->handler->unbind)
++		adev->handler->unbind(dev);
+ 
+ 	acpi_unbind_one(dev);
+ 	return 0;
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -133,6 +133,8 @@ struct acpi_scan_handler {
+ 	struct list_head list_node;
+ 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
+ 	void (*detach)(struct acpi_device *dev);
++	void (*bind)(struct device *phys_dev);
++	void (*unbind)(struct device *phys_dev);
+ 	struct acpi_hotplug_profile hotplug;
+ };
+ 
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1952,13 +1952,14 @@ static int acpi_scan_attach_handler(stru
+ 
+ 		handler = acpi_scan_match_handler(hwid->id, &devid);
+ 		if (handler) {
++			device->handler = handler;
+ 			ret = handler->attach(device, devid);
+-			if (ret > 0) {
+-				device->handler = handler;
++			if (ret > 0)
+ 				break;
+-			} else if (ret < 0) {
++
++			device->handler = NULL;
++			if (ret < 0)
+ 				break;
+-			}
+ 		}
+ 	}
+ 	return ret;
+
