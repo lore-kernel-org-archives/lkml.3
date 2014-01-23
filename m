@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaAWTtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:49:23 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58738 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaAWTtW (ORCPT
+	id S1755317AbaAWTtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:49:41 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:38466 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753035AbaAWTti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:49:22 -0500
-Date: Thu, 23 Jan 2014 19:48:50 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, shawn.guo@linaro.org,
-        kuninori.morimoto.gx@renesas.com, moinejf@free.fr,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140123194850.GJ11727@sirena.org.uk>
-References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
- <1390453370-29194-7-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 23 Jan 2014 14:49:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugJAOtx4VJ5LGaB/2dsb2JhbABaDoJ+gzq0O4VQgRMXdIIlAQEBBDocMwgDEgYJJQ8FJQMNFAESiATHJBaOIVCEOASYIpIZgW9/UyiBLQ
+Date: Fri, 24 Jan 2014 06:49:31 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, Chris Mason <clm@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Message-ID: <20140123194931.GS13997@dastard>
+References: <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
+ <1390413819.1198.20.camel@ret.masoncoding.com>
+ <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
+ <52E00B28.3060609@redhat.com>
+ <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>
+ <52E0106B.5010604@redhat.com>
+ <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>
+ <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
+ <20140123083558.GQ13997@dastard>
+ <20140123125550.GB6853@thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NqSa+Xr3J/G6Hhls"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390453370-29194-7-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Please ignore previous fortune.
+In-Reply-To: <20140123125550.GB6853@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 6/8] ASoC: simple-card: add tdm slot supports
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 23, 2014 at 07:55:50AM -0500, Theodore Ts'o wrote:
+> On Thu, Jan 23, 2014 at 07:35:58PM +1100, Dave Chinner wrote:
+> > > 
+> > > I expect it would be relatively simple to get large blocksizes working
+> > > on powerpc with 64k PAGE_SIZE.  So before diving in and doing huge
+> > > amounts of work, perhaps someone can do a proof-of-concept on powerpc
+> > > (or ia64) with 64k blocksize.
+> > 
+> > Reality check: 64k block sizes on 64k page Linux machines has been
+> > used in production on XFS for at least 10 years. It's exactly the
+> > same case as 4k block size on 4k page size - one page, one buffer
+> > head, one filesystem block.
+> 
+> This is true for ext4 as well.  Block size == page size support is
+> pretty easy; the hard part is when block size > page size, due to
+> assumptions in the VM layer that requires that FS system needs to do a
+> lot of extra work to fudge around.  So the real problem comes with
+> trying to support 64k block sizes on a 4k page architecture, and can
+> we do it in a way where every single file system doesn't have to do
+> their own specific hacks to work around assumptions made in the VM
+> layer.
+> 
+> Some of the problems include handling the case where you get someone
+> dirties a single block in a sparse page, and the FS needs to manually
+> fault in the other 56k pages around that single page.  Or the VM not
+> understanding that page eviction needs to be done in chunks of 64k so
+> we don't have part of the block evicted but not all of it, etc.
 
---NqSa+Xr3J/G6Hhls
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, this is part of the problem that fsblock tried to handle, and
+some of the nastiness it had was that a page fault only resulted in
+the individual page being read from the underlying block. This means
+that it was entirely possible that the filesystem would need to do
+RMW cycles in the writeback path itself to handle things like block
+checksums, copy-on-write, unwritten extent conversion, etc. i.e. all
+the stuff that the page cache currently handles by doing RMW cycles
+at the page level.
 
-On Thu, Jan 23, 2014 at 01:02:48PM +0800, Xiubo Li wrote:
-> For some CPU/CODEC DAI devices the tdm slot maybe needed. This patch
-> adds the tdm slot supporting for simple-card driver.
+The method of using compound pages in the page cache so that the
+page cache could do 64k RMW cycles so that a filesystem never had to
+deal with new issues like the above was one of the reasons that
+approach is so appealing to us filesystem people. ;)
 
-This needs binding documentation.
+Cheers,
 
---NqSa+Xr3J/G6Hhls
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS4XIfAAoJELSic+t+oim95cAQAJvhrpEkzgblNK+7xWFXFCXC
-25yBW0vxiVlEOyZ7Gk8dxiFf9pdOlh53oz/iFO4vWsJ2SDhfR1morYeJT+qd0Gfy
-TyaFJ2OyIOLnntGUxuYEjtjJ41nLyc0cJ1y8oJR1CE9qkshqck+YkcGTwYK0Xt2Y
-ftAvpTXBMeOP5jb6i4Vvp24/mr0fMRubnLTgPYqSUjSqBtc4qnC91Y3GE8aV2FSw
-uVuNnN3B9Jk4/wGlth2WD2KavuSeprQKYelTXZAXaGnclsOUBJBC+Tmwkc2JAmFM
-ImU6dLxLwtONH7bOmC/SJYq8cSRzkp2nUSu3vIwn+DIMc4hoFRzJMzVhNYeIjA48
-kL62V1Jxbe0mTzIvXd5Rc2Dq9aGcIkL/7IA7aAqRSEeTjIC9AjcQdxKNqSiRvhbU
-zdtFkCyz2PbkHmKti3fkT2A1hoR5PuAJ0adlwux7VETudo+ioJwT+hZgpn8+LX+z
-WsAfmXX20z83jxj10svHeN5dZGTH9PYNxFGTcgItd3yGpgmRos27YbhXAFXA9Zbz
-ALRDXtF+txaWNJhFMncPKbuJNDSvBEa3bMi1LQxOo9SAch7eaydlyB3ynSrWfTD2
-OsbGouRthL0vV+Brsdn+QNWdg6THZJc4AxXV5DIuMLYUWVYf6RiM8fwgJ6IfILuf
-xoC95/hx5tlTSkKlLjLf
-=w/Ed
------END PGP SIGNATURE-----
-
---NqSa+Xr3J/G6Hhls--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
