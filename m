@@ -1,281 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaAWFTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 00:19:03 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57508 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaAWFS7 (ORCPT
+	id S1752014AbaAWFTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 00:19:37 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:24136 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaAWFTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 00:18:59 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-3b-52e0a640c08d
-Date: Thu, 23 Jan 2014 14:20:14 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20140123052014.GC28732@bbox>
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
- <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
- <20140113073947.GR1992@bbox>
- <20140122184217.GD4407@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122184217.GD4407@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 23 Jan 2014 00:19:22 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-07-52e0a6546302
+Message-id: <DA6097ED98694425932A6AF93513371A@sisodomain.com>
+From: swaminathan <swaminath.p@samsung.com>
+To: Amit Grover <amit.grover@samsung.com>, linux-media@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, rob@landley.net,
+        kyungmin.park@samsung.com, k.debski@samsung.com, jtp.park@samsung.com
+Cc: hans.verkuil@cisco.com, andrew.smirnov@gmail.com, s.nawrocki@samsung.com,
+        arun.kk@samsung.com, anatol.pomozov@gmail.com, jmccrohan@gmail.com,
+        austin.lobo@samsung.com, hverkuil@xs4all.nl
+References: <1388400186-22045-1-git-send-email-amit.grover@samsung.com>
+In-reply-to: <1388400186-22045-1-git-send-email-amit.grover@samsung.com>
+Subject: Re: [PATCH] [media] s5p-mfc: Add Horizontal and Vertical search range
+ for Video Macro Blocks
+Date: Thu, 23 Jan 2014 10:49:03 +0530
+MIME-version: 1.0
+Content-type: text/plain; format=flowed; charset=iso-8859-1; reply-type=original
+Content-transfer-encoding: 7bit
+X-Priority: 3
+X-MSMail-priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MIMEOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsWyRsSkSjdk2YMgg327eSye9X1itXjZW2jR
+	3GFr8fHUbVaL+Z9uslgs+bmLyeLU5GdMFv2P1jNaHFl7lcnix+sLbBZnm96wW2x6fI3VYmHb
+	EhaLy7vmsFn0bNjKajHj/D4mi3Uvp7NYHH7Tzuog5DHl90ZWj52z7rJ7vFo9k9Vj85J6j74t
+	qxg9Pm+S8zj19TN7AHsUl01Kak5mWWqRvl0CV8aVFw9YCybbVuzZvIixgfGgcRcjJ4eEgInE
+	sm19rBC2mMSFe+vZuhi5OIQEljJK/DxxhRGmqGHdPlaIxHRGifu3r7CAJIQEfjJK/HmeBWLz
+	CthKHH9yBqiIg4NNQFvi0w1GkHoRgRVMEs1L/7GDOMwCBxkl7l2EmCok4C6xfHEHmM0p4CGx
+	/s0ydhBbWCBd4v/fI4wgg1gEVCX6bvNAzBeU+DH5HtheZoEAiZUTZzNC2PISm9e8ZYY4lFdi
+	RvtTFghbUmJ1zy12iPFCEh1XO6G+NJaY8m8pVL25xMXtm5lAbpMQuMMhcf/tVDaQBIuAgMS3
+	yYdYQG6QEJCV2HSAGWbmwRU3WCYwSs1CctIsJCfNQnLSAkbmVYyiqQXJBcVJ6UXGesWJucWl
+	eel6yfm5mxiBKeX0v2f9OxjvHrA+xJgMtHIis5Rocj4wJeWVxBsamxlZmJqYGhuZW5qRJqwk
+	znv/YVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk4pYMwfLmMr8bu3zq+P+xmDrrOsfUlWjsbr
+	sNjL8tKnXKawL/YNqZ6wcptphelJn/97inbpCIi1l5hyzDi1+GFdUWBdx7H+uNPGDBt3BE+o
+	uc4iXyc2uUYsNiA66qG5eHNkVmDmp5/TH8wN6Tx6qURhhtY83vDjjorBGqJJ64V/S+/6FH2+
+	17xBiaU4I9FQi7moOBEAc3Lhlz8DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkk+LIzCtJLcpLzFFi42I5/e+xoG7IsgdBBp/XMFo86/vEavGyt9Ci
+	ucPW4uOp26wW8z/dZLFY8nMXk8Wpyc+YLPofrWe0OLL2KpPFj9cX2CzONr1ht9j0+BqrxcK2
+	JSwWl3fNYbPo2bCV1WLG+X1MFuteTmexOPymndVByGPK742sHjtn3WX3eLV6JqvH5iX1Hn1b
+	VjF6fN4k53Hq62f2APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTc
+	VFslF58AXbfMHKAvlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZV148
+	YC2YbFuxZ/MixgbGg8ZdjJwcEgImEg3r9rFC2GISF+6tZ+ti5OIQEpjOKHH/9hUWkISQwE9G
+	iT/Ps0BsXgFbieNPzgA1cHCwCWhLfLrBCFIvIrCCSaJ56T92EIdZ4CCjxL2LVxghmt0lli/u
+	ALM5BTwk1r9Zxg5iCwukS/z/e4QRZBCLgKpE320eiPmCEj8m3wPbyywQILFy4mxGCFteYvOa
+	t8wQh/JKzGh/ygJhS0qs7rnFDjFeSKLjaifUM8YSU/4thao3l7i4fTPTBEaRWUhWzEKyYhaS
+	FQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBCesZ9I7GFc1WBxiFOBgVOLhTfhyP0iI
+	NbGsuDL3EKMEB7OSCG/LtAdBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTKZ5JfGGxibm
+	psamliYWJmaWpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cA45xPHjaQv64PVy/KcsiOO
+	VL1q/coiN02X6fHkz5v+PjftOnzh7xln8afvtk7l+9y6oH76s3m7PvmoBTvK2HPcPhEiEnhE
+	PONH75wijdsch7f+6DGYv+u+kwOPzckbN5/pCd5bv8No8q7lPUwCPI/SIzZtNbAtX8H93CZx
+	t+HDJP2dJj5M2yVElFiKMxINtZiLihMBvCcKRJwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 01:42:17PM -0500, Johannes Weiner wrote:
-> On Mon, Jan 13, 2014 at 04:39:47PM +0900, Minchan Kim wrote:
-> > On Fri, Jan 10, 2014 at 01:10:43PM -0500, Johannes Weiner wrote:
-> > > Previously, page cache radix tree nodes were freed after reclaim
-> > > emptied out their page pointers.  But now reclaim stores shadow
-> > > entries in their place, which are only reclaimed when the inodes
-> > > themselves are reclaimed.  This is problematic for bigger files that
-> > > are still in use after they have a significant amount of their cache
-> > > reclaimed, without any of those pages actually refaulting.  The shadow
-> > > entries will just sit there and waste memory.  In the worst case, the
-> > > shadow entries will accumulate until the machine runs out of memory.
-> > > 
-> > > To get this under control, the VM will track radix tree nodes
-> > > exclusively containing shadow entries on a per-NUMA node list.
-> > > Per-NUMA rather than global because we expect the radix tree nodes
-> > > themselves to be allocated node-locally and we want to reduce
-> > > cross-node references of otherwise independent cache workloads.  A
-> > > simple shrinker will then reclaim these nodes on memory pressure.
-> > > 
-> > > A few things need to be stored in the radix tree node to implement the
-> > > shadow node LRU and allow tree deletions coming from the list:
-> > > 
-> > > 1. There is no index available that would describe the reverse path
-> > >    from the node up to the tree root, which is needed to perform a
-> > >    deletion.  To solve this, encode in each node its offset inside the
-> > >    parent.  This can be stored in the unused upper bits of the same
-> > >    member that stores the node's height at no extra space cost.
-> > > 
-> > > 2. The number of shadow entries needs to be counted in addition to the
-> > >    regular entries, to quickly detect when the node is ready to go to
-> > >    the shadow node LRU list.  The current entry count is an unsigned
-> > >    int but the maximum number of entries is 64, so a shadow counter
-> > >    can easily be stored in the unused upper bits.
-> > > 
-> > > 3. Tree modification needs tree lock and tree root, which are located
-> > >    in the address space, so store an address_space backpointer in the
-> > >    node.  The parent pointer of the node is in a union with the 2-word
-> > >    rcu_head, so the backpointer comes at no extra cost as well.
-> > > 
-> > > 4. The node needs to be linked to an LRU list, which requires a list
-> > >    head inside the node.  This does increase the size of the node, but
-> > >    it does not change the number of objects that fit into a slab page.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > ---
-> > >  include/linux/list_lru.h   |   2 +
-> > >  include/linux/mmzone.h     |   1 +
-> > >  include/linux/radix-tree.h |  32 +++++++++---
-> > >  include/linux/swap.h       |   1 +
-> > >  lib/radix-tree.c           |  36 ++++++++------
-> > >  mm/filemap.c               |  77 +++++++++++++++++++++++------
-> > >  mm/list_lru.c              |   8 +++
-> > >  mm/truncate.c              |  20 +++++++-
-> > >  mm/vmstat.c                |   1 +
-> > >  mm/workingset.c            | 121 +++++++++++++++++++++++++++++++++++++++++++++
-> > >  10 files changed, 259 insertions(+), 40 deletions(-)
-> > > 
-> > > diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-> > > index 3ce541753c88..b02fc233eadd 100644
-> > > --- a/include/linux/list_lru.h
-> > > +++ b/include/linux/list_lru.h
-> > > @@ -13,6 +13,8 @@
-> > >  /* list_lru_walk_cb has to always return one of those */
-> > >  enum lru_status {
-> > >  	LRU_REMOVED,		/* item removed from list */
-> > > +	LRU_REMOVED_RETRY,	/* item removed, but lock has been
-> > > +				   dropped and reacquired */
-> > >  	LRU_ROTATE,		/* item referenced, give another pass */
-> > >  	LRU_SKIP,		/* item cannot be locked, skip */
-> > >  	LRU_RETRY,		/* item not freeable. May drop the lock
-> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > > index 118ba9f51e86..8cac5a7ef7a7 100644
-> > > --- a/include/linux/mmzone.h
-> > > +++ b/include/linux/mmzone.h
-> > > @@ -144,6 +144,7 @@ enum zone_stat_item {
-> > >  #endif
-> > >  	WORKINGSET_REFAULT,
-> > >  	WORKINGSET_ACTIVATE,
-> > > +	WORKINGSET_NODERECLAIM,
-> > >  	NR_ANON_TRANSPARENT_HUGEPAGES,
-> > >  	NR_FREE_CMA_PAGES,
-> > >  	NR_VM_ZONE_STAT_ITEMS };
-> > > diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-> > > index 13636c40bc42..33170dbd9db4 100644
-> > > --- a/include/linux/radix-tree.h
-> > > +++ b/include/linux/radix-tree.h
-> > > @@ -72,21 +72,37 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
-> > >  #define RADIX_TREE_TAG_LONGS	\
-> > >  	((RADIX_TREE_MAP_SIZE + BITS_PER_LONG - 1) / BITS_PER_LONG)
-> > >  
-> > > +#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
-> > > +#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
-> > > +					  RADIX_TREE_MAP_SHIFT))
-> > > +
-> > > +/* Height component in node->path */
-> > > +#define RADIX_TREE_HEIGHT_SHIFT	(RADIX_TREE_MAX_PATH + 1)
-> > > +#define RADIX_TREE_HEIGHT_MASK	((1UL << RADIX_TREE_HEIGHT_SHIFT) - 1)
-> > > +
-> > > +/* Internally used bits of node->count */
-> > > +#define RADIX_TREE_COUNT_SHIFT	(RADIX_TREE_MAP_SHIFT + 1)
-> > > +#define RADIX_TREE_COUNT_MASK	((1UL << RADIX_TREE_COUNT_SHIFT) - 1)
-> > > +
-> > >  struct radix_tree_node {
-> > > -	unsigned int	height;		/* Height from the bottom */
-> > > +	unsigned int	path;	/* Offset in parent & height from the bottom */
-> > >  	unsigned int	count;
-> > >  	union {
-> > > -		struct radix_tree_node *parent;	/* Used when ascending tree */
-> > > -		struct rcu_head	rcu_head;	/* Used when freeing node */
-> > > +		struct {
-> > > +			/* Used when ascending tree */
-> > > +			struct radix_tree_node *parent;
-> > > +			/* For tree user */
-> > > +			void *private_data;
-> > > +		};
-> > > +		/* Used when freeing node */
-> > > +		struct rcu_head	rcu_head;
-> > >  	};
-> > > +	/* For tree user */
-> > > +	struct list_head private_list;
-> > >  	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
-> > >  	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
-> > >  };
-> > >  
-> > > -#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
-> > > -#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
-> > > -					  RADIX_TREE_MAP_SHIFT))
-> > > -
-> > >  /* root tags are stored in gfp_mask, shifted by __GFP_BITS_SHIFT */
-> > >  struct radix_tree_root {
-> > >  	unsigned int		height;
-> > > @@ -251,7 +267,7 @@ void *__radix_tree_lookup(struct radix_tree_root *root, unsigned long index,
-> > >  			  struct radix_tree_node **nodep, void ***slotp);
-> > >  void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
-> > >  void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
-> > > -bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
-> > > +bool __radix_tree_delete_node(struct radix_tree_root *root,
-> > >  			      struct radix_tree_node *node);
-> > >  void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
-> > >  void *radix_tree_delete(struct radix_tree_root *, unsigned long);
-> > > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > > index b83cf61403ed..102e37bc82d5 100644
-> > > --- a/include/linux/swap.h
-> > > +++ b/include/linux/swap.h
-> > > @@ -264,6 +264,7 @@ struct swap_list_t {
-> > >  void *workingset_eviction(struct address_space *mapping, struct page *page);
-> > >  bool workingset_refault(void *shadow);
-> > >  void workingset_activation(struct page *page);
-> > > +extern struct list_lru workingset_shadow_nodes;
-> > >  
-> > >  /* linux/mm/page_alloc.c */
-> > >  extern unsigned long totalram_pages;
-> > > diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> > > index e601c56a43d0..0a0895371447 100644
-> > > --- a/lib/radix-tree.c
-> > > +++ b/lib/radix-tree.c
-> > > @@ -342,7 +342,8 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
-> > >  
-> > >  		/* Increase the height.  */
-> > >  		newheight = root->height+1;
-> > > -		node->height = newheight;
-> > > +		BUG_ON(newheight & ~RADIX_TREE_HEIGHT_MASK);
-> > > +		node->path = newheight;
-> > 
-> > Nitpick:
-> > It would be better to add some accessor for path and offset for
-> > readability and future enhance?
-> 
-> Nodes are instantiated in one central place, I can't see the value in
-> obscuring a straight-forward bitop with a radix_tree_node_set_offset()
-> call.
-> 
-> And height = node->path & RADIX_TREE_HEIGHT_MASK should be fairly
-> descriptive, I think.
-> 
-> > > @@ -123,9 +129,39 @@ static void page_cache_tree_delete(struct address_space *mapping,
-> > >  		 * same time and miss a shadow entry.
-> > >  		 */
-> > >  		smp_wmb();
-> > > -	} else
-> > > -		radix_tree_delete(&mapping->page_tree, page->index);
-> > > +	}
-> > >  	mapping->nrpages--;
-> > > +
-> > > +	if (!node) {
-> > > +		/* Clear direct pointer tags in root node */
-> > > +		mapping->page_tree.gfp_mask &= __GFP_BITS_MASK;
-> > > +		radix_tree_replace_slot(slot, shadow);
-> > > +		return;
-> > > +	}
-> > > +
-> > > +	/* Clear tree tags for the removed page */
-> > > +	index = page->index;
-> > > +	offset = index & RADIX_TREE_MAP_MASK;
-> > > +	for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
-> > > +		if (test_bit(offset, node->tags[tag]))
-> > > +			radix_tree_tag_clear(&mapping->page_tree, index, tag);
-> > > +	}
-> > > +
-> > > +	/* Delete page, swap shadow entry */
-> > > +	radix_tree_replace_slot(slot, shadow);
-> > > +	node->count--;
-> > > +	if (shadow)
-> > > +		node->count += 1U << RADIX_TREE_COUNT_SHIFT;
-> > 
-> > Nitpick2:
-> > It should be a function of workingset.c rather than exposing
-> > RADIX_TREE_COUNT_SHIFT?
-> > 
-> > IMO, It would be better to provide some accessor functions here, too.
-> 
-> The shadow maintenance and node lifetime management are pretty
-> interwoven to share branches and reduce instructions as these are
-> common paths.  I don't see how this could result in cleaner code while
-> keeping these advantages.
+Hi All,
+Is there any review Comments for the patch "[PATCH] [media] s5p-mfc: Add 
+Horizontal and Vertical search range for Video Macro Blocks"
+posted on 30-Dec-2013 ?
 
-What I want is just put a inline accessor in somewhere like workingset.h
 
-static inline void inc_shadow_entry(struct radix_tree_node *node)
-{
-    node->count += 1U << RADIX_TREE_COUNT_MASK;
-}
+Regards,
+Swaminathan
 
-So, anyone don't need to know that node->count upper bits present
-count of shadow entry.
 
+
+
+--------------------------------------------------
+From: "Amit Grover" <amit.grover@samsung.com>
+Sent: Monday, December 30, 2013 4:13 PM
+To: <m.chehab@samsung.com>; <linux-media@vger.kernel.org>; 
+<linux-doc@vger.kernel.org>; <linux-kernel@vger.kernel.org>; 
+<linux-arm-kernel@lists.infradead.org>; <linux-samsung-soc@vger.kernel.org>; 
+<rob@landley.net>; <kyungmin.park@samsung.com>; <k.debski@samsung.com>; 
+<jtp.park@samsung.com>
+Cc: <hans.verkuil@cisco.com>; <andrew.smirnov@gmail.com>; 
+<s.nawrocki@samsung.com>; <arun.kk@samsung.com>; <anatol.pomozov@gmail.com>; 
+<jmccrohan@gmail.com>; <austin.lobo@samsung.com>; "Swami Nathan" 
+<swaminath.p@samsung.com>
+Subject: [PATCH] [media] s5p-mfc: Add Horizontal and Vertical search range 
+for Video Macro Blocks
+
+> This patch adds Controls to set Horizontal and Vertical search range
+> for Motion Estimation block for Samsung MFC video Encoders.
+>
+> Signed-off-by: Swami Nathan <swaminath.p@samsung.com>
+> Signed-off-by: Amit Grover <amit.grover@samsung.com>
+> ---
+> Documentation/DocBook/media/v4l/controls.xml    |   14 +++++++++++++
+> drivers/media/platform/s5p-mfc/s5p_mfc_common.h |    2 ++
+> drivers/media/platform/s5p-mfc/s5p_mfc_enc.c    |   24 
+> +++++++++++++++++++++++
+> drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c |    8 ++------
+> drivers/media/v4l2-core/v4l2-ctrls.c            |   14 +++++++++++++
+> include/uapi/linux/v4l2-controls.h              |    2 ++
+> 6 files changed, 58 insertions(+), 6 deletions(-)
+>
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml 
+> b/Documentation/DocBook/media/v4l/controls.xml
+> index 7a3b49b..70a0f6f 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -2258,6 +2258,20 @@ Applicable to the MPEG1, MPEG2, MPEG4 
+> encoders.</entry>
+> VBV buffer control.</entry>
+>        </row>
+>
+> +   <row><entry></entry></row>
+> +       <row id="v4l2-mpeg-video-horz-search-range">
+> + <entry 
+> spanname="id"><constant>V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE</constant>&nbsp;</entry>
+> + <entry>integer</entry>
+> +       </row><row><entry spanname="descr">Sets the Horizontal search 
+> range for Video Macro blocks.</entry>
+> +       </row>
+> +
+> + <row><entry></entry></row>
+> +       <row id="v4l2-mpeg-video-vert-search-range">
+> + <entry 
+> spanname="id"><constant>V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE</constant>&nbsp;</entry>
+> + <entry>integer</entry>
+> +       </row><row><entry spanname="descr">Sets the Vertical search range 
+> for Video Macro blocks.</entry>
+> +       </row>
+> +
+>        <row><entry></entry></row>
+>        <row>
+>  <entry 
+> spanname="id"><constant>V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE</constant>&nbsp;</entry>
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h 
+> b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> index 6920b54..f2c13c3 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> @@ -430,6 +430,8 @@ struct s5p_mfc_vp8_enc_params {
+> struct s5p_mfc_enc_params {
+>  u16 width;
+>  u16 height;
+> + u32 horz_range;
+> + u32 vert_range;
+>
+>  u16 gop_size;
+>  enum v4l2_mpeg_video_multi_slice_mode slice_mode;
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c 
+> b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> index 4ff3b6c..a02e7b8 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> @@ -208,6 +208,24 @@ static struct mfc_control controls[] = {
+>  .default_value = 0,
+>  },
+>  {
+> + .id = V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE,
+> + .type = V4L2_CTRL_TYPE_INTEGER,
+> + .name = "horizontal search range of video macro block",
+> + .minimum = 16,
+> + .maximum = 128,
+> + .step = 16,
+> + .default_value = 32,
+> + },
+> + {
+> + .id = V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE,
+> + .type = V4L2_CTRL_TYPE_INTEGER,
+> + .name = "vertical search range of video macro block",
+> + .minimum = 16,
+> + .maximum = 128,
+> + .step = 16,
+> + .default_value = 32,
+> + },
+> + {
+>  .id = V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE,
+>  .type = V4L2_CTRL_TYPE_INTEGER,
+>  .minimum = 0,
+> @@ -1377,6 +1395,12 @@ static int s5p_mfc_enc_s_ctrl(struct v4l2_ctrl 
+> *ctrl)
+>  case V4L2_CID_MPEG_VIDEO_VBV_SIZE:
+>  p->vbv_size = ctrl->val;
+>  break;
+> + case V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE:
+> + p->horz_range = ctrl->val;
+> + break;
+> + case V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE:
+> + p->vert_range = ctrl->val;
+> + break;
+>  case V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE:
+>  p->codec.h264.cpb_size = ctrl->val;
+>  break;
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c 
+> b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> index 461358c..47e1807 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> @@ -727,14 +727,10 @@ static int s5p_mfc_set_enc_params(struct s5p_mfc_ctx 
+> *ctx)
+>  WRITEL(reg, S5P_FIMV_E_RC_CONFIG_V6);
+>
+>  /* setting for MV range [16, 256] */
+> - reg = 0;
+> - reg &= ~(0x3FFF);
+> - reg = 256;
+> + reg = (p->horz_range & 0x3fff); /* conditional check in app */
+>  WRITEL(reg, S5P_FIMV_E_MV_HOR_RANGE_V6);
+>
+> - reg = 0;
+> - reg &= ~(0x3FFF);
+> - reg = 256;
+> + reg = (p->vert_range & 0x3fff); /* conditional check in app */
+>  WRITEL(reg, S5P_FIMV_E_MV_VER_RANGE_V6);
+>
+>  WRITEL(0x0, S5P_FIMV_E_FRAME_INSERTION_V6);
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c 
+> b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index fb46790..7cf23d5 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -735,6 +735,8 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  case V4L2_CID_MPEG_VIDEO_DEC_PTS: return "Video Decoder PTS";
+>  case V4L2_CID_MPEG_VIDEO_DEC_FRAME: return "Video Decoder Frame Count";
+>  case V4L2_CID_MPEG_VIDEO_VBV_DELAY: return "Initial Delay for VBV 
+> Control";
+> + case V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE: return "hor search range of 
+> video MB";
+> + case V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE: return "vert search range of 
+> video MB";
+>  case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER: return "Repeat Sequence 
+> Header";
+>
+>  /* VPX controls */
+> @@ -905,6 +907,18 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum 
+> v4l2_ctrl_type *type,
+>  *min = 0;
+>  *max = *step = 1;
+>  break;
+> + case V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE:
+> + *type = V4L2_CTRL_TYPE_INTEGER;
+> + *min = 16;
+> + *max = 128;
+> + *step = 16;
+> + break;
+> + case V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE:
+> + *type = V4L2_CTRL_TYPE_INTEGER;
+> + *min = 16;
+> + *max = 128;
+> + *step = 16;
+> + break;
+>  case V4L2_CID_PAN_RESET:
+>  case V4L2_CID_TILT_RESET:
+>  case V4L2_CID_FLASH_STROBE:
+> diff --git a/include/uapi/linux/v4l2-controls.h 
+> b/include/uapi/linux/v4l2-controls.h
+> index 1666aab..bcce536 100644
+> --- a/include/uapi/linux/v4l2-controls.h
+> +++ b/include/uapi/linux/v4l2-controls.h
+> @@ -372,6 +372,8 @@ enum v4l2_mpeg_video_multi_slice_mode {
+> #define V4L2_CID_MPEG_VIDEO_DEC_FRAME (V4L2_CID_MPEG_BASE+224)
+> #define V4L2_CID_MPEG_VIDEO_VBV_DELAY (V4L2_CID_MPEG_BASE+225)
+> #define V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER (V4L2_CID_MPEG_BASE+226)
+> +#define V4L2_CID_MPEG_VIDEO_HORZ_SEARCH_RANGE (V4L2_CID_MPEG_BASE+227)
+> +#define V4L2_CID_MPEG_VIDEO_VERT_SEARCH_RANGE (V4L2_CID_MPEG_BASE+228)
+>
+> #define V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP (V4L2_CID_MPEG_BASE+300)
+> #define V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP (V4L2_CID_MPEG_BASE+301)
+> -- 
+> 1.7.9.5
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
