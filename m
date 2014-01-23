@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaAWTQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:16:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35021 "EHLO
+	id S932273AbaAWTQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:16:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaAWTGb (ORCPT
+	with ESMTP id S1751675AbaAWTGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:31 -0500
+	Thu, 23 Jan 2014 14:06:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Damian Nowak <spam@nowaker.net>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.12 21/27] md/raid10: fix two bugs in handling of known-bad-blocks.
-Date: Thu, 23 Jan 2014 11:06:58 -0800
-Message-Id: <20140123190650.878710483@linuxfoundation.org>
+Subject: [PATCH 3.12 20/27] md/raid10: fix bug when raid10 recovery fails to recover a block.
+Date: Thu, 23 Jan 2014 11:06:57 -0800
+Message-Id: <20140123190650.787039140@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -30,48 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit b50c259e25d9260b9108dc0c2964c26e5ecbe1c1 upstream.
+commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
 
-If we discover a bad block when reading we split the request and
-potentially read some of it from a different device.
+commit e875ecea266a543e643b19e44cf472f1412708f9
+    md/raid10 record bad blocks as needed during recovery.
 
-The code path of this has two bugs in RAID10.
-1/ we get a spin_lock with _irq, but unlock without _irq!!
-2/ The calculation of 'sectors_handled' is wrong, as can be clearly
-   seen by comparison with raid1.c
+added code to the "cannot recover this block" path to record a bad
+block rather than fail the whole recovery.
+Unfortunately this new case was placed *after* r10bio was freed rather
+than *before*, yet it still uses r10bio.
+This is will crash with a null dereference.
 
-This leads to at least 2 warnings and a probable crash is a RAID10
-ever had known bad blocks.
+So move the freeing of r10bio down where it is safe.
 
-Fixes: 856e08e23762dfb92ffc68fd0a8d228f9e152160
+Fixes: e875ecea266a543e643b19e44cf472f1412708f9
 Reported-by: Damian Nowak <spam@nowaker.net>
 URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid10.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 --- a/drivers/md/raid10.c
 +++ b/drivers/md/raid10.c
-@@ -1319,7 +1319,7 @@ read_again:
- 			/* Could not read all from this device, so we will
- 			 * need another r10_bio.
- 			 */
--			sectors_handled = (r10_bio->sectors + max_sectors
-+			sectors_handled = (r10_bio->sector + max_sectors
- 					   - bio->bi_sector);
- 			r10_bio->sectors = max_sectors;
- 			spin_lock_irq(&conf->device_lock);
-@@ -1327,7 +1327,7 @@ read_again:
- 				bio->bi_phys_segments = 2;
- 			else
- 				bio->bi_phys_segments++;
--			spin_unlock(&conf->device_lock);
-+			spin_unlock_irq(&conf->device_lock);
- 			/* Cannot call generic_make_request directly
- 			 * as that will be queued in __generic_make_request
- 			 * and subsequent mempool_alloc might block
+@@ -3220,10 +3220,6 @@ static sector_t sync_request(struct mdde
+ 			if (j == conf->copies) {
+ 				/* Cannot recover, so abort the recovery or
+ 				 * record a bad block */
+-				put_buf(r10_bio);
+-				if (rb2)
+-					atomic_dec(&rb2->remaining);
+-				r10_bio = rb2;
+ 				if (any_working) {
+ 					/* problem is that there are bad blocks
+ 					 * on other device(s)
+@@ -3255,6 +3251,10 @@ static sector_t sync_request(struct mdde
+ 					mirror->recovery_disabled
+ 						= mddev->recovery_disabled;
+ 				}
++				put_buf(r10_bio);
++				if (rb2)
++					atomic_dec(&rb2->remaining);
++				r10_bio = rb2;
+ 				break;
+ 			}
+ 		}
 
 
