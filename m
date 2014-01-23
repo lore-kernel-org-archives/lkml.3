@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786AbaAWXjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 18:39:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:58137 "EHLO ozlabs.org"
+	id S1753088AbaAWXzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 18:55:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755626AbaAWXjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 18:39:24 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Michel Lespinasse <walken@google.com>,
-        ego@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: Deadlock between cpu_hotplug_begin and cpu_add_remove_lock
-In-Reply-To: <52E0AA5D.6070908@linux.vnet.ibm.com>
-References: <20140122055239.GA29418@iris.ozlabs.ibm.com> <52DF81B0.7020700@linux.vnet.ibm.com> <52DF8C59.1090702@linux.vnet.ibm.com> <87r47z2zxu.fsf@rustcorp.com.au> <52E0AA5D.6070908@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Fri, 24 Jan 2014 09:31:29 +1030
-Message-ID: <87wqhq1ewm.fsf@rustcorp.com.au>
+	id S1752062AbaAWXzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 18:55:51 -0500
+Date: Fri, 24 Jan 2014 00:55:49 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: fanotify use after free.
+Message-ID: <20140123235549.GA7363@quack.suse.cz>
+References: <20140122062730.GA25601@redhat.com>
+ <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com>
+ <20140122233622.GB27916@quack.suse.cz>
+ <CA+55aFwzb7rJate=r0Sgi_N7FStNtJS_PvfgPSGaczPPgeUZvg@mail.gmail.com>
+ <alpine.LNX.2.00.1401231120360.581@pobox.suse.cz>
+ <20140123150540.GD28796@quack.suse.cz>
+ <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
-> On 01/23/2014 07:59 AM, Rusty Russell wrote:
->> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
->>> On 01/22/2014 02:00 PM, Srivatsa S. Bhat wrote:
->>>> Hi Paul,
->> 
->> I find an old patch for register_allcpu_notifier(), but the "bool
->> replay_history" should be eliminated (always true): it's too weird.
->> 
->
-> Sorry, I didn't get this part. Why do you say that replay_history
-> will always be true?
+On Thu 23-01-14 16:07:45, Jiri Kosina wrote:
+> On Thu, 23 Jan 2014, Jan Kara wrote:
+> 
+> > > > > But refcounting seems like an overkill for this - there is exactly one
+> > > > > fanotify_response_event structure iff it is a permission event. So
+> > > > > something like the (completely untested) attached patch should fix the
+> > > > > problem. But I agree it's a bit ugly so we might want something different.
+> > > > > I'll try to think about something better tomorrow.
+> > > > 
+> > > > Ok, In the meantime, Dave, can you verify whether this hacky patch
+> > > > fixes your problem?
+> > > 
+> > > I reported the same slab corruption yesterday as well here:
+> > > 
+> > > 	https://lkml.org/lkml/2014/1/22/173
+> > > 
+> > > With the patch applied, I am still seeing the slab corruption, preceeded 
+> > > by GPF (which is not there without the patch) in 
+> > > lockref_put_or_lock(&dentry->d_lockref) in dput():
+> >   Hmm, OK. Can you please send me your .config? I'll try to reproduce this
+> > myself.
+> 
+> Attached.
+> 
+> The userspace is systemd-based.
+  Strange. I've installed systemd system (openSUSE 13.1) and it boots with
+the latest Linus' kernel just fine (and I have at least FANOTIFY and
+SLAB debugging set the same way as you). But it was only a KVM guest. I'll
+try tomorrow with a physical machine I guess.
 
-OK, let me start again and try to explain myself properly:
-
-register_cpu_notifier is a bad API.  It's hard to get right because:
-1) You need to loop over online (or present) cpus once before you call
-   it.
-2) You have to beware the race between the loop and registration, but
-   much example code happens at boot time where it doesn't matter,
-   so random author is likely to copy that and have a race.
-3) You have two paths doing the same thing: the loop which is run on
-   every machine (cpu hotplug or not), and the notifier callback which
-   is run far less rarely.
-
-What we actually *want* is a routine which will reliably call for every
-current and future CPU, and then there are very few places which should
-use the current register_cpu_notifier().
-
-ie. halfway between register_cpu_notifier() (too racy) and
-register_allcpu_notifier() (too simplified).
-
-Let's call it register_cpu_callback / unregister_cpu_callback?
-
-> By the way, I'm still tempted to try out the simpler-looking alternative
-> idea of exporting cpu_maps_update_begin() and cpu_maps_update_done()
-> and then mandating that the callers do:
->
-> cpu_maps_update_begin();
-> for_each_online_cpu(cpu) {
-> 	...
-> }
->
-> __register_cpu_notifier(); // this doesn't take the add_remove_lock
-> cpu_maps_update_done();
-
-Sure, fix this one for -stable.  But let's create an idiom we can be
-proud of for the longer term.
-
-Thanks,
-Rusty.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
