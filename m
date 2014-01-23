@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaAWKau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:30:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51804 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564AbaAWKat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:30:49 -0500
-Date: Thu, 23 Jan 2014 10:30:44 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
-        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
- fail in 3.12 after exceeding vm_max_map_count
-Message-ID: <20140123103044.GE4963@suse.de>
-References: <20140122190816.GB4963@suse.de>
- <20140122191928.GQ1574@moon>
- <20140122223325.GA30637@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140122223325.GA30637@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753061AbaAWKbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:31:40 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:43185 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaAWKbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 05:31:38 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
+        Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
+        olivier.clergeaud@st.com
+Subject: [PATCH RESEND v4 00/37] mtd: st_spi_fsm: Add new driver
+Date: Thu, 23 Jan 2014 10:30:48 +0000
+Message-Id: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 02:33:25AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Jan 22, 2014 at 11:19:28PM +0400, Cyrill Gorcunov wrote:
-> > > commit. Test case was simple -- try and open the large file described in
-> > > the bug. I did not investigate the patch itself as I'm just reporting
-> > > the results of the bisection. If I had to guess, I'd say that VMA
-> > > merging has been affected.
-> > 
-> > Thanks a lot for report, Mel! I'm investigating...
-> 
-> Mel, here is a quick fix for bring merging back (just in case if you
-> have a minute to test it and confirm the merging were affected). It
-> seems I've lost setting up vma-softdirty bit somewhere and procedure
-> which tests vma flags mathcing fails, will continue investigating/testing
-> tomorrow.
+Version 4:
+  Tended to Brian's review comments
+    - Checkpatch acceptance
+    - MODULE_DEVICE_TABLE() name slip correction
+    - Timeout issue(s) resolved
+    - Potential infinite loop mitigated
+    - Code clarity suggests heeded
+    - Duplication with MTD core code removed
+    - Upgraded to using ROUND_UP() helper
+    - Moved non-shared header code into main driver
+    - Relocated dynamic msg sequence stores into main struct
+    - Averted adaption of static (table) data
+    - Basic whitespace/spelling/data type/dev_err suggestions applied
+  
+Version 3:
+  Okay, this thing should be fully functional now. Identify a chip
+  based on it's JEDEC ID, Read, Write, Erase (all or by sector).
+  Support for various chip quirks added too.
 
-The test case passes with this patch applied to 3.13 so that appears
-to confirm that this is related to VM_SOFTDIRTY preventing merges.
-Unfortunately I did not have slabinfo tracking enabled to double check
-the number of vm_area_structs in teh system.
+Version 2:
+  The first bunch of these patches have been on the MLs before, but
+  didn't receive a great deal of attention for the most part. We are
+  a little more featureful this time however. We can now successfully
+  setup and configure the N25Q256. We still can't read/write/erase
+  it though. I'll start work on that next week and will provide it in
+  the next instalment.
 
--- 
-Mel Gorman
-SUSE Labs
+Version 1:
+  First stab at getting this thing Mainlined. It doesn't do a great deal
+  yet, but we are able to initialise the device and dynamically set it up
+  correctly based on an extracted JEDEC ID.
+
+ Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
+ arch/arm/boot/dts/stih416-b2105.dts              |   14 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi           |   12 +
+ drivers/mtd/devices/Kconfig                      |    8 +
+ drivers/mtd/devices/Makefile                     |    1 +
+ drivers/mtd/devices/serial_flash_cmds.h          |   81 ++++
+ drivers/mtd/devices/st_spi_fsm.c                 | 2124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+7 files changed, 2266 insertions(+)
+
