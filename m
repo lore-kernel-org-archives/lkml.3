@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaAWQPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:15:19 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19141 "EHLO
+	id S1752596AbaAWQTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:19:31 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:29503 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752194AbaAWQPQ (ORCPT
+	by vger.kernel.org with ESMTP id S1751407AbaAWQT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:15:16 -0500
-Date: Thu, 23 Jan 2014 16:15:05 +0000
+	Thu, 23 Jan 2014 11:19:29 -0500
+Date: Thu, 23 Jan 2014 16:19:19 +0000
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Will Deacon <Will.Deacon@arm.com>,
+Cc: Sudeep Holla <Sudeep.Holla@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <Will.Deacon@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
@@ -25,66 +27,43 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Will Deacon <Will.Deacon@arm.com>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
         Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Al Stone <al.stone@linaro.org>,
         "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
-Subject: Re: [PATCH 02/20] ARM64 : Add dummy asm/cpu.h
-Message-ID: <20140123161505.GB23939@localhost>
+Subject: Re: [PATCH 03/20] ARM64 / ACPI: Introduce the skeleton of _PDC
+ related for ARM64
+Message-ID: <20140123161918.GA25927@localhost>
 References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-3-git-send-email-hanjun.guo@linaro.org>
+ <1389961514-13562-4-git-send-email-hanjun.guo@linaro.org>
+ <52D93D4E.5020605@arm.com>
+ <52DCEA66.90903@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389961514-13562-3-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <52DCEA66.90903@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 12:24:56PM +0000, Hanjun Guo wrote:
-> ACPI requires a cpu.h, add a dummy one copied from arm. This will need
-> updated or replaced as ACPI based cpu hotplug or cpu topology for armv8
-> is worked out.
+On Mon, Jan 20, 2014 at 09:20:38AM +0000, Hanjun Guo wrote:
+> On 2014-1-17 22:25, Sudeep Holla wrote:
+> > On 17/01/14 12:24, Hanjun Guo wrote:
+> >> --- a/arch/arm64/kernel/process.c
+> >> +++ b/arch/arm64/kernel/process.c
+> >> @@ -89,6 +89,9 @@ void arch_cpu_idle_prepare(void)
+> >>  	local_fiq_enable();
+> >>  }
+> >>  
+> >> +unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
+> >> +EXPORT_SYMBOL(boot_option_idle_override);
+> >> +
+> > 
+> > This is what I mentioned in other email. Do we really foresee use of this in
+> > ARM64 or it's just added to avoid build issues ?
 > 
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/include/asm/cpu.h |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
->  create mode 100644 arch/arm64/include/asm/cpu.h
-> 
-> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
-> new file mode 100644
-> index 0000000..8625eb1
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/cpu.h
-> @@ -0,0 +1,25 @@
-> +/*
-> + *  Copyright (C) 2004-2005 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef __ASM_ARM_CPU_H
-> +#define __ASM_ARM_CPU_H
-> +
-> +#include <linux/percpu.h>
-> +#include <linux/cpu.h>
-> +#include <linux/topology.h>
-> +
-> +struct cpuinfo_arm {
-> +	struct cpu	cpu;
-> +	u64		cpuid;
-> +#ifdef CONFIG_SMP
-> +	unsigned int	loops_per_jiffy;
-> +#endif
-> +};
-> +
-> +DECLARE_PER_CPU(struct cpuinfo_arm, cpu_data);
-> +
-> +#endif
+> Just avoid build issues, can not foresee use of this in ARM64 :)
 
-Could you not leave this file empty until you add the code that actually
-makes use of cpu_data?
+So ideally we should look for a better solution here.
 
 -- 
 Catalin
