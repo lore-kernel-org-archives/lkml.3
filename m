@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaAWJr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 04:47:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23323 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbaAWJrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 04:47:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,705,1384329600"; 
-   d="scan'208";a="471208630"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: "JBottomley@Parallels.com" <JBottomley@Parallels.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>
-Subject: RE: [PATCH] isci: update version to 1.2
-Thread-Topic: [PATCH] isci: update version to 1.2
-Thread-Index: AQHPGB8BoEkkAxepjkCeKHXIfUY+hpqSDnxQ
-Date: Thu, 23 Jan 2014 09:46:49 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6A5944@IRSMSX105.ger.corp.intel.com>
-References: <20140123093835.6047.53983.stgit@gklab-154-244.igk.intel.com>
-In-Reply-To: <20140123093835.6047.53983.stgit@gklab-154-244.igk.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.180]
-Content-Type: text/plain; charset="utf-8"
+	id S1752235AbaAWJsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 04:48:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55711 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaAWJso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 04:48:44 -0500
+Date: Thu, 23 Jan 2014 10:48:04 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140123094804.GP30183@twins.programming.kicks-ass.net>
+References: <20140122123022.GN31570@twins.programming.kicks-ass.net>
+ <20140122131456.GA389@x4>
+ <52DFD50E.800@oracle.com>
+ <20140122183538.GA389@x4>
+ <20140122184253.GN30183@twins.programming.kicks-ass.net>
+ <20140122190905.GA391@x4>
+ <20140122191254.GA390@x4>
+ <20140122201605.GU11314@laptop.programming.kicks-ass.net>
+ <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+ <20140122211740.GA391@x4>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122211740.GA391@x4>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0N9ltGJ022551
 
-On Thursday, January 23, 2014 10:39 AM Lukasz Dorau <lukasz.dorau@intel.com> wrote:
-> The version of isci driver has not been updated for 2 years.
-> It was 83 isci commits ago. Suspend/resume support has been implemented
-> and many bugs have been fixed since 1.1. Now update the version to 1.2.
+On Wed, Jan 22, 2014 at 10:17:40PM +0100, Markus Trippelsdorf wrote:
+> Yes. Thanks Peter.
 > 
-> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-> Cc: <stable@vger.kernel.org>
 
-Oops... By mistake I have sent the wrong version of the patch. I'm sorry.
-Please disregard it.
+Ah much simpler patch that should have the same effect:
 
-Lukasz
+---
+Subject: sched/x86/tsc: Initialize multiplier to 0
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 22 Jan 2014 22:08:14 +0100
+
+Since we keep the clock value linearly continuous on frequency change,
+make sure the initial multiplier is 0, such that out initial value is
+0. Without this we compute the initial value at whatever the TSC has
+managed to reach since power-on.
+
+Fixes: 20d1c86a57762 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
+Cc: lenb@kernel.org
+Cc: rjw@rjwysocki.net
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com
+Cc: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: dyoung@redhat.com
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/kernel/tsc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -180,7 +180,7 @@ static void cyc2ns_write_end(int cpu, st
  
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ static void cyc2ns_data_init(struct cyc2ns_data *data)
+ {
+-	data->cyc2ns_mul = 1U << CYC2NS_SCALE_FACTOR;
++	data->cyc2ns_mul = 0;
+ 	data->cyc2ns_shift = CYC2NS_SCALE_FACTOR;
+ 	data->cyc2ns_offset = 0;
+ 	data->__count = 0;
