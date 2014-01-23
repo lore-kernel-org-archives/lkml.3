@@ -1,476 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaAWDB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 22:01:28 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58865 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaAWDB1 (ORCPT
+	id S1753648AbaAWDCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 22:02:12 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:45348 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaAWDCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 22:01:27 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-07-52e08605b1cb
-Date: Thu, 23 Jan 2014 12:02:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Cai Liu <liucai.lfn@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Bob Liu <bob.liu@oracle.com>, Cai Liu <cai.liu@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Weijie Yang <weijie.yang.kh@gmail.com>
-Subject: Re: [PATCH v2] mm/zswap: Check all pool pages instead of one pool
- pages
-Message-ID: <20140123030242.GA28732@bbox>
-References: <CAFLCcBqyhL=wfC4uJmpp9MkGExBuPJC4EqY2RHRngnEn_1ytSA@mail.gmail.com>
- <20140121050439.GA16664@bbox>
- <CAFLCcBr1_=i3Pdh8_MToS0Dc1UGruviMiydF5c-vX2Bv8AfeAw@mail.gmail.com>
- <20140121081820.GA31230@bbox>
- <CAFLCcBo90jDa562OxwACFVBmSAwVM06oGnx7ooq7YKAvNdqU=w@mail.gmail.com>
- <20140122080238.GD31230@bbox>
- <CAFLCcBqPeeJEqyO978VQmiP3coAHBhoC86jQ0rwFwD-dkGyjkw@mail.gmail.com>
- <CALZtONDZ-jPTOLfnoXsZ8mNPFXU_j8v+QQq6+DCAvRP3+3x_=w@mail.gmail.com>
- <CAFLCcBpgfeGO4t1kxxd3-a7AgoR_bho_8v=SXTvEzBf-opYvVQ@mail.gmail.com>
+	Wed, 22 Jan 2014 22:02:11 -0500
+Date: Thu, 23 Jan 2014 11:01:03 +0800
+From: walimis <walimisdev@gmail.com>
+To: John Tobias <john.tobias.ph@gmail.com>
+Cc: "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
+Subject: Re: Internal error: Oops: 17 [#1] ARM
+Message-ID: <20140123030103.GC18520@pek-lwang0-d1>
+References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLCcBpgfeGO4t1kxxd3-a7AgoR_bho_8v=SXTvEzBf-opYvVQ@mail.gmail.com>
+In-Reply-To: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Cai,
+On Wed, Jan 22, 2014 at 08:23:36AM -0800, John Tobias wrote:
+>Hello all,
+>
+>I am using 3.13-rc1 kernel on iMX6SL processor. My filesystem is in
+>eMMC running SDR50.
+>Is anyone here encountered these problem and if there's any existing
+>patch that I can get?.
+hi,
 
-On Thu, Jan 23, 2014 at 09:38:41AM +0800, Cai Liu wrote:
-> Hello Dan
-> 
-> 2014/1/22 Dan Streetman <ddstreet@ieee.org>:
-> > On Wed, Jan 22, 2014 at 7:16 AM, Cai Liu <liucai.lfn@gmail.com> wrote:
-> >> Hello Minchan
-> >>
-> >>
-> >> 2014/1/22 Minchan Kim <minchan@kernel.org>
-> >>>
-> >>> Hello Cai,
-> >>>
-> >>> On Tue, Jan 21, 2014 at 09:52:25PM +0800, Cai Liu wrote:
-> >>> > Hello Minchan
-> >>> >
-> >>> > 2014/1/21 Minchan Kim <minchan@kernel.org>:
-> >>> > > Hello,
-> >>> > >
-> >>> > > On Tue, Jan 21, 2014 at 02:35:07PM +0800, Cai Liu wrote:
-> >>> > >> 2014/1/21 Minchan Kim <minchan@kernel.org>:
-> >>> > >> > Please check your MUA and don't break thread.
-> >>> > >> >
-> >>> > >> > On Tue, Jan 21, 2014 at 11:07:42AM +0800, Cai Liu wrote:
-> >>> > >> >> Thanks for your review.
-> >>> > >> >>
-> >>> > >> >> 2014/1/21 Minchan Kim <minchan@kernel.org>:
-> >>> > >> >> > Hello Cai,
-> >>> > >> >> >
-> >>> > >> >> > On Mon, Jan 20, 2014 at 03:50:18PM +0800, Cai Liu wrote:
-> >>> > >> >> >> zswap can support multiple swapfiles. So we need to check
-> >>> > >> >> >> all zbud pool pages in zswap.
-> >>> > >> >> >>
-> >>> > >> >> >> Version 2:
-> >>> > >> >> >>   * add *total_zbud_pages* in zbud to record all the pages in pools
-> >>> > >> >> >>   * move the updating of pool pages statistics to
-> >>> > >> >> >>     alloc_zbud_page/free_zbud_page to hide the details
-> >>> > >> >> >>
-> >>> > >> >> >> Signed-off-by: Cai Liu <cai.liu@samsung.com>
-> >>> > >> >> >> ---
-> >>> > >> >> >>  include/linux/zbud.h |    2 +-
-> >>> > >> >> >>  mm/zbud.c            |   44 ++++++++++++++++++++++++++++++++------------
-> >>> > >> >> >>  mm/zswap.c           |    4 ++--
-> >>> > >> >> >>  3 files changed, 35 insertions(+), 15 deletions(-)
-> >>> > >> >> >>
-> >>> > >> >> >> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
-> >>> > >> >> >> index 2571a5c..1dbc13e 100644
-> >>> > >> >> >> --- a/include/linux/zbud.h
-> >>> > >> >> >> +++ b/include/linux/zbud.h
-> >>> > >> >> >> @@ -17,6 +17,6 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle);
-> >>> > >> >> >>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
-> >>> > >> >> >>  void *zbud_map(struct zbud_pool *pool, unsigned long handle);
-> >>> > >> >> >>  void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
-> >>> > >> >> >> -u64 zbud_get_pool_size(struct zbud_pool *pool);
-> >>> > >> >> >> +u64 zbud_get_pool_size(void);
-> >>> > >> >> >>
-> >>> > >> >> >>  #endif /* _ZBUD_H_ */
-> >>> > >> >> >> diff --git a/mm/zbud.c b/mm/zbud.c
-> >>> > >> >> >> index 9451361..711aaf4 100644
-> >>> > >> >> >> --- a/mm/zbud.c
-> >>> > >> >> >> +++ b/mm/zbud.c
-> >>> > >> >> >> @@ -52,6 +52,13 @@
-> >>> > >> >> >>  #include <linux/spinlock.h>
-> >>> > >> >> >>  #include <linux/zbud.h>
-> >>> > >> >> >>
-> >>> > >> >> >> +/*********************************
-> >>> > >> >> >> +* statistics
-> >>> > >> >> >> +**********************************/
-> >>> > >> >> >> +
-> >>> > >> >> >> +/* zbud pages in all pools */
-> >>> > >> >> >> +static u64 total_zbud_pages;
-> >>> > >> >> >> +
-> >>> > >> >> >>  /*****************
-> >>> > >> >> >>   * Structures
-> >>> > >> >> >>  *****************/
-> >>> > >> >> >> @@ -142,10 +149,28 @@ static struct zbud_header *init_zbud_page(struct page *page)
-> >>> > >> >> >>       return zhdr;
-> >>> > >> >> >>  }
-> >>> > >> >> >>
-> >>> > >> >> >> +static struct page *alloc_zbud_page(struct zbud_pool *pool, gfp_t gfp)
-> >>> > >> >> >> +{
-> >>> > >> >> >> +     struct page *page;
-> >>> > >> >> >> +
-> >>> > >> >> >> +     page = alloc_page(gfp);
-> >>> > >> >> >> +
-> >>> > >> >> >> +     if (page) {
-> >>> > >> >> >> +             pool->pages_nr++;
-> >>> > >> >> >> +             total_zbud_pages++;
-> >>> > >> >> >
-> >>> > >> >> > Who protect race?
-> >>> > >> >>
-> >>> > >> >> Yes, here the pool->pages_nr and also the total_zbud_pages are not protected.
-> >>> > >> >> I will re-do it.
-> >>> > >> >>
-> >>> > >> >> I will change *total_zbud_pages* to atomic type.
-> >>> > >> >
-> >>> > >> > Wait, it doesn't make sense. Now, you assume zbud allocator would be used
-> >>> > >> > for only zswap. It's true until now but we couldn't make sure it in future.
-> >>> > >> > If other user start to use zbud allocator, total_zbud_pages would be pointless.
-> >>> > >>
-> >>> > >> Yes, you are right.  ZBUD is a common module. So in this patch calculate the
-> >>> > >> zswap pool size in zbud is not suitable.
-> >>> > >>
-> >>> > >> >
-> >>> > >> > Another concern is that what's your scenario for above two swap?
-> >>> > >> > How often we need to call zbud_get_pool_size?
-> >>> > >> > In previous your patch, you reduced the number of call so IIRC,
-> >>> > >> > we only called it in zswap_is_full and for debugfs.
-> >>> > >>
-> >>> > >> zbud_get_pool_size() is called frequently when adding/freeing zswap
-> >>> > >> entry happen in zswap . This is why in this patch I added a counter in zbud,
-> >>> > >> and then in zswap the iteration of zswap_list to calculate the pool size will
-> >>> > >> not be needed.
-> >>> > >
-> >>> > > We can remove updating zswap_pool_pages in zswap_frontswap_store and
-> >>> > > zswap_free_entry as I said. So zswap_is_full is only hot spot.
-> >>> > > Do you think it's still big overhead? Why? Maybe locking to prevent
-> >>> > > destroying? Then, we can use RCU to minimize the overhead as I mentioned.
-> >>> >
-> >>> > I get your point. Yes, In my previous patch, zswap_is_full() was the
-> >>> > only path to call
-> >>> > zbud_get_pool_size(). And your suggestion on patch v1 to remove the unnecessary
-> >>> > iteration will reduce the overhead further.
-> >>> >
-> >>> > So adding the calculating of all the pool size in zswap.c is better.
-> >>> >
-> >>> > >>
-> >>> > >> > Of course, it would need some lock or refcount to prevent destroy
-> >>> > >> > of zswap_tree in parallel with zswap_frontswap_invalidate_area but
-> >>> > >> > zswap_is_full doesn't need to be exact so RCU would be good fit.
-> >>> > >> >
-> >>> > >> > Most important point is that now zswap doesn't consider multiple swap.
-> >>> > >> > For example, Let's assume you uses two swap A and B with different priority
-> >>> > >> > and A already has charged 19% long time ago and let's assume that A swap is
-> >>> > >> > full now so VM start to use B so that B has charged 1% recently.
-> >>> > >> > It menas zswap charged (19% + 1%)i is full by default.
-> >>> > >> >
-> >>> > >> > Then, if VM want to swap out more pages into B, zbud_reclaim_page
-> >>> > >> > would be evict one of pages in B's pool and it would be repeated
-> >>> > >> > continuously. It's totally LRU reverse problem and swap thrashing in B
-> >>> > >> > would happen.
-> >>> > >> >
-> >>> > >>
-> >>> > >> The scenario is below:
-> >>> > >> There are 2 swap A, B in system. If pool size of A reach 19% of ram
-> >>> > >> size and swap A
-> >>> > >> is also full. Then swap B will be used. Pool size of B will be
-> >>> > >> increased until it hit
-> >>> > >> the 20% of the ram size. By now zswap pool size is about 39% of ram size.
-> >>> > >> If there are more than 2 swap file/device,  zswap pool will expand out
-> >>> > >> of control
-> >>> > >> and there may be no swapout happened.
-> >>> > >
-> >>> > > I know.
-> >>> > >
-> >>> > >>
-> >>> > >> I think the original intention of zswap designer is to keep the total
-> >>> > >> zswap pools size below
-> >>> > >> 20% of RAM size.
-> >>> > >
-> >>> > > My point is your patch still doesn't solve the example I mentioned.
-> >>> >
-> >>> > Hmm. My patch only make sure all the zswap pools use maximum 20% of
-> >>> > RAM size. It is a new problem in your example. The zbud_reclaim_page would
-> >>> > not swap out the oldest zbud page when multiple swaps are used.
-> >>> >
-> >>> > Maybe the new problem can be resolved in another patch.
-> >>>
-> >>> It means current zswap has a problem in multiple swap but you want
-> >>> to fix a problem which happens only when it is used for multiple swap.
-> >>> So, I'm not sure we want a fix in this phase before discussing more
-> >>> fundamental thing.
-> >>>
-> >>
-> >> Yes, The bug which I want to fix only happens when multiple swap are used.
-> >>
-> >>> That's why I want to know why you want to use multiple swap with zswap
-> >>> but you are never saying it to us. :(
-> >>>
-> >>
-> >> If user uses more than one swap device/file, then this is an issue.
-> >> Zswap pool is created when a swap device/file is swapped on happens.
-> >> So there will be more than one zswap pool when user uses 2 or even
-> >> more swap devices/files.
-> >>
-> >> I am not sure whether multiple swap are popular. But if multiple swap
-> >> are swapped
-> >> on, then multiple zswap pool will be created. And the size of these pools may
-> >> out of control.
-> >
-> > Personally I don't think using multiple swap partitions/files has to
-> > be popular to need to solve this, it only needs to be possible, which
-> > it is.
-> >
-> > Why not just leave zbud unchanged, and sum up the total size using a
-> > list of active zswap_trees as Minchan suggested for the v1 patch?  The
-> 
-> Yes. This is what I want to do in the v3 patch after this bug is considered need
-> to be fixed.
+Do you use gcc 4.8.1? If so, maybe you should look at following link
+to see whether it's a similar issue.
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
 
-In my position, I'd like to fix zswap and multiple swap problem firstly
-and like the Weijie's suggestion.
+Liming Wang
 
-So, how about this?
-I didn't look at code in detail and want to show the concept.
-That's why I added RFC tag.
-
->From 67c64746e977a091ee30ca37bbc034990adf5ca5 Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan@kernel.org>
-Date: Thu, 23 Jan 2014 11:41:44 +0900
-Subject: [RFC] zswap: support multiple swap
-
-Cai Liu reporeted that now zbud pool pages counting has a problem
-when multiple swap is used because it just counts one of swap
-among mutliple swap intead of all of swap so zswap cannot control
-writeback properly. The result is unnecessary writeback or
-no writeback when we should really writeback. IOW, it made zswap
-crazy.
-
-Another problem in zswap is following as.
-For example, let's assume we use two swap A and B with different
-priority and A already has charged 19% long time ago and let's assume
-that A swap is full now so VM start to use B so that B has charged 1%
-recently. It menas zswap charged (19% + 1%) is full by default.
-Then, if VM want to swap out more pages into B, zbud_reclaim_page
-would be evict one of pages in B's pool and it would be repeated
-continuously. It's totally LRU reverse problem and swap thrashing
-in B would happen.
-
-This patch makes zswap consider mutliple swap by creating *a* zbud
-pool which will be shared by multiple swap so all of zswap pages
-in multiple swap keep order by LRU so it can prevent above two
-problems.
-
-Reported-by: Cai Liu <cai.liu@samsung.com>
-Suggested-by: Weijie Yang <weijie.yang.kh@gmail.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/zswap.c | 56 +++++++++++++++++++++++++++++---------------------------
- 1 file changed, 29 insertions(+), 27 deletions(-)
-
-diff --git a/mm/zswap.c b/mm/zswap.c
-index 5a63f78a5601..96039e86db79 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -89,6 +89,8 @@ static unsigned int zswap_max_pool_percent = 20;
- module_param_named(max_pool_percent,
- 			zswap_max_pool_percent, uint, 0644);
- 
-+static struct zbud_pool *mem_pool;
-+
- /*********************************
- * compression functions
- **********************************/
-@@ -189,7 +191,6 @@ struct zswap_header {
- struct zswap_tree {
- 	struct rb_root rbroot;
- 	spinlock_t lock;
--	struct zbud_pool *pool;
- };
- 
- static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
-@@ -288,10 +289,10 @@ static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
- static void zswap_free_entry(struct zswap_tree *tree,
- 			struct zswap_entry *entry)
- {
--	zbud_free(tree->pool, entry->handle);
-+	zbud_free(mem_pool, entry->handle);
- 	zswap_entry_cache_free(entry);
- 	atomic_dec(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-+	zswap_pool_pages = zbud_get_pool_size(mem_pool);
- }
- 
- /* caller must hold the tree lock */
-@@ -545,7 +546,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	zbud_unmap(pool, handle);
- 	tree = zswap_trees[swp_type(swpentry)];
- 	offset = swp_offset(swpentry);
--	BUG_ON(pool != tree->pool);
-+	BUG_ON(pool != mem_pool);
- 
- 	/* find and ref zswap entry */
- 	spin_lock(&tree->lock);
-@@ -573,13 +574,13 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	case ZSWAP_SWAPCACHE_NEW: /* page is locked */
- 		/* decompress */
- 		dlen = PAGE_SIZE;
--		src = (u8 *)zbud_map(tree->pool, entry->handle) +
-+		src = (u8 *)zbud_map(mem_pool, entry->handle) +
- 			sizeof(struct zswap_header);
- 		dst = kmap_atomic(page);
- 		ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
- 				entry->length, dst, &dlen);
- 		kunmap_atomic(dst);
--		zbud_unmap(tree->pool, entry->handle);
-+		zbud_unmap(mem_pool, entry->handle);
- 		BUG_ON(ret);
- 		BUG_ON(dlen != PAGE_SIZE);
- 
-@@ -652,7 +653,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 	/* reclaim space if needed */
- 	if (zswap_is_full()) {
- 		zswap_pool_limit_hit++;
--		if (zbud_reclaim_page(tree->pool, 8)) {
-+		if (zbud_reclaim_page(mem_pool, 8)) {
- 			zswap_reject_reclaim_fail++;
- 			ret = -ENOMEM;
- 			goto reject;
-@@ -679,7 +680,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 
- 	/* store */
- 	len = dlen + sizeof(struct zswap_header);
--	ret = zbud_alloc(tree->pool, len, __GFP_NORETRY | __GFP_NOWARN,
-+	ret = zbud_alloc(mem_pool, len, __GFP_NORETRY | __GFP_NOWARN,
- 		&handle);
- 	if (ret == -ENOSPC) {
- 		zswap_reject_compress_poor++;
-@@ -689,11 +690,11 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 		zswap_reject_alloc_fail++;
- 		goto freepage;
- 	}
--	zhdr = zbud_map(tree->pool, handle);
-+	zhdr = zbud_map(mem_pool, handle);
- 	zhdr->swpentry = swp_entry(type, offset);
- 	buf = (u8 *)(zhdr + 1);
- 	memcpy(buf, dst, dlen);
--	zbud_unmap(tree->pool, handle);
-+	zbud_unmap(mem_pool, handle);
- 	put_cpu_var(zswap_dstmem);
- 
- 	/* populate entry */
-@@ -716,7 +717,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 
- 	/* update stats */
- 	atomic_inc(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-+	zswap_pool_pages = zbud_get_pool_size(mem_pool);
- 
- 	return 0;
- 
-@@ -752,13 +753,13 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
- 
- 	/* decompress */
- 	dlen = PAGE_SIZE;
--	src = (u8 *)zbud_map(tree->pool, entry->handle) +
-+	src = (u8 *)zbud_map(mem_pool, entry->handle) +
- 			sizeof(struct zswap_header);
- 	dst = kmap_atomic(page);
- 	ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
- 		dst, &dlen);
- 	kunmap_atomic(dst);
--	zbud_unmap(tree->pool, entry->handle);
-+	zbud_unmap(mem_pool, entry->handle);
- 	BUG_ON(ret);
- 
- 	spin_lock(&tree->lock);
-@@ -807,8 +808,6 @@ static void zswap_frontswap_invalidate_area(unsigned type)
- 		zswap_free_entry(tree, entry);
- 	tree->rbroot = RB_ROOT;
- 	spin_unlock(&tree->lock);
--
--	zbud_destroy_pool(tree->pool);
- 	kfree(tree);
- 	zswap_trees[type] = NULL;
- }
-@@ -822,20 +821,14 @@ static void zswap_frontswap_init(unsigned type)
- 	struct zswap_tree *tree;
- 
- 	tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
--	if (!tree)
--		goto err;
--	tree->pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
--	if (!tree->pool)
--		goto freetree;
-+	if (!tree) {
-+		pr_err("alloc failed, zswap disabled for swap type %d\n", type);
-+		return;
-+	}
-+
- 	tree->rbroot = RB_ROOT;
- 	spin_lock_init(&tree->lock);
- 	zswap_trees[type] = tree;
--	return;
--
--freetree:
--	kfree(tree);
--err:
--	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
- }
- 
- static struct frontswap_ops zswap_frontswap_ops = {
-@@ -907,9 +900,14 @@ static int __init init_zswap(void)
- 		return 0;
- 
- 	pr_info("loading zswap\n");
-+
-+	mem_pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
-+	if (!mem_pool)
-+		goto error;
-+
- 	if (zswap_entry_cache_create()) {
- 		pr_err("entry cache creation failed\n");
--		goto error;
-+		goto cachefail;
- 	}
- 	if (zswap_comp_init()) {
- 		pr_err("compressor initialization failed\n");
-@@ -919,6 +917,8 @@ static int __init init_zswap(void)
- 		pr_err("per-cpu initialization failed\n");
- 		goto pcpufail;
- 	}
-+
-+
- 	frontswap_register_ops(&zswap_frontswap_ops);
- 	if (zswap_debugfs_init())
- 		pr_warn("debugfs initialization failed\n");
-@@ -927,6 +927,8 @@ pcpufail:
- 	zswap_comp_exit();
- compfail:
- 	zswap_entry_cache_destory();
-+cachefail:
-+	zbud_destroy_pool(mem_pool);
- error:
- 	return -ENOMEM;
- }
--- 
-1.8.5.2
-
-
--- 
-Kind regards,
-Minchan Kim
+>
+>Regards,
+>
+>john
+>
+>[ 1552.394899] Unable to handle kernel NULL pointer dereference at
+>virtual address 00000037
+>[ 1552.403034] pgd = beef4000
+>[ 1552.405855] [00000037] *pgd=bef60831, *pte=00000000, *ppte=00000000
+>[ 1552.412245] Internal error: Oops: 17 [#1] ARM
+>[ 1552.416627] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(O)
+>[ 1552.422249] CPU: 0 PID: 232 Comm: commsd Tainted: G           O 3.13.0-rc1 #7
+>[ 1552.429409] task: bfbc7500 ti: bec96000 task.ti: bec96000
+>[ 1552.434844] PC is at lookup_fast+0x5c/0x318
+>[ 1552.439067] LR is at mark_held_locks+0x78/0x13c
+>[ 1552.443622] pc : [<80101184>]    lr : [<80056e48>]    psr: a00f0013
+>[ 1552.443622] sp : bec97d88  ip : 00666e6f  fp : bec97ddc
+>[ 1552.455124] r10: 00000000  r9 : bec97e08  r8 : 80102d94
+>[ 1552.460370] r7 : bec97e60  r6 : bf133ac8  r5 : bec97e60  r4 : bec97e00
+>[ 1552.466918] r3 : bee4f01d  r2 : 00000000  r1 : ffffffff  r0 : ffffffff
+>[ 1552.473471] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+>[ 1552.480629] Control: 10c53c7d  Table: beef4059  DAC: 00000015
+>[ 1552.486397] Process commsd (pid: 232, stack limit = 0xbec96238)
+>[ 1552.492341] Stack: (0xbec97d88 to 0xbec98000)
+>[ 1552.496728] 7d80:                   80102b94 80057108 bfb95310
+>bf133ac8 bf15f4e8 bfb95310
+>[ 1552.504936] 7da0: c08bb14d ffffffff bee4f015 00000008 bfbc7500
+>bec97e08 00000000 00000041
+>[ 1552.513142] 7dc0: bec97e60 bec96020 bec96000 00000000 bec97e3c
+>bec97de0 80102d94 80101134
+>[ 1552.521347] 7de0: bec97df8 00000000 800d982c bec96018 00000010
+>bec97e00 00000000 bec97e08
+>[ 1552.529553] 7e00: 8026e25c 800d97e8 bee4f000 00000ff0 80d4e3a4
+>00000001 bee4f000 bec97e60
+>[ 1552.537758] 7e20: ffffff9c ffffff9c bec96000 00000000 bec97e5c
+>bec97e40 801033bc 80102c70
+>[ 1552.545964] 7e40: bee4f000 00000001 bec97e60 bec97f00 bec97ee4
+>bec97e60 80105dc0 80103398
+>[ 1552.554170] 7e60: bfb95310 bf133ac8 c08bb14d 0000000b bee4f015
+>8005992c bfb95310 bf133398
+>[ 1552.562375] 7e80: bf15f4e8 00000041 00000002 0000008a 00000000
+>00000000 600f0013 bec96000
+>[ 1552.570581] 7ea0: ffffffea bf8c1840 807b4430 80115444 801156e4
+>8011563c 00000008 00000000
+>[ 1552.578786] 7ec0: bec97f04 733fe4e0 00000001 ffffff9c 757e3810
+>bec97f40 bec97efc bec97ee8
+>[ 1552.586991] 7ee0: 80105e0c 80105d68 00000000 bc950fe0 bec97f2c
+>bec97f00 800faf64 80105df4
+>[ 1552.595196] 7f00: 801156e4 80115420 bec97f54 733fe4e0 733ff8f0
+>733fe61c 000000c3 8000f504
+>[ 1552.603402] 7f20: bec97f3c bec97f30 800fafe0 800faf1c bec97fa4
+>bec97f40 800fb71c 800fafc4
+>[ 1552.611608] 7f40: 8000f310 bfbc7500 733fe550 8000f458 733fe61c
+>000000c3 bec97f84 bec97f68
+>[ 1552.619813] 7f60: 80056f28 800a0270 733fe550 733ff8f0 733fe61c
+>000000c3 bec97f94 bec97f88
+>[ 1552.628019] 7f80: 80057110 80056f18 00000000 bec97f98 8000f458
+>733fe550 00000000 bec97fa8
+>[ 1552.636226] 7fa0: 8000f280 800fb704 733fe550 733ff8f0 757e3810
+>733fe4e0 733fe550 00000003
+>[ 1552.644431] 7fc0: 733fe550 733ff8f0 733fe61c 000000c3 00000000
+>00000002 733fe92c 00000200
+>[ 1552.652636] 7fe0: 000000c3 733fe4d8 7579b7e5 7572e276 200f0030
+>757e3810 bfffd821 bfffdc21
+>[ 1552.660828] Backtrace:
+>[ 1552.663343] [<80101128>] (lookup_fast+0x0/0x318) from [<80102d94>]
+>(path_lookupat+0x130/0x728)
+>[ 1552.671994] [<80102c64>] (path_lookupat+0x0/0x728) from
+>[<801033bc>] (filename_lookup.isra.40+0x30/0x70)
+>[ 1552.681515] [<8010338c>] (filename_lookup.isra.40+0x0/0x70) from
+>[<80105dc0>] (user_path_at_empty+0x64/0x8c)
+>[ 1552.691361]  r7:bec97f00 r6:bec97e60 r5:00000001 r4:bee4f000
+>[ 1552.697163] [<80105d5c>] (user_path_at_empty+0x0/0x8c) from
+>[<80105e0c>] (user_path_at+0x24/0x2c)
+>[ 1552.706053]  r8:bec97f40 r7:757e3810 r6:ffffff9c r5:00000001 r4:733fe4e0
+>[ 1552.712927] [<80105de8>] (user_path_at+0x0/0x2c) from [<800faf64>]
+>(vfs_fstatat+0x54/0xa8)
+>[ 1552.721232] [<800faf10>] (vfs_fstatat+0x0/0xa8) from [<800fafe0>]
+>(vfs_stat+0x28/0x2c)
+>[ 1552.729167]  r8:8000f504 r7:000000c3 r6:733fe61c r5:733ff8f0 r4:733fe4e0
+>[ 1552.736031] [<800fafb8>] (vfs_stat+0x0/0x2c) from [<800fb71c>]
+>(SyS_stat64+0x24/0x40)
+>[ 1552.743902] [<800fb6f8>] (SyS_stat64+0x0/0x40) from [<8000f280>]
+>(ret_fast_syscall+0x0/0x48)
+>[ 1552.752359]  r4:733fe550
+>[ 1552.754946] Code: eb00352d e3500000 e50b0038 0a000080 (e5903038)
+>[ 1552.761270] ---[ end trace 02679086a39365e8 ]---
+>[ 1552.765968] Kernel panic - not syncing: Fatal exception
+>
+>_______________________________________________
+>linux-arm-kernel mailing list
+>linux-arm-kernel@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
