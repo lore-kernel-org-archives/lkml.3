@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaAWCKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 21:10:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394AbaAWCKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 21:10:36 -0500
-Date: Thu, 23 Jan 2014 10:10:28 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140123021028.GE3768@dhcp-16-126.nay.redhat.com>
-References: <20140122123022.GN31570@twins.programming.kicks-ass.net>
- <20140122131456.GA389@x4>
- <52DFD50E.800@oracle.com>
- <20140122183538.GA389@x4>
- <20140122184253.GN30183@twins.programming.kicks-ass.net>
- <20140122190905.GA391@x4>
- <20140122191254.GA390@x4>
- <20140122201605.GU11314@laptop.programming.kicks-ass.net>
- <20140122210814.GC9481@laptop.programming.kicks-ass.net>
- <20140123015354.GB3768@dhcp-16-126.nay.redhat.com>
+	id S1753278AbaAWCPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 21:15:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25763 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaAWCPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 21:15:35 -0500
+Message-ID: <52E07B31.8070104@oracle.com>
+Date: Wed, 22 Jan 2014 21:15:13 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123015354.GB3768@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: khlebnikov@openvz.org, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG: Bad rss-counter state
+References: <52E06B6F.90808@oracle.com> <alpine.DEB.2.02.1401221735450.26172@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401221735450.26172@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/14 at 09:53am, Dave Young wrote:
-> On 01/22/14 at 10:08pm, Peter Zijlstra wrote:
-> > > 
-> > > I think its the right region to look through. My current suspect is the
-> > > linear continuity fit with the initial 'random' multiplier.
-> > > 
-> > > That initial 'random' multiplier can get us quite high, and we'll fit
-> > > the function to match that but continue at a sane rate.
-> > > 
-> > > I'll try and prod a little more later this evening as time permits.
-> > 
-> > Does this cure things?
-> 
-> Peter, the odd timstamp still happens with this patch for me.
+On 01/22/2014 08:39 PM, David Rientjes wrote:
+> On Wed, 22 Jan 2014, Sasha Levin wrote:
+>
+>> Hi all,
+>>
+>> While fuzzing with trinity running inside a KVM tools guest using latest -next
+>> kernel,
+>> I've stumbled on a "mm: BUG: Bad rss-counter state" error which was pretty
+>> non-obvious
+>> in the mix of the kernel spew (why?).
+>>
+>
+> It's not a fatal condition and there's only a few possible stack traces
+> that could be emitted during the exit() path.  I don't see how we could
+> make it more visible other than its log-level which is already KERN_ALERT.
 
-Hmm, seems the my physical machine is booting fine with this patch. kvm
-guest problem still exist, but that kvm thing might be other problem.
+Would it make sense to add a VM_BUG_ON() to make it more obvious when we have
+CONFIG_VM_DEBUG enabled? Many of the VM_BUG_ON test cases are non-fatal either,
+and it would make it easier spotting this issue.
 
-> 
-> > 
-> > ---
-> >  arch/x86/kernel/tsc.c | 11 +++++++----
-> >  1 file changed, 7 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> > index a3acbac2ee72..bb04148c5fe0 100644
-> > --- a/arch/x86/kernel/tsc.c
-> > +++ b/arch/x86/kernel/tsc.c
-> > @@ -237,7 +237,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
-> >  /* XXX surely we already have this someplace in the kernel?! */
-> >  #define DIV_ROUND(n, d) (((n) + ((d) / 2)) / (d))
-> >  
-> > -static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
-> > +static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu, bool origin)
-> >  {
-> >  	unsigned long long tsc_now, ns_now;
-> >  	struct cyc2ns_data *data;
-> > @@ -252,7 +252,10 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
-> >  	data = cyc2ns_write_begin(cpu);
-> >  
-> >  	rdtscll(tsc_now);
-> > -	ns_now = cycles_2_ns(tsc_now);
-> > +	if (origin)
-> > +		ns_now = 0;
-> > +	else
-> > +		ns_now = cycles_2_ns(tsc_now);
-> >  
-> >  	/*
-> >  	 * Compute a new multiplier as per the above comment and ensure our
-> > @@ -926,7 +929,7 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
-> >  			mark_tsc_unstable("cpufreq changes");
-> >  	}
-> >  
-> > -	set_cyc2ns_scale(tsc_khz, freq->cpu);
-> > +	set_cyc2ns_scale(tsc_khz, freq->cpu, false);
-> >  
-> >  	return 0;
-> >  }
-> > @@ -1199,7 +1202,7 @@ void __init tsc_init(void)
-> >  	 */
-> >  	for_each_possible_cpu(cpu) {
-> >  		cyc2ns_init(cpu);
-> > -		set_cyc2ns_scale(cpu_khz, cpu);
-> > +		set_cyc2ns_scale(cpu_khz, cpu, true);
-> >  	}
-> >  
-> >  	if (tsc_disabled > 0)
+>> I've added a small BUG() after the printk() in check_mm(), and here's the full
+>> output:
+>>
+>
+> Worst place to add it :)  At line 562 of kernel/fork.c in linux-next
+> you're going to hit BUG() when there may be other counters that are also
+> bad and they don't get printed.
+
+I gave the condition before curly braces :)
+
+                 if (unlikely(x)) {
+                         printk(KERN_ALERT "BUG: Bad rss-counter state "
+                                           "mm:%p idx:%d val:%ld\n", mm, i, x);
+                         BUG();
+                 }
+
+>> [  318.334905] BUG: Bad rss-counter state mm:ffff8801e6dec000 idx:0 val:1
+>
+> So our mm has a non-zero MM_FILEPAGES count, but there's nothing that was
+> cited that would tell us what that is so there's not much to go on, unless
+> someone already recognizes this as another issue.  Is this reproducible on
+> 3.13 or only on linux-next?
+
+Yup, I see it in v3.13 too, which is odd.
+
+
+Thanks,
+Sasha
