@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaAWKVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:21:53 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:36407 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968AbaAWKVw (ORCPT
+	id S1753395AbaAWKWN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:22:13 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:61960 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269AbaAWKVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 05:21:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHz4KR5A8KgXfak_tgfCOGg8O+KW2dSH3nZ_A8cRZ16Dxw@mail.gmail.com>
-References: <1390470990-16065-1-git-send-email-prabhakar.csengg@gmail.com> <CAK9yfHz4KR5A8KgXfak_tgfCOGg8O+KW2dSH3nZ_A8cRZ16Dxw@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 23 Jan 2014 15:51:31 +0530
-Message-ID: <CA+V-a8vN2VBCjuAMGootU=t+PbjK7wVDQeYZgV03Wa5070WwFw@mail.gmail.com>
-Subject: Re: [PATCH] lib/genalloc.c: add check gen_pool_dma_alloc() if dma
- pointer is not NULL
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Nicolin Chen <b42378@freescale.com>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+In-Reply-To: <CAK2H+edXO3Akcv8jMuantrhd1UzyMZ3MUFkFXYGweS_fLbN_cw@mail.gmail.com>
+References: <CAH=mFZwxay59O8sHc1fKSbh=gHPghYZMPNKEVyPvXUgitx1vPg@mail.gmail.com>
+	<CAH=mFZzmcp5amS-JsNApWiwgYqs70M==FUA6KoxH+oLdbZihcg@mail.gmail.com>
+	<CAK2H+ee8MgXdm3eTzrkvo=R-=8U_0LOmEAKMnKga8KU04jmgCg@mail.gmail.com>
+	<CAH=mFZzLEQ5MAAmwB3tdcM+DxWQho9C6h1Ho7NhKe6JMnOhyVg@mail.gmail.com>
+	<CAK2H+eeihXmxcaupmiXLLRbsbMKiaRT52sxWLX_p3EBFJVuiyA@mail.gmail.com>
+	<CAH=mFZwtOiTZvOd0_iezcYG+dL=mdxspECUmVeQq6e684sjKqg@mail.gmail.com>
+	<CAK2H+edXO3Akcv8jMuantrhd1UzyMZ3MUFkFXYGweS_fLbN_cw@mail.gmail.com>
+Date: Thu, 23 Jan 2014 15:51:51 +0530
+Message-ID: <CAH=mFZyEBU4s-+_6sne2iDjWE4oT3M8t-8OcoCThos1UyATYDQ@mail.gmail.com>
+Subject: Re: Help Needed
+From: Madhusudhan Rao Sripalle <madhu.sripalle@gmail.com>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+Hi,
 
-On Thu, Jan 23, 2014 at 3:38 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Hi Prabhakar,
->
-> On 23 January 2014 15:26, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> In the gen_pool_dma_alloc() the dma pointer can be NULL
->> and while assigning gen_pool_virt_to_phys(pool, vaddr) to
->> dma caused the following crash on da850 evm,
->>
-> [snip]
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>  lib/genalloc.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/lib/genalloc.c b/lib/genalloc.c
->> index dda3116..f48163f 100644
->> --- a/lib/genalloc.c
->> +++ b/lib/genalloc.c
->> @@ -334,7 +334,8 @@ void *gen_pool_dma_alloc(struct gen_pool *pool, size_t size, dma_addr_t *dma)
->>         if (!vaddr)
->>                 return NULL;
->>
->> -       *dma = gen_pool_virt_to_phys(pool, vaddr);
->> +       if (dma)
->> +               *dma = gen_pool_virt_to_phys(pool, vaddr);
->
-> Wouldn't it be better to return (with error/message) if dma is NULL
-> rather than silently ignore it?
->
-I am not sure if returning here with error is OK,
-may be just adding a warning message could be OK ?
+In the context of solving the below original issue, I came across
+below error while I was running "sudo make install".  Wondering what
+the below error means?
 
-Regards,
---Prabhakar Lad
+W: Possible missing firmware /lib/firmware/rtl_nic/rtl8168g-3.fw for
+module r8169
+
+
+-Madhu
+
+On Wed, Jan 22, 2014 at 11:11 PM, Mark Knecht <markknecht@gmail.com> wrote:
+> On Wed, Jan 22, 2014 at 7:47 AM, Madhusudhan Rao Sripalle
+> <madhu.sripalle@gmail.com> wrote:
+>> I have attached the boot directory contents, /boot/grub/grub.cfg and
+>> /etc/default/grub contents. Also attached the mount points on the
+>> system.
+>>
+>> On Wed, Jan 22, 2014 at 8:39 PM, Mark Knecht <markknecht@gmail.com> wrote:
+>>> On Wed, Jan 22, 2014 at 7:05 AM, Madhusudhan Rao Sripalle
+>>> <madhu.sripalle@gmail.com> wrote:
+>>>> The grub file is /boot/grub/grub.cfg. The newly built kernel is
+>>>> reflected in grub.cfg. But, the grub doesn't display this new kernel
+>>>> at the boot time. I tried few tips from the web. It is no help. That
+>>>> is why I sought help from this forum.
+>>>
+>>> You have not provided enough information for anyone to help you very
+>>> much. Show  things like the contents of /boot, your grub config file,
+>>> etc., and maybe we'll see the mistake you're making.
+>>>
+>>> Good luck,
+>>> Mark
+>
+> I thin you need someone who knows your disto. You're likely going to
+> be better served on a distro-specific list.
+>
+> In my case (Gentoo) the file edited to give me boot options is
+> /boot/grub/grub.conf which is not what you attached. I don't have the
+> file on my system but maybe your disto calls it something else.
+> Anyway, the contents of what you showed are quite different from the
+> way we do it on Gentoo. My grub.conf file contents for comparison:
+>
+> c2RAID6 ~ # cat /boot/grub/grub.conf
+> default 0
+> timeout 15
+> splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+>
+>
+> title RAID6 3.10.27-gentoo using LABEL (RAID6, md=1.2, initramfs in kernel)
+> root (hd0,0)
+> kernel (hd0,0)/boot/bzImage-3.10.27-gentoo root=LABEL=RAID6root
+> video=vesafb vga=0x307
+>
+> title RAID6 3.10.26-gentoo using LABEL (RAID6, md=1.2, initramfs in kernel)
+> root (hd0,0)
+> kernel (hd0,0)/boot/bzImage-3.10.26-gentoo root=LABEL=RAID6root
+> video=vesafb vga=0x307
+>
+>
+> title SSD 3.8.13-gentoo using LABEL (SSD, no initramfs)
+> root (hd5,1)
+> kernel (hd5,0)/boot/bzImage-3.8.13-gentoo root=LABEL=SDDroot
+> video=vesafb vga=0x307
+>
+> title SSD 3.8.13-gentoo using /dev/sda2 (SSD, no initramfs)
+> root (hd5,1)
+> kernel (hd5,0)/boot/bzImage-3.8.13-gentoo root=/dev/sda2 video=vesafb vga=0x307
+>
+> c2RAID6 ~ #
+>
+> When I build a new kernel it's just added in the manner I briefly
+> explained earlier.
+>
+> Likely I cannot give more help.
+>
+> Good luck,
+> Mark
