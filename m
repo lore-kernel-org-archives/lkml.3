@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaAWH7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 02:59:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24497 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139AbaAWH7S convert rfc822-to-8bit (ORCPT
+	id S1753731AbaAWILY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:11:24 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:41502 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaAWILW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 02:59:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,704,1384329600"; 
-   d="scan'208";a="469485821"
-From: "Brown, Len" <len.brown@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Len Brown <lenb@kernel.org>
-CC: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: RE: [PATCH 1/1] suspend: make sync() on suspend-to-RAM optional
-Thread-Topic: [PATCH 1/1] suspend: make sync() on suspend-to-RAM optional
-Thread-Index: AQHPGAq3gRHtQBA3DE+j9xymb170hZqSckEA//9/kVA=
-Date: Thu, 23 Jan 2014 07:59:16 +0000
-Message-ID: <1A7043D5F58CCB44A599DFD55ED4C948452C575B@FMSMSX106.amr.corp.intel.com>
-References: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
- <52E0C6F8.5050004@linux.vnet.ibm.com>
-In-Reply-To: <52E0C6F8.5050004@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Jan 2014 03:11:22 -0500
 MIME-Version: 1.0
+In-Reply-To: <1390339396-3479-53-git-send-email-paul.gortmaker@windriver.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+	<1390339396-3479-53-git-send-email-paul.gortmaker@windriver.com>
+Date: Thu, 23 Jan 2014 09:11:22 +0100
+Message-ID: <CACRpkdaEabRiwPBWHb6cDYMe-vcCXLYN7OQFx7vYaf55cWiYvw@mail.gmail.com>
+Subject: Re: [PATCH 52/73] drivers/pinctrl: delete non-required instances of
+ include <linux/init.h>
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How about naming it as PM_SLEEP_FS_SYNC (and similarly in the sysfs
-> files
-> and variable names as well). Just to avoid confusion with
-> "synchronous/async".
+On Tue, Jan 21, 2014 at 10:22 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
 
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-good point -- thanks!
+Patch applied for v3.15.
 
-
+Yours,
+Linus Walleij
