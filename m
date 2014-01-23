@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaAWTLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:11:24 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:40138 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaAWTLU (ORCPT
+	id S1754516AbaAWTGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:06:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34954 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaAWTGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:11:20 -0500
+	Thu, 23 Jan 2014 14:06:20 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 15/27] crash_dump: fix compilation error (on MIPS at least)
+Date: Thu, 23 Jan 2014 11:06:52 -0800
+Message-Id: <20140123190650.292792208@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
+References: <20140123190648.720195687@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
-Date: Thu, 23 Jan 2014 11:11:19 -0800
-X-Google-Sender-Auth: Dk8cYcCrHk-_sMB4l3tK37-Rh4g
-Message-ID: <CA+55aFykzCSKeXgBEiFTozVqbBvJUiK2bdTDfRO80sqZZS8TXw@mail.gmail.com>
-Subject: Re: [PATCH 0/10] framebuffer patches
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. Is there some reason why these are not going through Tomi? And
-cc'd to linux-fbdev for that matter?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-It's not that I can't apply patches sent directly to me, but quite
-frankly, unless there is a *reason* to not go through the subsystem
-maintainer I don't really want to. Afaik Tomi has been active and
-responsive, but maybe there's some strife I don't know about..
+------------------
 
-             Linus
+From: Qais Yousef <qais.yousef@imgtec.com>
 
-On Thu, Jan 23, 2014 at 10:17 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
-> Here I'm sending some framebuffer patches for matrox, mach64, tga and a
-> fix for copying on vesafb.
->
-> Mikulas
+commit 5a610fcc7390ee60308deaf09426ada87a1eeec2 upstream.
+
+  In file included from kernel/crash_dump.c:2:0:
+  include/linux/crash_dump.h:22:27: error: unknown type name `pgprot_t'
+
+when CONFIG_CRASH_DUMP=y
+
+The error was traced back to commit 9cb218131de1 ("vmcore: introduce
+remap_oldmem_pfn_range()")
+
+include <asm/pgtable.h> to get the missing definition
+
+Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/linux/crash_dump.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/include/linux/crash_dump.h
++++ b/include/linux/crash_dump.h
+@@ -6,6 +6,8 @@
+ #include <linux/proc_fs.h>
+ #include <linux/elf.h>
+ 
++#include <asm/pgtable.h> /* for pgprot_t */
++
+ #define ELFCORE_ADDR_MAX	(-1ULL)
+ #define ELFCORE_ADDR_ERR	(-2ULL)
+ 
+
+
