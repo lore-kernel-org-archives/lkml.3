@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170AbaAWToW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:44:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35478 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973AbaAWToU (ORCPT
+	id S1755068AbaAWTp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:45:29 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:49268 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaAWTp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:44:20 -0500
-Date: Thu, 23 Jan 2014 11:45:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        navinp@cdac.in, linux-usb@vger.kernel.org, ly80toro@cip.cs.fau.de,
-        josh@joshtriplett.org, linux-kernel@vger.kernel.org,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        tulinizer@gmail.com, stern@rowland.harvard.edu,
-        yacine.belkadi.1@gmail.com, ke42caxa@cip.cs.fau.de
-Subject: Re: [PATCH] staging: usbip: convert usbip-host driver to
- usb_device_driver
-Message-ID: <20140123194510.GA10745@kroah.com>
-References: <1390502206-28684-1-git-send-email-valentina.manea.m@gmail.com>
- <20140123190944.GA11639@kroah.com>
- <CABdoFFeC=S6raty6d6+4sfm4zk7jiF-XnBKgxzTmEzmf6wX3CA@mail.gmail.com>
+	Thu, 23 Jan 2014 14:45:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABdoFFeC=S6raty6d6+4sfm4zk7jiF-XnBKgxzTmEzmf6wX3CA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <alpine.LRH.2.02.1401231426470.7971@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<CA+55aFxPfHmpcMH-bmRcTPUQeq5=67cKVmra6+SvT26ybvQaug@mail.gmail.com>
+	<alpine.LRH.2.02.1401231426470.7971@file01.intranet.prod.int.rdu2.redhat.com>
+Date: Thu, 23 Jan 2014 11:45:26 -0800
+X-Google-Sender-Auth: i5GAr9WjB2u67uvCrj8Sn2E-msg
+Message-ID: <CA+55aFxrZE6oxu5CxFo3mRwGdVcq3jvnn_ChoSJDFgQz45Lq_A@mail.gmail.com>
+Subject: Re: [PATCH 4/10] atyfb: set FBINFO_READS_FAST
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 09:37:28PM +0200, Valentina Manea wrote:
-> On Thu, Jan 23, 2014 at 9:09 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Jan 23, 2014 at 08:36:46PM +0200, Valentina Manea wrote:
-> >> This driver was previously an interface driver. Since USB/IP
-> >> exports a whole device, not just an interface, it would make
-> >> sense to be a device driver.
-> >>
-> >> This patch also modifies the way userspace sees and uses a
-> >> shared device - dealing with interfaces is no longer required.
-> >
-> > In what way is this modified?  What is now different?
-> >
-> 
-> 1. The usbip_status file is no longer created for interface 0, but for
-> the whole device (such as
-> /sys/devices/pci0000:00/0000:00:01.2/usb1/1-1/usbip_status).
-> 2. Per interface information, such as interface class or protocol, is
-> no longer sent/received. Only device specific information is
-> transmitted.
-> 3. Since the driver was moved one level below in the USB architecture,
-> there is no need to bind/unbind each interface, just the device as a
-> whole.
+On Thu, Jan 23, 2014 at 11:31 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+> Both mach64 and matrox have a hardware bitter that is faster than
+> rewriting the console - that's why FBINFO_READS_FAST improves performance
+> for them.
 
-Please say all of this in your changelog entry :)
+My point is that I'd expect *anything* that has a hardware blitter to
+be faster than rewriting the screen.
 
-thanks,
+FBINFO_READS_FAST is documented to be about "soft-copy" being faster
+than re-rendering. Which I take to be about actually doing copying in
+*software*.
 
-greg k-h
+In particular, updatescrollmode() seems to do this right. It sets
+p->scrollmode based on whether there's an accelerated copyarea. But
+then SCROLL_PAN/WRAP_MOVE ends up re-testing FBINFO_READS_FAST,
+ignoring any hw-accelerated copy-area, and I don't quite see why..
+
+                Linus
