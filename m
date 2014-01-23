@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaAWRFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:05:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55676 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaAWRFf (ORCPT
+	id S1753945AbaAWRGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:06:46 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:34631 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaAWRGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:05:35 -0500
-Date: Thu, 23 Jan 2014 09:04:37 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-578c03c86fadcc6fd7319ddf41dd4d1d88aab77a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, gjain@fb.com,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, gjain@fb.com, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
-References: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols: Fix JIT symbol resolution on heap
-Git-Commit-ID: 578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 23 Jan 2014 12:06:44 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 23 Jan 2014 09:04:44 -0800 (PST)
+In-Reply-To: <20140123150524.GH29955@cumulusnetworks.com>
+References: <CAOMwXhMVgcVVWiUYbEgGcM+K5bZmKA3LO0=jZCEsyJak1TbTSA@mail.gmail.com>
+	<20140123150524.GH29955@cumulusnetworks.com>
+Date: Thu, 23 Jan 2014 17:06:43 +0000
+X-Google-Sender-Auth: BxkQAuOxGh6Zd8J_IqhFTypSmoE
+Message-ID: <CAOMwXhPXDhsGRWE1eUN6WWiMQkd1eSOaAD+N1nJTGDK3aHysDg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Add at24 based EEPROMs to the eeprom_dev hardware class
+From: Laszlo Papp <lpapp@kde.org>
+To: Curt Brune <curt@cumulusnetworks.com>
+Cc: Thomas De Schampheleire <patrickdepinguin@gmail.com>,
+        gregkh@linuxfoundation.org,
+        Shrijeet Mukherjee <shm@cumulusnetworks.com>, wolfram@the-dreams.de,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
-Gitweb:     http://git.kernel.org/tip/578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 16 Jan 2014 10:49:31 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 21 Jan 2014 10:56:05 -0300
+On Thu, Jan 23, 2014 at 3:05 PM, Curt Brune <curt@cumulusnetworks.com> wrote:
+> On Thu Jan 23 07:44, Laszlo Papp wrote:
+>> On Wed, Jan 22, 2014 at 5:23 PM, Curt Brune <curt@cumulusnetworks.com> wrote:
+>> > During device instantiation have the at24 driver add the new device to
+>> > the eeprom_dev hardware class.  The functionality is enabled by
+>> > CONFIG_EEPROM_CLASS.
+> [snip]
+>> >  static void __exit at24_exit(void)
+>> >  {
+>> >         i2c_del_driver(&at24_driver);
+>> >  }
+>> >  module_exit(at24_exit);
+>>
+>> Couldn't you use module_i2c_driver() instead of this?
+>
+> I'm not sure what you mean.
+>
+> Do you mean should the class registration/unregistration be put in
+> module_i2c_driver()?  That would not work as not all i2c devices are
+> eeproms.
 
-perf symbols: Fix JIT symbol resolution on heap
+When I was writing an i2c driver, I was taught to drop the init and
+exit functions in favor of a module_i2c_driver() call. You could check
+it with grep or lxr to see the details in other existing drivers. I
+might be totally wrong as I have not much experience, but I thought I
+would ask it either way... It does not hurt (at least not me). ;-)
 
-Gaurav reported that perf cannot profile JIT program if it executes the
-code on heap.  This was because current map__new() only handle JIT on
-anon mappings - extends it to handle no_dso (heap, stack) case too.
+>> >  MODULE_DESCRIPTION("Driver for most I2C EEPROMs");
+>> >  MODULE_AUTHOR("David Brownell and Wolfram Sang");
+>>
+>> I would personally put your name in here if I were you, otherwise
+>> David and Wolfram might get contacted by some people instead of you
+>> (at least based on this).
+>
+> Hmmm.   I don't know.  I didn't change the driver very much, just
+> added about 10 lines to a perfectly fine driver.  git-blame would
+> point right at me for anything to do with this patch.
 
-This patch assumes JIT profiling only provides dynamic function symbols
-so check the mapping type to distinguish the case.  It'd provide no
-symbols for data mapping - if we need to support symbols on data
-mappings later it should be changed.
-
-Reported-by: Gaurav Jain <gjain@fb.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Tested-by: Gaurav Jain <gjain@fb.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Gaurav Jain <gjain@fb.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389836971-3549-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/map.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 9b9bd71..ee1dd68 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 		map->ino = ino;
- 		map->ino_generation = ino_gen;
- 
--		if (anon) {
-+		if ((anon || no_dso) && type == MAP__FUNCTION) {
- 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
- 			filename = newfilename;
- 		}
-@@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			 * functions still return NULL, and we avoid the
- 			 * unnecessary map__load warning.
- 			 */
--			if (no_dso)
-+			if (type != MAP__FUNCTION)
- 				dso__set_loaded(dso, map->type);
- 		}
- 	}
+Fwiw, git will not help people using lxr for instance, and I would
+personally mention them in the copyrights instead. You put this file
+together, so IMO you are the author even if the copyrights is held by
+other people. But I do not know the kernel rules, so I might be
+totally wrong, so it is not a problem for me if you do not change it.
