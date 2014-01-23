@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaAWHdW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 02:33:22 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38093 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaAWHdV (ORCPT
+	id S1753640AbaAWHdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 02:33:50 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:49855 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217AbaAWHds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 02:33:21 -0500
-Message-ID: <52E0C5B7.7040908@gmail.com>
-Date: Thu, 23 Jan 2014 15:33:11 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 23 Jan 2014 02:33:48 -0500
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, linux-kernel@vger.kernel.org,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: How to identify different ip tunnels
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389886665-32076-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
+	<1389886665-32076-1-git-send-email-srinivas.kandagatla@st.com>
+Date: Thu, 23 Jan 2014 08:33:48 +0100
+Message-ID: <CACRpkdZhUshDzSQtTO=ZXk1Lany1C-2UBBjVTwykh8DSLpFBAw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM:STi: STiH415: Add interrupt support for pin controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Maintainers
+On Thu, Jan 16, 2014 at 4:37 PM,  <srinivas.kandagatla@st.com> wrote:
 
-We want to identify different ip tunnels.
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> This patch adds interrupt support for STiH415 pin controllers.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-For example, we use “ip tunnel add xxx” command in linux to create an 
-ipv4/6 tunnel interface,then,we can receive a RTM_NEWLINK message from 
-linux for the new tunnel interface.
-We will parse the struct ifinfomsg message and get the ifi->ifi_type 
-attribute. We need to do somethings depend on the tunnel type here.
-I checked the linux source code and list all the tunnel types here:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-#define ARPHRD_TUNNEL 768 /* IPIP tunnel */
-#define ARPHRD_TUNNEL6 769 /* IP6IP6 tunnel */
-#define ARPHRD_SIT 776 /* sit0 device - IPv6-in-IPv4 */
-#define ARPHRD_IPGRE 778 /* GRE over IP */
+Merge this through ARM SoC.
 
-It means that the linux will report the new link for any ipv4/6 tunnel 
-interface with type only within these four types. However, We need more 
-tunnel types for ipv4/6 tunnel.
-For example, 4IN4/6IN4/6TO4/GRE/ISATAP for ipv4 tunnel and 
-4IN6/6IN6/IPIN6 for ipv6 tunnel.
+> +                       reg             = <0xfe61f080 0x4>;
+> +                       reg-names       = "irqmux";
 
-Here are the result that we have got:
+Aha so that is how it looks when you handle the separate
+mux reg, well I can't think of anything better and this works
+fine for me.
 
-Actual Tunnel type ifi->ifi_type
-4IN4 768
-GRE4 778
-6IN4/6TO4/ISATAP 776
-4IN6/6IN6/IPIN6 769
+The alternative would be to have a syscon thing using regmap
+such as drivers/mfd/syscon.c but I really cannot decide
+between these two design patterns for odd registers.
 
-So, we can NOT distinguish the actual tunnel type via ifi_type attribute 
-except the GRE4 and 4IN4 tunnel. However we need the actual type. That 
-is our question.
-
-BTW, for the 6IN4 and 6TO4 tunnel, Can we distinguish them before the 
-interface ip address configured? Because we need to do different things 
-for them when we received the new link message and the tunnel has NOT 
-any ip address in this time.
-
-Best Regards!
-Zhu Yanjun
+Yours,
+Linus Walleij
