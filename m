@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaAWSir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:38:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58667 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979AbaAWSip (ORCPT
+	id S1753356AbaAWSjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:39:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34695 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868AbaAWSjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:38:45 -0500
-Date: Thu, 23 Jan 2014 18:38:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, shawn.guo@linaro.org,
-        kuninori.morimoto.gx@renesas.com, moinejf@free.fr,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140123183829.GB11727@sirena.org.uk>
-References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
- <1390453370-29194-2-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 23 Jan 2014 13:39:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jianguo Wu <wujianguo@huawei.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 05/23] mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
+Date: Thu, 23 Jan 2014 10:39:38 -0800
+Message-Id: <20140123183900.522319861@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
+References: <20140123183859.635713053@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8P1HSweYDcXXzwPJ"
-Content-Disposition: inline
-In-Reply-To: <1390453370-29194-2-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/8] ASoC: fsl: Add VF610 soc audio card Kconfig
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---8P1HSweYDcXXzwPJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Thu, Jan 23, 2014 at 01:02:43PM +0800, Xiubo Li wrote:
+From: Jianguo Wu <wujianguo@huawei.com>
 
-> +menuconfig SND_VF610_SOC
-> +       tristate "SoC Audio for Freescale VF610 CPUs"
-> +       select DMA_ENGINE
-> +       help
-> +         Say Y or M if you want to add support for codecs attached to
-> +         the VF610 CPUs.
-> +
-> +         This will enable Freeacale SAI and SGTL5000 codec, and an extra
-> +         TWR-AUDIO-SGTL sub-board is needed for SGTL5000.
+commit a49ecbcd7b0d5a1cda7d60e03df402dd0ef76ac8 upstream.
 
-This bit is OK but...
+After a successful hugetlb page migration by soft offline, the source
+page will either be freed into hugepage_freelists or buddy(over-commit
+page).  If page is in buddy, page_hstate(page) will be NULL.  It will
+hit a NULL pointer dereference in dequeue_hwpoisoned_huge_page().
 
-> +config SND_SOC_VF610_SGTL5000
-> +       tristate "SoC Audio support for VF610 boards with SGTL5000"
-> +       depends on OF && I2C
-> +       select SND_SOC_FSL_SAI
-> +       select SND_SOC_SGTL5000
-> +       select SND_SIMPLE_CARD
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+  IP: [<ffffffff81163761>] dequeue_hwpoisoned_huge_page+0x131/0x1d0
+  PGD c23762067 PUD c24be2067 PMD 0
+  Oops: 0000 [#1] SMP
 
-...for simple card since the whole idea is to support any CODEC with the
-same driver we should probably just make sure that all the individual
-drivers can be enabled in Kconfig, that way we don't have to have
-specific Kconfig entries for boards and loose some of the benefit of the
-generic card.  I sent a patch earlier exposing the OF supporting CODEC
-drivers, one for at least some of the Freescale CPU drivers was sent to
-the list recently too but there were some review comments.
+So check PageHuge(page) after call migrate_pages() successfully.
 
---8P1HSweYDcXXzwPJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[wujg: backport to 3.10:
+ - adjust context]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-iQIcBAEBAgAGBQJS4WGiAAoJELSic+t+oim9QAUP/RFv5AYDForSR5l3Wd+80uD4
-L4j8HjDnd1kXUXmLCHoU4kg+pXJU8jXNn4qQMOUsAh+lTklr5cVy/N4Wcxck6Nwt
-OLfyW9LDzDDuFyl4Y/Zn0fLZ1ZaYtCGMiCRLzNC1eVm659sl+vz/JTP0q4WWQmRq
-xeEJmtJMLww47jqfgR51MdCW960ybgd3Wt38BsapWx6PEb7Pq2A99goH5cB2Xjik
-5RtZpZa2KQA4qSg9AJOO/MEC2OIEJKrelNnm3CX3xpGRsOf8uttLxGMmJHGg1666
-p0Hut24Ng51JwnEmmGWE6psjkf0tMhKg6dPLQw/VYAQgFhbWLvsclwO6ZofLbwr1
-P5mFGdeIwSL7AFPEau7PyXylKHclWng9BrPBjeUQE539ZqSglS3QabHz981fsjK0
-OG6EbQuujmQ3t2ds7fnOztt0Wh+m4GPYMjp3duhThseMK29pwcZMqaxlik9qxNao
-+B0sealsirm/eZilCaT9JexGfyfw3icoeR+sSAdREFnI1NbhPwdu9Pjp2b2EJT1K
-Wya+7mvYCRGmcztYWRLn5ThLzgrnqJbUfBlKGrQZcQpz7Vyzdk1TUtciuCunIJTM
-6WA810W3MarJdGwWPOr9KNbrlQTyjj7BQJPfjaO7hJgGG57qYCTtF2+KXDSD67lf
-94uYK2ihYioJDSe6u98X
-=uZlJ
------END PGP SIGNATURE-----
+---
+ mm/memory-failure.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---8P1HSweYDcXXzwPJ--
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1499,10 +1499,16 @@ static int soft_offline_huge_page(struct
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+ 	} else {
+-		set_page_hwpoison_huge_page(hpage);
+-		dequeue_hwpoisoned_huge_page(hpage);
+-		atomic_long_add(1 << compound_trans_order(hpage),
+-				&num_poisoned_pages);
++		/* overcommit hugetlb page will be freed to buddy */
++		if (PageHuge(page)) {
++			set_page_hwpoison_huge_page(hpage);
++			dequeue_hwpoisoned_huge_page(hpage);
++			atomic_long_add(1 << compound_order(hpage),
++					&num_poisoned_pages);
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
++		}
+ 	}
+ 	/* keep elevated page count for bad page */
+ 	return ret;
+
+
