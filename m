@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaAWSjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:39:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34695 "EHLO
+	id S1753740AbaAWSj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:39:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbaAWSjM (ORCPT
+	with ESMTP id S1753648AbaAWSjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:12 -0500
+	Thu, 23 Jan 2014 13:39:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianguo Wu <wujianguo@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 05/23] mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
-Date: Thu, 23 Jan 2014 10:39:38 -0800
-Message-Id: <20140123183900.522319861@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 12/23] ftrace/x86: Load ftrace_ops in parameter not the variable holding it
+Date: Thu, 23 Jan 2014 10:39:45 -0800
+Message-Id: <20140123183901.572192141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -31,58 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit a49ecbcd7b0d5a1cda7d60e03df402dd0ef76ac8 upstream.
+commit 1739f09e33d8f66bf48ddbc3eca615574da6c4f6 upstream.
 
-After a successful hugetlb page migration by soft offline, the source
-page will either be freed into hugepage_freelists or buddy(over-commit
-page).  If page is in buddy, page_hstate(page) will be NULL.  It will
-hit a NULL pointer dereference in dequeue_hwpoisoned_huge_page().
+Function tracing callbacks expect to have the ftrace_ops that registered it
+passed to them, not the address of the variable that holds the ftrace_ops
+that registered it.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
-  IP: [<ffffffff81163761>] dequeue_hwpoisoned_huge_page+0x131/0x1d0
-  PGD c23762067 PUD c24be2067 PMD 0
-  Oops: 0000 [#1] SMP
+Use a mov instead of a lea to store the ftrace_ops into the parameter
+of the function tracing callback.
 
-So check PageHuge(page) after call migrate_pages() successfully.
-
-[wujg: backport to 3.10:
- - adjust context]
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/x86/kernel/entry_32.S |    4 ++--
+ arch/x86/kernel/entry_64.S |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1499,10 +1499,16 @@ static int soft_offline_huge_page(struct
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
- 	} else {
--		set_page_hwpoison_huge_page(hpage);
--		dequeue_hwpoisoned_huge_page(hpage);
--		atomic_long_add(1 << compound_trans_order(hpage),
--				&num_poisoned_pages);
-+		/* overcommit hugetlb page will be freed to buddy */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_order(hpage),
-+					&num_poisoned_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
-+		}
- 	}
- 	/* keep elevated page count for bad page */
- 	return ret;
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1075,7 +1075,7 @@ ENTRY(ftrace_caller)
+ 	pushl $0	/* Pass NULL as regs pointer */
+ 	movl 4*4(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+-	leal function_trace_op, %ecx
++	movl function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
+ 
+ .globl ftrace_call
+@@ -1133,7 +1133,7 @@ ENTRY(ftrace_regs_caller)
+ 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+ 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
+ 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+-	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
++	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+ 	pushl %esp		/* Save pt_regs as 4th parameter */
+ 
+ GLOBAL(ftrace_regs_call)
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -88,7 +88,7 @@ END(function_hook)
+ 	MCOUNT_SAVE_FRAME \skip
+ 
+ 	/* Load the ftrace_ops into the 3rd parameter */
+-	leaq function_trace_op, %rdx
++	movq function_trace_op(%rip), %rdx
+ 
+ 	/* Load ip into the first parameter */
+ 	movq RIP(%rsp), %rdi
 
 
