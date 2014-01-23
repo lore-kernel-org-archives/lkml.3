@@ -1,145 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaAWD26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 22:28:58 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:64828 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaAWD25 (ORCPT
+	id S1752905AbaAWDmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 22:42:24 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58206 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310AbaAWDmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 22:28:57 -0500
+	Wed, 22 Jan 2014 22:42:22 -0500
+Message-ID: <52E08EC2.6090204@linux.vnet.ibm.com>
+Date: Thu, 23 Jan 2014 09:08:42 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20140123030103.GC18520@pek-lwang0-d1>
-References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
-	<20140123030103.GC18520@pek-lwang0-d1>
-Date: Wed, 22 Jan 2014 19:28:55 -0800
-Message-ID: <CACUGKYO-k0isyOvYtRMDQoSD+QrrifzLmpMZVG9tN_cfOX5Dcw@mail.gmail.com>
-Subject: Re: Internal error: Oops: 17 [#1] ARM
-From: John Tobias <john.tobias.ph@gmail.com>
-To: walimis <walimisdev@gmail.com>
-Cc: "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
+        agraf@suse.de, paul.gortmaker@windriver.com, paulus@samba.org,
+        mingo@kernel.org, mikey@neuling.org, shangw@linux.vnet.ibm.com,
+        rafael.j.wysocki@intel.com, galak@kernel.crashing.org,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
+        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V5 6/8] time/cpuidle: Support in tick broadcast framework
+ in the absence of external clock device
+References: <20140115080555.20446.27238.stgit@preeti.in.ibm.com> <20140115080947.20446.30305.stgit@preeti.in.ibm.com> <alpine.DEB.2.02.1401221042130.4260@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1401221042130.4260@ionos.tec.linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012303-0928-0000-0000-000005E7CFEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liming,
+Hi Thomas,
 
-Yes, I am using 4.8.1. I switched back to 4.7.3 and will test it again
-if I can re-produce it.
+Thank you very much for the review.
 
-Regards,
+On 01/22/2014 06:57 PM, Thomas Gleixner wrote:
+> On Wed, 15 Jan 2014, Preeti U Murthy wrote:
+>> diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+>> index 086ad60..d61404e 100644
+>> --- a/kernel/time/clockevents.c
+>> +++ b/kernel/time/clockevents.c
+>> @@ -524,12 +524,13 @@ void clockevents_resume(void)
+>>  #ifdef CONFIG_GENERIC_CLOCKEVENTS
+>>  /**
+>>   * clockevents_notify - notification about relevant events
+>> + * Returns non zero on error.
+>>   */
+>> -void clockevents_notify(unsigned long reason, void *arg)
+>> +int clockevents_notify(unsigned long reason, void *arg)
+>>  {
+> 
+> The interface change of clockevents_notify wants to be a separate
+> patch.
+> 
+>> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+>> index 9532690..1c23912 100644
+>> --- a/kernel/time/tick-broadcast.c
+>> +++ b/kernel/time/tick-broadcast.c
+>> @@ -20,6 +20,7 @@
+>>  #include <linux/sched.h>
+>>  #include <linux/smp.h>
+>>  #include <linux/module.h>
+>> +#include <linux/slab.h>
+>>  
+>>  #include "tick-internal.h"
+>>  
+>> @@ -35,6 +36,15 @@ static cpumask_var_t tmpmask;
+>>  static DEFINE_RAW_SPINLOCK(tick_broadcast_lock);
+>>  static int tick_broadcast_force;
+>>  
+>> +/*
+>> + * Helper variables for handling broadcast in the absence of a
+>> + * tick_broadcast_device.
+>> + * */
+>> +static struct hrtimer *bc_hrtimer;
+>> +static int bc_cpu = -1;
+>> +static ktime_t bc_next_wakeup;
+> 
+> Why do you need another variable to store the expiry time? The
+> broadcast code already knows it and the hrtimer expiry value gives you
+> the same information for free.
 
-john
+The reason was functions like tick_handle_oneshot_broadcast() and
+tick_broadcast_switch_to_oneshot() were using the
+tick_broadcast_device.evtdev->next_event to set/get the next wakeups.
 
-On Wed, Jan 22, 2014 at 7:01 PM, walimis <walimisdev@gmail.com> wrote:
-> On Wed, Jan 22, 2014 at 08:23:36AM -0800, John Tobias wrote:
->>Hello all,
->>
->>I am using 3.13-rc1 kernel on iMX6SL processor. My filesystem is in
->>eMMC running SDR50.
->>Is anyone here encountered these problem and if there's any existing
->>patch that I can get?.
-> hi,
->
-> Do you use gcc 4.8.1? If so, maybe you should look at following link
-> to see whether it's a similar issue.
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
->
-> Liming Wang
->
->>
->>Regards,
->>
->>john
->>
->>[ 1552.394899] Unable to handle kernel NULL pointer dereference at
->>virtual address 00000037
->>[ 1552.403034] pgd = beef4000
->>[ 1552.405855] [00000037] *pgd=bef60831, *pte=00000000, *ppte=00000000
->>[ 1552.412245] Internal error: Oops: 17 [#1] ARM
->>[ 1552.416627] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(O)
->>[ 1552.422249] CPU: 0 PID: 232 Comm: commsd Tainted: G           O 3.13.0-rc1 #7
->>[ 1552.429409] task: bfbc7500 ti: bec96000 task.ti: bec96000
->>[ 1552.434844] PC is at lookup_fast+0x5c/0x318
->>[ 1552.439067] LR is at mark_held_locks+0x78/0x13c
->>[ 1552.443622] pc : [<80101184>]    lr : [<80056e48>]    psr: a00f0013
->>[ 1552.443622] sp : bec97d88  ip : 00666e6f  fp : bec97ddc
->>[ 1552.455124] r10: 00000000  r9 : bec97e08  r8 : 80102d94
->>[ 1552.460370] r7 : bec97e60  r6 : bf133ac8  r5 : bec97e60  r4 : bec97e00
->>[ 1552.466918] r3 : bee4f01d  r2 : 00000000  r1 : ffffffff  r0 : ffffffff
->>[ 1552.473471] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
->>[ 1552.480629] Control: 10c53c7d  Table: beef4059  DAC: 00000015
->>[ 1552.486397] Process commsd (pid: 232, stack limit = 0xbec96238)
->>[ 1552.492341] Stack: (0xbec97d88 to 0xbec98000)
->>[ 1552.496728] 7d80:                   80102b94 80057108 bfb95310
->>bf133ac8 bf15f4e8 bfb95310
->>[ 1552.504936] 7da0: c08bb14d ffffffff bee4f015 00000008 bfbc7500
->>bec97e08 00000000 00000041
->>[ 1552.513142] 7dc0: bec97e60 bec96020 bec96000 00000000 bec97e3c
->>bec97de0 80102d94 80101134
->>[ 1552.521347] 7de0: bec97df8 00000000 800d982c bec96018 00000010
->>bec97e00 00000000 bec97e08
->>[ 1552.529553] 7e00: 8026e25c 800d97e8 bee4f000 00000ff0 80d4e3a4
->>00000001 bee4f000 bec97e60
->>[ 1552.537758] 7e20: ffffff9c ffffff9c bec96000 00000000 bec97e5c
->>bec97e40 801033bc 80102c70
->>[ 1552.545964] 7e40: bee4f000 00000001 bec97e60 bec97f00 bec97ee4
->>bec97e60 80105dc0 80103398
->>[ 1552.554170] 7e60: bfb95310 bf133ac8 c08bb14d 0000000b bee4f015
->>8005992c bfb95310 bf133398
->>[ 1552.562375] 7e80: bf15f4e8 00000041 00000002 0000008a 00000000
->>00000000 600f0013 bec96000
->>[ 1552.570581] 7ea0: ffffffea bf8c1840 807b4430 80115444 801156e4
->>8011563c 00000008 00000000
->>[ 1552.578786] 7ec0: bec97f04 733fe4e0 00000001 ffffff9c 757e3810
->>bec97f40 bec97efc bec97ee8
->>[ 1552.586991] 7ee0: 80105e0c 80105d68 00000000 bc950fe0 bec97f2c
->>bec97f00 800faf64 80105df4
->>[ 1552.595196] 7f00: 801156e4 80115420 bec97f54 733fe4e0 733ff8f0
->>733fe61c 000000c3 8000f504
->>[ 1552.603402] 7f20: bec97f3c bec97f30 800fafe0 800faf1c bec97fa4
->>bec97f40 800fb71c 800fafc4
->>[ 1552.611608] 7f40: 8000f310 bfbc7500 733fe550 8000f458 733fe61c
->>000000c3 bec97f84 bec97f68
->>[ 1552.619813] 7f60: 80056f28 800a0270 733fe550 733ff8f0 733fe61c
->>000000c3 bec97f94 bec97f88
->>[ 1552.628019] 7f80: 80057110 80056f18 00000000 bec97f98 8000f458
->>733fe550 00000000 bec97fa8
->>[ 1552.636226] 7fa0: 8000f280 800fb704 733fe550 733ff8f0 757e3810
->>733fe4e0 733fe550 00000003
->>[ 1552.644431] 7fc0: 733fe550 733ff8f0 733fe61c 000000c3 00000000
->>00000002 733fe92c 00000200
->>[ 1552.652636] 7fe0: 000000c3 733fe4d8 7579b7e5 7572e276 200f0030
->>757e3810 bfffd821 bfffdc21
->>[ 1552.660828] Backtrace:
->>[ 1552.663343] [<80101128>] (lookup_fast+0x0/0x318) from [<80102d94>]
->>(path_lookupat+0x130/0x728)
->>[ 1552.671994] [<80102c64>] (path_lookupat+0x0/0x728) from
->>[<801033bc>] (filename_lookup.isra.40+0x30/0x70)
->>[ 1552.681515] [<8010338c>] (filename_lookup.isra.40+0x0/0x70) from
->>[<80105dc0>] (user_path_at_empty+0x64/0x8c)
->>[ 1552.691361]  r7:bec97f00 r6:bec97e60 r5:00000001 r4:bee4f000
->>[ 1552.697163] [<80105d5c>] (user_path_at_empty+0x0/0x8c) from
->>[<80105e0c>] (user_path_at+0x24/0x2c)
->>[ 1552.706053]  r8:bec97f40 r7:757e3810 r6:ffffff9c r5:00000001 r4:733fe4e0
->>[ 1552.712927] [<80105de8>] (user_path_at+0x0/0x2c) from [<800faf64>]
->>(vfs_fstatat+0x54/0xa8)
->>[ 1552.721232] [<800faf10>] (vfs_fstatat+0x0/0xa8) from [<800fafe0>]
->>(vfs_stat+0x28/0x2c)
->>[ 1552.729167]  r8:8000f504 r7:000000c3 r6:733fe61c r5:733ff8f0 r4:733fe4e0
->>[ 1552.736031] [<800fafb8>] (vfs_stat+0x0/0x2c) from [<800fb71c>]
->>(SyS_stat64+0x24/0x40)
->>[ 1552.743902] [<800fb6f8>] (SyS_stat64+0x0/0x40) from [<8000f280>]
->>(ret_fast_syscall+0x0/0x48)
->>[ 1552.752359]  r4:733fe550
->>[ 1552.754946] Code: eb00352d e3500000 e50b0038 0a000080 (e5903038)
->>[ 1552.761270] ---[ end trace 02679086a39365e8 ]---
->>[ 1552.765968] Kernel panic - not syncing: Fatal exception
->>
->>_______________________________________________
->>linux-arm-kernel mailing list
->>linux-arm-kernel@lists.infradead.org
->>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+But since this patchset introduced an explicit hrtimer for archs which
+did not have such a device, I wanted these functions to use a generic
+parameter to set/get the next wakeups without having to know about the
+existence of this hrtimer, if at all. And program the hrtimer/tick
+broadcast device whichever was present only when the next event was to
+be set. But with your below concept patch, we will not be required to do
+this.
+> 
+>> +static int hrtimer_initialized = 0;
+> 
+> What's the point of this hrtimer_initialized dance? Why not simply
+> making the hrtimer static and avoid that all together. Also adding the
+> initialization into tick_broadcast_oneshot_available() is
+> braindamaged.  Why not adding this to tick_broadcast_init() which is
+> the proper place to do?
+
+Right I agree, this hrtimer initialization should have been in
+tick_broadcast_init() and a simple static declaration would have done
+the job.
+> 
+> Aside of that you are making this hrtimer mode unconditional, which
+> might break existing systems which are not aware of the hrtimer
+> implications.
+> 
+> What you really want is a pseudo clock event device which has the
+> proper functions for handling the timer and you can register it from
+> your architecture code. The broadcast core code needs a few tweaks to
+> avoid the shutdown of the cpu local clock event device, but aside of
+> that the whole thing just falls into place. So architectures can use
+> this if they want and are sure that their low level idle code knows
+> about the deep idle preventing return value of
+> clockevents_notify(). Once that works you can register the hrtimer
+> based broadcast device and a real hardware broadcast device with a
+> higher rating. It just works.
+
+I now completely see your point. This will surely break on archs which
+are not using the return value of the BROADCAST_ENTER notification.
+
+I am not even giving them a choice about using the hrtimer mode of
+broadcast framework and am expecting them to take action for the failed
+return of BROADCAST_ENTER. I missed that critical point. I went through
+the below patch and am able to see how you are solving this problem.
+> 
+> Find an incomplete and nonfunctional concept patch below. It should be
+> simple to make it work for real.
+
+Thank you very much for the valuable review. The below patch makes your
+points very clear. Let me try this out.
+
+Regards
+Preeti U Murthy
+> 
+> Thanks,
+> 
+> 	tglx
+> ----
+> Index: linux-2.6/include/linux/clockchips.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/clockchips.h
+> +++ linux-2.6/include/linux/clockchips.h
+> @@ -62,6 +62,11 @@ enum clock_event_mode {
+>  #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
+>  #define CLOCK_EVT_FEAT_PERCPU		0x000040
+> 
+> +/*
+> + * Clockevent device is based on a hrtimer for broadcast
+> + */
+> +#define CLOCK_EVT_FEAT_HRTIMER		0x000080
+> +
+>  /**
+>   * struct clock_event_device - clock event device descriptor
+>   * @event_handler:	Assigned by the framework to be called by the low
+> @@ -83,6 +88,7 @@ enum clock_event_mode {
+>   * @name:		ptr to clock event name
+>   * @rating:		variable to rate clock event devices
+>   * @irq:		IRQ number (only for non CPU local devices)
+> + * @bound_on:		Bound on CPU
+>   * @cpumask:		cpumask to indicate for which CPUs this device works
+>   * @list:		list head for the management code
+>   * @owner:		module reference
+> @@ -113,6 +119,7 @@ struct clock_event_device {
+>  	const char		*name;
+>  	int			rating;
+>  	int			irq;
+> +	int			bound_on;
+>  	const struct cpumask	*cpumask;
+>  	struct list_head	list;
+>  	struct module		*owner;
+> Index: linux-2.6/kernel/time/tick-broadcast-hrtimer.c
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6/kernel/time/tick-broadcast-hrtimer.c
+> @@ -0,0 +1,77 @@
+> +
+> +static struct hrtimer bctimer;
+> +
+> +static void bc_set_mode(enum clock_event_mode mode,
+> +			struct clock_event_device *bc)
+> +{
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +		/*
+> +		 * Note, we cannot cancel the timer here as we might
+> +		 * run into the following live lock scenario:
+> +		 *
+> +		 * cpu 0		cpu1
+> +		 * lock(broadcast_lock);
+> +		 *			hrtimer_interrupt()
+> +		 *			bc_handler()
+> +		 *			   tick_handle_oneshot_broadcast();
+> +		 *			    lock(broadcast_lock);
+> +		 * hrtimer_cancel()
+> +		 *  wait_for_callback()
+> +		 */
+> +		hrtimer_try_to_cancel(&bctimer);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +}
+> +
+> +/*
+> + * This is called from the guts of the broadcast code when the cpu
+> + * which is about to enter idle has the earliest broadcast timer event.
+> + */
+> +static int bc_set_next(ktime_t expires, struct clock_event_device *bc)
+> +{
+> +	/*
+> +	 * We try to cancel the timer first. If the callback is on
+> +	 * flight on some other cpu then we let it handle it. If we
+> +	 * were able to cancel the timer nothing can rearm it as we
+> +	 * own broadcast_lock.
+> +	 */
+> +	if (hrtimer_try_to_cancel(&bctimer) >= 0) {
+> +		hrtimer_start(&bctimer, expires, HRTIMER_MODE_ABS_PINNED);
+> +		/* Bind the "device" to the cpu */
+> +		bc->bound_on = smp_processor_id();
+> +	}
+> +	return 0;
+> +}
+> +
+> +static struct clock_event_device ce_broadcast_hrtimer = {
+> +	.set_mode		= bc_set_mode,
+> +	.set_next_ktime		= bc_set_next,
+> +	.features		= CLOCK_EVT_FEAT_ONESHOT |
+> +				  CLOCK_EVT_FEAT_KTIME |
+> +				  CLOCK_EVT_FEAT_HRTIMER,
+> +	.rating			= 0,
+> +	.bound_on		= -1,
+> +	.min_delta_ns		= 1,
+> +	.max_delta_ns		= KTIME_MAX,
+> +	.min_delta_ticks	= 1,
+> +	.max_delta_ticks	= KTIME_MAX,
+> +	.mult			= 1,
+> +	.shift			= 0,
+> +	.cpumask		= cpu_all_mask,
+> +};
+> +
+> +static enum hrtimer_restart bc_handler(struct hrtimer *t)
+> +{
+> +	ce_broadcast_hrtimer.event_handler(&ce_broadcast_hrtimer);
+> +	return HRTIMER_NORESTART;
+> +}
+> +
+> +void tick_setup_hrtimer_broadcast(void)
+> +{
+> +	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+> +	bctimer.function = bc_handler;
+> +	clockevents_register(&ce_broadcast_hrtimer);
+> +}
+> Index: linux-2.6/kernel/time/tick-broadcast.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/time/tick-broadcast.c
+> +++ linux-2.6/kernel/time/tick-broadcast.c
+> @@ -630,6 +630,42 @@ again:
+>  	raw_spin_unlock(&tick_broadcast_lock);
+>  }
+> 
+> +static int broadcast_needs_cpu(struct clock_event_device *bc, int cpu)
+> +{
+> +	if (!(bc->features & CLOCK_EVT_FEAT_HRTIMER))
+> +		return 0;
+> +	if (bc->next_event.tv64 == KTIME_MAX)
+> +		return 0;
+> +	return bc->bound_on == cpu ? -EBUSY : 0;
+> +}
+> +
+> +static void broadcast_shutdown_local(struct clock_event_device *bc,
+> +				     struct clock_event_device *dev)
+> +{
+> +	/*
+> +	 * For hrtimer based broadcasting we cannot shutdown the cpu
+> +	 * local device if our own event is the first one to expire or
+> +	 * if we own the broadcast timer.
+> +	 */
+> +	if (bc->features & CLOCK_EVT_FEAT_HRTIMER) {
+> +		if (broadcast_needs_cpu(bc))
+> +			return;
+> +		if (dev->next_event.tv64 < bc->next_event.tv64)
+> +			return;
+> +	}
+> +	clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+> +}
+> +
+> +static void broadcast_move_bc(int deadcpu)
+> +{
+> +	struct clock_event_device *bc = tick_broadcast_device.evtdev;
+> +
+> +	if (!bc || !broadcast_needs_cpu(bc, deadcpu))
+> +		return;
+> +	/* This moves the broadcast assignment to this cpu */
+> +	clockevents_program_event(bc, bc->next_event, 1);
+> +}
+> +
+>  /*
+>   * Powerstate information: The system enters/leaves a state, where
+>   * affected devices might stop
+> @@ -639,8 +675,8 @@ void tick_broadcast_oneshot_control(unsi
+>  	struct clock_event_device *bc, *dev;
+>  	struct tick_device *td;
+>  	unsigned long flags;
+> +	int cpu, ret = 0;
+>  	ktime_t now;
+> -	int cpu;
+> 
+>  	/*
+>  	 * Periodic mode does not care about the enter/exit of power
+> @@ -666,7 +702,7 @@ void tick_broadcast_oneshot_control(unsi
+>  	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
+>  		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
+>  			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
+> -			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+> +			broadcast_shutdown_local(bc, dev);
+>  			/*
+>  			 * We only reprogram the broadcast timer if we
+>  			 * did not mark ourself in the force mask and
+> @@ -679,6 +715,11 @@ void tick_broadcast_oneshot_control(unsi
+>  			    dev->next_event.tv64 < bc->next_event.tv64)
+>  				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
+>  		}
+> +		/*
+> +		 * If the current CPU owns the hrtimer broadcast
+> +		 * mechanism, it cannot go deep idle.
+> +		 */
+> +		ret = broadcast_needs_cpu(bc, cpu);
+>  	} else {
+>  		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
+>  			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
+> @@ -851,6 +892,8 @@ void tick_shutdown_broadcast_oneshot(uns
+>  	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
+>  	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
+> 
+> +	broadcast_move_bc(cpu);
+> +
+>  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+>  }
+> 
+> 
+
