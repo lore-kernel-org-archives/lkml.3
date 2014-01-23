@@ -1,125 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaAWW53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 17:57:29 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:57147 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaAWW52 (ORCPT
+	id S1755604AbaAWW54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 17:57:56 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:24735 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbaAWW5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 17:57:28 -0500
-Message-ID: <52E19E53.40409@gmail.com>
-Date: Thu, 23 Jan 2014 14:57:23 -0800
-From: Marc C <marc.ceeeee@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 23 Jan 2014 17:57:55 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfstAo5SQMel8AXawDOUvwr8pxjMon91SD6m7JJcBA==
+X-RZG-CLASS-ID: mo00
+Date: Thu, 23 Jan 2014 23:57:51 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH V4 1/1] Drivers: hv: Implement the file copy service
+Message-ID: <20140123225751.GA13163@aepfle.de>
+References: <1390355033-16008-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 7/8] ARM: brcmstb: gic: add compatible string for Broadcom
- Brahma15
-References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com> <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com> <CAGVrzcbPyaSe0aEHt157kz=quvsrBCPOUriCVG27fJfasa45jg@mail.gmail.com> <52E074ED.5000906@gmail.com> <CAGVrzcauDKeNM-Tqxt67Km6r6sjqvwe9_ki_GLc9_ZiXOauN8Q@mail.gmail.com>
-In-Reply-To: <CAGVrzcauDKeNM-Tqxt67Km6r6sjqvwe9_ki_GLc9_ZiXOauN8Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1390355033-16008-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On Tue, Jan 21, K. Y. Srinivasan wrote:
 
->> Patch #8 [1] of this series has the "compatible" string set exactly that way. I was
->> following the pattern seen in the other reference DTS files, where "arm,cortex-a15-gic" is
->> used as the fall-back.
->
-> Ah, I missed that, thanks! How about the CPU compatible property?
-> AFAIK it is only used by arch/arm/kernel/topology.c, I am not sure if
-> we have the exact same number to use as the "vanilla" Cortex-A15 here,
-> or if we should have another number match against "brcm,brahma-b15".
-> What do you think?
+> Implement the file copy service for Linux guests on Hyper-V. This permits the
+> host to copy a file (over VMBUS) into the guest. This facility is part of
+> "guest integration services" supported on the Windows platform.
+> Here is a link that provides additional details on this functionality:
 
-I think we should let the code fall-through to use the "SCHED_POWER_SCALE" defaults for
-now, and not have an entry in the efficiency table. There are currently no BCM7xxx
-platforms architected with heterogeneous multi-processing or multiple disparate CPU
-clusters (like big.LITTLE).
+Looks ok to me now. Thanks.
 
-Thanks,
-Marc
 
-On 01/23/2014 10:26 AM, Florian Fainelli wrote:
-> Hi Marc,
-> 
-> 2014/1/22 Marc C <marc.ceeeee@gmail.com>:
->> Hi Florian,
->>
->>> Do not we also need to update drivers/irqchip/irq-gic.c to look for
->>> this compatible property? Alternatively should the example DTS contain
->>> the following:
->>>
->>> compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
->>
->> Patch #8 [1] of this series has the "compatible" string set exactly that way. I was
->> following the pattern seen in the other reference DTS files, where "arm,cortex-a15-gic" is
->> used as the fall-back.
-> 
-> Ah, I missed that, thanks! How about the CPU compatible property?
-> AFAIK it is only used by arch/arm/kernel/topology.c, I am not sure if
-> we have the exact same number to use as the "vanilla" Cortex-A15 here,
-> or if we should have another number match against "brcm,brahma-b15".
-> What do you think?
-> 
->>
->> Thanks,
->> Marc C
->>
->> [1] https://lkml.org/lkml/2014/1/21/649
->>
->> On 01/22/2014 02:40 PM, Florian Fainelli wrote:
->>> Hi Marc,
->>>
->>> 2014/1/21 Marc Carino <marc.ceeeee@gmail.com>:
->>>> Document the Broadcom Brahma B15 GIC implementation as compatible
->>>> with the ARM GIC standard.
->>>>
->>>> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
->>>> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
->>>
->>> Do not we also need to update drivers/irqchip/irq-gic.c to look for
->>> this compatible property? Alternatively should the example DTS contain
->>> the following:
->>>
->>> compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
->>>
->>>> ---
->>>>  Documentation/devicetree/bindings/arm/gic.txt |    1 +
->>>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
->>>> index 3dfb0c0..d7409fd 100644
->>>> --- a/Documentation/devicetree/bindings/arm/gic.txt
->>>> +++ b/Documentation/devicetree/bindings/arm/gic.txt
->>>> @@ -15,6 +15,7 @@ Main node required properties:
->>>>         "arm,cortex-a9-gic"
->>>>         "arm,cortex-a7-gic"
->>>>         "arm,arm11mp-gic"
->>>> +       "brcm,brahma-b15-gic"
->>>>  - interrupt-controller : Identifies the node as an interrupt controller
->>>>  - #interrupt-cells : Specifies the number of cells needed to encode an
->>>>    interrupt source.  The type shall be a <u32> and the value shall be 3.
->>>> --
->>>> 1.7.1
->>>>
->>>
->>>
->>>
->>
->>
->>
-> 
-> 
-> 
+> +++ b/include/linux/hyperv.h
+> @@ -26,6 +26,7 @@
+>  #define _HYPERV_H
+>  
+>  #include <linux/types.h>
+> +#include <linux/uuid.h>
 
+uuid.h is also include in the __KERNEL__ section later in the file.
+
+
+Olaf
