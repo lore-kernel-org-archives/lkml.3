@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaAWVk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:40:58 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:37685 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaAWVk5 (ORCPT
+	id S1753818AbaAWVpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:45:14 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:55345 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778AbaAWVpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:40:57 -0500
+	Thu, 23 Jan 2014 16:45:12 -0500
+Date: Fri, 24 Jan 2014 01:45:05 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        gnome@rvzt.net, grawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging, v2
+Message-ID: <20140123214505.GA1992@moon>
+References: <20140122190816.GB4963@suse.de>
+ <20140122191928.GQ1574@moon>
+ <20140122223325.GA30637@moon>
+ <20140123095541.GD4963@suse.de>
+ <20140123103606.GU1574@moon>
+ <20140123121555.GV1574@moon>
+ <20140123125543.GW1574@moon>
+ <20140123151445.GX1574@moon>
+ <20140123130235.61e2eca44d92b37936955ff1@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1401231334540.7313@chino.kir.corp.google.com>
-References: <1390473588-23367-1-git-send-email-ard.biesheuvel@linaro.org> <alpine.DEB.2.02.1401231334540.7313@chino.kir.corp.google.com>
-From: Mike Waychison <mikew@google.com>
-Date: Thu, 23 Jan 2014 13:40:34 -0800
-Message-ID: <CAGTjWtCCpPLQ8DA=Gbg_jFneQG539aomZHpm4Oz8WDX7SU3fjQ@mail.gmail.com>
-Subject: Re: [PATCH] firmware/google: drop 'select EFI' to avoid recursive dependency
-To: David Rientjes <rientjes@google.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, gregkh@linuxfoundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140123130235.61e2eca44d92b37936955ff1@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 1:36 PM, David Rientjes <rientjes@google.com> wrote:
-> On Thu, 23 Jan 2014, Ard Biesheuvel wrote:
->
->> The GOOGLE_SMI Kconfig symbol depends on DMI and selects EFI. This
->> causes problems on other archs when introducing DMI support that
->> depends on EFI, as it results in a recursive dependency:
->>
->> arch/arm/Kconfig:1845:error: recursive dependency detected!
->> arch/arm/Kconfig:1845:        symbol DMI depends on EFI
->>
->> Fix by changing the 'select EFI' to a 'depends on EFI'.
->>
->> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+On Thu, Jan 23, 2014 at 01:02:35PM -0800, Andrew Morton wrote:
+> On Thu, 23 Jan 2014 19:14:45 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> 
+> > VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all
+> > bits in vm_flags matched except dirty bit the kernel can't longer
+> > merge them and this forces the kernel to generate new VMAs instead.
+> 
+> Do you intend to alter the brk() and binprm code to set VM_SOFTDIRTY?
 
-Acked-by: Mike Waychison <mikew@google.com>
+brk() will be "dirtified" now with this merge fix.
+brk
+  do_brk
+    out:
+	...
+	vma->vm_flags |= VM_SOFTDIRTY;
 
->> ---
->>  drivers/firmware/google/Kconfig | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/drivers/firmware/google/Kconfig b/drivers/firmware/google/Kconfig
->> index 2f21b0bfe653..29c8cdda82a1 100644
->> --- a/drivers/firmware/google/Kconfig
->> +++ b/drivers/firmware/google/Kconfig
->> @@ -12,8 +12,7 @@ menu "Google Firmware Drivers"
->>
->>  config GOOGLE_SMI
->>       tristate "SMI interface for Google platforms"
->> -     depends on ACPI && DMI
->> -     select EFI
->> +     depends on ACPI && DMI && EFI
->>       select EFI_VARS
->>       help
->>         Say Y here if you want to enable SMI callbacks for Google
->
-> Adding Mike Waychison <mikew@google.com> to the cc since this is his code,
-> but it looks good to me.
->
-> $ ./scripts/get_maintainer.pl -f drivers/firmware/google/Kconfig
-> linux-kernel@vger.kernel.org (open list)
->
-> I wonder why he's not listed as a recipient for patches from
-> get_maintainer.pl since it's clearly obvious he wrote the entire file.
+this will work even if vma get merged, the problem was that earlier
+we tried to merge without VM_SOFTDIRTY flag. And matcher failed.
+
+do_brk
+  flags = VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
+	vma = vma_merge(mm, prev, addr, addr + len, flags,
+					NULL, NULL, pgoff, NULL);
+	if (vma)
+		goto out;
+...
+out:
+	...
+	vma->vm_flags |= VM_SOFTDIRTY;
+
+That said I'm not really sure now if I should alert @flags in code above.
+Should I add VM_SOFTDIRTY into @flags for clarity?
+
+Same for binprm -- the vma allocated for bprm->vma is dirtified
+__bprm_mm_init
+  vma->vm_flags = VM_SOFTDIRTY | VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
+
+then setup_arg_pages calls mprotect_fixup with @vm_flags having dirty bit
+set thus it'll be propagated to vma
+
+mprotect_fixup
+  ...
+  vma->vm_flags = newflags;
+
+the @newflags will have dirty bit set from caller code.
+
+Or you mean something else which I'm missing?
