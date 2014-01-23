@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaAWROm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:14:42 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:43871 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaAWROk (ORCPT
+	id S1753780AbaAWRPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:15:41 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:55455 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaAWRPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:14:40 -0500
-Date: Thu, 23 Jan 2014 18:14:36 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Subject: Re: [PATCH 02/11] x86: sysfb: remove sysfb when probing real hw
-Message-ID: <20140123171436.GA27345@gmail.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
- <1390486503-1504-3-git-send-email-dh.herrmann@gmail.com>
- <20140123165115.GB23869@gmail.com>
- <CANq1E4QQE2qeEz1AaN1NO3p2TE006jHfz8uaJ_LLHptKdHecxQ@mail.gmail.com>
+	Thu, 23 Jan 2014 12:15:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4QQE2qeEz1AaN1NO3p2TE006jHfz8uaJ_LLHptKdHecxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E14D67.4000202@hp.com>
+References: <1390426438-31252-1-git-send-email-Waiman.Long@hp.com>
+	<1390426438-31252-2-git-send-email-Waiman.Long@hp.com>
+	<20140123100751.GS30183@twins.programming.kicks-ass.net>
+	<52E14D67.4000202@hp.com>
+Date: Thu, 23 Jan 2014 09:15:38 -0800
+X-Google-Sender-Auth: DHfwhUOy8p87kL6q0YJM5iOvtX4
+Message-ID: <CA+55aFzhx6K9A62ve6E5X4juvNPewED_g1nWwq+-EY0fd0A-0g@mail.gmail.com>
+Subject: Re: [PATCH v10 1/4] qrwlock: A queue read/write lock implementation
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 23, 2014 at 9:12 AM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> I thought that all atomic RMW instructions are memory barrier.
 
-* David Herrmann <dh.herrmann@gmail.com> wrote:
+On x86 they are. Not necessarily elsewhere.
 
-> >> +#ifdef CONFIG_X86_SYSFB
-> >> +#  include <asm/sysfb.h>
-> >> +#endif
-> >
-> > I guess a single space is sufficient?
-> >
-> > Better yet, I'd include sysfb.h unconditionally:
-> 
-> Unconditionally won't work as only x86 has this header. [...]
+> If they are not, what kind of barrier should be added?
 
-Well, in non-x86 code an #ifdef x86 looks ugly as well - but I guess 
-better than not building.
+smp_mb__before_atomic_xyz() and smp_mb__after_atomic_xyz() will do it,
+and are no-op (well, barriers - I don't think it matters) on x86.
 
-> [...] If there's a way to place a dummy into asm-generic which is 
-> picked if arch/xy/include/asm/ doesn't have the header, let me know. 
-
-Not that I know of.
-
-> But if I include it unconditionally without any fallback, this will 
-> fail on non-x86. And adding the header to all archs seems overkill.
-
-So why not drop the x86-ism and rename it to CONFIG_PLATFORM_SYSFB? 
-Some platforms configure it, some don't. Then the prototypes could 
-move into include/linux/sysfb.h or so and would be platform agnostic.
-
-Thanks,
-
-	Ingo
+            Linus
