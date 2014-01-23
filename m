@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaAWUyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:54:41 -0500
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:53903 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752323AbaAWUyj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:54:39 -0500
-Date: Thu, 23 Jan 2014 14:54:37 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Dave Chinner <david@fromorbit.com>, Chris Mason <clm@fb.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-In-Reply-To: <1390492073.2372.118.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <alpine.DEB.2.10.1401231450550.8031@nuc>
-References: <52DF353D.6050300@redhat.com> <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com> <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com> <20140122151913.GY4963@suse.de> <1390410233.1198.7.camel@ret.masoncoding.com>
- <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com> <1390413819.1198.20.camel@ret.masoncoding.com> <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com> <20140123082734.GP13997@dastard>
- <1390492073.2372.118.camel@dabdike.int.hansenpartnership.com>
+	id S1753970AbaAWUzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:55:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753473AbaAWUzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 15:55:53 -0500
+Date: Thu, 23 Jan 2014 15:55:45 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/10] framebuffer: fix cfb_copyarea
+In-Reply-To: <CAMuHMdWebQNKh4G8ZjpmZV15riHFpLiz5j1V4H+iSZ3VQp91gA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1401231552260.23605@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com> <CAMuHMdWebQNKh4G8ZjpmZV15riHFpLiz5j1V4H+iSZ3VQp91gA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014, James Bottomley wrote:
-
-> If the compound page infrastructure exists today and is usable for this,
-> what else do we need to do? ... because if it's a couple of trivial
-> changes and a few minor patches to filesystems to take advantage of it,
-> we might as well do it anyway.  I was only objecting on the grounds that
-> the last time we looked at it, it was major VM surgery.  Can someone
-> give a summary of how far we are away from being able to do this with
-> the VM system today and what extra work is needed (and how big is this
-> piece of work)?
-
-The main problem for me was the page cache. The VM would not be such a
-problem. Changing the page cache function required updates to many
-filesystems.
 
 
+On Thu, 23 Jan 2014, Geert Uytterhoeven wrote:
+
+> BTW, good to see you still have a working TGA. My PPC and Alpha gear
+> died a decade ago.
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+
+With the patches that I sent, I can switch it to 1920x1080 and let it 
+drive my monitor in native resolution. I was wondering how such an old 
+card can do that :)
+
+Mikulas
