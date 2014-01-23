@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaAWUBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:01:13 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:23720 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaAWUBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:01:10 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 23 Jan 2014 15:01:09 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Wang Nan <wangnan0@huawei.com>, kexec@lists.infradead.org,
-        Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geng Hui <hui.geng@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: allow kernel to be loaded in middle of phymem
-In-reply-to: <20140123193137.GA15937@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.11.1401231443060.1652@knanqh.ubzr>
-References: <1390389916-8711-1-git-send-email-wangnan0@huawei.com>
- <1390389916-8711-4-git-send-email-wangnan0@huawei.com>
- <alpine.LFD.2.11.1401231357520.1652@knanqh.ubzr>
- <20140123193137.GA15937@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1752094AbaAWUDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:03:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbaAWUDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 15:03:08 -0500
+Date: Thu, 23 Jan 2014 15:03:03 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/10] atyfb: set FBINFO_READS_FAST
+In-Reply-To: <CA+55aFxrZE6oxu5CxFo3mRwGdVcq3jvnn_ChoSJDFgQz45Lq_A@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1401231448100.7971@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFxPfHmpcMH-bmRcTPUQeq5=67cKVmra6+SvT26ybvQaug@mail.gmail.com>
+ <alpine.LRH.2.02.1401231426470.7971@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFxrZE6oxu5CxFo3mRwGdVcq3jvnn_ChoSJDFgQz45Lq_A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014, Russell King - ARM Linux wrote:
 
-> On Thu, Jan 23, 2014 at 02:15:07PM -0500, Nicolas Pitre wrote:
-> > On Wed, 22 Jan 2014, Wang Nan wrote:
-> > 
-> > > This patch allows the kernel to be loaded at the middle of kernel awared
-> > > physical memory. Before this patch, users must use mem= or device tree to cheat
-> > > kernel about the start address of physical memory.
-> > > 
-> > > This feature is useful in some special cases, for example, building a crash
-> > > dump kernel. Without it, kernel command line, atag and devicetree must be
-> > > adjusted carefully, sometimes is impossible.
-> > 
-> > With CONFIG_PATCH_PHYS_VIRT the value for PHYS_OFFSET is determined 
-> > dynamically by rounding down the kernel image start address to the 
-> > previous 16MB boundary.  In the case of a crash kernel, this might be 
-> > cleaner to simply readjust __pv_phys_offset during early boot and call 
-> > fixup_pv_table(), and then reserve away the memory from the previous 
-> > kernel.  That will let you access that memory directly (with gdb for 
-> > example) and no pointer address translation will be required.
+
+On Thu, 23 Jan 2014, Linus Torvalds wrote:
+
+> On Thu, Jan 23, 2014 at 11:31 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> >
+> > Both mach64 and matrox have a hardware bitter that is faster than
+> > rewriting the console - that's why FBINFO_READS_FAST improves performance
+> > for them.
 > 
-> We already have support in the kernel to ignore memory below the calculated
-> PHYS_OFFSET.  See 571b14375019c3a66ef70d4d4a7083f4238aca30.
+> My point is that I'd expect *anything* that has a hardware blitter to
+> be faster than rewriting the screen.
+>
+> FBINFO_READS_FAST is documented to be about "soft-copy" being faster
+> than re-rendering. Which I take to be about actually doing copying in
+> *software*.
+> 
+> In particular, updatescrollmode() seems to do this right. It sets
+> p->scrollmode based on whether there's an accelerated copyarea. But
+> then SCROLL_PAN/WRAP_MOVE ends up re-testing FBINFO_READS_FAST,
+> ignoring any hw-accelerated copy-area, and I don't quite see why..
+> 
+>                 Linus
 
-Sure.  Anyway what I'm suggesting above  would require that the crash 
-kernel be linked at a different virtual address for that to work.  
-That's probably more trouble than simply mapping the otherwise still 
-unmapped memory from the crashed kernel.
+I think the argument why not to use the blitter was this:
 
+Some hardware have font expansion - you submit monochromatic bitwise image 
+of the character via writes to some register and the hardware expands it 
+to full color. Mach64 has this capability, matrox doesn't (maybe it does, 
+but the driver doesn't use it).
 
-Nicolas
+If you use font expansion, you actually generate less load on the videoram 
+than using the blitter (the expander only writes to the videoram; the 
+blitter reads data from the videoram and stores them back).
+
+But the benchmarks that I performed show that the blitter is faster than 
+the font expander. Maybe on a different computer that has better 
+bufferring in the PCI chipset the font expander could be faster - who 
+knows?
+
+Mikulas
