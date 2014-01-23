@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367AbaAWTHE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:07:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35050 "EHLO
+	id S1752171AbaAWTHC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:07:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaAWTGl (ORCPT
+	with ESMTP id S1752676AbaAWTG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:41 -0500
+	Thu, 23 Jan 2014 14:06:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 25/27] ARM: 7934/1: DT/kernel: fix arch_match_cpu_phys_id to avoid erroneous match
-Date: Thu, 23 Jan 2014 11:07:02 -0800
-Message-Id: <20140123190651.325319682@linuxfoundation.org>
+        Qingshuai Tian <qingshuai.tian@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 18/27] drm/i915: fix DDI PLLs HW state readout code
+Date: Thu, 23 Jan 2014 11:06:55 -0800
+Message-Id: <20140123190650.595284732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -30,39 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit e44ef891e9e68b6ce7d3fd3bac73b7d5433050ae upstream.
+commit 0882dae983707455e97479e5e904e37673517ebc upstream.
 
-The MPIDR contains specific bitfields(MPIDR.Aff{2..0}) which uniquely
-identify a CPU, in addition to some non-identifying information and
-reserved bits. The ARM cpu binding defines the 'reg' property to only
-contain the affinity bits, and any cpu nodes with other bits set in
-their 'reg' entry are skipped.
+Properly zero the refcounts and crtc->ddi_pll_set so the previous HW
+state doesn't affect the result of reading the current HW state.
 
-As such it is not necessary to mask the phys_id with MPIDR_HWID_BITMASK,
-and doing so could lead to matching erroneous CPU nodes in the device
-tree. This patch removes the masking of the physical identifier.
+This fixes WARNs about WRPLL refcount if we have an HDMI monitor on
+HSW and then suspend/resume.
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64379
+Tested-by: Qingshuai Tian <qingshuai.tian@intel.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/devtree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_ddi.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -171,7 +171,7 @@ void __init arm_dt_init_cpu_maps(void)
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -961,12 +961,18 @@ void intel_ddi_setup_hw_pll_state(struct
+ 	enum pipe pipe;
+ 	struct intel_crtc *intel_crtc;
  
- bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
- {
--	return (phys_id & MPIDR_HWID_BITMASK) == cpu_logical_map(cpu);
-+	return phys_id == cpu_logical_map(cpu);
- }
++	dev_priv->ddi_plls.spll_refcount = 0;
++	dev_priv->ddi_plls.wrpll1_refcount = 0;
++	dev_priv->ddi_plls.wrpll2_refcount = 0;
++
+ 	for_each_pipe(pipe) {
+ 		intel_crtc =
+ 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
  
- /**
+-		if (!intel_crtc->active)
++		if (!intel_crtc->active) {
++			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
+ 			continue;
++		}
+ 
+ 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
+ 								 pipe);
 
 
