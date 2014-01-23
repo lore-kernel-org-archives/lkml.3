@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaAWVC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:02:28 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:64449 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429AbaAWVAB (ORCPT
+	id S932373AbaAWVCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:02:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36181 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442AbaAWVCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:00:01 -0500
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        bhelgaas@google.com
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 2/8] PCI: Clarify the "scan anyway" comment in pci_scan_bridge.
-Date: Thu, 23 Jan 2014 21:59:22 +0100
-Message-Id: <1390510768-5652-3-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390510768-5652-1-git-send-email-andreas.noever@gmail.com>
-References: <1390510768-5652-1-git-send-email-andreas.noever@gmail.com>
+	Thu, 23 Jan 2014 16:02:36 -0500
+Date: Thu, 23 Jan 2014 13:02:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        gnome@rvzt.net, grawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging, v2
+Message-Id: <20140123130235.61e2eca44d92b37936955ff1@linux-foundation.org>
+In-Reply-To: <20140123151445.GX1574@moon>
+References: <20140122190816.GB4963@suse.de>
+	<20140122191928.GQ1574@moon>
+	<20140122223325.GA30637@moon>
+	<20140123095541.GD4963@suse.de>
+	<20140123103606.GU1574@moon>
+	<20140123121555.GV1574@moon>
+	<20140123125543.GW1574@moon>
+	<20140123151445.GX1574@moon>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initially when we encountered a bus that was already present we skipped
-it. Since 74710ded8e16 'PCI: always scan child buses' we continue
-scanning in order to allow user triggered rescans of already existing
-busses.
+On Thu, 23 Jan 2014 19:14:45 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-The old comment suggested that the reason for continuing the scan is a
-bug in the i450NX chipset. This is not the case.
+> VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all
+> bits in vm_flags matched except dirty bit the kernel can't longer
+> merge them and this forces the kernel to generate new VMAs instead.
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
----
- drivers/pci/probe.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 78caade..cf05b3e 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -805,11 +805,10 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
- 			goto out;
- 
- 		/*
--		 * If we already got to this bus through a different bridge,
--		 * don't re-add it. This can happen with the i450NX chipset.
--		 *
--		 * However, we continue to descend down the hierarchy and
--		 * scan remaining child buses.
-+		 * The bus might already exist for two reasons: Either we are
-+		 * rescanning the bus or the bus is reachable through more than
-+		 * one bridge. The second case can happen with the i450NX
-+		 * chipset.
- 		 */
- 		child = pci_find_bus(pci_domain_nr(bus), secondary);
- 		if (!child) {
--- 
-1.8.5.3
-
+Do you intend to alter the brk() and binprm code to set VM_SOFTDIRTY?
