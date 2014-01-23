@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaAWQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:53:57 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46593 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753366AbaAWQxz (ORCPT
+	id S1753551AbaAWQ5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:57:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39570 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961AbaAWQ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:53:55 -0500
-Date: Thu, 23 Jan 2014 16:53:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        Mark Rutland <mark.rutland@arm.com>, linux-pwm@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
-Message-ID: <20140123165349.GY15937@n2100.arm.linux.org.uk>
-References: <20140123083714.3c6e86ae@ipc1.ka-ro> <1390467898-9216-1-git-send-email-s.hauer@pengutronix.de> <1390467898-9216-2-git-send-email-s.hauer@pengutronix.de> <20140123115632.6d3f1a58@ipc1.ka-ro> <20140123110444.GI16215@pengutronix.de>
+	Thu, 23 Jan 2014 11:57:31 -0500
+Date: Thu, 23 Jan 2014 17:56:55 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
+Message-ID: <20140123165655.GY31570@twins.programming.kicks-ass.net>
+References: <20140122131456.GA389@x4>
+ <52DFD50E.800@oracle.com>
+ <20140122183538.GA389@x4>
+ <20140122184253.GN30183@twins.programming.kicks-ass.net>
+ <20140122190905.GA391@x4>
+ <20140122191254.GA390@x4>
+ <20140122201605.GU11314@laptop.programming.kicks-ass.net>
+ <20140122210814.GC9481@laptop.programming.kicks-ass.net>
+ <20140123015354.GB3768@dhcp-16-126.nay.redhat.com>
+ <20140123021028.GE3768@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140123110444.GI16215@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140123021028.GE3768@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 12:04:44PM +0100, Sascha Hauer wrote:
-> On Thu, Jan 23, 2014 at 11:56:32AM +0100, Lothar Waßmann wrote:
-> > Hi,
-> > 
-> > Sascha Hauer wrote:
-> > > of_pwm_n_cells for the of_xlate handler is stored in struct pwm_chip,
-> > > but it is only ever used by the of_xlate handler itsel. Remove
-> > > of_pwm_n_cells from struct pwm_chip and let the handler do the argument
-> > > count checking to simplify the code.
-> > > 
-> > This still does not make the PWM_POLARITY flag in the pwms node
-> > optional as was the goal because of_parse_phandle_with_args() requires
-> > at least #pwm-cells arguments in the node.
-> > 
-> > So, with a DT configuration like:
-> > pwm0: pwm@0 {
-> > 	#pwm-cells = <3>;
-> > };
-> > backlight {
-> > 	pwms = <&pwm0 0 100000>;
-> > };
-> 
-> We misunderstood each other. My goal was to allow the driver to also
-> work with old devicetrees which specify #pwm-cells = <2>, not to allow
-> inconsistent devicetrees like the snippet above.
+On Thu, Jan 23, 2014 at 10:10:28AM +0800, Dave Young wrote:
+> Hmm, seems the my physical machine is booting fine with this patch. kvm
+> guest problem still exist, but that kvm thing might be other problem.
 
-In which case, the patch I've posted seems to do that job too... I'm
-just about to test out the three-cell version.
+Dave, could you try with tip/master, Ingo pushed out all the fixes
+gathered.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Lacking that, could you perhaps provide the .config you use for your
+guest and a kvm invocation?
+
+I used a defconfig with KVM_GUEST=y, which was enough to enable kvmclock
+support and then started with:
+
+kvm -kernel defconfig-build/arch/x86/boot/bzImage -nographic -append "console=ttyS0" -smp 2
