@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590AbaAWSku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:40:50 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58672 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429AbaAWSko (ORCPT
+	id S1754731AbaAWSl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:41:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34744 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029AbaAWSjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:40:44 -0500
-Date: Thu, 23 Jan 2014 18:40:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Message-ID: <20140123184022.GC11727@sirena.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
- <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
- <20140120100530.GY15937@n2100.arm.linux.org.uk>
- <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
- <20140123180423.1a62611a@www.etchedpixels.co.uk>
+	Thu, 23 Jan 2014 13:39:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 19/23] md/raid5: Fix possible confusion when multiple write errors occur.
+Date: Thu, 23 Jan 2014 10:39:52 -0800
+Message-Id: <20140123183902.585601199@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
+References: <20140123183859.635713053@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UPT3ojh+0CqEDtpF"
-Content-Disposition: inline
-In-Reply-To: <20140123180423.1a62611a@www.etchedpixels.co.uk>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---UPT3ojh+0CqEDtpF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Thu, Jan 23, 2014 at 06:04:23PM +0000, Alan Cox wrote:
+From: NeilBrown <neilb@suse.de>
 
-> We can then enable that config option for ARM (and in time for any other
-> architecture that turns out to need/want it). Eventually it can go away
-> (not that its exactly doing any harm if it doesnt).
+commit 1cc03eb93245e63b0b7a7832165efdc52e25b4e6 upstream.
 
-We'd need to leave it user selectable rather than enabling it for ARM,
-the whole reason this got noticed is that people are trying to build
-kernels that support a wider range of devices for ARM.
+commit 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+    md: raid5 crash during degradation
 
---UPT3ojh+0CqEDtpF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Fixed a crash in an overly simplistic way which could leave
+R5_WriteError or R5_MadeGood set in the stripe cache for devices
+for which it is no longer relevant.
+When those devices are removed and spares added the flags are still
+set and can cause incorrect behaviour.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+commit 14a75d3e07c784c004b4b44b34af996b8e4ac453
+    md/raid5: preferentially read from replacement device if possible.
 
-iQIcBAEBAgAGBQJS4WISAAoJELSic+t+oim9/IAP/iQ9FWf4Yvk5hhAuq/9JU9M7
-3jJjM/wpQ1I2n2JRu0KyE4Had9tCEdUV1gDwMbWehAP8VsbjRhouOVs0VvDggWcn
-s2VQAg0tgMmTkUsdrLagJNuJhvJqB6heXitiIvU/+GAF9IaQKV3VM1LaRSVFazCi
-uJltDTdS2+8cdO59prUK528LeE+5hYB096B9LvEuUC37jXOWlkOsA/grl0Arxc+x
-GhXCPikVYS8ecq5xSsAfLt7puSg7Uk/rf6ByHDlgtgaSlU4baqEEKEDqBu22RqPl
-/X7EadmVfzeGnUghQ2k/6suz6Igf1TdxvIa783Clq171yWpaY7Rdi7MJQ0Y2nZ5P
-YGSvvO9UEoBqca1lJjhrLwWVkH0KQbCQVBBmUTIvUMzwALOBOGUOj+GV2c/pb79D
-gHAOBOo6RBGpH4hLDAnYD/zILflehMBDsrrzkrkr1JF8MlbkqnP0MFdhF0WJDon9
-b6WmfvsyiAX+SK6WGr4Xk9gO1BuschTUoxtVFMXvxeF428c6hVWOreJvm7GWSWph
-Re8f417NlKryfw1InFQ23b5SAI+jxpn1OW+P39A9Jx+MBlGaPMx7AG0+MrvpQF4+
-K/4RBXERVR3vXUfIwQfXkVvXyaTSsrsJQVsNhXFnCClmvuDA22vIu+g8vYGj15q4
-48gdgQL5GfigXUatwXVK
-=QPQS
------END PGP SIGNATURE-----
+Fixed the same bug if a more effective way, so we can now revert
+the original commit.
 
---UPT3ojh+0CqEDtpF--
+Reported-and-tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Fixes: 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/raid5.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3391,7 +3391,7 @@ static void analyse_stripe(struct stripe
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
+ 
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3404,7 +3404,7 @@ static void analyse_stripe(struct stripe
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+
+
