@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaAWSkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:40:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34753 "EHLO
+	id S1754373AbaAWSkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:40:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbaAWSjW (ORCPT
+	with ESMTP id S1753561AbaAWSjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 13:39:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Medhurst <tixy@linaro.org>
-Subject: [PATCH 3.10 21/23] serial: amba-pl011: use port lock to guard control register access
-Date: Thu, 23 Jan 2014 10:39:54 -0800
-Message-Id: <20140123183902.882294796@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 20/23] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
+Date: Thu, 23 Jan 2014 10:39:53 -0800
+Message-Id: <20140123183902.745494894@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -28,71 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
+commit f92f455f67fef27929e6043499414605b0c94872 upstream.
 
-When the pl011 is being used for a console, pl011_console_write forces
-the control register (CR) to enable the UART for transmission and then
-restores this to the original value afterwards. It does this while
-holding the port lock.
+{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
+!WANT_PAGE_VIRTUAL, they're plain C functions.
 
-Unfortunately, when the uart is started or shutdown - say in response to
-userland using the serial device for a terminal - then this updates the
-control register without any locking.
+If someone calls them with a void *, this pointer is auto-converted to
+struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
+architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
 
-This means we can have
+  drivers/md/bcache/bset.c: In function `__btree_sort':
+  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
+  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
 
-  pl011_console_write   Save CR
-  pl011_startup         Initialise CR, e.g. enable receive
-  pl011_console_write   Restore old CR with receive not enabled
+Convert them to static inline functions to fix this.  There are already
+plenty of users of struct page members inside <linux/mm.h>, so there's
+no reason to keep them as macros.
 
-this result is a serial port which doesn't respond to any input.
-
-A similar race in reverse could happen when the device is shutdown.
-
-We can fix these problems by taking the port lock when updating CR.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/mm.h |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1543,6 +1543,8 @@ static int pl011_startup(struct uart_por
- 	/*
- 	 * Provoke TX FIFO interrupt into asserting.
- 	 */
-+	spin_lock_irq(&uap->port.lock);
-+
- 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1567,6 +1569,8 @@ static int pl011_startup(struct uart_por
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -766,11 +766,14 @@ static __always_inline void *lowmem_page
+ #endif
  
-+	spin_unlock_irq(&uap->port.lock);
-+
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1636,11 +1640,13 @@ static void pl011_shutdown(struct uart_p
- 	 * it during startup().
- 	 */
- 	uap->autorts = false;
-+	spin_lock_irq(&uap->port.lock);
- 	cr = readw(uap->port.membase + UART011_CR);
- 	uap->old_cr = cr;
- 	cr &= UART011_CR_RTS | UART011_CR_DTR;
- 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-+	spin_unlock_irq(&uap->port.lock);
+ #if defined(WANT_PAGE_VIRTUAL)
+-#define page_address(page) ((page)->virtual)
+-#define set_page_address(page, address)			\
+-	do {						\
+-		(page)->virtual = (address);		\
+-	} while(0)
++static inline void *page_address(const struct page *page)
++{
++	return page->virtual;
++}
++static inline void set_page_address(struct page *page, void *address)
++{
++	page->virtual = address;
++}
+ #define page_address_init()  do { } while(0)
+ #endif
  
- 	/*
- 	 * disable break condition and fifos
 
 
