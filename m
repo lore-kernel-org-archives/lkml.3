@@ -1,161 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaAWRvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:51:10 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27303 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932078AbaAWRvH (ORCPT
+	id S932289AbaAWRw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:52:29 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:52210 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264AbaAWRw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:51:07 -0500
-Date: Thu, 23 Jan 2014 17:50:31 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH 11/20] ARM64 / ACPI: Get the enable method for SMP
- initialization
-Message-ID: <20140123175031.GJ27520@arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-12-git-send-email-hanjun.guo@linaro.org>
+	Thu, 23 Jan 2014 12:52:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389961514-13562-12-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52E155A8.7000206@hp.com>
+References: <1390426438-31252-1-git-send-email-Waiman.Long@hp.com>
+	<1390426438-31252-2-git-send-email-Waiman.Long@hp.com>
+	<20140123100751.GS30183@twins.programming.kicks-ass.net>
+	<52E14D67.4000202@hp.com>
+	<CA+55aFzhx6K9A62ve6E5X4juvNPewED_g1nWwq+-EY0fd0A-0g@mail.gmail.com>
+	<52E155A8.7000206@hp.com>
+Date: Thu, 23 Jan 2014 09:52:25 -0800
+X-Google-Sender-Auth: rLh8L1xG5xeS3fjwnPq_3wltyNQ
+Message-ID: <CA+55aFyb-qFpUWGZjXJx_V_tr43XYGGL9srfrZf6qhxV_qPfVg@mail.gmail.com>
+Subject: Re: [PATCH v10 1/4] qrwlock: A queue read/write lock implementation
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 12:25:05PM +0000, Hanjun Guo wrote:
-> --- a/arch/arm64/kernel/smp.c
-> +++ b/arch/arm64/kernel/smp.c
-> @@ -48,6 +48,7 @@
->  #include <asm/sections.h>
->  #include <asm/tlbflush.h>
->  #include <asm/ptrace.h>
-> +#include <asm/acpi.h>
->  
->  /*
->   * as from 2.5, kernels no longer have an init_tasks structure
-> @@ -280,7 +281,7 @@ static void (*smp_cross_call)(const struct cpumask *, unsigned int);
->   * cpu logical map array containing MPIDR values related to logical
->   * cpus. Assumes that cpu_logical_map(0) has already been initialized.
->   */
-> -void __init smp_init_cpus(void)
-> +static int __init of_smp_init_cpus(void)
->  {
->  	struct device_node *dn = NULL;
->  	unsigned int i, cpu = 1;
-> @@ -364,6 +365,10 @@ next:
->  		cpu++;
->  	}
->  
-> +	/* No device tree or no CPU node in DT */
-> +	if (cpu == 1 && !bootcpu_valid)
-> +		return -ENODEV;
-> +
->  	/* sanity check */
->  	if (cpu > NR_CPUS)
->  		pr_warning("no. of cores (%d) greater than configured maximum of %d - clipping\n",
-> @@ -371,7 +376,7 @@ next:
->  
->  	if (!bootcpu_valid) {
->  		pr_err("DT missing boot CPU MPIDR, not enabling secondaries\n");
-> -		return;
-> +		return -EINVAL;
->  	}
->  
->  	/*
-> @@ -381,6 +386,39 @@ next:
->  	for (i = 0; i < NR_CPUS; i++)
->  		if (cpu_logical_map(i) != INVALID_HWID)
->  			set_cpu_possible(i, true);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * In ACPI mode, the cpu possible map was enumerated before SMP
-> + * initialization when MADT table was parsed, so we can get the
-> + * possible map here to initialize CPUs.
-> + */
-> +static void __init acpi_smp_init_cpus(void)
-> +{
-> +	int cpu;
-> +	const char *enable_method;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		enable_method = acpi_get_enable_method(cpu);
-> +		if (!enable_method)
-> +			continue;
-> +
-> +		cpu_ops[cpu] = cpu_get_ops(enable_method);
-> +		if (!cpu_ops[cpu])
-> +			continue;
-> +
-> +		cpu_ops[cpu]->cpu_init(NULL, cpu);
-> +	}
-> +}
-> +
-> +void __init smp_init_cpus(void)
-> +{
-> +	if (!of_smp_init_cpus())
-> +		return;
-> +
-> +	acpi_smp_init_cpus();
->  }
+On Thu, Jan 23, 2014 at 9:47 AM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> Thank for the info. I am less familiar with that kind of issues on other
+> architecture. I will add a smp_mb__after_atomic_dec() & send out a new
+> patch.
 
-With DT we initialise the cpu_ops[0] via cpu_read_bootcpu_ops() called
-from setup_arch(). This is needed because with PSCI we use cpu_ops for
-power management even if it's a UP system. Do you get a some kernel
-warning about device node for the boot cpu not found?
+SInce it's the unlock path,. you need to use the "mb__*before*"
+versions, since presumably you want to protect what is inside the lock
+from leaking out, not some random thing after the lock from leaking
+in..
 
-> --- a/drivers/acpi/plat/arm-core.c
-> +++ b/drivers/acpi/plat/arm-core.c
-> @@ -367,6 +367,32 @@ static void __init acpi_process_madt(void)
->  }
->  
->  /*
-> + * To see PCSI is enabled or not.
-> + *
-> + * PSCI is not available for ACPI 5.0, return FALSE for now.
-> + *
-> + * FIXME: should we introduce early_param("psci", func) for test purpose?
-> + */
-> +static bool acpi_psci_smp_available(int cpu)
-> +{
-> +	return FALSE;
-> +}
-> +
-> +static const char *enable_method[] = {
-> +	"psci",
-> +	"spin-table",
-> +	NULL
-> +};
-> +
-> +const char *acpi_get_enable_method(int cpu)
-> +{
-> +	if (acpi_psci_smp_available(cpu))
-> +		return enable_method[0];
-> +	else
-> +		return enable_method[1];
-> +}
-
-You could just use literal strings here, actually even ignoring PSCI
-until available.
-
--- 
-Catalin
+              Linus
