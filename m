@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaAWK5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:57:24 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:51299 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaAWK5V convert rfc822-to-8bit (ORCPT
+	id S1753580AbaAWK5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:57:39 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60380 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868AbaAWK5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:57:21 -0500
-Date: Thu, 23 Jan 2014 11:56:32 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
-Message-ID: <20140123115632.6d3f1a58@ipc1.ka-ro>
-In-Reply-To: <1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
-References: <20140123083714.3c6e86ae@ipc1.ka-ro>
-	<1390467898-9216-1-git-send-email-s.hauer@pengutronix.de>
-	<1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Jan 2014 05:57:36 -0500
+Date: Thu, 23 Jan 2014 11:57:32 +0100
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Chris Ruehl <chris.ruehl@gtsys.com.hk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm@lists.infradead.org
+Subject: Re: [PATCH 2/2 v2] imx27: pinctrl: fix offset calculation in
+ imx_read_2bit
+Message-ID: <20140123105732.GD25016@pengutronix.de>
+References: <1390360492-29126-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1390360492-29126-2-git-send-email-chris.ruehl@gtsys.com.hk>
+ <CACRpkdbWY8Ny0wNo0tM9WWG4uB2xOKV6zvFcqJ__qbku9VRN9g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbWY8Ny0wNo0tM9WWG4uB2xOKV6zvFcqJ__qbku9VRN9g@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:54:58 up 151 days, 20:25, 49 users,  load average: 0.14, 0.10,
+ 0.08
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Sascha Hauer wrote:
-> of_pwm_n_cells for the of_xlate handler is stored in struct pwm_chip,
-> but it is only ever used by the of_xlate handler itsel. Remove
-> of_pwm_n_cells from struct pwm_chip and let the handler do the argument
-> count checking to simplify the code.
+On Thu, Jan 23, 2014 at 09:26:06AM +0100, Linus Walleij wrote:
+> On Wed, Jan 22, 2014 at 4:14 AM, Chris Ruehl <chris.ruehl@gtsys.com.hk> wrote:
 > 
-This still does not make the PWM_POLARITY flag in the pwms node
-optional as was the goal because of_parse_phandle_with_args() requires
-at least #pwm-cells arguments in the node.
+> > The offset for the 2bit register calculate wrong, this patch
+> > fixes the problem. The debugfs printout for oconf, iconfa, iconfb
+> > now shows the real values.
+> >
+> > Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> 
+> Markus: this OK? I want your review tag on it.
 
-So, with a DT configuration like:
-pwm0: pwm@0 {
-	#pwm-cells = <3>;
-};
-backlight {
-	pwms = <&pwm0 0 100000>;
-};
-the driver will bail out at of_parse_phandle_with_args() in
-of_pwm_get() with the error message:
-"/backlight: arguments longer than property" and never reach your
-clever xlate function.
+Yes this one is also ok.
 
-Thus you will still need to replace of_parse_phandle_with_args()
-with different code that copies most but not all of the functionality.
+Reviewed-by: Markus Pargmann <mpa@pengutronix.de>
 
+Regards,
 
-Lothar Waßmann
+Markus
+
 -- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
