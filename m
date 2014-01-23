@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbaAWIRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:17:11 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:55531 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaAWIRI (ORCPT
+	id S1756130AbaAWIUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:20:22 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:47146 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502AbaAWIUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:17:08 -0500
+	Thu, 23 Jan 2014 03:20:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <1390343886-25852-1-git-send-email-syin@broadcom.com>
-References: <1390343886-25852-1-git-send-email-syin@broadcom.com>
-Date: Thu, 23 Jan 2014 09:17:08 +0100
-Message-ID: <CACRpkdZ+3MC8XpfD-vumvq3yQACzFn89DQjWQeXbdBK+9JmfLQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Rename Broadcom Capri pinctrl driver
+In-Reply-To: <1390349404-23326-1-git-send-email-markus.mayer@linaro.org>
+References: <1390349404-23326-1-git-send-email-markus.mayer@linaro.org>
+Date: Thu, 23 Jan 2014 09:20:19 +0100
+Message-ID: <CACRpkdbgS3DjG+z79VV_-UUZ+t3DbZM1rxX+pHhuXv6WOxOW6Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: bcm281xx: Fix parameter name for GPIO_CONTROL macro
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Linaro Patches <patches@linaro.org>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 11:38 PM, Sherman Yin <syin@broadcom.com> wrote:
+On Wed, Jan 22, 2014 at 1:10 AM, Markus Mayer <markus.mayer@linaro.org> wrote:
 
-> To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
-> driver and its related CONFIG option are renamed to bcm281xx.
+> The GPIO_CONTROL macro returns the control register offset when given a
+> GPIO number.
 >
-> Devicetree compatible string and binding documentation use
-> "brcm,bcm11351-pinctrl" to match the machine binding here:
-> Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+> Update the argument name in the macro to reflect that it takes in a
+> GPIO number and not a bank.
 >
-> This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
-> and BCM28155 SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Matt Porter <mporter@linaro.org>
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+(...)
+> +/* There is a GPIO control register for each GPIO */
+> +#define GPIO_CONTROL(gpio)                     (0x00000100 + ((gpio) << 2))
 
-Patch applied for fixes.
+Technically I prefer naming this parameter "offset" rather than
+"gpio" as it is the offset of a GPIO line in *this* very GPIO
+HW block rather than a GPIO number from the global
+GPIO number space.
 
-If it was only the DT bindings that were rushed to change
-you *could* have made a patch just changing these and the
-binding doc, and give me the option to defer the changing of
-variables and function names, but whatever.
+But it's no big deal, so patch applied.
 
 Yours,
 Linus Walleij
