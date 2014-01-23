@@ -1,169 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaAWTGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34931 "EHLO
+	id S1755232AbaAWTOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:14:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaAWTGR (ORCPT
+	with ESMTP id S1753040AbaAWTGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:17 -0500
+	Thu, 23 Jan 2014 14:06:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [PATCH 3.12 00/27] 3.12.9-stable review
-Date: Thu, 23 Jan 2014 11:06:37 -0800
-Message-Id: <20140123190648.720195687@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Helge Deller <deller@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        John David Anglin <dave.anglin@bell.net>
+Subject: [PATCH 3.12 16/27] mm: fix crash when using XFS on loopback
+Date: Thu, 23 Jan 2014 11:06:53 -0800
+Message-Id: <20140123190650.377489117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
+References: <20140123190648.720195687@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.12.9 release.
-There are 27 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Jan 25 19:06:36 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.9-rc1.gz
-and the diffstat can be found below.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-thanks,
+commit 03e5ac2fc3bf6f4140db0371e8bb4243b24e3e02 upstream.
 
-greg k-h
+Commit 8456a648cf44 ("slab: use struct page for slab management") causes
+a crash in the LVM2 testsuite on PA-RISC (the crashing test is
+fsadm.sh).  The testsuite doesn't crash on 3.12, crashes on 3.13-rc1 and
+later.
 
--------------
-Pseudo-Shortlog of commits:
+ Bad Address (null pointer deref?): Code=15 regs=000000413edd89a0 (Addr=000006202224647d)
+ CPU: 3 PID: 24008 Comm: loop0 Not tainted 3.13.0-rc6 #5
+ task: 00000001bf3c0048 ti: 000000413edd8000 task.ti: 000000413edd8000
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.12.9-rc1
+      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+ PSW: 00001000000001101111100100001110 Not tainted
+ r00-03  000000ff0806f90e 00000000405c8de0 000000004013e6c0 000000413edd83f0
+ r04-07  00000000405a95e0 0000000000000200 00000001414735f0 00000001bf349e40
+ r08-11  0000000010fe3d10 0000000000000001 00000040829c7778 000000413efd9000
+ r12-15  0000000000000000 000000004060d800 0000000010fe3000 0000000010fe3000
+ r16-19  000000413edd82a0 00000041078ddbc0 0000000000000010 0000000000000001
+ r20-23  0008f3d0d83a8000 0000000000000000 00000040829c7778 0000000000000080
+ r24-27  00000001bf349e40 00000001bf349e40 202d66202224640d 00000000405a95e0
+ r28-31  202d662022246465 000000413edd88f0 000000413edd89a0 0000000000000001
+ sr00-03  000000000532c000 0000000000000000 0000000000000000 000000000532c000
+ sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
 
-Taras Kondratiuk <taras.kondratiuk@linaro.org>
-    ARM: 7938/1: OMAP4/highbank: Flush L2 cache before disabling
+ IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401fe42c 00000000401fe430
+  IIR: 539c0030    ISR: 00000000202d6000  IOR: 000006202224647d
+  CPU:        3   CR30: 000000413edd8000 CR31: 0000000000000000
+  ORIG_R28: 00000000405a95e0
+  IAOQ[0]: vma_interval_tree_iter_first+0x14/0x48
+  IAOQ[1]: vma_interval_tree_iter_first+0x18/0x48
+  RP(r2): flush_dcache_page+0x128/0x388
+ Backtrace:
+   flush_dcache_page+0x128/0x388
+   lo_splice_actor+0x90/0x148 [loop]
+   splice_from_pipe_feed+0xc0/0x1d0
+   __splice_from_pipe+0xac/0xc0
+   lo_direct_splice_actor+0x1c/0x70 [loop]
+   splice_direct_to_actor+0xec/0x228
+   lo_receive+0xe4/0x298 [loop]
+   loop_thread+0x478/0x640 [loop]
+   kthread+0x134/0x168
+   end_fault_vector+0x20/0x28
+   xfs_setsize_buftarg+0x0/0x90 [xfs]
 
-Ville Syrjälä <ville.syrjala@linux.intel.com>
-    drm/i915: Don't grab crtc mutexes in intel_modeset_gem_init()
+ Kernel panic - not syncing: Bad Address (null pointer deref?)
 
-Sudeep Holla <sudeep.holla@arm.com>
-    ARM: 7934/1: DT/kernel: fix arch_match_cpu_phys_id to avoid erroneous match
+Commit 8456a648cf44 changes the page structure so that the slab
+subsystem reuses the page->mapping field.
 
-Jon Medhurst <tixy@linaro.org>
-    serial: amba-pl011: use port lock to guard control register access
+The crash happens in the following way:
+ * XFS allocates some memory from slab and issues a bio to read data
+   into it.
+ * the bio is sent to the loopback device.
+ * lo_receive creates an actor and calls splice_direct_to_actor.
+ * lo_splice_actor copies data to the target page.
+ * lo_splice_actor calls flush_dcache_page because the page may be
+   mapped by userspace.  In that case we need to flush the kernel cache.
+ * flush_dcache_page asks for the list of userspace mappings, however
+   that page->mapping field is reused by the slab subsystem for a
+   different purpose.  This causes the crash.
 
-Geert Uytterhoeven <geert@linux-m68k.org>
-    mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
+Note that other architectures without coherent caches (sparc, arm, mips)
+also call page_mapping from flush_dcache_page, so they may crash in the
+same way.
 
-NeilBrown <neilb@suse.de>
-    md/raid5: Fix possible confusion when multiple write errors occur.
+This patch fixes this bug by testing if the page is a slab page in
+page_mapping and returning NULL if it is.
 
-NeilBrown <neilb@suse.de>
-    md/raid10: fix two bugs in handling of known-bad-blocks.
+The patch also fixes VM_BUG_ON(PageSlab(page)) that could happen in
+earlier kernels in the same scenario on architectures without cache
+coherence when CONFIG_DEBUG_VM is enabled - so it should be backported
+to stable kernels.
 
-NeilBrown <neilb@suse.de>
-    md/raid10: fix bug when raid10 recovery fails to recover a block.
+In the old kernels, the function page_mapping is placed in
+include/linux/mm.h, so you should modify the patch accordingly when
+backporting it.
 
-NeilBrown <neilb@suse.de>
-    md: fix problem when adding device to read-only array with bitmap.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: John David Anglin <dave.anglin@bell.net>]
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Helge Deller <deller@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Paulo Zanoni <paulo.r.zanoni@intel.com>
-    drm/i915: fix DDI PLLs HW state readout code
+---
+ mm/util.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Andreas Rohner <andreas.rohner@gmx.net>
-    nilfs2: fix segctor bug that causes file system corruption
-
-Mikulas Patocka <mpatocka@redhat.com>
-    mm: fix crash when using XFS on loopback
-
-Qais Yousef <qais.yousef@imgtec.com>
-    crash_dump: fix compilation error (on MIPS at least)
-
-Steven Rostedt <rostedt@goodmis.org>
-    ftrace/x86: Load ftrace_ops in parameter not the variable holding it
-
-Hugh Dickins <hughd@google.com>
-    thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once only
-
-Steven Rostedt <rostedt@goodmis.org>
-    SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
-
-Jan Kara <jack@suse.cz>
-    writeback: Fix data corruption on NFS
-
-Jean Delvare <khali@linux-fr.org>
-    hwmon: (coretemp) Fix truncated name of alarm attributes
-
-Stephen Warren <swarren@nvidia.com>
-    i2c: Re-instate body of i2c_parent_is_i2c_adapter()
-
-Eric W. Biederman <ebiederm@xmission.com>
-    fork: Allow CLONE_PARENT after setns(CLONE_NEWPID)
-
-Eric W. Biederman <ebiederm@xmission.com>
-    vfs: Fix a regression in mounting proc
-
-Eric W. Biederman <ebiederm@xmission.com>
-    vfs: In d_path don't call d_dname on a mount point
-
-H Hartley Sweeten <hsweeten@visionengravers.com>
-    staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
-
-H Hartley Sweeten <hsweeten@visionengravers.com>
-    staging: comedi: addi_apci_1032: fix subdevice type/flags bug
-
-Bob Peterson <rpeterso@redhat.com>
-    GFS2: Increase i_writecount during gfs2_setattr_chown
-
-Robert Richter <rric@kernel.org>
-    perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-
-Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    Revert "ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs"
-
-
--------------
-
-Diffstat:
-
- Makefile                                        |  4 +-
- arch/arm/kernel/devtree.c                       |  2 +-
- arch/arm/mach-highbank/highbank.c               |  1 +
- arch/arm/mach-omap2/omap4-common.c              |  1 +
- arch/x86/kernel/cpu/perf_event_amd_ibs.c        | 53 +++++++++++++++++++++----
- arch/x86/kernel/entry_32.S                      |  4 +-
- arch/x86/kernel/entry_64.S                      |  2 +-
- drivers/acpi/acpi_lpss.c                        |  1 -
- drivers/gpu/drm/i915/intel_ddi.c                |  8 +++-
- drivers/gpu/drm/i915/intel_display.c            |  4 +-
- drivers/hwmon/coretemp.c                        |  2 +-
- drivers/md/md.c                                 | 18 +++++++--
- drivers/md/md.h                                 |  3 ++
- drivers/md/raid10.c                             | 12 +++---
- drivers/md/raid5.c                              |  4 +-
- drivers/pinctrl/pinctrl-baytrail.c              |  1 -
- drivers/staging/comedi/drivers/addi_apci_1032.c |  4 +-
- drivers/staging/comedi/drivers/adl_pci9111.c    |  2 +-
- drivers/tty/serial/amba-pl011.c                 |  6 +++
- fs/dcache.c                                     |  7 +++-
- fs/fs-writeback.c                               | 15 ++++---
- fs/gfs2/inode.c                                 | 16 +++++++-
- fs/namespace.c                                  |  2 +-
- fs/nilfs2/segment.c                             | 10 +++--
- include/linux/crash_dump.h                      |  2 +
- include/linux/i2c.h                             |  2 +-
- include/linux/mm.h                              | 13 +++---
- kernel/fork.c                                   |  2 +-
- mm/huge_memory.c                                |  6 +--
- mm/util.c                                       |  5 ++-
- security/selinux/hooks.c                        | 20 +++++++++-
- security/selinux/include/objsec.h               |  5 ++-
- 32 files changed, 176 insertions(+), 61 deletions(-)
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -387,7 +387,10 @@ struct address_space *page_mapping(struc
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+-	VM_BUG_ON(PageSlab(page));
++	/* This happens if someone calls flush_dcache_page on slab page */
++	if (unlikely(PageSlab(page)))
++		return NULL;
++
+ 	if (unlikely(PageSwapCache(page))) {
+ 		swp_entry_t entry;
+ 
 
 
