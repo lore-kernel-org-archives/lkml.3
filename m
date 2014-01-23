@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327AbaAWTes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:34:48 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63623 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaAWTeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:34:44 -0500
-Date: Thu, 23 Jan 2014 11:34:41 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
- accept task state bitmask
-Message-ID: <20140123193441.GV9037@kmo>
-References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
- <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
- <20140120113415.GE30183@twins.programming.kicks-ass.net>
- <20140121221852.GT9037@kmo>
- <1390420413.5567.949.camel@haakon3.risingtidesystems.com>
- <1390502404.5567.994.camel@haakon3.risingtidesystems.com>
- <20140123191229.GW11314@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123191229.GW11314@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755723AbaAWTfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:35:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755656AbaAWTec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 14:34:32 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        akpm@linux-foundation.org, peterz@infradead.org, oleg@redhat.com,
+        stable@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 7/7] pid: get pid_t ppid of task in init_pid_ns
+Date: Thu, 23 Jan 2014 14:32:40 -0500
+Message-Id: <328c85752a7eb053e72d9194827b91fc228d4f67.1390495874.git.rgb@redhat.com>
+In-Reply-To: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+References: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+In-Reply-To: <cover.1390495874.git.rgb@redhat.com>
+References: <cover.1390495874.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 08:12:29PM +0100, Peter Zijlstra wrote:
-> On Thu, Jan 23, 2014 at 10:40:04AM -0800, Nicholas A. Bellinger wrote:
-> > On Wed, 2014-01-22 at 11:53 -0800, Nicholas A. Bellinger wrote:
-> > > Hi Peter,
-> > > 
-> > > Does this satisfy your questions..?
-> > > 
-> > > Do you have any more concerns about TASK_RUNNING + prepare_to_wait()
-> > > usage in percpu_ida_alloc() that need to be addressed before I can drop
-> > > this series into target-pending/for-next to address the original bug..?
-> > > 
-> > 
-> > Given the silence, 
-> 
-> You mean the silence in which I send a 4+ emails earlier today?
-> 
-> > I'll assume your OK with the initial TASK_RUNNING +
-> > prepare_to_wait() bit, right..?
-> 
-> No, I would prefer not to do that. While it does work its awkward at
-> best.
+Added the functions task_ppid_nr_ns() and task_ppid_nr() to abstract the lookup
+of the PPID (real_parent's pid_t) of a process, including rcu locking, in the
+arbitrary and init_pid_ns.
+This provides an alternative to sys_getppid(), which is relative to the child
+process' pid namespace.
 
-I do like the improvements, but personally, I really don't see anything wrong
-with the initial patch and for backporting that really is what we should do -
-this code _is_ subtle enough backporting our (your) improvements is not
-something I'd want to do, having debugged this code when I first wrote it...
+(informed by ebiederman's 6c621b7e)
+Cc: stable@vger.kernel.org
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/linux/sched.h |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2016d92..cba2486 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1561,6 +1561,24 @@ static inline pid_t task_tgid_vnr(const struct task_struct *tsk)
+ }
+ 
+ 
++static int pid_alive(const struct task_struct *p);
++static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
++{
++	pid_t pid = 0;
++
++	rcu_read_lock();
++	if (pid_alive(tsk))
++		pid = task_tgid_nr_ns(rcu_dereference(tsk->real_parent), ns);
++	rcu_read_unlock();
++
++	return pid;
++}
++
++static inline pid_t task_ppid_nr(const struct task_struct *tsk)
++{
++	return task_ppid_nr_ns(tsk, &init_pid_ns);
++}
++
+ static inline pid_t task_pgrp_nr_ns(const struct task_struct *tsk,
+ 					struct pid_namespace *ns)
+ {
+-- 
+1.7.1
+
