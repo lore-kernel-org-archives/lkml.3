@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109AbaAWPWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:22:20 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:37608 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaAWPWR (ORCPT
+	id S1753474AbaAWPXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:23:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37262 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaAWPXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:22:17 -0500
+	Thu, 23 Jan 2014 10:23:52 -0500
+Date: Thu, 23 Jan 2014 16:23:30 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        bsegall@google.com, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH 3/9] sched: Move idle_stamp up to the core
+Message-ID: <20140123152330.GW30183@twins.programming.kicks-ass.net>
+References: <20140121111754.580142558@infradead.org>
+ <20140121112258.410353740@infradead.org>
+ <20140123125822.GX31570@twins.programming.kicks-ass.net>
+ <52E129A8.5050503@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <52D1494E.9090303@overkiz.com>
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-	<52D1494E.9090303@overkiz.com>
-Date: Thu, 23 Jan 2014 09:22:16 -0600
-Message-ID: <CAL_JsqJNd_gtn-cCLbZxT=s5NkkXp0DZkJkZrBhWiaL6Js=woQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/9] mtd: nand: add sunxi NAND Flash Controller support
-From: Rob Herring <robherring2@gmail.com>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mtd@lists.infradead.org, dev@linux-sunxi.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E129A8.5050503@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 7:38 AM, boris brezillon
-<b.brezillon@overkiz.com> wrote:
-> On 08/01/2014 15:21, Boris BREZILLON wrote:
->>
->> Hello,
->>
->> This series add the sunxi NFC support with up to 8 NAND chip connected.
->> I'm still in the early stages drivers development and some key features
->> are
->> missing, but it's usable (I tested it on the cubietruck board).
->>
->> Here's what's missing:
->>   - HW ECC support
->>   - DMA support
->>   - HW randomization support
->>   - many more improvements
->>
->> This series depends on Emilio's patch series implementing mod0 clks
->>
->> (http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/185478.html)
->> + an other patch not yet posted
->>
->> (http://git.elopez.com.ar/linux/commits/5b4eb3ac406b9c98965714d40e8dd6da943d1ab0)
->
->
-> During my reasearch regarding the HW ECC and HW randomizer of the Allwinner
-> NAND flash controller I found this document describing the Altera NAND flash
-> controller
-> (which is in turn based on a cadence IP):
+On Thu, Jan 23, 2014 at 03:39:36PM +0100, Daniel Lezcano wrote:
+> On 01/23/2014 01:58 PM, Peter Zijlstra wrote:
+> >On Tue, Jan 21, 2014 at 12:17:57PM +0100, Peter Zijlstra wrote:
+> >>From: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>
+> >>The idle_balance modifies the idle_stamp field of the rq, making this
+> >>information to be shared across core.c and fair.c. As we can know if the
+> >>cpu is going to idle or not with the previous patch, let's encapsulate the
+> >>idle_stamp information in core.c by moving it up to the caller. The
+> >>idle_balance function returns true in case a balancing occured and the cpu
+> >>won't be idle, false if no balance happened and the cpu is going idle.
+> >>
+> >>Cc: alex.shi@linaro.org
+> >>Cc: peterz@infradead.org
+> >>Cc: mingo@kernel.org
+> >>Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> >>Link: http://lkml.kernel.org/r/1389949444-14821-3-git-send-email-daniel.lezcano@linaro.org
+> >>---
+> >>  kernel/sched/core.c  |    2 +-
+> >>  kernel/sched/fair.c  |   14 ++++++--------
+> >>  kernel/sched/sched.h |    2 +-
+> >>  3 files changed, 8 insertions(+), 10 deletions(-)
+> >>
+> >>--- a/kernel/sched/core.c
+> >>+++ b/kernel/sched/core.c
+> >>@@ -2680,7 +2680,7 @@ static void __sched __schedule(void)
+> >>  	pre_schedule(rq, prev);
+> >>
+> >>  	if (unlikely(!rq->nr_running))
+> >>-		idle_balance(rq);
+> >>+		rq->idle_stamp = idle_balance(rq) ? 0 : rq_clock(rq);
+> >
+> >OK, spotted a problem here..
+> >
+> >So previously idle_stamp was set _before_ actually doing idle_balance(),
+> >and that was RIGHT, because that way we include the cost of actually
+> >doing idle_balance() into the idle time.
+> >
+> >By not including the cost of idle_balance() you underestimate the 'idle'
+> >time in that if idle_balance() filled the entire idle time we account 0
+> >idle, even though we had 'plenty' of time to run the entire thing.
+> >
+> >This leads to not running idle_balance() even though we have the time
+> >for it.
+> 
+> Good catch. How did you notice that ?
 
-Which may be similar to drivers/mtd/nand/denali.c as Cadence bought Denali?
+Staring at that code for too long :-)
 
-Rob
+> >So we very much want something like:
+> >
+> >
+> >   if (!rq->nr_running)
+> >   	rq->idle_stamp = rq_clock(rq);
+> >
+> >   p = pick_next_task(rq, prev);
+> >
+> >   if (!is_idle_task(p))
+> >   	rq->idle_stamp = 0;
+> 
+> Is this code assuming idle_balance() is in pick_next_task ?
+
+Yeah, I'm trying to make that work.
