@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaAWIyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:54:44 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:56763 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaAWIyn (ORCPT
+	id S1751723AbaAWIzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:55:00 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49259 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647AbaAWIy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:54:43 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Linux Walleij <linux.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v2] vt8500: pinctrl: Change devicetree data parsing
-Date: Thu, 23 Jan 2014 21:55:04 +1300
-Message-Id: <1390467304-8701-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 23 Jan 2014 03:54:57 -0500
+Message-ID: <52E0D8D8.8040902@gmail.com>
+Date: Thu, 23 Jan 2014 16:54:48 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, linux-kernel@vger.kernel.org,
+        zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: How to identify different ip tunnels
+References: <52E0C5B7.7040908@gmail.com>
+In-Reply-To: <52E0C5B7.7040908@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to an assumption in the VT8500 pinctrl driver, the value passed
-from devicetree for 'wm,pull' was not explicitly translated before
-being passed to pinconf.
+The version of the kernel is 3.4.43.
 
-Since v3.10, changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
-no longer map 1-to-1 with the expected values in devicetree.
+Any reply is appreciated.
 
-This patch adds a small translation between the devicetree values (0..2)
-and the enum pin_config_param equivalent values.
-
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-v2:
-Minor change in commit message to indicate time since problem occurred.
-Change assigned variable to configs[0] rather than reassigning to pull.
-Add a default case to the switch to prevent static checker errors.
-
- drivers/pinctrl/vt8500/pinctrl-wmt.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
-index 39aec08..25ab2ee 100644
---- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
-+++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
-@@ -276,7 +276,20 @@ static int wmt_pctl_dt_node_to_map_pull(struct wmt_pinctrl_data *data,
- 	if (!configs)
- 		return -ENOMEM;
- 
--	configs[0] = pull;
-+	switch (pull) {
-+	case 0:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		break;
-+	case 1:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_DOWN;
-+		break;
-+	case 2:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_UP;
-+		break;
-+	default:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		dev_err(data->dev, "invalid pull state %d - disabling\n", pull);
-+	}
- 
- 	map->type = PIN_MAP_TYPE_CONFIGS_PIN;
- 	map->data.configs.group_or_pin = data->groups[group];
--- 
-1.7.9.5
+Best Regards!
+Zhu Yanjun
+On 01/23/2014 03:33 PM, zhuyj wrote:
+> Hi, Maintainers
+>
+> We want to identify different ip tunnels.
+>
+> For example, we use “ip tunnel add xxx” command in linux to create an 
+> ipv4/6 tunnel interface,then,we can receive a RTM_NEWLINK message from 
+> linux for the new tunnel interface.
+> We will parse the struct ifinfomsg message and get the ifi->ifi_type 
+> attribute. We need to do somethings depend on the tunnel type here.
+> I checked the linux source code and list all the tunnel types here:
+>
+> #define ARPHRD_TUNNEL 768 /* IPIP tunnel */
+> #define ARPHRD_TUNNEL6 769 /* IP6IP6 tunnel */
+> #define ARPHRD_SIT 776 /* sit0 device - IPv6-in-IPv4 */
+> #define ARPHRD_IPGRE 778 /* GRE over IP */
+>
+> It means that the linux will report the new link for any ipv4/6 tunnel 
+> interface with type only within these four types. However, We need 
+> more tunnel types for ipv4/6 tunnel.
+> For example, 4IN4/6IN4/6TO4/GRE/ISATAP for ipv4 tunnel and 
+> 4IN6/6IN6/IPIN6 for ipv6 tunnel.
+>
+> Here are the result that we have got:
+>
+> Actual Tunnel type ifi->ifi_type
+> 4IN4 768
+> GRE4 778
+> 6IN4/6TO4/ISATAP 776
+> 4IN6/6IN6/IPIN6 769
+>
+> So, we can NOT distinguish the actual tunnel type via ifi_type 
+> attribute except the GRE4 and 4IN4 tunnel. However we need the actual 
+> type. That is our question.
+>
+> BTW, for the 6IN4 and 6TO4 tunnel, Can we distinguish them before the 
+> interface ip address configured? Because we need to do different 
+> things for them when we received the new link message and the tunnel 
+> has NOT any ip address in this time.
+>
+> Best Regards!
+> Zhu Yanjun
+>
 
