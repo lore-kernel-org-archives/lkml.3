@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaAWUXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:23:49 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58776 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaAWUXr (ORCPT
+	id S1753191AbaAWU1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:27:16 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:54607 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaAWU1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:23:47 -0500
-Date: Thu, 23 Jan 2014 20:23:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Message-ID: <20140123202339.GR11727@sirena.org.uk>
-References: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 23 Jan 2014 15:27:14 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QFliEIXSSz7hGqqc"
-Content-Disposition: inline
-In-Reply-To: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: simple-card: fix simple card widgets
- routing property name usage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Date: Thu, 23 Jan 2014 21:27:14 +0100
+X-Google-Sender-Auth: UUI1iNCcdIVoF3Nz4iU3kE5XEus
+Message-ID: <CAMuHMdWebQNKh4G8ZjpmZV15riHFpLiz5j1V4H+iSZ3VQp91gA@mail.gmail.com>
+Subject: Re: [PATCH 3/10] framebuffer: fix cfb_copyarea
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 23, 2014 at 7:18 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> The cfb_copyarea code was very buggy and it looks like it was written
+> and never tried with non-8-pixel font.
 
---QFliEIXSSz7hGqqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My memory may suffer from bitrot, but I think I tested it with the Sun
+12x22 font. That was on big endian (PPC), though.
 
-On Fri, Jan 10, 2014 at 01:17:27PM +0800, Xiubo Li wrote:
-> Fix the usage of simple card widgets routing property, and make it the
-> same with simple card routing property name.
+BTW, good to see you still have a working TGA. My PPC and Alpha gear
+died a decade ago.
 
-Applied, thanks.
+Gr{oetje,eeting}s,
 
---QFliEIXSSz7hGqqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+                        Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-iQIcBAEBAgAGBQJS4XpIAAoJELSic+t+oim9XmsQAJWo4DZS6ltaxtF9VxuzbIJR
-HSCHN4yOkd7qGFfNizUTMtJxa/+JTFpoXebozGbk5FNguDnGBJ5aASgSz9N/agU9
-M1uOrpxINtMXj3ng8/GCDtVrW9eGYSj9ZHsoP4ltn+ZdLx/hyK8sqhDJ7yJhXh60
-m0/EtAzbEssA43/ZKqqtrt0tNaeJRcrBtsiXyQm7sEDd/yzJ6WgMRS0ktfUbc5kl
-kIFUJNtKomO+xrhq0dPlkVbhuTqdX9ckKse8QMU54oAnkDIBoWjHImcK/PGu3BA4
-AhR0hMjlQFM3EKf0P+91sWJOUIuHKO/4JomZ6R9GLS73+ZypxyLTvVB7B89tnwm0
-Ve51sjaq0t8DWzUEbtq17Nqkdakha7h7b0y9UpKNwlJv/G71FAP9RCRKqX8iPOqE
-5zPsrldLLwiH2ZosrzD0gfOfVmVTeULhasWMKGiItbbp+v97F2X9KrMGim8Y6k7E
-O6mL7YMYsQnyDHxTsirX05DhQ/0ptdNIwl0BGYw2la0mCo3ofq1D9e3GKHdrwcds
-TCCjSvkadVt1SIAaYza329HQvVhcffcWsCkGBI1w9YwVsk1v4jKXHKS8qKjKCrw3
-CcQJBpF01cUWg+loU5nQoRqBZW99W4vOnaKdX4d/vI2NJ4DXx89pybNUhxleYT1b
-Qv2dPnlFDDGzKGvdLKl6
-=UwYr
------END PGP SIGNATURE-----
-
---QFliEIXSSz7hGqqc--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
