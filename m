@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaAWOUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:20:43 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:36367 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaAWOUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:20:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140123133537.GA13345@localhost.localdomain>
-References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
-	<alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
-	<CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
-	<CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
-	<20140123133537.GA13345@localhost.localdomain>
-Date: Thu, 23 Jan 2014 19:50:40 +0530
-Message-ID: <CAKohponoTb-SeRx8Za6HhmVNwrT0COxykhi=s=uOR8SGNvkgUA@mail.gmail.com>
-Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lei Wen <adrian.wenl@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754551AbaAWOVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:21:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56610 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754084AbaAWOVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 09:21:44 -0500
+Subject: Re: [PATCH v6 7/8] x86: patch all traced function calls using the
+ int3-based framework
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+In-Reply-To: <1390396845.16203.58.camel@pathway.suse.cz>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	 <1386690140-19941-8-git-send-email-pmladek@suse.cz>
+	 <20140115104741.2d78cee4@gandalf.local.home>
+	 <1390396845.16203.58.camel@pathway.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Jan 2014 15:21:42 +0100
+Message-ID: <1390486902.16203.161.camel@pathway.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2014 19:05, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jan 23, 2014 at 11:22:32AM +0530, Viresh Kumar wrote:
->> I think below diff might get this fixed for you, though I am not sure if it
->> breaks something else. Probably Thomas/Frederic can answer here.
->> If this looks fine I will send it formally again:
->>
->> diff --git a/kernel/timer.c b/kernel/timer.c
->> index accfd24..3a2c7fa 100644
->> --- a/kernel/timer.c
->> +++ b/kernel/timer.c
->> @@ -940,7 +940,8 @@ void add_timer_on(struct timer_list *timer, int cpu)
->>          * makes sure that a CPU on the way to stop its tick can not
->>          * evaluate the timer wheel.
->>          */
->> -       wake_up_nohz_cpu(cpu);
->> +       if (!tbase_get_deferrable(timer->base))
->> +               wake_up_nohz_cpu(cpu);
+On Wed, 2014-01-22 at 14:20 +0100, Petr Mladek wrote:
+> On Wed, 2014-01-15 at 10:47 -0500, Steven Rostedt wrote:
+> > On Tue, 10 Dec 2013 16:42:19 +0100
+> > Petr Mladek <pmladek@suse.cz> wrote:
+> > 
+> > > 
+> > > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> > > index 03abf9abf681..e5c02af3a8cc 100644
+> > > --- a/arch/x86/kernel/alternative.c
+> > > +++ b/arch/x86/kernel/alternative.c
+> > > @@ -613,7 +613,7 @@ void __kprobes text_poke_or_die(void *addr, const void *opcode, size_t len)
+> > >   * responsible for setting the patched code read-write. This is more effective
+> > >   * only when you patch many addresses at the same time.
+> > >   */
+> > > -static int text_poke_part(void *addr, const void *opcode, size_t len)
+> > > +static int notrace text_poke_part(void *addr, const void *opcode, size_t len)
+> > 
+> > I can understand why you want to not trace any of these, but again, I
+> > hate using notrace unless it is absolutely necessary. That's what the
+> > set_ftrace_notrace is for. If you don't want to trace it, simply tell
+> > the kernel not to.
+> 
+> I removed "notrace" from all locations, except for "poke_int3_handler".
+> Then I tried to switch between 7 tracers, enable and disable tracing,
+> and repeated this 100 times. It slowed down from:
+> 
+> real    3m25.837s    3m29.280s    3m27.408s
+> user    0m0.004s     0m0.004s     0m0.000s
+> sys     0m3.532s     0m3.460s     0m3.416s
+> 
+> to 
+> 
+> real    5m23.294s    5m24.944s    5m28.056s
+> user    0m0.004s     0m0.004s	  0m0.004s
+> sys     0m3.076s     0m3.180s	  0m3.396s
+> 
+> It means a change by 60%. As you know indeed, the reason is that the
+> functions used during patching are called via the int3 handler once the
+> breakpoint is added.
+> 
+> I thought about patching these functions separately, e.g. using separate
+> list or extra filters with two round patching. But I think that it is
+> not worth the extra complexity.
+> 
+> I agree that it might be worth to keep the functions traceable. So, if
+> the slowness is acceptable for you, I am fine with it as well.
 
-Wait, I got the wrong code here. That's wasn't my initial intention.
-I actually wanted to write something like this:
+I updated numbers in commit messages for the patchset v7. I am slightly
+in doubts now. I wonder if the complex iterator-based text_poke_bp_list
+is still worth the effort.
 
- -       wake_up_nohz_cpu(cpu);
- +       if (!tbase_get_deferrable(timer->base) || idle_cpu(cpu))
- +               wake_up_nohz_cpu(cpu);
+I tried to switch between 7 tracers: blk, branch, function_graph,
+wakeup_rt, irqsoff, function, and nop. Every tracer has also been
+enabled and disabled. I tested it on idle system with Intel(R) Core(TM)2
+Duo CPU E8400  @ 3.00GHz. With 500 cycles I got these times:
 
-Will that work?
+1. original code (without the patch set):
 
-> So you simply rely on the next tick to see the new timer. This should work with
-> CONFIG_NO_HZ_IDLE but not with CONFIG_NO_HZ_FULL since the target may be running
-> without the tick.
->
-> Basically, in the case of a deferrable timer you need to manage to call
-> wake_up_full_nohz_cpu() but not wake_up_idle_cpu().
->
-> It should be even possible to spare the IPI in a full dynticks CPU if it is
-> running idle. But that's an optional bonus because it require some deep
-> care on complicated races against the call to tick_nohz_idle_exit().
->
-> I also realize than when we enqueue a timer on a full nohz CPU, we should set_need_resched()
-> the target before sending the IPI if it is idle like does wake_up_idle_cpu(). Otherwise the
-> IPI will be ignored without exiting the idle loop nor reevaluating the tick on irq exit.
-> If you can fix that along the way, that will be much appreciated.
+real    18m4.545s    18m11.568s    18m14.396s
+user    0m0.004s     0m0.008s	   0m0.004s
+sys     0m17.176s    0m16.940s	   0m16.664s
 
-I haven't thought much about this currently as I have limited knowledge of
-these routines. Though the problem we were facing wasn't related to
-NO_HZ_FULL. It was just about waking up an idle cpu.
+
+2. with patchset v7 ; notrace used only for poke_int3_handler; the
+   slowness is caused by heavy using poke_int3_handler during patching
+
+real    27m11.690s    27m18.176s    27m13.844s
+user    0m0.008s      0m0.008s	    0m0.008s
+sys     0m15.916s     0m15.956s	    0m15.860s
+
+
+3. using text_poke_bp instead of text_poke_bp_list; every address
+   is patched separately; the slowness is caused by heavy using of
+   run_sync()
+
+real    34m8.042s    34m15.584s    34m5.008s
+user    0m0.004s     0m0.004s	   0m0.004s
+sys     0m16.296s    0m16.268s	   0m16.048s
+
+
+It means that the slowness caused by tracing "text_poke*" stuff is
+comparable with the slowness caused by "run_sync()". It might mean that
+"text_poke_bp_list" is not worth the added complexity.
+
+Well, the iterator-based implementation is complex but still faster.
+Also the many sync calls might be more painful for a busy system that
+heavy use of the int3 handler. So, "text_poke_bp_list" still might be
+useful.
+
+
+Best Regards,
+Petr
+
