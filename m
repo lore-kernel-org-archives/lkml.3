@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaAWBud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 20:50:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52587 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaAWBuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 20:50:32 -0500
-Date: Wed, 22 Jan 2014 17:50:31 -0800 (PST)
-Message-Id: <20140122.175031.873909526743971037.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
-Subject: Re: [PATCH net-next v5 0/9] xen-netback: TX grant mapping with
- SKBTX_DEV_ZEROCOPY instead of copy
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756064AbaAWBxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:53:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752950AbaAWBxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 20:53:01 -0500
+Date: Wed, 22 Jan 2014 20:52:41 -0500
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, khlebnikov@openvz.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG: Bad rss-counter state
+Message-ID: <20140123015241.GA947@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Sasha Levin <sasha.levin@oracle.com>, khlebnikov@openvz.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <52E06B6F.90808@oracle.com>
+ <alpine.DEB.2.02.1401221735450.26172@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401221735450.26172@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Mon, 20 Jan 2014 21:24:20 +0000
+On Wed, Jan 22, 2014 at 05:39:25PM -0800, David Rientjes wrote:
+ 
+ > > While fuzzing with trinity running inside a KVM tools guest using latest -next
+ > > kernel,
+ > > I've stumbled on a "mm: BUG: Bad rss-counter state" error which was pretty
+ > > non-obvious
+ > > in the mix of the kernel spew (why?).
+ > > 
+ > 
+ > It's not a fatal condition and there's only a few possible stack traces 
+ > that could be emitted during the exit() path.  I don't see how we could 
+ > make it more visible other than its log-level which is already KERN_ALERT.
+ > 
+ > > I've added a small BUG() after the printk() in check_mm(), and here's the full
+ > > output:
+ > > 
+ > 
+ > Worst place to add it :)  At line 562 of kernel/fork.c in linux-next 
+ > you're going to hit BUG() when there may be other counters that are also 
+ > bad and they don't get printed.  
+ > 
+ > > [  318.334905] BUG: Bad rss-counter state mm:ffff8801e6dec000 idx:0 val:1
+ > 
+ > So our mm has a non-zero MM_FILEPAGES count, but there's nothing that was 
+ > cited that would tell us what that is so there's not much to go on, unless 
+ > someone already recognizes this as another issue.  Is this reproducible on 
+ > 3.13 or only on linux-next?
 
-> A long known problem of the upstream netback implementation that on the TX
-> path (from guest to Dom0) it copies the whole packet from guest memory into
-> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
-> huge perfomance penalty. The classic kernel version of netback used grant
-> mapping, and to get notified when the page can be unmapped, it used page
-> destructors. Unfortunately that destructor is not an upstreamable solution.
-> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
-> problem, however it seems to be very invasive on the network stack's code,
-> and therefore haven't progressed very well.
-> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
-> know when the skb is freed up.
+Sasha, is this the current git tree version of Trinity ?
+(I'm wondering if yesterdays munmap changes might be tickling this bug).
 
-This series does not apply to net-next due to some other recent changes.
-
-Please respin, thanks.
+	Dave
 
