@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022AbaAWPB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:01:58 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:55685 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753817AbaAWPB5 (ORCPT
+	id S932207AbaAWPFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:05:00 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:58661 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817AbaAWPE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:01:57 -0500
-Date: Thu, 23 Jan 2014 15:01:23 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        Dave P Martin <Dave.Martin@arm.com>,
+	Thu, 23 Jan 2014 10:04:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140123133141.GD8586@lee--X1>
+References: <1390481008-23900-1-git-send-email-linus.walleij@linaro.org>
+	<20140123133141.GD8586@lee--X1>
+Date: Thu, 23 Jan 2014 16:04:57 +0100
+Message-ID: <CACRpkdZjRG=cmWHmmFNS+=guCwQoFpu8T3r4YHr6t_XihvmaWA@mail.gmail.com>
+Subject: Re: [PATCH 2/3 RESEND] mfd: tc3589x: Reform device tree probing
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>
-Subject: Re: [PATCH v2 resend 0/5] arm64: advertise availability of CRC and
- crypto instructions
-Message-ID: <20140123150123.GH27520@arm.com>
-References: <1389950591-4212-1-git-send-email-ard.biesheuvel@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389950591-4212-1-git-send-email-ard.biesheuvel@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 09:23:06AM +0000, Ard Biesheuvel wrote:
-> Ard Biesheuvel (5):
->   ARM: add support for AT_HWCAP2 ELF auxv entry
->   binfmt_elf: add ELF_HWCAP2 to compat auxv entries
->   arm64: add AT_HWCAP2 support for 32-bit compat
->   ARM: introduce HWCAP2 feature bits for ARMv8 Crypto Extensions
->   arm64: advertise ARMv8 extensions to 32-bit compat ELF binaries
+On Thu, Jan 23, 2014 at 2:31 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-I think I acked this series but probably after you posted the resend.
-Just in case I haven't:
+> Patch looks good to me. Is there any reason why we should rush this in
+> for v3.14, or is it okay to go to -next?
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+No rush, but it's been on review like forever so unless there is
+some noise from the DT people at -rc1 I'd be very happy if you
+could apply patches 1 & 2 by then.
+
+The third one can be applied out-of-order to the input tree after
+that.
+
+Yours,
+Linus Walleij
