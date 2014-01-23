@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaAWTGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34964 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaAWTGW (ORCPT
+	id S932288AbaAWTLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:11:24 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:40138 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473AbaAWTLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.12 07/27] vfs: Fix a regression in mounting proc
-Date: Thu, 23 Jan 2014 11:06:44 -0800
-Message-Id: <20140123190649.445014032@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
-References: <20140123190648.720195687@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 23 Jan 2014 14:11:20 -0500
 MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Date: Thu, 23 Jan 2014 11:11:19 -0800
+X-Google-Sender-Auth: Dk8cYcCrHk-_sMB4l3tK37-Rh4g
+Message-ID: <CA+55aFykzCSKeXgBEiFTozVqbBvJUiK2bdTDfRO80sqZZS8TXw@mail.gmail.com>
+Subject: Re: [PATCH 0/10] framebuffer patches
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hmm. Is there some reason why these are not going through Tomi? And
+cc'd to linux-fbdev for that matter?
 
-------------------
+It's not that I can't apply patches sent directly to me, but quite
+frankly, unless there is a *reason* to not go through the subsystem
+maintainer I don't really want to. Afaik Tomi has been active and
+responsive, but maybe there's some strife I don't know about..
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+             Linus
 
-commit 41301ae78a99ead04ea42672a1ab72c6f44cc81d upstream.
-
-Gao feng <gaofeng@cn.fujitsu.com> reported that commit
-e51db73532955dc5eaba4235e62b74b460709d5b
-userns: Better restrictions on when proc and sysfs can be mounted
-caused a regression on mounting a new instance of proc in a mount
-namespace created with user namespace privileges, when binfmt_misc
-is mounted on /proc/sys/fs/binfmt_misc.
-
-This is an unintended regression caused by the absolutely bogus empty
-directory check in fs_fully_visible.  The check fs_fully_visible replaced
-didn't even bother to attempt to verify proc was fully visible and
-hiding proc files with any kind of mount is rare.  So for now fix
-the userspace regression by allowing directory with nlink == 1
-as /proc/sys/fs/binfmt_misc has.
-
-I will have a better patch but it is not stable material, or
-last minute kernel material.  So it will have to wait.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
-Tested-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/namespace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2888,7 +2888,7 @@ bool fs_fully_visible(struct file_system
- 			struct inode *inode = child->mnt_mountpoint->d_inode;
- 			if (!S_ISDIR(inode->i_mode))
- 				goto next;
--			if (inode->i_nlink != 2)
-+			if (inode->i_nlink > 2)
- 				goto next;
- 		}
- 		visible = true;
-
-
+On Thu, Jan 23, 2014 at 10:17 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+> Here I'm sending some framebuffer patches for matrox, mach64, tga and a
+> fix for copying on vesafb.
+>
+> Mikulas
