@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaAWSjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:39:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34684 "EHLO
+	id S1754497AbaAWSm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:42:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34726 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaAWSjL (ORCPT
+	with ESMTP id S1753384AbaAWSjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:11 -0500
+	Thu, 23 Jan 2014 13:39:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.10 04/23] GFS2: Increase i_writecount during gfs2_setattr_chown
-Date: Thu, 23 Jan 2014 10:39:37 -0800
-Message-Id: <20140123183900.335602751@linuxfoundation.org>
+        Qingshuai Tian <qingshuai.tian@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 15/23] drm/i915: fix DDI PLLs HW state readout code
+Date: Thu, 23 Jan 2014 10:39:48 -0800
+Message-Id: <20140123183901.989207539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -29,59 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 62e96cf81988101fe9e086b2877307b6adda5197 upstream.
+commit 0882dae983707455e97479e5e904e37673517ebc upstream.
 
-This patch calls get_write_access in function gfs2_setattr_chown,
-which merely increases inode->i_writecount for the duration of the
-function. That will ensure that any file closes won't delete the
-inode's multi-block reservation while the function is running.
-It also ensures that a multi-block reservation exists when needed
-for quota change operations during the chown.
+Properly zero the refcounts and crtc->ddi_pll_set so the previous HW
+state doesn't affect the result of reading the current HW state.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+This fixes WARNs about WRPLL refcount if we have an HDMI monitor on
+HSW and then suspend/resume.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64379
+Tested-by: Qingshuai Tian <qingshuai.tian@intel.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/inode.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_ddi.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -1536,10 +1536,22 @@ static int setattr_chown(struct inode *i
- 	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
- 		ogid = ngid = NO_GID_QUOTA_CHANGE;
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -1193,12 +1193,18 @@ void intel_ddi_setup_hw_pll_state(struct
+ 	enum pipe pipe;
+ 	struct intel_crtc *intel_crtc;
  
--	error = gfs2_quota_lock(ip, nuid, ngid);
-+	error = get_write_access(inode);
- 	if (error)
- 		return error;
++	dev_priv->ddi_plls.spll_refcount = 0;
++	dev_priv->ddi_plls.wrpll1_refcount = 0;
++	dev_priv->ddi_plls.wrpll2_refcount = 0;
++
+ 	for_each_pipe(pipe) {
+ 		intel_crtc =
+ 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
  
-+	error = gfs2_rs_alloc(ip);
-+	if (error)
-+		goto out;
-+
-+	error = gfs2_rindex_update(sdp);
-+	if (error)
-+		goto out;
-+
-+	error = gfs2_quota_lock(ip, nuid, ngid);
-+	if (error)
-+		goto out;
-+
- 	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
- 	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
- 		error = gfs2_quota_check(ip, nuid, ngid);
-@@ -1566,6 +1578,8 @@ out_end_trans:
- 	gfs2_trans_end(sdp);
- out_gunlock_q:
- 	gfs2_quota_unlock(ip);
-+out:
-+	put_write_access(inode);
- 	return error;
- }
+-		if (!intel_crtc->active)
++		if (!intel_crtc->active) {
++			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
+ 			continue;
++		}
  
+ 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
+ 								 pipe);
 
 
