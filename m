@@ -1,168 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaAWH3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 02:29:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47764 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245AbaAWH3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 02:29:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,704,1384329600"; 
-   d="scan'208";a="463325651"
-Message-ID: <1390462163.10944.4.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/1] suspend: make sync() on suspend-to-RAM optional
-From: Zhang Rui <rui.zhang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: rjw@sisk.pl, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Date: Thu, 23 Jan 2014 15:29:23 +0800
-In-Reply-To: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
-References: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755563AbaAWHaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 02:30:17 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:51693 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731AbaAWHaO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 02:30:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <1389886657-32035-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
+	<1389886657-32035-1-git-send-email-srinivas.kandagatla@st.com>
+Date: Thu, 23 Jan 2014 08:30:13 +0100
+Message-ID: <CACRpkdZ7xK_2zt8XK87YrHGtimjOgVuVnGBNc11eGQcd3uySfw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] ARM:STi: STiH416: Add interrupt support for pin controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-23 at 02:11 -0500, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> Linux suspend-to-RAM was unreliable when first developed,
-> and so sys_sync() was invoked inside the kernel at the
-> start of every suspend flow.
-> 
-> Today, many devices are invoking suspend with
-> high reliability and high frequency, and they don't
-> want to be forced to pay for sync on every suspend.
-> 
-> So here we make it optional.
-> De-select CONFIG_PM_SLEEP_SYNC to delete the call entirely.
-> or keep CONFIG_PM_SLEEP and you can now clear the
-> sys/power/sleep_sync attribte to disable the sync
-> from user-space.
-> 
-> As we have had this call for a long time,
-> the default remains to keep the call, and to
-> invoke it on every suspend.
-> 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
->  kernel/power/Kconfig   |  8 ++++++++
->  kernel/power/main.c    | 33 +++++++++++++++++++++++++++++++++
->  kernel/power/power.h   |  1 +
->  kernel/power/suspend.c | 10 +++++++---
->  4 files changed, 49 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> index 2fac9cc..d2927ce 100644
-> --- a/kernel/power/Kconfig
-> +++ b/kernel/power/Kconfig
-> @@ -102,6 +102,14 @@ config PM_SLEEP_SMP
->  	depends on PM_SLEEP
->  	select HOTPLUG_CPU
->  
-> +config PM_SLEEP_SYNC
-> +	bool "Suspend to RAM starts with in-kernel call to sync()"
-> +	default y
-> +	depends on PM_SLEEP
+On Thu, Jan 16, 2014 at 4:37 PM,  <srinivas.kandagatla@st.com> wrote:
 
-this is actually a suspend specific feature, and it should depends on
-SUSPEND instead?
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> This patch adds interrupt support for STiH416 pin controllers.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-thanks,
-rui
-> +	---help---
-> +	Build a call to sync() into the Linux kernel suspend to RAM flow.
-> +	The sync can still be skipped by clearing /sys/power/sleep_sync.
-> +
->  config PM_AUTOSLEEP
->  	bool "Opportunistic sleep"
->  	depends on PM_SLEEP
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index 1d1bf63..1102871 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -71,6 +71,36 @@ static ssize_t pm_async_store(struct kobject *kobj, struct kobj_attribute *attr,
->  
->  power_attr(pm_async);
->  
-> +#ifdef CONFIG_PM_SLEEP_SYNC
-> +
-> +/* If set, sync file systems at start of suspend flow */
-> +int pm_sleep_sync_enabled = 1;
-> +
-> +static ssize_t pm_sleep_sync_show(struct kobject *kobj, struct kobj_attribute *attr,
-> +			     char *buf)
-> +{
-> +	return sprintf(buf, "%d\n", pm_sleep_sync_enabled);
-> +}
-> +
-> +static ssize_t pm_sleep_sync_store(struct kobject *kobj, struct kobj_attribute *attr,
-> +			      const char *buf, size_t n)
-> +{
-> +	unsigned long val;
-> +
-> +	if (kstrtoul(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	if (val > 1)
-> +		return -EINVAL;
-> +
-> +	pm_sleep_sync_enabled = val;
-> +	return n;
-> +}
-> +
-> +power_attr(pm_sleep_sync);
-> +
-> +#endif /* CONFIG_PM_SLEEP_SYNC */
-> +
->  #ifdef CONFIG_PM_DEBUG
->  int pm_test_level = TEST_NONE;
->  
-> @@ -592,6 +622,9 @@ static struct attribute * g[] = {
->  #ifdef CONFIG_PM_SLEEP
->  	&pm_async_attr.attr,
->  	&wakeup_count_attr.attr,
-> +#ifdef CONFIG_PM_SLEEP_SYNC
-> +	&pm_sleep_sync_attr.attr,
-> +#endif
->  #ifdef CONFIG_PM_AUTOSLEEP
->  	&autosleep_attr.attr,
->  #endif
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 7d4b7ff..dca60a7 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -200,6 +200,7 @@ static inline void suspend_test_finish(const char *label) {}
->  #ifdef CONFIG_PM_SLEEP
->  /* kernel/power/main.c */
->  extern int pm_notifier_call_chain(unsigned long val);
-> +extern int pm_sleep_sync_enabled;
->  #endif
->  
->  #ifdef CONFIG_HIGHMEM
-> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> index 62ee437..2fb2f51 100644
-> --- a/kernel/power/suspend.c
-> +++ b/kernel/power/suspend.c
-> @@ -333,9 +333,13 @@ static int enter_state(suspend_state_t state)
->  	if (state == PM_SUSPEND_FREEZE)
->  		freeze_begin();
->  
-> -	printk(KERN_INFO "PM: Syncing filesystems ... ");
-> -	sys_sync();
-> -	printk("done.\n");
-> +#ifdef CONFIG_PM_SLEEP_SYNC
-> +	if (pm_sleep_sync_enabled) {
-> +		printk(KERN_INFO "PM: Syncing filesystems ... ");
-> +		sys_sync();
-> +		printk("done.\n");
-> +	}
-> +#endif /* CONFIG_PM_SLEEP_SYNC */
->  
->  	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
->  	error = suspend_prepare(state);
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Please merge this through the ARM SoC tree with the rest of
+your device tree stuff.
 
+Yours,
+Linus Walleij
