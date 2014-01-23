@@ -1,170 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaAWLxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 06:53:30 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:39107 "EHLO
-	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaAWLx2 (ORCPT
+	id S1752224AbaAWLzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 06:55:47 -0500
+Received: from mail7-212.sinamail.sina.com.cn ([202.108.7.212]:39772 "EHLO
+	smtp.sina.com.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751499AbaAWLzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 06:53:28 -0500
-Date: Thu, 23 Jan 2014 19:53:19 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 3.14
-Message-ID: <20140123115319.GA20602@gondor.apana.org.au>
-References: <20110315145940.GA15373@gondor.apana.org.au>
- <20110520235409.GA1722@gondor.apana.org.au>
- <20110724011752.GA14373@gondor.apana.org.au>
- <20111031040952.GA19659@gondor.apana.org.au>
- <20120106041250.GA7759@gondor.apana.org.au>
- <20121004095357.GA11777@gondor.apana.org.au>
- <20121214103156.GA5840@gondor.apana.org.au>
- <20130223023331.GA11002@gondor.apana.org.au>
- <20130907035544.GA22658@gondor.apana.org.au>
- <20131107080131.GA32307@gondor.apana.org.au>
+	Thu, 23 Jan 2014 06:55:46 -0500
+X-Originating-IP: [113.101.82.219]
+X-Auth-ID: senidnl
+From: =?gb2312?B?x/65+raw?= <senidnl@sina.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Qmqtwadgjnq
+Message-ID: <201401231945560021235@sina.com>
+Date: Thu, 23 Jan 2014 19:45:56 +0800
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107080131.GA32307@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="----=iln725_1322_55078252.7527158"
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+This is a multi-part message in MIME format.
 
-Here is the crypto update for 3.14:
+------=iln725_1322_55078252.7527158
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: base64
 
-* Improved crypto_memneq helper.
-* Use cyprto_memneq in arch-specific crypto code.
-* Replaced orphaned DCP driver with Freescale MXS DCP driver.
-* Added AVX/AVX2 version of AESNI-GCM encode and decode.
-* Added AMD Cryptographic Coprocessor (CCP) driver.
-* Misc fixes.
+ytW1vbi9vP7H69SkwMDE2sjd
 
+------=iln725_1322_55078252.7527158
+Content-Type: image/gif;
+	name="=?gb2312?B?s6PW3dDBxtXJrbjW0rUuZ2lm?="
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="=?gb2312?B?s6PW3dDBxtXJrbjW0rUuZ2lm?="
 
-Please pull from
+R0lGODdhcQIcAHcAACwAAAAAcQIcAIcAAAAAADMAAGYAAJkAAMwAAP8AMwAAMzMAM2YAM5kAM8wA
+M/8AZgAAZjMAZmYAZpkAZswAZv8AmQAAmTMAmWYAmZkAmcwAmf8AzAAAzDMAzGYAzJkAzMwAzP8A
+/wAA/zMA/2YA/5kA/8wA//8zAAAzADMzAGYzAJkzAMwzAP8zMwAzMzMzM2YzM5kzM8wzM/8zZgAz
+ZjMzZmYzZpkzZswzZv8zmQAzmTMzmWYzmZkzmcwzmf8zzAAzzDMzzGYzzJkzzMwzzP8z/wAz/zMz
+/2Yz/5kz/8wz//9mAABmADNmAGZmAJlmAMxmAP9mMwBmMzNmM2ZmM5lmM8xmM/9mZgBmZjNmZmZm
+ZplmZsxmZv9mmQBmmTNmmWZmmZlmmcxmmf9mzABmzDNmzGZmzJlmzMxmzP9m/wBm/zNm/2Zm/5lm
+/8xm//+ZAACZADOZAGaZAJmZAMyZAP+ZMwCZMzOZM2aZM5mZM8yZM/+ZZgCZZjOZZmaZZpmZZsyZ
+Zv+ZmQCZmTOZmWaZmZmZmcyZmf+ZzACZzDOZzGaZzJmZzMyZzP+Z/wCZ/zOZ/2aZ/5mZ/8yZ///M
+AADMADPMAGbMAJnMAMzMAP/MMwDMMzPMM2bMM5nMM8zMM//MZgDMZjPMZmbMZpnMZszMZv/MmQDM
+mTPMmWbMmZnMmczMmf/MzADMzDPMzGbMzJnMzMzMzP/M/wDM/zPM/2bM/5nM/8zM////AAD/ADP/
+AGb/AJn/AMz/AP//MwD/MzP/M2b/M5n/M8z/M///ZgD/ZjP/Zmb/Zpn/Zsz/Zv//mQD/mTP/mWb/
+mZn/mcz/mf//zAD/zDP/zGb/zJn/zMz/zP///wD//zP//2b//5n//8z///8AAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAahqwAAABCfyQAAACgLuwAAAC+4NwAAACwgMwAAAAfMYQAAAD+Q0QA
+AABCeawAAAAZ+yQAAADqDPwAAAA9tKwAAAD4DiwAAADTXlQAAAASYSQAAACHH/QAAAAI/wBbCRQI
+oFXBggMBKFy4cKBDhggdGpQoMSJFghAtTtx4ESLGjA0NMryYkGDHkiRTPqRoUWNFlRxhypxJs6bN
+mzhz6tzJE2ZEjy9VuuxJtKjRo0iRjtw4dKVIhRwRglyKsuJSqSajkqS6cihXllmtfhU60qvIp1Kn
+ngybtK3bt3Dj2vxZFevapnLz6t2b125Kv3QPgu0I8mVhpjJDJlT7EOpfthirzv3oGKVfyYsZz2xZ
+WbFYx4pDV17rFKhnn51HRyZtmavGlkE/Zo5983BU24gh893Nu/fcqVDV0jUpuPFYrV2zHgTu8jTW
+y08H57ZbvObzrtTDZq+LmSz34bS1Bv/uvnoxZPBCS6L33lj3WfPl30+vi3dzZtDkmfvez7//XZpp
+BTcRZ06pR19Il9UHn3EZsWTWfATWNuCEylVo4Gua2QfWeucZ2OFWycWEnE8eipieh82JV6B2sV23
+E3iAkaagfzTWKNdybJn2nYqYVTfackBRptqCOA0JoVXxafhhdszF6N5j7YlXFoKSRRgkbAH+ZKSM
+IyYWIlU+xvTafSxSmFNZ6ukHm41stnmjgGNaqCJ1QeZm5pqGPTkkcA6CmNZstyHJWpxXiSUdh1s+
+eFxpobHWom5hekkceSDKiaKlcfJI4YxQAvmjexm6KeqotUVaoJOT0jYclq155iJhnDr/2FRxzTXY
+54apWojjhZ/VmWR+4Uln6YqqOtflX3AKCCCDQV3V6KklZqnTq2vWFyup2GbbLGCFyjYhZ2PhWV6K
+T3orpK3m/sflrc2aKSK5CVL6a5nzHVphpnjBG62GyqqW6GDoZfrujjm+2FDA9Mqr7cIMR+cuwKuK
+SSy+AjO1q6yEnndau8LWOqhl8gkaqKpRygqow7ACatqWKK8m2rUvW+dvgCK/F7O5zl37KHcJl9vw
+z6LmvNXMJ48s38ZooUl0ry5rKSTGh4HGMnvRoqvw00Dz9qPOWS8r28zB6df12GSXbfbZaKet9tps
+t+022tHELffcdNcd9zXXvK333nz3/+333zXaLbjgeQNu+OGI6+WqsCY2HmzjWXoab8dQSsr4vq0+
++/jQoW7urqmeB2u148je5ytZuCXNtbiVKzollRInLrviZ6Eb+bqqd5s6vsB2pxmf5y6+HuuRT13a
+toyJPWmttodK/LlotVxpkZWTPr2YrmVuLLR2zu79W4JVB/1tfP575L08Q949pCdeHvzWth58NXaw
+l9gjg7aRe/34wL7aPvWcQ1p6oFMlkN0pV4E53fcWSBT8ZG99x8rdbPxHK1CdhGa++1+9dKW+zhBn
+UYQ5IGK45RECpk9h+ovdmPwXwhdVb3UWW1WD5Pe5DRaMgTgsCq0mR0AOEctiNWRSav8Q5CnsNW90
+3+LYDtFHL5gVcIQskh+4vvK71KnuhJu6YugCiBskegdN9pNhEO81uRyacVrRAVO/7LW/yFSwZJpb
+oQN/6EPTzRBIB5yhdkAIsBGFT2IVHJ7o5oe6FLloVj3hmn2olLFAvXFBsPPiGSdJoj860oTiy92U
+PghIOfkwkHQkpPSSCDrxwYhdxhlQmCwZQ1UasGIRxJ/VDElDRJZOg5oU2gVzFUWX1e5LnrQeJYdp
+siJmsYO4lNqmqMUrXLXsd9dj5fJu+EFUeYxyvfwU92yoSUpFbJfANKH1jGdLayESg6la4i//JMLx
+pJKY8CTYIXnpM/VBMTxOQ6ad9GfSSxtaklXV6mbJGDUxE7HSkFiM5SXjWFA9Ua2NbgzXOTkYu/M1
+9I9MIsngNhqNeL6NhfsiEMsUNdCB9YyeiPLm0eCDRx9lkp0T6+exMplFUzaRjX0MGf8q6rh8zch1
+twQn5soUofv9cjrGgwnelnoNjkaDqR5tGJ1Ek8qcgUuoByoaNLUo0Fym8IkVFaAoverVHapRSy+7
+UvlkCUht+i6pyEqhJO+iQJTRFK0qI58i3cLUvvr1r1ENrGAHS9i1/RWqhU2sYhfL2MY69rGQjaxk
+1RYQADs=
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-
-Andy Shevchenko (1):
-      crypto: aesni - fix build on x86 (32bit)
-
-Cesar Eduardo Barros (1):
-      crypto: more robust crypto_memneq
-
-Daniel Borkmann (2):
-      crypto: memneq - fix for archs without efficient unaligned access
-      crypto: arch - use crypto_memneq instead of memcmp
-
-Fengguang Wu (1):
-      crytpo: ccp - fix coccinelle warnings
-
-Horia Geanta (2):
-      crypto: talitos - fix locating offending descriptor in error path
-      crypto: caam - simplify and harden key parsing
-
-Lokesh Vutla (1):
-      crypto: omap-sham - Fix Polling mode for larger blocks
-
-Marek Vasut (5):
-      crypto: ahash - Fully restore ahash request before completing
-      crypto: mxs - Remove the old DCP driver
-      crypto: mxs - Add Freescale MXS DCP driver
-      ARM: mxs: dts: Enable DCP for MXS
-      crypto: drivers - Sort drivers/crypto/Makefile
-
-Mark A. Greer (1):
-      crypto: omap-sham - Only release DMA channel if successfully requested
-
-Mathias Krause (2):
-      crypto: pcrypt - Fix wrong usage of rcu_dereference()
-      padata: Fix wrong usage of rcu_dereference()
-
-Nishanth Menon (1):
-      crypto: omap-aes - add error check for pm_runtime_get_sync
-
-Sachin Kamat (3):
-      crypto: crypto4xx - Remove redundant dev_set_drvdata
-      crypto: ccp - Remove redundant dev_set_drvdata
-      crypto: talitos - Remove redundant dev_set_drvdata
-
-Tim Chen (3):
-      crypto: aesni - AVX and AVX2 version of AESNI-GCM encode and decode
-      crypto: tcrypt - Added speed tests for AEAD crypto alogrithms in tcrypt test suite
-      crypto: aesni - fix build on x86 (32bit)
-
-Tom Lendacky (17):
-      crypto: ccp - CCP device driver and interface support
-      crypto: ccp - crypto API interface to the CCP device driver
-      crypto: ccp - CCP AES crypto API support
-      crypto: ccp - CCP AES CMAC mode crypto API support
-      crypto: ccp - CCP XTS-AES crypto API support
-      crypto: ccp - CCP SHA crypto API support
-      crytpo: ccp - CCP device driver build files
-      crypto: ccp - CCP maintainer information
-      crypto: ccp - Fix sparse warnings in ccp-crypto-sha.c
-      crypto: ccp - CCP Kconfig fixes
-      crypto: ccp - Remove user triggerable pr_err calls
-      crypto: ccp - Apply appropriate gfp_t type to memory allocations
-      crypto: ccp - Cleanup scatterlist usage
-      crypto: ccp - Check for caller result area before using it
-      crypto: ccp - Change data length declarations to u64
-      crypto: ccp - Cleanup hash invocation calls
-      crypto: ccp - CCP device enabled/disabled changes
-
-Wei Yongjun (1):
-      crypto: mxs - Fix sparse non static symbol warning
-
- .../devicetree/bindings/crypto/fsl-dcp.txt         |   17 +
- MAINTAINERS                                        |    7 +
- arch/arm/boot/dts/imx23.dtsi                       |    4 +-
- arch/arm/boot/dts/imx28.dtsi                       |    3 +-
- arch/s390/crypto/des_s390.c                        |    6 +-
- arch/x86/crypto/Makefile                           |    1 +
- arch/x86/crypto/aesni-intel_avx-x86_64.S           | 2811 ++++++++++++++++++++
- arch/x86/crypto/aesni-intel_glue.c                 |  147 +-
- crypto/Makefile                                    |    5 -
- crypto/ahash.c                                     |    5 +-
- crypto/memneq.c                                    |   80 +-
- crypto/pcrypt.c                                    |    2 +-
- crypto/tcrypt.c                                    |  270 ++
- crypto/tcrypt.h                                    |   10 +
- drivers/crypto/Kconfig                             |   39 +-
- drivers/crypto/Makefile                            |   33 +-
- drivers/crypto/amcc/crypto4xx_core.c               |    1 -
- drivers/crypto/caam/caamalg.c                      |   36 +-
- drivers/crypto/ccp/Kconfig                         |   24 +
- drivers/crypto/ccp/Makefile                        |   10 +
- drivers/crypto/ccp/ccp-crypto-aes-cmac.c           |  365 +++
- drivers/crypto/ccp/ccp-crypto-aes-xts.c            |  279 ++
- drivers/crypto/ccp/ccp-crypto-aes.c                |  369 +++
- drivers/crypto/ccp/ccp-crypto-main.c               |  432 +++
- drivers/crypto/ccp/ccp-crypto-sha.c                |  517 ++++
- drivers/crypto/ccp/ccp-crypto.h                    |  197 ++
- drivers/crypto/ccp/ccp-dev.c                       |  595 +++++
- drivers/crypto/ccp/ccp-dev.h                       |  272 ++
- drivers/crypto/ccp/ccp-ops.c                       | 2024 ++++++++++++++
- drivers/crypto/ccp/ccp-pci.c                       |  361 +++
- drivers/crypto/dcp.c                               |  903 -------
- drivers/crypto/mxs-dcp.c                           | 1100 ++++++++
- drivers/crypto/omap-aes.c                          |   16 +-
- drivers/crypto/omap-sham.c                         |   19 +-
- drivers/crypto/talitos.c                           |   23 +-
- include/linux/ccp.h                                |  537 ++++
- include/linux/compiler-gcc.h                       |    3 +
- include/linux/compiler-intel.h                     |    7 +
- include/linux/compiler.h                           |    4 +
- kernel/padata.c                                    |    2 +-
- 40 files changed, 10527 insertions(+), 1009 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+------=iln725_1322_55078252.7527158--
