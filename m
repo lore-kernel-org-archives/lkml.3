@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238AbaAWARq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:17:46 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57768 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756074AbaAWAOS (ORCPT
+	id S932260AbaAWARz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:17:55 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:18759 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243AbaAWARx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:14:18 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-61-52e05ed157ce
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 11/21] perf ui/browser: Add support to accumulated hist stat
-Date: Thu, 23 Jan 2014 09:13:55 +0900
-Message-Id: <1390436045-16830-12-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
-References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 Jan 2014 19:17:53 -0500
+X-AuditID: cbfee690-b7f266d00000287c-9e-52e05fafd796
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: drop obsolete node page when it is truncated
+Date: Thu, 23 Jan 2014 09:16:27 +0900
+Message-id: <1390436188-3237-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zI9318Q+CDC7ONbK4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6N9TT97wQrWimvd
+	3SwNjNtYuhg5OSQETCQa/3ewQ9hiEhfurWfrYuTiEBJYxijxd8J7uKLuYzuYIBLTGSVWbnnD
+	CuE0MUksvXsaKMPBwSagLbF5vwFIg4gAs8SCqecZQWqYBSYwSvxfBDKJg0NYwFnizWFGkBoW
+	AVWJF72TwTbzCrhJXDhwlhVimbbEtucTwXolBO6zScxv+8YK0SAg8W3yIbA5EgKyEpsOMEPU
+	S0ocXHGDZQKj4AJGhlWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsYISE4YQfjvQPWhxiTgcZN
+	ZJYSTc4HhnBeSbyhsZmRhamJqbGRuaUZacJK4rxqj5KChATSE0tSs1NTC1KL4otKc1KLDzEy
+	cXBKNTDOr/dfx1uvPZNxg9/6fX254ga1hx+oPFyw6bmnReSPY5Xpjf01jHrWdusitk3ft/Dd
+	foPImTsmat57/t/cQP3d2pvXWTdNvGH5rDOCoSzk0u6Nm3z+rIpguSNsZyuvO3/ht0q7qvXe
+	az8tYYvvTE09YLi461qg1eRzuw86ZKdMfGbXeFblC/MEJZbijERDLeai4kQAGEYlGlcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQd318Q+CDDbc17O4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjGjfU0/e8EK1opr3d0sDYzbWLoYOTkkBEwkuo/tYIKwxSQu3FvP1sXIxSEk
+	MJ1RYuWWN6wQThOTxNK7p4GqODjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4DUCAs4
+	S7w5zAhSwyKgKvGidzI7iM0r4CZx4cBZVohl2hLbnk9knMDIvYCRYRWjaGpBckFxUnquoV5x
+	Ym5xaV66XnJ+7iZGcIA/k9rBuLLB4hCjAAejEg9vwpf7QUKsiWXFlbmHGCU4mJVEeJMiHwQJ
+	8aYkVlalFuXHF5XmpBYfYkwG2j6RWUo0OR8YfXkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4U
+	EkhPLEnNTk0tSC2C2cLEwSnVwCj+YQN7Zol27ONtO+6zf17RHrB0bY2X15egqUbn5n1a3c0e
+	1txgcvVZkImwoftcy3f/pGzfHV0r2Prtb7CGQuXcA6037ILOLg7ad1k14eOSKc1/f8/ZYjrl
+	nM1MmXcS/Gx63yzj0npLn+QpZLDwu9m2iZVWXumWehTlMTsqsPTVD6M7UZ29bUosxRmJhlrM
+	RcWJAGEGP8u0AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print accumulated stat of a hist entry if requested.
+If a node page is trucated, we'd better drop the page in the node_inode's page
+cache for better memory footprint.
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- tools/perf/ui/browsers/hists.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/f2fs/node.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b720b92eba6e..c8e3a2e7b5c0 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -693,11 +693,26 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, _cb);	\
- }
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index bbfc655..b0649b7 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -518,6 +518,10 @@ invalidate:
+ 	F2FS_SET_SB_DIRT(sbi);
  
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field, _cb)			\
-+static u64 __hpp_get_acc_##_field(struct hist_entry *he)		\
-+{									\
-+	return he->stat_acc->_field;					\
-+}									\
-+									\
-+static int								\
-+hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
-+				struct perf_hpp *hpp,			\
-+				struct hist_entry *he)			\
-+{									\
-+	return __hpp__color_fmt(hpp, he, __hpp_get_acc_##_field, _cb);	\
-+}
+ 	f2fs_put_page(dn->node_page, 1);
 +
- __HPP_COLOR_PERCENT_FN(overhead, period, __hpp__color_callchain)
- __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_us, period_us, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, NULL)
-+__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period, NULL)
- 
- #undef __HPP_COLOR_PERCENT_FN
- 
-@@ -715,6 +730,8 @@ void hist_browser__init_hpp(void)
- 				hist_browser__hpp_color_overhead_guest_sys;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
- 				hist_browser__hpp_color_overhead_guest_us;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
-+				hist_browser__hpp_color_overhead_acc;
++	invalidate_mapping_pages(NODE_MAPPING(sbi),
++			dn->node_page->index, dn->node_page->index);
++
+ 	dn->node_page = NULL;
+ 	trace_f2fs_truncate_node(dn->inode, dn->nid, ni.blk_addr);
  }
- 
- static int hist_browser__show_entry(struct hist_browser *browser,
 -- 
-1.7.11.7
+1.8.4.474.g128a96c
 
