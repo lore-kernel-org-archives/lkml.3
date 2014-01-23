@@ -1,132 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaAWLJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 06:09:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52814 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406AbaAWLJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 06:09:22 -0500
-Date: Thu, 23 Jan 2014 12:09:20 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
- in mem_cgroup_iter
-Message-ID: <20140123110920.GE4911@dhcp22.suse.cz>
-References: <20140121083454.GA1894@dhcp22.suse.cz>
- <1390301143-9541-1-git-send-email-mhocko@suse.cz>
- <1390301143-9541-2-git-send-email-mhocko@suse.cz>
- <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org>
- <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
- <20140122082723.GB18154@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401230203070.1132@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401230203070.1132@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753091AbaAWLPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 06:15:45 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:43433 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaAWLPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 06:15:44 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: mingo@kernel.org, peterz@infradead.org
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpusets: Allocate heap only when required
+Date: Thu, 23 Jan 2014 16:45:34 +0530
+Message-Id: <8622e93b9c49c66ffdc9ef0aa8371c322718edd5.1390475530.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-01-14 02:42:58, Hugh Dickins wrote:
-> On Wed, 22 Jan 2014, Michal Hocko wrote:
-> > On Tue 21-01-14 13:18:42, Hugh Dickins wrote:
-> > [...]
-> > > We do have a confusing situation.  The hang goes back to 3.10 but takes
-> > > two different forms, because of intervening changes: in 3.10 and 3.11
-> > > mem_cgroup_iter repeatedly returns root memcg to its caller, in 3.12 and
-> > > 3.13 mem_cgroup_iter repeatedly gets NULL memcg from mem_cgroup_iter_next
-> > > and cannot return to its caller.
-> > > 
-> > > Patch 1/2 is what's needed to fix 3.10 and 3.11 (and applies correctly
-> > > to 3.11, but will have to be rediffed for 3.10 because of rearrangement
-> > > in between). 
-> > 
-> > I will backport it when it reaches stable queue.
-> 
-> Thank you.
-> 
-> Testing, at home and at work, has confirmed your two patches are good.
+update_flag() routine uses heap only when spread_flag_changed is true. Otherwise
+heap isn't used, but is allocated and freed unnecessarily.
 
-Great. Thanks a lot!
+Fix this by allocating heap only when required.
 
-> Greg's particular test on 3.11 gave convincing results, and I was helped
-> by Linus's tree of last night (df32e43a54d0) happening to be quite quick
-> to reproduce the issue on my laptop.
-> 
-> > 
-> > > Patch 2/2 is what's needed to fix 3.12 and 3.13 (but applies
-> > > correctly to neither of them because it's diffed on top of my CSS_ONLINE
-> > > fix).  Patch 1/2 is correct but unnecessary in 3.12 and 3.13: I'm unclear
-> > > whether Michal is claiming that it would also fix the hang in 3.12 and
-> > > 3.13 if we didn't have 2/2: I doubt that, and haven't tested that.
-> > 
-> > Actually both patches are needed. If we had only 2/2 then we wouldn't
-> > endless loop inside mem_cgroup_iter but we could still return root to
-> > caller all the time because mem_cgroup_iter_load would return NULL on
-> > css_tryget failure on the cached root. Or am I missing something that
-> > would prevent that?
-> 
-> In theory I agree with you; and if you're missing something, I can't see
-> it either.  But in practice, all my earlier testing of 3.12 and 3.13 was
-> just with 2/2, and I've tried without your 1/2 since: whereas I have hung
-> on 3.12 and 3.13 a convincing number of times without 2/2, I have never
-> hung on them with 2/2 without 1/2.  In practice 1/2 appears essential
-> for 3.10 and 3.11, but irrelevant for 3.12 and 3.13.
-> 
-> That could be easy to explain if there were a difference at the calling
-> end, shrink_zone(), between those releases: but I don't see that.  Odd.
-> Either we're both missing something, or my testing is even less reliable
-> than I'd thought.  But since I certainly don't dispute 1/2, it is merely
-> academic.  Though still bothersome.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Rebased over linux-next/master
 
-I would assume that it is (sc->nr_reclaimed >= sc->nr_to_reclaim) that
-helps us to back off. SWAP_CLUSTER_MAX shouldn't be that hard to get to
-before css_offline racing part reparents all the memory.
+ kernel/cpuset.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-Anyway, I would feel safer if this was pushed fixed although you haven't
-reporoduced it.
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 4410ac6..9ccdfb2 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1326,16 +1326,18 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
+ 	if (err < 0)
+ 		goto out;
  
-> > > Given how Michal has diffed this patch on top of my CSS_ONLINE one
-> > > (mm-memcg-iteration-skip-memcgs-not-yet-fully-initialized.patch),
-> > > it would be helpful if you could mark that one also for stable 3.12+,
-> > > to save us from having to rediff this one for stable.  We don't have
-> > > a concrete example of a problem it solves in the vanilla kernel, but
-> > > it makes more sense to include it than to exclude it.
-> > 
-> > Yes, I think it makes sense to queue it for 3.12+ as well because it is
-> > non intrusive and potential issues would be really subtle.
-> 
-> Before Andrew sends these all off to Linus, I should admit that there's
-> probably a refinement still to come to the CSS_ONLINE one.  I'm ashamed
-> to admit that I overlooked a much earlier comment from Greg Thelen, who
-> suggested that a memory barrier might be required.
-
-I was thinking about mem barrier while reviewing your patch but then I
-convinced myself that we should be safe also without using one when
-checking CSS_ONLINE.
-We have basically two situations.
-	- online_css when we can miss it being set which is OK because
-	  we would miss a new empty group.
-	- offline_css when we could still see the flag being set but
-	  then css_tryget would be already failing.
-
-So while all this is subtle and relies on cgroup core heavily I think we
-should be safe wrt. memory barriers.
-
-Or did you mean something else here?
-
-> I think he's right, and I'd have liked to say exactly what and where
-> before answering you now; but barriers are tricky elusive things, I've
-> not yet decided, and better report back to you now on the testing
-> result.
-> 
-> Hugh
-
-Thanks!
+-	err = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
+-	if (err < 0)
+-		goto out;
+-
+ 	balance_flag_changed = (is_sched_load_balance(cs) !=
+ 				is_sched_load_balance(trialcs));
+ 
+ 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
+ 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
+ 
++	if (spread_flag_changed) {
++		err = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
++		if (err < 0)
++			goto out;
++	}
++
+ 	mutex_lock(&callback_mutex);
+ 	cs->flags = trialcs->flags;
+ 	mutex_unlock(&callback_mutex);
+@@ -1343,9 +1345,10 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
+ 	if (!cpumask_empty(trialcs->cpus_allowed) && balance_flag_changed)
+ 		rebuild_sched_domains_locked();
+ 
+-	if (spread_flag_changed)
++	if (spread_flag_changed) {
+ 		update_tasks_flags(cs, &heap);
+-	heap_free(&heap);
++		heap_free(&heap);
++	}
+ out:
+ 	free_trial_cpuset(trialcs);
+ 	return err;
 -- 
-Michal Hocko
-SUSE Labs
+1.7.12.rc2.18.g61b472e
+
