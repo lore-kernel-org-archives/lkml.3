@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaAWJsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 04:48:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55711 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaAWJso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 04:48:44 -0500
-Date: Thu, 23 Jan 2014 10:48:04 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        dyoung@redhat.com
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140123094804.GP30183@twins.programming.kicks-ass.net>
-References: <20140122123022.GN31570@twins.programming.kicks-ass.net>
- <20140122131456.GA389@x4>
- <52DFD50E.800@oracle.com>
- <20140122183538.GA389@x4>
- <20140122184253.GN30183@twins.programming.kicks-ass.net>
- <20140122190905.GA391@x4>
- <20140122191254.GA390@x4>
- <20140122201605.GU11314@laptop.programming.kicks-ass.net>
- <20140122210814.GC9481@laptop.programming.kicks-ass.net>
- <20140122211740.GA391@x4>
+	id S1752101AbaAWJwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 04:52:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:31131 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751475AbaAWJwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 04:52:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,705,1384329600"; 
+   d="scan'208";a="463402305"
+Subject: [PATCH] isci: update version to 1.2
+To: JBottomley@Parallels.com
+From: Lukasz Dorau <lukasz.dorau@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>
+Date: Thu, 23 Jan 2014 10:52:01 +0100
+Message-ID: <20140123095201.6396.47361.stgit@gklab-154-244.igk.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140122211740.GA391@x4>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 10:17:40PM +0100, Markus Trippelsdorf wrote:
-> Yes. Thanks Peter.
-> 
+The version of isci driver has not been updated for 2 years.
+It was 83 isci commits ago. Suspend/resume support has been implemented
+and many bugs have been fixed since 1.1. Now update the version to 1.2.
 
-Ah much simpler patch that should have the same effect:
-
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
 ---
-Subject: sched/x86/tsc: Initialize multiplier to 0
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 22 Jan 2014 22:08:14 +0100
-
-Since we keep the clock value linearly continuous on frequency change,
-make sure the initial multiplier is 0, such that out initial value is
-0. Without this we compute the initial value at whatever the TSC has
-managed to reach since power-on.
-
-Fixes: 20d1c86a57762 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
-Cc: lenb@kernel.org
-Cc: rjw@rjwysocki.net
-Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: rui.zhang@intel.com
-Cc: jacob.jun.pan@linux.intel.com
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: dyoung@redhat.com
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/tsc.c |    2 +-
+ drivers/scsi/isci/init.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -180,7 +180,7 @@ static void cyc2ns_write_end(int cpu, st
+diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
+index d25d0d8..695b34e 100644
+--- a/drivers/scsi/isci/init.c
++++ b/drivers/scsi/isci/init.c
+@@ -66,7 +66,7 @@
+ #include "probe_roms.h"
  
- static void cyc2ns_data_init(struct cyc2ns_data *data)
- {
--	data->cyc2ns_mul = 1U << CYC2NS_SCALE_FACTOR;
-+	data->cyc2ns_mul = 0;
- 	data->cyc2ns_shift = CYC2NS_SCALE_FACTOR;
- 	data->cyc2ns_offset = 0;
- 	data->__count = 0;
+ #define MAJ 1
+-#define MIN 1
++#define MIN 2
+ #define BUILD 0
+ #define DRV_VERSION __stringify(MAJ) "." __stringify(MIN) "." \
+ 	__stringify(BUILD)
+
