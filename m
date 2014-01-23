@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaAWOSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:18:36 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40438 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066AbaAWOPy (ORCPT
+	id S932349AbaAWOSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:18:45 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44640 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752773AbaAWOSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:15:54 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Ingo Molnar <mingo@kernel.org>, linux-fbdev@vger.kernel.org,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 04/11] fbdev: vesafb: add dev->remove() callback
-Date: Thu, 23 Jan 2014 15:14:56 +0100
-Message-Id: <1390486503-1504-5-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+	Thu, 23 Jan 2014 09:18:43 -0500
+Date: Thu, 23 Jan 2014 14:18:08 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
+Message-ID: <20140123141808.GD27520@arm.com>
+References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
+ <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If x86-sysfb platform-devices are removed from a system, we should
-properly unload vesafb. Otherwise, we end up releasing the parent while
-our vesa framebuffer is still running. This currently works just fine, but
-will cause problems on handover to real hw. So add the ->remove() callback
-and unregister vesafb.
+On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -327,6 +327,8 @@ enum {
+>  /* distinguish syscall tables */
+>  #define __AUDIT_ARCH_64BIT 0x80000000
+>  #define __AUDIT_ARCH_LE	   0x40000000
+> +#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> +#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
+>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 79383d3..3aae602 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -284,7 +284,7 @@ config AUDIT
+>  
+>  config AUDITSYSCALL
+>  	bool "Enable system-call auditing support"
+> -	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
+> +	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- drivers/video/vesafb.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+The usual comment for such changes: could you please clean this up and
+just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
 
-diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
-index 1c7da3b..6170e7f 100644
---- a/drivers/video/vesafb.c
-+++ b/drivers/video/vesafb.c
-@@ -179,7 +179,6 @@ static void vesafb_destroy(struct fb_info *info)
- 	if (info->screen_base)
- 		iounmap(info->screen_base);
- 	release_mem_region(info->apertures->ranges[0].base, info->apertures->ranges[0].size);
--	framebuffer_release(info);
- }
- 
- static struct fb_ops vesafb_ops = {
-@@ -297,6 +296,7 @@ static int vesafb_probe(struct platform_device *dev)
- 		release_mem_region(vesafb_fix.smem_start, size_total);
- 		return -ENOMEM;
- 	}
-+	platform_set_drvdata(dev, info);
- 	info->pseudo_palette = info->par;
- 	info->par = NULL;
- 
-@@ -499,12 +499,23 @@ err:
- 	return err;
- }
- 
-+static int vesafb_remove(struct platform_device *pdev)
-+{
-+	struct fb_info *info = platform_get_drvdata(pdev);
-+
-+	unregister_framebuffer(info);
-+	framebuffer_release(info);
-+
-+	return 0;
-+}
-+
- static struct platform_driver vesafb_driver = {
- 	.driver = {
- 		.name = "vesa-framebuffer",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = vesafb_probe,
-+	.remove = vesafb_remove,
- };
- 
- module_platform_driver(vesafb_driver);
 -- 
-1.8.5.3
-
+Catalin
