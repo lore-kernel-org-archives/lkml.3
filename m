@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaAWVKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:10:15 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:33423 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaAWVKK (ORCPT
+	id S1753831AbaAWVKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:10:13 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:57315 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaAWVKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 16:10:10 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:cda5:d5b8:bf47:af28]
-In-Reply-To: <CAOesGMgtavy=gSJQeqqxQFXgSwKGekU2=vwnN2o2TeWhG0bktg@mail.gmail.com>
-References: <20140122140402.20163da276690810a1040909@canb.auug.org.au>
-	<CAKMK7uF+p96YtDo3NG4nBV5S5gYXk55p5KUOxsb+PMY+MH_Zyw@mail.gmail.com>
-	<CAOesGMgtavy=gSJQeqqxQFXgSwKGekU2=vwnN2o2TeWhG0bktg@mail.gmail.com>
-Date: Thu, 23 Jan 2014 13:10:09 -0800
-Message-ID: <CAOesGMjg5hX8KV847DPQrP94GxRPAaMxyGH48BrCyySvFxSLog@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the drm-intel tree with the drm tree
-From: Olof Johansson <olof@lixom.net>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1401231502010.891-100000@iolanthe.rowland.org>
+References: <CABdoFFeC=S6raty6d6+4sfm4zk7jiF-XnBKgxzTmEzmf6wX3CA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1401231502010.891-100000@iolanthe.rowland.org>
+Date: Thu, 23 Jan 2014 23:10:09 +0200
+Message-ID: <CABdoFFeo7+nwtNGYOQ9gqhQRLmNANCkBG0Ghxu1xFL2ZW0WzvQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: usbip: convert usbip-host driver to usb_device_driver
+From: Valentina Manea <valentina.manea.m@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
+        navinp@cdac.in, linux-usb@vger.kernel.org, ly80toro@cip.cs.fau.de,
+        josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
+        =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
+        yacine.belkadi.1@gmail.com, ke42caxa@cip.cs.fau.de
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 5:21 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Wed, Jan 22, 2014 at 2:06 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> Hi Stephen,
->>
->> On Wed, Jan 22, 2014 at 4:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Today's linux-next merge of the drm-intel tree got a conflict in
->>> drivers/gpu/drm/i915/i915_irq.c between commit abca9e454498 ("drm: Pass
->>> 'flags' from the caller to .get_scanout_position()") from the drm tree
->>> and commit d59a63ad8234 ("drm/i915: Add intel_get_crtc_scanline()") from
->>> the drm-intel tree.
->>>
->>> I fixed it up (I think - see below) and can carry the fix as necessary
->>> (no action is required).
->>
->> Oops, this patch escaped - it's only for 3.15. I've shuffled my
->> branches around now for the merge window so this should not pop up in
->> your -next tree again until 3.15 starts.
+> If you don't bind the interfaces, they will naturally bind to their
+> normal drivers on the host.  You probably don't want that to happen.
+> (Although, at the moment, I don't see how you can prevent it.)
 >
-> I just bisected boot failures on x86 chromebooks with -next to this
-> merge commit. I'll take a look tomorrow morning and make sure they're
-> gone.
 
-Yep, looks happier today.
+That's true but, the way I see USB/IP general use case, the drivers
+from the host the device is physically attached to won't even be
+actually used, since the host doesn't use the device. However, I can't
+think of a way to enforce this.
 
+> Also, in your patch, stub_probe() calls usb_choose_configuration().
+> Shouldn't that be done by the client, since the client now has access
+> to the entire device?
 
--Olof
+I think the normal user just wants things *to work*. Surely, for
+advanced user an option for choosing the configuration could be added
+but I, personally, don't see it as a necessity at this point.
+
+Thanks,
+Valentina
