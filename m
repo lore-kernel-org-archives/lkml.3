@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbaAWHW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 02:22:57 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:33024 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaAWHWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 02:22:54 -0500
+	id S1752752AbaAWH2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 02:28:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48510 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831AbaAWH2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 02:28:39 -0500
+Date: Thu, 23 Jan 2014 07:28:33 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>, gnome@rvzt.net,
+        drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
+ fail in 3.12 after exceeding vm_max_map_count
+Message-ID: <20140123072833.GC4963@suse.de>
+References: <20140122190816.GB4963@suse.de>
+ <20140122115215.f723ddf2e2a3c3d4b6ab9bf3@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1389886613-31945-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
-	<1389886613-31945-1-git-send-email-srinivas.kandagatla@st.com>
-Date: Thu, 23 Jan 2014 08:22:53 +0100
-Message-ID: <CACRpkdZV7TBP7Ac1MPVSAgJeqWtDQEuT3dHjUJHgDTeX9_datw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] pinctrl: st: Add Interrupt support.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140122115215.f723ddf2e2a3c3d4b6ab9bf3@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 16, 2014 at 4:36 PM,  <srinivas.kandagatla@st.com> wrote:
+On Wed, Jan 22, 2014 at 11:52:15AM -0800, Andrew Morton wrote:
+> On Wed, 22 Jan 2014 19:08:16 +0000 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > X-related junk is there was because I was using a headless server and
+> > xinit directly to launch gimp to reproduce the bug.
+> 
+> I've never done this.  Can you share the magic recipe for running an X
+> app in this way?
+> 
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> This patch add interrupt support to the pincontroller driver.
->
-> ST Pincontroller GPIO bank can have one of the two possible types of
-> interrupt-wirings.
->
-> First type is via irqmux, single interrupt is used by multiple gpio
-> banks. This reduces number of overall interrupts numbers required. All
-> these banks belong to a single pincontroller.
->                   _________
->                  |         |----> [gpio-bank (n)    ]
->                  |         |----> [gpio-bank (n + 1)]
->         [irqN]-- | irq-mux |----> [gpio-bank (n + 2)]
->                  |         |----> [gpio-bank (...  )]
->                  |_________|----> [gpio-bank (n + 7)]
->
-> Second type has a dedicated interrupt per gpio bank.
->
->         [irqN]----> [gpio-bank (n)]
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+The relevant part of the test script is
 
-I've applied this patch so that it won't just sit idle.
-Besides you've done a real good job on it Srinivas.
+# Build a wrapper script to launch gimp
+cat > gimp-launch.sh << EOF
+/usr/bin/gimp -i -b "(mmtests-open-image \"$FILENAME\")" -b "(gimp-quit 0)" > $LOGDIR_RESULTS/gimp-out.1 2>&1
+echo \$? > gimp-exit-code
+EOF
+chmod u+x gimp-launch.sh
 
-It'll be for v3.15 though and I'm still waiting to see if
-the device tree people say something about it.
+$TIME_CMD xinit ./gimp-launch.sh 2> $LOGDIR_RESULTS/time.1
+RETVAL=`cat gimp-exit-code`
 
-Yours,
-Linus Walleij
+It's clumsy because the application would start with no window manager
+and looking at it again, it probably was not even necessary because of
+the -i switch in gimp.
+
+Previously when I needed to automate an X app I configured the machine to
+login automatically, exported the DISPLAY variable in the test script and
+used wmctrl to detect if an application had a window displayed yet.
+
+-- 
+Mel Gorman
+SUSE Labs
