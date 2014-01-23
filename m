@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845AbaAWKea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:34:30 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58190 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511AbaAWKdN (ORCPT
+	id S1754522AbaAWKdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:33:08 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39924 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404AbaAWKdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:33:13 -0500
+	Thu, 23 Jan 2014 05:33:03 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
         linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
         Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
         olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 35/37] mtd: st_spi_fsm: Supply the W25Qxxx chip specific configuration call-back
-Date: Thu, 23 Jan 2014 10:31:23 +0000
-Message-Id: <1390473085-24626-36-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH RESEND v4 31/37] mtd: st_spi_fsm: Add the ability to read the FSM's status
+Date: Thu, 23 Jan 2014 10:31:19 +0000
+Message-Id: <1390473085-24626-32-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
 References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
@@ -25,88 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 47 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 43 insertions(+), 4 deletions(-)
+ drivers/mtd/devices/st_spi_fsm.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 88017d8..ddfff35 100644
+index eac23df..5f291dc 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -339,6 +339,7 @@ struct flash_info {
- static int stfsm_n25q_config(struct stfsm *fsm);
- static int stfsm_mx25_config(struct stfsm *fsm);
- static int stfsm_s25fl_config(struct stfsm *fsm);
-+static int stfsm_w25q_config(struct stfsm *fsm);
- 
- static struct flash_info flash_types[] = {
- 	/*
-@@ -444,10 +445,14 @@ static struct flash_info flash_types[] = {
- 		   FLASH_FLAG_READ_1_1_4        |	\
- 		   FLASH_FLAG_READ_1_4_4        |	\
- 		   FLASH_FLAG_WRITE_1_1_4)
--	{ "w25q80",  0xef4014, 0,  64 * 1024,  16, W25Q_FLAG, 80, NULL },
--	{ "w25q16",  0xef4015, 0,  64 * 1024,  32, W25Q_FLAG, 80, NULL },
--	{ "w25q32",  0xef4016, 0,  64 * 1024,  64, W25Q_FLAG, 80, NULL },
--	{ "w25q64",  0xef4017, 0,  64 * 1024, 128, W25Q_FLAG, 80, NULL },
-+	{ "w25q80",  0xef4014, 0,  64 * 1024,  16, W25Q_FLAG, 80,
-+	  stfsm_w25q_config },
-+	{ "w25q16",  0xef4015, 0,  64 * 1024,  32, W25Q_FLAG, 80,
-+	  stfsm_w25q_config },
-+	{ "w25q32",  0xef4016, 0,  64 * 1024,  64, W25Q_FLAG, 80,
-+	  stfsm_w25q_config },
-+	{ "w25q64",  0xef4017, 0,  64 * 1024, 128, W25Q_FLAG, 80,
-+	  stfsm_w25q_config },
- 
- 	/* Sentinel */
- 	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
-@@ -575,6 +580,11 @@ static struct seq_rw_config stfsm_s25fl_write4_configs[] = {
- 	{0x00,                   0,                      0, 0, 0, 0x00, 0, 0},
- };
- 
-+/*
-+ * [W25Qxxx] Configuration
-+ */
-+#define W25Q_STATUS_QE			(0x1 << 9)
-+
- static struct stfsm_seq stfsm_seq_read;		/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_write;	/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
-@@ -1433,6 +1443,35 @@ static int stfsm_s25fl_config(struct stfsm *fsm)
- 	return 0;
+@@ -778,6 +778,30 @@ static uint8_t stfsm_wait_busy(struct stfsm *fsm)
+ 	return -EIO;
  }
  
-+static int stfsm_w25q_config(struct stfsm *fsm)
++static int stfsm_read_status(struct stfsm *fsm, uint8_t cmd,
++			   uint8_t *status)
 +{
-+	uint32_t data_pads;
-+	uint16_t sta_wr;
-+	uint8_t sta1, sta2;
-+	int ret;
++	struct stfsm_seq *seq = &stfsm_seq_read_status_fifo;
++	uint32_t tmp;
 +
-+	ret = stfsm_prepare_rwe_seqs_default(fsm);
-+	if (ret)
-+		return ret;
++	dev_dbg(fsm->dev, "reading STA[%s]\n",
++		(cmd == FLASH_CMD_RDSR) ? "1" : "2");
 +
-+	/* If using QUAD mode, set QE STATUS bit */
-+	data_pads = ((stfsm_seq_read.seq_cfg >> 16) & 0x3) + 1;
-+	if (data_pads == 4) {
-+		stfsm_read_status(fsm, FLASH_CMD_RDSR, &sta1);
-+		stfsm_read_status(fsm, FLASH_CMD_RDSR2, &sta2);
++	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
++			   SEQ_OPC_CYCLES(8) |
++			   SEQ_OPC_OPCODE(cmd)),
 +
-+		sta_wr = ((uint16_t)sta2 << 8) | sta1;
++	stfsm_load_seq(fsm, seq);
 +
-+		sta_wr |= W25Q_STATUS_QE;
++	stfsm_read_fifo(fsm, &tmp, 4);
 +
-+		stfsm_write_status(fsm, sta_wr, 2);
++	*status = (uint8_t)(tmp >> 24);
 +
-+		stfsm_wait_busy(fsm);
-+	}
++	stfsm_wait_seq(fsm);
 +
 +	return 0;
 +}
 +
- static int stfsm_read(struct stfsm *fsm, uint8_t *buf, uint32_t size,
- 		      uint32_t offset)
+ static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
  {
+ 	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
 -- 
 1.8.3.2
 
