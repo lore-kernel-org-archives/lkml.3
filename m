@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaAWSjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:39:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34761 "EHLO
+	id S1754041AbaAWSkD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:40:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34753 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaAWSjY (ORCPT
+	with ESMTP id S1753593AbaAWSjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:24 -0500
+	Thu, 23 Jan 2014 13:39:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 23/23] ARM: 7938/1: OMAP4/highbank: Flush L2 cache before disabling
-Date: Thu, 23 Jan 2014 10:39:56 -0800
-Message-Id: <20140123183903.232255153@linuxfoundation.org>
+        Jon Medhurst <tixy@linaro.org>
+Subject: [PATCH 3.10 21/23] serial: amba-pl011: use port lock to guard control register access
+Date: Thu, 23 Jan 2014 10:39:54 -0800
+Message-Id: <20140123183902.882294796@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -33,51 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+From: Jon Medhurst <tixy@linaro.org>
 
-commit b25f3e1c358434bf850220e04f28eebfc45eb634 upstream.
+commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
 
-Kexec disables outer cache before jumping to reboot code, but it doesn't
-flush it explicitly. Flush is done implicitly inside of l2x0_disable().
-But some SoC's override default .disable handler and don't flush cache.
-This may lead to a corrupted memory during Kexec reboot on these
-platforms.
+When the pl011 is being used for a console, pl011_console_write forces
+the control register (CR) to enable the UART for transmission and then
+restores this to the original value afterwards. It does this while
+holding the port lock.
 
-This patch adds cache flush inside of OMAP4 and Highbank outer_cache.disable()
-handlers to make it consistent with default l2x0_disable().
+Unfortunately, when the uart is started or shutdown - say in response to
+userland using the serial device for a terminal - then this updates the
+control register without any locking.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Wang Nan <wangnan0@huawei.com>
+This means we can have
+
+  pl011_console_write   Save CR
+  pl011_startup         Initialise CR, e.g. enable receive
+  pl011_console_write   Restore old CR with receive not enabled
+
+this result is a serial port which doesn't respond to any input.
+
+A similar race in reverse could happen when the device is shutdown.
+
+We can fix these problems by taking the port lock when updating CR.
+
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-highbank/highbank.c  |    1 +
- arch/arm/mach-omap2/omap4-common.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/tty/serial/amba-pl011.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/mach-highbank/highbank.c
-+++ b/arch/arm/mach-highbank/highbank.c
-@@ -68,6 +68,7 @@ void highbank_set_cpu_jump(int cpu, void
- #ifdef CONFIG_CACHE_L2X0
- static void highbank_l2x0_disable(void)
- {
-+	outer_flush_all();
- 	/* Disable PL310 L2 Cache controller */
- 	highbank_smc1(0x102, 0x0);
- }
---- a/arch/arm/mach-omap2/omap4-common.c
-+++ b/arch/arm/mach-omap2/omap4-common.c
-@@ -162,6 +162,7 @@ void __iomem *omap4_get_l2cache_base(voi
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1543,6 +1543,8 @@ static int pl011_startup(struct uart_por
+ 	/*
+ 	 * Provoke TX FIFO interrupt into asserting.
+ 	 */
++	spin_lock_irq(&uap->port.lock);
++
+ 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 	writew(0, uap->port.membase + UART011_FBRD);
+@@ -1567,6 +1569,8 @@ static int pl011_startup(struct uart_por
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
- static void omap4_l2x0_disable(void)
- {
-+	outer_flush_all();
- 	/* Disable PL310 L2 Cache controller */
- 	omap_smc1(0x102, 0x0);
- }
++	spin_unlock_irq(&uap->port.lock);
++
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1636,11 +1640,13 @@ static void pl011_shutdown(struct uart_p
+ 	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
++	spin_lock_irq(&uap->port.lock);
+ 	cr = readw(uap->port.membase + UART011_CR);
+ 	uap->old_cr = cr;
+ 	cr &= UART011_CR_RTS | UART011_CR_DTR;
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
++	spin_unlock_irq(&uap->port.lock);
+ 
+ 	/*
+ 	 * disable break condition and fifos
 
 
