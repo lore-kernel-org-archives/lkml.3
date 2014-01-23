@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285AbaAWTgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:36:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52969 "EHLO mx1.redhat.com"
+	id S932360AbaAWTgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:36:45 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:47707 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755268AbaAWTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:36:17 -0500
-Date: Thu, 23 Jan 2014 14:36:15 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] framebuffer patches
-In-Reply-To: <CA+55aFw1AVYtin48_jpEueo2ESqDav6NZ_f15uaZOPVcufC5Vg@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1401231433440.7971@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFykzCSKeXgBEiFTozVqbBvJUiK2bdTDfRO80sqZZS8TXw@mail.gmail.com> <alpine.LRH.2.02.1401231417320.7971@file01.intranet.prod.int.rdu2.redhat.com>
- <CA+55aFw1AVYtin48_jpEueo2ESqDav6NZ_f15uaZOPVcufC5Vg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S932205AbaAWTgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 14:36:44 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: AMD microcode loading broken on 32 bit
+Date: Thu, 23 Jan 2014 14:36:41 -0500
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+References: <52DE94A9.9060505@oracle.com> <201401231354.06952.gheskett@wdtv.com> <52E168F7.7090709@oracle.com>
+In-Reply-To: <52E168F7.7090709@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401231436.42274.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 23 January 2014, Boris Ostrovsky wrote:
 
+>Right. But the (suspected) regression is from this Monday's merge
+>of early microcode loading code.
+>
+>-boris
 
-On Thu, 23 Jan 2014, Linus Torvalds wrote:
+Ahh, I missed that in the OP then.  I'll get me coat.
 
-> On Thu, Jan 23, 2014 at 11:26 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> >
-> > I posted the patches a year ago to the linux-fbdev mailing list
-> > (http://marc.info/?l=linux-fbdev&r=6&b=201208&w=2) and to Florian Tobias
-> > Schandinat who was FB maintainer at that time. I didn't get an answer and
-> > they were ignored.
-> 
-> Yes, there was a time when fbdev maintainership had responsiveness
-> issues, but that should be fixed. So I'd much rather have these go
-> through the channels.
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
 
-So I repost the patches to current fb maintainers and let them handle 
-that.
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
 
-> And btw, you actually have access to a TGA card? Trippy.
-
-Yes - on AlphaServer 233MHz.
-
->             Linus
-
-Mikulas
+It is very difficult to prophesy, especially when it pertains to the 
+future.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
