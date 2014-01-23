@@ -1,246 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaAWENw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 23:13:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:45837 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752360AbaAWEN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 23:13:26 -0500
-Date: Thu, 23 Jan 2014 15:13:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Deng-Cheng Zhu" <dengcheng.zhu@imgtec.com>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>
-Subject: linux-next: manual merge of the userns tree with the mips tree
-Message-Id: <20140123151318.2829ff70e3157df9ea6285b2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__23_Jan_2014_15_13_18_+1100_Yj_JnW5942nZCiuE"
+	id S1753524AbaAWEOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 23:14:17 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:53213 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360AbaAWEOO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 23:14:14 -0500
+References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com> <20140123030103.GC18520@pek-lwang0-d1> <CACUGKYO-k0isyOvYtRMDQoSD+QrrifzLmpMZVG9tN_cfOX5Dcw@mail.gmail.com> <20140123034644.GD18520@pek-lwang0-d1>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20140123034644.GD18520@pek-lwang0-d1>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <48909D77-0C28-4330-83F3-1DDE611C36CF@gmail.com>
+Cc: "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (11B554a)
+From: John Tobias <john.tobias.ph@gmail.com>
+Subject: Re: Internal error: Oops: 17 [#1] ARM
+Date: Wed, 22 Jan 2014 20:13:31 -0800
+To: walimis <walimisdev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Jan_2014_15_13_18_+1100_Yj_JnW5942nZCiuE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks!
 
-Hi Eric,
+I will try it tomorrow.
 
-Today's linux-next merge of the userns tree got conflicts in
-arch/mips/include/asm/vpe.h and arch/mips/kernel/vpe.c between commits
-1a2a6d7e8816 ("MIPS: APRP: Split VPE loader into separate files") and
-5792bf643865 ("MIPS: APRP: Code formatting clean-ups") from the mips tree
-and commit f58437f1f916 ("MIPS: VPE: Remove vpe_getuid and vpe_getgid")
-from the userns tree.
+Regards,
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+John
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Sent from my iPhone
 
-diff --cc arch/mips/include/asm/vpe.h
-index e0684f5f0054,0880fe8809b1..000000000000
---- a/arch/mips/include/asm/vpe.h
-+++ b/arch/mips/include/asm/vpe.h
-@@@ -9,88 -18,7 +9,87 @@@
-  #ifndef _ASM_VPE_H
-  #define _ASM_VPE_H
- =20
- +#include <linux/init.h>
- +#include <linux/list.h>
- +#include <linux/smp.h>
- +#include <linux/spinlock.h>
- +
- +#define VPE_MODULE_NAME "vpe"
- +#define VPE_MODULE_MINOR 1
- +
- +/* grab the likely amount of memory we will need. */
- +#ifdef CONFIG_MIPS_VPE_LOADER_TOM
- +#define P_SIZE (2 * 1024 * 1024)
- +#else
- +/* add an overhead to the max kmalloc size for non-striped symbols/etc */
- +#define P_SIZE (256 * 1024)
- +#endif
- +
- +#define MAX_VPES 16
- +#define VPE_PATH_MAX 256
- +
- +static inline int aprp_cpu_index(void)
- +{
- +#ifdef CONFIG_MIPS_CMP
- +	return setup_max_cpus;
- +#else
- +	extern int tclimit;
- +	return tclimit;
- +#endif
- +}
- +
- +enum vpe_state {
- +	VPE_STATE_UNUSED =3D 0,
- +	VPE_STATE_INUSE,
- +	VPE_STATE_RUNNING
- +};
- +
- +enum tc_state {
- +	TC_STATE_UNUSED =3D 0,
- +	TC_STATE_INUSE,
- +	TC_STATE_RUNNING,
- +	TC_STATE_DYNAMIC
- +};
- +
- +struct vpe {
- +	enum vpe_state state;
- +
- +	/* (device) minor associated with this vpe */
- +	int minor;
- +
- +	/* elfloader stuff */
- +	void *load_addr;
- +	unsigned long len;
- +	char *pbuffer;
- +	unsigned long plen;
-- 	unsigned int uid, gid;
- +	char cwd[VPE_PATH_MAX];
- +
- +	unsigned long __start;
- +
- +	/* tc's associated with this vpe */
- +	struct list_head tc;
- +
- +	/* The list of vpe's */
- +	struct list_head list;
- +
- +	/* shared symbol address */
- +	void *shared_ptr;
- +
- +	/* the list of who wants to know when something major happens */
- +	struct list_head notify;
- +
- +	unsigned int ntcs;
- +};
- +
- +struct tc {
- +	enum tc_state state;
- +	int index;
- +
- +	struct vpe *pvpe;	/* parent VPE */
- +	struct list_head tc;	/* The list of TC's with this VPE */
- +	struct list_head list;	/* The global list of tc's */
- +};
- +
-  struct vpe_notifications {
-  	void (*start)(int vpe);
-  	void (*stop)(int vpe);
-@@@ -98,36 -26,10 +97,34 @@@
-  	struct list_head list;
-  };
- =20
- +struct vpe_control {
- +	spinlock_t vpe_list_lock;
- +	struct list_head vpe_list;      /* Virtual processing elements */
- +	spinlock_t tc_list_lock;
- +	struct list_head tc_list;       /* Thread contexts */
- +};
- +
- +extern unsigned long physical_memsize;
- +extern struct vpe_control vpecontrol;
- +extern const struct file_operations vpe_fops;
- +
- +int vpe_notify(int index, struct vpe_notifications *notify);
- +
- +void *vpe_get_shared(int index);
-- int vpe_getuid(int index);
-- int vpe_getgid(int index);
- +char *vpe_getcwd(int index);
- +
- +struct vpe *get_vpe(int minor);
- +struct tc *get_tc(int index);
- +struct vpe *alloc_vpe(int minor);
- +struct tc *alloc_tc(int index);
- +void release_vpe(struct vpe *v);
- =20
- -extern int vpe_notify(int index, struct vpe_notifications *notify);
- +void *alloc_progmem(unsigned long len);
- +void release_progmem(void *ptr);
- =20
- -extern void *vpe_get_shared(int index);
- -extern char *vpe_getcwd(int index);
- +int __weak vpe_run(struct vpe *v);
- +void cleanup_tc(struct tc *tc);
- =20
- +int __init vpe_module_init(void);
- +void __exit vpe_module_exit(void);
-  #endif /* _ASM_VPE_H */
-diff --cc arch/mips/kernel/vpe.c
-index 42d3ca08bd28,2d5c142bad67..000000000000
---- a/arch/mips/kernel/vpe.c
-+++ b/arch/mips/kernel/vpe.c
-@@@ -899,35 -1262,14 +896,13 @@@ void *vpe_get_shared(int index
- =20
-  	return v->shared_ptr;
-  }
- -
-  EXPORT_SYMBOL(vpe_get_shared);
- =20
-- int vpe_getuid(int index)
-- {
-- 	struct vpe *v =3D get_vpe(index);
--=20
-- 	if (v =3D=3D NULL)
-- 		return -1;
--=20
-- 	return v->uid;
-- }
-- EXPORT_SYMBOL(vpe_getuid);
--=20
-- int vpe_getgid(int index)
-- {
-- 	struct vpe *v =3D get_vpe(index);
--=20
-- 	if (v =3D=3D NULL)
-- 		return -1;
--=20
-- 	return v->gid;
-- }
-- EXPORT_SYMBOL(vpe_getgid);
--=20
-  int vpe_notify(int index, struct vpe_notifications *notify)
-  {
- -	struct vpe *v;
- +	struct vpe *v =3D get_vpe(index);
- =20
- -	if ((v =3D get_vpe(index)) =3D=3D NULL)
- +	if (v =3D=3D NULL)
-  		return -1;
- =20
-  	list_add(&notify->list, &v->notify);
-
---Signature=_Thu__23_Jan_2014_15_13_18_+1100_Yj_JnW5942nZCiuE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS4JbiAAoJEMDTa8Ir7ZwVNMMP/0eOPfxLt4cezaWI3uhJKfJV
-f4xCtHaQtHJYsAEEMUQs7/7BLE/EQyc9NXwxdmQuj2Fgo3EG88VKs2gqTkMwrb30
-QSnK8l9GTmchcEnw/eeReChhYHGQlwa/CyfvLcM0fxs6bubnBrbrQN25hiNokBKq
-OckhJatam1wjnzWybtOxR+STfgZfxobBa7jemAgp971MBx4wv0vXyaacC9OyfK8+
-r9jQI6Lav0/FcnPlNQ8Hfc8keFcX5U+NyZztiGKlu7pqNgkk3dVu3NOzcGEZgB9W
-FbvqTST2drjhJsMcl+TnSfj8dyL4WItmBzEtC1OPnHMFcXvJIhkR562JgfPp7qBe
-H4NHM53TyHfzoz7VoWrX7Em9uKaB0LnseY9QSlax5i8PBrNxlQTMXHDVVjByiBSh
-06aplNX5vsJujgyQJSHH2zimr1xW1hTKDUAOWMTZXfj2lowft37T+5jxhoaonB3r
-fNTuUUb04EUYOrk9QGcN4sM2TKQaCrha4QPWb+tS1gmtL7i9y0V9+m7K40uB22yV
-ecx9wtdPYeBSWqN44NHApqBoZKeKB2w7WH/vwVmL4lOQP4H/krz6QYNGPX534Cnn
-UgwLOyYPnSfumv6p403d4kTZAj5Otatnlx7GgEJweogAGBELaaHRpLp9GeUz76q7
-lgQsKiLKtX5UmP0RnPsJ
-=s9UY
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Jan_2014_15_13_18_+1100_Yj_JnW5942nZCiuE--
+> On Jan 22, 2014, at 7:46 PM, walimis <walimisdev@gmail.com> wrote:
+> 
+>> On Wed, Jan 22, 2014 at 07:28:55PM -0800, John Tobias wrote:
+>> Hi Liming,
+>> 
+>> Yes, I am using 4.8.1. I switched back to 4.7.3 and will test it again
+>> if I can re-produce it.
+> 
+> Hi,
+> 
+> Or you can use the latest linaro 4.8.x toolchain, which has been applied that patch:
+> 
+> http://releases.linaro.org/13.12/components/toolchain/binaries/
+> 
+> Please select this one to try:
+> 
+> gcc-linaro-arm-linux-gnueabihf-4.8-2013.12_linux.tar.bz2
+> 
+> Liming Wang
+>> 
+>> Regards,
+>> 
+>> john
+>> 
+>>> On Wed, Jan 22, 2014 at 7:01 PM, walimis <walimisdev@gmail.com> wrote:
+>>>> On Wed, Jan 22, 2014 at 08:23:36AM -0800, John Tobias wrote:
+>>>> Hello all,
+>>>> 
+>>>> I am using 3.13-rc1 kernel on iMX6SL processor. My filesystem is in
+>>>> eMMC running SDR50.
+>>>> Is anyone here encountered these problem and if there's any existing
+>>>> patch that I can get?.
+>>> hi,
+>>> 
+>>> Do you use gcc 4.8.1? If so, maybe you should look at following link
+>>> to see whether it's a similar issue.
+>>> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
+>>> 
+>>> Liming Wang
+>>> 
+>>>> 
+>>>> Regards,
+>>>> 
+>>>> john
+>>>> 
+>>>> [ 1552.394899] Unable to handle kernel NULL pointer dereference at
+>>>> virtual address 00000037
+>>>> [ 1552.403034] pgd = beef4000
+>>>> [ 1552.405855] [00000037] *pgd=bef60831, *pte=00000000, *ppte=00000000
+>>>> [ 1552.412245] Internal error: Oops: 17 [#1] ARM
+>>>> [ 1552.416627] Modules linked in: bt8xxx(O) sd8xxx(O) mlan(O)
+>>>> [ 1552.422249] CPU: 0 PID: 232 Comm: commsd Tainted: G           O 3.13.0-rc1 #7
+>>>> [ 1552.429409] task: bfbc7500 ti: bec96000 task.ti: bec96000
+>>>> [ 1552.434844] PC is at lookup_fast+0x5c/0x318
+>>>> [ 1552.439067] LR is at mark_held_locks+0x78/0x13c
+>>>> [ 1552.443622] pc : [<80101184>]    lr : [<80056e48>]    psr: a00f0013
+>>>> [ 1552.443622] sp : bec97d88  ip : 00666e6f  fp : bec97ddc
+>>>> [ 1552.455124] r10: 00000000  r9 : bec97e08  r8 : 80102d94
+>>>> [ 1552.460370] r7 : bec97e60  r6 : bf133ac8  r5 : bec97e60  r4 : bec97e00
+>>>> [ 1552.466918] r3 : bee4f01d  r2 : 00000000  r1 : ffffffff  r0 : ffffffff
+>>>> [ 1552.473471] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+>>>> [ 1552.480629] Control: 10c53c7d  Table: beef4059  DAC: 00000015
+>>>> [ 1552.486397] Process commsd (pid: 232, stack limit = 0xbec96238)
+>>>> [ 1552.492341] Stack: (0xbec97d88 to 0xbec98000)
+>>>> [ 1552.496728] 7d80:                   80102b94 80057108 bfb95310
+>>>> bf133ac8 bf15f4e8 bfb95310
+>>>> [ 1552.504936] 7da0: c08bb14d ffffffff bee4f015 00000008 bfbc7500
+>>>> bec97e08 00000000 00000041
+>>>> [ 1552.513142] 7dc0: bec97e60 bec96020 bec96000 00000000 bec97e3c
+>>>> bec97de0 80102d94 80101134
+>>>> [ 1552.521347] 7de0: bec97df8 00000000 800d982c bec96018 00000010
+>>>> bec97e00 00000000 bec97e08
+>>>> [ 1552.529553] 7e00: 8026e25c 800d97e8 bee4f000 00000ff0 80d4e3a4
+>>>> 00000001 bee4f000 bec97e60
+>>>> [ 1552.537758] 7e20: ffffff9c ffffff9c bec96000 00000000 bec97e5c
+>>>> bec97e40 801033bc 80102c70
+>>>> [ 1552.545964] 7e40: bee4f000 00000001 bec97e60 bec97f00 bec97ee4
+>>>> bec97e60 80105dc0 80103398
+>>>> [ 1552.554170] 7e60: bfb95310 bf133ac8 c08bb14d 0000000b bee4f015
+>>>> 8005992c bfb95310 bf133398
+>>>> [ 1552.562375] 7e80: bf15f4e8 00000041 00000002 0000008a 00000000
+>>>> 00000000 600f0013 bec96000
+>>>> [ 1552.570581] 7ea0: ffffffea bf8c1840 807b4430 80115444 801156e4
+>>>> 8011563c 00000008 00000000
+>>>> [ 1552.578786] 7ec0: bec97f04 733fe4e0 00000001 ffffff9c 757e3810
+>>>> bec97f40 bec97efc bec97ee8
+>>>> [ 1552.586991] 7ee0: 80105e0c 80105d68 00000000 bc950fe0 bec97f2c
+>>>> bec97f00 800faf64 80105df4
+>>>> [ 1552.595196] 7f00: 801156e4 80115420 bec97f54 733fe4e0 733ff8f0
+>>>> 733fe61c 000000c3 8000f504
+>>>> [ 1552.603402] 7f20: bec97f3c bec97f30 800fafe0 800faf1c bec97fa4
+>>>> bec97f40 800fb71c 800fafc4
+>>>> [ 1552.611608] 7f40: 8000f310 bfbc7500 733fe550 8000f458 733fe61c
+>>>> 000000c3 bec97f84 bec97f68
+>>>> [ 1552.619813] 7f60: 80056f28 800a0270 733fe550 733ff8f0 733fe61c
+>>>> 000000c3 bec97f94 bec97f88
+>>>> [ 1552.628019] 7f80: 80057110 80056f18 00000000 bec97f98 8000f458
+>>>> 733fe550 00000000 bec97fa8
+>>>> [ 1552.636226] 7fa0: 8000f280 800fb704 733fe550 733ff8f0 757e3810
+>>>> 733fe4e0 733fe550 00000003
+>>>> [ 1552.644431] 7fc0: 733fe550 733ff8f0 733fe61c 000000c3 00000000
+>>>> 00000002 733fe92c 00000200
+>>>> [ 1552.652636] 7fe0: 000000c3 733fe4d8 7579b7e5 7572e276 200f0030
+>>>> 757e3810 bfffd821 bfffdc21
+>>>> [ 1552.660828] Backtrace:
+>>>> [ 1552.663343] [<80101128>] (lookup_fast+0x0/0x318) from [<80102d94>]
+>>>> (path_lookupat+0x130/0x728)
+>>>> [ 1552.671994] [<80102c64>] (path_lookupat+0x0/0x728) from
+>>>> [<801033bc>] (filename_lookup.isra.40+0x30/0x70)
+>>>> [ 1552.681515] [<8010338c>] (filename_lookup.isra.40+0x0/0x70) from
+>>>> [<80105dc0>] (user_path_at_empty+0x64/0x8c)
+>>>> [ 1552.691361]  r7:bec97f00 r6:bec97e60 r5:00000001 r4:bee4f000
+>>>> [ 1552.697163] [<80105d5c>] (user_path_at_empty+0x0/0x8c) from
+>>>> [<80105e0c>] (user_path_at+0x24/0x2c)
+>>>> [ 1552.706053]  r8:bec97f40 r7:757e3810 r6:ffffff9c r5:00000001 r4:733fe4e0
+>>>> [ 1552.712927] [<80105de8>] (user_path_at+0x0/0x2c) from [<800faf64>]
+>>>> (vfs_fstatat+0x54/0xa8)
+>>>> [ 1552.721232] [<800faf10>] (vfs_fstatat+0x0/0xa8) from [<800fafe0>]
+>>>> (vfs_stat+0x28/0x2c)
+>>>> [ 1552.729167]  r8:8000f504 r7:000000c3 r6:733fe61c r5:733ff8f0 r4:733fe4e0
+>>>> [ 1552.736031] [<800fafb8>] (vfs_stat+0x0/0x2c) from [<800fb71c>]
+>>>> (SyS_stat64+0x24/0x40)
+>>>> [ 1552.743902] [<800fb6f8>] (SyS_stat64+0x0/0x40) from [<8000f280>]
+>>>> (ret_fast_syscall+0x0/0x48)
+>>>> [ 1552.752359]  r4:733fe550
+>>>> [ 1552.754946] Code: eb00352d e3500000 e50b0038 0a000080 (e5903038)
+>>>> [ 1552.761270] ---[ end trace 02679086a39365e8 ]---
+>>>> [ 1552.765968] Kernel panic - not syncing: Fatal exception
+>>>> 
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
