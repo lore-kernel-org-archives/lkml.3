@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaAWMwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 07:52:25 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:32897 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaAWMwY (ORCPT
+	id S1752937AbaAWMx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 07:53:57 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:49747 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaAWMx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 07:52:24 -0500
-Date: Thu, 23 Jan 2014 13:52:20 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pwm@vger.kernel.org, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] pwm: Remove obsolete HAVE_PWM Kconfig symbol
-Message-ID: <20140123125219.GC28527@ulmo.nvidia.com>
-References: <1389884494-13729-1-git-send-email-s.hauer@pengutronix.de>
+	Thu, 23 Jan 2014 07:53:56 -0500
+Date: Thu, 23 Jan 2014 04:53:16 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
+ in mem_cgroup_iter
+In-Reply-To: <20140123110920.GE4911@dhcp22.suse.cz>
+Message-ID: <alpine.LSU.2.11.1401230451490.1563@eggly.anvils>
+References: <20140121083454.GA1894@dhcp22.suse.cz> <1390301143-9541-1-git-send-email-mhocko@suse.cz> <1390301143-9541-2-git-send-email-mhocko@suse.cz> <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org> <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
+ <20140122082723.GB18154@dhcp22.suse.cz> <alpine.LSU.2.11.1401230203070.1132@eggly.anvils> <20140123110920.GE4911@dhcp22.suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
-Content-Disposition: inline
-In-Reply-To: <1389884494-13729-1-git-send-email-s.hauer@pengutronix.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 23 Jan 2014, Michal Hocko wrote:
+> On Thu 23-01-14 02:42:58, Hugh Dickins wrote:
+> > > 
+> > > Actually both patches are needed. If we had only 2/2 then we wouldn't
+> > > endless loop inside mem_cgroup_iter but we could still return root to
+> > > caller all the time because mem_cgroup_iter_load would return NULL on
+> > > css_tryget failure on the cached root. Or am I missing something that
+> > > would prevent that?
+> > 
+> > In theory I agree with you; and if you're missing something, I can't see
+> > it either.  But in practice, all my earlier testing of 3.12 and 3.13 was
+> > just with 2/2, and I've tried without your 1/2 since: whereas I have hung
+> > on 3.12 and 3.13 a convincing number of times without 2/2, I have never
+> > hung on them with 2/2 without 1/2.  In practice 1/2 appears essential
+> > for 3.10 and 3.11, but irrelevant for 3.12 and 3.13.
+> > 
+> > That could be easy to explain if there were a difference at the calling
+> > end, shrink_zone(), between those releases: but I don't see that.  Odd.
+> > Either we're both missing something, or my testing is even less reliable
+> > than I'd thought.  But since I certainly don't dispute 1/2, it is merely
+> > academic.  Though still bothersome.
+> 
+> I would assume that it is (sc->nr_reclaimed >= sc->nr_to_reclaim) that
+> helps us to back off. SWAP_CLUSTER_MAX shouldn't be that hard to get to
+> before css_offline racing part reparents all the memory.
 
---ctP54qlpMx3WjD+/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But wouldn't explain why I could see it on 3.10,11 but not on 3.12,13.
 
-On Thu, Jan 16, 2014 at 04:01:34PM +0100, Sascha Hauer wrote:
-> Before we had the PWM framework we used to have a barebone PWM api. The
-> HAVE_PWM Kconfig symbol used to be selected by the PWM drivers to specify
-> the PWM API is present in the kernel. Since the last legacy driver is gone
-> the HAVE_PWM symbol can go aswell.
->=20
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->=20
-> I suggest that Thierry as PWM Maintainer takes the patch through his tree.
-> Is that ok for you Thierry?
+Perhaps the 2/2 problem is a lot easier to hit than the 1/2 problem,
+and I mistakenly expected to see the 1/2 problem in the timescale that
+I saw the 2/2 problem; but I don't really think either is the case.
 
-Yes, that'd be my preference as well. Perhaps you can resend and add a
-few more people on Cc. In particular I'd like at least Russell's (ARM)
-and Ralf's (MIPS) Acked-by. Dmitry was already Cc'ed for input/misc.
+> 
+> Anyway, I would feel safer if this was pushed fixed although you haven't
+> reporoduced it.
 
-The patch is rather minimal, but I'd still like to give them an
-opportunity to object or at least see the patch.
+Absolutely.
 
-Thanks,
-Thierry
+> > Before Andrew sends these all off to Linus, I should admit that there's
+> > probably a refinement still to come to the CSS_ONLINE one.  I'm ashamed
+> > to admit that I overlooked a much earlier comment from Greg Thelen, who
+> > suggested that a memory barrier might be required.
+> 
+> I was thinking about mem barrier while reviewing your patch but then I
+> convinced myself that we should be safe also without using one when
+> checking CSS_ONLINE.
+> We have basically two situations.
+> 	- online_css when we can miss it being set which is OK because
+> 	  we would miss a new empty group.
+> 	- offline_css when we could still see the flag being set but
+> 	  then css_tryget would be already failing.
+> 
+> So while all this is subtle and relies on cgroup core heavily I think we
+> should be safe wrt. memory barriers.
+> 
+> Or did you mean something else here?
 
---ctP54qlpMx3WjD+/
-Content-Type: application/pgp-signature
+Something else.  My CSS_OFFLINE patch claims to prevent the iterator
+from returning an uninitialized struct mem_cgroup: if that is to be
+relied upon, then it needs to make sure that the initialization of
+the mem_cgroup is visible to the caller before the CSS_OFFLINE flag.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+kernel/cgroup.c online_css() does nowadays have an smp_wmb() buried
+in its rcu_assign_pointer(); but it's not in the right place to
+make this particular guarantee.  And an smp_rmb() needed somewhere
+too, if it doesn't already come for free somehow.
 
-iQIcBAEBAgAGBQJS4RCDAAoJEN0jrNd/PrOho8wP/iDOVWDGatEcpTOT854cLsrQ
-F62Q67hrLHWTib2u1/EntD62h3ZOIEAWp1b4KKFHE9sBUm5JMq13t/TM1hDZ01St
-LPMbqowi7Sl1JgdIu31lHlh0jn6KJ0kGJ7AI35hkhPEDxEvFJWfQJTxet88Q9BZ6
-dHMwllYJw5zis5+rMFDozq6cLZqc3dNLuZP82pz4lx0Q7d3fLZdfaVXpeTBjABY6
-uCn13ZvHhLUqOr1pKMv73aEVr2jGEP9yroBtcvccIiV3SMg3NuiaPiTSKqx9noos
-KNbfjAAKXSUN9e8+qm4B90RIHmxvW7bohm7MbUH/ukIRZy00BvByqzbAhGza9f2I
-3WJJ7dxEyE78q05UpXeE2uQMSn+AOQ5sr1rQ07LbmU17ouvJuzVDi8rZXOr34ys3
-JkCZ3WOy5PiA0c/p+b8vBN7cz/FUD1iEkXQcF8my7krBcn2az4E1bRZ0DZdfqF0b
-pXkW2mKTUiwUKcDsj59clwo5jBG/lDU+3640Tfm4UfvA8yegHOExcwxCf1wrFEXC
-xN0fKJExslMc7PJqBEe9Yd+XupploEahHvvxAINY7IwMzpmkWTf13OzTQgy9DBZX
-jz29krPIOUmI/jJzhfPTsqMkdZ6i/eSMLFCK3EzXMGebh0xigPT4nzRRZl2wgNYr
-PmRPW30DdPwOMgLlUidx
-=eoiF
------END PGP SIGNATURE-----
-
---ctP54qlpMx3WjD+/--
+Hugh
