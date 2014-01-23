@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaAWK57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:57:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2203 "EHLO mx1.redhat.com"
+	id S1753863AbaAWLAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 06:00:22 -0500
+Received: from mail-bn1lp0150.outbound.protection.outlook.com ([207.46.163.150]:47079
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026AbaAWK4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:56:47 -0500
-From: Aaron Tomlin <atomlin@redhat.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com, mingo@redhat.com,
-        oleg@redhat.com, riel@redhat.com, akpm@linux-foundation.org,
-        atomlin@redhat.com
-Subject: [RFC PATCH v5 1/2] sysctl: Make neg_one a standard constraint
-Date: Thu, 23 Jan 2014 10:56:02 +0000
-Message-Id: <1390474563-15424-2-git-send-email-atomlin@redhat.com>
-In-Reply-To: <1390474563-15424-1-git-send-email-atomlin@redhat.com>
-References: <1390474563-15424-1-git-send-email-atomlin@redhat.com>
+	id S1752868AbaAWLAU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 06:00:20 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "broonie@linaro.org" <broonie@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Subject: RE: [PATCH] ASoC: simple-card: fix simple card widgets routing
+ property name usage
+Thread-Topic: [PATCH] ASoC: simple-card: fix simple card widgets routing
+ property name usage
+Thread-Index: AQHPDcs8kQD2oClG706xXAi/otI9D5qSOExA
+Date: Thu, 23 Jan 2014 11:00:16 +0000
+Message-ID: <6982194301ae4ee48be60e23dbd79927@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 0100732B76
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(189002)(81816001)(47976001)(81686001)(76576001)(59766001)(4396001)(87266001)(79102001)(76786001)(47736001)(2201001)(83322001)(85306002)(19580405001)(87936001)(53806001)(56776001)(81342001)(50986001)(81542001)(69226001)(92566001)(49866001)(76796001)(93136001)(65816001)(33646001)(85852003)(74316001)(54356001)(74876001)(90146001)(56816005)(51856001)(47446002)(83072002)(63696002)(76482001)(46102001)(19580395003)(74502001)(2656002)(54316002)(77982001)(74366001)(80976001)(80022001)(86362001)(66066001)(93516002)(74662001)(74706001)(31966008)(94316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add neg_one to the list of standard constraints.
+Hi,
 
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
----
- kernel/sysctl.c | 1 +
- 1 file changed, 1 insertion(+)
+I'd like to know the status about this patch.
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a6047..dd531a6 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -122,6 +122,7 @@ extern int blk_iopoll_enabled;
- static int sixty = 60;
- #endif
- 
-+static int neg_one = -1;
- static int zero;
- static int __maybe_unused one = 1;
- static int __maybe_unused two = 2;
--- 
-1.8.4.2
+Thanks very much.
+
+Best Regards,
+Xiubo
+
+
+> Subject: [PATCH] ASoC: simple-card: fix simple card widgets routing property
+> name usage
+> 
+> Fix the usage of simple card widgets routing property, and make it the
+> same with simple card routing property name.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  Documentation/devicetree/bindings/sound/simple-card.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt
+> b/Documentation/devicetree/bindings/sound/simple-card.txt
+> index e9e20ec..19c84df 100644
+> --- a/Documentation/devicetree/bindings/sound/simple-card.txt
+> +++ b/Documentation/devicetree/bindings/sound/simple-card.txt
+> @@ -43,7 +43,7 @@ Example:
+>  sound {
+>  	compatible = "simple-audio-card";
+>  	simple-audio-card,format = "left_j";
+> -	simple-audio-routing =
+> +	simple-audio-card,routing =
+>  		"MIC_IN", "Mic Jack",
+>  		"Headphone Jack", "HP_OUT",
+>  		"Ext Spk", "LINE_OUT";
+> --
+> 1.8.4
+> 
 
