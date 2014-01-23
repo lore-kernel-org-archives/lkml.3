@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130AbaAWTGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34982 "EHLO
+	id S1755073AbaAWTGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:06:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaAWTGY (ORCPT
+	with ESMTP id S1752516AbaAWTGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:24 -0500
+	Thu, 23 Jan 2014 14:06:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hollmann <hollmann@in.tum.de>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.12 10/27] hwmon: (coretemp) Fix truncated name of alarm attributes
-Date: Thu, 23 Jan 2014 11:06:47 -0800
-Message-Id: <20140123190649.751972060@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.12 11/27] writeback: Fix data corruption on NFS
+Date: Thu, 23 Jan 2014 11:06:48 -0800
+Message-Id: <20140123190649.861199315@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -29,34 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 3f9aec7610b39521c7c69d754de7265f6994c194 upstream.
+commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
 
-When the core number exceeds 9, the size of the buffer storing the
-alarm attribute name is insufficient and the attribute name is
-truncated. This causes libsensors to skip these attributes as the
-truncated name is not recognized.
+Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
+a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
+mode because there we also want to wait for outstanding writeback on
+possibly clean inode. This was causing occasional data corruption issues
+on NFS because it uses sync_inode() to make sure all outstanding writes
+are flushed to the server before truncating the inode and with
+sync_inode() returning prematurely file was sometimes extended back
+by an outstanding write after it was truncated.
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+So modify the test to also check for pages under writeback in
+WB_SYNC_ALL mode.
+
+Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
+Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/coretemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fs-writeback.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in
- 
- #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
- #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
--#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
-+#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
- #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -510,13 +510,16 @@ writeback_single_inode(struct inode *ino
+ 	}
+ 	WARN_ON(inode->i_state & I_SYNC);
+ 	/*
+-	 * Skip inode if it is clean. We don't want to mess with writeback
+-	 * lists in this function since flusher thread may be doing for example
+-	 * sync in parallel and if we move the inode, it could get skipped. So
+-	 * here we make sure inode is on some writeback list and leave it there
+-	 * unless we have completely cleaned the inode.
++	 * Skip inode if it is clean and we have no outstanding writeback in
++	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
++	 * function since flusher thread may be doing for example sync in
++	 * parallel and if we move the inode, it could get skipped. So here we
++	 * make sure inode is on some writeback list and leave it there unless
++	 * we have completely cleaned the inode.
+ 	 */
+-	if (!(inode->i_state & I_DIRTY))
++	if (!(inode->i_state & I_DIRTY) &&
++	    (wbc->sync_mode != WB_SYNC_ALL ||
++	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
+ 		goto out;
+ 	inode->i_state |= I_SYNC;
+ 	spin_unlock(&inode->i_lock);
 
 
