@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaAWSE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:04:28 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58649 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547AbaAWSEY (ORCPT
+	id S1754921AbaAWSE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:04:58 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33859 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491AbaAWSEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:04:24 -0500
-Date: Thu, 23 Jan 2014 18:04:10 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-spi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Message-ID: <20140123180410.GA9571@sirena.org.uk>
-References: <20140123131936.GK17314@sirena.org.uk>
- <CAADWXX-EZm-=cUqR54bWoLyCBo16ErOpAV7DSu5Ne9bhBG532A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
-Content-Disposition: inline
-In-Reply-To: <CAADWXX-EZm-=cUqR54bWoLyCBo16ErOpAV7DSu5Ne9bhBG532A@mail.gmail.com>
-X-Cookie: But it does move!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] SPI updates for v3.14 remerged
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 23 Jan 2014 13:04:55 -0500
+Date: Thu, 23 Jan 2014 18:04:23 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+Message-ID: <20140123180423.1a62611a@www.etchedpixels.co.uk>
+In-Reply-To: <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+	<20140120100530.GY15937@n2100.arm.linux.org.uk>
+	<CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I had earlier submitted a patch [1] to remove the hard coded
+> major/minor number for Samsung UART driver, but that was rejected
+> because of userspace breakage. Without this patch, Samsung UART driver
+> can't bind to the hard-coded device node. Changing the default
+> major/minor will also not help to fix the objections raised in [1].
+> 
+> Would you please suggest a way forward?
+> 
+> [1] https://lkml.org/lkml/2013/12/27/2
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So to go and try and put this to bed properly I would suggest the
+following way forward. 
 
-On Thu, Jan 23, 2014 at 09:40:44AM -0800, Linus Torvalds wrote:
-> On Thu, Jan 23, 2014 at 5:19 AM, Mark Brown <broonie@kernel.org> wrote:
+We add
 
-> > spi: Updates for v3.14
+CONFIG_LEGACY_STATIC_TTY
 
-> gmail hates you. I just found four of your emails in my spam-box.
+Some platforms historically used static device nodes for the console
+devices. Select this if you are building a kernel for an old system which
+has a static /dev.
 
-> I don't know why, since it's not the (somewhat) common issue with bad
-> or missing SPF information. The only thing I can imagine is that gmail
-> thinks you're not you, since your "From:" line says
+Note that because some devices historically used incorrect clashing
+numbering this may prevent you building a single kernel which can be
+booted on multiple platforms.
 
->    From: Mark Brown <broonie@kernel.org>
 
-> but then the SPF is validated as coming from
-> smtp.mail=broonie@sirena.org.uk with that as a return path:
+And then we do
 
->    Return-Path: <broonie@sirena.org.uk>
+	.nr		= CONFIG_SERIAL_SAMSUNG_UARTS,
+ 	.cons		= S3C24XX_SERIAL_CONSOLE,
+ 	.dev_name	= S3C24XX_SERIAL_NAME,
+#ifdef CONFIG_LEGACY_STATIC_TTY
+	.major		= S3C24XX_SERIAL_MAJOR,
+	.minor		= S3C24XX_SERIAL_MINOR,
+#endif
 
-> so gmail may be dinging you for not using your real "From:". I dunno.
-> Nothing else looks odd about the email.
+for the afflicted ports (and anyone else who wants to migrate)
 
-Possibly - I've noticed the same problem myself in incoming non-upstream
-mail hosted on gmail, they seem to have recently introduced new checks
-there which aren't playing well with some mailing lists and e-mail
-forwarding either.  For some mails it's explicitly saying that it thinks
-it's forged.
 
-Dunno if the fact that one of the VMs that handles my outgoing mail is
-now in Japan (so I can have something a bit less laggy when I travel in
-Asia) is hurting too but that'd be a bit odd.
+We can then enable that config option for ARM (and in time for any other
+architecture that turns out to need/want it). Eventually it can go away
+(not that its exactly doing any harm if it doesnt).
 
---45Z9DzgjV8m4Oswq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Does that sound a valid way forward for everyone ?
 
-iQIcBAEBAgAGBQJS4VmXAAoJELSic+t+oim9PIgP/3wcQ/KCi2aDxAkzosX1XUQa
-kxjWPWg1AHa9pyq/uVQMMW2oC7bj0Ou9tuLoJl0uTAMxWsyrCgFO/OreheJmo6ha
-PX5bhR2Gi2VuFUvZqchRR+aQIth8zg8Eg5+e5NbsF8TAkfn5qlpoXlAA4+3tIgAz
-HuJK0o6R2CEyaSLvPLJqZjLG70S5rYYvZdmxPCV2VW153wXGqPobapEaoUw7kWGG
-JLqIcYzjCa4T0x/YXA6d6YQOTwuikk9joczAd6+KOo7IhMNT6iLPoTfJrwgW5MQi
-m6BKYE9aCq6sJjQLbdsjixuxhjHuIBvgj9fjmEIj7o4asXYLN1djxrHCww10bLcD
-CPkd/uMVbAFbXyGS11mT9gn8FW28P8QHm4Z8iJR3WGzeYP99pjiN3gE/r8HG/rH4
-dSkN6rB6sGvBNyvXRQs6x722xUw+quVB3TA7zVcdMih76CMmNSzbCDU1S+2e19if
-boW911U048qHvGKARSMtVqz2yUV1Vw7p1lTpqQt0JLqCQPyd9sxCx4tCMcFm5jGt
-pOg4+RL36ZA8e19O9wB33yuHactJy+/F5vgiT2B6cJAnGcGLJIzFH89tx6JSVZd0
-TJIiO1tVJxWCYobzVGVGW7kZwSWO5nKiHjFpzjT00mqJoelRprSUYMH9XJlmFkDL
-ptC2U5QfMOHLwK45UzXA
-=N/8A
------END PGP SIGNATURE-----
-
---45Z9DzgjV8m4Oswq--
+Alan
