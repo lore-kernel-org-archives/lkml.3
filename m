@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaAWSjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:39:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34675 "EHLO
+	id S1754821AbaAWSln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:41:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029AbaAWSjL (ORCPT
+	with ESMTP id S1753514AbaAWSjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:11 -0500
+	Thu, 23 Jan 2014 13:39:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 03/23] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-Date: Thu, 23 Jan 2014 10:39:36 -0800
-Message-Id: <20140123183900.164295451@linuxfoundation.org>
+        Damian Nowak <spam@nowaker.net>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 18/23] md/raid10: fix two bugs in handling of known-bad-blocks.
+Date: Thu, 23 Jan 2014 10:39:51 -0800
+Message-Id: <20140123183902.428863287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -31,136 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <rric@kernel.org>
+From: NeilBrown <neilb@suse.de>
 
-commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
+commit b50c259e25d9260b9108dc0c2964c26e5ecbe1c1 upstream.
 
-On AMD family 10h we see following error messages while waking up from
-S3 for all non-boot CPUs leading to a failed IBS initialization:
+If we discover a bad block when reading we split the request and
+potentially read some of it from a different device.
 
- Enabling non-boot CPUs ...
- smpboot: Booting Node 0 Processor 1 APIC 0x1
- [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
- perf: IBS APIC setup failed on cpu #1
- process: Switch to broadcast mode on CPU1
- CPU1 is up
- ...
- ACPI: Waking up from system sleep state S3
+The code path of this has two bugs in RAID10.
+1/ we get a spin_lock with _irq, but unlock without _irq!!
+2/ The calculation of 'sectors_handled' is wrong, as can be clearly
+   seen by comparison with raid1.c
 
-Reason for this is that during suspend the LVT offset for the IBS
-vector gets lost and needs to be reinialized while resuming.
+This leads to at least 2 warnings and a probable crash is a RAID10
+ever had known bad blocks.
 
-The offset is read from the IBSCTL msr. On family 10h the offset needs
-to be 1 as offset 0 is used for the MCE threshold interrupt, but
-firmware assings it for IBS to 0 too. The kernel needs to reprogram
-the vector. The msr is a readonly node msr, but a new value can be
-written via pci config space access. The reinitialization is
-implemented for family 10h in setup_ibs_ctl() which is forced during
-IBS setup.
-
-This patch fixes IBS setup after waking up from S3 by adding
-resume/supend hooks for the boot cpu which does the offset
-reinitialization.
-
-Marking it as stable to let distros pick up this fix.
-
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 856e08e23762dfb92ffc68fd0a8d228f9e152160
+Reported-by: Damian Nowak <spam@nowaker.net>
+URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   53 ++++++++++++++++++++++++++-----
- 1 file changed, 45 insertions(+), 8 deletions(-)
+ drivers/md/raid10.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -10,6 +10,7 @@
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/ptrace.h>
-+#include <linux/syscore_ops.h>
- 
- #include <asm/apic.h>
- 
-@@ -816,6 +817,18 @@ out:
- 	return ret;
- }
- 
-+static void ibs_eilvt_setup(void)
-+{
-+	/*
-+	 * Force LVT offset assignment for family 10h: The offsets are
-+	 * not assigned by the BIOS for this family, so the OS is
-+	 * responsible for doing it. If the OS assignment fails, fall
-+	 * back to BIOS settings and try to setup this.
-+	 */
-+	if (boot_cpu_data.x86 == 0x10)
-+		force_ibs_eilvt_setup();
-+}
-+
- static inline int get_ibs_lvt_offset(void)
- {
- 	u64 val;
-@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
- 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
- }
- 
-+#ifdef CONFIG_PM
-+
-+static int perf_ibs_suspend(void)
-+{
-+	clear_APIC_ibs(NULL);
-+	return 0;
-+}
-+
-+static void perf_ibs_resume(void)
-+{
-+	ibs_eilvt_setup();
-+	setup_APIC_ibs(NULL);
-+}
-+
-+static struct syscore_ops perf_ibs_syscore_ops = {
-+	.resume		= perf_ibs_resume,
-+	.suspend	= perf_ibs_suspend,
-+};
-+
-+static void perf_ibs_pm_init(void)
-+{
-+	register_syscore_ops(&perf_ibs_syscore_ops);
-+}
-+
-+#else
-+
-+static inline void perf_ibs_pm_init(void) { }
-+
-+#endif
-+
- static int __cpuinit
- perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- {
-@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
- 	if (!caps)
- 		return -ENODEV;	/* ibs not supported by the cpu */
- 
--	/*
--	 * Force LVT offset assignment for family 10h: The offsets are
--	 * not assigned by the BIOS for this family, so the OS is
--	 * responsible for doing it. If the OS assignment fails, fall
--	 * back to BIOS settings and try to setup this.
--	 */
--	if (boot_cpu_data.x86 == 0x10)
--		force_ibs_eilvt_setup();
-+	ibs_eilvt_setup();
- 
- 	if (!ibs_eilvt_valid())
- 		goto out;
- 
-+	perf_ibs_pm_init();
- 	get_online_cpus();
- 	ibs_caps = caps;
- 	/* make ibs_caps visible to other cpus: */
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1321,7 +1321,7 @@ read_again:
+ 			/* Could not read all from this device, so we will
+ 			 * need another r10_bio.
+ 			 */
+-			sectors_handled = (r10_bio->sectors + max_sectors
++			sectors_handled = (r10_bio->sector + max_sectors
+ 					   - bio->bi_sector);
+ 			r10_bio->sectors = max_sectors;
+ 			spin_lock_irq(&conf->device_lock);
+@@ -1329,7 +1329,7 @@ read_again:
+ 				bio->bi_phys_segments = 2;
+ 			else
+ 				bio->bi_phys_segments++;
+-			spin_unlock(&conf->device_lock);
++			spin_unlock_irq(&conf->device_lock);
+ 			/* Cannot call generic_make_request directly
+ 			 * as that will be queued in __generic_make_request
+ 			 * and subsequent mempool_alloc might block
 
 
