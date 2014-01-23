@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaAWCbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 21:31:16 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51880 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868AbaAWCaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755954AbaAWCaA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 Jan 2014 21:30:00 -0500
-Subject: [PATCH -tip 5/8] perf-probe: Show source level information for
- address only kprobes
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51865 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755616AbaAWC35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 21:29:57 -0500
+Subject: [PATCH -tip 4/8] perf-probe: Use the actual address instead of the
+ symbol name
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 23 Jan 2014 02:29:57 +0000
-Message-ID: <20140123022957.7206.56546.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Thu, 23 Jan 2014 02:29:55 +0000
+Message-ID: <20140123022954.7206.77940.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,170 +29,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show the source code level information for address only kprobe
-events. Currently the perf probe shows such information only
-for symbol-based probes. With this change, perf-probe correctly
-parses the address-based events and tries to find the actual
-lines of code from the debuginfo.
+Since several local symbols can have same name (e.g. t_show),
+we need to use the actual address instead of symbol name for
+those points. Note that this works only with debuginfo.
 
-E.g. without this patch;
+E.g. without this change;
+----
+# ./perf probe -a t_show \$vars
+Added new events:
+  probe:t_show         (on t_show with $vars)
+  probe:t_show_1       (on t_show with $vars)
+  probe:t_show_2       (on t_show with $vars)
+  probe:t_show_3       (on t_show with $vars)
 
-# ./perf probe -l
-  probe:t_show         (on 0xffffffff810d9720 with m v)
-  probe:t_show_1       (on 0xffffffff810e2e40 with m v t)
-  probe:t_show_2       (on 0xffffffff810ece30 with m v fmt)
-  probe:t_show_3       (on 0xffffffff810f4ad0 with m v file)
+You can now use it in all perf tools, such as:
 
-With this patch;
+        perf record -e probe:t_show_3 -aR sleep 1
+----
+OK, we have 4 different t_show()s. All functions have
+different arguments as below;
+----
+# cat /sys/kernel/debug/tracing/kprobe_events
+p:probe/t_show t_show m=%di:u64 v=%si:u64
+p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
+p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
+p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
+----
+However, all of them have been put on the *same* address.
+----
+# cat /sys/kernel/debug/kprobes/list
+ffffffff810d9720  k  t_show+0x0    [DISABLED]
+ffffffff810d9720  k  t_show+0x0    [DISABLED]
+ffffffff810d9720  k  t_show+0x0    [DISABLED]
+ffffffff810d9720  k  t_show+0x0    [DISABLED]
+----
 
-# ./perf probe -l
-  probe:t_show         (on t_show@linux-3/kernel/trace/ftrace.c with m v)
-  probe:t_show_1       (on t_show@linux-3/kernel/trace/trace.c with m v t)
-  probe:t_show_2       (on t_show@kernel/trace/trace_printk.c with m v fmt)
-  probe:t_show_3       (on t_show@kernel/trace/trace_events.c with m v file)
+With this change;
+----
+# ./perf probe -a t_show \$vars
+Added new events:
+  probe:t_show         (on t_show with $vars)
+  probe:t_show_1       (on t_show with $vars)
+  probe:t_show_2       (on t_show with $vars)
+  probe:t_show_3       (on t_show with $vars)
+
+You can now use it in all perf tools, such as:
+
+        perf record -e probe:t_show_3 -aR sleep 1
+
+# cat /sys/kernel/debug/tracing/kprobe_events
+p:probe/t_show 0xffffffff810d9720 m=%di:u64 v=%si:u64
+p:probe/t_show_1 0xffffffff810e2e40 m=%di:u64 v=%si:u64 t=%si:u64
+p:probe/t_show_2 0xffffffff810ece30 m=%di:u64 v=%si:u64 fmt=%si:u64
+p:probe/t_show_3 0xffffffff810f4ad0 m=%di:u64 v=%si:u64 file=%si:u64
+
+# cat /sys/kernel/debug/kprobes/list
+ffffffff810e2e40  k  t_show+0x0    [DISABLED]
+ffffffff810ece30  k  t_show+0x0    [DISABLED]
+ffffffff810f4ad0  k  t_show+0x0    [DISABLED]
+ffffffff810d9720  k  t_show+0x0    [DISABLED]
+----
+This time, each event is put in different address
+correctly.
+
+Note that currently this doesn't support address-based
+probe on modules (thus the probes on modules are symbol
+based), since it requires relative address probe syntax
+for kprobe-tracer, and it doesn't implemented yet.
+
+One more note, this allows us to put events on correct
+address, but --list option should be updated to show
+correct corresponding source code.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/probe-event.c |   87 ++++++++++++++++++++++++++---------------
- 1 file changed, 56 insertions(+), 31 deletions(-)
+ tools/perf/util/probe-event.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 92ab688..3470934 100644
+index 2fb4486..92ab688 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -153,7 +153,7 @@ static struct dso *kernel_get_module_dso(const char *module)
- 	struct map *map;
- 	const char *vmlinux_name;
+@@ -1529,20 +1529,27 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+ 	if (buf == NULL)
+ 		return NULL;
  
--	if (module) {
-+	if (module && strcmp(module, "kernel") != 0) {
- 		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
- 			if (strncmp(dso->short_name + 1, module,
- 				    dso->short_name_len - 2) == 0)
-@@ -220,12 +220,22 @@ out:
- static int convert_to_perf_probe_point(struct probe_trace_point *tp,
- 					struct perf_probe_point *pp)
- {
--	pp->function = strdup(tp->symbol);
-+	char buf[128];
-+	int ret;
- 
-+	if (tp->symbol) {
-+		pp->function = strdup(tp->symbol);
-+		pp->offset = tp->offset;
-+	} else {
-+		ret = e_snprintf(buf, 128, "0x%" PRIx64, (u64)tp->address);
-+		if (ret < 0)
-+			return ret;
-+		pp->function = strdup(buf);
-+		pp->offset = 0;
-+	}
- 	if (pp->function == NULL)
- 		return -ENOMEM;
- 
--	pp->offset = tp->offset;
- 	pp->retprobe = tp->retprobe;
- 
- 	return 0;
-@@ -261,28 +271,35 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- {
- 	struct symbol *sym;
- 	struct map *map;
--	u64 addr;
--	int ret = -ENOENT;
-+	u64 addr = tp->address;
-+	int ret;
- 	struct debuginfo *dinfo;
- 
--	sym = __find_kernel_function_by_name(tp->symbol, &map);
--	if (sym) {
-+	if (!addr) {
-+		sym = __find_kernel_function_by_name(tp->symbol, &map);
-+		if (!sym) {
-+			ret = -ENOENT;
-+			goto error;
-+		}
- 		addr = map->unmap_ip(map, sym->start + tp->offset);
--		pr_debug("try to find %s+%ld@%" PRIx64 "\n", tp->symbol,
--			 tp->offset, addr);
-+	}
+-	if (tev->uprobes)
+-		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s:%s",
+-				 tp->retprobe ? 'r' : 'p',
+-				 tev->group, tev->event,
++	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s ", tp->retprobe ? 'r' : 'p',
++			 tev->group, tev->event);
++	if (len <= 0)
++		goto error;
 +
-+	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
-+		 tp->module ? : "kernel");
++	/* Use the real address, except for kernel modules */
++	if (tp->address && !(tp->module && !tev->uprobes))
++		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s%s0x%lx",
++				 tp->module ?: "", tp->module ? ":" : "",
++				 tp->address);
++	else if (tev->uprobes)
++		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s:%s",
+ 				 tp->module, tp->symbol);
+ 	else
+-		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
+-				 tp->retprobe ? 'r' : 'p',
+-				 tev->group, tev->event,
++		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s%s%s+%lu",
+ 				 tp->module ?: "", tp->module ? ":" : "",
+ 				 tp->symbol, tp->offset);
  
--		dinfo = debuginfo__new_online_kernel(addr);
--		if (dinfo) {
--			ret = debuginfo__find_probe_point(dinfo,
-+	dinfo = debuginfo__new_online_kernel(addr);
-+	if (dinfo) {
-+		ret = debuginfo__find_probe_point(dinfo,
- 						 (unsigned long)addr, pp);
--			debuginfo__delete(dinfo);
--		} else {
--			pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n",
--				 addr);
--			ret = -ENOENT;
--		}
-+		debuginfo__delete(dinfo);
-+	} else {
-+		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n",
-+			 addr);
-+		ret = -ENOENT;
- 	}
-+
- 	if (ret <= 0) {
-+error:
- 		pr_debug("Failed to find corresponding probes from "
- 			 "debuginfo. Use kprobe event information.\n");
- 		return convert_to_perf_probe_point(tp, pp);
-@@ -745,10 +762,13 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- {
- 	struct symbol *sym;
+-	if (len <= 0)
++	if (ret <= 0)
+ 		goto error;
++	len += ret;
  
--	sym = __find_kernel_function_by_name(tp->symbol, NULL);
--	if (!sym) {
--		pr_err("Failed to find symbol %s in kernel.\n", tp->symbol);
--		return -ENOENT;
-+	if (tp->symbol) {
-+		sym = __find_kernel_function_by_name(tp->symbol, NULL);
-+		if (!sym) {
-+			pr_err("Failed to find symbol %s in kernel.\n",
-+				tp->symbol);
-+			return -ENOENT;
-+		}
- 	}
- 
- 	return convert_to_perf_probe_point(tp, pp);
-@@ -1278,16 +1298,21 @@ static int parse_probe_trace_command(const char *cmd,
- 	} else
- 		p = argv[1];
- 	fmt1_str = strtok_r(p, "+", &fmt);
--	tp->symbol = strdup(fmt1_str);
--	if (tp->symbol == NULL) {
--		ret = -ENOMEM;
--		goto out;
-+	if (fmt1_str[0] == '0')	/* only the address started with 0x */
-+		tp->address = strtoul(fmt1_str, NULL, 0);
-+	else {
-+		/* Only the symbol-based probe has offset */
-+		tp->symbol = strdup(fmt1_str);
-+		if (tp->symbol == NULL) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		fmt2_str = strtok_r(NULL, "", &fmt);
-+		if (fmt2_str == NULL)
-+			tp->offset = 0;
-+		else
-+			tp->offset = strtoul(fmt2_str, NULL, 10);
- 	}
--	fmt2_str = strtok_r(NULL, "", &fmt);
--	if (fmt2_str == NULL)
--		tp->offset = 0;
--	else
--		tp->offset = strtoul(fmt2_str, NULL, 10);
- 
- 	tev->nargs = argc - 2;
- 	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
+ 	for (i = 0; i < tev->nargs; i++) {
+ 		ret = synthesize_probe_trace_arg(&tev->args[i], buf + len,
 
 
