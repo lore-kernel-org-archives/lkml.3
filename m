@@ -1,103 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaAWDV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 22:21:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44116 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaAWDV4 (ORCPT
+	id S1753166AbaAWDZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 22:25:46 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:37423 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaAWDZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 22:21:56 -0500
-Date: Wed, 22 Jan 2014 19:21:49 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, roger.pau@citrix.com,
-        Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [V0 PATCH] xen/pvh: set some cr flags upon vcpu start
-Message-ID: <20140122192149.5f9205f7@mantra.us.oracle.com>
-In-Reply-To: <20140120150930.GA4598@phenom.dumpdata.com>
-References: <1390011895-28123-1-git-send-email-mukesh.rathor@oracle.com>
-	<1390011895-28123-2-git-send-email-mukesh.rathor@oracle.com>
-	<20140120150930.GA4598@phenom.dumpdata.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 22 Jan 2014 22:25:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOMZO5BhZspH3FfDh+3z0xBpgxWEHK1Fa5KOYsN5og2VfGktXQ@mail.gmail.com>
+References: <CACUGKYPXficVuqDgy6_Tnh9b-VOXDNK=+nqb6U5O6NpcZOGGpQ@mail.gmail.com>
+	<20140122164100.GE15937@n2100.arm.linux.org.uk>
+	<CACUGKYPakuAGOWb+RetqNhEBvRP-+Pmtu2_4a2zuV0bFR0QJRA@mail.gmail.com>
+	<CAOMZO5BhZspH3FfDh+3z0xBpgxWEHK1Fa5KOYsN5og2VfGktXQ@mail.gmail.com>
+Date: Wed, 22 Jan 2014 19:25:42 -0800
+Message-ID: <CACUGKYMwFVKqQAVoXkE8vgzYXQXnZYtsYeHEDY20XiqcT-Drnw@mail.gmail.com>
+Subject: Re: Internal error: Oops: 17 [#1] ARM
+From: John Tobias <john.tobias.ph@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dong Aisheng <b29396@freescale.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: multipart/mixed; boundary=001a11c26818e141d504f09acb54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jan 2014 10:09:30 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+--001a11c26818e141d504f09acb54
+Content-Type: text/plain; charset=ISO-8859-1
 
-> On Fri, Jan 17, 2014 at 06:24:55PM -0800, Mukesh Rathor wrote:
-> > pvh was designed to start with pv flags, but a commit in xen tree
-> 
-> Thank you for posting this!
-> 
-> > 51e2cac257ec8b4080d89f0855c498cbbd76a5e5 removed some of the flags
-> > as
-> 
-> You need to always include the title of said commit.
-> 
-> > they are not necessary. As a result, these CR flags must be set in
-> > the guest.
-> 
-> I sent out replies to this over the weekend but somehow they are not
-> showing up.
-> 
+Hi Fabio,
 
-Well, they finally showed up today... US mail must be slow :)...
+Attached are the two patch files that I applied in the 3.13 released
+so that the kernel will detect my eMMC in DDR50.
+(let me correct my previous email, I was mentioning SDR50 but it
+should be DDR50).
+eMMC info:
 
+clock:          52000000 Hz
+actual clock:   49500000 Hz
+vdd:            21 (3.3 ~ 3.4 V)
+bus mode:       2 (push-pull)
+chip select:    0 (don't care)
+power mode:     2 (on)
+bus width:      3 (8 bits)
+timing spec:    1 (mmc high-speed)
+signal voltage: 0 (3.30 V)
 
-> 
-> > +
-> > +	if (!cpu)
-> > +		return;
-> 
-> And what happens if don't have this check? Will be bad if do multiple
-> cr4 writes?
+I reboot my device often and it shows during the reboot.
 
-no, but just confuses the reader/debugger of the code IMO :)... 
+Regards,
+
+john
 
 
-> Fyi, this (cr4) should have been a seperate patch. I fixed it up that
-> way.
-> > +	/*
-> > +	 * Unlike PV, for pvh xen does not set: PSE PGE OSFXSR
-> > OSXMMEXCPT
-> > +	 * For BSP, PSE PGE will be set in probe_page_size_mask(),
-> > for AP
-> > +	 * set them here. For all, OSFXSR OSXMMEXCPT will be set
-> > in fpu_init
-> > +	 */
-> > +	if (cpu_has_pse)
-> > +		set_in_cr4(X86_CR4_PSE);
-> > +
-> > +	if (cpu_has_pge)
-> > +		set_in_cr4(X86_CR4_PGE);
-> > +}
-> 
-> Seperate patch and since the PGE part is more complicated that just
-> setting the CR4 - you also have to tweak this:
-> 
-> 1512         /* Prevent unwanted bits from being set in PTEs.
-> */ 1513         __supported_pte_mask &=
-> ~_PAGE_GLOBAL;                                  
-> 
-> I think it should be done once we have actually confirmed that you can
-> do 2MB pages within the guest. (might need some more tweaking?)
 
-Umm... well, the above is just setting the PSE and PGE in the APs, the
-BSP is already doing that in probe_page_size_mask, and setting 
-__supported_pte_mask which needs to be set just once. So, because it's
-being set in the BSP, it's already broken/untested if we add expose of PGE
-from xen to a linux PVH guest... 
 
-IOW, leaving above is no more harm, or we should 'if (pvh)' the code in 
-probe_page_size_mask() for PSE, and wait till we can test it...
+On Wed, Jan 22, 2014 at 6:28 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> On Wed, Jan 22, 2014 at 9:49 PM, John Tobias <john.tobias.ph@gmail.com> wrote:
+>> Hello all,
+>>
+>> Just to confirm that the error I posted previously exist in 3.13
+>> released. Just be noted that some patches related to eMMC/sdhci has
+>> been applied in order to boot the 3.13 on my board.
+>> Addition to that, I was getting additional errors (please see below):
+>> - It happened during the reboot.
+>>
+>> Cc'ng Dong Aisheng.
+>
+> What are the steps to reproduce this? Which SoC are you using?
+>
+> Regards,
+>
+> Fabio Estevam
 
-thanks
-Mukesh
+--001a11c26818e141d504f09acb54
+Content-Type: application/octet-stream; name="sdhci-esdhc-imx.patch"
+Content-Disposition: attachment; filename="sdhci-esdhc-imx.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hqrg6nb90
 
+LS0tIC4uLy4uL2xpbnV4LTMuMTMvZHJpdmVycy9tbWMvaG9zdC9zZGhjaS1lc2RoYy1pbXguYwky
+MDE0LTAxLTE5IDE4OjQwOjA3LjAwMDAwMDAwMCAtMDgwMAorKysgZHJpdmVycy9tbWMvaG9zdC9z
+ZGhjaS1lc2RoYy1pbXguYwkyMDE0LTAxLTIyIDE4OjUxOjA3LjA1MTI3NTUxOCAtMDgwMApAQCAt
+Mzg1LDYgKzM4NSwyMiBAQAogCQlyZXR1cm4gcmV0OwogCX0KIAorCWlmICh1bmxpa2VseShyZWcg
+PT0gU0RIQ0lfVFJBTlNGRVJfTU9ERSkpIHsKKwkJaWYgKGVzZGhjX2lzX3VzZGhjKGlteF9kYXRh
+KSkgeworCQkJdTMyIG0gPSByZWFkbChob3N0LT5pb2FkZHIgKyBFU0RIQ19NSVhfQ1RSTCk7CisJ
+CQlyZXQgPSBtICYgRVNESENfTUlYX0NUUkxfU0RIQ0lfTUFTSzsKKwkJCS8qIFN3YXAgQUMyMyBi
+aXQgKi8KKwkJCWlmIChtICYgRVNESENfTUlYX0NUUkxfQUMyM0VOKSB7CisJCQkJcmV0ICY9IH5F
+U0RIQ19NSVhfQ1RSTF9BQzIzRU47CisJCQkJcmV0IHw9IFNESENJX1RSTlNfQVVUT19DTUQyMzsK
+KwkJCX0KKwkJfSBlbHNlIHsKKwkJCXJldCA9IHJlYWR3KGhvc3QtPmlvYWRkciArIFNESENJX1RS
+QU5TRkVSX01PREUpOworCQl9CisKKwkJcmV0dXJuIHJldDsKKwl9CisKIAlyZXR1cm4gcmVhZHco
+aG9zdC0+aW9hZGRyICsgcmVnKTsKIH0KIApAQCAtNTU4LDE5ICs1NzQsMTcgQEAKIAlzdHJ1Y3Qg
+cGx0Zm1faW14X2RhdGEgKmlteF9kYXRhID0gcGx0Zm1faG9zdC0+cHJpdjsKIAlzdHJ1Y3QgZXNk
+aGNfcGxhdGZvcm1fZGF0YSAqYm9hcmRkYXRhID0gJmlteF9kYXRhLT5ib2FyZGRhdGE7CiAKLQl1
+MzIgZl9ob3N0ID0gY2xrX2dldF9yYXRlKHBsdGZtX2hvc3QtPmNsayk7Ci0KLQlpZiAoYm9hcmRk
+YXRhLT5mX21heCAmJiAoYm9hcmRkYXRhLT5mX21heCA8IGZfaG9zdCkpCisJaWYgKGJvYXJkZGF0
+YS0+Zl9tYXggJiYgKGJvYXJkZGF0YS0+Zl9tYXggPCBwbHRmbV9ob3N0LT5jbG9jaykpCiAJCXJl
+dHVybiBib2FyZGRhdGEtPmZfbWF4OwogCWVsc2UKLQkJcmV0dXJuIGZfaG9zdDsKKwkJcmV0dXJu
+IHBsdGZtX2hvc3QtPmNsb2NrOwogfQogCiBzdGF0aWMgdW5zaWduZWQgaW50IGVzZGhjX3BsdGZt
+X2dldF9taW5fY2xvY2soc3RydWN0IHNkaGNpX2hvc3QgKmhvc3QpCiB7CiAJc3RydWN0IHNkaGNp
+X3BsdGZtX2hvc3QgKnBsdGZtX2hvc3QgPSBzZGhjaV9wcml2KGhvc3QpOwogCi0JcmV0dXJuIGNs
+a19nZXRfcmF0ZShwbHRmbV9ob3N0LT5jbGspIC8gMjU2IC8gMTY7CisJcmV0dXJuIHBsdGZtX2hv
+c3QtPmNsb2NrIC8gMjU2IC8gMTY7CiB9CiAKIHN0YXRpYyBpbmxpbmUgdm9pZCBlc2RoY19wbHRm
+bV9zZXRfY2xvY2soc3RydWN0IHNkaGNpX2hvc3QgKmhvc3QsCkBAIC01NzgsNyArNTkyLDcgQEAK
+IHsKIAlzdHJ1Y3Qgc2RoY2lfcGx0Zm1faG9zdCAqcGx0Zm1faG9zdCA9IHNkaGNpX3ByaXYoaG9z
+dCk7CiAJc3RydWN0IHBsdGZtX2lteF9kYXRhICppbXhfZGF0YSA9IHBsdGZtX2hvc3QtPnByaXY7
+Ci0JdW5zaWduZWQgaW50IGhvc3RfY2xvY2sgPSBjbGtfZ2V0X3JhdGUocGx0Zm1faG9zdC0+Y2xr
+KTsKKwl1bnNpZ25lZCBpbnQgaG9zdF9jbG9jayA9IHBsdGZtX2hvc3QtPmNsb2NrOwogCWludCBw
+cmVfZGl2ID0gMjsKIAlpbnQgZGl2ID0gMTsKIAl1MzIgdGVtcCwgdmFsOwpAQCAtODA5LDYgKzgy
+Myw3IEBACiAJCXBpbmN0cmwgPSBpbXhfZGF0YS0+cGluc18xMDBtaHo7CiAJCWJyZWFrOwogCWNh
+c2UgTU1DX1RJTUlOR19VSFNfU0RSMTA0OgorCWNhc2UgTU1DX1RJTUlOR19NTUNfSFMyMDA6CiAJ
+CXBpbmN0cmwgPSBpbXhfZGF0YS0+cGluc18yMDBtaHo7CiAJCWJyZWFrOwogCWRlZmF1bHQ6CkBA
+IC04MzYsNiArODUxLDcgQEAKIAkJaW14X2RhdGEtPnVoc19tb2RlID0gU0RIQ0lfQ1RSTF9VSFNf
+U0RSNTA7CiAJCWJyZWFrOwogCWNhc2UgTU1DX1RJTUlOR19VSFNfU0RSMTA0OgorCWNhc2UgTU1D
+X1RJTUlOR19NTUNfSFMyMDA6CiAJCWlteF9kYXRhLT51aHNfbW9kZSA9IFNESENJX0NUUkxfVUhT
+X1NEUjEwNDsKIAkJYnJlYWs7CiAJY2FzZSBNTUNfVElNSU5HX1VIU19ERFI1MDoKQEAgLTk3Nyw2
+ICs5OTMsNyBAQAogCiAJcGx0Zm1faG9zdC0+Y2xrID0gaW14X2RhdGEtPmNsa19wZXI7CiAKKwlw
+bHRmbV9ob3N0LT5jbG9jayA9IGNsa19nZXRfcmF0ZShwbHRmbV9ob3N0LT5jbGspOwogCWNsa19w
+cmVwYXJlX2VuYWJsZShpbXhfZGF0YS0+Y2xrX3Blcik7CiAJY2xrX3ByZXBhcmVfZW5hYmxlKGlt
+eF9kYXRhLT5jbGtfaXBnKTsKIAljbGtfcHJlcGFyZV9lbmFibGUoaW14X2RhdGEtPmNsa19haGIp
+OwpAQCAtMTA1Myw3ICsxMDcwLDcgQEAKIAkJYnJlYWs7CiAKIAljYXNlIEVTREhDX0NEX1BFUk1B
+TkVOVDoKLQkJaG9zdC0+bW1jLT5jYXBzID0gTU1DX0NBUF9OT05SRU1PVkFCTEU7CisJCWhvc3Qt
+Pm1tYy0+Y2FwcyB8PSBNTUNfQ0FQX05PTlJFTU9WQUJMRTsKIAkJYnJlYWs7CiAKIAljYXNlIEVT
+REhDX0NEX05PTkU6Cg==
+--001a11c26818e141d504f09acb54
+Content-Type: application/octet-stream; name="sdhci.patch"
+Content-Disposition: attachment; filename="sdhci.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hqrg6nbg1
+
+LS0tIC4uLy4uL2xpbnV4LTMuMTMvZHJpdmVycy9tbWMvaG9zdC9zZGhjaS5jCTIwMTQtMDEtMTkg
+MTg6NDA6MDcuMDAwMDAwMDAwIC0wODAwCisrKyBkcml2ZXJzL21tYy9ob3N0L3NkaGNpLmMJMjAx
+NC0wMS0yMiAxMToyMDowNy45MjIxMjA0OTUgLTA4MDAKQEAgLTg5OCw4ICs4OTgsMTMgQEAKIAl1
+MTYgbW9kZTsKIAlzdHJ1Y3QgbW1jX2RhdGEgKmRhdGEgPSBjbWQtPmRhdGE7CiAKLQlpZiAoZGF0
+YSA9PSBOVUxMKQorCWlmIChkYXRhID09IE5VTEwpIHsKKwkJLyogY2xlYXIgQXV0byBDTUQgc2V0
+dGluZ3MgZm9yIG5vIGRhdGEgQ01EcyAqLworCQltb2RlID0gc2RoY2lfcmVhZHcoaG9zdCwgU0RI
+Q0lfVFJBTlNGRVJfTU9ERSk7CisJCXNkaGNpX3dyaXRldyhob3N0LCBtb2RlICYgfihTREhDSV9U
+Uk5TX0FVVE9fQ01EMTIgfAorCQkJCVNESENJX1RSTlNfQVVUT19DTUQyMyksIFNESENJX1RSQU5T
+RkVSX01PREUpOwogCQlyZXR1cm47CisJfQogCiAJV0FSTl9PTighaG9zdC0+ZGF0YSk7CiAKQEAg
+LTEzOTEsNiArMTM5NiwxMyBAQAogCQkJCQltbWMtPmNhcmQtPnR5cGUgPT0gTU1DX1RZUEVfTU1D
+ID8KIAkJCQkJTU1DX1NFTkRfVFVOSU5HX0JMT0NLX0hTMjAwIDoKIAkJCQkJTU1DX1NFTkRfVFVO
+SU5HX0JMT0NLOworCisJCQkJLyogSGVyZSB3ZSBuZWVkIHRvIHNldCB0aGUgaG9zdC0+bXJxIHRv
+IE5VTEwsCisJCQkJICogaW4gY2FzZSB0aGUgcGVuZGluZyBmaW5pc2hfdGFza2xldAorCQkJCSAq
+IGZpbmlzaGVzIGl0IGluY29ycmVjdGx5LgorCQkJCSAqLworCQkJCWhvc3QtPm1ycSA9IE5VTEw7
+CisKIAkJCQlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJCQkJ
+c2RoY2lfZXhlY3V0ZV90dW5pbmcobW1jLCB0dW5pbmdfb3Bjb2RlKTsKIAkJCQlzcGluX2xvY2tf
+aXJxc2F2ZSgmaG9zdC0+bG9jaywgZmxhZ3MpOwpAQCAtMTg0NSwxMiArMTg1NywxMiBAQAogCXVu
+c2lnbmVkIGxvbmcgdGltZW91dDsKIAlpbnQgZXJyID0gMDsKIAlib29sIHJlcXVpcmVzX3R1bmlu
+Z19ub251aHMgPSBmYWxzZTsKKwl1bnNpZ25lZCBsb25nIGZsYWdzOwogCiAJaG9zdCA9IG1tY19w
+cml2KG1tYyk7CiAKIAlzZGhjaV9ydW50aW1lX3BtX2dldChob3N0KTsKLQlkaXNhYmxlX2lycSho
+b3N0LT5pcnEpOwotCXNwaW5fbG9jaygmaG9zdC0+bG9jayk7CisJc3Bpbl9sb2NrX2lycXNhdmUo
+Jmhvc3QtPmxvY2ssIGZsYWdzKTsKIAogCWN0cmwgPSBzZGhjaV9yZWFkdyhob3N0LCBTREhDSV9I
+T1NUX0NPTlRST0wyKTsKIApAQCAtMTg3MCwxNSArMTg4MiwxMyBAQAogCSAgICByZXF1aXJlc190
+dW5pbmdfbm9udWhzKQogCQljdHJsIHw9IFNESENJX0NUUkxfRVhFQ19UVU5JTkc7CiAJZWxzZSB7
+Ci0JCXNwaW5fdW5sb2NrKCZob3N0LT5sb2NrKTsKLQkJZW5hYmxlX2lycShob3N0LT5pcnEpOwor
+CQlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJCXNkaGNpX3J1
+bnRpbWVfcG1fcHV0KGhvc3QpOwogCQlyZXR1cm4gMDsKIAl9CiAKIAlpZiAoaG9zdC0+b3BzLT5w
+bGF0Zm9ybV9leGVjdXRlX3R1bmluZykgewotCQlzcGluX3VubG9jaygmaG9zdC0+bG9jayk7Ci0J
+CWVuYWJsZV9pcnEoaG9zdC0+aXJxKTsKKwkJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmaG9zdC0+
+bG9jaywgZmxhZ3MpOwogCQllcnIgPSBob3N0LT5vcHMtPnBsYXRmb3JtX2V4ZWN1dGVfdHVuaW5n
+KGhvc3QsIG9wY29kZSk7CiAJCXNkaGNpX3J1bnRpbWVfcG1fcHV0KGhvc3QpOwogCQlyZXR1cm4g
+ZXJyOwpAQCAtMTk1MSwxNSArMTk2MSwxMiBAQAogCQlob3N0LT5jbWQgPSBOVUxMOwogCQlob3N0
+LT5tcnEgPSBOVUxMOwogCi0JCXNwaW5fdW5sb2NrKCZob3N0LT5sb2NrKTsKLQkJZW5hYmxlX2ly
+cShob3N0LT5pcnEpOwotCisJCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUoJmhvc3QtPmxvY2ssIGZs
+YWdzKTsKIAkJLyogV2FpdCBmb3IgQnVmZmVyIFJlYWQgUmVhZHkgaW50ZXJydXB0ICovCiAJCXdh
+aXRfZXZlbnRfaW50ZXJydXB0aWJsZV90aW1lb3V0KGhvc3QtPmJ1Zl9yZWFkeV9pbnQsCiAJCQkJ
+CShob3N0LT50dW5pbmdfZG9uZSA9PSAxKSwKIAkJCQkJbXNlY3NfdG9famlmZmllcyg1MCkpOwot
+CQlkaXNhYmxlX2lycShob3N0LT5pcnEpOwotCQlzcGluX2xvY2soJmhvc3QtPmxvY2spOworCQlz
+cGluX2xvY2tfaXJxc2F2ZSgmaG9zdC0+bG9jaywgZmxhZ3MpOwogCiAJCWlmICghaG9zdC0+dHVu
+aW5nX2RvbmUpIHsKIAkJCXByX2luZm8oRFJJVkVSX05BTUUgIjogVGltZW91dCB3YWl0aW5nIGZv
+ciAiCkBAIC0yMDM0LDggKzIwNDEsNyBAQAogCQllcnIgPSAwOwogCiAJc2RoY2lfY2xlYXJfc2V0
+X2lycXMoaG9zdCwgU0RIQ0lfSU5UX0RBVEFfQVZBSUwsIGllcik7Ci0Jc3Bpbl91bmxvY2soJmhv
+c3QtPmxvY2spOwotCWVuYWJsZV9pcnEoaG9zdC0+aXJxKTsKKwlzcGluX3VubG9ja19pcnFyZXN0
+b3JlKCZob3N0LT5sb2NrLCBmbGFncyk7CiAJc2RoY2lfcnVudGltZV9wbV9wdXQoaG9zdCk7CiAK
+IAlyZXR1cm4gZXJyOwo=
+--001a11c26818e141d504f09acb54--
