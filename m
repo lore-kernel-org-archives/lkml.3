@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaAWCqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 21:46:40 -0500
-Received: from mail.lang.hm ([64.81.33.126]:55557 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaAWCqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 21:46:39 -0500
-Date: Wed, 22 Jan 2014 18:46:11 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Chris Mason <clm@fb.com>
-cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-In-Reply-To: <1390421691.1198.43.camel@ret.masoncoding.com>
-Message-ID: <alpine.DEB.2.02.1401221836330.13577@nftneq.ynat.uz>
-References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>  <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>  <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>  <20140122151913.GY4963@suse.de> 
- <1390410233.1198.7.camel@ret.masoncoding.com>  <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>  <1390413819.1198.20.camel@ret.masoncoding.com>  <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>  <52E00B28.3060609@redhat.com> 
- <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>  <52E0106B.5010604@redhat.com>  <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>  <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
- <1390421691.1198.43.camel@ret.masoncoding.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753001AbaAWCzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 21:55:00 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52247 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaAWCy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 21:54:59 -0500
+Message-ID: <52E08478.2080405@linux.vnet.ibm.com>
+Date: Thu, 23 Jan 2014 10:54:48 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] sched: tip/master show soft lockup while running multiple
+ VM
+References: <52DF8101.6020903@linux.vnet.ibm.com> <20140122123643.GO31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140122123643.GO31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012302-1396-0000-0000-0000042E399E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jan 2014, Chris Mason wrote:
+On 01/22/2014 08:36 PM, Peter Zijlstra wrote:
+> On Wed, Jan 22, 2014 at 04:27:45PM +0800, Michael wang wrote:
+>> # CONFIG_PREEMPT_NONE is not set
+>> CONFIG_PREEMPT_VOLUNTARY=y
+>> # CONFIG_PREEMPT is not set
+> 
+> Could you try the patch here:
+> 
+>   lkml.kernel.org/r/20140122102435.GH31570@twins.programming.kicks-ass.net
+> 
+> I suspect its the same issue.
 
-> On Wed, 2014-01-22 at 11:50 -0800, Andrew Morton wrote:
->> On Wed, 22 Jan 2014 11:30:19 -0800 James Bottomley <James.Bottomley@hansenpartnership.com> wrote:
->>
->>> But this, I think, is the fundamental point for debate.  If we can pull
->>> alignment and other tricks to solve 99% of the problem is there a need
->>> for radical VM surgery?  Is there anything coming down the pipe in the
->>> future that may move the devices ahead of the tricks?
->>
->> I expect it would be relatively simple to get large blocksizes working
->> on powerpc with 64k PAGE_SIZE.  So before diving in and doing huge
->> amounts of work, perhaps someone can do a proof-of-concept on powerpc
->> (or ia64) with 64k blocksize.
->
->
-> Maybe 5 drives in raid5 on MD, with 4K coming from each drive.  Well
-> aligned 16K IO will work, everything else will about the same as a rmw
-> from a single drive.
+Yup, it works.
 
-I think this is the key point to think about here. How will these new hard drive 
-large block sizes differ from RAID stripes and SSD eraseblocks?
+Regards,
+Michael Wang
 
-In all of these cases there are very clear advantages to doing the writes in 
-properly sized and aligned chunks that correspond with the underlying structure 
-to avoid the RMW overhead.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-It's extremely unlikely that drive manufacturers will produce drives that won't 
-work with any existing OS, so they are going to support smaller writes in 
-firmware. If they don't, they won't be able to sell their drives to anyone 
-running existing software. Given the Enterprise software upgrade cycle compared 
-to the expanding storage needs, whatever they ship will have to work on OS and 
-firmware releases that happened several years ago.
-
-I think what is needed is some way to be able to get a report on how man RMW 
-cycles have to happen. Then people can work on ways to reduce this number and 
-measure the results.
-
-I don't know if md and dm are currently smart enough to realize that the entire 
-stripe is being overwritten and avoid the RMW cycle. If they can't, I would 
-expect that once we start measuring it, they will gain such support.
-
-David Lang
