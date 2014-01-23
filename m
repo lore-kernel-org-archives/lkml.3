@@ -1,146 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179AbaAWN3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:29:13 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50051 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752773AbaAWN1V (ORCPT
+	id S1753137AbaAWNbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:31:51 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48971 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaAWNbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:27:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC/RFT][PATCH v2 6/6] PM / QoS: Add type to dev_pm_qos_add_ancestor_request() arguments
-Date: Thu, 23 Jan 2014 14:40:27 +0100
-Message-ID: <1440212.NuPsDCRgku@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1447517.8AFrWcAgld@vostro.rjw.lan>
-References: <5434847.aCyiWHNRe7@vostro.rjw.lan> <1447517.8AFrWcAgld@vostro.rjw.lan>
+	Thu, 23 Jan 2014 08:31:48 -0500
+Date: Thu, 23 Jan 2014 13:31:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 2/3 RESEND] mfd: tc3589x: Reform device tree probing
+Message-ID: <20140123133141.GD8586@lee--X1>
+References: <1390481008-23900-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1390481008-23900-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> This changes the following mechanisms in the TC3589x device tree
+> probing path:
+> 
+> - Use the .of_match_table in struct device_driver to match the
+>   device in the device tree.
+> - Add matches for the proper compatible strings "toshiba,..."
+>   and all sub-variants, just as is done for the .id matches.
+> - Move over all the allocation of platform data etc to the
+>   tc3589x_of_probe() function and follow the pattern of passing
+>   a platform data pointer back, or an error pointer on error,
+>   as found in the STMPE driver.
+> - Match the new (proper) compatible strings for the GPIO and
+>   keypad MFD cells.
+> - Use of_device_is_compatible() rather than just !strcmp()
+>   to discover which cells to instantiate.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mfd/tc3589x.c | 84 ++++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 59 insertions(+), 25 deletions(-)
 
-Rework dev_pm_qos_add_ancestor_request() so that device PM QoS type
-is passed to it as the third argument and make it support the
-DEV_PM_QOS_LATENCY_TOLERANCE device PM QoS type (in addition to
-DEV_PM_QOS_RESUME_LATENCY).
+Patch looks good to me. Is there any reason why we should rush this in
+for v3.14, or is it okay to go to -next?
 
-That will allow the drivers of devices without latency tolerance
-hardware support to use their ancestors having it as proxies for
-their latency tolerance requirements.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/power/pm_qos_interface.txt |    6 ++++--
- drivers/base/power/qos.c                 |   22 +++++++++++++++++-----
- drivers/input/touchscreen/st1232.c       |    3 ++-
- include/linux/pm_qos.h                   |    7 +++++--
- 4 files changed, 28 insertions(+), 10 deletions(-)
-
-Index: linux-pm/include/linux/pm_qos.h
-===================================================================
---- linux-pm.orig/include/linux/pm_qos.h
-+++ linux-pm/include/linux/pm_qos.h
-@@ -148,7 +148,8 @@ int dev_pm_qos_remove_global_notifier(st
- void dev_pm_qos_constraints_init(struct device *dev);
- void dev_pm_qos_constraints_destroy(struct device *dev);
- int dev_pm_qos_add_ancestor_request(struct device *dev,
--				    struct dev_pm_qos_request *req, s32 value);
-+				    struct dev_pm_qos_request *req,
-+				    enum dev_pm_qos_req_type type, s32 value);
- #else
- static inline enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev,
- 							  s32 mask)
-@@ -191,7 +192,9 @@ static inline void dev_pm_qos_constraint
- 	dev->power.power_state = PMSG_INVALID;
- }
- static inline int dev_pm_qos_add_ancestor_request(struct device *dev,
--				    struct dev_pm_qos_request *req, s32 value)
-+						  struct dev_pm_qos_request *req,
-+						  enum dev_pm_qos_req_type type,
-+						  s32 value)
- 			{ return 0; }
- #endif
- 
-Index: linux-pm/drivers/base/power/qos.c
-===================================================================
---- linux-pm.orig/drivers/base/power/qos.c
-+++ linux-pm/drivers/base/power/qos.c
-@@ -565,20 +565,32 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_remove_glob
-  * dev_pm_qos_add_ancestor_request - Add PM QoS request for device's ancestor.
-  * @dev: Device whose ancestor to add the request for.
-  * @req: Pointer to the preallocated handle.
-+ * @type: Type of the request.
-  * @value: Constraint latency value.
-  */
- int dev_pm_qos_add_ancestor_request(struct device *dev,
--				    struct dev_pm_qos_request *req, s32 value)
-+				    struct dev_pm_qos_request *req,
-+				    enum dev_pm_qos_req_type type, s32 value)
- {
- 	struct device *ancestor = dev->parent;
- 	int ret = -ENODEV;
- 
--	while (ancestor && !ancestor->power.ignore_children)
--		ancestor = ancestor->parent;
-+	switch (type) {
-+	case DEV_PM_QOS_RESUME_LATENCY:
-+		while (ancestor && !ancestor->power.ignore_children)
-+			ancestor = ancestor->parent;
- 
-+		break;
-+	case DEV_PM_QOS_LATENCY_TOLERANCE:
-+		while (ancestor && !ancestor->power.set_latency_tolerance)
-+			ancestor = ancestor->parent;
-+
-+		break;
-+	default:
-+		ancestor = NULL;
-+	}
- 	if (ancestor)
--		ret = dev_pm_qos_add_request(ancestor, req,
--					     DEV_PM_QOS_RESUME_LATENCY, value);
-+		ret = dev_pm_qos_add_request(ancestor, req, type, value);
- 
- 	if (ret < 0)
- 		req->dev = NULL;
-Index: linux-pm/Documentation/power/pm_qos_interface.txt
-===================================================================
---- linux-pm.orig/Documentation/power/pm_qos_interface.txt
-+++ linux-pm/Documentation/power/pm_qos_interface.txt
-@@ -134,9 +134,11 @@ The meaning of the return values is as f
- 	PM_QOS_FLAGS_UNDEFINED: The device's PM QoS structure has not been
- 			initialized or the list of requests is empty.
- 
--int dev_pm_qos_add_ancestor_request(dev, handle, value)
-+int dev_pm_qos_add_ancestor_request(dev, handle, type, value)
- Add a PM QoS request for the first direct ancestor of the given device whose
--power.ignore_children flag is unset.
-+power.ignore_children flag is unset (for DEV_PM_QOS_RESUME_LATENCY requests)
-+or whose power.set_latency_tolerance callback pointer is not NULL (for
-+DEV_PM_QOS_LATENCY_TOLERANCE requests).
- 
- int dev_pm_qos_expose_latency_limit(device, value)
- Add a request to the device's PM QoS list of resume latency constraints and
-Index: linux-pm/drivers/input/touchscreen/st1232.c
-===================================================================
---- linux-pm.orig/drivers/input/touchscreen/st1232.c
-+++ linux-pm/drivers/input/touchscreen/st1232.c
-@@ -134,7 +134,8 @@ static irqreturn_t st1232_ts_irq_handler
- 	} else if (!ts->low_latency_req.dev) {
- 		/* First contact, request 100 us latency. */
- 		dev_pm_qos_add_ancestor_request(&ts->client->dev,
--						&ts->low_latency_req, 100);
-+						&ts->low_latency_req,
-+						DEV_PM_QOS_RESUME_LATENCY, 100);
- 	}
- 
- 	/* SYN_REPORT */
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
