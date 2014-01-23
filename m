@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969AbaAWPBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:01:02 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:46575 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaAWPBA (ORCPT
+	id S1755022AbaAWPB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:01:58 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:55685 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753817AbaAWPB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:01:00 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, torvalds@linux-foundation.org, jeffm@suse.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] openfirmware: trivial: Standardise formatting of 'struct of_device_id' definition
-Date: Thu, 23 Jan 2014 15:00:39 +0000
-Message-Id: <1390489239-29001-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 23 Jan 2014 10:01:57 -0500
+Date: Thu, 23 Jan 2014 15:01:23 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>
+Subject: Re: [PATCH v2 resend 0/5] arm64: advertise availability of CRC and
+ crypto instructions
+Message-ID: <20140123150123.GH27520@arm.com>
+References: <1389950591-4212-1-git-send-email-ard.biesheuvel@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389950591-4212-1-git-send-email-ard.biesheuvel@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's commonly accepted that when defining a struct the '{' is appended
-onto the first line. This helps when searching for the definition using
-syntax similar to 'struct of_device_id {'.
+On Fri, Jan 17, 2014 at 09:23:06AM +0000, Ard Biesheuvel wrote:
+> Ard Biesheuvel (5):
+>   ARM: add support for AT_HWCAP2 ELF auxv entry
+>   binfmt_elf: add ELF_HWCAP2 to compat auxv entries
+>   arm64: add AT_HWCAP2 support for 32-bit compat
+>   ARM: introduce HWCAP2 feature bits for ARMv8 Crypto Extensions
+>   arm64: advertise ARMv8 extensions to 32-bit compat ELF binaries
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- include/linux/mod_devicetable.h | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I think I acked this series but probably after you posted the resend.
+Just in case I haven't:
 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 45e9214..090e014 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -220,8 +220,7 @@ struct serio_device_id {
- /*
-  * Struct used for matching a device
-  */
--struct of_device_id
--{
-+struct of_device_id {
- 	char	name[32];
- 	char	type[32];
- 	char	compatible[128];
--- 
-1.8.3.2
-
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
