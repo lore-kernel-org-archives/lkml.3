@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaAWUna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 15:43:30 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:36986 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaAWUn3 convert rfc822-to-8bit (ORCPT
+	id S1753384AbaAWUoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:44:01 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:61817 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaAWUoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 15:43:29 -0500
+	Thu, 23 Jan 2014 15:44:00 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:cda5:d5b8:bf47:af28]
-In-Reply-To: <DBC6E587-D188-4DA7-B898-D1DF34613320@codeaurora.org>
-References: <1389921904-3777-1-git-send-email-sboyd@codeaurora.org>
-	<878uu6y5im.fsf@paris.lan>
-	<DBC6E587-D188-4DA7-B898-D1DF34613320@codeaurora.org>
-Date: Thu, 23 Jan 2014 12:43:28 -0800
-Message-ID: <CAOesGMgDg5KyvV9Gj0NeDnWYPQN+EZBzm18mSTku+VZOApVxyA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Enable clock controllers on MSM
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140122123358.a65c42605513fc8466152801@linux-foundation.org>
+References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
+ <20140114001115.GU1992@bbox> <CALZtONCCrckuHxgHB=GQj0tHszLAYTZZLGzFTnRkj9pvxx0dyg@mail.gmail.com>
+ <20140115054208.GL1992@bbox> <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com>
+ <CALZtONAaPCi8eUhSmdXSxWbeFFN=ChsfL9OurSZUsSPo-_gnfg@mail.gmail.com> <20140122123358.a65c42605513fc8466152801@linux-foundation.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 23 Jan 2014 15:43:37 -0500
+X-Google-Sender-Auth: 7uKY9FPS-OCN7bnkWQWumviSZXM
+Message-ID: <CALZtONCteZPFaAG0oXQGnmDocnVmpmxBeGzYMa3B_4QpGSgCvw@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: add writethrough option
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Weijie Yang <weijie.yang@samsung.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 11:59 AM, Kumar Gala <galak@codeaurora.org> wrote:
+On Wed, Jan 22, 2014 at 3:33 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 22 Jan 2014 09:19:58 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
 >
-> On Jan 23, 2014, at 11:25 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>> >>> > Acutally, I really don't know how much benefit we have that in-memory
+>> >>> > swap overcomming to the real storage but if you want, zRAM with dm-cache
+>> >>> > is another option rather than invent new wheel by "just having is better".
+>> >>>
+>> >>> I'm not sure if this patch is related to the zswap vs. zram discussions.  This
+>> >>> only adds the option of using writethrough to zswap.  It's a first
+>> >>> step to possibly
+>> >>> making zswap work more efficiently using writeback and/or writethrough
+>> >>> depending on
+>> >>> the system and conditions.
+>> >>
+>> >> The patch size is small. Okay I don't want to be a party-pooper
+>> >> but at least, I should say my thought for Andrew to help judging.
+>> >
+>> > Sure, I'm glad to have your suggestions.
+>>
+>> To give this a bump - Andrew do you have any concerns about this
+>> patch?  Or can you pick this up?
 >
->> Stephen Boyd <sboyd@codeaurora.org> writes:
->>
->>> These patches add the clock controller nodes, enable the clock drivers
->>> on MSM based platforms, and hook it up enough to get the serial console
->>> working. This is based on the merge of Mike's clk-next branch with
->>> linux-next-20140116. The changes need the clk-next branch because that's
->>> where the DTS include files landed.
->>
->> I forgot to repond to this earlier, but I tested this on top of -next
->> and it gets the dragonboard booting w/mainline.  Yay!
->>
->>> Perhaps this can be applied after 3.14-rc1 is out?
->>
->> Yeah, sounds good.
->>
->> Kevin
+> I don't pay much attention to new features during the merge window,
+> preferring to shove them into a folder to look at later.  Often they
+> have bitrotted by the time -rc1 comes around.
 >
-> We’ll need arm-soc to pull in the clk changes from Mike’s tree for that.
+> I'm not sure that this review discussion has played out yet - is
+> Minchan happy?
 
-They're queued for this merge window, right? If so, they'll be in -rc1
-and the dependency will be solved before we apply the patches.
+I think so, or at least ok enough to not block it, but please correct
+me if I am wrong, Minchan.
 
+>
+> Please update the changelog so that it reflects the questions Minchan
+> asked (any reviewer question should be regarded as an inadequacy in
+> either the code commenting or the changelog - people shouldn't need to
+> ask the programmer why he did something!) and resend for -rc1?
 
--Olof
+OK I'll update and resend.
