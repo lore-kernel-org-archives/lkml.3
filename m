@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbaAWOPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:15:49 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47514 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977AbaAWOPr (ORCPT
+	id S932365AbaAWOUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:20:10 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:53417 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104AbaAWOUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:15:47 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Ingo Molnar <mingo@kernel.org>, linux-fbdev@vger.kernel.org,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 01/11] x86: sysfb: fool-proof CONFIG_X86_SYSFB
-Date: Thu, 23 Jan 2014 15:14:53 +0100
-Message-Id: <1390486503-1504-2-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+	Thu, 23 Jan 2014 09:20:08 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] regulator: ab3100: cast fix
+Date: Thu, 23 Jan 2014 15:20:01 +0100
+Message-Id: <1390486801-4839-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.4.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turns out, people do not read help-texts of new config-options and enable
-them nonetheless. So several reports came in with X86_SYSFB=y and
-FB_SIMPLE=n, which in almost all situations prevents firmware-fbs from
-being probed.
+The AB3100 regulator driver emits a warning when compiled on 64bit
+systems like this:
 
-X86_SYSFB clearly states that it turns legacy vesa/efi framebuffers into a
-format compatible to simplefb (and does nothing else..). So to avoid
-further complaints about missing gfx-support during boot, simply depend on
-FB_SIMPLE now.
-As FB_SIMPLE is disabled by default and usually only enabled on selected
-ARM architectures, x86 users should thus never see the X86_SYSFB
-config-option. And if they do, everything is fine as simplefb will be
-available.
+drivers/regulator/ab3100.c:
+In function ‘ab3100_regulator_of_probe’:
+srivers/regulator/ab3100.c:649:4:
+warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
 
-Note that most of the sysfb code is enabled independently of X86_SYSFB.
-The config option only selects a compatibility mode for simplefb. It was
-introduced to ease the transition to SimpleDRM and disabling fbdev. As
-this is still ongoing, there's no need for non-developers to care for
-X86_SYSFB so we can safely hide it behind FB_SIMPLE.
+As the int is a different size than the 64bit pointer used to
+pass regulator data. Switch to using an unsigned long as ID
+passed for the regulator to get rid of the warning.
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Reported-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/regulator/ab3100.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0952ecd..098228e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2299,6 +2299,7 @@ source "drivers/rapidio/Kconfig"
- 
- config X86_SYSFB
- 	bool "Mark VGA/VBE/EFI FB as generic system framebuffer"
-+	depends on FB_SIMPLE
- 	help
- 	  Firmwares often provide initial graphics framebuffers so the BIOS,
- 	  bootloader or kernel can show basic video-output during boot for
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 77b46d0b37a6..e10febe9ec34 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -498,7 +498,7 @@ static int ab3100_regulator_register(struct platform_device *pdev,
+ 				     struct ab3100_platform_data *plfdata,
+ 				     struct regulator_init_data *init_data,
+ 				     struct device_node *np,
+-				     int id)
++				     unsigned long id)
+ {
+ 	struct regulator_desc *desc;
+ 	struct ab3100_regulator *reg;
+@@ -646,7 +646,7 @@ ab3100_regulator_of_probe(struct platform_device *pdev, struct device_node *np)
+ 		err = ab3100_regulator_register(
+ 			pdev, NULL, ab3100_regulator_matches[i].init_data,
+ 			ab3100_regulator_matches[i].of_node,
+-			(int) ab3100_regulator_matches[i].driver_data);
++			(unsigned long)ab3100_regulator_matches[i].driver_data);
+ 		if (err) {
+ 			ab3100_regulators_remove(pdev);
+ 			return err;
 -- 
-1.8.5.3
+1.8.4.2
 
