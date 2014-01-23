@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193AbaAWCbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 21:31:47 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51842 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731AbaAWC3x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 21:29:53 -0500
-Subject: [PATCH -tip 2/8] [BUGFIX] perf-tools: Load map before using
- map->map_ip
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 23 Jan 2014 02:29:50 +0000
-Message-ID: <20140123022950.7206.17357.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-References: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.16
+	id S1752964AbaAWCqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 21:46:40 -0500
+Received: from mail.lang.hm ([64.81.33.126]:55557 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276AbaAWCqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 21:46:39 -0500
+Date: Wed, 22 Jan 2014 18:46:11 -0800 (PST)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Chris Mason <clm@fb.com>
+cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+In-Reply-To: <1390421691.1198.43.camel@ret.masoncoding.com>
+Message-ID: <alpine.DEB.2.02.1401221836330.13577@nftneq.ynat.uz>
+References: <20131220093022.GV11295@suse.de> <52DF353D.6050300@redhat.com>  <20140122093435.GS4963@suse.de> <52DFD168.8080001@redhat.com>  <20140122143452.GW4963@suse.de> <52DFDCA6.1050204@redhat.com>  <20140122151913.GY4963@suse.de> 
+ <1390410233.1198.7.camel@ret.masoncoding.com>  <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>  <1390413819.1198.20.camel@ret.masoncoding.com>  <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>  <52E00B28.3060609@redhat.com> 
+ <1390415703.2372.62.camel@dabdike.int.hansenpartnership.com>  <52E0106B.5010604@redhat.com>  <1390419019.2372.89.camel@dabdike.int.hansenpartnership.com>  <20140122115002.bb5d01dee836b567a7aad157@linux-foundation.org>
+ <1390421691.1198.43.camel@ret.masoncoding.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In map_groups__find_symbol() map->map_ip is used without
-ensuring the map is loaded. Then the address passed
-to map->map_ip isn't mapped at the first time.
+On Wed, 22 Jan 2014, Chris Mason wrote:
 
-E.g. below code always fails to get a symbol at the first call;
+> On Wed, 2014-01-22 at 11:50 -0800, Andrew Morton wrote:
+>> On Wed, 22 Jan 2014 11:30:19 -0800 James Bottomley <James.Bottomley@hansenpartnership.com> wrote:
+>>
+>>> But this, I think, is the fundamental point for debate.  If we can pull
+>>> alignment and other tricks to solve 99% of the problem is there a need
+>>> for radical VM surgery?  Is there anything coming down the pipe in the
+>>> future that may move the devices ahead of the tricks?
+>>
+>> I expect it would be relatively simple to get large blocksizes working
+>> on powerpc with 64k PAGE_SIZE.  So before diving in and doing huge
+>> amounts of work, perhaps someone can do a proof-of-concept on powerpc
+>> (or ia64) with 64k blocksize.
+>
+>
+> Maybe 5 drives in raid5 on MD, with 4K coming from each drive.  Well
+> aligned 16K IO will work, everything else will about the same as a rmw
+> from a single drive.
 
-	addr = /* Somewhere in the kernel text */
-	symbol_conf.try_vmlinux_path = true;
-	symbol__init();
-	host_machine = machine__new_host();
-	sym = machine__find_kernel_function(host_machine,
-					 addr, NULL, NULL);
-	/* Note that machine__find_kernel_function calls
-	   map_groups__find_symbol */
+I think this is the key point to think about here. How will these new hard drive 
+large block sizes differ from RAID stripes and SSD eraseblocks?
 
-This ensures it by calling map__load before using it in
-map_groups__find_symbol().
+In all of these cases there are very clear advantages to doing the writes in 
+properly sized and aligned chunks that correspond with the underlying structure 
+to avoid the RMW overhead.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- tools/perf/util/map.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+It's extremely unlikely that drive manufacturers will produce drives that won't 
+work with any existing OS, so they are going to support smaller writes in 
+firmware. If they don't, they won't be able to sell their drives to anyone 
+running existing software. Given the Enterprise software upgrade cycle compared 
+to the expanding storage needs, whatever they ship will have to work on OS and 
+firmware releases that happened several years ago.
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 9b9bd71..6a805e7 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -386,7 +386,8 @@ struct symbol *map_groups__find_symbol(struct map_groups *mg,
- {
- 	struct map *map = map_groups__find(mg, type, addr);
- 
--	if (map != NULL) {
-+	/* Ensure map is loaded before using map->map_ip */
-+	if (map != NULL && map__load(map, filter) >= 0) {
- 		if (mapp != NULL)
- 			*mapp = map;
- 		return map__find_symbol(map, map->map_ip(map, addr), filter);
+I think what is needed is some way to be able to get a report on how man RMW 
+cycles have to happen. Then people can work on ways to reduce this number and 
+measure the results.
 
+I don't know if md and dm are currently smart enough to realize that the entire 
+stripe is being overwritten and avoid the RMW cycle. If they can't, I would 
+expect that once we start measuring it, they will gain such support.
 
+David Lang
