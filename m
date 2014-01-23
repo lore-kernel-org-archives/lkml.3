@@ -1,95 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaAWVX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:23:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36370 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaAWVX1 (ORCPT
+	id S932158AbaAWVXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:23:54 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:46091 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaAWVXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:23:27 -0500
-Date: Thu, 23 Jan 2014 13:23:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Nicolin Chen <b42378@freescale.com>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] lib/genalloc.c: add check gen_pool_dma_alloc() if dma
- pointer is not NULL
-Message-Id: <20140123132325.cada6dca726c2cdd1173ad91@linux-foundation.org>
-In-Reply-To: <CA+V-a8vN2VBCjuAMGootU=t+PbjK7wVDQeYZgV03Wa5070WwFw@mail.gmail.com>
-References: <1390470990-16065-1-git-send-email-prabhakar.csengg@gmail.com>
-	<CAK9yfHz4KR5A8KgXfak_tgfCOGg8O+KW2dSH3nZ_A8cRZ16Dxw@mail.gmail.com>
-	<CA+V-a8vN2VBCjuAMGootU=t+PbjK7wVDQeYZgV03Wa5070WwFw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jan 2014 16:23:52 -0500
+X-IronPort-AV: E=Sophos;i="4.95,708,1384300800"; 
+   d="scan'208";a="93903678"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH v6] xen/grant-table: Avoid m2p_override during mapping
+Date: Thu, 23 Jan 2014 21:23:44 +0000
+Message-ID: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014 15:51:31 +0530 Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
+The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+for blkback and future netback patches it just cause a lock contention, as
+those pages never go to userspace. Therefore this series does the following:
+- the original functions were renamed to __gnttab_[un]map_refs, with a new
+  parameter m2p_override
+- based on m2p_override either they follow the original behaviour, or just set
+  the private flag and call set_phys_to_machine
+- gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+  m2p_override false
+- a new function gnttab_[un]map_refs_userspace provides the old behaviour
 
-> Hi Sachin,
-> 
-> On Thu, Jan 23, 2014 at 3:38 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> > Hi Prabhakar,
-> >
-> > On 23 January 2014 15:26, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
-> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> >>
-> >> In the gen_pool_dma_alloc() the dma pointer can be NULL
-> >> and while assigning gen_pool_virt_to_phys(pool, vaddr) to
-> >> dma caused the following crash on da850 evm,
-> >>
-> > [snip]
-> >>
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> ---
-> >>  lib/genalloc.c |    3 ++-
-> >>  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/lib/genalloc.c b/lib/genalloc.c
-> >> index dda3116..f48163f 100644
-> >> --- a/lib/genalloc.c
-> >> +++ b/lib/genalloc.c
-> >> @@ -334,7 +334,8 @@ void *gen_pool_dma_alloc(struct gen_pool *pool, size_t size, dma_addr_t *dma)
-> >>         if (!vaddr)
-> >>                 return NULL;
-> >>
-> >> -       *dma = gen_pool_virt_to_phys(pool, vaddr);
-> >> +       if (dma)
-> >> +               *dma = gen_pool_virt_to_phys(pool, vaddr);
-> >
-> > Wouldn't it be better to return (with error/message) if dma is NULL
-> > rather than silently ignore it?
-> >
-> I am not sure if returning here with error is OK,
-> may be just adding a warning message could be OK ?
+It also removes a stray space from page.h and change ret to 0 if
+XENFEAT_auto_translated_physmap, as that is the only possible return value
+there.
 
-The patch look OK as-is to me.  `dma' is a second return value from
-gen_pool_dma_alloc() and this patch extends the gen_pool_dma_alloc()
-interface by making that return value optional.  That's good for
-callers who don't want the physical address, and they can call
-gen_pool_virt_to_phys() at a later time to get the physical address
-anyway.
+v2:
+- move the storing of the old mfn in page->index to gnttab_map_refs
+- move the function header update to a separate patch
 
->From my reading, 3.13.x kernels will need this patch.
+v3:
+- a new approach to retain old behaviour where it needed
+- squash the patches into one
 
-I suppose we should document the API change:
+v4:
+- move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+- clear page->private before doing anything with the page, so m2p_find_override
+  won't race with this
 
---- a/lib/genalloc.c~lib-genallocc-add-check-gen_pool_dma_alloc-if-dma-pointer-is-not-null-fix
-+++ a/lib/genalloc.c
-@@ -316,7 +316,7 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  * gen_pool_dma_alloc - allocate special memory from the pool for DMA usage
-  * @pool: pool to allocate from
-  * @size: number of bytes to allocate from the pool
-- * @dma: dma-view physical address
-+ * @dma: dma-view physical address return value.  Use NULL if unneeded.
-  *
-  * Allocate the requested number of bytes from the specified pool.
-  * Uses the pool allocation function (with first-fit algorithm by default).
-_
+v5:
+- change return value handling in __gnttab_[un]map_refs
+- remove a stray space in page.h
+- add detail why ret = 0 now at some places
 
+v6:
+- don't pass pfn to m2p* functions, just get it locally
+
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Suggested-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/x86/include/asm/xen/page.h     |    5 +-
+ arch/x86/xen/p2m.c                  |   17 +------
+ drivers/block/xen-blkback/blkback.c |   15 +++---
+ drivers/xen/gntdev.c                |   13 +++--
+ drivers/xen/grant-table.c           |   89 ++++++++++++++++++++++++++++++-----
+ include/xen/grant_table.h           |    8 +++-
+ 6 files changed, 101 insertions(+), 46 deletions(-)
+
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index b913915..ce47243 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -52,7 +52,8 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+ extern int m2p_add_override(unsigned long mfn, struct page *page,
+ 			    struct gnttab_map_grant_ref *kmap_op);
+ extern int m2p_remove_override(struct page *page,
+-				struct gnttab_map_grant_ref *kmap_op);
++			       struct gnttab_map_grant_ref *kmap_op,
++			       unsigned long mfn);
+ extern struct page *m2p_find_override(unsigned long mfn);
+ extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+ 
+@@ -121,7 +122,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+ 		pfn = m2p_find_override_pfn(mfn, ~0);
+ 	}
+ 
+-	/* 
++	/*
+ 	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+ 	 * entry doesn't map back to the mfn and m2p_override doesn't have a
+ 	 * valid entry for it.
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 2ae8699..bd4724b 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -888,13 +888,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 					"m2p_add_override: pfn %lx not mapped", pfn))
+ 			return -EINVAL;
+ 	}
+-	WARN_ON(PagePrivate(page));
+-	SetPagePrivate(page);
+-	set_page_private(page, mfn);
+-	page->index = pfn_to_mfn(pfn);
+-
+-	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+-		return -ENOMEM;
+ 
+ 	if (kmap_op != NULL) {
+ 		if (!PageHighMem(page)) {
+@@ -933,19 +926,16 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ }
+ EXPORT_SYMBOL_GPL(m2p_add_override);
+ int m2p_remove_override(struct page *page,
+-		struct gnttab_map_grant_ref *kmap_op)
++			struct gnttab_map_grant_ref *kmap_op,
++			unsigned long mfn)
+ {
+ 	unsigned long flags;
+-	unsigned long mfn;
+ 	unsigned long pfn;
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
+ 
+ 	pfn = page_to_pfn(page);
+-	mfn = get_phys_to_machine(pfn);
+-	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+-		return -EINVAL;
+ 
+ 	if (!PageHighMem(page)) {
+ 		address = (unsigned long)__va(pfn << PAGE_SHIFT);
+@@ -959,10 +949,7 @@ int m2p_remove_override(struct page *page,
+ 	spin_lock_irqsave(&m2p_override_lock, flags);
+ 	list_del(&page->lru);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
+-	WARN_ON(!PagePrivate(page));
+-	ClearPagePrivate(page);
+ 
+-	set_phys_to_machine(pfn, page->index);
+ 	if (kmap_op != NULL) {
+ 		if (!PageHighMem(page)) {
+ 			struct multicall_space mcs;
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 6620b73..875025f 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
+ 
+ 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+ 			!rb_next(&persistent_gnt->node)) {
+-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+-				segs_to_unmap);
++			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, pages, segs_to_unmap);
+ 			segs_to_unmap = 0;
+@@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
+ 		pages[segs_to_unmap] = persistent_gnt->page;
+ 
+ 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+-			ret = gnttab_unmap_refs(unmap, NULL, pages,
+-				segs_to_unmap);
++			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, pages, segs_to_unmap);
+ 			segs_to_unmap = 0;
+@@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
+ 		kfree(persistent_gnt);
+ 	}
+ 	if (segs_to_unmap > 0) {
+-		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
++		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+ 		BUG_ON(ret);
+ 		put_free_pages(blkif, pages, segs_to_unmap);
+ 	}
+@@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
+ 				    GNTMAP_host_map, pages[i]->handle);
+ 		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+ 		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+-			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+-			                        invcount);
++			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+ 			BUG_ON(ret);
+ 			put_free_pages(blkif, unmap_pages, invcount);
+ 			invcount = 0;
+ 		}
+ 	}
+ 	if (invcount) {
+-		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
++		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+ 		BUG_ON(ret);
+ 		put_free_pages(blkif, unmap_pages, invcount);
+ 	}
+@@ -740,7 +737,7 @@ again:
+ 	}
+ 
+ 	if (segs_to_map) {
+-		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
++		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+ 		BUG_ON(ret);
+ 	}
+ 
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index e41c79c..e652c0e 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+ 	}
+ 
+ 	pr_debug("map %d+%d\n", map->index, map->count);
+-	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+-			map->pages, map->count);
++	err = gnttab_map_refs_userspace(map->map_ops,
++					use_ptemod ? map->kmap_ops : NULL,
++					map->pages,
++					map->count);
+ 	if (err)
+ 		return err;
+ 
+@@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+ 		}
+ 	}
+ 
+-	err = gnttab_unmap_refs(map->unmap_ops + offset,
+-			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+-			pages);
++	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
++					  use_ptemod ? map->kmap_ops + offset : NULL,
++					  map->pages + offset,
++					  pages);
+ 	if (err)
+ 		return err;
+ 
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index aa846a4..e4ddfeb 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+ }
+ EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+ 
+-int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
++int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		    struct gnttab_map_grant_ref *kmap_ops,
+-		    struct page **pages, unsigned int count)
++		    struct page **pages, unsigned int count,
++		    bool m2p_override)
+ {
+ 	int i, ret;
+ 	bool lazy = false;
+ 	pte_t *pte;
+-	unsigned long mfn;
++	unsigned long mfn, pfn;
+ 
++	BUG_ON(kmap_ops && !m2p_override);
+ 	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+ 	if (ret)
+ 		return ret;
+@@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+ 					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+ 		}
+-		return ret;
++		return 0;
+ 	}
+ 
+-	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++	if (m2p_override &&
++	    !in_interrupt() &&
++	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
+ 		lazy = true;
+ 	}
+@@ -927,8 +931,20 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		} else {
+ 			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+ 		}
+-		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+-				       &kmap_ops[i] : NULL);
++		pfn = page_to_pfn(pages[i]);
++
++		WARN_ON(PagePrivate(pages[i]));
++		SetPagePrivate(pages[i]);
++		set_page_private(pages[i], mfn);
++
++		pages[i]->index = pfn_to_mfn(pfn);
++		if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		if (m2p_override)
++			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
++					       &kmap_ops[i] : NULL);
+ 		if (ret)
+ 			goto out;
+ 	}
+@@ -939,15 +955,32 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 
+ 	return ret;
+ }
++
++int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
++		    struct page **pages, unsigned int count)
++{
++	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
++}
+ EXPORT_SYMBOL_GPL(gnttab_map_refs);
+ 
+-int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
++int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
++			      struct gnttab_map_grant_ref *kmap_ops,
++			      struct page **pages, unsigned int count)
++{
++	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
++}
++EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
++
++int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		      struct gnttab_map_grant_ref *kmap_ops,
+-		      struct page **pages, unsigned int count)
++		      struct page **pages, unsigned int count,
++		      bool m2p_override)
+ {
+ 	int i, ret;
+ 	bool lazy = false;
++	unsigned long pfn, mfn;
+ 
++	BUG_ON(kmap_ops && !m2p_override);
+ 	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+ 	if (ret)
+ 		return ret;
+@@ -958,17 +991,33 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+ 					INVALID_P2M_ENTRY);
+ 		}
+-		return ret;
++		return 0;
+ 	}
+ 
+-	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++	if (m2p_override &&
++	    !in_interrupt() &&
++	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
+ 		lazy = true;
+ 	}
+ 
+ 	for (i = 0; i < count; i++) {
+-		ret = m2p_remove_override(pages[i], kmap_ops ?
+-				       &kmap_ops[i] : NULL);
++		pfn = page_to_pfn(pages[i]);
++		mfn = get_phys_to_machine(pfn);
++		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		set_page_private(pages[i], INVALID_P2M_ENTRY);
++		WARN_ON(!PagePrivate(pages[i]));
++		ClearPagePrivate(pages[i]);
++		set_phys_to_machine(pfn, pages[i]->index);
++		if (m2p_override)
++			ret = m2p_remove_override(pages[i],
++						  kmap_ops ?
++						   &kmap_ops[i] : NULL,
++						  mfn);
+ 		if (ret)
+ 			goto out;
+ 	}
+@@ -979,8 +1028,22 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 
+ 	return ret;
+ }
++
++int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
++		    struct page **pages, unsigned int count)
++{
++	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
++}
+ EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+ 
++int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
++				struct gnttab_map_grant_ref *kmap_ops,
++				struct page **pages, unsigned int count)
++{
++	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
++}
++EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
++
+ static unsigned nr_status_frames(unsigned nr_grant_frames)
+ {
+ 	BUG_ON(grefs_per_grant_frame == 0);
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index 694dcaf..9a919b1 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
+ #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+ 
+ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+-		    struct gnttab_map_grant_ref *kmap_ops,
+ 		    struct page **pages, unsigned int count);
++int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
++			      struct gnttab_map_grant_ref *kmap_ops,
++			      struct page **pages, unsigned int count);
+ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+-		      struct gnttab_map_grant_ref *kunmap_ops,
+ 		      struct page **pages, unsigned int count);
++int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
++				struct gnttab_map_grant_ref *kunmap_ops,
++				struct page **pages, unsigned int count);
+ 
+ /* Perform a batch of grant map/copy operations. Retry every batch slot
+  * for which the hypervisor returns GNTST_eagain. This is typically due
