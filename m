@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaAWAPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:15:51 -0500
+	id S932171AbaAWAPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:15:50 -0500
 Received: from lgeamrelo01.lge.com ([156.147.1.125]:57768 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154AbaAWAOT (ORCPT
+	with ESMTP id S1756160AbaAWAOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:14:19 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-68-52e05ed18184
+	Wed, 22 Jan 2014 19:14:20 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-70-52e05ed213bd
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 14/21] perf tools: Add more hpp helper functions
-Date: Thu, 23 Jan 2014 09:13:58 +0900
-Message-Id: <1390436045-16830-15-git-send-email-namhyung@kernel.org>
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 18/21] perf top: Convert to hist_entry_iter
+Date: Thu, 23 Jan 2014 09:14:02 +0900
+Message-Id: <1390436045-16830-19-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
 References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
@@ -27,67 +26,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it needs to disable some columns at runtime.  Add help
-functions to support that.
+Reuse hist_entry_iter__add() function to share the similar code with
+perf report.  Note that it needs to be called with hists.lock so tweak
+some internal functions not to deadlock or hold the lock too long.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
 Tested-by: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 17 +++++++++++++++++
- tools/perf/util/hist.h |  3 +++
- 2 files changed, 20 insertions(+)
+ tools/perf/builtin-top.c | 78 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 43 insertions(+), 35 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index eb9c07bcdb01..1f9e25211da2 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -275,12 +275,29 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format)
- 	list_add_tail(&format->list, &perf_hpp__list);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c574c291383c..9de14f71c196 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -194,6 +194,12 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+ 
++	/*
++	 * This function is now called with he->hists->lock held.
++	 * Release it before going to sleep.
++	 */
++	pthread_mutex_unlock(&he->hists->lock);
++
+ 	if (err == -ERANGE && !he->ms.map->erange_warned)
+ 		ui__warn_map_erange(he->ms.map, sym, ip);
+ 	else if (err == -ENOMEM) {
+@@ -201,6 +207,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+ 		       sym->name);
+ 		sleep(1);
+ 	}
++
++	pthread_mutex_lock(&he->hists->lock);
  }
  
-+void perf_hpp__column_unregister(struct perf_hpp_fmt *format)
-+{
-+	list_del(&format->list);
-+}
-+
- void perf_hpp__column_enable(unsigned col)
- {
- 	BUG_ON(col >= PERF_HPP__MAX_INDEX);
- 	perf_hpp__column_register(&perf_hpp__format[col]);
+ static void perf_top__show_details(struct perf_top *top)
+@@ -236,24 +244,6 @@ out_unlock:
+ 	pthread_mutex_unlock(&notes->lock);
  }
  
-+void perf_hpp__column_disable(unsigned col)
+-static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+-						     struct addr_location *al,
+-						     struct perf_sample *sample)
+-{
+-	struct hist_entry *he;
+-
+-	pthread_mutex_lock(&evsel->hists.lock);
+-	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
+-				sample->period, sample->weight,
+-				sample->transaction, true);
+-	pthread_mutex_unlock(&evsel->hists.lock);
+-	if (he == NULL)
+-		return NULL;
+-
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-	return he;
+-}
+-
+ static void perf_top__print_sym_table(struct perf_top *top)
+ {
+ 	char bf[160];
+@@ -657,6 +647,28 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
+ 	return 0;
+ }
+ 
++static int hist_iter_cb(struct hist_entry_iter *iter, struct addr_location *al,
++			bool single, void *arg)
 +{
-+	BUG_ON(col >= PERF_HPP__MAX_INDEX);
-+	perf_hpp__column_unregister(&perf_hpp__format[col]);
++	struct perf_top *top = arg;
++	struct hist_entry *he = iter->he;
++	struct perf_evsel *evsel = iter->evsel;
++
++	if (single)
++		hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++	if (sort__has_sym) {
++		u64 ip = al->addr;
++
++		if (al->map)
++			ip = al->map->unmap_ip(al->map, ip);
++
++		perf_top__record_precise_ip(top, he, evsel->idx, ip);
++	}
++
++	return 0;
 +}
 +
-+void perf_hpp__cancel_cumulate(void)
-+{
-+	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
-+	perf_hpp__format[PERF_HPP__OVERHEAD].header = hpp__header_overhead;
-+}
-+
- int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
- 			      struct hists *hists)
+ static void perf_event__process_sample(struct perf_tool *tool,
+ 				       const union perf_event *event,
+ 				       struct perf_evsel *evsel,
+@@ -664,8 +676,6 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 				       struct machine *machine)
  {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 421c2d809769..1a91d536e443 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -209,7 +209,10 @@ enum {
+ 	struct perf_top *top = container_of(tool, struct perf_top, tool);
+-	struct symbol *parent = NULL;
+-	u64 ip = sample->ip;
+ 	struct addr_location al;
+ 	int err;
  
- void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
-+void perf_hpp__column_unregister(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
-+void perf_hpp__column_disable(unsigned col);
-+void perf_hpp__cancel_cumulate(void);
+@@ -741,25 +751,23 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	}
  
- static inline size_t perf_hpp__use_color(void)
- {
+ 	if (al.sym == NULL || !al.sym->ignore) {
+-		struct hist_entry *he;
++		struct hist_entry_iter iter = {
++			.add_entry_cb = hist_iter_cb,
++		};
+ 
+-		err = sample__resolve_callchain(sample, &parent, evsel, &al,
+-						top->max_stack);
+-		if (err)
+-			return;
++		if (symbol_conf.cumulate_callchain)
++			iter.ops = &hist_iter_cumulative;
++		else
++			iter.ops = &hist_iter_normal;
+ 
+-		he = perf_evsel__add_hist_entry(evsel, &al, sample);
+-		if (he == NULL) {
+-			pr_err("Problem incrementing symbol period, skipping event\n");
+-			return;
+-		}
++		pthread_mutex_lock(&evsel->hists.lock);
+ 
+-		err = hist_entry__append_callchain(he, sample);
+-		if (err)
+-			return;
++		err = hist_entry_iter__add(&iter, &al, evsel, event, sample,
++					   top->max_stack, top);
++		if (err < 0)
++			pr_err("Problem incrementing symbol period, skipping event\n");
+ 
+-		if (sort__has_sym)
+-			perf_top__record_precise_ip(top, he, evsel->idx, ip);
++		pthread_mutex_unlock(&evsel->hists.lock);
+ 	}
+ 
+ 	return;
 -- 
 1.7.11.7
 
