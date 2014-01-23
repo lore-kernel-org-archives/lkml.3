@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaAWGK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 01:10:26 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:34067 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaAWGKY (ORCPT
+	id S1753648AbaAWGLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 01:11:09 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:11473 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284AbaAWGLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 01:10:24 -0500
+	Thu, 23 Jan 2014 01:11:07 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <lgirdwood@gmail.com>, <broonie@kernel.org>, <shawn.guo@linaro.org>,
+        <kuninori.morimoto.gx@renesas.com>
+CC: <moinejf@free.fr>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 5/8] ASoC: core: set_tdm_slot() will return -ENOTSUPP if no operation provided
+Date: Thu, 23 Jan 2014 13:02:47 +0800
+Message-ID: <1390453370-29194-6-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <52D02693.1040003@samsung.com>
-References: <CAPUj1OM=Zn2nd98aXRCRUJrLknkS0o44V1BfuJhz5i19w+M5Ow@mail.gmail.com>
-	<1437466.9hkS4zH5MN@amdc1032>
-	<52D02693.1040003@samsung.com>
-Date: Thu, 23 Jan 2014 11:40:23 +0530
-Message-ID: <CAPUj1OOvphUhLRO6jDRD4RRUFbYO_my=BZZ1gMJ6d_G9WUN4_w@mail.gmail.com>
-Subject: Re: Arndale Timer Interrupt Question
-From: Mj Embd <mj.embd@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/14, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi,
->
-> On 09.01.2014 13:52, Bartlomiej Zolnierkiewicz wrote:
->>
->> added linux-samsung-soc to cc:,
->> it is a better suited list for this question
->>
->> On Thursday, January 09, 2014 10:30:56 AM Mj Embd wrote:
->>> I am a bit confused on the interrupt number for CNTVIRQ..CNTHPIRQ. Can
->>> you please help here.
->>>
->>> As per the exynos5 public manual
->>> What is the difference between  CPU_nCNTHPIRQ[0] and CNTHPIRQ.
->
-> I'm not sure if this is really what I think it is, but looking at the
-> manual, CPU_nCNTHPIRQ[0] and [1] SPI ports and CNTHPIRQ PPI port seem to
-> be the same signals, with the difference that the first two are shared
-> interrupts connected through the combiner, while the last one is a
-> per-processor interrupt, directly connected to GIC PPI port, allowing
-> each CPU to get its own CNTHPIRQ signal ([0] for CPU 0 and [1] for CPU 1).
+Make it easier for generic code to work with set_tdm_slot() by distinguishing
+between the operation not being supported and an error as is done.
 
-So while registering the IRQ which one has to be used Core0:26/33 Core1:26/54 ?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/soc-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Best regards,
-> Tomasz
->
->>>
->>> While the later has an interrupt ID 26, the former is part of a group
->>> with combined interrupt id as 33 for core 0 and 54 for core 1.
->>>
->>> For a timer interrupt which goes to PL2, which id should be used 26 or
->>> 33 for core 0 ?
->>>
->>> Please clear this confusion.
->>>
->>> Many Thanks
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-
-
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index fe1df50..393ff06 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3626,7 +3626,7 @@ int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+ 		return dai->driver->ops->set_tdm_slot(dai, tx_mask, rx_mask,
+ 				slots, slot_width);
+ 	else
+-		return -EINVAL;
++		return -ENOTSUPP;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot);
+ 
 -- 
--mj
+1.8.4
+
+
