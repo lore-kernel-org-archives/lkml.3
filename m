@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaAWA7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:59:39 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:44808 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752201AbaAWA7i (ORCPT
+	id S1753387AbaAWBBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:01:46 -0500
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:46638 "HELO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752101AbaAWBBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:59:38 -0500
+	Wed, 22 Jan 2014 20:01:45 -0500
 MIME-Version: 1.0
 In-Reply-To: <1386534157-17366-1-git-send-email-fkan@apm.com>
 References: <1386534157-17366-1-git-send-email-fkan@apm.com>
-Date: Wed, 22 Jan 2014 16:59:37 -0800
-Message-ID: <CAL85gmBaV9_9J3Td1FZxsFii+AO338-8PXgbXZoUEaO+ozHUmg@mail.gmail.com>
+Date: Wed, 22 Jan 2014 17:01:44 -0800
+Message-ID: <CAL85gmDXy=ZcbZNiQ8GuK4se3AFFo5-iAkBPo3cZJR0W=j=7uw@mail.gmail.com>
 Subject: Re: [PATCH 1/1] gic: change access of gicc_ctrl register to read
  modify write.
 From: Feng Kan <fkan@apm.com>
 To: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: tglx@linuxtronix.de
+Cc: Vinayak Kale <vkale@apm.com>, tglx@linutronix.de
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Just checking to see anyone had time to take a look at this and comment.
+
+Thanks
 
 On Sun, Dec 8, 2013 at 12:22 PM, Feng Kan <fkan@apm.com> wrote:
 > This change is made to preserve the GIC v2 releated bits in the
