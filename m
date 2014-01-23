@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaAWVtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:49:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36731 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaAWVtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:49:12 -0500
-Date: Thu, 23 Jan 2014 13:49:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mike Waychison <mikew@google.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] firmware/google: drop 'select EFI' to avoid recursive
- dependency
-Message-Id: <20140123134910.144a70cc0fd4c02ba0f14de4@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1401231334540.7313@chino.kir.corp.google.com>
-References: <1390473588-23367-1-git-send-email-ard.biesheuvel@linaro.org>
-	<alpine.DEB.2.02.1401231334540.7313@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755589AbaAWVtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:49:17 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:4260 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755439AbaAWVtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 16:49:14 -0500
+X-IronPort-AV: E=Sophos;i="4.95,708,1384300800"; 
+   d="scan'208";a="95952738"
+Message-ID: <52E18E57.8040600@citrix.com>
+Date: Thu, 23 Jan 2014 21:49:11 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
+ instead of copy
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>	<20140122.175031.873909526743971037.davem@davemloft.net>	<52E11563.1090707@citrix.com> <20140123.133948.1912867106975845377.davem@davemloft.net>
+In-Reply-To: <20140123.133948.1912867106975845377.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014 13:36:55 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+On 23/01/14 21:39, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Thu, 23 Jan 2014 13:13:07 +0000
+>
+>> It is already based on two predecessor patches, one which is already
+>> accepted but not applied yet:
+>>
+>> [PATCH net-next v2] xen-netback: Rework rx_work_todo
+>>
+>> And the other one is hopefully will be accepted very soon:
+>>
+>> [PATCH v5] xen/grant-table: Avoid m2p_override during mapping
+>
+> These have both been asked for changes or small adjustments to be made.
+AFAIK Wei acked the netback one:
 
-> $ ./scripts/get_maintainer.pl -f drivers/firmware/google/Kconfig
-> linux-kernel@vger.kernel.org (open list)
-> 
-> I wonder why he's not listed as a recipient for patches from 
-> get_maintainer.pl since it's clearly obvious he wrote the entire file.
+http://www.spinics.net/lists/netdev/msg267800.html
 
-I do wish get_maintainer was better about this.  You can apparently
-make it dtrt with funky arguments, but --git-since and --git aren't
-working for me.
+I've just sent in the latest one for the grant mapping one
 
-get_maintainer's default output should answer the question "who do I
-email about this file", and that ain't working :(
+> Also, you really have to precisely and explicitly mention any
+> dependencies which exist.
+Ok, the grant mapping API dependency is vaguely mentioned in the patch 
+history, I'll move it. I haven't mentioned the other one because it's 
+not related to the grant mapping changes, it's a generic bug.
 
+> In fact, it's often best to not post a series until the dependent
+> patches have been accepted.
+I've posted the first version of this series in November, these two 
+issues turned up in the recent weeks.
+
+Zoli
