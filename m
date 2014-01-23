@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373AbaAWVCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 16:02:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36181 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442AbaAWVCg (ORCPT
+	id S1754509AbaAWVKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 16:10:15 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:33423 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaAWVKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 16:02:36 -0500
-Date: Thu, 23 Jan 2014 13:02:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        gnome@rvzt.net, grawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging, v2
-Message-Id: <20140123130235.61e2eca44d92b37936955ff1@linux-foundation.org>
-In-Reply-To: <20140123151445.GX1574@moon>
-References: <20140122190816.GB4963@suse.de>
-	<20140122191928.GQ1574@moon>
-	<20140122223325.GA30637@moon>
-	<20140123095541.GD4963@suse.de>
-	<20140123103606.GU1574@moon>
-	<20140123121555.GV1574@moon>
-	<20140123125543.GW1574@moon>
-	<20140123151445.GX1574@moon>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jan 2014 16:10:10 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:cda5:d5b8:bf47:af28]
+In-Reply-To: <CAOesGMgtavy=gSJQeqqxQFXgSwKGekU2=vwnN2o2TeWhG0bktg@mail.gmail.com>
+References: <20140122140402.20163da276690810a1040909@canb.auug.org.au>
+	<CAKMK7uF+p96YtDo3NG4nBV5S5gYXk55p5KUOxsb+PMY+MH_Zyw@mail.gmail.com>
+	<CAOesGMgtavy=gSJQeqqxQFXgSwKGekU2=vwnN2o2TeWhG0bktg@mail.gmail.com>
+Date: Thu, 23 Jan 2014 13:10:09 -0800
+Message-ID: <CAOesGMjg5hX8KV847DPQrP94GxRPAaMxyGH48BrCyySvFxSLog@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the drm-intel tree with the drm tree
+From: Olof Johansson <olof@lixom.net>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014 19:14:45 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+On Wed, Jan 22, 2014 at 5:21 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Jan 22, 2014 at 2:06 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>> Hi Stephen,
+>>
+>> On Wed, Jan 22, 2014 at 4:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi all,
+>>>
+>>> Today's linux-next merge of the drm-intel tree got a conflict in
+>>> drivers/gpu/drm/i915/i915_irq.c between commit abca9e454498 ("drm: Pass
+>>> 'flags' from the caller to .get_scanout_position()") from the drm tree
+>>> and commit d59a63ad8234 ("drm/i915: Add intel_get_crtc_scanline()") from
+>>> the drm-intel tree.
+>>>
+>>> I fixed it up (I think - see below) and can carry the fix as necessary
+>>> (no action is required).
+>>
+>> Oops, this patch escaped - it's only for 3.15. I've shuffled my
+>> branches around now for the merge window so this should not pop up in
+>> your -next tree again until 3.15 starts.
+>
+> I just bisected boot failures on x86 chromebooks with -next to this
+> merge commit. I'll take a look tomorrow morning and make sure they're
+> gone.
 
-> VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all
-> bits in vm_flags matched except dirty bit the kernel can't longer
-> merge them and this forces the kernel to generate new VMAs instead.
+Yep, looks happier today.
 
-Do you intend to alter the brk() and binprm code to set VM_SOFTDIRTY?
+
+-Olof
