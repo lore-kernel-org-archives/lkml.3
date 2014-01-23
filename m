@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaAWPLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:11:33 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:55642 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaAWPLb (ORCPT
+	id S1754628AbaAWPMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:12:14 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:54052 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaAWPMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:11:31 -0500
-Date: Thu, 23 Jan 2014 15:11:23 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 2/3 RESEND] mfd: tc3589x: Reform device tree probing
-Message-ID: <20140123151123.GE8586@lee--X1>
-References: <1390481008-23900-1-git-send-email-linus.walleij@linaro.org>
- <20140123133141.GD8586@lee--X1>
- <CACRpkdZjRG=cmWHmmFNS+=guCwQoFpu8T3r4YHr6t_XihvmaWA@mail.gmail.com>
+	Thu, 23 Jan 2014 10:12:13 -0500
+X-IronPort-AV: E=Sophos;i="4.95,706,1384300800"; 
+   d="scan'208";a="93724787"
+Message-ID: <52E13149.1070705@citrix.com>
+Date: Thu, 23 Jan 2014 15:12:09 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZjRG=cmWHmmFNS+=guCwQoFpu8T3r4YHr6t_XihvmaWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v4] xen/grant-table: Avoid m2p_override during
+ mapping
+References: <1390335755-29328-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401221618340.21510@kaball.uk.xensource.com> <52E00FB7.3040508@citrix.com> <alpine.DEB.2.02.1401221848080.21510@kaball.uk.xensource.com> <52E015F5.70408@citrix.com> <alpine.DEB.2.02.1401231355340.15917@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1401231355340.15917@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Patch looks good to me. Is there any reason why we should rush this in
-> > for v3.14, or is it okay to go to -next?
-> 
-> No rush, but it's been on review like forever so unless there is
-> some noise from the DT people at -rc1 I'd be very happy if you
-> could apply patches 1 & 2 by then.
+On 23/01/14 13:59, Stefano Stabellini wrote:
+> On Wed, 22 Jan 2014, Zoltan Kiss wrote:
+>>>>>> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+>>>>>> index 2ae8699..0060178 100644
+>>>>>> --- a/arch/x86/xen/p2m.c
+>>>>>> +++ b/arch/x86/xen/p2m.c
+>>>>>> @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long mfn)
+>>>>>>
+>>>>>>     /* Add an MFN override for a particular page */
+>>>>>>     int m2p_add_override(unsigned long mfn, struct page *page,
+>>>>>> -		struct gnttab_map_grant_ref *kmap_op)
+>>>>>> +		struct gnttab_map_grant_ref *kmap_op, unsigned long
+>>>>>> pfn)
+>>>>>
+>>>>> Do we really need to add another additional parameter to
+>>>>> m2p_add_override?
+>>>>> I would just let m2p_add_override and m2p_remove_override call
+>>>>> page_to_pfn again. It is not that expensive.
+>>>> Yes, because that page_to_pfn can return something different. That's why
+>>>> the
+>>>> v2 patches failed.
+>>>
+>>> I am really curious: how can page_to_pfn return something different?
+>>> I don't think is supposed to happen.
+>> You call set_phys_to_machine before calling m2p* functions.
+>
+> set_phys_to_machine changes the physical to machine mapping, that would
+> be the mfn corresponding to a given pfn. It shouldn't affect the output
+> of page_to_pfn that returns the pfn corresponding to a given struct
+> page. The calculation of which is based on address offsets and should be
+> static and unaffected by things like set_phys_to_machine.
 
-I'm just waiting for their Ack. If I don't have it soon I'll review it
-myself and any changes will have to come in via subsequent patch
-submissions.
+Indeed, my mistake. The mfn is the only thing which changes, it still 
+has to be passed to m2p_remove_override. I'll send in a next version
 
-I think it's sensible to head for v3.15 for this set.
+Zoli
 
-> The third one can be applied out-of-order to the input tree after
-> that.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
