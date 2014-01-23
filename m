@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaAWT7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:59:35 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46267 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaAWT7e convert rfc822-to-8bit (ORCPT
+	id S1753061AbaAWUBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 15:01:13 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:23720 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaAWUBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:59:34 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH 0/2] Enable clock controllers on MSM
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <878uu6y5im.fsf@paris.lan>
-Date: Thu, 23 Jan 2014 13:59:28 -0600
-Cc: Stephen Boyd <sboyd@codeaurora.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DBC6E587-D188-4DA7-B898-D1DF34613320@codeaurora.org>
-References: <1389921904-3777-1-git-send-email-sboyd@codeaurora.org> <878uu6y5im.fsf@paris.lan>
-To: Kevin Hilman <khilman@linaro.org>
-X-Mailer: Apple Mail (2.1827)
+	Thu, 23 Jan 2014 15:01:10 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 23 Jan 2014 15:01:09 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Wang Nan <wangnan0@huawei.com>, kexec@lists.infradead.org,
+        Eric Biederman <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geng Hui <hui.geng@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: allow kernel to be loaded in middle of phymem
+In-reply-to: <20140123193137.GA15937@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.11.1401231443060.1652@knanqh.ubzr>
+References: <1390389916-8711-1-git-send-email-wangnan0@huawei.com>
+ <1390389916-8711-4-git-send-email-wangnan0@huawei.com>
+ <alpine.LFD.2.11.1401231357520.1652@knanqh.ubzr>
+ <20140123193137.GA15937@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 23 Jan 2014, Russell King - ARM Linux wrote:
 
-On Jan 23, 2014, at 11:25 AM, Kevin Hilman <khilman@linaro.org> wrote:
-
-> Stephen Boyd <sboyd@codeaurora.org> writes:
+> On Thu, Jan 23, 2014 at 02:15:07PM -0500, Nicolas Pitre wrote:
+> > On Wed, 22 Jan 2014, Wang Nan wrote:
+> > 
+> > > This patch allows the kernel to be loaded at the middle of kernel awared
+> > > physical memory. Before this patch, users must use mem= or device tree to cheat
+> > > kernel about the start address of physical memory.
+> > > 
+> > > This feature is useful in some special cases, for example, building a crash
+> > > dump kernel. Without it, kernel command line, atag and devicetree must be
+> > > adjusted carefully, sometimes is impossible.
+> > 
+> > With CONFIG_PATCH_PHYS_VIRT the value for PHYS_OFFSET is determined 
+> > dynamically by rounding down the kernel image start address to the 
+> > previous 16MB boundary.  In the case of a crash kernel, this might be 
+> > cleaner to simply readjust __pv_phys_offset during early boot and call 
+> > fixup_pv_table(), and then reserve away the memory from the previous 
+> > kernel.  That will let you access that memory directly (with gdb for 
+> > example) and no pointer address translation will be required.
 > 
->> These patches add the clock controller nodes, enable the clock drivers
->> on MSM based platforms, and hook it up enough to get the serial console
->> working. This is based on the merge of Mike's clk-next branch with
->> linux-next-20140116. The changes need the clk-next branch because that's
->> where the DTS include files landed.
-> 
-> I forgot to repond to this earlier, but I tested this on top of -next
-> and it gets the dragonboard booting w/mainline.  Yay!
-> 
->> Perhaps this can be applied after 3.14-rc1 is out?
-> 
-> Yeah, sounds good.
-> 
-> Kevin
+> We already have support in the kernel to ignore memory below the calculated
+> PHYS_OFFSET.  See 571b14375019c3a66ef70d4d4a7083f4238aca30.
 
-We’ll need arm-soc to pull in the clk changes from Mike’s tree for that.
+Sure.  Anyway what I'm suggesting above  would require that the crash 
+kernel be linked at a different virtual address for that to work.  
+That's probably more trouble than simply mapping the otherwise still 
+unmapped memory from the crashed kernel.
 
-> Stephen Boyd (2):
->>  ARM: dts: msm: Add clock controller nodes and hook into uart
->>  ARM: msm_defconfig: Enable MSM clock drivers
->> 
->> arch/arm/boot/dts/qcom-msm8660-surf.dts | 11 +++++++++++
->> arch/arm/boot/dts/qcom-msm8960-cdp.dts  | 18 ++++++++++++++++++
->> arch/arm/boot/dts/qcom-msm8974.dtsi     | 24 ++++++++++++++++++++++++
->> arch/arm/configs/msm_defconfig          |  4 ++++
->> 4 files changed, 57 insertions(+)
 
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Nicolas
