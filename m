@@ -1,203 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaAWKn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:43:29 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:38329 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103AbaAWKbr (ORCPT
+	id S1755109AbaAWKno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:43:44 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52963 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029AbaAWKnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:31:47 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
-        Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
-        olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 03/37] mtd: st_spi_fsm: Initialise and configure the FSM for normal working conditions
-Date: Thu, 23 Jan 2014 10:30:51 +0000
-Message-Id: <1390473085-24626-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
-References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
+	Thu, 23 Jan 2014 05:43:41 -0500
+Date: Thu, 23 Jan 2014 02:42:58 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 2/2] memcg: fix css reference leak and endless loop
+ in mem_cgroup_iter
+In-Reply-To: <20140122082723.GB18154@dhcp22.suse.cz>
+Message-ID: <alpine.LSU.2.11.1401230203070.1132@eggly.anvils>
+References: <20140121083454.GA1894@dhcp22.suse.cz> <1390301143-9541-1-git-send-email-mhocko@suse.cz> <1390301143-9541-2-git-send-email-mhocko@suse.cz> <20140121114219.8c34256dfbe7c2470b36ced8@linux-foundation.org> <alpine.LSU.2.11.1401211218010.5688@eggly.anvils>
+ <20140122082723.GB18154@dhcp22.suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses default values to initialise a connected flash chip. This
-includes; a device soft reset, setting of a safe working frequency, a
-switch into Fast Sequencing Mode, configuring of timing data and a purge
-of the FIFO.
+On Wed, 22 Jan 2014, Michal Hocko wrote:
+> On Tue 21-01-14 13:18:42, Hugh Dickins wrote:
+> [...]
+> > We do have a confusing situation.  The hang goes back to 3.10 but takes
+> > two different forms, because of intervening changes: in 3.10 and 3.11
+> > mem_cgroup_iter repeatedly returns root memcg to its caller, in 3.12 and
+> > 3.13 mem_cgroup_iter repeatedly gets NULL memcg from mem_cgroup_iter_next
+> > and cannot return to its caller.
+> > 
+> > Patch 1/2 is what's needed to fix 3.10 and 3.11 (and applies correctly
+> > to 3.11, but will have to be rediffed for 3.10 because of rearrangement
+> > in between). 
+> 
+> I will backport it when it reaches stable queue.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 127 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 127 insertions(+)
+Thank you.
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index ccee749..5badbe4 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -74,6 +74,10 @@
- #define SPI_CFG_CS_SETUPHOLD(x)		(((x) & 0xff) << 16)
- #define SPI_CFG_DATA_HOLD(x)		(((x) & 0xff) << 24)
- 
-+#define SPI_CFG_DEFAULT_MIN_CS_HIGH    SPI_CFG_MIN_CS_HIGH(0x0AA)
-+#define SPI_CFG_DEFAULT_CS_SETUPHOLD   SPI_CFG_CS_SETUPHOLD(0xA0)
-+#define SPI_CFG_DEFAULT_DATA_HOLD      SPI_CFG_DATA_HOLD(0x00)
-+
- /*
-  * Register: SPI_FAST_SEQ_TRANSFER_SIZE
-  */
-@@ -185,19 +189,136 @@
- #define STFSM_INST_WAIT			STFSM_INSTR(STFSM_OPC_WAIT,	0)
- #define STFSM_INST_STOP			STFSM_INSTR(STFSM_OPC_STOP,	0)
- 
-+#define STFSM_DEFAULT_EMI_FREQ 100000000UL                        /* 100 MHz */
-+#define STFSM_DEFAULT_WR_TIME  (STFSM_DEFAULT_EMI_FREQ * (15/1000)) /* 15ms */
-+
-+#define STFSM_FLASH_SAFE_FREQ  10000000UL                         /* 10 MHz */
-+
- struct stfsm {
- 	struct device		*dev;
- 	void __iomem		*base;
- 	struct resource		*region;
- 	struct mtd_info		mtd;
- 	struct mutex		lock;
-+
-+	uint32_t                fifo_dir_delay;
- };
- 
-+static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
-+{
-+	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
-+}
-+
-+static void stfsm_clear_fifo(struct stfsm *fsm)
-+{
-+	uint32_t avail;
-+
-+	for (;;) {
-+		avail = stfsm_fifo_available(fsm);
-+		if (!avail)
-+			break;
-+
-+		while (avail) {
-+			readl(fsm->base + SPI_FAST_SEQ_DATA_REG);
-+			avail--;
-+		}
-+	}
-+}
-+
-+static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
-+{
-+	int ret, timeout = 10;
-+
-+	/* Wait for controller to accept mode change */
-+	while (--timeout) {
-+		ret = readl(fsm->base + SPI_STA_MODE_CHANGE);
-+		if (ret & 0x1)
-+			break;
-+		udelay(1);
-+	}
-+
-+	if (!timeout)
-+		return -EBUSY;
-+
-+	writel(mode, fsm->base + SPI_MODESELECT);
-+
-+	return 0;
-+}
-+
-+static void stfsm_set_freq(struct stfsm *fsm, uint32_t spi_freq)
-+{
-+	uint32_t emi_freq;
-+	uint32_t clk_div;
-+
-+	/* TODO: Make this dynamic */
-+	emi_freq = STFSM_DEFAULT_EMI_FREQ;
-+
-+	/*
-+	 * Calculate clk_div - values between 2 and 128
-+	 * Multiple of 2, rounded up
-+	 */
-+	clk_div = 2 * DIV_ROUND_UP(emi_freq, 2 * spi_freq);
-+	if (clk_div < 2)
-+		clk_div = 2;
-+	else if (clk_div > 128)
-+		clk_div = 128;
-+
-+	/*
-+	 * Determine a suitable delay for the IP to complete a change of
-+	 * direction of the FIFO. The required delay is related to the clock
-+	 * divider used. The following heuristics are based on empirical tests,
-+	 * using a 100MHz EMI clock.
-+	 */
-+	if (clk_div <= 4)
-+		fsm->fifo_dir_delay = 0;
-+	else if (clk_div <= 10)
-+		fsm->fifo_dir_delay = 1;
-+	else
-+		fsm->fifo_dir_delay = DIV_ROUND_UP(clk_div, 10);
-+
-+	dev_dbg(fsm->dev, "emi_clk = %uHZ, spi_freq = %uHZ, clk_div = %u\n",
-+		emi_freq, spi_freq, clk_div);
-+
-+	writel(clk_div, fsm->base + SPI_CLOCKDIV);
-+}
-+
-+static int stfsm_init(struct stfsm *fsm)
-+{
-+	int ret;
-+
-+	/* Perform a soft reset of the FSM controller */
-+	writel(SEQ_CFG_SWRESET, fsm->base + SPI_FAST_SEQ_CFG);
-+	udelay(1);
-+	writel(0, fsm->base + SPI_FAST_SEQ_CFG);
-+
-+	/* Set clock to 'safe' frequency initially */
-+	stfsm_set_freq(fsm, STFSM_FLASH_SAFE_FREQ);
-+
-+	/* Switch to FSM */
-+	ret = stfsm_set_mode(fsm, SPI_MODESELECT_FSM);
-+	if (ret)
-+		return ret;
-+
-+	/* Set timing parameters */
-+	writel(SPI_CFG_DEVICE_ST            |
-+	       SPI_CFG_DEFAULT_MIN_CS_HIGH  |
-+	       SPI_CFG_DEFAULT_CS_SETUPHOLD |
-+	       SPI_CFG_DEFAULT_DATA_HOLD,
-+	       fsm->base + SPI_CONFIGDATA);
-+	writel(STFSM_DEFAULT_WR_TIME, fsm->base + SPI_STATUS_WR_TIME_REG);
-+
-+	/* Clear FIFO, just in case */
-+	stfsm_clear_fifo(fsm);
-+
-+	return 0;
-+}
-+
- static int stfsm_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
- 	struct resource *res;
- 	struct stfsm *fsm;
-+	int ret;
- 
- 	if (!np) {
- 		dev_err(&pdev->dev, "No DT found\n");
-@@ -234,6 +355,12 @@ static int stfsm_probe(struct platform_device *pdev)
- 
- 	mutex_init(&fsm->lock);
- 
-+	ret = stfsm_init(fsm);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to initialise FSM Controller\n");
-+		return ret;
-+	}
-+
- 	platform_set_drvdata(pdev, fsm);
- 
- 	fsm->mtd.dev.parent	= &pdev->dev;
--- 
-1.8.3.2
+Testing, at home and at work, has confirmed your two patches are good.
+Greg's particular test on 3.11 gave convincing results, and I was helped
+by Linus's tree of last night (df32e43a54d0) happening to be quite quick
+to reproduce the issue on my laptop.
 
+> 
+> > Patch 2/2 is what's needed to fix 3.12 and 3.13 (but applies
+> > correctly to neither of them because it's diffed on top of my CSS_ONLINE
+> > fix).  Patch 1/2 is correct but unnecessary in 3.12 and 3.13: I'm unclear
+> > whether Michal is claiming that it would also fix the hang in 3.12 and
+> > 3.13 if we didn't have 2/2: I doubt that, and haven't tested that.
+> 
+> Actually both patches are needed. If we had only 2/2 then we wouldn't
+> endless loop inside mem_cgroup_iter but we could still return root to
+> caller all the time because mem_cgroup_iter_load would return NULL on
+> css_tryget failure on the cached root. Or am I missing something that
+> would prevent that?
+
+In theory I agree with you; and if you're missing something, I can't see
+it either.  But in practice, all my earlier testing of 3.12 and 3.13 was
+just with 2/2, and I've tried without your 1/2 since: whereas I have hung
+on 3.12 and 3.13 a convincing number of times without 2/2, I have never
+hung on them with 2/2 without 1/2.  In practice 1/2 appears essential
+for 3.10 and 3.11, but irrelevant for 3.12 and 3.13.
+
+That could be easy to explain if there were a difference at the calling
+end, shrink_zone(), between those releases: but I don't see that.  Odd.
+Either we're both missing something, or my testing is even less reliable
+than I'd thought.  But since I certainly don't dispute 1/2, it is merely
+academic.  Though still bothersome.
+
+> 
+> > Given how Michal has diffed this patch on top of my CSS_ONLINE one
+> > (mm-memcg-iteration-skip-memcgs-not-yet-fully-initialized.patch),
+> > it would be helpful if you could mark that one also for stable 3.12+,
+> > to save us from having to rediff this one for stable.  We don't have
+> > a concrete example of a problem it solves in the vanilla kernel, but
+> > it makes more sense to include it than to exclude it.
+> 
+> Yes, I think it makes sense to queue it for 3.12+ as well because it is
+> non intrusive and potential issues would be really subtle.
+
+Before Andrew sends these all off to Linus, I should admit that there's
+probably a refinement still to come to the CSS_ONLINE one.  I'm ashamed
+to admit that I overlooked a much earlier comment from Greg Thelen, who
+suggested that a memory barrier might be required.  I think he's right,
+and I'd have liked to say exactly what and where before answering you
+now; but barriers are tricky elusive things, I've not yet decided,
+and better report back to you now on the testing result.
+
+Hugh
+
+> 
+> > (You would be right to point out that the CSS_ONLINE one fixes
+> > something that goes back to 3.10: I'm saying 3.12+ because I'm not
+> > motivated to rediff it for 3.10 and 3.11 when there's nothing to
+> > go on top; but that's not a very good reason to lie - overrule me.)
+> > 
+> > Hugh
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
