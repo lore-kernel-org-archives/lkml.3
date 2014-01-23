@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaAWQ5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:57:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39570 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaAWQ5b (ORCPT
+	id S1752259AbaAWRCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:02:43 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:47014 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaAWRCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:57:31 -0500
-Date: Thu, 23 Jan 2014 17:56:55 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/15] sched: Use a static_key for sched_clock_stable
-Message-ID: <20140123165655.GY31570@twins.programming.kicks-ass.net>
-References: <20140122131456.GA389@x4>
- <52DFD50E.800@oracle.com>
- <20140122183538.GA389@x4>
- <20140122184253.GN30183@twins.programming.kicks-ass.net>
- <20140122190905.GA391@x4>
- <20140122191254.GA390@x4>
- <20140122201605.GU11314@laptop.programming.kicks-ass.net>
- <20140122210814.GC9481@laptop.programming.kicks-ass.net>
- <20140123015354.GB3768@dhcp-16-126.nay.redhat.com>
- <20140123021028.GE3768@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123021028.GE3768@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 23 Jan 2014 12:02:42 -0500
+Message-ID: <1390496192.1792.488.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/5] EFI memmap and other fixes, v3
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 23 Jan 2014 09:56:32 -0700
+In-Reply-To: <20140123165109.GA11190@pd.tnic>
+References: <1390045698-16882-1-git-send-email-bp@alien8.de>
+	 <20140123090654.GA17297@console-pimps.org>
+	 <1390494619.1792.482.camel@misato.fc.hp.com>
+	 <20140123165109.GA11190@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 10:10:28AM +0800, Dave Young wrote:
-> Hmm, seems the my physical machine is booting fine with this patch. kvm
-> guest problem still exist, but that kvm thing might be other problem.
+On Thu, 2014-01-23 at 17:51 +0100, Borislav Petkov wrote:
+> On Thu, Jan 23, 2014 at 09:30:19AM -0700, Toshi Kani wrote:
+> > Since this issue is quite serious on our systems (3.14 kernels won't
+> > boot up), I'd really appreciate if the fixes can be made into some
+> > 3.14-rc.  It can hit on any EFI systems with large memory.
+> 
+> That's why we have "efi=old_map" - so that you can use the old mapping
+> method which is a chicken bit for the new scheme.
 
-Dave, could you try with tip/master, Ingo pushed out all the fixes
-gathered.
+Good point.  Yes, that will help us a lot.
 
-Lacking that, could you perhaps provide the .config you use for your
-guest and a kvm invocation?
+> And I told you privately already that you're better off merging Matt's
+> 'next' branch than us exposing this to the world too early. So stop
+> pushing this when there are clearly other solutions for your case and be
+> patient!
 
-I used a defconfig with KVM_GUEST=y, which was enough to enable kvmclock
-support and then started with:
+Right, but I just responded to Matt's query. :-) 
 
-kvm -kernel defconfig-build/arch/x86/boot/bzImage -nographic -append "console=ttyS0" -smp 2
+Thanks,
+-Toshi
+
+
