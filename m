@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaAWTGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34954 "EHLO
+	id S1754300AbaAWTGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:06:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34958 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaAWTGU (ORCPT
+	with ESMTP id S1752465AbaAWTGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:20 -0500
+	Thu, 23 Jan 2014 14:06:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 15/27] crash_dump: fix compilation error (on MIPS at least)
-Date: Thu, 23 Jan 2014 11:06:52 -0800
-Message-Id: <20140123190650.292792208@linuxfoundation.org>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Aditya Kali <adityakali@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.12 06/27] vfs: In d_path dont call d_dname on a mount point
+Date: Thu, 23 Jan 2014 11:06:43 -0800
+Message-Id: <20140123190649.355407916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -33,42 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qais Yousef <qais.yousef@imgtec.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 5a610fcc7390ee60308deaf09426ada87a1eeec2 upstream.
+commit f48cfddc6729ef133933062320039808bafa6f45 upstream.
 
-  In file included from kernel/crash_dump.c:2:0:
-  include/linux/crash_dump.h:22:27: error: unknown type name `pgprot_t'
+Aditya Kali (adityakali@google.com) wrote:
+> Commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
+> "proc: Fix the namespace inode permission checks." converted
+> the namespace files into symlinks. The same commit changed
+> the way namespace bind mounts appear in /proc/mounts:
+>   $ mount --bind /proc/self/ns/ipc /mnt/ipc
+> Originally:
+>   $ cat /proc/mounts | grep ipc
+>   proc /mnt/ipc proc rw,nosuid,nodev,noexec 0 0
+>
+> After commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
+>   $ cat /proc/mounts | grep ipc
+>   proc ipc:[4026531839] proc rw,nosuid,nodev,noexec 0 0
+>
+> This breaks userspace which expects the 2nd field in
+> /proc/mounts to be a valid path.
 
-when CONFIG_CRASH_DUMP=y
+The symlink /proc/<pid>/ns/{ipc,mnt,net,pid,user,uts} point to
+dentries allocated with d_alloc_pseudo that we can mount, and
+that have interesting names printed out with d_dname.
 
-The error was traced back to commit 9cb218131de1 ("vmcore: introduce
-remap_oldmem_pfn_range()")
+When these files are bind mounted /proc/mounts is not currently
+displaying the mount point correctly because d_dname is called instead
+of just displaying the path where the file is mounted.
 
-include <asm/pgtable.h> to get the missing definition
+Solve this by adding an explicit check to distinguish mounted pseudo
+inodes and unmounted pseudo inodes.  Unmounted pseudo inodes always
+use mount of their filesstem as the mnt_root  in their path making
+these two cases easy to distinguish.
 
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Aditya Kali <adityakali@google.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/crash_dump.h |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/dcache.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -6,6 +6,8 @@
- #include <linux/proc_fs.h>
- #include <linux/elf.h>
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3064,8 +3064,13 @@ char *d_path(const struct path *path, ch
+ 	 * thus don't need to be hashed.  They also don't need a name until a
+ 	 * user wants to identify the object in /proc/pid/fd/.  The little hack
+ 	 * below allows us to generate a name for these objects on demand:
++	 *
++	 * Some pseudo inodes are mountable.  When they are mounted
++	 * path->dentry == path->mnt->mnt_root.  In that case don't call d_dname
++	 * and instead have d_path return the mounted path.
+ 	 */
+-	if (path->dentry->d_op && path->dentry->d_op->d_dname)
++	if (path->dentry->d_op && path->dentry->d_op->d_dname &&
++	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
  
-+#include <asm/pgtable.h> /* for pgprot_t */
-+
- #define ELFCORE_ADDR_MAX	(-1ULL)
- #define ELFCORE_ADDR_ERR	(-2ULL)
- 
+ 	rcu_read_lock();
 
 
