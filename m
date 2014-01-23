@@ -1,167 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaAWP5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:57:18 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:42235 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaAWP5Q (ORCPT
+	id S1751743AbaAWQKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:10:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61865 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751001AbaAWQKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:57:16 -0500
-Message-ID: <52E13BBC.5020005@linaro.org>
-Date: Thu, 23 Jan 2014 16:56:44 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 23 Jan 2014 11:10:21 -0500
+Date: Thu, 23 Jan 2014 11:10:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v6 7/8] x86: patch all traced function calls using the
+ int3-based framework
+Message-ID: <20140123111018.5cb064e4@gandalf.local.home>
+In-Reply-To: <1390486902.16203.161.camel@pathway.suse.cz>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	<1386690140-19941-8-git-send-email-pmladek@suse.cz>
+	<20140115104741.2d78cee4@gandalf.local.home>
+	<1390396845.16203.58.camel@pathway.suse.cz>
+	<1390486902.16203.161.camel@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [PATCH 04/20] ARM64 / ACPI: Introduce arm_core.c
- and its related head file
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-5-git-send-email-hanjun.guo@linaro.org> <20140122115453.GC24288@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20140122115453.GC24288@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo,
+On Thu, 23 Jan 2014 15:21:42 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-W dniu 22.01.2014 12:54, Lorenzo Pieralisi pisze:
-> On Fri, Jan 17, 2014 at 12:24:58PM +0000, Hanjun Guo wrote:
->
-> [...]
->
->> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
->> index bd9bbd0..2210353 100644
->> --- a/arch/arm64/kernel/setup.c
->> +++ b/arch/arm64/kernel/setup.c
->> @@ -41,6 +41,7 @@
->>   #include <linux/memblock.h>
->>   #include <linux/of_fdt.h>
->>   #include <linux/of_platform.h>
->> +#include <linux/acpi.h>
->>
->>   #include <asm/cputype.h>
->>   #include <asm/elf.h>
->> @@ -225,6 +226,11 @@ void __init setup_arch(char **cmdline_p)
->>
->>   	arm64_memblock_init();
->>
->> +	/* Parse the ACPI tables for possible boot-time configuration */
->> +	acpi_boot_table_init();
->> +	early_acpi_boot_init();
->> +	acpi_boot_init();
->> +
->>   	paging_init();
->
-> Can I ask you please why we need to parse ACPI tables before
-> paging_init() ?
-This is for future usage and because of couple of reasons. Mainly SRAT 
-table parsing should be done (before paging_init()) for proper NUMA 
-initialization and then paging_init().
+> It means that the slowness caused by tracing "text_poke*" stuff is
+> comparable with the slowness caused by "run_sync()". It might mean that
+> "text_poke_bp_list" is not worth the added complexity.
 
-Regards,
-Tomasz
->
-> [...]
->
->> +/*
->> + * __acpi_map_table() will be called before page_init(), so early_ioremap()
->> + * or early_memremap() should be called here.
->
-> Again, why is this needed ? What's needed before paging_init() from ACPI ?
->
-> [...]
->
->> +/*
->> + * acpi_boot_table_init() and acpi_boot_init()
->> + *  called from setup_arch(), always.
->> + *	1. checksums all tables
->> + *	2. enumerates lapics
->> + *	3. enumerates io-apics
->> + *
->> + * acpi_table_init() is separated to allow reading SRAT without
->> + * other side effects.
->> + */
->> +void __init acpi_boot_table_init(void)
->> +{
->> +	/*
->> +	 * If acpi_disabled, bail out
->> +	 */
->> +	if (acpi_disabled)
->> +		return;
->> +
->> +	/*
->> +	 * Initialize the ACPI boot-time table parser.
->> +	 */
->> +	if (acpi_table_init()) {
->> +		disable_acpi();
->> +		return;
->> +	}
->> +}
->> +
->> +int __init early_acpi_boot_init(void)
->> +{
->> +	/*
->> +	 * If acpi_disabled, bail out
->> +	 */
->> +	if (acpi_disabled)
->> +		return -ENODEV;
->> +
->> +	/*
->> +	 * Process the Multiple APIC Description Table (MADT), if present
->> +	 */
->> +	early_acpi_process_madt();
->> +
->> +	return 0;
->> +}
->> +
->> +int __init acpi_boot_init(void)
->> +{
->> +	/*
->> +	 * If acpi_disabled, bail out
->> +	 */
->> +	if (acpi_disabled)
->> +		return -ENODEV;
->> +
->> +	acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
->> +
->> +	/*
->> +	 * Process the Multiple APIC Description Table (MADT), if present
->> +	 */
->> +	acpi_process_madt();
->> +
->> +	return 0;
->> +}
->
-> Well, apart from having three init calls, one returning void and two
-> returning proper values, do not understand why, and do not understand
-> why we need three calls in the first place...why should we process MADT
-> twice in two separate calls ? What is supposed to change in between that
-> prevents you from merging the two together ?
->
-> Thanks,
-> Lorenzo
->
->
-> _______________________________________________
-> Linaro-acpi mailing list
-> Linaro-acpi@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-acpi
->
+I'm starting to think it's fine keeping ftrace and text_poke separate.
+Ftrace is rather the NMI of text modification. It's extremely invasive
+and has more corner cases than anything else. I rather not complicate
+the more generic text_poke just to satisfy ftrace. Perhaps if it was
+not such an arch specific change it may be worth it. As these only have
+to deal with x86, and the only rational in doing it is to get ftrace to
+use text_poke() (one code base for all), I think we can drop it.
+
+Having them separate isn't that bad either, as both get heavy testing
+as they both are used in normal development.
+
+> 
+> Well, the iterator-based implementation is complex but still faster.
+> Also the many sync calls might be more painful for a busy system that
+> heavy use of the int3 handler. So, "text_poke_bp_list" still might be
+> useful.
+
+That said, I'm sure text_poke can use some clean ups. That would be
+nice as well. I think batch processing with the list may be more useful
+for things like kprobes and jump labels.
+
+-- Steve
+
