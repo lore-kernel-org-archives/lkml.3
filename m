@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaAWSmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:42:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34732 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaAWSjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753459AbaAWSjT (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Jan 2014 13:39:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaAWSjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:39:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrei Warkentin <andreiw@vmware.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 16/23] md: fix problem when adding device to read-only array with bitmap.
-Date: Thu, 23 Jan 2014 10:39:49 -0800
-Message-Id: <20140123183902.165598811@linuxfoundation.org>
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.10 04/23] GFS2: Increase i_writecount during gfs2_setattr_chown
+Date: Thu, 23 Jan 2014 10:39:37 -0800
+Message-Id: <20140123183900.335602751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -28,129 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Bob Peterson <rpeterso@redhat.com>
 
-commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97 upstream.
+commit 62e96cf81988101fe9e086b2877307b6adda5197 upstream.
 
-If an array is started degraded, and then the missing device
-is found it can be re-added and a minimal bitmap-based recovery
-will bring it fully up-to-date.
+This patch calls get_write_access in function gfs2_setattr_chown,
+which merely increases inode->i_writecount for the duration of the
+function. That will ensure that any file closes won't delete the
+inode's multi-block reservation while the function is running.
+It also ensures that a multi-block reservation exists when needed
+for quota change operations during the chown.
 
-If the array is read-only a recovery would not be allowed.
-But also if the array is read-only and the missing device was
-present very recently, then there could be no need for any
-recovery at all, so we simply include the device in the read-only
-array without any recovery.
-
-However... if the missing device was removed a little longer ago
-it could be missing some updates, but if a bitmap is present it will
-be conditionally accepted pending a bitmap-based update.  We don't
-currently detect this case properly and will include that old
-device into the read-only array with no recovery even though it really
-needs a recovery.
-
-This patch keeps track of whether a bitmap-based-recovery is really
-needed or not in the new Bitmap_sync rdev flag.  If that is set,
-then the device will not be added to a read-only array.
-
-Cc: Andrei Warkentin <andreiw@vmware.com>
-Fixes: d70ed2e4fafdbef0800e73942482bb075c21578b
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |   18 +++++++++++++++---
- drivers/md/md.h |    3 +++
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ fs/gfs2/inode.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1118,6 +1118,7 @@ static int super_90_validate(struct mdde
- 	rdev->raid_disk = -1;
- 	clear_bit(Faulty, &rdev->flags);
- 	clear_bit(In_sync, &rdev->flags);
-+	clear_bit(Bitmap_sync, &rdev->flags);
- 	clear_bit(WriteMostly, &rdev->flags);
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1536,10 +1536,22 @@ static int setattr_chown(struct inode *i
+ 	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
+ 		ogid = ngid = NO_GID_QUOTA_CHANGE;
  
- 	if (mddev->raid_disks == 0) {
-@@ -1196,6 +1197,8 @@ static int super_90_validate(struct mdde
- 		 */
- 		if (ev1 < mddev->bitmap->events_cleared)
- 			return 0;
-+		if (ev1 < mddev->events)
-+			set_bit(Bitmap_sync, &rdev->flags);
- 	} else {
- 		if (ev1 < mddev->events)
- 			/* just a hot-add of a new device, leave raid_disk at -1 */
-@@ -1604,6 +1607,7 @@ static int super_1_validate(struct mddev
- 	rdev->raid_disk = -1;
- 	clear_bit(Faulty, &rdev->flags);
- 	clear_bit(In_sync, &rdev->flags);
-+	clear_bit(Bitmap_sync, &rdev->flags);
- 	clear_bit(WriteMostly, &rdev->flags);
+-	error = gfs2_quota_lock(ip, nuid, ngid);
++	error = get_write_access(inode);
+ 	if (error)
+ 		return error;
  
- 	if (mddev->raid_disks == 0) {
-@@ -1686,6 +1690,8 @@ static int super_1_validate(struct mddev
- 		 */
- 		if (ev1 < mddev->bitmap->events_cleared)
- 			return 0;
-+		if (ev1 < mddev->events)
-+			set_bit(Bitmap_sync, &rdev->flags);
- 	} else {
- 		if (ev1 < mddev->events)
- 			/* just a hot-add of a new device, leave raid_disk at -1 */
-@@ -2829,6 +2835,7 @@ slot_store(struct md_rdev *rdev, const c
- 		else
- 			rdev->saved_raid_disk = -1;
- 		clear_bit(In_sync, &rdev->flags);
-+		clear_bit(Bitmap_sync, &rdev->flags);
- 		err = rdev->mddev->pers->
- 			hot_add_disk(rdev->mddev, rdev);
- 		if (err) {
-@@ -5761,6 +5768,7 @@ static int add_new_disk(struct mddev * m
- 			    info->raid_disk < mddev->raid_disks) {
- 				rdev->raid_disk = info->raid_disk;
- 				set_bit(In_sync, &rdev->flags);
-+				clear_bit(Bitmap_sync, &rdev->flags);
- 			} else
- 				rdev->raid_disk = -1;
- 		} else
-@@ -7694,7 +7702,8 @@ static int remove_and_add_spares(struct
- 		if (test_bit(Faulty, &rdev->flags))
- 			continue;
- 		if (mddev->ro &&
--		    rdev->saved_raid_disk < 0)
-+		    ! (rdev->saved_raid_disk >= 0 &&
-+		       !test_bit(Bitmap_sync, &rdev->flags)))
- 			continue;
++	error = gfs2_rs_alloc(ip);
++	if (error)
++		goto out;
++
++	error = gfs2_rindex_update(sdp);
++	if (error)
++		goto out;
++
++	error = gfs2_quota_lock(ip, nuid, ngid);
++	if (error)
++		goto out;
++
+ 	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
+ 	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
+ 		error = gfs2_quota_check(ip, nuid, ngid);
+@@ -1566,6 +1578,8 @@ out_end_trans:
+ 	gfs2_trans_end(sdp);
+ out_gunlock_q:
+ 	gfs2_quota_unlock(ip);
++out:
++	put_write_access(inode);
+ 	return error;
+ }
  
- 		rdev->recovery_offset = 0;
-@@ -7775,9 +7784,12 @@ void md_check_recovery(struct mddev *mdd
- 			 * As we only add devices that are already in-sync,
- 			 * we can activate the spares immediately.
- 			 */
--			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 			remove_and_add_spares(mddev, NULL);
--			mddev->pers->spare_active(mddev);
-+			/* There is no thread, but we need to call
-+			 * ->spare_active and clear saved_raid_disk
-+			 */
-+			md_reap_sync_thread(mddev);
-+			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 			goto unlock;
- 		}
- 
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -129,6 +129,9 @@ struct md_rdev {
- enum flag_bits {
- 	Faulty,			/* device is known to have a fault */
- 	In_sync,		/* device is in_sync with rest of array */
-+	Bitmap_sync,		/* ..actually, not quite In_sync.  Need a
-+				 * bitmap-based recovery to get fully in sync
-+				 */
- 	Unmerged,		/* device is being added to array and should
- 				 * be considerred for bvec_merge_fn but not
- 				 * yet for actual IO
 
 
