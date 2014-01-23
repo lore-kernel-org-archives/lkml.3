@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaAWSQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:16:11 -0500
-Received: from sauhun.de ([89.238.76.85]:58602 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932298AbaAWSPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:15:46 -0500
-Date: Thu, 23 Jan 2014 19:15:38 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Curt Brune <curt@cumulusnetworks.com>,
-        Thomas De Schampheleire <patrickdepinguin@gmail.com>,
-        gregkh@linuxfoundation.org,
-        Shrijeet Mukherjee <shm@cumulusnetworks.com>, wolfram@the-dreams.de,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Add at24 based EEPROMs to the eeprom_dev hardware
- class
-Message-ID: <20140123181537.GA3756@katana>
-References: <CAOMwXhMVgcVVWiUYbEgGcM+K5bZmKA3LO0=jZCEsyJak1TbTSA@mail.gmail.com>
- <20140123172534.GA2665@katana>
- <CAOMwXhPqnSNWtPMo7Qrr-O3qAqtjju7au7Mudckp7kN50yQW3A@mail.gmail.com>
+	id S932321AbaAWSQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:16:23 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:63228 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470AbaAWSQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:16:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhPqnSNWtPMo7Qrr-O3qAqtjju7au7Mudckp7kN50yQW3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E0C5B7.7040908@gmail.com>
+References: <52E0C5B7.7040908@gmail.com>
+Date: Thu, 23 Jan 2014 10:16:08 -0800
+Message-ID: <CAHA+R7MGzxYGkNYrBmENcsaY_0de79xA4fHu+hPDGQK9bf21QA@mail.gmail.com>
+Subject: Re: How to identify different ip tunnels
+From: Cong Wang <cwang@twopensource.com>
+To: zhuyj <zyjzyj2000@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 22, 2014 at 11:33 PM, zhuyj <zyjzyj2000@gmail.com> wrote:
+> Here are the result that we have got:
+>
+> Actual Tunnel type ifi->ifi_type
+> 4IN4 768
+> GRE4 778
+> 6IN4/6TO4/ISATAP 776
+> 4IN6/6IN6/IPIN6 769
+>
+> So, we can NOT distinguish the actual tunnel type via ifi_type attribute
+> except the GRE4 and 4IN4 tunnel. However we need the actual type. That is
+> our question.
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-
-> Well, it is not the Copyrights section, or you are saying the same
-> people should go to MODULE_AUTHOR as in the Copyrights section, even
-> if it is potentially several names? I thought this would be the name
-> of the person who put the file together even if from existing sources.
-
-You may be right that the two can be viewed differently. Nonetheless,
-adding 10 lines to an existing driver already upstream does not count
-for both.
-
-> >> PS.: Fixing the broken i2c mailing list typo, and updating Wolfram's
-> >> address from the broken (obsolete?) version.
-> >
-> > It came through to the i2c list? What was wrong?
->=20
-> Yes, it did, _after_ fixing the typo in the mailing list address.
-> Check the original mailing list address typed for details.
-
-I did. That's why I asked :) Plus, since I got the original mail, it
-must have come via i2c-list since my pengutronix address was in deed
-wrong.
-
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS4VxJAAoJEBQN5MwUoCm2L/UQAKyTIauMbVAIrX0eV/S+8cQE
-vPcqM1yprtczIO9ggb4Wr+tIvvV2dZbGzu19O5/65RHWGeQL4kAKq1d1i1tf32yS
-7YuEkALUKIO6hgHs7GXV0FeC/q9wYuzlq0DbpEZYqrqq5ok8Q4A1JHkBI6FUz+kx
-YpspV7Wr3kTjQRwZ7igxhucROSD7lEohcUQJKuC6EBl/MluuvmFDtv8quuwLBn/M
-rTv+QNKkE0CkdApUdqHsnaAX+y/i3JPz4rEyABR9Q15smOF2dtX0W6ipaCUNiEeg
-VeJzChwJWXNKMz6CXIj8xhr0S/bxpArxc2YH8m8e8kabhJdqQxLpddbXc7SBbwr2
-vad92J9jHfcR+4pqgoTOaP8kNdryGKYweQDb/U6PZIGol5FnCF3/DvDmAclHpywB
-x51NvigSMwG5rAd95wl3NLdWaCVLWlR1sNoUeFTN3eIYUSpnpVAMevCMEgpn7NDn
-GbNsPfk+mlHhL7i+Lj3MIXHxsk82IwUjnaVpnMoi34TB059CpK0rcm4LRTB1oaTr
-yVTQaBKSRa9pY8rri8a3M9yWDyj65T5Nbsob3ltZIyYhMisd4wGHWRjwJQ1wqIpw
-QjhfVQx5mAPQBpoOAapLOjuq3AA4xuCJ0aQGXFGuEoPvFXx3mxL2SJtkvcLpqHad
-602JEqx+eXwOaXdaul7r
-=H8WQ
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
+Try to search IFLA_IPTUN_PROTO. They are distinguished by protocol.
