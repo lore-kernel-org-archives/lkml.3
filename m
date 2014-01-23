@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217AbaAWAPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:15:47 -0500
+	id S1756152AbaAWAOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:14:18 -0500
 Received: from lgeamrelo01.lge.com ([156.147.1.125]:58514 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbaAWAOU (ORCPT
+	with ESMTP id S1756045AbaAWAOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:14:20 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-73-52e05ed2fe29
+	Wed, 22 Jan 2014 19:14:15 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-59-52e05ed1b236
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 19/21] perf top: Add --children option
-Date: Thu, 23 Jan 2014 09:14:03 +0900
-Message-Id: <1390436045-16830-20-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/21] perf tools: Save callchain info for each cumulative entry
+Date: Thu, 23 Jan 2014 09:13:52 +0900
+Message-Id: <1390436045-16830-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
 References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
@@ -27,60 +27,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --children option is for showing accumulated overhead (period)
-value as well as self overhead.  It should be used with one of -g or
---call-graph option.
+When accumulating callchain entry, also save current snapshot of the
+chain so that it can show the rest of the chain.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-top.txt | 6 ++++++
- tools/perf/builtin-top.c              | 7 +++++++
- 2 files changed, 13 insertions(+)
+ tools/perf/util/hist.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index cdd8d4946dba..01b6fd1a4428 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -149,6 +149,12 @@ Default is to monitor all CPUS.
- 	Setup and enable call-graph (stack chain/backtrace) recording,
- 	implies -g.
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 1b477f8d2d17..765ac5953201 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -744,6 +744,14 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
  
-+--children::
-+	Accumulate callchain of children to parent entry so that then can
-+	show up in the output.  The output will have a new "Children" column
-+	and will be sorted on the data.  It requires -g/--call-graph option
-+	enabled.
+ 	he_cache[iter->curr++] = he;
+ 
++	callchain_append(he->callchain, &callchain_cursor, sample->period);
 +
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
- 	beyond the specified depth will be ignored. This is a trade-off
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 9de14f71c196..439e000b0f39 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1087,6 +1087,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
- 		     "mode[,dump_size]", record_callchain_help,
- 		     &parse_callchain_opt),
-+	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
-+		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &top.max_stack,
- 		    "Set the maximum stack depth when parsing the callchain. "
- 		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
-@@ -1186,6 +1188,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	top.sym_evsel = perf_evlist__first(top.evlist);
- 
-+	if (!symbol_conf.use_callchain) {
-+		symbol_conf.cumulate_callchain = false;
-+		perf_hpp__cancel_cumulate();
-+	}
++	/*
++	 * We need to re-initialize the cursor since callchain_append()
++	 * advanced the cursor to the end.
++	 */
++	callchain_cursor_commit(&callchain_cursor);
 +
- 	symbol_conf.priv_size = sizeof(struct annotation);
+ 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ }
  
- 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+@@ -757,8 +765,6 @@ iter_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	if (node == NULL)
+ 		return 0;
+ 
+-	callchain_cursor_advance(&callchain_cursor);
+-
+ 	return fill_callchain_info(al, node, iter->hide_unresolved);
+ }
+ 
+@@ -782,6 +788,11 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 		.parent = iter->parent,
+ 	};
+ 	int i;
++	struct callchain_cursor cursor;
++
++	callchain_cursor_snapshot(&cursor, &callchain_cursor);
++
++	callchain_cursor_advance(&callchain_cursor);
+ 
+ 	/*
+ 	 * Check if there's duplicate entries in the callchain.
+@@ -800,6 +811,8 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 
+ 	he_cache[iter->curr++] = he;
+ 
++	callchain_append(he->callchain, &cursor, sample->period);
++
+ 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ }
+ 
 -- 
 1.7.11.7
 
