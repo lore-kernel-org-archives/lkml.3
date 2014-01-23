@@ -1,49 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbaAWTdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:33:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43545 "EHLO mga09.intel.com"
+	id S1755575AbaAWTeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:34:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751AbaAWTdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:33:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,707,1384329600"; 
-   d="scan'208";a="471478057"
-Message-ID: <52E16E83.6060301@intel.com>
-Date: Thu, 23 Jan 2014 11:33:23 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-CC: kernel@gentoo.org, kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.13 hangs when I tried to start a KVM at a 32 bit stable Gentoo
-References: <52DEA270.60803@gmx.de> <52E165B7.6020506@intel.com>
-In-Reply-To: <52E165B7.6020506@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752815AbaAWTeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 14:34:22 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        akpm@linux-foundation.org, peterz@infradead.org, oleg@redhat.com
+Subject: [PATCH 1/7] pid: change task_struct::pid to read-only
+Date: Thu, 23 Jan 2014 14:32:34 -0500
+Message-Id: <daf6b97e8e6782dff6bb75f8347f16fb4c834670.1390495874.git.rgb@redhat.com>
+In-Reply-To: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+References: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+In-Reply-To: <cover.1390495874.git.rgb@redhat.com>
+References: <cover.1390495874.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 10:55 AM, Dave Hansen wrote:
-> On 01/21/2014 08:38 AM, Toralf Förster wrote:
->> Jan 21 17:18:57 n22 kernel: INFO: rcu_sched self-detected stall on CPU { 2}  (t=60001 jiffies g=18494 c=18493 q=183951)
->> Jan 21 17:18:57 n22 kernel: sending NMI to all CPUs:
->> Jan 21 17:18:57 n22 kernel: NMI backtrace for cpu 2
->> Jan 21 17:18:57 n22 kernel: CPU: 2 PID: 6779 Comm: qemu-system-x86 Not tainted 3.13.0 #3
->> Jan 21 17:18:57 n22 kernel: Hardware name: LENOVO 4180F65/4180F65, BIOS 83ET75WW (1.45 ) 05/10/2013
->> Jan 21 17:18:57 n22 kernel: task: e921c370 ti: e5f36000 task.ti: e5f36000
-> 
-> I'm seeing a very similar hang with an ubuntu guest and a custom kernel.
-> I'm on commit 0dc3fd0249a, and it's 100% reproducible every time I run KVM.
+task->pid is only ever assigned once (well ok, twice).  For system health and
+secure logging confidence, make it const to make it much more intentional when
+it is being changed.
 
-Did a little more LKML digging and found this:
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ arch/x86/kernel/process.c |    2 +-
+ fs/exec.c                 |    4 +++-
+ include/linux/sched.h     |    2 +-
+ kernel/fork.c             |    8 ++++++--
+ 4 files changed, 11 insertions(+), 5 deletions(-)
 
-	http://marc.info/?l=linux-kernel&m=139038631607917&q=raw
-
-Peter's fix works for me.  I'm also running a CONFIG_PREEMPT_VOLUNTARY=y
-config.
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 3fb8d95..bab0730 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -66,7 +66,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
+ {
+ 	int ret;
+ 
+-	*dst = *src;
++	memcpy(dst, src, sizeof(struct task_struct));
+ 	if (fpu_allocated(&src->thread.fpu)) {
+ 		memset(&dst->thread.fpu, 0, sizeof(dst->thread.fpu));
+ 		ret = fpu_alloc(&dst->thread.fpu);
+diff --git a/fs/exec.c b/fs/exec.c
+index 7ea097f..a6b585e 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -906,6 +906,8 @@ static int de_thread(struct task_struct *tsk)
+ 	 */
+ 	if (!thread_group_leader(tsk)) {
+ 		struct task_struct *leader = tsk->group_leader;
++		/* tast_struct::pid is const pid_t, hence the ugly cast */
++		pid_t *pid_p = (pid_t *)&(tsk->pid);
+ 
+ 		sig->notify_count = -1;	/* for exit_notify() */
+ 		for (;;) {
+@@ -948,7 +950,7 @@ static int de_thread(struct task_struct *tsk)
+ 		 * Note: The old leader also uses this pid until release_task
+ 		 *       is called.  Odd but simple and correct.
+ 		 */
+-		tsk->pid = leader->pid;
++		*pid_p = leader->pid;
+ 		change_pid(tsk, PIDTYPE_PID, task_pid(leader));
+ 		transfer_pid(leader, tsk, PIDTYPE_PGID);
+ 		transfer_pid(leader, tsk, PIDTYPE_SID);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 53f97eb..195f6bd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1128,7 +1128,7 @@ struct task_struct {
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
+ 
+-	pid_t pid;
++	const pid_t pid;
+ 	pid_t tgid;
+ 
+ #ifdef CONFIG_CC_STACKPROTECTOR
+diff --git a/kernel/fork.c b/kernel/fork.c
+index dfa736c..296e564 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -286,7 +286,7 @@ void __init fork_init(unsigned long mempages)
+ int __attribute__((weak)) arch_dup_task_struct(struct task_struct *dst,
+ 					       struct task_struct *src)
+ {
+-	*dst = *src;
++	memcpy(dst, src, sizeof(struct task_struct));
+ 	return 0;
+ }
+ 
+@@ -1135,6 +1135,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ {
+ 	int retval;
+ 	struct task_struct *p;
++	pid_t *pid_p;
+ 
+ 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+ 		return ERR_PTR(-EINVAL);
+@@ -1389,7 +1390,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	clear_all_latency_tracing(p);
+ 
+ 	/* ok, now we should be set up.. */
+-	p->pid = pid_nr(pid);
++
++	/* tast_struct::pid is const pid_t, hence the ugly cast */
++	pid_p = (pid_t *)&(p->pid);
++	*pid_p = pid_nr(pid);
+ 	if (clone_flags & CLONE_THREAD) {
+ 		p->exit_signal = -1;
+ 		p->group_leader = current->group_leader;
+-- 
+1.7.1
 
