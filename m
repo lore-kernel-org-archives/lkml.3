@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaAWO4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:56:40 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46803 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753869AbaAWO4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:56:39 -0500
-Date: Thu, 23 Jan 2014 14:56:05 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v2 6/6] arm64: audit: Add audit hook in
- ptrace/syscall_trace
-Message-ID: <20140123145605.GG27520@arm.com>
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
- <1389946399-4525-7-git-send-email-takahiro.akashi@linaro.org>
+	id S1754794AbaAWO51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:57:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773AbaAWO50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 09:57:26 -0500
+Date: Thu, 23 Jan 2014 15:56:54 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 01/21] perf tools: Introduce struct hist_entry_iter
+Message-ID: <20140123145654.GE1180@krava.brq.redhat.com>
+References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
+ <1390436045-16830-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389946399-4525-7-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1390436045-16830-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 08:13:19AM +0000, AKASHI Takahiro wrote:
-> @@ -1064,6 +1066,16 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
->  {
->  	unsigned long saved_reg;
+On Thu, Jan 23, 2014 at 09:13:45AM +0900, Namhyung Kim wrote:
+> There're some duplicate code when adding hist entries.  They are
+> different in that some have branch info or mem info but generally do
+> same thing.  So introduce new struct hist_entry_iter and add callbacks
+> to customize each case in general way.
+> 
+
+SNIP
+
 >  
-> +#ifdef CONFIG_AUDITSYSCALL
-> +	if (dir)
-> +		audit_syscall_exit(regs);
-> +	else
-> +		audit_syscall_entry(syscall_get_arch(current, regs),
-> +			(int)regs->syscallno,
-> +			regs->orig_x0, regs->regs[1],
-> +			regs->regs[2], regs->regs[3]);
-> +#endif /* CONFIG_AUDITSYSCALL */
+> -	if (sort__mode == SORT_MODE__BRANCH) {
+> -		ret = report__add_branch_hist_entry(tool, &al, sample, evsel);
+> -		if (ret < 0)
+> -			pr_debug("problem adding lbr entry, skipping event\n");
+> -	} else if (rep->mem_mode == 1) {
+> -		ret = report__add_mem_hist_entry(tool, &al, sample, evsel, event);
+> -		if (ret < 0)
+> -			pr_debug("problem adding mem entry, skipping event\n");
+> -	} else {
+> -		if (al.map != NULL)
+> -			al.map->dso->hit = 1;
+> -
+> -		ret = report__add_hist_entry(tool, evsel, &al, sample);
+> -		if (ret < 0)
+> -			pr_debug("problem incrementing symbol period, skipping event\n");
+> -	}
+> +	if (sort__mode == SORT_MODE__BRANCH)
+> +		iter.ops = &hist_iter_branch;
+> +	else if (rep->mem_mode == 1)
 
-It should work without the #ifdef as audit_syscall_exit/entry are dummy
-static inline functions when !CONFIG_AUDITSYSCALL.
+nit.. mem_mode is bool
 
--- 
-Catalin
+jirka
+> +
