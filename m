@@ -1,136 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaAWLYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 06:24:41 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:37316 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751935AbaAWLYj (ORCPT
+	id S1753301AbaAWLZb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 06:25:31 -0500
+Received: from smtp-out-180.synserver.de ([212.40.185.180]:1078 "EHLO
+	smtp-out-085.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751979AbaAWLZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 06:24:39 -0500
-Date: Thu, 23 Jan 2014 11:24:05 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "msalter@redhat.com" <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 6/6] arm64: add EFI runtime services
-Message-ID: <20140123112405.GC27520@arm.com>
-References: <1389392950-22457-1-git-send-email-msalter@redhat.com>
- <1389392950-22457-7-git-send-email-msalter@redhat.com>
+	Thu, 23 Jan 2014 06:25:29 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17395
+Message-ID: <52E0FC22.8060903@metafoo.de>
+Date: Thu, 23 Jan 2014 12:25:22 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389392950-22457-7-git-send-email-msalter@redhat.com>
-Thread-Topic: [PATCH 6/6] arm64: add EFI runtime services
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Srikanth Thokala <sthokal@xilinx.com>
+CC: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com> <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+In-Reply-To: <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 10:29:10PM +0000, Mark Salter wrote:
-> diff --git a/arch/arm64/include/asm/efi.h b/arch/arm64/include/asm/efi.h
-> new file mode 100644
-> index 0000000..a835b2c
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/efi.h
-> @@ -0,0 +1,12 @@
-> +#ifndef _ASM_ARM64_EFI_H
-> +#define _ASM_ARM64_EFI_H
-
-__ASM_EFI_H please for consistency with the other files.
-
-> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-> new file mode 100644
-> index 0000000..a42dc38
-> --- /dev/null
-> +++ b/arch/arm64/kernel/efi.c
-> @@ -0,0 +1,353 @@
-> +/*
-> + * Extensible Firmware Interface
+On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+[...]
+> +/**
+> + * xilinx_vdma_device_control - Configure DMA channel of the device
+> + * @dchan: DMA Channel pointer
+> + * @cmd: DMA control command
+> + * @arg: Channel configuration
 > + *
-> + * Based on Extensible Firmware Interface Specification version 2.4
-> + *
-> + * Copyright (C) 2013 Linaro Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
+> + * Return: '0' on success and failure value on error
 > + */
+> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
+> +				      enum dma_ctrl_cmd cmd, unsigned long arg)
+> +{
+> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 > +
-> +#include <linux/efi.h>
-> +#include <linux/export.h>
-> +#include <linux/memblock.h>
-> +#include <linux/of.h>
-> +#include <linux/of_fdt.h>
-> +#include <linux/sched.h>
-> +#include <linux/slab.h>
+> +	switch (cmd) {
+> +	case DMA_TERMINATE_ALL:
+> +		xilinx_vdma_terminate_all(chan);
+> +		return 0;
+> +	case DMA_SLAVE_CONFIG:
+> +		return xilinx_vdma_slave_config(chan,
+> +					(struct xilinx_vdma_config *)arg);
+
+You really shouldn't be overloading the generic API with your own semantics.
+DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
+
+> +	default:
+> +		return -ENXIO;
+> +	}
+> +}
 > +
-> +#include <asm/cacheflush.h>
-> +#include <asm/efi.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/mmu_context.h>
+[...]
 > +
-> +struct efi_memory_map memmap;
+> +	/* Request the interrupt */
+> +	chan->irq = irq_of_parse_and_map(node, 0);
+> +	err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
+> +			       IRQF_SHARED, "xilinx-vdma-controller", chan);
 
-Is this variable used outside this file or from common code? It has a
-too generic name, may clash with other things.
+This is a clasic example of where to not use devm_request_irq. 'chan' is
+accessed in the interrupt handler, but if you use devm_request_irq 'chan'
+will be freed before the interrupt handler has been released, which means
+there is now a race condition where the interrupt handler can access already
+freed memory.
 
-> +static unsigned long arm_efi_facility;
+> +	if (err) {
+> +		dev_err(xdev->dev, "unable to request IRQ\n");
+> +		return err;
+> +	}
+> +
+> +	/* Initialize the DMA channel and add it to the DMA engine channels
+> +	 * list.
+> +	 */
+> +	chan->common.device = &xdev->common;
+> +
+> +	list_add_tail(&chan->common.device_node, &xdev->common.channels);
+> +	xdev->chan[chan->id] = chan;
+> +
+> +	/* Reset the channel */
+> +	err = xilinx_vdma_chan_reset(chan);
+> +	if (err < 0) {
+> +		dev_err(xdev->dev, "Reset channel failed\n");
+> +		return err;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * struct of_dma_filter_xilinx_args - Channel filter args
+> + * @dev: DMA device structure
+> + * @chan_id: Channel id
+> + */
+> +struct of_dma_filter_xilinx_args {
+> +	struct dma_device *dev;
+> +	u32 chan_id;
+> +};
+> +
+> +/**
+> + * xilinx_vdma_dt_filter - VDMA channel filter function
+> + * @chan: DMA channel pointer
+> + * @param: Filter match value
+> + *
+> + * Return: true/false based on the result
+> + */
+> +static bool xilinx_vdma_dt_filter(struct dma_chan *chan, void *param)
+> +{
+> +	struct of_dma_filter_xilinx_args *args = param;
+> +
+> +	return chan->device == args->dev && chan->chan_id == args->chan_id;
+> +}
+> +
+> +/**
+> + * of_dma_xilinx_xlate - Translation function
+> + * @dma_spec: Pointer to DMA specifier as found in the device tree
+> + * @ofdma: Pointer to DMA controller data
+> + *
+> + * Return: DMA channel pointer on success and NULL on error
+> + */
+> +static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
+> +						struct of_dma *ofdma)
+> +{
+> +	struct of_dma_filter_xilinx_args args;
+> +	dma_cap_mask_t cap;
+> +
+> +	args.dev = ofdma->of_dma_data;
+> +	if (!args.dev)
+> +		return NULL;
+> +
+> +	if (dma_spec->args_count != 1)
+> +		return NULL;
+> +
+> +	dma_cap_zero(cap);
+> +	dma_cap_set(DMA_SLAVE, cap);
+> +
+> +	args.chan_id = dma_spec->args[0];
+> +
+> +	return dma_request_channel(cap, xilinx_vdma_dt_filter, &args);
 
-You could drop the "arm_" prefix here, that's just local to this file.
+There is a new helper function called dma_get_slave_channel, which makes
+this much easier. Take a look at the k3dma.c driver for an example.
+> +}
 
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index 5516f54..7a45095 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -41,6 +41,7 @@
->  #include <linux/memblock.h>
->  #include <linux/of_fdt.h>
->  #include <linux/of_platform.h>
-> +#include <linux/efi.h>
->
->  #include <asm/fixmap.h>
->  #include <asm/cputype.h>
-> @@ -55,6 +56,7 @@
->  #include <asm/traps.h>
->  #include <asm/memblock.h>
->  #include <asm/psci.h>
-> +#include <asm/efi.h>
->
->  unsigned int processor_id;
->  EXPORT_SYMBOL(processor_id);
-> @@ -229,9 +231,13 @@ void __init setup_arch(char **cmdline_p)
->
->         arm64_memblock_init();
->
-> +       efi_init();
->         paging_init();
->         request_standard_resources();
->
-> +       if (efi_enabled(EFI_BOOT))
-> +               efi_enter_virtual_mode();
-
-The common start_kernel() function already has this call:
-
-#ifdef CONFIG_X86
-	if (efi_enabled(EFI_RUNTIME_SERVICES))
-		efi_enter_virtual_mode();
-#endif
-
-Could we not use it for arm64 as well? Ideally with an empty
-efi_enter_virtual_mode() in include/linux/efi.h if !CONFIG_EFI but I
-noticed that ia64 does a separate call and they don't seem to have
-efi_enabled(), so probably not feasible for them.
-
---
-Catalin
