@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaAWNfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:35:47 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:58939 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaAWNfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:35:45 -0500
-Date: Thu, 23 Jan 2014 14:35:41 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lei Wen <adrian.wenl@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
-Message-ID: <20140123133537.GA13345@localhost.localdomain>
-References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
- <alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
- <CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
- <CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
+	id S1753628AbaAWNip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:38:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61612 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935AbaAWNin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 08:38:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,706,1384329600"; 
+   d="scan'208";a="443458196"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Srikanth Thokala <sthokal@xilinx.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+Thread-Topic: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+Thread-Index: AQHPGEBrkYhUftUf0k+A2fvAkjPdqg==
+Date: Thu, 23 Jan 2014 13:38:37 +0000
+Message-ID: <1390484317.7619.81.camel@smile>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+	 <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+	 <52E0FC22.8060903@metafoo.de>
+In-Reply-To: <52E0FC22.8060903@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.173]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <AF2F9C8839194F4C8194B17569A6F1F3@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0NDcp7H023911
 
-On Thu, Jan 23, 2014 at 11:22:32AM +0530, Viresh Kumar wrote:
-> I think below diff might get this fixed for you, though I am not sure if it
-> breaks something else. Probably Thomas/Frederic can answer here.
-> If this looks fine I will send it formally again:
+On Thu, 2014-01-23 at 12:25 +0100, Lars-Peter Clausen wrote:
+> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+
+[...]
+
+> > +	/* Request the interrupt */
+> > +	chan->irq = irq_of_parse_and_map(node, 0);
+> > +	err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
+> > +			       IRQF_SHARED, "xilinx-vdma-controller", chan);
 > 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index accfd24..3a2c7fa 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -940,7 +940,8 @@ void add_timer_on(struct timer_list *timer, int cpu)
->          * makes sure that a CPU on the way to stop its tick can not
->          * evaluate the timer wheel.
->          */
-> -       wake_up_nohz_cpu(cpu);
-> +       if (!tbase_get_deferrable(timer->base))
-> +               wake_up_nohz_cpu(cpu);
+> This is a clasic example of where to not use devm_request_irq. 'chan' is
+> accessed in the interrupt handler, but if you use devm_request_irq 'chan'
+> will be freed before the interrupt handler has been released, which means
+> there is now a race condition where the interrupt handler can access already
+> freed memory.
 
-So you simply rely on the next tick to see the new timer. This should work with
-CONFIG_NO_HZ_IDLE but not with CONFIG_NO_HZ_FULL since the target may be running
-without the tick.
+Could you elaborate this case? As far as I understood managed resources
+are a kind of stack pile. In this case you have no such condition. Where
+am I wrong?
 
-Basically, in the case of a deferrable timer you need to manage to call
-wake_up_full_nohz_cpu() but not wake_up_idle_cpu().
 
-It should be even possible to spare the IPI in a full dynticks CPU if it is
-running idle. But that's an optional bonus because it require some deep
-care on complicated races against the call to tick_nohz_idle_exit().
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
 
-I also realize than when we enqueue a timer on a full nohz CPU, we should set_need_resched()
-the target before sending the IPI if it is idle like does wake_up_idle_cpu(). Otherwise the
-IPI will be ignored without exiting the idle loop nor reevaluating the tick on irq exit.
-If you can fix that along the way, that will be much appreciated.
-
-Thanks!
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
