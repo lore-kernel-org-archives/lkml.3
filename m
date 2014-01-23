@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaAWMy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 07:54:57 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:57078 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101AbaAWMy4 (ORCPT
+	id S1753601AbaAWMzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 07:55:48 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:52456 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaAWMzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 07:54:56 -0500
-Message-ID: <52E10F37.7030904@gmail.com>
-Date: Thu, 23 Jan 2014 07:46:47 -0500
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
+	Thu, 23 Jan 2014 07:55:47 -0500
+Date: Thu, 23 Jan 2014 16:55:43 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Mel Gorman <mgorman@suse.de>, Pavel Emelyanov <xemul@parallels.com>,
         Andrew Morton <akpm@linux-foundation.org>
-CC: Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Weijie Yang <weijie.yang@samsung.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm/zswap: add writethrough option
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org> <20140114001115.GU1992@bbox> <CALZtONCCrckuHxgHB=GQj0tHszLAYTZZLGzFTnRkj9pvxx0dyg@mail.gmail.com> <20140115054208.GL1992@bbox> <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com> <CALZtONAaPCi8eUhSmdXSxWbeFFN=ChsfL9OurSZUsSPo-_gnfg@mail.gmail.com> <20140122123358.a65c42605513fc8466152801@linux-foundation.org> <20140123001806.GF31230@bbox>
-In-Reply-To: <20140123001806.GF31230@bbox>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: gnome@rvzt.net, drawoc@darkrefraction.com, alan@lxorguk.ukuu.org.uk,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 67651] Bisected: Lots of fragmented mmaps cause gimp to
+ fail in 3.12 after exceeding vm_max_map_count
+Message-ID: <20140123125543.GW1574@moon>
+References: <20140122190816.GB4963@suse.de>
+ <20140122191928.GQ1574@moon>
+ <20140122223325.GA30637@moon>
+ <20140123095541.GD4963@suse.de>
+ <20140123103606.GU1574@moon>
+ <20140123121555.GV1574@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140123121555.GV1574@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-22 19:18, Minchan Kim wrote:
+On Thu, Jan 23, 2014 at 04:15:55PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Jan 23, 2014 at 02:36:06PM +0400, Cyrill Gorcunov wrote:
+> > > The test case passes with this patch applied to 3.13 so that appears
+> > > to confirm that this is related to VM_SOFTDIRTY preventing merges.
+> > > Unfortunately I did not have slabinfo tracking enabled to double check
+> > > the number of vm_area_structs in teh system.
+> > 
+> > Thanks a lot, Mel! I'm testing the patch as well (manually though :).
+> > I'll send the final fix today.
 > 
-> From the beginning, zswap is for reducing swap I/O but if workingset
-> overflows, it should write back rather than OOM with expecting a small
-> number of writeback would make the system happy because the high memory
-> pressure is temporal so soon most of workload would be hit in zswap
-> without further writeback.
-> 
-But write-through would still reduce I/O to swap, the only difference is
-that it just reduces the need to read from swap, not the need for all
-I/O.  This can still be significant because it would mean (assuming that
-zswap uses a LRU algorithm for deciding what to drop) that static pages
-that get accessed frequently and get swapped out often would just get
-written to swap once, and only be read from zswap.
+> The patch below should fix the problem. I would really appreaciate
+> some additional testing.
 
-Also, I disagree with the implication that memory pressure is
-short-lived, I have a desktop with 16G of RAM, and I regularly work with
-data-sets that are at-least that size (mostly hi-res images and
-hi-quality video/audio).
-> If memory pressure continues and writeback steadily, it means zswap's
-> benefit would be mitigated, even worse by addding comp/decomp overhead.
-> In that case, it would be better to disable zswap, even.
-> 
-> Dan said writethrough supporting is first step to make zswap smart
-> but anybody didn't say further words to step into the smart and
-> what's the *real* workload want it and what's the *real* number from
-> that because dm-cache/zram might be a good fit.
-> (I don't intend to argue zram VS zswap. If the concern is solved by
-> existing solution, why should we invent new function and
-> have maintenace cost?) so it's very hard for me to judge that we should
-> accept and maintain it.
-bcache isn't stable enough that I would even trust using it for /tmp,
-let alone using it for swap (i consistently get kernel OOPSes when it's
-compiled in or loaded as a module, even when I'm not using it), and
-dm-cache is a pain to setup (especially if it needs to happen every time
-the system boots).  Part of the big advantage of zswap is that it is
-(relatively) stable, and all it takes to set it up is turning on a pair
-of kconfig options.
-> We need blueprint for the future and make an agreement on the
-> direction before merging this patch.
-> 
-> But code size is not much and Seth already gave an his Ack so I don't
-> want to hurt Dan any more(Sorry for Dan) and wasting my time so pass
-> the decision to others(ex, Seth and Bob).
-> If they insist on, I don't object any more.
-> 
-> Sorry for bothering Dan.
-> 
-> Thanks.
+Forgot to refresh the patch, sorry.
+---
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging
 
+VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all
+bits in vm_flags matched except dirty bit the kernel can't longer
+merge them and this forces the kernel to generate new VMAs instead.
+
+It finally may lead to the situation when userspace application
+reaches vm.max_map_count limit and get crashed in worse case
+
+ | (gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
+ |
+ | (file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+ | xinit: connection to X server lost
+ |
+ | waiting for X server to shut down
+ | /usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+
+https://bugzilla.kernel.org/show_bug.cgi?id=67651
+https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
+
+Initial problem came from missed VM_SOFTDIRTY in do_brk() routine
+but even if we would set up VM_SOFTDIRTY here, there is still a way to
+prevent VMAs from merging: one can call
+
+ | echo 4 > /proc/$PID/clear_refs
+
+and clear all VM_SOFTDIRTY over all VMAs presented in memory map,
+then new do_brk() will try to extend old VMA and finds that dirty
+bit doesn't match thus new VMA will be generated.
+
+As discussed to Pavel, the right approach should be to ignore
+VM_SOFTDIRTY bit when we're trying to merge VMAs and if merged
+successed we mark extended VMA with dirty bit.
+
+Reported-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/mmap.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.git/mm/mmap.c
+===================================================================
+--- linux-2.6.git.orig/mm/mmap.c
++++ linux-2.6.git/mm/mmap.c
+@@ -893,7 +893,15 @@ again:			remove_next = 1 + (end > next->
+ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 			struct file *file, unsigned long vm_flags)
+ {
+-	if (vma->vm_flags ^ vm_flags)
++	/*
++	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
++	 * match the flags but dirty bit -- the caller should mark
++	 * merged VMA as dirty. If dirty bit won't be excluded from
++	 * comparison, we increase pressue on the memory system forcing
++	 * the kernel to generate new VMAs when old one could be extended
++	 * instead.
++	 */
++	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
+ 		return 0;
+ 	if (vma->vm_file != file)
+ 		return 0;
+@@ -1038,6 +1046,8 @@ struct vm_area_struct *vma_merge(struct
+ 				end, prev->vm_pgoff, NULL);
+ 		if (err)
+ 			return NULL;
++		else
++			prev->vm_flags |= VM_SOFTDIRTY;
+ 		khugepaged_enter_vma_merge(prev);
+ 		return prev;
+ 	}
+@@ -1057,6 +1067,8 @@ struct vm_area_struct *vma_merge(struct
+ 				next->vm_pgoff - pglen, NULL);
+ 		if (err)
+ 			return NULL;
++		else
++			area->vm_flags |= VM_SOFTDIRTY;
+ 		khugepaged_enter_vma_merge(area);
+ 		return area;
+ 	}
+@@ -1082,7 +1094,7 @@ static int anon_vma_compatible(struct vm
+ 	return a->vm_end == b->vm_start &&
+ 		mpol_equal(vma_policy(a), vma_policy(b)) &&
+ 		a->vm_file == b->vm_file &&
+-		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
++		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
+ 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
+ }
+ 
