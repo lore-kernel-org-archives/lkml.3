@@ -1,71 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaAWRvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:51:11 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54064 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbaAWRvI (ORCPT
+	id S932196AbaAWRvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:51:10 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27303 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932078AbaAWRvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:51:08 -0500
+	Thu, 23 Jan 2014 12:51:07 -0500
+Date: Thu, 23 Jan 2014 17:50:31 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
+Subject: Re: [PATCH 11/20] ARM64 / ACPI: Get the enable method for SMP
+ initialization
+Message-ID: <20140123175031.GJ27520@arm.com>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+ <1389961514-13562-12-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140123172534.GA2665@katana>
-References: <CAOMwXhMVgcVVWiUYbEgGcM+K5bZmKA3LO0=jZCEsyJak1TbTSA@mail.gmail.com>
-	<20140123172534.GA2665@katana>
-Date: Thu, 23 Jan 2014 17:51:07 +0000
-X-Google-Sender-Auth: UHn_LZ2ON1A71vyPgcz5LHh_q5M
-Message-ID: <CAOMwXhPqnSNWtPMo7Qrr-O3qAqtjju7au7Mudckp7kN50yQW3A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Add at24 based EEPROMs to the eeprom_dev hardware class
-From: Laszlo Papp <lpapp@kde.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Curt Brune <curt@cumulusnetworks.com>,
-        Thomas De Schampheleire <patrickdepinguin@gmail.com>,
-        gregkh@linuxfoundation.org,
-        Shrijeet Mukherjee <shm@cumulusnetworks.com>, wolfram@the-dreams.de,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389961514-13562-12-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 5:25 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> Hi,
->
-> No need to quote the whole message if you reply only to a bit of it.
->
->> >  module_init(at24_init);
->> >
->> >  static void __exit at24_exit(void)
->> >  {
->> >         i2c_del_driver(&at24_driver);
->> >  }
->> >  module_exit(at24_exit);
->>
->> Couldn't you use module_i2c_driver() instead of this?
->
-> He didn't write that code. It doesn't have a + at the beginning. He used
-> the whole driver as context, which is highly unusual. A context of 3
-> lines is usually good enough.
+On Fri, Jan 17, 2014 at 12:25:05PM +0000, Hanjun Guo wrote:
+> --- a/arch/arm64/kernel/smp.c
+> +++ b/arch/arm64/kernel/smp.c
+> @@ -48,6 +48,7 @@
+>  #include <asm/sections.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/ptrace.h>
+> +#include <asm/acpi.h>
+>  
+>  /*
+>   * as from 2.5, kernels no longer have an init_tasks structure
+> @@ -280,7 +281,7 @@ static void (*smp_cross_call)(const struct cpumask *, unsigned int);
+>   * cpu logical map array containing MPIDR values related to logical
+>   * cpus. Assumes that cpu_logical_map(0) has already been initialized.
+>   */
+> -void __init smp_init_cpus(void)
+> +static int __init of_smp_init_cpus(void)
+>  {
+>  	struct device_node *dn = NULL;
+>  	unsigned int i, cpu = 1;
+> @@ -364,6 +365,10 @@ next:
+>  		cpu++;
+>  	}
+>  
+> +	/* No device tree or no CPU node in DT */
+> +	if (cpu == 1 && !bootcpu_valid)
+> +		return -ENODEV;
+> +
+>  	/* sanity check */
+>  	if (cpu > NR_CPUS)
+>  		pr_warning("no. of cores (%d) greater than configured maximum of %d - clipping\n",
+> @@ -371,7 +376,7 @@ next:
+>  
+>  	if (!bootcpu_valid) {
+>  		pr_err("DT missing boot CPU MPIDR, not enabling secondaries\n");
+> -		return;
+> +		return -EINVAL;
+>  	}
+>  
+>  	/*
+> @@ -381,6 +386,39 @@ next:
+>  	for (i = 0; i < NR_CPUS; i++)
+>  		if (cpu_logical_map(i) != INVALID_HWID)
+>  			set_cpu_possible(i, true);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * In ACPI mode, the cpu possible map was enumerated before SMP
+> + * initialization when MADT table was parsed, so we can get the
+> + * possible map here to initialize CPUs.
+> + */
+> +static void __init acpi_smp_init_cpus(void)
+> +{
+> +	int cpu;
+> +	const char *enable_method;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		enable_method = acpi_get_enable_method(cpu);
+> +		if (!enable_method)
+> +			continue;
+> +
+> +		cpu_ops[cpu] = cpu_get_ops(enable_method);
+> +		if (!cpu_ops[cpu])
+> +			continue;
+> +
+> +		cpu_ops[cpu]->cpu_init(NULL, cpu);
+> +	}
+> +}
+> +
+> +void __init smp_init_cpus(void)
+> +{
+> +	if (!of_smp_init_cpus())
+> +		return;
+> +
+> +	acpi_smp_init_cpus();
+>  }
 
-Right. I will send a patch addressing that separately.
+With DT we initialise the cpu_ops[0] via cpu_read_bootcpu_ops() called
+from setup_arch(). This is needed because with PSCI we use cpu_ops for
+power management even if it's a UP system. Do you get a some kernel
+warning about device node for the boot cpu not found?
 
->> >  MODULE_DESCRIPTION("Driver for most I2C EEPROMs");
->> >  MODULE_AUTHOR("David Brownell and Wolfram Sang");
->>
->> I would personally put your name in here if I were you, otherwise
->> David and Wolfram might get contacted by some people instead of you
->> (at least based on this).
->
-> See above. He changed only 10 lines. Not enough for copyright IMO.
+> --- a/drivers/acpi/plat/arm-core.c
+> +++ b/drivers/acpi/plat/arm-core.c
+> @@ -367,6 +367,32 @@ static void __init acpi_process_madt(void)
+>  }
+>  
+>  /*
+> + * To see PCSI is enabled or not.
+> + *
+> + * PSCI is not available for ACPI 5.0, return FALSE for now.
+> + *
+> + * FIXME: should we introduce early_param("psci", func) for test purpose?
+> + */
+> +static bool acpi_psci_smp_available(int cpu)
+> +{
+> +	return FALSE;
+> +}
+> +
+> +static const char *enable_method[] = {
+> +	"psci",
+> +	"spin-table",
+> +	NULL
+> +};
+> +
+> +const char *acpi_get_enable_method(int cpu)
+> +{
+> +	if (acpi_psci_smp_available(cpu))
+> +		return enable_method[0];
+> +	else
+> +		return enable_method[1];
+> +}
 
-Well, it is not the Copyrights section, or you are saying the same
-people should go to MODULE_AUTHOR as in the Copyrights section, even
-if it is potentially several names? I thought this would be the name
-of the person who put the file together even if from existing sources.
+You could just use literal strings here, actually even ignoring PSCI
+until available.
 
->> PS.: Fixing the broken i2c mailing list typo, and updating Wolfram's
->> address from the broken (obsolete?) version.
->
-> It came through to the i2c list? What was wrong?
-
-Yes, it did, _after_ fixing the typo in the mailing list address.
-Check the original mailing list address typed for details.
+-- 
+Catalin
