@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaAWOHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 09:07:43 -0500
-Received: from smtp-out-198.synserver.de ([212.40.185.198]:1102 "EHLO
-	smtp-out-085.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752717AbaAWOHl (ORCPT
+	id S932100AbaAWOPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 09:15:51 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52068 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaAWOPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 09:07:41 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25836
-Message-ID: <52E12224.9060506@metafoo.de>
-Date: Thu, 23 Jan 2014 15:07:32 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Srikanth Thokala <sthokal@xilinx.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
- driver support
-References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>  <1390409565-4200-2-git-send-email-sthokal@xilinx.com>  <52E0FC22.8060903@metafoo.de> <1390484317.7619.81.camel@smile>  <52E11E39.6090901@metafoo.de> <1390485637.7619.88.camel@smile>
-In-Reply-To: <1390485637.7619.88.camel@smile>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jan 2014 09:15:47 -0500
+From: David Herrmann <dh.herrmann@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: Ingo Molnar <mingo@kernel.org>, linux-fbdev@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org,
+        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 00/11] SimpleDRM & Sysfb
+Date: Thu, 23 Jan 2014 15:14:52 +0100
+Message-Id: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 03:00 PM, Andy Shevchenko wrote:
-> On Thu, 2014-01-23 at 14:50 +0100, Lars-Peter Clausen wrote:
->> On 01/23/2014 02:38 PM, Shevchenko, Andriy wrote:
->>> On Thu, 2014-01-23 at 12:25 +0100, Lars-Peter Clausen wrote:
->>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
->>>
->>> [...]
->>>
->>>>> +	/* Request the interrupt */
->>>>> +	chan->irq = irq_of_parse_and_map(node, 0);
->>>>> +	err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
->>>>> +			       IRQF_SHARED, "xilinx-vdma-controller", chan);
->>>>
->>>> This is a clasic example of where to not use devm_request_irq. 'chan' is
->>>> accessed in the interrupt handler, but if you use devm_request_irq 'chan'
->>>> will be freed before the interrupt handler has been released, which means
->>>> there is now a race condition where the interrupt handler can access already
->>>> freed memory.ta
->>>
->>> Could you elaborate this case? As far as I understood managed resources
->>> are a kind of stack pile. In this case you have no such condition. Where
->>> am I wrong?
->>
->> The stacked stuff is only ran after the remove() function. Which means that
->> you call dma_async_device_unregister() before the interrupt handler is
->> freed. Another issue with the interrupt handler is a bit hidden. The driver
->> does not call tasklet_kill in the remove function. Which it should though to
->> make sure that the tasklet does not race against the freeing of the memory.
->> And in order to make sure that the tasklet is not rescheduled you need to
->> free the irq before killing the tasklet, since the interrupt handler
->> schedules the tasklet.
-> 
-> So, you mean devm_request_irq() will race in any DMA driver?
+Hi
 
-Most likely yes. devm_request_irq() is race condition prone for the majority
-of device driver. You have to be really careful if you want to use it.
+Another round of SimpleDRM patches. I somehow lost track of the last ones and as
+this is a major rewrite, I'll just start at v1 again.
 
-> 
-> I think the proper solution is to disable all device work in
-> the .remove() and devm will care about resources.
+Some comments up-front:
 
-As long as the interrupt handler is registered it can be called, the only
-proper solution is to make sure that the order in which resources are torn
-down is correct.
+ - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussions. I
+   included them in this series as the other patches depend on them. Could you
+   pick them up for the x86 tree? The other 9 patches won't make it in 3.14 so
+   no reason to put them through the DRM tree.
+   All mentioned issues should be addressed. If there's still sth missing,
+   please let me know.
 
-- Lars
+ - The DRM patches depend on my "DRM Anonymous Inode" patches. But it should be
+   trivial to apply them on drm-next (I think only one line needs to be changed:
+   i_mapping => dev_mapping).
+
+ - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it works
+   fine. The DRM backend is only tested with some DRM tests I have locally. I
+   have no idea how to make Xorg pick up a specific /dev/dri/card0 card. It
+   always tells me "no screens found" (as the underlying device is not marked as
+   boot_vga..). If someone knows how to tell Xorg to use card0, I'd gladly test
+   this. But I'm no longer used to writing xorg.confs..
+
+
+This series introduces two new concepts: sysfb and SimpleDRM
+Sysfb is just a generalization of the x86-sysfb concept. It allows to register
+firmware-framebuffers with the system as platform-devices. This way, drivers can
+properly bind to these devices and we prevent multiple drivers from accessing
+the same firmware-framebuffer.
+Sysfb also provides hooks to get a safe handover to real hw-drivers (like i915).
+Please see the "video: sysfb: add generic firmware-fb interface" patch for a
+thorough description of the API. This patch also adds a rather verbose
+documentation of all known firmware-fb facilities.
+
+As second part, this series introduces SimpleDRM. It's a very basic DRM driver
+that can replace efifb, vesafb, simplefb and friends. It's 100% compatible to
+the "udl" DRM driver, so user-space like xf86-video-modesetting can pick them up
+just fine. User-space that cannot deal with drmModeDirtyFB() (like weston and
+friends) currently cannot use SimpleDRM. However, that's also true for all other
+DRM drivers which provide shadow framebuffers. We could provide something like
+FB-DEFIO, but that's just useless overhead to paper of lazy user-space.
+
+I have tested this with all hardware that I have at home, with a lot hand-over
+combinations (with/without SYSFB, with efifb/vesafb/simplefb, with SimpleDRM,
+...) and all worked great so far.
+
+Comments welcome!
+David
+
+David Herrmann (11):
+  x86: sysfb: fool-proof CONFIG_X86_SYSFB
+  x86: sysfb: remove sysfb when probing real hw
+  fbdev: efifb: add dev->remove() callback
+  fbdev: vesafb: add dev->remove() callback
+  x86: sysfb: store apertures in simplefb platform-data
+  video: sysfb: add generic firmware-fb interface
+  drm: mgag200: remove redundant fbdev removal
+  drm/i915: remove sysfbs early
+  drm: add SimpleDRM driver
+  drm: simpledrm: add fbdev fallback support
+  x86/sysfb: allow sysfb+simpledrm combination
+
+ Documentation/firmware-fbs.txt               | 236 +++++++++++++++++
+ MAINTAINERS                                  |   8 +
+ arch/x86/Kconfig                             |   2 +
+ arch/x86/include/asm/sysfb.h                 |   6 +-
+ arch/x86/kernel/sysfb.c                      |   3 +-
+ arch/x86/kernel/sysfb_simplefb.c             |  97 ++++---
+ drivers/gpu/drm/Kconfig                      |   2 +
+ drivers/gpu/drm/Makefile                     |   1 +
+ drivers/gpu/drm/i915/i915_drv.c              |   6 +
+ drivers/gpu/drm/mgag200/mgag200_main.c       |   9 -
+ drivers/gpu/drm/simpledrm/Kconfig            |  29 +++
+ drivers/gpu/drm/simpledrm/Makefile           |   4 +
+ drivers/gpu/drm/simpledrm/simpledrm.c        | 263 +++++++++++++++++++
+ drivers/gpu/drm/simpledrm/simpledrm.h        | 122 +++++++++
+ drivers/gpu/drm/simpledrm/simpledrm_damage.c | 306 ++++++++++++++++++++++
+ drivers/gpu/drm/simpledrm/simpledrm_fbdev.c  | 148 +++++++++++
+ drivers/gpu/drm/simpledrm/simpledrm_gem.c    | 282 +++++++++++++++++++++
+ drivers/gpu/drm/simpledrm/simpledrm_kms.c    | 365 +++++++++++++++++++++++++++
+ drivers/video/Kconfig                        |   3 +
+ drivers/video/Makefile                       |   1 +
+ drivers/video/efifb.c                        |  13 +-
+ drivers/video/fbmem.c                        |  17 +-
+ drivers/video/simplefb.c                     |   8 -
+ drivers/video/sysfb.c                        | 348 +++++++++++++++++++++++++
+ drivers/video/vesafb.c                       |  13 +-
+ include/linux/fb.h                           |   9 +-
+ include/linux/platform_data/simplefb.h       |   2 +
+ include/linux/sysfb.h                        |  62 +++++
+ 28 files changed, 2299 insertions(+), 66 deletions(-)
+ create mode 100644 Documentation/firmware-fbs.txt
+ create mode 100644 drivers/gpu/drm/simpledrm/Kconfig
+ create mode 100644 drivers/gpu/drm/simpledrm/Makefile
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm.c
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm.h
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm_damage.c
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm_gem.c
+ create mode 100644 drivers/gpu/drm/simpledrm/simpledrm_kms.c
+ create mode 100644 drivers/video/sysfb.c
+ create mode 100644 include/linux/sysfb.h
+
+-- 
+1.8.5.3
+
