@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254AbaAWRFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:05:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55663 "EHLO
+	id S932278AbaAWRFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:05:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55676 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaAWRFO (ORCPT
+	with ESMTP id S932176AbaAWRFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:05:14 -0500
-Date: Thu, 23 Jan 2014 09:04:27 -0800
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-8ad9219e08af12a5652892e273336dbd31b25b03@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1389972846-6566-3-git-send-email-eranian@google.com>
-References: <1389972846-6566-3-git-send-email-eranian@google.com>
+	Thu, 23 Jan 2014 12:05:35 -0500
+Date: Thu, 23 Jan 2014 09:04:37 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-578c03c86fadcc6fd7319ddf41dd4d1d88aab77a@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, gjain@fb.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, gjain@fb.com, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
+References: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf stat:
-  Fix memory corruption of xyarray when cpumask is used
-Git-Commit-ID: 8ad9219e08af12a5652892e273336dbd31b25b03
+Subject: [tip:perf/urgent] perf symbols: Fix JIT symbol resolution on heap
+Git-Commit-ID: 578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,72 +33,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 23 Jan 2014 09:04:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 23 Jan 2014 09:04:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ad9219e08af12a5652892e273336dbd31b25b03
-Gitweb:     http://git.kernel.org/tip/8ad9219e08af12a5652892e273336dbd31b25b03
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Fri, 17 Jan 2014 16:34:06 +0100
+Commit-ID:  578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
+Gitweb:     http://git.kernel.org/tip/578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Thu, 16 Jan 2014 10:49:31 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 20 Jan 2014 16:19:09 -0300
+CommitDate: Tue, 21 Jan 2014 10:56:05 -0300
 
-perf stat: Fix memory corruption of xyarray when cpumask is used
+perf symbols: Fix JIT symbol resolution on heap
 
-This patch fixes a memory corruption problem with the xyarray when the
-evsel fds get closed at the end of the run_perf_stat() call.
+Gaurav reported that perf cannot profile JIT program if it executes the
+code on heap.  This was because current map__new() only handle JIT on
+anon mappings - extends it to handle no_dso (heap, stack) case too.
 
-It could be triggered with:
+This patch assumes JIT profiling only provides dynamic function symbols
+so check the mapping type to distinguish the case.  It'd provide no
+symbols for data mapping - if we need to support symbols on data
+mappings later it should be changed.
 
- # perf stat -a -e power/energy-cores/ ls
-
-When cpumask are used by events (.e.g, RAPL or uncores) then the evsel
-fds are allocated based on the actual number of CPUs monitored. That
-number can be smaller than the total number of CPUs on the system.
-
-The problem arises at the end by perf stat closes the fds twice. When
-fds are closed, their entry in the xyarray are set to -1.
-
-The first close() on the evsel is made from __run_perf_stat() and it
-uses the actual number of CPUS for the event which is how the xyarray
-was allocated for.
-
-The second is from perf_evlist_close() but that one is on the total
-number of CPUs in the system, so it assume the xyarray was allocated to
-cover it. However it was not, and some writes corrupt memory.
-
-The fix is in perf_evlist_close() is to first try with the evsel->cpus
-if present, if not use the evlist->cpus. That fixes the problem.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Reported-by: Gaurav Jain <gjain@fb.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Tested-by: Gaurav Jain <gjain@fb.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Gaurav Jain <gjain@fb.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389972846-6566-3-git-send-email-eranian@google.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1389836971-3549-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ tools/perf/util/map.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 40bd2c0..59ef280 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1003,9 +1003,12 @@ void perf_evlist__close(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel;
- 	int ncpus = cpu_map__nr(evlist->cpus);
- 	int nthreads = thread_map__nr(evlist->threads);
-+	int n;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9b9bd71..ee1dd68 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		map->ino = ino;
+ 		map->ino_generation = ino_gen;
  
--	evlist__for_each_reverse(evlist, evsel)
--		perf_evsel__close(evsel, ncpus, nthreads);
-+	evlist__for_each_reverse(evlist, evsel) {
-+		n = evsel->cpus ? evsel->cpus->nr : ncpus;
-+		perf_evsel__close(evsel, n, nthreads);
-+	}
- }
- 
- int perf_evlist__open(struct perf_evlist *evlist)
+-		if (anon) {
++		if ((anon || no_dso) && type == MAP__FUNCTION) {
+ 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
+ 			filename = newfilename;
+ 		}
+@@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 			 * functions still return NULL, and we avoid the
+ 			 * unnecessary map__load warning.
+ 			 */
+-			if (no_dso)
++			if (type != MAP__FUNCTION)
+ 				dso__set_loaded(dso, map->type);
+ 		}
+ 	}
