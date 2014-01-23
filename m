@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaAWCaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 21:30:00 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51865 "EHLO
+	id S1756193AbaAWCbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 21:31:47 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51842 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616AbaAWC35 (ORCPT
+	with ESMTP id S1753731AbaAWC3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 21:29:57 -0500
-Subject: [PATCH -tip 4/8] perf-probe: Use the actual address instead of the
- symbol name
+	Wed, 22 Jan 2014 21:29:53 -0500
+Subject: [PATCH -tip 2/8] [BUGFIX] perf-tools: Load map before using
+ map->map_ip
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 23 Jan 2014 02:29:55 +0000
-Message-ID: <20140123022954.7206.77940.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Thu, 23 Jan 2014 02:29:50 +0000
+Message-ID: <20140123022950.7206.17357.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140123022945.7206.79944.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,122 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since several local symbols can have same name (e.g. t_show),
-we need to use the actual address instead of symbol name for
-those points. Note that this works only with debuginfo.
+In map_groups__find_symbol() map->map_ip is used without
+ensuring the map is loaded. Then the address passed
+to map->map_ip isn't mapped at the first time.
 
-E.g. without this change;
-----
-# ./perf probe -a t_show \$vars
-Added new events:
-  probe:t_show         (on t_show with $vars)
-  probe:t_show_1       (on t_show with $vars)
-  probe:t_show_2       (on t_show with $vars)
-  probe:t_show_3       (on t_show with $vars)
+E.g. below code always fails to get a symbol at the first call;
 
-You can now use it in all perf tools, such as:
+	addr = /* Somewhere in the kernel text */
+	symbol_conf.try_vmlinux_path = true;
+	symbol__init();
+	host_machine = machine__new_host();
+	sym = machine__find_kernel_function(host_machine,
+					 addr, NULL, NULL);
+	/* Note that machine__find_kernel_function calls
+	   map_groups__find_symbol */
 
-        perf record -e probe:t_show_3 -aR sleep 1
-----
-OK, we have 4 different t_show()s. All functions have
-different arguments as below;
-----
-# cat /sys/kernel/debug/tracing/kprobe_events
-p:probe/t_show t_show m=%di:u64 v=%si:u64
-p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
-p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
-p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
-----
-However, all of them have been put on the *same* address.
-----
-# cat /sys/kernel/debug/kprobes/list
-ffffffff810d9720  k  t_show+0x0    [DISABLED]
-ffffffff810d9720  k  t_show+0x0    [DISABLED]
-ffffffff810d9720  k  t_show+0x0    [DISABLED]
-ffffffff810d9720  k  t_show+0x0    [DISABLED]
-----
-
-With this change;
-----
-# ./perf probe -a t_show \$vars
-Added new events:
-  probe:t_show         (on t_show with $vars)
-  probe:t_show_1       (on t_show with $vars)
-  probe:t_show_2       (on t_show with $vars)
-  probe:t_show_3       (on t_show with $vars)
-
-You can now use it in all perf tools, such as:
-
-        perf record -e probe:t_show_3 -aR sleep 1
-
-# cat /sys/kernel/debug/tracing/kprobe_events
-p:probe/t_show 0xffffffff810d9720 m=%di:u64 v=%si:u64
-p:probe/t_show_1 0xffffffff810e2e40 m=%di:u64 v=%si:u64 t=%si:u64
-p:probe/t_show_2 0xffffffff810ece30 m=%di:u64 v=%si:u64 fmt=%si:u64
-p:probe/t_show_3 0xffffffff810f4ad0 m=%di:u64 v=%si:u64 file=%si:u64
-
-# cat /sys/kernel/debug/kprobes/list
-ffffffff810e2e40  k  t_show+0x0    [DISABLED]
-ffffffff810ece30  k  t_show+0x0    [DISABLED]
-ffffffff810f4ad0  k  t_show+0x0    [DISABLED]
-ffffffff810d9720  k  t_show+0x0    [DISABLED]
-----
-This time, each event is put in different address
-correctly.
-
-Note that currently this doesn't support address-based
-probe on modules (thus the probes on modules are symbol
-based), since it requires relative address probe syntax
-for kprobe-tracer, and it doesn't implemented yet.
-
-One more note, this allows us to put events on correct
-address, but --list option should be updated to show
-correct corresponding source code.
+This ensures it by calling map__load before using it in
+map_groups__find_symbol().
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/probe-event.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+ tools/perf/util/map.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 2fb4486..92ab688 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1529,20 +1529,27 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
- 	if (buf == NULL)
- 		return NULL;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9b9bd71..6a805e7 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -386,7 +386,8 @@ struct symbol *map_groups__find_symbol(struct map_groups *mg,
+ {
+ 	struct map *map = map_groups__find(mg, type, addr);
  
--	if (tev->uprobes)
--		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s:%s",
--				 tp->retprobe ? 'r' : 'p',
--				 tev->group, tev->event,
-+	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s ", tp->retprobe ? 'r' : 'p',
-+			 tev->group, tev->event);
-+	if (len <= 0)
-+		goto error;
-+
-+	/* Use the real address, except for kernel modules */
-+	if (tp->address && !(tp->module && !tev->uprobes))
-+		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s%s0x%lx",
-+				 tp->module ?: "", tp->module ? ":" : "",
-+				 tp->address);
-+	else if (tev->uprobes)
-+		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s:%s",
- 				 tp->module, tp->symbol);
- 	else
--		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
--				 tp->retprobe ? 'r' : 'p',
--				 tev->group, tev->event,
-+		ret = e_snprintf(buf + len, MAX_CMDLEN, "%s%s%s+%lu",
- 				 tp->module ?: "", tp->module ? ":" : "",
- 				 tp->symbol, tp->offset);
- 
--	if (len <= 0)
-+	if (ret <= 0)
- 		goto error;
-+	len += ret;
- 
- 	for (i = 0; i < tev->nargs; i++) {
- 		ret = synthesize_probe_trace_arg(&tev->args[i], buf + len,
+-	if (map != NULL) {
++	/* Ensure map is loaded before using map->map_ip */
++	if (map != NULL && map__load(map, filter) >= 0) {
+ 		if (mapp != NULL)
+ 			*mapp = map;
+ 		return map__find_symbol(map, map->map_ip(map, addr), filter);
 
 
