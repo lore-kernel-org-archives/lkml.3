@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217AbaAWKku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:40:50 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:40390 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaAWKcP (ORCPT
+	id S932234AbaAWKld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:41:33 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:54463 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaAWKlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:32:15 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
-        Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
-        olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 13/37] mtd: st_spi_fsm: Prepare the read/write FSM message sequence(s)
-Date: Thu, 23 Jan 2014 10:31:01 +0000
-Message-Id: <1390473085-24626-14-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
-References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
+	Thu, 23 Jan 2014 05:41:31 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-fe-52e0f1d9e446
+Message-id: <52E0F1D7.4030401@samsung.com>
+Date: Thu, 23 Jan 2014 11:41:27 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-crypto@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
+        cpgs@samsung.com, tomasz.figa@gmail.com
+Subject: Re: [PATCH 8/8 v4] crypto:s5p-sss: Use clk_prepare/clk_unprepare
+References: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
+ <1389777472-15294-1-git-send-email-ch.naveen@samsung.com>
+ <CAHfPSqCHGbVX3iMC-LNnFYkdutRYFuk07RCeYLU4KAaTpgyQ0w@mail.gmail.com>
+In-reply-to: <CAHfPSqCHGbVX3iMC-LNnFYkdutRYFuk07RCeYLU4KAaTpgyQ0w@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xq7o3Pz4IMtg6n9/i7vPDjBYvD2la
+	dL+Ssbh/7yeTxeVdc9gsZpzfx2SxaNt/ZotVu/4wWpydc4jJgdNj56y77B7bDqh69G1Zxejx
+	eZNcAEsUl01Kak5mWWqRvl0CV0bD8pPMBbfZK26cPsrYwDiRrYuRg0NCwETi306+LkZOIFNM
+	4sK99UBhLg4hgaWMEi/aFzFCOJ8YJS7vPsYEUsUroCXxadVyNhCbRUBVovPLahYQm03AUKL3
+	aB8jiC0qECHxd956Roh6QYkfk++B1YgIpEn0THjNCjKUWeAfo8STgzPAhgoLeErc23yXCWLb
+	CUaJ/dPns4OcxykQLNEyOwekhllAR2J/6zQ2CFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGK
+	ppYmFxQnpeca6RUn5haX5qXrJefnbmKEhPrXHYxLj1kdYhTgYFTi4U38cj9IiDWxrLgy9xCj
+	BAezkgjvhTcPgoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUwzmJYNHtr8s+apy8yPxsZXHB5s2lK
+	ysuXBWfOOc9326rZtKn+0OuSQ8kuR+eYrLvU1/zI6fKs6JIo+UqBsEkeAvwNa0sT17Nc6Jaa
+	ueFde+bnr/5Gp9RfXV9RF31hWppVctjB66c37/j72jx72y2v9qyZMn+OHL7j+Gf2dPu5Jnvb
+	FfOq6g3+xyixFGckGmoxFxUnAgDG35F+UwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSM Serial Flash Controller is driven by issuing a standard set of
-register writes we call a message sequence. This patch supplies a method
-to prepare read/write FSM message sequence(s) based on chip capability
-and configuration.
+Hi,
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 69 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
+On 23/01/14 11:18, Naveen Krishna Ch wrote:
+> Hello All,
+> 
+> On 15 January 2014 14:47, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> This patch set adds use of clk_prepare/clk_unprepare as
+>> required by generic clock framework.
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>> ---
+>> Changes since v3:
+>> None
+>>
+>>  drivers/crypto/s5p-sss.c |    6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+>> index f7c66c7..870e794 100644
+>> --- a/drivers/crypto/s5p-sss.c
+>> +++ b/drivers/crypto/s5p-sss.c
+>> @@ -648,7 +648,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
+>>                 return -ENOENT;
+>>         }
+>>
+>> -       clk_enable(pdata->clk);
+>> +       clk_prepare_enable(pdata->clk);
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 1803f94..961abfd 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -520,6 +520,75 @@ stfsm_search_seq_rw_configs(struct stfsm *fsm,
- 	return NULL;
- }
- 
-+/* Prepare a READ/WRITE sequence according to configuration parameters */
-+static void stfsm_prepare_rw_seq(struct stfsm *fsm,
-+				 struct stfsm_seq *seq,
-+				 struct seq_rw_config *cfg)
-+{
-+	int addr1_cycles, addr2_cycles;
-+	int i = 0;
-+
-+	memset(seq, 0, sizeof(*seq));
-+
-+	/* Add READ/WRITE OPC  */
-+	seq->seq_opc[i++] = (SEQ_OPC_PADS_1 |
-+			     SEQ_OPC_CYCLES(8) |
-+			     SEQ_OPC_OPCODE(cfg->cmd));
-+
-+	/* Add WREN OPC for a WRITE sequence */
-+	if (cfg->write)
-+		seq->seq_opc[i++] = (SEQ_OPC_PADS_1 |
-+				     SEQ_OPC_CYCLES(8) |
-+				     SEQ_OPC_OPCODE(FLASH_CMD_WREN) |
-+				     SEQ_OPC_CSDEASSERT);
-+
-+	/* Address configuration (24 or 32-bit addresses) */
-+	addr1_cycles  = (fsm->info->flags & FLASH_FLAG_32BIT_ADDR) ? 16 : 8;
-+	addr1_cycles /= cfg->addr_pads;
-+	addr2_cycles  = 16 / cfg->addr_pads;
-+	seq->addr_cfg = ((addr1_cycles & 0x3f) << 0 |	/* ADD1 cycles */
-+			 (cfg->addr_pads - 1) << 6 |	/* ADD1 pads */
-+			 (addr2_cycles & 0x3f) << 16 |	/* ADD2 cycles */
-+			 ((cfg->addr_pads - 1) << 22));	/* ADD2 pads */
-+
-+	/* Data/Sequence configuration */
-+	seq->seq_cfg = ((cfg->data_pads - 1) << 16 |
-+			SEQ_CFG_STARTSEQ |
-+			SEQ_CFG_CSDEASSERT);
-+	if (!cfg->write)
-+		seq->seq_cfg |= SEQ_CFG_READNOTWRITE;
-+
-+	/* Mode configuration (no. of pads taken from addr cfg) */
-+	seq->mode = ((cfg->mode_data & 0xff) << 0 |	/* data */
-+		     (cfg->mode_cycles & 0x3f) << 16 |	/* cycles */
-+		     (cfg->addr_pads - 1) << 22);	/* pads */
-+
-+	/* Dummy configuration (no. of pads taken from addr cfg) */
-+	seq->dummy = ((cfg->dummy_cycles & 0x3f) << 16 |	/* cycles */
-+		      (cfg->addr_pads - 1) << 22);		/* pads */
-+
-+
-+	/* Instruction sequence */
-+	i = 0;
-+	if (cfg->write)
-+		seq->seq[i++] = STFSM_INST_CMD2;
-+
-+	seq->seq[i++] = STFSM_INST_CMD1;
-+
-+	seq->seq[i++] = STFSM_INST_ADD1;
-+	seq->seq[i++] = STFSM_INST_ADD2;
-+
-+	if (cfg->mode_cycles)
-+		seq->seq[i++] = STFSM_INST_MODE;
-+
-+	if (cfg->dummy_cycles)
-+		seq->seq[i++] = STFSM_INST_DUMMY;
-+
-+	seq->seq[i++] =
-+		cfg->write ? STFSM_INST_DATA_WRITE : STFSM_INST_DATA_READ;
-+	seq->seq[i++] = STFSM_INST_STOP;
-+}
-+
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
--- 
-1.8.3.2
+How about properly checking the return value ?
 
+--
+Thanks,
+Sylwester
