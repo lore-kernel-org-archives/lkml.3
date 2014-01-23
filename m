@@ -1,165 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280AbaAWASK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:18:10 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48670 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243AbaAWASE (ORCPT
+	id S932297AbaAWASl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:18:41 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64605 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756063AbaAWAOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:18:04 -0500
-Date: Wed, 22 Jan 2014 16:18:02 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-pm@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Pavel Machek <pavel@ucw.cz>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power
- domain look-up
-Message-ID: <20140123001802.GF13785@codeaurora.org>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
- <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Jan 2014 19:14:18 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-5b-52e05ed1a885
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 09/21] perf hists: Sort hist entries by accumulated period
+Date: Thu, 23 Jan 2014 09:13:53 +0900
+Message-Id: <1390436045-16830-10-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
+References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11, Tomasz Figa wrote:
-> +
-> +/**
-> + * of_genpd_lock() - Lock access to of_genpd_providers list
-> + */
-> +static void of_genpd_lock(void)
-> +{
-> +	mutex_lock(&of_genpd_mutex);
-> +}
-> +
-> +/**
-> + * of_genpd_unlock() - Unlock access to of_genpd_providers list
-> + */
-> +static void of_genpd_unlock(void)
-> +{
-> +	mutex_unlock(&of_genpd_mutex);
-> +}
+When callchain accumulation is requested, we need to sort the entries
+by accumulated period value.  When accumulated periods of two entries
+are same (i.e. single path callchain) put the caller above since
+accumulation tends to put callers on higher position for obvious
+reason.
 
-Why do we need these functions? Can't we just call
-mutex_lock/unlock directly?
+Tested-by: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-> +
-> +/**
-> + * of_genpd_add_provider() - Register a domain provider for a node
-> + * @np: Device node pointer associated with domain provider
-> + * @genpd_src_get: callback for decoding domain
-> + * @data: context pointer for @genpd_src_get callback.
-
-These look a little outdated.
-
-> + */
-> +int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
-> +			  void *data)
-> +{
-> +	struct of_genpd_provider *cp;
-> +
-> +	cp = kzalloc(sizeof(struct of_genpd_provider), GFP_KERNEL);
-
-Please use sizeof(*cp) instead.
-
-> +	if (!cp)
-> +		return -ENOMEM;
-> +
-> +	cp->node = of_node_get(np);
-> +	cp->data = data;
-> +	cp->xlate = xlate;
-> +
-> +	of_genpd_lock();
-> +	list_add(&cp->link, &of_genpd_providers);
-> +	of_genpd_unlock();
-> +	pr_debug("Added domain provider from %s\n", np->full_name);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(of_genpd_add_provider);
-> +
-[...]
-> +
-> +/* See of_genpd_get_from_provider(). */
-> +static struct generic_pm_domain *__of_genpd_get_from_provider(
-> +					struct of_phandle_args *genpdspec)
-> +{
-> +	struct of_genpd_provider *provider;
-> +	struct generic_pm_domain *genpd = ERR_PTR(-ENOENT);
-
-Can this be -EPROBE_DEFER so that we can defer probe until a
-later time if the power domain provider hasn't registered yet?
-
-> +
-> +	/* Check if we have such a provider in our array */
-> +	list_for_each_entry(provider, &of_genpd_providers, link) {
-> +		if (provider->node == genpdspec->np)
-> +			genpd = provider->xlate(genpdspec, provider->data);
-> +		if (!IS_ERR(genpd))
-> +			break;
-> +	}
-> +
-> +	return genpd;
-> +}
-> +
-[...]
-> +static int of_genpd_notifier_call(struct notifier_block *nb,
-> +				  unsigned long event, void *data)
-> +{
-> +	struct device *dev = data;
-> +	int ret;
-> +
-> +	if (!dev->of_node)
-> +		return NOTIFY_DONE;
-> +
-> +	switch (event) {
-> +	case BUS_NOTIFY_BIND_DRIVER:
-> +		ret = of_genpd_add_to_domain(dev);
-> +		break;
-> +
-> +	case BUS_NOTIFY_UNBOUND_DRIVER:
-> +		ret = of_genpd_del_from_domain(dev);
-> +		break;
-> +
-> +	default:
-> +		return NOTIFY_DONE;
-> +	}
-> +
-> +	return notifier_from_errno(ret);
-> +}
-> +
-> +static struct notifier_block of_genpd_notifier_block = {
-> +	.notifier_call = of_genpd_notifier_call,
-> +};
-> +
-> +static int of_genpd_init(void)
-> +{
-> +	return bus_register_notifier(&platform_bus_type,
-> +					&of_genpd_notifier_block);
-> +}
-> +core_initcall(of_genpd_init);
-
-Would it be possible to call the of_genpd_add_to_domain() and
-of_genpd_del_from_domain() functions directly in the driver core,
-similar to how the pinctrl framework has a hook in there? That
-way we're not relying on any initcall ordering for this.
-
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 765ac5953201..da4fbec3d0d8 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -1063,6 +1063,18 @@ static int hist_entry__sort_on_period(struct hist_entry *a,
+ 	struct hist_entry *pair;
+ 	u64 *periods_a, *periods_b;
+ 
++	if (symbol_conf.cumulate_callchain) {
++		/*
++		 * Put caller above callee when they have equal period.
++		 */
++		if (a->stat_acc->period != b->stat_acc->period)
++			return a->stat_acc->period > b->stat_acc->period ? 1 : -1;
++
++		if (a->callchain->max_depth != b->callchain->max_depth)
++			return a->callchain->max_depth < b->callchain->max_depth ?
++				1 : -1;
++	}
++
+ 	ret = period_cmp(a->stat.period, b->stat.period);
+ 	if (ret || !symbol_conf.event_group)
+ 		return ret;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.11.7
+
