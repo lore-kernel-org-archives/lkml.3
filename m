@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476AbaAWSTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:19:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48573 "EHLO mx1.redhat.com"
+	id S932490AbaAWSTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:19:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138AbaAWSTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:19:38 -0500
-Date: Thu, 23 Jan 2014 13:19:35 -0500 (EST)
+	id S932138AbaAWSTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 13:19:46 -0500
+Date: Thu, 23 Jan 2014 13:19:43 -0500 (EST)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/10] tgafb: fix mode setting with fbset
-In-Reply-To: <alpine.LRH.2.02.1401231308070.31739@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1401231310460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Subject: [PATCH 9/10] tgafb: fix data copying
+In-Reply-To: <alpine.LRH.2.02.1401231310460.31739@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1401231311450.31739@file01.intranet.prod.int.rdu2.redhat.com>
 References: <alpine.LRH.2.02.1401231259340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231302340.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231303100.31739@file01.intranet.prod.int.rdu2.redhat.com>
  <alpine.LRH.2.02.1401231303460.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231305390.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231306220.31739@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1401231307120.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231308070.31739@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401231307120.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231308070.31739@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401231310460.31739@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,122 +24,338 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mode setting in the TGA driver is broken for these reasons:
+The functions for data copying copyarea_foreward_8bpp and
+copyarea_backward_8bpp are buggy, they produce screen corruption.
 
-- info->fix.line_length is set just once in tgafb_init_fix function. If
-  we change videomode, info->fix.line_length is not recalculated - so
-  the video mode is changed but the screen is corrupted because of wrong
-  info->fix.line_length.
-
-- info->fix.smem_len is set in tgafb_init_fix to the size of the default
-  video mode (640x480). If we set a higher resolution,
-  info->fix.smem_len is smaller than the current screen size, preventing
-  the userspace program from mapping the framebuffer.
-
-This patch fixes it:
-
-- info->fix.line_length initialization is moved to tgafb_set_par so that
-  it is recalculated with each mode change.
-
-- info->fix.smem_len is set to a fixed value representing the real
-  amount of video ram (the values are taken from xfree86 driver).
-
-- add a check to tgafb_check_var to prevent us from setting a videomode
-  that doesn't fit into videoram.
-
-- in tgafb_register, tgafb_init_fix is moved upwards, to be called
-  before fb_find_mode (because fb_find_mode already needs the videoram
-  size set in tgafb_init_fix).
+This patch fixes the functions and moves the logic to one function
+"copyarea_8bpp". For simplicity, the function only handles copying that
+is aligned on 8 pixes. If we copy an unaligned area, generic function
+cfb_copyarea is used.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vga.kernel.org
+Cc: stable@vger.kernel.org
 
 ---
- drivers/video/tgafb.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/video/tgafb.c |  264 +++++++++-----------------------------------------
+ 1 file changed, 51 insertions(+), 213 deletions(-)
 
 Index: linux-3.8-rc3-fast/drivers/video/tgafb.c
 ===================================================================
---- linux-3.8-rc3-fast.orig/drivers/video/tgafb.c	2013-01-10 23:42:12.000000000 +0100
-+++ linux-3.8-rc3-fast/drivers/video/tgafb.c	2013-01-10 23:43:16.000000000 +0100
-@@ -188,6 +188,8 @@ tgafb_check_var(struct fb_var_screeninfo
+--- linux-3.8-rc3-fast.orig/drivers/video/tgafb.c	2013-01-10 23:43:16.000000000 +0100
++++ linux-3.8-rc3-fast/drivers/video/tgafb.c	2013-01-10 23:43:44.000000000 +0100
+@@ -1145,222 +1145,57 @@ copyarea_line_32bpp(struct fb_info *info
+ 	__raw_writel(TGA_MODE_SBM_24BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+ }
  
- 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
- 		return -EINVAL;
-+	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
-+		return -EINVAL;
- 	if (var->nonstd)
- 		return -EINVAL;
- 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
-@@ -268,6 +270,7 @@ tgafb_set_par(struct fb_info *info)
- 	par->yres = info->var.yres;
- 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
- 	par->bits_per_pixel = info->var.bits_per_pixel;
-+	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+-/* The general case of forward copy in 8bpp mode.  */
++/* The (almost) general case of backward copy in 8bpp mode.  */
+ static inline void
+-copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length)
++copyarea_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
++	      u32 height, u32 width, u32 line_length,
++	      const struct fb_copyarea *area)
+ {
+ 	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, copied, left;
+-	unsigned long dpos, spos, dalign, salign, yincr;
+-	u32 smask_first, dmask_first, dmask_last;
+-	int pixel_shift, need_prime, need_second;
+-	unsigned long n64, n32, xincr_first;
++	unsigned i, yincr;
++	int depos, sepos, backward, last_step, step;
++	u32 mask_last;
++	unsigned n32;
+ 	void __iomem *tga_regs;
+ 	void __iomem *tga_fb;
  
- 	tga_type = par->tga_type;
- 
-@@ -1476,6 +1479,7 @@ tgafb_init_fix(struct fb_info *info)
- 	int tga_bus_tc = TGA_BUS_TC(par->dev);
- 	u8 tga_type = par->tga_type;
- 	const char *tga_type_name = NULL;
-+	unsigned memory_size;
- 
- 	switch (tga_type) {
- 	case TGA_TYPE_8PLANE:
-@@ -1483,21 +1487,25 @@ tgafb_init_fix(struct fb_info *info)
- 			tga_type_name = "Digital ZLXp-E1";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E1";
-+		memory_size = 2097152;
- 		break;
- 	case TGA_TYPE_24PLANE:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E2";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E2";
-+		memory_size = 8388608;
- 		break;
- 	case TGA_TYPE_24PLUSZ:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E3";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E3";
-+		memory_size = 16777216;
- 		break;
- 	default:
- 		tga_type_name = "Unknown";
-+		memory_size = 16777216;
- 		break;
+-	yincr = line_length;
+-	if (dy > sy) {
+-		dy += height - 1;
+-		sy += height - 1;
+-		yincr = -yincr;
+-	}
+-
+-	/* Compute the offsets and alignments in the frame buffer.
+-	   More than anything else, these control how we do copies.  */
+-	dpos = dy * line_length + dx;
+-	spos = sy * line_length + sx;
+-	dalign = dpos & 7;
+-	salign = spos & 7;
+-	dpos &= -8;
+-	spos &= -8;
+-
+-	/* Compute the value for the PIXELSHIFT register.  This controls
+-	   both non-co-aligned source and destination and copy direction.  */
+-	if (dalign >= salign)
+-		pixel_shift = dalign - salign;
+-	else
+-		pixel_shift = 8 - (salign - dalign);
+-
+-	/* Figure out if we need an additional priming step for the
+-	   residue register.  */
+-	need_prime = (salign > dalign);
+-	if (need_prime)
+-		dpos -= 8;
+-
+-	/* Begin by copying the leading unaligned destination.  Copy enough
+-	   to make the next destination address 32-byte aligned.  */
+-	copied = 32 - (dalign + (dpos & 31));
+-	if (copied == 32)
+-		copied = 0;
+-	xincr_first = (copied + 7) & -8;
+-	smask_first = dmask_first = (1ul << copied) - 1;
+-	smask_first <<= salign;
+-	dmask_first <<= dalign + need_prime*8;
+-	if (need_prime && copied > 24)
+-		copied -= 8;
+-	left = width - copied;
+-
+-	/* Care for small copies.  */
+-	if (copied > width) {
+-		u32 t;
+-		t = (1ul << width) - 1;
+-		t <<= dalign + need_prime*8;
+-		dmask_first &= t;
+-		left = 0;
+-	}
+-
+-	/* Attempt to use 64-byte copies.  This is only possible if the
+-	   source and destination are co-aligned at 64 bytes.  */
+-	n64 = need_second = 0;
+-	if ((dpos & 63) == (spos & 63)
+-	    && (height == 1 || line_length % 64 == 0)) {
+-		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
+-		need_second = (dpos + xincr_first) & 63;
+-		if ((need_second & 32) != need_second)
+-			printk(KERN_ERR "tgafb: need_second wrong\n");
+-		if (left >= need_second + 64) {
+-			left -= need_second;
+-			n64 = left / 64;
+-			left %= 64;
+-		} else
+-			need_second = 0;
+-	}
+-
+-	/* Copy trailing full 32-byte sections.  This will be the main
+-	   loop if the 64 byte loop can't be used.  */
+-	n32 = left / 32;
+-	left %= 32;
+-
+-	/* Copy the trailing unaligned destination.  */
+-	dmask_last = (1ul << left) - 1;
+-
+-	tga_regs = par->tga_regs_base;
+-	tga_fb = par->tga_fb_base;
+-
+-	/* Set up the MODE and PIXELSHIFT registers.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_COPY, tga_regs+TGA_MODE_REG);
+-	__raw_writel(pixel_shift, tga_regs+TGA_PIXELSHIFT_REG);
+-	wmb();
+-
+-	for (i = 0; i < height; ++i) {
+-		unsigned long j;
+-		void __iomem *sfb;
+-		void __iomem *dfb;
+-
+-		sfb = tga_fb + spos;
+-		dfb = tga_fb + dpos;
+-		if (dmask_first) {
+-			__raw_writel(smask_first, sfb);
+-			wmb();
+-			__raw_writel(dmask_first, dfb);
+-			wmb();
+-			sfb += xincr_first;
+-			dfb += xincr_first;
+-		}
+-
+-		if (need_second) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
+-			printk(KERN_ERR
+-			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
+-			       sfb, dfb);
+-
+-		for (j = 0; j < n64; ++j) {
+-			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
+-			wmb();
+-			__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
+-			wmb();
+-			sfb += 64;
+-			dfb += 64;
+-		}
+-
+-		for (j = 0; j < n32; ++j) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (dmask_last) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(dmask_last, dfb);
+-			wmb();
+-		}
+-
+-		spos += yincr;
+-		dpos += yincr;
++	/* Do acceleration only if we are aligned on 8 pixels */
++	if ((dx | sx | width) & 7) {
++		cfb_copyarea(info, area);
++		return;
  	}
  
-@@ -1509,9 +1517,8 @@ tgafb_init_fix(struct fb_info *info)
- 			    ? FB_VISUAL_PSEUDOCOLOR
- 			    : FB_VISUAL_DIRECTCOLOR);
- 
--	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 	info->fix.smem_start = (size_t) par->tga_fb_base;
--	info->fix.smem_len = info->fix.line_length * par->yres;
-+	info->fix.smem_len = memory_size;
- 	info->fix.mmio_start = (size_t) par->tga_regs_base;
- 	info->fix.mmio_len = 512;
- 
-@@ -1635,6 +1642,9 @@ static int tgafb_register(struct device 
- 		modedb_tga = &modedb_tc;
- 		modedbsize_tga = 1;
+-	/* Reset the MODE register to normal.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+-}
+-
+-/* The (almost) general case of backward copy in 8bpp mode.  */
+-static inline void
+-copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length,
+-		       const struct fb_copyarea *area)
+-{
+-	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, left, yincr;
+-	unsigned long depos, sepos, dealign, sealign;
+-	u32 mask_first, mask_last;
+-	unsigned long n32;
+-	void __iomem *tga_regs;
+-	void __iomem *tga_fb;
+-
+ 	yincr = line_length;
+ 	if (dy > sy) {
+ 		dy += height - 1;
+ 		sy += height - 1;
+ 		yincr = -yincr;
  	}
++	backward = dy == sy && dx > sx && dx < sx + width;
+ 
+ 	/* Compute the offsets and alignments in the frame buffer.
+ 	   More than anything else, these control how we do copies.  */
+-	depos = dy * line_length + dx + width;
+-	sepos = sy * line_length + sx + width;
+-	dealign = depos & 7;
+-	sealign = sepos & 7;
+-
+-	/* ??? The documentation appears to be incorrect (or very
+-	   misleading) wrt how pixel shifting works in backward copy
+-	   mode, i.e. when PIXELSHIFT is negative.  I give up for now.
+-	   Do handle the common case of co-aligned backward copies,
+-	   but frob everything else back on generic code.  */
+-	if (dealign != sealign) {
+-		cfb_copyarea(info, area);
+-		return;
+-	}
+-
+-	/* We begin the copy with the trailing pixels of the
+-	   unaligned destination.  */
+-	mask_first = (1ul << dealign) - 1;
+-	left = width - dealign;
+-
+-	/* Care for small copies.  */
+-	if (dealign > width) {
+-		mask_first ^= (1ul << (dealign - width)) - 1;
+-		left = 0;
+-	}
++	depos = dy * line_length + dx;
++	sepos = sy * line_length + sx;
++	if (backward)
++		depos += width, sepos += width;
+ 
+ 	/* Next copy full words at a time.  */
+-	n32 = left / 32;
+-	left %= 32;
++	n32 = width / 32;
++	last_step = width % 32;
+ 
+ 	/* Finally copy the unaligned head of the span.  */
+-	mask_last = -1 << (32 - left);
++	mask_last = (1ul << last_step) - 1;
 +
-+	tgafb_init_fix(info);
-+
- 	ret = fb_find_mode(&info->var, info,
- 			   mode_option ? mode_option : mode_option_tga,
- 			   modedb_tga, modedbsize_tga, NULL,
-@@ -1652,7 +1662,6 @@ static int tgafb_register(struct device 
- 	}
++	if (!backward) {
++		step = 32;
++		last_step = 32;
++	} else {
++		step = -32;
++		last_step = -last_step;
++		sepos -= 32;
++		depos -= 32;
++	}
  
- 	tgafb_set_par(info);
--	tgafb_init_fix(info);
+ 	tga_regs = par->tga_regs_base;
+ 	tga_fb = par->tga_fb_base;
+@@ -1377,25 +1212,33 @@ copyarea_backward_8bpp(struct fb_info *i
  
- 	if (register_framebuffer(info) < 0) {
- 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
+ 		sfb = tga_fb + sepos;
+ 		dfb = tga_fb + depos;
+-		if (mask_first) {
+-			__raw_writel(mask_first, sfb);
+-			wmb();
+-			__raw_writel(mask_first, dfb);
+-			wmb();
+-		}
+ 
+-		for (j = 0; j < n32; ++j) {
+-			sfb -= 32;
+-			dfb -= 32;
++		for (j = 0; j < n32; j++) {
++			if (j < 2 && j + 1 < n32 && !backward &&
++			    !(((unsigned long)sfb | (unsigned long)dfb) & 63)) {
++				do {
++					__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
++					wmb();
++					__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
++					wmb();
++					sfb += 64;
++					dfb += 64;
++					j += 2;
++				} while (j + 1 < n32);
++				j--;
++				continue;
++			}
+ 			__raw_writel(0xffffffff, sfb);
+ 			wmb();
+ 			__raw_writel(0xffffffff, dfb);
+ 			wmb();
++			sfb += step;
++			dfb += step;
+ 		}
+ 
+ 		if (mask_last) {
+-			sfb -= 32;
+-			dfb -= 32;
++			sfb += last_step - step;
++			dfb += last_step - step;
+ 			__raw_writel(mask_last, sfb);
+ 			wmb();
+ 			__raw_writel(mask_last, dfb);
+@@ -1456,14 +1299,9 @@ tgafb_copyarea(struct fb_info *info, con
+ 	else if (bpp == 32)
+ 		cfb_copyarea(info, area);
+ 
+-	/* Detect overlapping source and destination that requires
+-	   a backward copy.  */
+-	else if (dy == sy && dx > sx && dx < sx + width)
+-		copyarea_backward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length, area);
+ 	else
+-		copyarea_foreward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length);
++		copyarea_8bpp(info, dx, dy, sx, sy, height,
++			      width, line_length, area);
+ }
+ 
+ 
 
