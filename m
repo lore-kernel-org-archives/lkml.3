@@ -1,190 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaAWXZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 18:25:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50187 "EHLO bear.ext.ti.com"
+	id S1753684AbaAWXfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 18:35:14 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:48530 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826AbaAWXZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 18:25:53 -0500
-Date: Thu, 23 Jan 2014 17:29:07 -0600
-From: Darren Etheridge <detheridge@ti.com>
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: <dri-devel@lists.freedesktop.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH v3 07/24] drm/i2c: tda998x: set the video mode from the
- adjusted value
-Message-ID: <20140123232907.GA25988@ti.com>
-References: <cover.1390153344.git.moinejf@free.fr>
- <20140119195840.1ecab03b@armhf>
+	id S1751616AbaAWXfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 18:35:11 -0500
+X-IronPort-AV: E=Sophos;i="4.95,709,1384300800"; 
+   d="scan'208";a="95990490"
+Date: Thu, 23 Jan 2014 23:34:01 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH v6] xen/grant-table: Avoid m2p_override during mapping
+In-Reply-To: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com>
+Message-ID: <alpine.DEB.2.02.1401232333280.15917@kaball.uk.xensource.com>
+References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140119195840.1ecab03b@armhf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Francois Moine <moinejf@free.fr> wrote on Sun [2014-Jan-19 19:58:40 +0100]:
-> This patch uses always the adjusted video mode instead of a mix of
-> original and adjusted mode.
+On Thu, 23 Jan 2014, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
 > 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->  drivers/gpu/drm/i2c/tda998x_drv.c | 66 +++++++++++++++++++--------------------
->  1 file changed, 33 insertions(+), 33 deletions(-)
+> It also removes a stray space from page.h and change ret to 0 if
+> XENFEAT_auto_translated_physmap, as that is the only possible return value
+> there.
 > 
-> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-> index b688801..5d82301 100644
-> --- a/drivers/gpu/drm/i2c/tda998x_drv.c
-> +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-> @@ -773,7 +773,7 @@ tda998x_encoder_mode_valid(struct drm_encoder *encoder,
->  static void
->  tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  			struct drm_display_mode *mode,
-> -			struct drm_display_mode *adjusted_mode)
-> +			struct drm_display_mode *adj_mode)
->  {
->  	struct tda998x_priv *priv = to_tda998x_priv(encoder);
->  	uint16_t ref_pix, ref_line, n_pix, n_line;
-> @@ -802,13 +802,13 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  	 * So we add +1 to all horizontal and vertical register values,
->  	 * plus an additional +3 for REFPIX as we are using RGB input only.
->  	 */
-> -	n_pix        = mode->htotal;
-> -	n_line       = mode->vtotal;
-> +	n_pix        = adj_mode->htotal;
-> +	n_line       = adj_mode->vtotal;
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
+> 
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
+> 
+> v4:
+> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> - clear page->private before doing anything with the page, so m2p_find_override
+>   won't race with this
+> 
+> v5:
+> - change return value handling in __gnttab_[un]map_refs
+> - remove a stray space in page.h
+> - add detail why ret = 0 now at some places
+> 
+> v6:
+> - don't pass pfn to m2p* functions, just get it locally
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Suggested-by: David Vrabel <david.vrabel@citrix.com>
+
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+
+>  arch/x86/include/asm/xen/page.h     |    5 +-
+>  arch/x86/xen/p2m.c                  |   17 +------
+>  drivers/block/xen-blkback/blkback.c |   15 +++---
+>  drivers/xen/gntdev.c                |   13 +++--
+>  drivers/xen/grant-table.c           |   89 ++++++++++++++++++++++++++++++-----
+>  include/xen/grant_table.h           |    8 +++-
+>  6 files changed, 101 insertions(+), 46 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index b913915..ce47243 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -52,7 +52,8 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+>  extern int m2p_add_override(unsigned long mfn, struct page *page,
+>  			    struct gnttab_map_grant_ref *kmap_op);
+>  extern int m2p_remove_override(struct page *page,
+> -				struct gnttab_map_grant_ref *kmap_op);
+> +			       struct gnttab_map_grant_ref *kmap_op,
+> +			       unsigned long mfn);
+>  extern struct page *m2p_find_override(unsigned long mfn);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
 >  
-> -	hs_pix_e     = mode->hsync_end - mode->hdisplay;
-> -	hs_pix_s     = mode->hsync_start - mode->hdisplay;
-> -	de_pix_e     = mode->htotal;
-> -	de_pix_s     = mode->htotal - mode->hdisplay;
-> +	hs_pix_e     = adj_mode->hsync_end - adj_mode->hdisplay;
-> +	hs_pix_s     = adj_mode->hsync_start - adj_mode->hdisplay;
-> +	de_pix_e     = adj_mode->htotal;
-> +	de_pix_s     = adj_mode->htotal - adj_mode->hdisplay;
->  	ref_pix      = 3 + hs_pix_s;
->  
->  	/*
-> @@ -816,37 +816,38 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  	 * those to adjust the position of the rising VS edge by adding
->  	 * HSKEW to ref_pix.
->  	 */
-> -	if (adjusted_mode->flags & DRM_MODE_FLAG_HSKEW)
-> -		ref_pix += adjusted_mode->hskew;
-> +	if (adj_mode->flags & DRM_MODE_FLAG_HSKEW)
-> +		ref_pix += adj_mode->hskew;
->  
-> -	if ((mode->flags & DRM_MODE_FLAG_INTERLACE) == 0) {
-> -		ref_line     = 1 + mode->vsync_start - mode->vdisplay;
-> -		vwin1_line_s = mode->vtotal - mode->vdisplay - 1;
-> -		vwin1_line_e = vwin1_line_s + mode->vdisplay;
-> +	if ((adj_mode->flags & DRM_MODE_FLAG_INTERLACE) == 0) {
-> +		ref_line     = 1 + adj_mode->vsync_start - adj_mode->vdisplay;
-> +		vwin1_line_s = adj_mode->vtotal - adj_mode->vdisplay - 1;
-> +		vwin1_line_e = vwin1_line_s + adj_mode->vdisplay;
->  		vs1_pix_s    = vs1_pix_e = hs_pix_s;
-> -		vs1_line_s   = mode->vsync_start - mode->vdisplay;
-> +		vs1_line_s   = adj_mode->vsync_start - adj_mode->vdisplay;
->  		vs1_line_e   = vs1_line_s +
-> -			       mode->vsync_end - mode->vsync_start;
-> +			       adj_mode->vsync_end - adj_mode->vsync_start;
->  		vwin2_line_s = vwin2_line_e = 0;
->  		vs2_pix_s    = vs2_pix_e  = 0;
->  		vs2_line_s   = vs2_line_e = 0;
->  	} else {
-> -		ref_line     = 1 + (mode->vsync_start - mode->vdisplay)/2;
-> -		vwin1_line_s = (mode->vtotal - mode->vdisplay)/2;
-> -		vwin1_line_e = vwin1_line_s + mode->vdisplay/2;
-> +		ref_line     = 1 + (adj_mode->vsync_start -
-> +						adj_mode->vdisplay)/2;
-> +		vwin1_line_s = (adj_mode->vtotal - adj_mode->vdisplay)/2;
-> +		vwin1_line_e = vwin1_line_s + adj_mode->vdisplay/2;
->  		vs1_pix_s    = vs1_pix_e = hs_pix_s;
-> -		vs1_line_s   = (mode->vsync_start - mode->vdisplay)/2;
-> +		vs1_line_s   = (adj_mode->vsync_start - adj_mode->vdisplay)/2;
->  		vs1_line_e   = vs1_line_s +
-> -			       (mode->vsync_end - mode->vsync_start)/2;
-> -		vwin2_line_s = vwin1_line_s + mode->vtotal/2;
-> -		vwin2_line_e = vwin2_line_s + mode->vdisplay/2;
-> -		vs2_pix_s    = vs2_pix_e = hs_pix_s + mode->htotal/2;
-> -		vs2_line_s   = vs1_line_s + mode->vtotal/2 ;
-> +			       (adj_mode->vsync_end - adj_mode->vsync_start)/2;
-> +		vwin2_line_s = vwin1_line_s + adj_mode->vtotal/2;
-> +		vwin2_line_e = vwin2_line_s + adj_mode->vdisplay/2;
-> +		vs2_pix_s    = vs2_pix_e = hs_pix_s + adj_mode->htotal/2;
-> +		vs2_line_s   = vs1_line_s + adj_mode->vtotal/2 ;
->  		vs2_line_e   = vs2_line_s +
-> -			       (mode->vsync_end - mode->vsync_start)/2;
-> +			       (adj_mode->vsync_end - adj_mode->vsync_start)/2;
+> @@ -121,7 +122,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+>  		pfn = m2p_find_override_pfn(mfn, ~0);
 >  	}
 >  
-> -	div = 148500 / mode->clock;
-> +	div = 148500 / adj_mode->clock;
->  
->  	/* mute the audio FIFO: */
->  	reg_set(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
-> @@ -896,9 +897,9 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  	 * TDA19988 requires high-active sync at input stage,
->  	 * so invert low-active sync provided by master encoder here
->  	 */
-> -	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
-> +	if (adj_mode->flags & DRM_MODE_FLAG_NHSYNC)
->  		reg_set(priv, REG_VIP_CNTRL_3, VIP_CNTRL_3_H_TGL);
-> -	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
-> +	if (adj_mode->flags & DRM_MODE_FLAG_NVSYNC)
->  		reg_set(priv, REG_VIP_CNTRL_3, VIP_CNTRL_3_V_TGL);
->  
-
-Using the adj_mode->flags breaks a workaround I had done on BeagleBone Black
-(tilcdc + tda998x) to resolve an issue with out of spec syncs from the
-tlcdc.  I invert the HSYNC in adj_mode->flags but don't want the tda998x to
-really know that I am doing that so I use adj_mode in the tilcdc driver, and
-mode here in the tda998x driver.  The theory being adj_mode contains whatever
-workarounds I need to do for the driving device and mode has the pristine
-values that I want to send to the monitor.  I would need to look if there is a
-different way to solve this as I am guessing you are actually using adj_mode in
-the manner it was intended.
-
-Otherwise this patch series is working on BeagleBone Black - I have only tried
-video so far (not audio).
-
-Darren
-
->  	/*
-> @@ -906,9 +907,9 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  	 * revert input stage toggled sync at output stage
->  	 */
->  	reg = TBG_CNTRL_1_TGL_EN;
-> -	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
-> +	if (adj_mode->flags & DRM_MODE_FLAG_NHSYNC)
->  		reg |= TBG_CNTRL_1_H_TGL;
-> -	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
-> +	if (adj_mode->flags & DRM_MODE_FLAG_NVSYNC)
->  		reg |= TBG_CNTRL_1_V_TGL;
->  	reg_write(priv, REG_TBG_CNTRL_1, reg);
->  
-> @@ -949,11 +950,10 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  		reg_write(priv, REG_ENC_CNTRL, ENC_CNTRL_CTL_CODE(1));
->  		reg_set(priv, REG_TX33, TX33_HDMI);
->  
-> -		tda998x_write_avi(priv, adjusted_mode);
-> +		tda998x_write_avi(priv, adj_mode);
->  
->  		if (priv->params.audio_cfg)
-> -			tda998x_configure_audio(priv, adjusted_mode,
-> -						&priv->params);
-> +			tda998x_configure_audio(priv, adj_mode, &priv->params);
+> -	/* 
+> +	/*
+>  	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+>  	 * entry doesn't map back to the mfn and m2p_override doesn't have a
+>  	 * valid entry for it.
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 2ae8699..bd4724b 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -888,13 +888,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  					"m2p_add_override: pfn %lx not mapped", pfn))
+>  			return -EINVAL;
 >  	}
+> -	WARN_ON(PagePrivate(page));
+> -	SetPagePrivate(page);
+> -	set_page_private(page, mfn);
+> -	page->index = pfn_to_mfn(pfn);
+> -
+> -	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> -		return -ENOMEM;
+>  
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+> @@ -933,19 +926,16 @@ int m2p_add_override(unsigned long mfn, struct page *page,
 >  }
+>  EXPORT_SYMBOL_GPL(m2p_add_override);
+>  int m2p_remove_override(struct page *page,
+> -		struct gnttab_map_grant_ref *kmap_op)
+> +			struct gnttab_map_grant_ref *kmap_op,
+> +			unsigned long mfn)
+>  {
+>  	unsigned long flags;
+> -	unsigned long mfn;
+>  	unsigned long pfn;
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
 >  
-> -- 
-> 1.8.5.3
+>  	pfn = page_to_pfn(page);
+> -	mfn = get_phys_to_machine(pfn);
+> -	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+> -		return -EINVAL;
+>  
+>  	if (!PageHighMem(page)) {
+>  		address = (unsigned long)__va(pfn << PAGE_SHIFT);
+> @@ -959,10 +949,7 @@ int m2p_remove_override(struct page *page,
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_del(&page->lru);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> -	WARN_ON(!PagePrivate(page));
+> -	ClearPagePrivate(page);
+>  
+> -	set_phys_to_machine(pfn, page->index);
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+>  			struct multicall_space mcs;
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 6620b73..875025f 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+>  			!rb_next(&persistent_gnt->node)) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		pages[segs_to_unmap] = persistent_gnt->page;
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		kfree(persistent_gnt);
+>  	}
+>  	if (segs_to_unmap > 0) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
+> +		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, pages, segs_to_unmap);
+>  	}
+> @@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
+>  				    GNTMAP_host_map, pages[i]->handle);
+>  		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+>  		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+> -			                        invcount);
+> +			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, unmap_pages, invcount);
+>  			invcount = 0;
+>  		}
+>  	}
+>  	if (invcount) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
+> +		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, unmap_pages, invcount);
+>  	}
+> @@ -740,7 +737,7 @@ again:
+>  	}
+>  
+>  	if (segs_to_map) {
+> -		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
+> +		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+>  		BUG_ON(ret);
+>  	}
+>  
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index e41c79c..e652c0e 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+>  	}
+>  
+>  	pr_debug("map %d+%d\n", map->index, map->count);
+> -	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+> -			map->pages, map->count);
+> +	err = gnttab_map_refs_userspace(map->map_ops,
+> +					use_ptemod ? map->kmap_ops : NULL,
+> +					map->pages,
+> +					map->count);
+>  	if (err)
+>  		return err;
+>  
+> @@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+>  		}
+>  	}
+>  
+> -	err = gnttab_unmap_refs(map->unmap_ops + offset,
+> -			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+> -			pages);
+> +	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
+> +					  use_ptemod ? map->kmap_ops + offset : NULL,
+> +					  map->pages + offset,
+> +					  pages);
+>  	if (err)
+>  		return err;
+>  
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index aa846a4..e4ddfeb 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+>  
+> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		    struct gnttab_map_grant_ref *kmap_ops,
+> -		    struct page **pages, unsigned int count)
+> +		    struct page **pages, unsigned int count,
+> +		    bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  	pte_t *pte;
+> -	unsigned long mfn;
+> +	unsigned long mfn, pfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+>  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+> @@ -927,8 +931,20 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		} else {
+>  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		pfn = page_to_pfn(pages[i]);
+> +
+> +		WARN_ON(PagePrivate(pages[i]));
+> +		SetPagePrivate(pages[i]);
+> +		set_page_private(pages[i], mfn);
+> +
+> +		pages[i]->index = pfn_to_mfn(pfn);
+> +		if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +		if (m2p_override)
+> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> +					       &kmap_ops[i] : NULL);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -939,15 +955,32 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_map_refs);
+>  
+> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
+> +
+> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct gnttab_map_grant_ref *kmap_ops,
+> -		      struct page **pages, unsigned int count)
+> +		      struct page **pages, unsigned int count,
+> +		      bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+> +	unsigned long pfn, mfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -958,17 +991,33 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+>  					INVALID_P2M_ENTRY);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+>  
+>  	for (i = 0; i < count; i++) {
+> -		ret = m2p_remove_override(pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		pfn = page_to_pfn(pages[i]);
+> +		mfn = get_phys_to_machine(pfn);
+> +		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
+> +			ret = -EINVAL;
+> +			goto out;
+> +		}
+> +
+> +		set_page_private(pages[i], INVALID_P2M_ENTRY);
+> +		WARN_ON(!PagePrivate(pages[i]));
+> +		ClearPagePrivate(pages[i]);
+> +		set_phys_to_machine(pfn, pages[i]->index);
+> +		if (m2p_override)
+> +			ret = m2p_remove_override(pages[i],
+> +						  kmap_ops ?
+> +						   &kmap_ops[i] : NULL,
+> +						  mfn);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -979,8 +1028,22 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+>  
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
+> +				struct gnttab_map_grant_ref *kmap_ops,
+> +				struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
+> +
+>  static unsigned nr_status_frames(unsigned nr_grant_frames)
+>  {
+>  	BUG_ON(grefs_per_grant_frame == 0);
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index 694dcaf..9a919b1 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
+>  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> -		    struct gnttab_map_grant_ref *kmap_ops,
+>  		    struct page **pages, unsigned int count);
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count);
+>  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> -		      struct gnttab_map_grant_ref *kunmap_ops,
+>  		      struct page **pages, unsigned int count);
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
+> +				struct gnttab_map_grant_ref *kunmap_ops,
+> +				struct page **pages, unsigned int count);
+>  
+>  /* Perform a batch of grant map/copy operations. Retry every batch slot
+>   * for which the hypervisor returns GNTST_eagain. This is typically due
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
