@@ -1,110 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaAWBsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 20:48:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48709 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201AbaAWBsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 20:48:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,703,1384329600"; 
-   d="scan'208";a="443208578"
-Message-ID: <52E07379.8020405@intel.com>
-Date: Thu, 23 Jan 2014 09:42:17 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1755475AbaAWBse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:48:34 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:59346 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754965AbaAWBsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jan 2014 20:48:32 -0500
+Message-ID: <52E074ED.5000906@gmail.com>
+Date: Wed, 22 Jan 2014 17:48:29 -0800
+From: Marc C <marc.ceeeee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v2 0/4] Intel MPX support
-References: <1390382866-6361-1-git-send-email-qiaowei.ren@intel.com> <20140122115321.GA8281@gmail.com> <9E0BE1322F2F2246BD820DA9FC397ADE014EC163@SHSMSX102.ccr.corp.intel.com> <20140122123059.GA8973@gmail.com>
-In-Reply-To: <20140122123059.GA8973@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 7/8] ARM: brcmstb: gic: add compatible string for Broadcom
+ Brahma15
+References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com> <1390361452-3124-8-git-send-email-marc.ceeeee@gmail.com> <CAGVrzcbPyaSe0aEHt157kz=quvsrBCPOUriCVG27fJfasa45jg@mail.gmail.com>
+In-Reply-To: <CAGVrzcbPyaSe0aEHt157kz=quvsrBCPOUriCVG27fJfasa45jg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2014 08:30 PM, Ingo Molnar wrote:
+Hi Florian,
+
+> Do not we also need to update drivers/irqchip/irq-gic.c to look for
+> this compatible property? Alternatively should the example DTS contain
+> the following:
 >
-> * Ren, Qiaowei <qiaowei.ren@intel.com> wrote:
->
->>
->>
->>> -----Original Message-----
->>> From: Ingo Molnar [mailto:mingo.kernel.org@gmail.com] On Behalf Of Ingo
->>> Molnar
->>> Sent: Wednesday, January 22, 2014 7:53 PM
->>> To: Ren, Qiaowei
->>> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
->>> linux-kernel@vger.kernel.org; Peter Zijlstra
->>> Subject: Re: [PATCH v2 0/4] Intel MPX support
->>>
->>>
->>> * Qiaowei Ren <qiaowei.ren@intel.com> wrote:
->>>
->>>> Changes since v1:
->>>>    * check to see if #BR occurred in userspace or kernel space.
->>>>    * use generic structure and macro as much as possible when
->>>>      decode mpx instructions.
->>>>
->>>> Qiaowei Ren (4):
->>>>    x86, mpx: add documentation on Intel MPX
->>>>    x86, mpx: hook #BR exception handler to allocate bound tables
->>>>    x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
->>>>    x86, mpx: extend siginfo structure to include bound violation
->>>>      information
->>>>
->>>>   Documentation/x86/intel_mpx.txt    |   76 +++++++
->>>>   arch/x86/Kconfig                   |    4 +
->>>>   arch/x86/include/asm/mpx.h         |   63 ++++++
->>>>   arch/x86/include/asm/processor.h   |   16 ++
->>>>   arch/x86/kernel/Makefile           |    1 +
->>>>   arch/x86/kernel/mpx.c              |  417
->>> ++++++++++++++++++++++++++++++++++++
->>>>   arch/x86/kernel/traps.c            |   61 +++++-
->>>>   include/uapi/asm-generic/siginfo.h |    9 +-
->>>>   include/uapi/linux/prctl.h         |    6 +
->>>>   kernel/signal.c                    |    4 +
->>>>   kernel/sys.c                       |   12 +
->>>>   11 files changed, 667 insertions(+), 2 deletions(-)  create mode
->>>> 100644 Documentation/x86/intel_mpx.txt  create mode 100644
->>>> arch/x86/include/asm/mpx.h  create mode 100644 arch/x86/kernel/mpx.c
->>>
->>> Such a patch submission is absolutely inadequate!
->>>
->>> Please outline:
->>>
->>>    - a short summary of what the feature does
->>>
->>>    - a short description of what hardware supports it today or will
->>>      support it in the future
->>>
->>>    - a short description of whether the feature needs any
->>>      configuration from the user or it's entirely auto-enabled on
->>>      hardware that supports it.
->>>
->>>    - a cost/benefit description to unrelated code: is this slowing down
->>>      anything else?
->>>
->>>    - how does user-space compiler support stand, what's the expected
->>>      status there, etc.
->>>
->>> Only a small fraction of that information can be found in
->>> Documentation/x86/intel_mpx.txt. in
->>>
->>> I'm absolutely sick of these semi-anonymous patch submissions from Intel, so
->>> I'm NAK-ing it until it's communicated properly.
->>>
->> Ok. I will add related content into this documentation.
->
-> More importantly, put it into the 0/X mail! That's how people can
-> review such a patch set effectively.
->
-Ok. Thanks for your feedback. I will do it.
+> compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
+
+Patch #8 [1] of this series has the "compatible" string set exactly that way. I was
+following the pattern seen in the other reference DTS files, where "arm,cortex-a15-gic" is
+used as the fall-back.
 
 Thanks,
-Qiaowei
+Marc C
+
+[1] https://lkml.org/lkml/2014/1/21/649
+
+On 01/22/2014 02:40 PM, Florian Fainelli wrote:
+> Hi Marc,
+> 
+> 2014/1/21 Marc Carino <marc.ceeeee@gmail.com>:
+>> Document the Broadcom Brahma B15 GIC implementation as compatible
+>> with the ARM GIC standard.
+>>
+>> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+>> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> 
+> Do not we also need to update drivers/irqchip/irq-gic.c to look for
+> this compatible property? Alternatively should the example DTS contain
+> the following:
+> 
+> compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic"?
+> 
+>> ---
+>>  Documentation/devicetree/bindings/arm/gic.txt |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+>> index 3dfb0c0..d7409fd 100644
+>> --- a/Documentation/devicetree/bindings/arm/gic.txt
+>> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+>> @@ -15,6 +15,7 @@ Main node required properties:
+>>         "arm,cortex-a9-gic"
+>>         "arm,cortex-a7-gic"
+>>         "arm,arm11mp-gic"
+>> +       "brcm,brahma-b15-gic"
+>>  - interrupt-controller : Identifies the node as an interrupt controller
+>>  - #interrupt-cells : Specifies the number of cells needed to encode an
+>>    interrupt source.  The type shall be a <u32> and the value shall be 3.
+>> --
+>> 1.7.1
+>>
+> 
+> 
+> 
+
+
+
