@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaAWPJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 10:09:14 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:57594 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746AbaAWPIj (ORCPT
+	id S932082AbaAWPLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 10:11:33 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:55642 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063AbaAWPLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 10:08:39 -0500
+	Thu, 23 Jan 2014 10:11:31 -0500
+Date: Thu, 23 Jan 2014 15:11:23 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, sameo@linux.intel.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/4] mfd: wm8994-core: Naturalise cross-architecture discrepancies
-Date: Thu, 23 Jan 2014 15:05:55 +0000
-Message-Id: <1390489556-9434-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390489556-9434-1-git-send-email-lee.jones@linaro.org>
-References: <1390489556-9434-1-git-send-email-lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 2/3 RESEND] mfd: tc3589x: Reform device tree probing
+Message-ID: <20140123151123.GE8586@lee--X1>
+References: <1390481008-23900-1-git-send-email-linus.walleij@linaro.org>
+ <20140123133141.GD8586@lee--X1>
+ <CACRpkdZjRG=cmWHmmFNS+=guCwQoFpu8T3r4YHr6t_XihvmaWA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZjRG=cmWHmmFNS+=guCwQoFpu8T3r4YHr6t_XihvmaWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we compile the WM8994 for a 64bit architecture we receive the following
-warnings:
+> > Patch looks good to me. Is there any reason why we should rush this in
+> > for v3.14, or is it okay to go to -next?
+> 
+> No rush, but it's been on review like forever so unless there is
+> some noise from the DT people at -rc1 I'd be very happy if you
+> could apply patches 1 & 2 by then.
 
-drivers/mfd/wm8994-core.c: In function ‘wm8994_i2c_probe’:
-drivers/mfd/wm8994-core.c:639:19:
-  warning: cast from pointer to integer of different size
-    wm8994->type = (int)of_id->data;
-                   ^
+I'm just waiting for their Ack. If I don't have it soon I'll review it
+myself and any changes will have to come in via subsequent patch
+submissions.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/wm8994-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think it's sensible to head for v3.15 for this set.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index ba04f1b..e6fab94 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -636,7 +636,7 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
- 	if (i2c->dev.of_node) {
- 		of_id = of_match_device(wm8994_of_match, &i2c->dev);
- 		if (of_id)
--			wm8994->type = (int)of_id->data;
-+			wm8994->type = (enum wm8994_type)of_id->data;
- 	} else {
- 		wm8994->type = id->driver_data;
- 	}
+> The third one can be applied out-of-order to the input tree after
+> that.
+
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
