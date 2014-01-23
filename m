@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929AbaAWTGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34974 "EHLO
+	id S1754816AbaAWTGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:06:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaAWTGX (ORCPT
+	with ESMTP id S1752498AbaAWTGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jan 2014 14:06:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Carmody <phil.carmody@partner.samsung.com>,
-        Stephen Warren <swarren@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.12 09/27] i2c: Re-instate body of i2c_parent_is_i2c_adapter()
-Date: Thu, 23 Jan 2014 11:06:46 -0800
-Message-Id: <20140123190649.661431498@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.12 08/27] fork:  Allow CLONE_PARENT after setns(CLONE_NEWPID)
+Date: Thu, 23 Jan 2014 11:06:45 -0800
+Message-Id: <20140123190649.534378268@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -29,45 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 2fac2b891f287691c27ee8d2eeecf39571b27fea upstream.
+commit 1f7f4dde5c945f41a7abc2285be43d918029ecc5 upstream.
 
-The body of i2c_parent_is_i2c_adapter() is currently guarded by
-I2C_MUX. It should be CONFIG_I2C_MUX instead.
+Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+> Hi Oleg,
+>
+> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
+> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
+> breaks lxc-attach in 3.12.  That code forks a child which does
+> setns() and then does a clone(CLONE_PARENT).  That way the
+> grandchild can be in the right namespaces (which the child was
+> not) and be a child of the original task, which is the monitor.
+>
+> lxc-attach in 3.11 was working fine with no side effects that I
+> could see.  Is there a real danger in allowing CLONE_PARENT
+> when current->nsproxy->pidns_for_children is not our pidns,
+> or was this done out of an "over-abundance of caution"?  Can we
+> safely revert that new extra check?
 
-Among potentially other problems, this resulted in i2c_lock_adapter()
-only locking I2C mux child adapters, and not the parent adapter. In
-turn, this could allow inter-mingling of mux child selection and I2C
-transactions, which could result in I2C transactions being directed to
-the wrong I2C bus, and possibly even switching between busses in the
-middle of a transaction.
+The two fundamental things I know we can not allow are:
+- A shared signal queue aka CLONE_THREAD.  Because we compute the pid
+  and uid of the signal when we place it in the queue.
 
-One concrete issue caused by this bug was corrupted HDMI EDID reads
-during boot on the NVIDIA Tegra Seaboard system, although this only
-became apparent in recent linux-next, when the boot timing was changed
-just enough to trigger the race condition.
+- Changing the pid and by extention pid_namespace of an existing
+  process.
 
-Fixes: 3923172b3d70 ("i2c: reduce parent checking to a NOOP in non-I2C_MUX case")
-Cc: Phil Carmody <phil.carmody@partner.samsung.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+>From a parents perspective there is nothing special about the pid
+namespace, to deny CLONE_PARENT, because the parent simply won't know or
+care.
+
+>From the childs perspective all that is special really are shared signal
+queues.
+
+User mode threading with CLONE_PARENT|CLONE_VM|CLONE_SIGHAND and tasks
+in different pid namespaces is almost certainly going to break because
+it is complicated.  But shared signal handlers can look at per thread
+information to know which pid namespace a process is in, so I don't know
+of any reason not to support CLONE_PARENT|CLONE_VM|CLONE_SIGHAND threads
+at the kernel level.  It would be absolutely stupid to implement but
+that is a different thing.
+
+So hmm.
+
+Because it can do no harm, and because it is a regression let's remove
+the CLONE_PARENT check and send it stable.
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/i2c.h |    2 +-
+ kernel/fork.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -447,7 +447,7 @@ static inline void i2c_set_adapdata(stru
- static inline struct i2c_adapter *
- i2c_parent_is_i2c_adapter(const struct i2c_adapter *adapter)
- {
--#if IS_ENABLED(I2C_MUX)
-+#if IS_ENABLED(CONFIG_I2C_MUX)
- 	struct device *parent = adapter->dev.parent;
- 
- 	if (parent != NULL && parent->type == &i2c_adapter_type)
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1175,7 +1175,7 @@ static struct task_struct *copy_process(
+ 	 * do not allow it to share a thread group or signal handlers or
+ 	 * parent with the forking task.
+ 	 */
+-	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
++	if (clone_flags & CLONE_SIGHAND) {
+ 		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
+ 		    (task_active_pid_ns(current) !=
+ 				current->nsproxy->pid_ns_for_children))
 
 
