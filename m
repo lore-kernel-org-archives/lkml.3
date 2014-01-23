@@ -1,54 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197AbaAWIWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:22:44 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:58595 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756174AbaAWIWm (ORCPT
+	id S1756216AbaAWIYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:24:18 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:27096 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751245AbaAWIYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:22:42 -0500
-Date: Thu, 23 Jan 2014 09:23:36 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] fuse update for 3.14
-Message-ID: <20140123082336.GJ24171@tucsk.piliscsaba.szeredi.hu>
+	Thu, 23 Jan 2014 03:24:16 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag0TAITQ4FJ5LKVw/2dsb2JhbABbgww4gwKkLgOPRYVQgQ4XdIIlAQEBBDocGAsQCAMYCSUPBSUDIRMUh3DFCxcWjh1JB4Q4BJQ8g2WSGYFvgVIogS0
+Date: Thu, 23 Jan 2014 19:24:10 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Chris Mason <clm@fb.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>
+Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
+ beyond 4096 bytes
+Message-ID: <20140123082410.GO13997@dastard>
+References: <20131220093022.GV11295@suse.de>
+ <52DF353D.6050300@redhat.com>
+ <20140122093435.GS4963@suse.de>
+ <52DFD168.8080001@redhat.com>
+ <20140122143452.GW4963@suse.de>
+ <52DFDCA6.1050204@redhat.com>
+ <20140122151913.GY4963@suse.de>
+ <1390410233.1198.7.camel@ret.masoncoding.com>
+ <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Jan 22, 2014 at 09:21:40AM -0800, James Bottomley wrote:
+> On Wed, 2014-01-22 at 17:02 +0000, Chris Mason wrote:
+> > On Wed, 2014-01-22 at 15:19 +0000, Mel Gorman wrote:
+> > > On Wed, Jan 22, 2014 at 09:58:46AM -0500, Ric Wheeler wrote:
+> > > > On 01/22/2014 09:34 AM, Mel Gorman wrote:
+> > > > >On Wed, Jan 22, 2014 at 09:10:48AM -0500, Ric Wheeler wrote:
+> > > > >>On 01/22/2014 04:34 AM, Mel Gorman wrote:
+> > > > >>>On Tue, Jan 21, 2014 at 10:04:29PM -0500, Ric Wheeler wrote:
+> > > > >>>>One topic that has been lurking forever at the edges is the current
+> > > > >>>>4k limitation for file system block sizes. Some devices in
+> > > > >>>>production today and others coming soon have larger sectors and it
+> > > > >>>>would be interesting to see if it is time to poke at this topic
+> > > > >>>>again.
+> > > > >>>>
+> > > > >>>Large block support was proposed years ago by Christoph Lameter
+> > > > >>>(http://lwn.net/Articles/232757/). I think I was just getting started
+> > > > >>>in the community at the time so I do not recall any of the details. I do
+> > > > >>>believe it motivated an alternative by Nick Piggin called fsblock though
+> > > > >>>(http://lwn.net/Articles/321390/). At the very least it would be nice to
+> > > > >>>know why neither were never merged for those of us that were not around
+> > > > >>>at the time and who may not have the chance to dive through mailing list
+> > > > >>>archives between now and March.
+> > > > >>>
+> > > > >>>FWIW, I would expect that a show-stopper for any proposal is requiring
+> > > > >>>high-order allocations to succeed for the system to behave correctly.
+> > > > >>>
+> > > > >>I have a somewhat hazy memory of Andrew warning us that touching
+> > > > >>this code takes us into dark and scary places.
+> > > > >>
+> > > > >That is a light summary. As Andrew tends to reject patches with poor
+> > > > >documentation in case we forget the details in 6 months, I'm going to guess
+> > > > >that he does not remember the details of a discussion from 7ish years ago.
+> > > > >This is where Andrew swoops in with a dazzling display of his eidetic
+> > > > >memory just to prove me wrong.
+> > > > >
+> > > > >Ric, are there any storage vendor that is pushing for this right now?
+> > > > >Is someone working on this right now or planning to? If they are, have they
+> > > > >looked into the history of fsblock (Nick) and large block support (Christoph)
+> > > > >to see if they are candidates for forward porting or reimplementation?
+> > > > >I ask because without that person there is a risk that the discussion
+> > > > >will go as follows
+> > > > >
+> > > > >Topic leader: Does anyone have an objection to supporting larger block
+> > > > >	sizes than the page size?
+> > > > >Room: Send patches and we'll talk.
+> > > > >
+> > > > 
+> > > > I will have to see if I can get a storage vendor to make a public
+> > > > statement, but there are vendors hoping to see this land in Linux in
+> > > > the next few years.
+> > > 
+> > > What about the second and third questions -- is someone working on this
+> > > right now or planning to? Have they looked into the history of fsblock
+> > > (Nick) and large block support (Christoph) to see if they are candidates
+> > > for forward porting or reimplementation?
+> > 
+> > I really think that if we want to make progress on this one, we need
+> > code and someone that owns it.  Nick's work was impressive, but it was
+> > mostly there for getting rid of buffer heads.  If we have a device that
+> > needs it and someone working to enable that device, we'll go forward
+> > much faster.
+> 
+> Do we even need to do that (eliminate buffer heads)?
 
-Please pull the following:
+No, the reason bufferheads were replaced was that a bufferhead can
+only reference a single page. i.e. the structure is that a page can
+reference multipl bufferheads (block size >= page size) but a
+bufferhead can't refernce multiple pages which is what is needed for
+block size > page size. fsblock was designed to handle both cases.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+Cheers,
 
-This contains a fix for a potential use-after-module-unload bug noticed by Al
-and caching improvements for read-only fuse filesystems by Andrew Gallagher.
-
-Thanks,
-Miklos
-----
-
-Andrew Gallagher (2):
-      fuse: don't invalidate attrs when not using atime
-      fuse: support clients that don't implement 'open'
-
-Miklos Szeredi (2):
-      fuse: fix pipe_buf_operations
-      fuse: fix SetPageUptodate() condition in STORE
-
----
- fs/fuse/dev.c             | 25 +++++++------------------
- fs/fuse/dir.c             | 14 ++++++++++++--
- fs/fuse/file.c            | 41 +++++++++++++++++++++++++++++------------
- fs/fuse/fuse_i.h          |  5 +++++
- fs/splice.c               | 18 ++++++++++++++++++
- include/linux/pipe_fs_i.h |  2 ++
- net/core/skbuff.c         | 32 +-------------------------------
- 7 files changed, 74 insertions(+), 63 deletions(-)
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
