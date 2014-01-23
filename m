@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaAWLAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 06:00:22 -0500
-Received: from mail-bn1lp0150.outbound.protection.outlook.com ([207.46.163.150]:47079
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753432AbaAWLES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 06:04:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13886 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752868AbaAWLAU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 06:00:20 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "broonie@linaro.org" <broonie@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: RE: [PATCH] ASoC: simple-card: fix simple card widgets routing
- property name usage
-Thread-Topic: [PATCH] ASoC: simple-card: fix simple card widgets routing
- property name usage
-Thread-Index: AQHPDcs8kQD2oClG706xXAi/otI9D5qSOExA
-Date: Thu, 23 Jan 2014 11:00:16 +0000
-Message-ID: <6982194301ae4ee48be60e23dbd79927@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1389331047-21437-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.216]
-x-forefront-prvs: 0100732B76
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(189002)(81816001)(47976001)(81686001)(76576001)(59766001)(4396001)(87266001)(79102001)(76786001)(47736001)(2201001)(83322001)(85306002)(19580405001)(87936001)(53806001)(56776001)(81342001)(50986001)(81542001)(69226001)(92566001)(49866001)(76796001)(93136001)(65816001)(33646001)(85852003)(74316001)(54356001)(74876001)(90146001)(56816005)(51856001)(47446002)(83072002)(63696002)(76482001)(46102001)(19580395003)(74502001)(2656002)(54316002)(77982001)(74366001)(80976001)(80022001)(86362001)(66066001)(93516002)(74662001)(74706001)(31966008)(94316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752774AbaAWLER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 06:04:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,705,1384329600"; 
+   d="scan'208";a="443400010"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bin Gao <bin.gao@intel.com>,
+        x86@kernel.org, Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] x86, tsc: Add missing Baytrail frequency to the table
+Date: Thu, 23 Jan 2014 13:04:03 +0200
+Message-Id: <1390475043-27457-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means that
+the CPU reference clock runs at 83.3MHz. Without this we crash a bit later
+with backtrace looking like:
 
-I'd like to know the status about this patch.
+ divide error: 0000 [#1] PREEMPT SMP
+ Modules linked in:
+ CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.13.0+ #47
+ task: ffff880075508000 ti: ffff880075506000 task.ti: ffff880075506000
+ RIP: 0010:[<ffffffff810aec14>]  [<ffffffff810aec14>] clockevents_config.part.3+0x24/0xa0
+ RSP: 0000:ffff880075507e58  EFLAGS: 00010246
+ RAX: ffffffffffffffff RBX: ffff880079c0cd80 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffffffffff
+ RBP: ffff880075507e70 R08: 0000000000000001 R09: 00000000000000be
+ R10: 00000000000000bd R11: 0000000000000003 R12: 000000000000b008
+ R13: 0000000000000008 R14: 000000000000b010 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: ffff880079fff000 CR3: 0000000001c0b000 CR4: 00000000001006f0
+ Stack:
+  ffff880079c0cd80 000000000000b008 0000000000000008 ffff880075507e88
+  ffffffff810aecb0 ffff880079c0cd80 ffff880075507e98 ffffffff81030168
+  ffff880075507ed8 ffffffff81d1104f 00000000000000c3 0000000000000000
+ Call Trace:
+  [<ffffffff810aecb0>] clockevents_config_and_register+0x20/0x30
+  [<ffffffff81030168>] setup_APIC_timer+0xc8/0xd0
+  [<ffffffff81d1104f>] setup_boot_APIC_clock+0x4cc/0x4d8
+  [<ffffffff81d0f5de>] native_smp_prepare_cpus+0x3dd/0x3f0
+  [<ffffffff81d02ee9>] kernel_init_freeable+0xc3/0x205
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
+  [<ffffffff8177c91e>] kernel_init+0xe/0x120
+  [<ffffffff8178deec>] ret_from_fork+0x7c/0xb0
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
 
-Thanks very much.
+This is due the fact that the returned zero TSC value is propagated further
+to clockevents code resulting division by zero.
 
-Best Regards,
-Xiubo
+Fix this by adding the missing frequency to freq_desc_tables for Baytrail.
 
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bin Gao <bin.gao@intel.com>
+---
+ arch/x86/kernel/tsc_msr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Subject: [PATCH] ASoC: simple-card: fix simple card widgets routing property
-> name usage
-> 
-> Fix the usage of simple card widgets routing property, and make it the
-> same with simple card routing property name.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  Documentation/devicetree/bindings/sound/simple-card.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt
-> b/Documentation/devicetree/bindings/sound/simple-card.txt
-> index e9e20ec..19c84df 100644
-> --- a/Documentation/devicetree/bindings/sound/simple-card.txt
-> +++ b/Documentation/devicetree/bindings/sound/simple-card.txt
-> @@ -43,7 +43,7 @@ Example:
->  sound {
->  	compatible = "simple-audio-card";
->  	simple-audio-card,format = "left_j";
-> -	simple-audio-routing =
-> +	simple-audio-card,routing =
->  		"MIC_IN", "Mic Jack",
->  		"Headphone Jack", "HP_OUT",
->  		"Ext Spk", "LINE_OUT";
-> --
-> 1.8.4
-> 
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 8b5434f4389f..10a278661fe1 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
+ };
+-- 
+1.8.5.2
 
