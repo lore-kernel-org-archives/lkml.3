@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaAWWBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 17:01:32 -0500
-Received: from xes-mad.com ([216.165.139.218]:54074 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaAWWBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 17:01:31 -0500
-X-Greylist: delayed 1025 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jan 2014 17:01:30 EST
-Message-ID: <52E18D25.6070403@xes-inc.com>
-Date: Thu, 23 Jan 2014 15:44:05 -0600
-From: Peter Tyser <ptyser@xes-inc.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
-CC: Samuel Ortiz <sameo@linux.intel.com>, x86@kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: Re: Kernel freeze with v3.13 on Avoton CPUs
-References: <20140123065051.GA1402@roeck-us.net>
-In-Reply-To: <20140123065051.GA1402@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755262AbaAWWEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 17:04:38 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55848 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaAWWEf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 17:04:35 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v2 0/9] CPU enable method based SMP/hotplug + MSM conversion
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52CE005A.3070802@codeaurora.org>
+Date: Thu, 23 Jan 2014 16:04:28 -0600
+Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <463D867F-6EF1-40E4-8AFB-28E54433CD79@codeaurora.org>
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org> <201401082237.36626.arnd@arndb.de> <52CE005A.3070802@codeaurora.org>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 12:50 AM, Guenter Roeck wrote:
-> Hi folks,
+
+On Jan 8, 2014, at 7:50 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+
+> On 01/08/14 13:37, Arnd Bergmann wrote:
+>> On Tuesday 24 December 2013, Stephen Boyd wrote:
+>>> This is a rework of patches sent a months back by Rohit[1].
+>>> The goal of these patches is to add support for SMP and (basic)
+>>> hotplug on MSM based SoCs. To get there, we add support for a
+>>> generic way to hook in SMP/hotplug support code based on DT. To
+>>> show how it's used, we convert the MSM8660 SMP support code over
+>>> to the new method. After that we add support for the rest of the
+>>> upstream MSM SoCs (note these patches are piled high on top of
+>>> Rohit's patches to add 8074 support to MSM[2] and my follow ups[3,4],
+>>> but this should only matter to the MSM maintainers).
+>>> 
+>>> This is one of the last items of code that still requires us to have
+>>> a mach directory and a machine descriptor. We should be able to move
+>>> the hotplug/smp code out of mach directories if this approach is
+>>> accepted.
+>> The implementation looks ok to me, but I wonder whether on a global
+>> scale we want to tie it more closely to the cpuidle implementations.
+>> We already have a drivers/cpuidle framework, and while I admit
+>> that I'm not familiar with the code in there, I would assume that
+>> the smp operations and the cpuidle code usually go hand in hand.
 > 
-> we are seeing an odd problem with kernel version 3.13 running on Mohan Peak
-> with an Avoton 8-core CPU. The kernel boots to the login prompt and then
-> freezes silently within a few seconds.
+> Sure. Right now the smp ops code is fairly well tied into the arch layer
+> so it sounds like there is some future work when we move this stuff out
+> of the mach directory.
 > 
-> The problem disappears if we revert patch 8477128fe0 (mfd: lpc_ich: Add support
-> for Intel Avoton SoC).
-> 
-> v3.10.27 runs fine. If we cherry-pick 8477128fe0 on top of 3.10.27 we see
-> exactly the same problem.
-> 
-> Any idea what might be causing this, and/or what we could do to track this down
-> further ?
+> Would arm-soc be able to pick these patches up for 3.14? I think
+> everything is in place for these patches now that Mark has reviewed them.
 
-I took a look at the Avoton datasheet, and it looks like its register
-layout is close, but not identical to the other ICH chipsets supported
-by the lpc_ich driver which could be part of the issue.
+Ping, wondering if arm-soc would pick up:
 
-Eg the "enable ACPI BAR" bit is in register offset 0x44 of PCI device
-31, function 0 on most ICH chipsets, while it's in 0x40 on the Avoton.
-So on the Avoton the "enable ACPI BAR" bit isn't being set by the
-lpc_ich driver.  If your BIOS didn't set this bit, it could cause
-erratic behavior since Linux assumes the ACPI region has been enabled.
-The driver is also writing to offset 0x44 which is RO/reserved on the
-Avoton.  In theory this should be OK, but clearly isn't "correct".
+ ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
 
-The same comment applies to the GPIO register in PCI device 31, function
-0.  The current lpc_ich driver enables the GPIO region in offset 0x4C
-while the Avoton does in 0x48.
+The other patches are all msm specific so we can handle them through the normal channels.
 
-I'm not sure if the above explains the specific behavior you saw, but
-does indicate that the driver shouldn't be used for the Avoton as-is.
+- k
 
-I don't have an Avoton to try and reproduce, but do have access to a Bay
-Trail platform which appears to have the same register layout as the
-Avoton.  I can give adding it to the lpc_ich driver a shot in the next
-week and see if I run into the same issues as you did.
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-In the short term we could either revert 8477128fe0 or wait a bit until
-more investigation is done in hopes that we can fix it.
-
-Peter
