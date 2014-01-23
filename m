@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaAWBJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 20:09:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48140 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaAWBJQ (ORCPT
+	id S1752862AbaAWBPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 20:15:46 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46211 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaAWBPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 20:09:16 -0500
-Message-ID: <52E06BA0.4090803@oracle.com>
-Date: Thu, 23 Jan 2014 09:08:48 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 22 Jan 2014 20:15:45 -0500
+Message-ID: <52E06D2A.30509@huawei.com>
+Date: Thu, 23 Jan 2014 09:15:22 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm/zswap: add writethrough option
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org> <20140114001115.GU1992@bbox> <CALZtONCCrckuHxgHB=GQj0tHszLAYTZZLGzFTnRkj9pvxx0dyg@mail.gmail.com> <20140115054208.GL1992@bbox> <CALZtONCehE8Td2C2w-fOC596uD54y1-kyc3SiKABBEODMb+a7Q@mail.gmail.com> <CALZtONAaPCi8eUhSmdXSxWbeFFN=ChsfL9OurSZUsSPo-_gnfg@mail.gmail.com> <20140122123358.a65c42605513fc8466152801@linux-foundation.org> <20140123001806.GF31230@bbox>
-In-Reply-To: <20140123001806.GF31230@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH] clocksource: fix some comments typo in clocksource.c
+References: <1388653000-9944-1-git-send-email-wangyijing@huawei.com> <alpine.DEB.2.02.1401222201260.24986@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1401222201260.24986@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 01/23/2014 08:18 AM, Minchan Kim wrote:
-> Hello all,
+On 2014/1/23 5:05, Thomas Gleixner wrote:
+> On Thu, 2 Jan 2014, Yijing Wang wrote:
 > 
-> On Wed, Jan 22, 2014 at 12:33:58PM -0800, Andrew Morton wrote:
->> On Wed, 22 Jan 2014 09:19:58 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
+>> Fix some trivial comments typo in kernel/time/clocksource.c
+> 
+> That's not a typo. Thats a left over. The function simply cannot fail
+> anymore. So the subject of that patch should be something like:
+> 
+> clocksource: Remove outdated comments
+
+Hi Thomas, sorry for my poor English, I will update this patch title and changelog.
+
+> 
+> And the changelog should explain, that the functions always return 0,
+> so the comment is just pointless. A nice follow up on that would be to
+> actually make the function void instead of returning a pointless int,
+> but that requires to check all call sites.
+
+You are right, it's pointless to return 0, I will try to change the function type to void
+in a separate patch, thanks!
+
+>  
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  kernel/time/clocksource.c |    3 ---
+>>  1 files changed, 0 insertions(+), 3 deletions(-)
 >>
->>>>>>> Acutally, I really don't know how much benefit we have that in-memory
->>>>>>> swap overcomming to the real storage but if you want, zRAM with dm-cache
->>>>>>> is another option rather than invent new wheel by "just having is better".
->>>>>>
->>>>>> I'm not sure if this patch is related to the zswap vs. zram discussions.  This
->>>>>> only adds the option of using writethrough to zswap.  It's a first
->>>>>> step to possibly
->>>>>> making zswap work more efficiently using writeback and/or writethrough
->>>>>> depending on
->>>>>> the system and conditions.
->>>>>
->>>>> The patch size is small. Okay I don't want to be a party-pooper
->>>>> but at least, I should say my thought for Andrew to help judging.
->>>>
->>>> Sure, I'm glad to have your suggestions.
->>>
->>> To give this a bump - Andrew do you have any concerns about this
->>> patch?  Or can you pick this up?
+>> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+>> index ba3e502..9951575 100644
+>> --- a/kernel/time/clocksource.c
+>> +++ b/kernel/time/clocksource.c
+>> @@ -779,8 +779,6 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+>>   * @scale:	Scale factor multiplied against freq to get clocksource hz
+>>   * @freq:	clocksource frequency (cycles per second) divided by scale
+>>   *
+>> - * Returns -EBUSY if registration fails, zero otherwise.
+>> - *
+>>   * This *SHOULD NOT* be called directly! Please use the
+>>   * clocksource_register_hz() or clocksource_register_khz helper functions.
+>>   */
+>> @@ -805,7 +803,6 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+>>   * clocksource_register - Used to install new clocksources
+>>   * @cs:		clocksource to be registered
+>>   *
+>> - * Returns -EBUSY if registration fails, zero otherwise.
+>>   */
+>>  int clocksource_register(struct clocksource *cs)
+>>  {
+>> -- 
+>> 1.7.1
 >>
->> I don't pay much attention to new features during the merge window,
->> preferring to shove them into a folder to look at later.  Often they
->> have bitrotted by the time -rc1 comes around.
 >>
->> I'm not sure that this review discussion has played out yet - is
->> Minchan happy?
+>>
 > 
-> From the beginning, zswap is for reducing swap I/O but if workingset
-> overflows, it should write back rather than OOM with expecting a small
-> number of writeback would make the system happy because the high memory
-> pressure is temporal so soon most of workload would be hit in zswap
-> without further writeback.
-> 
-> If memory pressure continues and writeback steadily, it means zswap's
-> benefit would be mitigated, even worse by addding comp/decomp overhead.
-> In that case, it would be better to disable zswap, even.
-> 
-> Dan said writethrough supporting is first step to make zswap smart
-> but anybody didn't say further words to step into the smart and
-> what's the *real* workload want it and what's the *real* number from
-> that because dm-cache/zram might be a good fit.
-> (I don't intend to argue zram VS zswap. If the concern is solved by
-> existing solution, why should we invent new function and
-> have maintenace cost?) so it's very hard for me to judge that we should
-> accept and maintain it.
 > 
 
-Speak of dm-cache, there are also bcache, flashcache and bcache.
 
-> We need blueprint for the future and make an agreement on the
-> direction before merging this patch.
-> 
-> But code size is not much and Seth already gave an his Ack so I don't
-> want to hurt Dan any more(Sorry for Dan) and wasting my time so pass
-> the decision to others(ex, Seth and Bob).
-
-Since zswap is a cache layer and write-back and write-through are two
-common options for any cache. I'm fine with adding this write-through
-option.
-
-Thanks,
--Bob
+-- 
+Thanks!
+Yijing
 
