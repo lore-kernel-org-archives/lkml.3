@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaAWQoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 11:44:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792AbaAWQoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 11:44:13 -0500
-Date: Thu, 23 Jan 2014 17:43:34 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hugh Dickins <hughd@google.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 2/2] mm: thp: kill the bogus ->def_flags check in
-	hugepage_madvise()
-Message-ID: <20140123164334.GA7097@redhat.com>
-References: <1bc8f911363af956b37d8ea415d734f3191f1c78.1389905087.git.athorlton@sgi.com> <13c9d1b0213af7cee7afb54de368a0b189e98df8.1389905087.git.athorlton@sgi.com> <20140118234957.GB10970@node.dhcp.inet.fi> <20140120195812.GD18196@sgi.com> <20140120201525.GA31416@redhat.com> <20140120204108.GE18196@sgi.com> <20140122174553.GA29710@redhat.com> <20140122174646.GC29710@redhat.com> <alpine.LSU.2.11.1401221209520.1541@eggly.anvils>
+	id S1753465AbaAWQos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 11:44:48 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46577 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753278AbaAWQoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 11:44:44 -0500
+Date: Thu, 23 Jan 2014 16:44:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Mark Rutland <mark.rutland@arm.com>, linux-pwm@vger.kernel.org,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 2/2] pwm: imx: support polarity inversion
+Message-ID: <20140123164433.GX15937@n2100.arm.linux.org.uk>
+References: <1389859585-14006-1-git-send-email-LW@KARO-electronics.de> <1389859585-14006-3-git-send-email-LW@KARO-electronics.de> <20140116160356.GY16215@pengutronix.de> <20140123083714.3c6e86ae@ipc1.ka-ro> <20140123115203.GV15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401221209520.1541@eggly.anvils>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140123115203.GV15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22, Hugh Dickins wrote:
->
-> On Wed, 22 Jan 2014, Oleg Nesterov wrote:
->
-> > hugepage_madvise() checks "mm->def_flags & VM_NOHUGEPAGE" but
-> > this can be never true, currently mm->def_flags can only have
-> > VM_LOCKED.
->
-> But line 1087 of arch/s390/mm/pgtable.c says
-> 	mm->def_flags |= VM_NOHUGEPAGE;
-> from 3eabaee998c787e7e1565574821652548f7fc003
-> "KVM: s390: allow sie enablement for multi-threaded programs".
+On Thu, Jan 23, 2014 at 11:52:03AM +0000, Russell King - ARM Linux wrote:
+> On Thu, Jan 23, 2014 at 08:37:14AM +0100, Lothar Waßmann wrote:
+> > This wouldn't buy much without a material change to of_pwm_get().
+> > The function of_parse_phandle_with_args() called by of_pwm_get()
+> > requires the number of args in the pwms property be greater or equal to
+> > the #pwm-cells property in the pwm node. Thus, the interesting case of
+> > having #pwm-cells = <3> without changing the existing users is
+> > prohibited by of_parse_phandle_with_args().
+> 
+> I really don't think that's a problem we need to be concerned with at
+> the moment.  What we need is for the kernel to be able to parse files
+> with #pwm-cells = <2> with the pwms property containing two arguments,
+> and when they're updated to #pwm-cells = <3> with the pwms property
+> containing three arguments.
+> 
+> Yes, that means all the board dt files need to be updated at the same
+> time to include the additional argument, but I don't see that as a big
+> problem.
+> 
+> What we do need to do is to adjust the PWM parsing code such that it's
+> possible to use either specification without causing any side effects.
+> 
+> I would test this, but as u-boot is rather fscked at the moment and the
+> networking has broken on my cubox-i as a result... and it seems that the
+> u-boot developers have pissed off cubox-i u-boot hackers soo much that
+> they've dropped u-boot in favour of barebox...
 
-Argh. Thanks Hugh!
+Okay, finally confirmed that this works with #pwm-cells = 2.
 
-Another case when I forgot about /bin/grep. So the patch is wrong,
-at least the changelog is certainly is. I am stupid.
-
-But, perhaps, this all still can work? Looks like, s390 already
-implements PR_SET_THP_DISABLE using the same idea, it would be
-nice to avoid another hack.
-
-Gerald, any chance we can revert 8e72033f2a489 "thp: make MADV_HUGEPAGE
-check for mm->def_flags" ? The changelog says "In order to also prevent
-MADV_HUGEPAGE on such an mm", is it really important? I mean, if the
-application calls madvise(MADV_HUGEPAGE) it should probably know what
-it does and, this can be useful after if PR_SET_THP_DISABLE or
-KVM_S390_ENABLE_SIE. Of course I do not understand this code, perhaps
-MADV_HUGEPAGE is simply impossible.
-
-Another question, can't fork/exec preserve VM_NOHUGEPAGE in ->def_flags?
-This is what PR_SET_THP_DISABLE wants.
-
-I'll send you mbox with the previous discussion privately.
-
-Thanks,
-
-Oleg.
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
