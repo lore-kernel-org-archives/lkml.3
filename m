@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaAWRCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 12:02:43 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:47014 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaAWRCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 12:02:42 -0500
-Message-ID: <1390496192.1792.488.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/5] EFI memmap and other fixes, v3
-From: Toshi Kani <toshi.kani@hp.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 23 Jan 2014 09:56:32 -0700
-In-Reply-To: <20140123165109.GA11190@pd.tnic>
-References: <1390045698-16882-1-git-send-email-bp@alien8.de>
-	 <20140123090654.GA17297@console-pimps.org>
-	 <1390494619.1792.482.camel@misato.fc.hp.com>
-	 <20140123165109.GA11190@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753265AbaAWRDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 12:03:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752961AbaAWRDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 12:03:11 -0500
+Date: Thu, 23 Jan 2014 18:02:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Michel Lespinasse <walken@google.com>, ego@linux.vnet.ibm.com,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: Deadlock between cpu_hotplug_begin and cpu_add_remove_lock
+Message-ID: <20140123170242.GA8051@redhat.com>
+References: <20140122055239.GA29418@iris.ozlabs.ibm.com> <52DF81B0.7020700@linux.vnet.ibm.com> <52DF8C59.1090702@linux.vnet.ibm.com> <20140122191820.GA32127@redhat.com> <52E022C8.4060902@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E022C8.4060902@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-23 at 17:51 +0100, Borislav Petkov wrote:
-> On Thu, Jan 23, 2014 at 09:30:19AM -0700, Toshi Kani wrote:
-> > Since this issue is quite serious on our systems (3.14 kernels won't
-> > boot up), I'd really appreciate if the fixes can be made into some
-> > 3.14-rc.  It can hit on any EFI systems with large memory.
-> 
-> That's why we have "efi=old_map" - so that you can use the old mapping
-> method which is a chicken bit for the new scheme.
+On 01/23, Srivatsa S. Bhat wrote:
+>
+> On 01/23/2014 12:48 AM, Oleg Nesterov wrote:
+> > On 01/22, Srivatsa S. Bhat wrote:
+> >>
+> >> Wait a min, that _will_ actually work for all cases because I have provided
+> >> an option to invoke _any_ arbitrary function as the "setup" routine.
+> >
+> > And probably the generic solution makes sense. I am not sure I actually
+> > understand the semantics of register_allcpu_notifier(), but the problem
+> > it tries to solve looks clear/valid.
+> >
+>
+> Thank you. But I was wondering whether its usage is a bit unintuitive/
+> convoluted. So I was contemplating between going with that solution or the
+> below one, where the call-sites are expected to do:
+>
+> cpu_maps_update_begin();
+> for_each_online_cpu(cpu) {
+> 	...
+> }
+> __register_cpu_notifier(); //use the __reg() variant, which doesn't take locks
+> cpu_maps_update_done();
+>
+> Of course, that requires exporting the functions cpu_maps_update_begin/done(),
+> but this latter form of callback registration might look more natural.
 
-Good point.  Yes, that will help us a lot.
+Yes, I thought about this too ;)
 
-> And I told you privately already that you're better off merging Matt's
-> 'next' branch than us exposing this to the world too early. So stop
-> pushing this when there are clearly other solutions for your case and be
-> patient!
+> But for some of the other call-sites, we might have to use one
+> of the solutions mentioned above.
 
-Right, but I just responded to Matt's query. :-) 
+Yes, yes, sure, I agree.
 
-Thanks,
--Toshi
+I suggested this change only for discussion, for the case we need
+an "urgent" fix without changes outside of drivers/md/. The generic
+solution is better.
 
+Oleg.
 
