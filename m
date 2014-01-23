@@ -1,122 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaAWFwK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 00:52:10 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:56257 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaAWFwI convert rfc822-to-8bit (ORCPT
+	id S1752798AbaAWFwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 00:52:34 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:37945 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaAWFwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 00:52:08 -0500
-Date: Thu, 23 Jan 2014 06:51:07 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Shijie <b32955@freescale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: mtd_oobtest: fix verify errors due to incorrect
- use of prandom_bytes_state()
-Message-ID: <20140123065107.099f9f86@ipc1.ka-ro>
-In-Reply-To: <CAC5umyjU5xoFJ1piLoWGciT=Y+H3-nqr38FGVMR-vdKhkOO-Qw@mail.gmail.com>
-References: <1389608739-10945-1-git-send-email-LW@KARO-electronics.de>
-	<20140122150959.78cf2827@ipc1.ka-ro>
-	<CAC5umyhC+9zwwX7Mswo2uAc0pFqp7Np1D+nFwr7Y3TS3OLT6-A@mail.gmail.com>
-	<20140122164115.211a819d@ipc1.ka-ro>
-	<CAC5umyjU5xoFJ1piLoWGciT=Y+H3-nqr38FGVMR-vdKhkOO-Qw@mail.gmail.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Jan 2014 00:52:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
+References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
+	<alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
+	<CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
+Date: Thu, 23 Jan 2014 11:22:32 +0530
+Message-ID: <CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
+Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Akinobu Mita wrote:
-> 2014/1/23 Lothar Waßmann <LW@karo-electronics.de>:
-> > Hi,
-> >
-> > Akinobu Mita wrote:
-> >> 2014/1/22 Lothar Waßmann <LW@karo-electronics.de>:
-> >> > Hi,
-> >> >
-> >> > Is anyone taking care of this?
-> >> >
-> >> > Lothar Waßmann wrote:
-> >> >> When using prandom_bytes_state() it is critical to use the same block
-> >> >> size in all invocations that are to produce the same random sequence.
-> >> >> Otherwise the state of the PRNG will be out of sync if the blocksize
-> >> >> is not divisible by 4.
-> >> >> This leads to bogus verification errors in several tests which use
-> >> >> different block sizes to initialize the buffer for writing and
-> >> >> comparison.
-> >> >>
-> >> >> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> >> >> ---
-> >> >>  drivers/mtd/tests/oobtest.c |   14 ++++++++++++--
-> >> >>  1 files changed, 12 insertions(+), 2 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/mtd/tests/oobtest.c b/drivers/mtd/tests/oobtest.c
-> >> >> index 2e9e2d1..72c7359 100644
-> >> >> --- a/drivers/mtd/tests/oobtest.c
-> >> >> +++ b/drivers/mtd/tests/oobtest.c
-> >> >> @@ -213,8 +213,15 @@ static int verify_eraseblock_in_one_go(int ebnum)
-> >> >>       int err = 0;
-> >> >>       loff_t addr = ebnum * mtd->erasesize;
-> >> >>       size_t len = mtd->ecclayout->oobavail * pgcnt;
-> >> >> +     int i;
-> >> >> +
-> >> >> +     for (i = 0; i < pgcnt; i++)
-> >> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> >> >> +                             use_len);
-> >> >> +     if (len % use_len)
-> >> >> +             prandom_bytes_state(&rnd_state, &writebuf[i * use_len],
-> >> >> +                             len % use_len);
-> >> >>
-> >> >> -     prandom_bytes_state(&rnd_state, writebuf, len);
-> >> >>       ops.mode      = MTD_OPS_AUTO_OOB;
-> >> >>       ops.len       = 0;
-> >> >>       ops.retlen    = 0;
-> >>
-> >> I would rather fix the use of prandom_bytes_state() in write_eraseblock()
-> >> than fix in verify_eraseblock_in_one_go().
-> >>
-> > Why and how?
-> 
-> I thought that it could reduce calls of prandom_bytes_state() and
-> it makes code simpler than increasing calls.
-> 
-> > write_whole_device() (which calls write_eraseblock()) is used multiple
-> > times with different verification methods (all blocks in one go or each
-> > block individually).
-> > If prandom_state_bytes() in write_eraseblock() would be changed, that
-> > function would have to know, how the block are going to be checked
-> > lateron to know how to set up the writebuffer.
-> 
-> Instead of calling prandom_bytes_state() in the for loop in
-> write_eraseblock(), call prandom_bytes_state() at once before going
-> into the loop and use correct offset in writebuf in the loop.
-> Although, we also need to fix verify_eraseblock() in the same way.
-> 
-> Doesn't that fix this problem?
+On 23 January 2014 11:11, Lei Wen <adrian.wenl@gmail.com> wrote:
+> On Wed, Jan 22, 2014 at 10:07 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> On Wed, 22 Jan 2014, Lei Wen wrote:
+>>> Recently I want to do the experiment for cpu isolation over 3.10 kernel.
+>>> But I find the isolated one is periodically waken up by IPI interrupt.
+>>>
+>>> By checking the trace, I find those IPI is generated by add_timer_on,
+>>> which would calls wake_up_nohz_cpu, and wake up the already idle cpu.
+>>>
+>>> With further checking, I find this timer is added by on_demand governor of
+>>> cpufreq. It would periodically check each cores' state.
+>>> The problem I see here is cpufreq_governor using INIT_DEFERRABLE_WORK
+>>> as the tool, while timer is made as deferrable anyway.
+>>> And what is more that cpufreq checking is very frequent. In my case, the
+>>> isolated cpu is wakenup by IPI every 5ms.
+>>>
+>>> So why kernel need to wake the remote processor when mount the deferrable
+>>> timer? As per my understanding, we'd better keep cpu as idle when use
+>>> the deferrable timer.
+>>
+>> Indeed, we can avoid the wakeup of the remote cpu when the timer is
+>> deferrable.
 >
-Of course one could fix it that way, but that would be a much more
-invasive change that also needs more testing.
+> Glad to hear that we could fix this unwanted wakeup.
+> Do you have related patches already?
+>
+>>
+>> Though you really want to figure out why the cpufreq governor is
+>> arming timers on other cores every 5ms. That smells like an utterly
+>> stupid approach.
+>
+> Not sure why cpufreq choose such frequent profiling over each cpu.
+> As my understanding, since kernel is smp, launching profiler over one cpu
+> would be enough...
 
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Hi Guys,
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+So the first question is why cpufreq needs it and is it really stupid?
+Yes, it is stupid but that's how its implemented since a long time. It does
+so to get data about the load on CPUs, so that freq can be scaled up/down.
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Though there is a solution in discussion currently, which will take
+inputs from scheduler and so these background timers would go away.
+But we need to wait until that time.
+
+Now, why do we need that for every cpu, while that for a single cpu might
+be enough? The answer is cpuidle here: What if the cpu responsible for
+running timer goes to sleep? Who will evaluate the load then? And if we
+make this timer run on one cpu in non-deferrable mode then that cpu
+would be waken up again and again from idle. So, it was decided to have
+a per-cpu deferrable timer. Though to improve efficiency, once it is fired
+on any cpu, timer for all other CPUs are rescheduled, so that they don't
+fire before 5ms (sampling time)..
+
+I think below diff might get this fixed for you, though I am not sure if it
+breaks something else. Probably Thomas/Frederic can answer here.
+If this looks fine I will send it formally again:
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index accfd24..3a2c7fa 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -940,7 +940,8 @@ void add_timer_on(struct timer_list *timer, int cpu)
+         * makes sure that a CPU on the way to stop its tick can not
+         * evaluate the timer wheel.
+         */
+-       wake_up_nohz_cpu(cpu);
++       if (!tbase_get_deferrable(timer->base))
++               wake_up_nohz_cpu(cpu);
+        spin_unlock_irqrestore(&base->lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(add_timer_on);
