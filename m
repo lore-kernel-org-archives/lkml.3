@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaAWInJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 03:43:09 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:58520 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaAWInH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 03:43:07 -0500
+	id S1751313AbaAWIpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 03:45:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19606 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750734AbaAWIpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 03:45:41 -0500
+X-IronPort-AV: E=Sophos;i="4.95,705,1384272000"; 
+   d="scan'208";a="9447276"
+Message-ID: <52E18CF5.5090202@cn.fujitsu.com>
+Date: Thu, 23 Jan 2014 16:43:17 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1390458701-30238-1-git-send-email-linux@prisktech.co.nz>
-References: <1390458701-30238-1-git-send-email-linux@prisktech.co.nz>
-Date: Thu, 23 Jan 2014 09:43:07 +0100
-Message-ID: <CACRpkdaFJphJdf6hyKoYEZ_wXikwRiwzMgtL=hY+3B8WrBnQaw@mail.gmail.com>
-Subject: Re: [PATCH] vt8500: pinctrl: Change devicetree data parsing
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: [PATCH] tracing: Use task_nice() in function __update_max_tr()
+ to get the nice value of task.
+References: <1390430505-17234-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20140122225632.73c2fbdf@gandalf.local.home> <20140122230029.638e9a53@gandalf.local.home> <52E14D28.2090208@cn.fujitsu.com> <20140123082630.GO30183@twins.programming.kicks-ass.net>
+In-Reply-To: <20140123082630.GO30183@twins.programming.kicks-ass.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/23 16:44:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/23 16:44:10,
+	Serialize complete at 2014/01/23 16:44:10
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 7:31 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+On 01/23/2014 03:26 AM, Peter Zijlstra wrote:
+> On Thu, Jan 23, 2014 at 12:11:04PM -0500, Dongsheng Yang wrote:
+>> On 01/22/2014 11:00 PM, Steven Rostedt wrote:
+>>> Bah, I just noticed that TASK_NICE is in kernel/sched/sched.h not
+>>> include/linux/sched.h
+>>>
+>>> Peter, is there a reason that task_nice() is not a static inline in
+>>> sched.h and have these macros there too? They only reference fields in
+>>> task_struct that are already defined there. I don't see why they need
+>>> to be private to kernel/sched.
+>> Agree. These macros are useful to other modules out of kernel/sched.
+>> But they are private to kernel/sched currently.
+> And the floodgates open.. _why_ would a module care about nice values?
+> That's sounds just so full of wrong.
 
-> Due to an assumption in the VT8500 pinctrl driver, the value passed
-> from devicetree for 'wm,pull' was not explicitly translated before
-> being passed to pinconf.
+Sorry for my misnomer with 'modules'. Actually I mean other subsystems in
+kernel, such as trace, sched, rcu. :)
+
+I did not mean the module for modprobe.
+
+Sorry for my terrible expression :(.
 >
-> With changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
-> no longer map 1-to-1 with the expected values in devicetree.
->
-> This patch adds a small translation between the devicetree values (0..2)
-> and the enum pin_config_param equivalent values.
->
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 
-Isn't this a regression fix for stable?
-
-> +       switch (pull) {
-> +       case 0:
-> +               pull = PIN_CONFIG_BIAS_DISABLE;
-> +               break;
-> +       case 1:
-> +               pull = PIN_CONFIG_BIAS_PULL_DOWN;
-> +               break;
-> +       case 2:
-> +               pull = PIN_CONFIG_BIAS_PULL_UP;
-> +               break;
-> +       }
->         configs[0] = pull;
-
-1. You're not adding a default: clause (I bet the static checkers will
-warn about this!)
-
-2. Please conjure a different variable name for the thing that
-actually gets set in the config so we see we are mapping one
-thing to another and not just altering an existing variable.
-
-Yours,
-Linus Walleij
