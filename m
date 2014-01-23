@@ -1,184 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaAWKdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:33:05 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:58449 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300AbaAWKdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:33:00 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
-        Angus.Clark@st.com, DCG_UPD_stlinux_kernel@list.st.com,
-        olivier.clergeaud@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND v4 30/37] mtd: st_spi_fsm: Erase partly or as a whole a Serial Flash device
-Date: Thu, 23 Jan 2014 10:31:18 +0000
-Message-Id: <1390473085-24626-31-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
-References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
+	id S1754920AbaAWKft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:35:49 -0500
+Received: from mail-bn1lp0154.outbound.protection.outlook.com ([207.46.163.154]:42132
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402AbaAWKdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 05:33:03 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Timur Tabi <timur@tabi.org>,
+        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [PATCH] ASoC: fsl-sai: convert to use regmap API
+ for Freeacale SAI
+Thread-Topic: [alsa-devel] [PATCH] ASoC: fsl-sai: convert to use regmap API
+ for Freeacale SAI
+Thread-Index: AQHPGBe3iZJSuY3aFUejeXJsnUujFpqSFqcAgAABv+A=
+Date: Thu, 23 Jan 2014 10:32:57 +0000
+Message-ID: <b073a0513dd04d4b99177b2f2c3a8eb5@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1390463283-7545-1-git-send-email-Li.Xiubo@freescale.com>
+ <CAOMZO5ATVkcORZBMbNzu2F-dyJxjzgjkRgezj2vGM9v7cyfy1w@mail.gmail.com>
+In-Reply-To: <CAOMZO5ATVkcORZBMbNzu2F-dyJxjzgjkRgezj2vGM9v7cyfy1w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 0100732B76
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(164054003)(51704005)(189002)(199002)(31966008)(76576001)(79102001)(81816001)(87266001)(63696002)(47446002)(85306002)(81342001)(81542001)(76786001)(76796001)(69226001)(77982001)(54316002)(83072002)(56776001)(59766001)(74502001)(74662001)(80022001)(65816001)(53806001)(85852003)(47976001)(4396001)(47736001)(49866001)(56816005)(80976001)(54356001)(51856001)(74706001)(86362001)(46102001)(83322001)(50986001)(33646001)(66066001)(74316001)(2656002)(87936001)(76482001)(81686001)(92566001)(74876001)(74366001)(93516002)(93136001)(1411001)(90146001)(94316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB442;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;InfoNoRecordsMX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0NAZrvW022861
 
-When an erase is requested by userspace the MTD framework calls back
-into the driver to conduct the actual command issue. Here we provide the
-routines which do exactly that. We can choose to either do an entire chip
-erase or by sector.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 113 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 112 insertions(+), 1 deletion(-)
+> >  static int fsl_sai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+> >                 int clk_id, unsigned int freq, int dir)
+> >  {
+> > -       struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
+> >         int ret;
+> >
+> >         if (dir == SND_SOC_CLOCK_IN)
+> >                 return 0;
+> >
+> > -       ret = clk_prepare_enable(sai->clk);
+> > -       if (ret)
+> > -               return ret;
+> 
+> The clock related change seems unrelated to the usage of regmap, right?
+> 
+ 
+The clock operations in the driver is only related to the module clock, and has
+move to the regmap core and regmap core will to the same clock operations at 
+proper time, since we are using:
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 0b80d74..eac23df 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -565,6 +565,27 @@ static struct stfsm_seq stfsm_seq_erase_sector = {
- 		    SEQ_CFG_STARTSEQ),
- };
- 
-+static struct stfsm_seq stfsm_seq_erase_chip = {
-+	.seq_opc = {
-+		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		 SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-+
-+		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		 SEQ_OPC_OPCODE(FLASH_CMD_CHIPERASE) | SEQ_OPC_CSDEASSERT),
-+	},
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_CMD2,
-+		STFSM_INST_WAIT,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_ERASE |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
-+
- static struct stfsm_seq stfsm_seq_wrvcr = {
- 	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
- 		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-@@ -1203,6 +1224,47 @@ static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
- 	return 0;
- }
- 
-+static int stfsm_erase_sector(struct stfsm *fsm, const uint32_t offset)
-+{
-+	struct stfsm_seq *seq = &stfsm_seq_erase_sector;
-+	int ret;
-+
-+	dev_dbg(fsm->dev, "erasing sector at 0x%08x\n", offset);
-+
-+	/* Enter 32-bit address mode, if required */
-+	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
-+		stfsm_enter_32bit_addr(fsm, 1);
-+
-+	seq->addr1 = (offset >> 16) & 0xffff;
-+	seq->addr2 = offset & 0xffff;
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	/* Wait for completion */
-+	ret = stfsm_wait_busy(fsm);
-+
-+	/* Exit 32-bit address mode, if required */
-+	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
-+		stfsm_enter_32bit_addr(fsm, 0);
-+
-+	return ret;
-+}
-+
-+static int stfsm_erase_chip(struct stfsm *fsm)
-+{
-+	const struct stfsm_seq *seq = &stfsm_seq_erase_chip;
-+
-+	dev_dbg(fsm->dev, "erasing chip\n");
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return stfsm_wait_busy(fsm);
-+}
-+
- /*
-  * Write an address range to the flash chip.  Data must be written in
-  * FLASH_PAGESIZE chunks.  The address range may be any size provided
-@@ -1260,6 +1322,54 @@ out1:
- 	return ret;
- }
- 
-+/*
-+ * Erase an address range on the flash chip. The address range may extend
-+ * one or more erase sectors.  Return an error is there is a problem erasing.
-+ */
-+static int stfsm_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
-+{
-+	struct stfsm *fsm = dev_get_drvdata(mtd->dev.parent);
-+	u32 addr, len;
-+	int ret;
-+
-+	dev_dbg(fsm->dev, "%s at 0x%llx, len %lld\n", __func__,
-+		(long long)instr->addr, (long long)instr->len);
-+
-+	addr = instr->addr;
-+	len = instr->len;
-+
-+	mutex_lock(&fsm->lock);
-+
-+	/* Whole-chip erase? */
-+	if (len == mtd->size) {
-+		ret = stfsm_erase_chip(fsm);
-+		if (ret)
-+			goto out1;
-+	} else {
-+		while (len) {
-+			ret = stfsm_erase_sector(fsm, addr);
-+			if (ret)
-+				goto out1;
-+
-+			addr += mtd->erasesize;
-+			len -= mtd->erasesize;
-+		}
-+	}
-+
-+	mutex_unlock(&fsm->lock);
-+
-+	instr->state = MTD_ERASE_DONE;
-+	mtd_erase_callback(instr);
-+
-+	return 0;
-+
-+out1:
-+	instr->state = MTD_ERASE_FAILED;
-+	mutex_unlock(&fsm->lock);
-+
-+	return ret;
-+}
-+
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
-@@ -1530,8 +1640,9 @@ static int stfsm_probe(struct platform_device *pdev)
- 
- 	fsm->mtd._read  = stfsm_mtd_read;
- 	fsm->mtd._write = stfsm_mtd_write;
-+	fsm->mtd._erase = stfsm_mtd_erase;
- 
--	dev_err(&pdev->dev,
-+	dev_info(&pdev->dev,
- 		"Found serial flash device: %s\n"
- 		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
- 		info->name,
--- 
-1.8.3.2
++	sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
++			"sai", base, &fsl_sai_regmap_config);
 
+
+Thanks,
+
+Best Regards,
+Xiubo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
