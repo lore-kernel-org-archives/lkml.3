@@ -1,176 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaAWKZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 05:25:24 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:8321 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaAWKZW (ORCPT
+	id S1752815AbaAWK2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 05:28:16 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:49434 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaAWK2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 05:25:22 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-17-52e0ee0f3afc
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: viro@zeniv.linux.org.uk
-Cc: bcrl@kvack.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] aio: fix request cancelling
-Date: Thu, 23 Jan 2014 11:25:03 +0100
-Message-id: <1390472703-11228-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t9jQV3+dw+CDM6t47bo+reFxWLKtCZG
-	iz17T7JYXN41h81i7ZG77BYPDu9ktzj/9zirA7vHpk+T2D36tqxi9Pi8Sc5j05O3TAEsUVw2
-	Kak5mWWpRfp2CVwZG+Y1MRUsVq74c3MHcwPjRJkuRk4OCQETifu9p9ghbDGJC/fWs3UxcnEI
-	CUxnlJj5qJ0Fwmlnkphy8DQzSBWbgI7Elu8TGEFsEQFpiTP9l5hAipgFVjFKnH61hBUkIQxU
-	NGvNPLAGFgFViSUvZwMVcXDwCrhKLD5UBGJKCChIzJlkM4GRewEjwypG0dSC5ILipPRcI73i
-	xNzi0rx0veT83E2M4NB4Jr2DcVWDxSFGAQ5GJR7ehC/3g4RYE8uKK3MPMUpwMCuJ8F548yBI
-	iDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2N1RsT1sgsM
-	r9SmdjmGcko+PTO9kVU68+4ajbhp3TmyZ+v/eDp8s7jsef22ZlCugIf7xz+fLvt4Lb0a5t2v
-	bRSfuLLOsX96r3af6TTFpYe8F7/ad295r57LhrgVYtpr4+9yv7qxJ2l2svce00Xder7R/D0G
-	1c3qHU1tFy6zWhx4rvn4UrhdmhJLcUaioRZzUXEiABr4ozwJAgAA
+	Thu, 23 Jan 2014 05:28:12 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-a7-52e0eeba4d50
+Message-id: <52E0EEB8.4080602@samsung.com>
+Date: Thu, 23 Jan 2014 11:28:08 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/8 v4] crypto:s5p-sss: Add device tree support
+References: <1389243541-13122-1-git-send-email-ch.naveen@samsung.com>
+ <1389777291-15026-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1389777291-15026-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xK7q73j0IMrj9RM7i7vPDjBYvD2la
+	zDnfwmIx/8g5VovuVzIW9+/9ZLK4vGsOm8WM8/uYLBZt+89ssWrXH0aLs3MOMTlwe2xZeZPJ
+	Y+esu+we2w6oevRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGtEtXmQveSFZ8PuTRwPhfpIuR
+	k0NCwESi/fNDVghbTOLCvfVsXYxcHEICSxkl3izaxA7hfGKU+HvvFyNIFa+AlsTpZSBVnBws
+	AqoSu6+2sYDYbAKGEr1H+8BqRAUiJP7OWw9VLyjxY/I9sBoRgXKJfzfWgPUyC3xglJjR5QJi
+	Cws4S9yZ0ccEsayRUeLMN4gFnAJuEvM2bGOBaNCR2N86DapZXmLzmrfMExgFZiHZMQtJ2Swk
+	ZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihETC1x2MS49ZHWIU4GBU4uFN/HI/SIg1
+	say4MvcQowQHs5II74U3D4KEeFMSK6tSi/Lji0pzUosPMTJxcEo1MO6covD9/bnb2ycaZuhn
+	Wuw8wfjTMkb9qHA9v4HLVI6fKXq+Ef/rn7qlF+WJqUqcuHDh75d2/7k+u7qCMl5mqNgdl5l4
+	8OeayX/MOJaL7oz/o/WxcMfyB8fW3Vr6XqsrODTOOT7issC9V7oTShdXqGoUBjxJ3hezhK1j
+	zXn+G9fnPOw8wHLu0FUlluKMREMt5qLiRAAoId8/YgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This this patch fix kiocb_cancel() function.
-If cancel() function ends successfully:
-- kiocb request is removed from ctx->active_reqs,
-- new event is added to ring buffer (this behavior is described in comment
-  in io_cancel function, but was not implemented)
-- kiocb_free function is called
-- percpu_ref_put is called for ctx->reqs refcount
+Hi,
 
-To do this, part of io_complete function, responsible for adding new event
-to ring buffer, was moved into new function named add_event().
+(Adding missing devicetre ML list at CC.)
 
-This patch solves problem related with lack of possibility to call
-aio_complete() from cancel callback. It was because it needs to lock
-ctx->ctx_lock which is always locked before kiocb_cancel() call. So there
-was no way to complete request properly. Now, after cancel() function call,
-request and related resources are freed, and event is added to ring buffer,
-so there is no need to call aio_complete() in cancel callback function.
+On 15/01/14 10:14, Naveen Krishna Chatradhi wrote:
+> This patch adds device tree support to the s5p-sss.c crypto driver.
+> 
+> Also, Documentation under devicetree/bindings added.
+> 
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+> TO: <linux-crypto@vger.kernel.org>
+> CC: <linux-samsung-soc@vger.kernel.org>
+> ---
+> Changes since v3:
+> None
+> 
+>  .../devicetree/bindings/crypto/samsung-sss.txt     |   20 ++++++++++++++++++++
+>  drivers/crypto/s5p-sss.c                           |   10 +++++++++-
+>  2 files changed, 29 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/crypto/samsung-sss.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/crypto/samsung-sss.txt b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
+> new file mode 100644
+> index 0000000..2f9d7e4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
+> @@ -0,0 +1,20 @@
+> +Samsung SoC SSS (Security SubSystem) module
+> +
+> +The SSS module in S5PV210 SoC supports the following:
+> +-- Feeder (FeedCtrl)
+> +-- Advanced Encryption Standard (AES)
+> +-- Data Encryption Standard (DES)/3DES
+> +-- Public Key Accelerator (PKA)
+> +-- SHA-1/SHA-256/MD5/HMAC (SHA-1/SHA-256/MD5)/PRNG
+> +-- PRNG: Pseudo Random Number Generator
+> +
+> +Required properties:
+> +
+> +- compatible : Should contain entries for this and backward compatible
+> +  SSS versions:
+> +  - "samsung,s5pv210-secss" for S5PV210 SoC.
+> +- reg : Offset and length of the register set for the module
+> +- interrupts : the interrupt-specifier for the SSS module.
+> +		Two interrupts "feed control and hash" in case of S5PV210
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- fs/aio.c |   77 ++++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 47 insertions(+), 30 deletions(-)
+It should be described in what order both interrupts are supposed to be
+specified.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 062a5f6..ea275fa 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -471,8 +471,12 @@ void kiocb_set_cancel_fn(struct kiocb *req, kiocb_cancel_fn *cancel)
- }
- EXPORT_SYMBOL(kiocb_set_cancel_fn);
- 
-+void add_event(struct kiocb *iocb, long res, long res2);
-+static void kiocb_free(struct kiocb *req);
-+
- static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb)
- {
-+	int ret;
- 	kiocb_cancel_fn *old, *cancel;
- 
- 	/*
-@@ -488,8 +492,15 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb)
- 		old = cancel;
- 		cancel = cmpxchg(&kiocb->ki_cancel, old, KIOCB_CANCELLED);
- 	} while (cancel != old);
--
--	return cancel(kiocb);
-+	
-+	ret = cancel(kiocb);
-+	if (!ret) {
-+		list_del_init(&kiocb->ki_list);
-+		add_event(kiocb, -EIDRM, -EIDRM);
-+		kiocb_free(kiocb);
-+		percpu_ref_put(&ctx->reqs);
-+	}
-+	return ret;
- }
- 
- static void free_ioctx(struct work_struct *work)
-@@ -906,40 +917,13 @@ out:
- 	return ret;
- }
- 
--/* aio_complete
-- *	Called when the io request on the given iocb is complete.
-- */
--void aio_complete(struct kiocb *iocb, long res, long res2)
-+void add_event(struct kiocb *iocb, long res, long res2)
- {
- 	struct kioctx	*ctx = iocb->ki_ctx;
- 	struct aio_ring	*ring;
- 	struct io_event	*ev_page, *event;
- 	unsigned long	flags;
- 	unsigned tail, pos;
--
--	/*
--	 * Special case handling for sync iocbs:
--	 *  - events go directly into the iocb for fast handling
--	 *  - the sync task with the iocb in its stack holds the single iocb
--	 *    ref, no other paths have a way to get another ref
--	 *  - the sync task helpfully left a reference to itself in the iocb
--	 */
--	if (is_sync_kiocb(iocb)) {
--		iocb->ki_user_data = res;
--		smp_wmb();
--		iocb->ki_ctx = ERR_PTR(-EXDEV);
--		wake_up_process(iocb->ki_obj.tsk);
--		return;
--	}
--
--	if (iocb->ki_list.next) {
--		unsigned long flags;
--
--		spin_lock_irqsave(&ctx->ctx_lock, flags);
--		list_del(&iocb->ki_list);
--		spin_unlock_irqrestore(&ctx->ctx_lock, flags);
--	}
--
- 	/*
- 	 * Add a completion event to the ring buffer. Must be done holding
- 	 * ctx->completion_lock to prevent other code from messing with the tail
-@@ -983,6 +967,39 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
- 	pr_debug("added to ring %p at [%u]\n", iocb, tail);
-+}
-+
-+/* aio_complete
-+ *	Called when the io request on the given iocb is complete.
-+ */
-+void aio_complete(struct kiocb *iocb, long res, long res2)
-+{
-+	struct kioctx	*ctx = iocb->ki_ctx;
-+
-+	/*
-+	 * Special case handling for sync iocbs:
-+	 *  - events go directly into the iocb for fast handling
-+	 *  - the sync task with the iocb in its stack holds the single iocb
-+	 *    ref, no other paths have a way to get another ref
-+	 *  - the sync task helpfully left a reference to itself in the iocb
-+	 */
-+	if (is_sync_kiocb(iocb)) {
-+		iocb->ki_user_data = res;
-+		smp_wmb();
-+		iocb->ki_ctx = ERR_PTR(-EXDEV);
-+		wake_up_process(iocb->ki_obj.tsk);
-+		return;
-+	}
-+
-+	if (iocb->ki_list.next) {
-+		unsigned long flags;
-+
-+		spin_lock_irqsave(&ctx->ctx_lock, flags);
-+		list_del(&iocb->ki_list);
-+		spin_unlock_irqrestore(&ctx->ctx_lock, flags);
-+	}
-+
-+	add_event(iocb, res, res2);
- 
- 	/*
- 	 * Check if the user asked us to deliver the result through an
--- 
-1.7.9.5
+> +- clocks : the required gating clock for the SSS module.
+> +- clock-names : the gating clock name to be requested in the SSS driver.
+> diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+> index 93cddeb..2da5617 100644
+> --- a/drivers/crypto/s5p-sss.c
+> +++ b/drivers/crypto/s5p-sss.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/scatterlist.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+>  #include <linux/crypto.h>
+>  #include <linux/interrupt.h>
+>  
+> @@ -177,6 +178,12 @@ struct s5p_aes_dev {
+>  
+>  static struct s5p_aes_dev *s5p_dev;
+>  
+> +static const struct of_device_id s5p_sss_dt_match[] = {
+> +	{ .compatible = "samsung,s5pv210-secss", },
 
+nit: the first semicolon could be omitted.
+
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, s5p_sss_dt_match);
+> +
+>  static void s5p_set_dma_indata(struct s5p_aes_dev *dev, struct scatterlist *sg)
+>  {
+>  	SSS_WRITE(dev, FCBRDMAS, sg_dma_address(sg));
+> @@ -676,7 +683,8 @@ static struct platform_driver s5p_aes_crypto = {
+>  	.remove	= s5p_aes_remove,
+>  	.driver	= {
+>  		.owner	= THIS_MODULE,
+> -		.name	= "s5p-secss",
+> +		.name	= "s5pv210-secss",
+
+Why you're changing the driver name ? It's not related and not needed AFAICT.
+
+> +		.of_match_table = s5p_sss_dt_match,
+>  	},
+>  };
+
+--
+Thanks,
+Sylwester
