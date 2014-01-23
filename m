@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaAWSqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 13:46:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34704 "EHLO
+	id S1753022AbaAWSjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 13:39:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34662 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217AbaAWSjO (ORCPT
+	with ESMTP id S1752868AbaAWSjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 13:39:14 -0500
+	Thu, 23 Jan 2014 13:39:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Aditya Kali <adityakali@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.10 08/23] vfs: In d_path dont call d_dname on a mount point
-Date: Thu, 23 Jan 2014 10:39:41 -0800
-Message-Id: <20140123183900.982451631@linuxfoundation.org>
+        Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        l00221744 <sdu.liu@huawei.com>
+Subject: [PATCH 3.10 01/23] ARM: 7815/1: kexec: offline non panic CPUs on Kdump panic
+Date: Thu, 23 Jan 2014 10:39:34 -0800
+Message-Id: <20140123183859.901907909@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123183859.635713053@linuxfoundation.org>
 References: <20140123183859.635713053@linuxfoundation.org>
@@ -30,65 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Vijaya Kumar K <vijay.kilari@gmail.com>
 
-commit f48cfddc6729ef133933062320039808bafa6f45 upstream.
+commit 4f9b4fb7a2091eec339413a460b1665758401828 upstream.
 
-Aditya Kali (adityakali@google.com) wrote:
-> Commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
-> "proc: Fix the namespace inode permission checks." converted
-> the namespace files into symlinks. The same commit changed
-> the way namespace bind mounts appear in /proc/mounts:
->   $ mount --bind /proc/self/ns/ipc /mnt/ipc
-> Originally:
->   $ cat /proc/mounts | grep ipc
->   proc /mnt/ipc proc rw,nosuid,nodev,noexec 0 0
->
-> After commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
->   $ cat /proc/mounts | grep ipc
->   proc ipc:[4026531839] proc rw,nosuid,nodev,noexec 0 0
->
-> This breaks userspace which expects the 2nd field in
-> /proc/mounts to be a valid path.
+In case of normal kexec kernel load, all cpu's are offlined
+before calling machine_kexec().But in case crash panic cpus
+are relaxed in machine_crash_nonpanic_core() SMP function
+but not offlined.
 
-The symlink /proc/<pid>/ns/{ipc,mnt,net,pid,user,uts} point to
-dentries allocated with d_alloc_pseudo that we can mount, and
-that have interesting names printed out with d_dname.
+When crash kernel is loaded with kexec and on panic trigger
+machine_kexec() checks for number of cpus online.
+If more than one cpu is online machine_kexec() fails to load
+with below error
 
-When these files are bind mounted /proc/mounts is not currently
-displaying the mount point correctly because d_dname is called instead
-of just displaying the path where the file is mounted.
+kexec: error: multiple CPUs still online
 
-Solve this by adding an explicit check to distinguish mounted pseudo
-inodes and unmounted pseudo inodes.  Unmounted pseudo inodes always
-use mount of their filesstem as the mnt_root  in their path making
-these two cases easy to distinguish.
+In machine_crash_nonpanic_core() SMP function, offline CPU
+before cpu_relax
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reported-by: Aditya Kali <adityakali@google.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: l00221744 <sdu.liu@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/arm/kernel/machine_kexec.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2686,8 +2686,13 @@ char *d_path(const struct path *path, ch
- 	 * thus don't need to be hashed.  They also don't need a name until a
- 	 * user wants to identify the object in /proc/pid/fd/.  The little hack
- 	 * below allows us to generate a name for these objects on demand:
-+	 *
-+	 * Some pseudo inodes are mountable.  When they are mounted
-+	 * path->dentry == path->mnt->mnt_root.  In that case don't call d_dname
-+	 * and instead have d_path return the mounted path.
- 	 */
--	if (path->dentry->d_op && path->dentry->d_op->d_dname)
-+	if (path->dentry->d_op && path->dentry->d_op->d_dname &&
-+	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -73,6 +73,7 @@ void machine_crash_nonpanic_core(void *u
+ 	crash_save_cpu(&regs, smp_processor_id());
+ 	flush_cache_all();
  
- 	get_fs_root(current->fs, &root);
++	set_cpu_online(smp_processor_id(), false);
+ 	atomic_dec(&waiting_for_crash_ipi);
+ 	while (1)
+ 		cpu_relax();
 
 
