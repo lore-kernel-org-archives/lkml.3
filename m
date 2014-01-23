@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786AbaAWTGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 14:06:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34943 "EHLO
+	id S932363AbaAWTNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 14:13:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaAWTGT (ORCPT
+	with ESMTP id S1753648AbaAWTGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:06:19 -0500
+	Thu, 23 Jan 2014 14:06:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.12 05/27] staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
-Date: Thu, 23 Jan 2014 11:06:42 -0800
-Message-Id: <20140123190649.272291296@linuxfoundation.org>
+        Rob Herring <rob.herring@calxeda.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.12 27/27] ARM: 7938/1: OMAP4/highbank: Flush L2 cache before disabling
+Date: Thu, 23 Jan 2014 11:07:04 -0800
+Message-Id: <20140123190651.584568157@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 References: <20140123190648.720195687@linuxfoundation.org>
@@ -29,32 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-commit 48108fe3daa0d142f9b97178fdb23704ea3a407b upstream.
+commit b25f3e1c358434bf850220e04f28eebfc45eb634 upstream.
 
-The dev->irq passed to request_irq() will always be 0 when the auto_attach
-function is called. The pcidev->irq should be used instead to get the correct
-irq number.
+Kexec disables outer cache before jumping to reboot code, but it doesn't
+flush it explicitly. Flush is done implicitly inside of l2x0_disable().
+But some SoC's override default .disable handler and don't flush cache.
+This may lead to a corrupted memory during Kexec reboot on these
+platforms.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+This patch adds cache flush inside of OMAP4 and Highbank outer_cache.disable()
+handlers to make it consistent with default l2x0_disable().
+
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/adl_pci9111.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-highbank/highbank.c  |    1 +
+ arch/arm/mach-omap2/omap4-common.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/staging/comedi/drivers/adl_pci9111.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9111.c
-@@ -869,7 +869,7 @@ static int pci9111_auto_attach(struct co
- 	pci9111_reset(dev);
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -66,6 +66,7 @@ void highbank_set_cpu_jump(int cpu, void
  
- 	if (pcidev->irq > 0) {
--		ret = request_irq(dev->irq, pci9111_interrupt,
-+		ret = request_irq(pcidev->irq, pci9111_interrupt,
- 				  IRQF_SHARED, dev->board_name, dev);
- 		if (ret)
- 			return ret;
+ static void highbank_l2x0_disable(void)
+ {
++	outer_flush_all();
+ 	/* Disable PL310 L2 Cache controller */
+ 	highbank_smc1(0x102, 0x0);
+ }
+--- a/arch/arm/mach-omap2/omap4-common.c
++++ b/arch/arm/mach-omap2/omap4-common.c
+@@ -163,6 +163,7 @@ void __iomem *omap4_get_l2cache_base(voi
+ 
+ static void omap4_l2x0_disable(void)
+ {
++	outer_flush_all();
+ 	/* Disable PL310 L2 Cache controller */
+ 	omap_smc1(0x102, 0x0);
+ }
 
 
