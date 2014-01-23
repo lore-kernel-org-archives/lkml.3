@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaAWNCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 08:02:20 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:55572 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490AbaAWNCT (ORCPT
+	id S1753778AbaAWNDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 08:03:18 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:53219 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751587AbaAWNDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 08:02:19 -0500
-Message-ID: <52E11123.3050803@st.com>
-Date: Thu, 23 Jan 2014 12:54:59 +0000
+	Thu, 23 Jan 2014 08:03:16 -0500
+Message-ID: <52E11185.6000802@st.com>
+Date: Thu, 23 Jan 2014 12:56:37 +0000
 From: srinivas kandagatla <srinivas.kandagatla@st.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -23,9 +23,10 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/4] pinctrl: st: Add Interrupt support.
-References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com> <1389886613-31945-1-git-send-email-srinivas.kandagatla@st.com> <CACRpkdZV7TBP7Ac1MPVSAgJeqWtDQEuT3dHjUJHgDTeX9_datw@mail.gmail.com>
-In-Reply-To: <CACRpkdZV7TBP7Ac1MPVSAgJeqWtDQEuT3dHjUJHgDTeX9_datw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] ARM:STi: STiH416: Add interrupt support for pin
+ controller
+References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com> <1389886657-32035-1-git-send-email-srinivas.kandagatla@st.com> <CACRpkdZ7xK_2zt8XK87YrHGtimjOgVuVnGBNc11eGQcd3uySfw@mail.gmail.com>
+In-Reply-To: <CACRpkdZ7xK_2zt8XK87YrHGtimjOgVuVnGBNc11eGQcd3uySfw@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.65.51.147]
@@ -33,16 +34,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/14 07:22, Linus Walleij wrote:
-> I've applied this patch so that it won't just sit idle.
-> Besides you've done a real good job on it Srinivas.
-Thanks Linus W.
+On 23/01/14 07:30, Linus Walleij wrote:
+> On Thu, Jan 16, 2014 at 4:37 PM,  <srinivas.kandagatla@st.com> wrote:
 > 
-> It'll be for v3.15 though and I'm still waiting to see if
-> the device tree people say something about it.
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>
+>> This patch adds interrupt support for STiH416 pin controllers.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 > 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+Thankyou Linus W.
+> Please merge this through the ARM SoC tree with the rest of
+> your device tree stuff.
+> 
+I will include these in my next DT pull request.
+
+Thanks,
+srini
+
 > Yours,
 > Linus Walleij
-
-
+> 
+> 
 
