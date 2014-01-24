@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaAXOKS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:10:18 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:35615 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaAXOKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:10:15 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-25-52e27445735d
-Message-id: <52E27436.5040908@samsung.com>
-Date: Fri, 24 Jan 2014 15:09:58 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3/8 v4] crypto:s5p-sss: Add support for SSS module on Exynos
-References: <1389243569-13161-1-git-send-email-ch.naveen@samsung.com>
- <1389777316-15070-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389777316-15070-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xy7quJY+CDNpnKVjcfX6Y0eLlIU2L
-	OedbWCy6X8lY3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFl5U0mj52z7rJ7
-	bDug6tG3ZRWjx+dNcgGsUVw2Kak5mWWpRfp2CVwZb6ZdYCy4zV1x7U8TcwPjTM4uRk4OCQET
-	iY/7rzJB2GISF+6tZ+ti5OIQEljKKNG7YBMrhPOZUeL4ibVADgcHr4CWROfxIJAGFgFVid19
-	69hBbDYBNYnPDY/YQGxRgQiJv/PWM4LYvAKCEj8m32MBsUUEyiX+3VgDtoBZ4CijxOc5F5lA
-	ZgoLBEg82JYNsauRUeJAy0ywZk4BN4mp89aDXccsYC2xctI2RghbXmLzmrfMExgFZiHZMQtJ
-	2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihIT/lx2Mi49ZHWIU4GBU4uGdEfgw
-	SIg1say4MvcQowQHs5II79aAR0FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGCXdPk7jTPjel1Fz
-	/oRkxbEnS+707Cl5bP/BOurnhRWPzjw83LH+QvsKv1JLZ+mW59eatzoFr137dH39hL4et+23
-	rvUk23A1MmbYmHu0B1odLjbIX954P8aNbf75Gqmo7jwpHba5V30eFwdN/h56If+LcY/R6n6W
-	ZbsffUvYHjvLIvOXlrvyHCWW4oxEQy3mouJEALPgxixdAgAA
+	id S1752847AbaAXOMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:12:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28966 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359AbaAXOMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 09:12:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,712,1384329600"; 
+   d="scan'208";a="471875853"
+Date: Fri, 24 Jan 2014 16:19:23 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT][PATCH v2 0/6] PM / QoS: Introduce latency tolerance
+ device PM QoS type
+Message-ID: <20140124141923.GQ18029@intel.com>
+References: <5434847.aCyiWHNRe7@vostro.rjw.lan>
+ <1447517.8AFrWcAgld@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1447517.8AFrWcAgld@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Thu, Jan 23, 2014 at 02:34:59PM +0100, Rafael J. Wysocki wrote:
+> On Friday, January 17, 2014 03:42:13 PM Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > On some platforms hardware may switch to an energy-saving mode on the fly
+> > on the basis of certain utilization metrics used by it.  That usually is
+> > desirable from the energy conservation standpoint, but it generally causes
+> > latencies to increase which may adversely affect some operations.  For this
+> > reason, the platforms in question usually provide some interfaces for software
+> > to indicate its latency tolerance and possibly to prevent the energy-saving
+> > modes from being selected too aggressively.
+> > 
+> > The following series of patches introduces a device PM QoS type allowing
+> > those interfaces to be used by kernel code and user space.  It is designed
+> > in analogy with the existing resume latency device PM QoS type, which allows
+> > some pieces of the existing device PM QoS code to be re-used and makes the
+> > new user space interface fit into the existing framework.
+> > 
+> > Patch [1/5] modifies the names of symbols, variables, functions and structure
+> > fields associated with the existing resume latency device PM QoS type to
+> > avoid any confusion with the new one introduced by the subsequent patches.
+> > 
+> > Patch [2/5] introduces a new field in struct pm_qos_constraints for specifying
+> > a special value to be returned as the effective requirement when the given list
+> > of PM QoS requirements is empty.  That field is necessary for the new latency
+> > tolerance device PM QoS type.
+> > 
+> > Patch [3/5] introduces the latency tolerance device PM QoS type along with
+> > documentation.
+> > 
+> > Patch [4/5] modifies the ACPI LPSS (Low-Power Subsystem) driver to hook up
+> > LPSS devices to the new latency tolerance device PM QoS interface.
+> > 
+> > Patch [5/5] modifies the dev_pm_qos_add_ancestor_request() routine so that it
+> > can be used by drivers of devices without hardware latency tolerance support
+> > for specifying their requirements via the ancestors of those devies.
+> 
+> As usual, testing uncovered some issues, so an updated series follows.
 
-On 15.01.2014 10:15, Naveen Krishna Chatradhi wrote:
-> This patch adds new compatible and variant struct to support the SSS
-> module on Exynos4 (Exynos4210), Exynos5 (Exynos5420 and Exynos5250)
-> for which
-> 1. AES register are at an offset of 0x200 and
-> 2. hash interrupt is not available
-[snip]
->   Required properties:
->
->   - compatible : Should contain entries for this and backward compatible
->     SSS versions:
->     - "samsung,s5pv210-secss" for S5PV210 SoC.
-> +  - "samsung,exynos4210-secss" for Exynos4210, Exynos4212, Exynos4412, Exynos5250,
-> +		Exynos5260 and Exynos5420 SoCs.
->   - reg : Offset and length of the register set for the module
->   - interrupts : the interrupt-specifier for the SSS module.
-> -		Two interrupts "feed control and hash" in case of S5PV210
-> -- clocks : the required gating clock for the SSS module.
-> -- clock-names : the gating clock name to be requested in the SSS driver.
-> +		-- Two interrupts "feed control and hash" in case of
-> +		   "samsung,s5pv210-secss"
-> +		-- One interrupts "feed control" in case of
-> +		   "samsung,exynos4210-secss".
-> +- clocks : list of clock phandle and specifier pairs for all clocks  listed in
-> +		clock-names property.
-> +- clock-names : list of device clock input names; should contain one entry
-> +		"secss".
+I tested this series on HSWULT and adding/removing QoS LTR requests from
+both userspace and from a modified i2c-hid driver (calling
+dev_pm_qos_add_ancestor_request()) and seems to work nicely -- When I read
+back the HW LTR values they are what is expected.
 
-Hmm, I guess this is a rebase error, because this should rather be 
-squashed with patch 2/8.
-
-Otherwise the patch looks good to me.
-
-Best regards,
-Tomasz
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
