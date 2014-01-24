@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaAXVlj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 16:41:39 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44185 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752486AbaAXVlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 16:41:36 -0500
-Date: Fri, 24 Jan 2014 18:41:37 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] irqchip: orion: clear bridge cause register on init
-Message-ID: <20140124211528.GA14012@localhost>
-References: <1390516686-2224-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1390516686-2224-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753175AbaAXVls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 16:41:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57005 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486AbaAXVll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 16:41:41 -0500
+Date: Fri, 24 Jan 2014 16:41:36 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Fix overflow when HZ is smaller than 60
+In-Reply-To: <alpine.LRH.2.02.1401241218470.16419@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401241218470.16419@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1390516686-2224-2-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 11:38:04PM +0100, Sebastian Hesselbarth wrote:
-> It is good practice to mask and clear pending irqs on init. We already
-> mask all irqs, so also clear the bridge irq cause register.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/irqchip/irq-orion.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-> index e51d40031884..4137c3d15284 100644
-> --- a/drivers/irqchip/irq-orion.c
-> +++ b/drivers/irqchip/irq-orion.c
-> @@ -180,8 +180,9 @@ static int __init orion_bridge_irq_init(struct device_node *np,
->  	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
->  	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
->  
-> -	/* mask all interrupts */
-> +	/* mask and clear all interrupts */
->  	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
-> +	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_CAUSE);
->  
+The patch that I sent before had wrong numbers in it, it could result in 
+"Clocksource jiffies might overflow on 11% adjustment" message. This is 
+the patch with correct numbers.
 
-This looks a bit bogus to me, now that we are clearing the cause upon
-irq_startup(). Don't have a strong opinion, it's just that I fail to see
-why we'd want or need this change...
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+> +#if HZ < 30
+> +#define JIFFIES_SHIFT	6
+> +#elif HZ < 60
+> +#define JIFFIES_SHIFT	7
+> +#else
+>  #define JIFFIES_SHIFT	8
+> +#endif
+
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+Fix overflow when HZ is 32
+
+When compiling for the IA-64 ski emulator, HZ is set to 32 because the
+emulation is slow and we don't want to waste too many cycles processing
+timers. Alpha also has an option to set HZ to 32.
+
+This causes integer underflow in
+kernel/time/jiffies.c:
+kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
+  ^
+
+This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: stable@vger.kernel.org
+
+---
+ kernel/time/jiffies.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-2.6-ia64/kernel/time/jiffies.c
+===================================================================
+--- linux-2.6-ia64.orig/kernel/time/jiffies.c	2014-01-24 22:34:17.000000000 +0100
++++ linux-2.6-ia64/kernel/time/jiffies.c	2014-01-24 22:36:56.000000000 +0100
+@@ -51,7 +51,13 @@
+  * HZ shrinks, so values greater than 8 overflow 32bits when
+  * HZ=100.
+  */
++#if HZ < 34
++#define JIFFIES_SHIFT	6
++#elif HZ < 67
++#define JIFFIES_SHIFT	7
++#else
+ #define JIFFIES_SHIFT	8
++#endif
+ 
+ static cycle_t jiffies_read(struct clocksource *cs)
+ {
