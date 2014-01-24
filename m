@@ -1,255 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaAXOhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:37:40 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60985 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550AbaAXOhi (ORCPT
+	id S1752892AbaAXOiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:38:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27516 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550AbaAXOiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:37:38 -0500
-Message-ID: <52E27AA8.8040105@linaro.org>
-Date: Fri, 24 Jan 2014 22:37:28 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 24 Jan 2014 09:38:23 -0500
+Date: Fri, 24 Jan 2014 09:37:11 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com
+Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
+Subject: Re: [Xen-devel] [PATCH v5] xen/grant-table: Avoid m2p_override
+ during mapping
+Message-ID: <20140124143711.GB12946@phenom.dumpdata.com>
+References: <1390482430-9168-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH 10/20] ARM64 / ACPI: Enumerate possible/present CPU set
- and map logical cpu id to APIC id
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org> <20140122155331.GD24288@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20140122155331.GD24288@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390482430-9168-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo,
+On Thu, Jan 23, 2014 at 01:07:10PM +0000, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> 
+> It also removes a stray space from page.h and change ret to 0 if
+> XENFEAT_auto_translated_physmap, as that is the only possible return value
+> there.
+> 
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
+> 
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
+> 
+> v4:
+> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> - clear page->private before doing anything with the page, so m2p_find_override
+>   won't race with this
+> 
+> v5:
+> - change return value handling in __gnttab_[un]map_refs
+> - remove a stray space in page.h
+> - add detail why ret = 0 now at some places
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Suggested-by: David Vrabel <david.vrabel@citrix.com>
 
-On 2014年01月22日 23:53, Lorenzo Pieralisi wrote:
-> On Fri, Jan 17, 2014 at 12:25:04PM +0000, Hanjun Guo wrote:
->
-> [...]
->
->> +/* map logic cpu id to physical GIC id */
->> +extern int arm_cpu_to_apicid[NR_CPUS];
->> +#define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
-> Sudeep already commented on this, please update it accordingly.
+It looks OK to me and while it is not a bug-fix I think it should
+go for v3.14 - as it _should_ improve the backends.
 
-Actually after some careful review of the ACPI code, I can't
-update it as MPIDR here.
+David or Boris; Stefano, please Ack/Nack it.
 
-MPIDR can be the ACPI uid and NOT the GIC id, the mapping
-of them are something like this in ACPI driver now:
-
-logic cpu id <---> APIC Id (GIC ID) <---> ACPI uid (MPIDR on ARM)
-but not logic cpu id <---> ACPI uid directly, you can refer to
-the code of processor_core.c
-
-So here I can only map GIC id to logical cpu id.
-
->
->> +
->>   #else	/* !CONFIG_ACPI */
->>   #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
->>   #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
->> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
->> index 8ba3e6f..1d9b789 100644
->> --- a/drivers/acpi/plat/arm-core.c
->> +++ b/drivers/acpi/plat/arm-core.c
->> @@ -31,6 +31,7 @@
->>   #include <linux/smp.h>
->>   
->>   #include <asm/pgtable.h>
->> +#include <asm/cputype.h>
->>   
->>   /*
->>    * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
->> @@ -52,6 +53,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
->>    */
->>   static u64 acpi_lapic_addr __initdata;
-> Is this variable actually needed ?
-
-Yes, needed for GIC initialization.
-
->
->>   
->> +/* available_cpus here means enabled cpu in MADT */
->> +static int available_cpus;
-> Ditto.
->
->> +
->> +/* Map logic cpu id to physical GIC id (physical CPU id). */
->> +int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
->> +static int boot_cpu_apic_id = -1;
-> Do we need all these variables ? I think we should reuse cpu_logical_map
-> data structures for that, it looks suspiciously familiar.
-
-MPIDR is the different part. if we use MPIDR as GIC id, i think
-we can reuse cpu_logical_map, but Sudeep suggested not
-use MPIDR as GIC id.
-
->
->>   #define BAD_MADT_ENTRY(entry, end) (					\
->>   	(!entry) || (unsigned long)entry + sizeof(*entry) > end ||	\
->>   	((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
->> @@ -132,6 +140,55 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
->>    * Please refer to chapter5.2.12.14/15 of ACPI 5.0
->>    */
->>   
->> +/**
->> + * acpi_register_gic_cpu_interface - register a gic cpu interface and
->> + * generates a logic cpu number
->> + * @id: gic cpu interface id to register
->> + * @enabled: this cpu is enabled or not
->> + *
->> + * Returns the logic cpu number which maps to the gic cpu interface
->> + */
->> +static int acpi_register_gic_cpu_interface(int id, u8 enabled)
->> +{
->> +	int cpu;
->> +
->> +	if (id >= MAX_GIC_CPU_INTERFACE) {
->> +		pr_info(PREFIX "skipped apicid that is too big\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	total_cpus++;
->> +	if (!enabled)
->> +		return -EINVAL;
->> +
->> +	if (available_cpus >=  NR_CPUS) {
->> +		pr_warn(PREFIX "NR_CPUS limit of %d reached,"
->> +		" Processor %d/0x%x ignored.\n", NR_CPUS, total_cpus, id);
->> +		return -EINVAL;
->> +	}
-> Hmm...what if you are missing the boot CPU ? It is a worthy check.
-> Have a look at smp_init_cpus(), it does not bail out on cpu>= NR_CPUS
-> because you do want to make sure that the DT contains the boot CPU
-> node. Same logic applies.
-
-Thanks, I will review he code you mentioned and find a solution
-for ACPI part.
-
->
->> +
->> +	available_cpus++;
->> +
-> Is available_cpus != num_possible_cpus() ? It does not look like hence
-> available_cpus can go.
-
-No, possible cpus include available cpus and disabled cpus
-this is useful for ACPI based CPU hot-plug features.
-
->
->> +	/* allocate a logic cpu id for the new comer */
->> +	if (boot_cpu_apic_id == id) {
->> +		/*
->> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
->> +		 * for BSP, no need to allocte again.
->> +		 */
->> +		cpu = 0;
->> +	} else {
->> +		cpu = cpumask_next_zero(-1, cpu_present_mask);
->> +	}
->> +
->> +	/* map the logic cpu id to APIC id */
->> +	arm_cpu_to_apicid[cpu] = id;
->> +
->> +	set_cpu_present(cpu, true);
->> +	set_cpu_possible(cpu, true);
-> This is getting nasty. Before adding this patch and previous ones we
-> need to put in place a method for the kernel to make a definite choice between
-> ACPI and DT and stick to that. We can't initialize the logical map twice
-> (which will happen if your DT has valid cpu nodes and a chosen node pointing
-> to proper ACPI tables) or even having some entries initialized from DT and
-> others by ACPI. It is a big fat no-no, please update the series accordingly.
-
-really good catch here :)
-so the problem here is that should we use both ACPI and DT in one system?
-
-
->
->> +
->> +	return cpu;
->> +}
->> +
->>   static int __init
->>   acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
->>   {
->> @@ -144,6 +201,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
->>   
->>   	acpi_table_print_madt_entry(header);
->>   
->> +	/*
->> +	 * We need to register disabled CPU as well to permit
->> +	 * counting disabled CPUs. This allows us to size
->> +	 * cpus_possible_map more accurately, to permit
->> +	 * to not preallocating memory for all NR_CPUS
->> +	 * when we use CPU hotplug.
->> +	 */
->> +	acpi_register_gic_cpu_interface(processor->gic_id,
->> +			processor->flags & ACPI_MADT_ENABLED);
->> +
->>   	return 0;
->>   }
->>   
->> @@ -186,6 +253,19 @@ static int __init acpi_parse_madt_gic_entries(void)
->>   		return count;
->>   	}
->>   
->> +#ifdef CONFIG_SMP
->> +	if (available_cpus == 0) {
->> +		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
->> +		arm_cpu_to_apicid[available_cpus] =
->> +			read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
->> +		available_cpus = 1;	/* We've got at least one of these */
->> +	}
-> I'd rather check the MADT for at least the boot cpu to present, if it is
-> not ACPI tables are horribly buggy and the kernel should barf on that.
->
->> +#endif
->> +
->> +	/* Make boot-up look pretty */
->> +	pr_info("%d CPUs available, %d CPUs total\n", available_cpus,
->> +		total_cpus);
-> Ok, now, how can we use the "disabled" CPUs == (total_cpus - available_cpus) ?
-
-For cpus can be hot-added later when system is running.
-
->
-> Are we keeping track of them in the kernel at all ? It does not look
-> like, so I wonder whether we need this bit of info. I do not see why it
-> is pretty to know that there are disabled, aka unusable CPUs.
->
->>   	return 0;
->>   }
->>   
->> @@ -321,6 +401,9 @@ int __init early_acpi_boot_init(void)
->>   	if (acpi_disabled)
->>   		return -ENODEV;
->>   
->> +	/* Get the boot CPU's GIC cpu interface id before MADT parsing */
->> +	boot_cpu_apic_id = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
-> See Sudeep's comment.
-
-I will rework this part to get the GIC cpu interface id, not the MPIDR here.
-
-Thanks
-Hanjun
+Thank you.
+> ---
+>  arch/x86/include/asm/xen/page.h     |   12 +++--
+>  arch/x86/xen/p2m.c                  |   25 ++--------
+>  drivers/block/xen-blkback/blkback.c |   15 +++---
+>  drivers/xen/gntdev.c                |   13 +++--
+>  drivers/xen/grant-table.c           |   90 ++++++++++++++++++++++++++++++-----
+>  include/xen/grant_table.h           |    8 +++-
+>  6 files changed, 109 insertions(+), 54 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index b913915..68a1438 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -49,10 +49,14 @@ extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+>  extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+>  					     unsigned long pfn_e);
+>  
+> -extern int m2p_add_override(unsigned long mfn, struct page *page,
+> -			    struct gnttab_map_grant_ref *kmap_op);
+> +extern int m2p_add_override(unsigned long mfn,
+> +			    struct page *page,
+> +			    struct gnttab_map_grant_ref *kmap_op,
+> +			    unsigned long pfn);
+>  extern int m2p_remove_override(struct page *page,
+> -				struct gnttab_map_grant_ref *kmap_op);
+> +			       struct gnttab_map_grant_ref *kmap_op,
+> +			       unsigned long pfn,
+> +			       unsigned long mfn);
+>  extern struct page *m2p_find_override(unsigned long mfn);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+>  
+> @@ -121,7 +125,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+>  		pfn = m2p_find_override_pfn(mfn, ~0);
+>  	}
+>  
+> -	/* 
+> +	/*
+>  	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+>  	 * entry doesn't map back to the mfn and m2p_override doesn't have a
+>  	 * valid entry for it.
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 2ae8699..0060178 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -872,15 +872,13 @@ static unsigned long mfn_hash(unsigned long mfn)
+>  
+>  /* Add an MFN override for a particular page */
+>  int m2p_add_override(unsigned long mfn, struct page *page,
+> -		struct gnttab_map_grant_ref *kmap_op)
+> +		struct gnttab_map_grant_ref *kmap_op, unsigned long pfn)
+>  {
+>  	unsigned long flags;
+> -	unsigned long pfn;
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
+>  
+> -	pfn = page_to_pfn(page);
+>  	if (!PageHighMem(page)) {
+>  		address = (unsigned long)__va(pfn << PAGE_SHIFT);
+>  		ptep = lookup_address(address, &level);
+> @@ -888,13 +886,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  					"m2p_add_override: pfn %lx not mapped", pfn))
+>  			return -EINVAL;
+>  	}
+> -	WARN_ON(PagePrivate(page));
+> -	SetPagePrivate(page);
+> -	set_page_private(page, mfn);
+> -	page->index = pfn_to_mfn(pfn);
+> -
+> -	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> -		return -ENOMEM;
+>  
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+> @@ -933,20 +924,15 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  }
+>  EXPORT_SYMBOL_GPL(m2p_add_override);
+>  int m2p_remove_override(struct page *page,
+> -		struct gnttab_map_grant_ref *kmap_op)
+> +			struct gnttab_map_grant_ref *kmap_op,
+> +			unsigned long pfn,
+> +			unsigned long mfn)
+>  {
+>  	unsigned long flags;
+> -	unsigned long mfn;
+> -	unsigned long pfn;
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
+>  
+> -	pfn = page_to_pfn(page);
+> -	mfn = get_phys_to_machine(pfn);
+> -	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+> -		return -EINVAL;
+> -
+>  	if (!PageHighMem(page)) {
+>  		address = (unsigned long)__va(pfn << PAGE_SHIFT);
+>  		ptep = lookup_address(address, &level);
+> @@ -959,10 +945,7 @@ int m2p_remove_override(struct page *page,
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_del(&page->lru);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> -	WARN_ON(!PagePrivate(page));
+> -	ClearPagePrivate(page);
+>  
+> -	set_phys_to_machine(pfn, page->index);
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+>  			struct multicall_space mcs;
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 6620b73..875025f 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+>  			!rb_next(&persistent_gnt->node)) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		pages[segs_to_unmap] = persistent_gnt->page;
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		kfree(persistent_gnt);
+>  	}
+>  	if (segs_to_unmap > 0) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
+> +		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, pages, segs_to_unmap);
+>  	}
+> @@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
+>  				    GNTMAP_host_map, pages[i]->handle);
+>  		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+>  		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+> -			                        invcount);
+> +			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, unmap_pages, invcount);
+>  			invcount = 0;
+>  		}
+>  	}
+>  	if (invcount) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
+> +		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, unmap_pages, invcount);
+>  	}
+> @@ -740,7 +737,7 @@ again:
+>  	}
+>  
+>  	if (segs_to_map) {
+> -		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
+> +		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+>  		BUG_ON(ret);
+>  	}
+>  
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index e41c79c..e652c0e 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+>  	}
+>  
+>  	pr_debug("map %d+%d\n", map->index, map->count);
+> -	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+> -			map->pages, map->count);
+> +	err = gnttab_map_refs_userspace(map->map_ops,
+> +					use_ptemod ? map->kmap_ops : NULL,
+> +					map->pages,
+> +					map->count);
+>  	if (err)
+>  		return err;
+>  
+> @@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+>  		}
+>  	}
+>  
+> -	err = gnttab_unmap_refs(map->unmap_ops + offset,
+> -			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+> -			pages);
+> +	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
+> +					  use_ptemod ? map->kmap_ops + offset : NULL,
+> +					  map->pages + offset,
+> +					  pages);
+>  	if (err)
+>  		return err;
+>  
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index aa846a4..2add483 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -880,15 +880,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+>  
+> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		    struct gnttab_map_grant_ref *kmap_ops,
+> -		    struct page **pages, unsigned int count)
+> +		    struct page **pages, unsigned int count,
+> +		    bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  	pte_t *pte;
+> -	unsigned long mfn;
+> +	unsigned long mfn, pfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -907,10 +909,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+>  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+> @@ -927,8 +931,20 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		} else {
+>  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		pfn = page_to_pfn(pages[i]);
+> +
+> +		WARN_ON(PagePrivate(pages[i]));
+> +		SetPagePrivate(pages[i]);
+> +		set_page_private(pages[i], mfn);
+> +
+> +		pages[i]->index = pfn_to_mfn(pfn);
+> +		if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +		if (m2p_override)
+> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> +					       &kmap_ops[i] : NULL, pfn);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -939,15 +955,32 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_map_refs);
+>  
+> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
+> +
+> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct gnttab_map_grant_ref *kmap_ops,
+> -		      struct page **pages, unsigned int count)
+> +		      struct page **pages, unsigned int count,
+> +		      bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+> +	unsigned long pfn, mfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -958,17 +991,34 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+>  					INVALID_P2M_ENTRY);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+>  
+>  	for (i = 0; i < count; i++) {
+> -		ret = m2p_remove_override(pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		pfn = page_to_pfn(pages[i]);
+> +		mfn = get_phys_to_machine(pfn);
+> +		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
+> +			ret = -EINVAL;
+> +			goto out;
+> +		}
+> +
+> +		set_page_private(pages[i], INVALID_P2M_ENTRY);
+> +		WARN_ON(!PagePrivate(pages[i]));
+> +		ClearPagePrivate(pages[i]);
+> +		set_phys_to_machine(pfn, pages[i]->index);
+> +		if (m2p_override)
+> +			ret = m2p_remove_override(pages[i],
+> +						  kmap_ops ?
+> +						   &kmap_ops[i] : NULL,
+> +						  pfn,
+> +						  mfn);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -979,8 +1029,22 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+>  
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
+> +				struct gnttab_map_grant_ref *kmap_ops,
+> +				struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
+> +
+>  static unsigned nr_status_frames(unsigned nr_grant_frames)
+>  {
+>  	BUG_ON(grefs_per_grant_frame == 0);
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index 694dcaf..9a919b1 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -184,11 +184,15 @@ unsigned int gnttab_max_grant_frames(void);
+>  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> -		    struct gnttab_map_grant_ref *kmap_ops,
+>  		    struct page **pages, unsigned int count);
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count);
+>  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> -		      struct gnttab_map_grant_ref *kunmap_ops,
+>  		      struct page **pages, unsigned int count);
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
+> +				struct gnttab_map_grant_ref *kunmap_ops,
+> +				struct page **pages, unsigned int count);
+>  
+>  /* Perform a batch of grant map/copy operations. Retry every batch slot
+>   * for which the hypervisor returns GNTST_eagain. This is typically due
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
