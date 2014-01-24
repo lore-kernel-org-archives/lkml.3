@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaAXRFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:05:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54322 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751115AbaAXRFn (ORCPT
+	id S1751940AbaAXRH1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:07:27 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:64869 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaAXRHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:05:43 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yijing Wang <wangyijing@huawei.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH v5] ACPI: Fix acpi_evaluate_object() return value check
-Date: Fri, 24 Jan 2014 18:19:55 +0100
-Message-ID: <4891976.lTa9ZQzyVA@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <CAErSpo6T28Dh=xkgx=Ki6nZOZN1c8QGhB6KWhiZ46ZwHAmirbg@mail.gmail.com>
-References: <1390448559-33896-1-git-send-email-wangyijing@huawei.com> <11909895.7rJ1jejxPI@vostro.rjw.lan> <CAErSpo6T28Dh=xkgx=Ki6nZOZN1c8QGhB6KWhiZ46ZwHAmirbg@mail.gmail.com>
+	Fri, 24 Jan 2014 12:07:25 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAAYSxhoCrveHd5Wkc7Z0qzpGr41qG6-neYSSsuHQuC7AcuJmZQ@mail.gmail.com>
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-6-git-send-email-tim.kryger@linaro.org>
+	<CAEPRUYrPXf7QNzput0bz_UPfytRy1eYgyOJYnH5v2v4DCEKSNA@mail.gmail.com>
+	<CAAYSxhoCrveHd5Wkc7Z0qzpGr41qG6-neYSSsuHQuC7AcuJmZQ@mail.gmail.com>
+Date: Fri, 24 Jan 2014 09:07:24 -0800
+Message-ID: <CAAYSxhrBSv8_Z1SfB-b3iGgq218Gttny4FEgYJnLtSFhJd2UFg@mail.gmail.com>
+Subject: Re: [PATCH v4 5/8] mmc: sdhci-bcm-kona: Add basic use of clocks
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>, Chris Ball <cjb@laptop.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 24, 2014 08:25:23 AM Bjorn Helgaas wrote:
-> On Fri, Jan 24, 2014 at 8:36 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Friday, January 24, 2014 07:54:29 AM Bjorn Helgaas wrote:
-> >> On Thu, Jan 23, 2014 at 5:33 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> > On Thursday, January 23, 2014 11:21:01 AM Bjorn Helgaas wrote:
-> >> >> On Wed, Jan 22, 2014 at 8:42 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> >> >> > Since acpi_evaluate_object() returns acpi_status and not plain int,
-> >> >> > ACPI_FAILURE() should be used for checking its return value. Also
-> >> >> > add some detailed debug info when acpi_evaluate_object() failed.
-> >> >> >
-> >> >> > Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> >> >> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> >> >> > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> >> >> > ---
-> >> >> > v4->v5: Add some detailed debug info for acpi_evaluate_object()
-> >> >> >         failure suggested by Bjorn.
-> >> >> > v3->v4: Fix spell error, add Jani Nikula reviewed-by.
-> >> >> > v2->v3: Fix compile error pointed out by Hanjun.
-> >> >> > v1->v2: Add CC to related subsystem MAINTAINERS
-> >> >> > ---
-> >> >> >  drivers/gpu/drm/i915/intel_acpi.c              |   33 ++++++++++++++++-------
-> >> >> >  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |   13 ++++++---
-> >> >> >  drivers/gpu/drm/nouveau/nouveau_acpi.c         |   25 +++++++++++-------
-> >> >> >  drivers/pci/pci-label.c                        |   10 +++++--
-> >> >> >  4 files changed, 54 insertions(+), 27 deletions(-)
-> >> >> >
-> >> >> > diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
-> >> >> > index dfff090..e7b526b 100644
-> >> >> > --- a/drivers/gpu/drm/i915/intel_acpi.c
-> >> >> > +++ b/drivers/gpu/drm/i915/intel_acpi.c
-> >> >> > @@ -31,11 +31,13 @@ static const u8 intel_dsm_guid[] = {
-> >> >> >  static int intel_dsm(acpi_handle handle, int func)
-> >> >> >  {
-> >> >> >         struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> >> >> > +       struct acpi_buffer string = { ACPI_ALLOCATE_BUFFER, NULL };
-> >> >> >         struct acpi_object_list input;
-> >> >> >         union acpi_object params[4];
-> >> >> >         union acpi_object *obj;
-> >> >> >         u32 result;
-> >> >> > -       int ret = 0;
-> >> >> > +       acpi_status status;
-> >> >> > +       int ret;
-> >> >> >
-> >> >> >         input.count = 4;
-> >> >> >         input.pointer = params;
-> >> >> > @@ -50,10 +52,14 @@ static int intel_dsm(acpi_handle handle, int func)
-> >> >> >         params[3].package.count = 0;
-> >> >> >         params[3].package.elements = NULL;
-> >> >> >
-> >> >> > -       ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
-> >> >> > -       if (ret) {
-> >> >> > -               DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
-> >> >> > -               return ret;
-> >> >> > +       status = acpi_evaluate_object(handle, "_DSM", &input, &output);
-> >> >> > +       if (ACPI_FAILURE(status)) {
-> >> >> > +               acpi_get_name(handle, ACPI_FULL_PATHNAME, &string);
-> >> >> > +               DRM_DEBUG_DRIVER(
-> >> >> > +                       "failed to evaluate _DSM for %s, exit status %u\n",
-> >> >> > +                       (char *)string.pointer, (unsigned int)status);
-> >> >> > +               kfree(string.pointer);
-> >> >> > +               return -EINVAL;
-> >> >>
-> >> >> I said "too bad there isn't an *easy* way" to include more
-> >> >> information.  IMHO this is too ugly and error-prone to use
-> >> >> consistently.  And if you are going to add more information, why did
-> >> >> you only do it for some of the calls and not others?
-> >> >>
-> >> >> I considered adding a %p extension to print the pathname; I don't know
-> >> >> if that's worthwhile or not.  I think it would be ideal if we had a
-> >> >> struct device and could use dev_info(), and then a way to connect the
-> >> >> struct device with an ACPI path, like maybe a dmesg note when we
-> >> >> create the struct device corresponding to an ACPI Device node.
-> >> >
-> >> > Well, we can generally print something like that from pci_acpi_setup().
-> >> >
-> >> > What about the below?  Wouldn't it generate too much output on some systems?
-> >>
-> >> Yeah, that probably would generate an awful lot of output.  I was just
-> >> hoping to avoid treating ACPI pathnames as first-class objects.  What
-> >> do you think about a %p extension?  I played with that once, but I
-> >> seem to have lost the patch.
-> >
-> > Well, it may be worth doing.  However, that information is readily available from
-> > sysfs anyway, you only need to follow the firmware_node link in the PCI device's
-> > sysfs directory and read the path attribute from there.  For example, on my
-> > system:
-> >
-> > $ cat /sys/devices/pci0000:00/0000:00:1c.4/0000:0b:00.0/firmware_node/path
-> > \_SB_.PCI0.RP05.PXSX
-> 
-> That's perfect.  If we had a struct device, we could just use
-> dev_info() for these messages.  But I have no idea how hard it would
-> be to get at the struct device.
+On Tue, Jan 7, 2014 at 11:37 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> On Sat, Dec 14, 2013 at 12:14 AM, Christian Daudt <bcm@fixthebug.org> wrote:
+>> On Thu, Dec 5, 2013 at 11:20 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+>>> Enable the external clock needed by the host controller during the
+>>> probe and disable it during the remove.
+>>>
+>>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+>>> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+>>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>>
+>> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+>>
+>> Chris,
+>>  Are you ok with me pulling this patch along with the rest of the
+>> patchset into the bcm tree?
+>>
+>>  Thanks,
+>>    csd
+>
+> Chris,
+>
+> Can you please provide an answer to csd?
+>
+> Thanks,
+> Tim Kryger
 
->From the pci_dev side that is trivial: use ACPI_COMPANION().  The other way
-around is rather more difficult as browsing a list would be involved.
+Chris,
 
-Rafael
+I haven't heard back so this patch has been dropped for 3.14 to allow
+the remaining patches in the series to move forward.   As such, I will
+be re-posting this patch for 3.15.  It is essential for the
+bcm28155_ap board to transition away from fake fixed clocks to the
+real clock driver.  This is because the bcm281xx clock driver does not
+set the CLK_IGNORE_UNUSED flag for the SDHCI peripheral clocks and the
+common clock code will shut them off in late init unless the SDHCI
+driver has asked for them to be enabled.
 
+Thanks,
+Tim
