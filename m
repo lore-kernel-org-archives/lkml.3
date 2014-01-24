@@ -1,167 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaAXOny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:43:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753079AbaAXOnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:43:52 -0500
-Subject: [PATCH] Fix race when checking i_size on direct i/o read
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Zheng Liu <gnehzuil.liu@gmail.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Zheng Liu <wenqing.lz@taobao.com>, Lukas Czerner <lczerner@redhat.com>,
-        linux-ext4@vger.kernel.org, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <CAJfpegtffQj1Rk0UM6nd0yBpbnS8kXjN-1j04gt1hnZefLZJ9w@mail.gmail.com>
-References: <1387273422.2729.13.camel@menhir>
-	 <20131217111626.GA7544@gmail.com> <1387282664.2729.42.camel@menhir>
-	 <20131217164159.GA7331@gmail.com> <1387456073.2763.20.camel@menhir>
-	 <20131219224400.GC31386@dastard> <1387531724.2739.13.camel@menhir>
-	 <20131223030006.GD3220@dastard> <1389712933.2790.31.camel@menhir>
-	 <20140114191901.GC27863@quack.suse.cz> <20140115071933.GA3449@gmail.com>
-	 <1389886553.2779.32.camel@menhir>
-	 <CAJfpegtffQj1Rk0UM6nd0yBpbnS8kXjN-1j04gt1hnZefLZJ9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 24 Jan 2014 14:42:22 +0000
-Message-ID: <1390574542.2707.14.camel@menhir>
-Mime-Version: 1.0
+	id S1753150AbaAXOo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:44:26 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:22543 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaAXOoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 09:44:24 -0500
+X-IronPort-AV: E=Sophos;i="4.95,713,1384300800"; 
+   d="scan'208";a="94151539"
+Message-ID: <52E27C45.4040706@citrix.com>
+Date: Fri, 24 Jan 2014 14:44:21 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <boris.ostrovsky@oracle.com>, <ian.campbell@citrix.com>,
+        <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v5] xen/grant-table: Avoid m2p_override during
+ mapping
+References: <1390482430-9168-1-git-send-email-zoltan.kiss@citrix.com> <20140124143711.GB12946@phenom.dumpdata.com>
+In-Reply-To: <20140124143711.GB12946@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24/01/14 14:37, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 23, 2014 at 01:07:10PM +0000, Zoltan Kiss wrote:
+>> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+>> for blkback and future netback patches it just cause a lock contention, as
+>> those pages never go to userspace. Therefore this series does the following:
+>> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>>   parameter m2p_override
+>> - based on m2p_override either they follow the original behaviour, or just set
+>>   the private flag and call set_phys_to_machine
+>> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>>   m2p_override false
+>> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+>>
+>> It also removes a stray space from page.h and change ret to 0 if
+>> XENFEAT_auto_translated_physmap, as that is the only possible return value
+>> there.
+>>
+>> v2:
+>> - move the storing of the old mfn in page->index to gnttab_map_refs
+>> - move the function header update to a separate patch
+>>
+>> v3:
+>> - a new approach to retain old behaviour where it needed
+>> - squash the patches into one
+>>
+>> v4:
+>> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+>> - clear page->private before doing anything with the page, so m2p_find_override
+>>   won't race with this
+>>
+>> v5:
+>> - change return value handling in __gnttab_[un]map_refs
+>> - remove a stray space in page.h
+>> - add detail why ret = 0 now at some places
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Suggested-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> It looks OK to me and while it is not a bug-fix I think it should
+> go for v3.14 - as it _should_ improve the backends.
+> 
+> David or Boris; Stefano, please Ack/Nack it.
 
-So far I've had one ACK for this, and no other comments. So I think it
-is probably time to send this via some suitable tree. I'm guessing that
-the vfs tree would be the most appropriate route, but not sure that
-there is one at the moment (don't see anything recent at kernel.org)
-so in that case I think -mm is the "back up plan". Al, please let me
-know if you will take this?
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-Steve.
-
----------------------
-
-Following on from the "Re: [PATCH v3] vfs: fix a bug when we do some dio
-reads with append dio writes" thread on linux-fsdevel, this patch is my
-current version of the fix proposed as option (b) in that thread.
-
-Removing the i_size test from the direct i/o read path at vfs level
-means that filesystems now have to deal with requests which are beyond
-i_size themselves. These I've divided into three sets:
-
- a) Those with "no op" ->direct_IO (9p, cifs, ceph)
-These are obviously not going to be an issue
-
- b) Those with "home brew" ->direct_IO (nfs, fuse)
-I've been told that NFS should not have any problem with the larger
-i_size, however I've added an extra test to FUSE to duplicate the
-original behaviour just to be on the safe side.
-
- c) Those using __blockdev_direct_IO()
-These call through to ->get_block() which should deal with the EOF
-condition correctly. I've verified that with GFS2 and I believe that
-Zheng has verified it for ext4. I've also run the test on XFS and it
-passes both before and after this change.
-
-The part of the patch in filemap.c looks a lot larger than it really is
-- there are only two lines of real change. The rest is just indentation
-of the contained code.
-
-There remains a test of i_size though, which was added for btrfs. It
-doesn't cause the other filesystems a problem as the test is performed
-after ->direct_IO has been called. It is possible that there is a race
-that does matter to btrfs, however this patch doesn't change that, so
-its still an overall improvement.
-
-
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>
-Acked-by: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Chris Mason <clm@fb.com>
-Cc: Josef Bacik <jbacik@fb.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 74f6ca5..77bcc30 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2727,6 +2727,9 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
- 	inode = file->f_mapping->host;
- 	i_size = i_size_read(inode);
- 
-+	if ((rw == READ) && (offset > i_size))
-+		return 0;
-+
- 	/* optimization for short read */
- 	if (async_dio && rw != WRITE && offset + count > i_size) {
- 		if (offset >= i_size)
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 7a7f3e0..d56d3c1 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1428,30 +1428,28 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 		if (!count)
- 			goto out; /* skip atime */
- 		size = i_size_read(inode);
--		if (pos < size) {
--			retval = filemap_write_and_wait_range(mapping, pos,
-+		retval = filemap_write_and_wait_range(mapping, pos,
- 					pos + iov_length(iov, nr_segs) - 1);
--			if (!retval) {
--				retval = mapping->a_ops->direct_IO(READ, iocb,
--							iov, pos, nr_segs);
--			}
--			if (retval > 0) {
--				*ppos = pos + retval;
--				count -= retval;
--			}
-+		if (!retval) {
-+			retval = mapping->a_ops->direct_IO(READ, iocb,
-+							   iov, pos, nr_segs);
-+		}
-+		if (retval > 0) {
-+			*ppos = pos + retval;
-+			count -= retval;
-+		}
- 
--			/*
--			 * Btrfs can have a short DIO read if we encounter
--			 * compressed extents, so if there was an error, or if
--			 * we've already read everything we wanted to, or if
--			 * there was a short read because we hit EOF, go ahead
--			 * and return.  Otherwise fallthrough to buffered io for
--			 * the rest of the read.
--			 */
--			if (retval < 0 || !count || *ppos >= size) {
--				file_accessed(filp);
--				goto out;
--			}
-+		/*
-+		 * Btrfs can have a short DIO read if we encounter
-+		 * compressed extents, so if there was an error, or if
-+		 * we've already read everything we wanted to, or if
-+		 * there was a short read because we hit EOF, go ahead
-+		 * and return.  Otherwise fallthrough to buffered io for
-+		 * the rest of the read.
-+		 */
-+		if (retval < 0 || !count || *ppos >= size) {
-+			file_accessed(filp);
-+			goto out;
- 		}
- 	}
- 
-
-
+David
