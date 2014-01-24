@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaAXWrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 17:47:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46847 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaAXWr3 (ORCPT
+	id S1753232AbaAXWsZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:48:25 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:46094 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaAXWsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 17:47:29 -0500
+	Fri, 24 Jan 2014 17:48:23 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: linux-wireless@vger.kernel.org
+To: backports@vger.kernel.org
 Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
         "W. Trevor King" <wking@tremily.us>, linux-kernel@vger.kernel.org
 Subject: [PATCH 11/11] rel-html: update documentation on contribution process using the DCO
-Date: Fri, 24 Jan 2014 14:46:33 -0800
-Message-Id: <1390603593-27728-12-git-send-email-mcgrof@do-not-panic.com>
+Date: Fri, 24 Jan 2014 14:47:16 -0800
+Message-Id: <1390603636-27841-12-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1390603593-27728-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1390603593-27728-1-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1390603636-27841-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1390603636-27841-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
