@@ -1,282 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaAXTob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:44:31 -0500
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:40503 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752288AbaAXTo1 (ORCPT
+	id S1752910AbaAXTpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:45:53 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46531 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaAXTpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:44:27 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Fri, 24 Jan 2014 11:43:47 -0800
-Message-Id: <1390592627-13487-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
+	Fri, 24 Jan 2014 14:45:49 -0500
+Date: Fri, 24 Jan 2014 14:39:33 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-next 2014-01-24
+Message-ID: <20140124193933.GL4309@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull from
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+Dave,
+
+Please pull these fixes for the 3.14 stream!
+
+For the iwlwifi fix, Emmanuel says:
+
+"A critical bug has been reported on all NICs supported by iwldvm.
+iwlwifi would simply panic upon interface up This patch fixes this. The
+offending code is by me and is present in wireless-next.git and hence in
+net-next.git."
+
+Along with that...
+
+Andreas Fenkart corrects a WoWLAN problem with mwifiex.
+
+Roman Dubtsov adds a device ID to rt2800usb.
+
+Sujith Manoharan re-enables a mistakenly commented-out line of code in
+ath9k, and also fixes and interrupt mitigation issue for that driver.
+
+ZHAO Gang fixes an incorrect assignment (reverse/wrong API call) in b43.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit f55aa836fb7a90b62cb2c533b899e331cdffcf0c:
+
+  rtnetlink: remove IFLA_BOND_SLAVE definition (2014-01-24 00:36:48 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next.git =
+for-davem
+
+for you to fetch changes up to 5746cc2a6923b4e4726d9be8aa155461829be360:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless-next into for-davem (2014-01-24 13:25:15 -0500)
 
 ----------------------------------------------------------------
 
-Main batch of InfiniBand/RDMA changes for 3.14:
- - Flow steering for InfiniBand UD traffic
- - IP-based addressing for IBoE aka RoCE
- - Pass SRP submaintainership from Dave to Bart
- - SRP transport fixes from Bart
- - Add the new Cisco usNIC low-level device driver
- - Various other fixes
+Andreas Fenkart (1):
+      mwifiex: fix wakeup on magic packet
 
-----------------------------------------------------------------
-Bart Van Assche (4):
-      scsi_transport_srp: Block rport upon TL error even with fast_io_fail_tmo = off
-      scsi_transport_srp: Fix a race condition
-      scsi_transport_srp: Add rport state diagram
-      scsi_transport_srp: Fix kernel-doc warnings
+Emmanuel Grumbach (1):
+      iwlwifi: pcie: don't panic on host commands in iwldvm
 
-Dan Carpenter (2):
-      mlx5_core: Remove dead code
-      IB/usnic: Use GFP_ATOMIC under spinlock
+John W. Linville (2):
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-n=
+ext
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-n=
+ext into for-davem
 
-David Dillow (1):
-      MAINTAINERS: Pass the torch of SRP submaintainership
+Roman Dubtsov (1):
+      rt2x00: rt2800usb: mark D-Link DWA-137 as supported
 
-Devesh Sharma (2):
-      RDMA/ocrdma: Fix AV_VALID bit position
-      RDMA/ocrdma: Fix OCRDMA_GEN2_FAMILY macro definition
+Sujith Manoharan (2):
+      ath9k: Fix code mistake
+      ath9k: Fix RX interrupt mitigation
 
-Ding Tianhong (1):
-      RDMA/nes: Slight optimization of Ethernet address compare
+ZHAO Gang (1):
+      b43: fix the wrong assignment of status.freq in b43_rx()
 
-Eli Cohen (13):
-      IB/mlx5: Remove unused code in mr.c
-      IB/mlx5: Fix micro UAR allocator
-      IB/mlx5: Clear out struct before create QP command
-      mlx5_core: Use mlx5 core style warning
-      IB/mlx5: Make sure doorbell record is visible before doorbell
-      IB/mlx5: Implement modify CQ
-      IB/mlx5: Add support for resize CQ
-      mlx5_core: Improve debugfs readability
-      mlx5_core: Fix PowerPC support
-      IB/mlx5: Allow creation of QPs with zero-length work queues
-      IB/mlx5: Abort driver cleanup if teardown hca fails
-      IB/mlx5: Remove old field for create mkey mailbox
-      IB/mlx5: Verify reserved fields are cleared
+ drivers/net/wireless/ath/ath9k/hw.c     | 12 ++++++++++--
+ drivers/net/wireless/ath/ath9k/hw.h     |  2 ++
+ drivers/net/wireless/ath/ath9k/main.c   |  2 +-
+ drivers/net/wireless/b43/xmit.c         |  4 ++--
+ drivers/net/wireless/iwlwifi/pcie/tx.c  |  4 +++-
+ drivers/net/wireless/mwifiex/cfg80211.c |  2 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c |  1 +
+ 7 files changed, 20 insertions(+), 7 deletions(-)
 
-Haggai Eran (1):
-      mlx5_core: Fix out arg size in access_register command
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath=
+/ath9k/hw.c
+index ce41658a6003..fbf43c05713f 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -358,6 +358,14 @@ static void ath9k_hw_init_config(struct ath_hw *ah)
+=20
+ 	ah->config.rx_intr_mitigation =3D true;
+=20
++	if (AR_SREV_9300_20_OR_LATER(ah)) {
++		ah->config.rimt_last =3D 500;
++		ah->config.rimt_first =3D 2000;
++	} else {
++		ah->config.rimt_last =3D 250;
++		ah->config.rimt_first =3D 700;
++	}
++
+ 	/*
+ 	 * We need this for PCI devices only (Cardbus, PCI, miniPCI)
+ 	 * _and_ if on non-uniprocessor systems (Multiprocessor/HT).
+@@ -1876,8 +1884,8 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_ch=
+annel *chan,
+ 		REG_WRITE(ah, AR_OBS, 8);
+=20
+ 	if (ah->config.rx_intr_mitigation) {
+-		REG_RMW_FIELD(ah, AR_RIMT, AR_RIMT_LAST, 500);
+-		REG_RMW_FIELD(ah, AR_RIMT, AR_RIMT_FIRST, 2000);
++		REG_RMW_FIELD(ah, AR_RIMT, AR_RIMT_LAST, ah->config.rimt_last);
++		REG_RMW_FIELD(ah, AR_RIMT, AR_RIMT_FIRST, ah->config.rimt_first);
+ 	}
+=20
+ 	if (ah->config.tx_intr_mitigation) {
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath=
+/ath9k/hw.h
+index e766399bdcda..0acd4b5a4892 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -310,6 +310,8 @@ struct ath9k_ops_config {
+ 	u8 max_txtrig_level;
+ 	u16 ani_poll_interval; /* ANI poll interval in ms */
+ 	u16 hw_hang_checks;
++	u16 rimt_first;
++	u16 rimt_last;
+=20
+ 	/* Platform specific config */
+ 	u32 aspm_l1_fix;
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/a=
+th/ath9k/main.c
+index 73a36551a5ed..5924f72dd493 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -524,7 +524,7 @@ void ath9k_tasklet(unsigned long data)
+ 			 * successfully after a GTT interrupt, the GTT counter
+ 			 * gets reset to zero here.
+ 			 */
+-			/* sc->gtt_cnt =3D 0; */
++			sc->gtt_cnt =3D 0;
+=20
+ 			ath_tx_edma_tasklet(sc);
+ 		} else {
+diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmi=
+t.c
+index 4ae63f4ddfb2..50e5ddb12fb3 100644
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -821,10 +821,10 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *sk=
+b, const void *_rxhdr)
+ 		 * channel number in b43. */
+ 		if (chanstat & B43_RX_CHAN_5GHZ) {
+ 			status.band =3D IEEE80211_BAND_5GHZ;
+-			status.freq =3D b43_freq_to_channel_5ghz(chanid);
++			status.freq =3D b43_channel_to_freq_5ghz(chanid);
+ 		} else {
+ 			status.band =3D IEEE80211_BAND_2GHZ;
+-			status.freq =3D b43_freq_to_channel_2ghz(chanid);
++			status.freq =3D b43_channel_to_freq_2ghz(chanid);
+ 		}
+ 		break;
+ 	default:
+diff --git a/drivers/net/wireless/iwlwifi/pcie/tx.c b/drivers/net/wireless/=
+iwlwifi/pcie/tx.c
+index 3b14fa8abfc7..3d549008b3e2 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/tx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
+@@ -289,13 +289,15 @@ static void iwl_pcie_txq_inval_byte_cnt_tbl(struct iw=
+l_trans *trans,
+  */
+ void iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_txq *txq)
+ {
++	struct iwl_trans_pcie *trans_pcie =3D IWL_TRANS_GET_PCIE_TRANS(trans);
+ 	u32 reg =3D 0;
+ 	int txq_id =3D txq->q.id;
+=20
+ 	if (txq->need_update =3D=3D 0)
+ 		return;
+=20
+-	if (trans->cfg->base_params->shadow_reg_enable) {
++	if (trans->cfg->base_params->shadow_reg_enable ||
++	    txq_id =3D=3D trans_pcie->cmd_queue) {
+ 		/* shadow register enabled */
+ 		iwl_write32(trans, HBUS_TARG_WRPTR,
+ 			    txq->q.write_ptr | (txq_id << 8));
+diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless=
+/mwifiex/cfg80211.c
+index f37b403e83d0..8bfc07cd330e 100644
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -2449,7 +2449,7 @@ static int mwifiex_cfg80211_suspend(struct wiphy *wip=
+hy,
+ 		       ETH_ALEN);
+ 		mef_entry->filter[filt_num].byte_seq[MWIFIEX_MEF_MAX_BYTESEQ] =3D
+ 								ETH_ALEN;
+-		mef_entry->filter[filt_num].offset =3D 14;
++		mef_entry->filter[filt_num].offset =3D 28;
+ 		mef_entry->filter[filt_num].filt_type =3D TYPE_EQ;
+ 		if (filt_num)
+ 			mef_entry->filter[filt_num].filt_action =3D TYPE_OR;
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless=
+/rt2x00/rt2800usb.c
+index 5c5c4906c6b6..caddc1b427a9 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -989,6 +989,7 @@ static struct usb_device_id rt2800usb_device_table[] =
+=3D {
+ 	{ USB_DEVICE(0x07d1, 0x3c15) },
+ 	{ USB_DEVICE(0x07d1, 0x3c16) },
+ 	{ USB_DEVICE(0x07d1, 0x3c17) },
++	{ USB_DEVICE(0x2001, 0x3317) },
+ 	{ USB_DEVICE(0x2001, 0x3c1b) },
+ 	/* Draytek */
+ 	{ USB_DEVICE(0x07fa, 0x7712) },
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
 
-Ira Weiny (1):
-      IB/qib: Fix QP check when looping back to/from QP1
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature
 
-Julia Lawall (1):
-      IB/mlx4: Fix error return code
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Matan Barak (9):
-      IB/core: Add flow steering support for IPoIB UD traffic
-      IB/core: Add support for IB L2 device-managed steering
-      mlx4_core: Add support for steerable IB UD QPs
-      IB/mlx4: Enable device-managed steering support for IB ports too
-      IB/mlx4: Add mechanism to support flow steering over IB links
-      IB/mlx4: Add support for steerable IB UD QPs
-      IB/core: Ethernet L2 attributes in verbs/cm structures
-      IB/core: Make ib_addr a core IB module
-      IB/mlx4: Add dependency INET
+iQIcBAEBAgAGBQJS4sF1AAoJEJctW/TcYTgGSGMP/RKEjGIxZtG4Qaj4TyccHF9o
+K+mHv1UbEwdkWXPvNd1a10NmnNFYv41Bwq8fHkakM299TpYl0ms8yB1m3rjy1JLJ
+I5+VrZTTJnynPMNApyT6djr6KPiRmcIK8IkQF7bGWQVL82MuZ7BJCbDgVoIFb0Jt
+Y0ACkmScPJ4JNYN+GMTOnNyFtnAfckHTwVrAmg8xflTN0/recBUYhB376DvNISgC
+tEsrL5UynMC+RK6rQGsBPJu9f/LVKNkV91CHryYl+WtKZZnqwWAyXO4Tlpa7F1i4
+R0SlQS0AL9ki9atmnzMN/Kigo5dmzpCmITdibc/x9j3nhvNKRF1Ilyg0T/MWlU+z
+DVBYiiZRXNubueqTUfcW2NlV1175VAWzuh+lEud9fzuyMI9QESwCAWJW6SQUjBQq
+tSviZ5sZB70Zdqq52hfNSFsYqp9hzQHXV8nxOF4XvVav7iokUyqxNawMRLyrif/w
+iYhk0htoKygpphsLaSvl4bueQ0Gy40OwV7hHWTyeTxoe89Tdkb4eYGI0cI3VghY/
+WUYATX19y0e+0ZyYJCw8+1/yGK8IMm21uanHVYqYrqlQsMtTa6PkkNc+C3gR1kx8
+VjSYDsUriXz5FCYgpGT4wzB93z+Nucs9SvDAWPpeNQ8/l7gyBbqYTWOfeFmDTwDT
+QCqg+ewSYz9WKwGEH7Hu
+=qKuS
+-----END PGP SIGNATURE-----
 
-Michal Schmidt (1):
-      IPoIB: Report operstate consistently when brought up without a link
-
-Moni Shoua (5):
-      IB/cma: IBoE (RoCE) IP-based GID addressing
-      IB/mlx4: Use IBoE (RoCE) IP based GIDs in the port GID table
-      IB/mlx4: Handle Ethernet L2 parameters for IP based GID addressing
-      RDMA/ocrdma: Handle Ethernet L2 parameters for IP based GID addressing
-      RDMA/ocrdma: Populate GID table with IP based gids
-
-Or Gerlitz (2):
-      IB/core: Resolve Ethernet L2 addresses when modifying QP
-      IB/core: Fix unused variable warning
-
-Paul Bolle (1):
-      RDMA/cxgb4: Fix gcc warning on 32-bit arch
-
-Roland Dreier (6):
-      IB/usnic: Fix typo "Ignorning" -> "Ignoring"
-      RDMA/ocrdma: Move ocrdma_inetaddr_event outside of "#if CONFIG_IPV6"
-      RDMA/ocrdma: Add dependency on INET
-      IB/mlx4: Use IS_ENABLED(CONFIG_IPV6)
-      Merge branches 'cma', 'cxgb4', 'flowsteer', 'ipoib', 'misc', 'mlx4', 'mlx5', 'ocrdma', 'qib', 'srp' and 'usnic' into for-next
-      Merge branch 'ip-roce' into for-next
-
-Somnath Kotur (1):
-      RDMA/cma: Handle global/non-linklocal IPv6 addresses in cma_check_linklocal()
-
-Svetlana Mavrina (1):
-      RDMA/amso1100: Add check if cache memory was allocated before freeing it
-
-Upinder Malhi (22):
-      IB/usnic: Add Cisco VIC low-level hardware driver
-      IB/usnic: Change WARN_ON to lockdep_assert_held
-      IB/usnic: Add struct usnic_transport_spec
-      IB/usnic: Push all forwarding state to usnic_fwd.[hc]
-      IB/usnic: Port over main.c and verbs.c to the usnic_fwd.h
-      IB/usnic: Port over usnic_ib_qp_grp.[hc] to new usnic_fwd.h
-      IB/usnic: Port over sysfs to new usnic_fwd.h
-      IB/usnic: Update ABI and Version file for UDP support
-      IB/usnic: Add UDP support to usnic_fwd.[hc]
-      IB:usnic: Add UDP support to usnic_transport.[hc]
-      IB/usnic: Add UDP support in u*verbs.c, u*main.c and u*util.h
-      IB/usnic: Add UDP support in usnic_ib_qp_grp.[hc]
-      IB/core: Add RDMA_TRANSPORT_USNIC_UDP
-      IB/usnic: Remove superflous parentheses
-      IB/usnic: Use for_each_sg instead of a for-loop
-      IB/usnic: Expose flows via debugfs
-      IB/usnic: Append documentation to usnic_transport.h and cleanup
-      IB/usnic: Fix endianness-related warnings
-      IB/usnic: Add dependency on CONFIG_INET
-      IB/core: Add support for RDMA_NODE_USNIC_UDP
-      IB/usnic: Advertise usNIC devices as RDMA_NODE_USNIC_UDP
-      IB/usnic: Set userspace/kernel ABI ver to 4
-
-Wei Yongjun (3):
-      IB/usnic: Remove unused variable in usnic_debugfs_exit()
-      IB/cm: Fix missing unlock on error in cm_init_qp_rtr_attr()
-      IB/usnic: Remove unused includes of <linux/version.h>
-
- Documentation/scsi/scsi_transport_srp/Makefile     |   7 +
- .../scsi_transport_srp/rport_state_diagram.dot     |  26 +
- MAINTAINERS                                        |   7 +-
- drivers/infiniband/Kconfig                         |   6 +-
- drivers/infiniband/Makefile                        |   1 +
- drivers/infiniband/core/Makefile                   |   5 +-
- drivers/infiniband/core/addr.c                     |  97 ++-
- drivers/infiniband/core/cm.c                       |  52 ++
- drivers/infiniband/core/cma.c                      |  81 ++-
- drivers/infiniband/core/core_priv.h                |   2 +
- drivers/infiniband/core/iwcm.c                     |   3 +-
- drivers/infiniband/core/sa_query.c                 |  12 +-
- drivers/infiniband/core/sysfs.c                    |   1 +
- drivers/infiniband/core/ucma.c                     |  18 +-
- drivers/infiniband/core/uverbs_cmd.c               |   4 +
- drivers/infiniband/core/verbs.c                    | 101 ++-
- drivers/infiniband/hw/amso1100/c2_intr.c           |   3 +-
- drivers/infiniband/hw/cxgb4/mem.c                  |   2 +-
- drivers/infiniband/hw/ehca/ehca_qp.c               |   2 +-
- drivers/infiniband/hw/ipath/ipath_qp.c             |   2 +-
- drivers/infiniband/hw/mlx4/Kconfig                 |   2 +-
- drivers/infiniband/hw/mlx4/ah.c                    |  40 +-
- drivers/infiniband/hw/mlx4/cq.c                    |   9 +
- drivers/infiniband/hw/mlx4/main.c                  | 747 +++++++++++++++-----
- drivers/infiniband/hw/mlx4/mlx4_ib.h               |  18 +-
- drivers/infiniband/hw/mlx4/qp.c                    | 157 ++++-
- drivers/infiniband/hw/mlx4/sysfs.c                 |   8 +-
- drivers/infiniband/hw/mlx5/cq.c                    | 310 ++++++++-
- drivers/infiniband/hw/mlx5/main.c                  |  13 +-
- drivers/infiniband/hw/mlx5/mlx5_ib.h               |   4 +-
- drivers/infiniband/hw/mlx5/mr.c                    |   1 -
- drivers/infiniband/hw/mlx5/qp.c                    | 133 ++--
- drivers/infiniband/hw/mlx5/user.h                  |   3 +
- drivers/infiniband/hw/mthca/mthca_qp.c             |   3 +-
- drivers/infiniband/hw/nes/nes_cm.c                 |   3 +-
- drivers/infiniband/hw/ocrdma/Kconfig               |   2 +-
- drivers/infiniband/hw/ocrdma/ocrdma.h              |  12 +
- drivers/infiniband/hw/ocrdma/ocrdma_ah.c           |   6 +-
- drivers/infiniband/hw/ocrdma/ocrdma_hw.c           |  21 +-
- drivers/infiniband/hw/ocrdma/ocrdma_hw.h           |   1 -
- drivers/infiniband/hw/ocrdma/ocrdma_main.c         | 138 ++--
- drivers/infiniband/hw/ocrdma/ocrdma_sli.h          |   4 +-
- drivers/infiniband/hw/ocrdma/ocrdma_verbs.c        |   3 +-
- drivers/infiniband/hw/qib/qib_qp.c                 |   2 +-
- drivers/infiniband/hw/qib/qib_ud.c                 |   9 +-
- drivers/infiniband/hw/usnic/Kconfig                |  10 +
- drivers/infiniband/hw/usnic/Makefile               |  15 +
- drivers/infiniband/hw/usnic/usnic.h                |  29 +
- drivers/infiniband/hw/usnic/usnic_abi.h            |  73 ++
- drivers/infiniband/hw/usnic/usnic_common_pkt_hdr.h |  27 +
- drivers/infiniband/hw/usnic/usnic_common_util.h    |  68 ++
- drivers/infiniband/hw/usnic/usnic_debugfs.c        | 154 +++++
- drivers/infiniband/hw/usnic/usnic_debugfs.h        |  29 +
- drivers/infiniband/hw/usnic/usnic_fwd.c            | 350 ++++++++++
- drivers/infiniband/hw/usnic/usnic_fwd.h            | 113 +++
- drivers/infiniband/hw/usnic/usnic_ib.h             | 118 ++++
- drivers/infiniband/hw/usnic/usnic_ib_main.c        | 682 ++++++++++++++++++
- drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c      | 754 ++++++++++++++++++++
- drivers/infiniband/hw/usnic/usnic_ib_qp_grp.h      | 117 ++++
- drivers/infiniband/hw/usnic/usnic_ib_sysfs.c       | 341 +++++++++
- drivers/infiniband/hw/usnic/usnic_ib_sysfs.h       |  29 +
- drivers/infiniband/hw/usnic/usnic_ib_verbs.c       | 765 +++++++++++++++++++++
- drivers/infiniband/hw/usnic/usnic_ib_verbs.h       |  72 ++
- drivers/infiniband/hw/usnic/usnic_log.h            |  58 ++
- drivers/infiniband/hw/usnic/usnic_transport.c      | 202 ++++++
- drivers/infiniband/hw/usnic/usnic_transport.h      |  51 ++
- drivers/infiniband/hw/usnic/usnic_uiom.c           | 604 ++++++++++++++++
- drivers/infiniband/hw/usnic/usnic_uiom.h           |  80 +++
- .../infiniband/hw/usnic/usnic_uiom_interval_tree.c | 236 +++++++
- .../infiniband/hw/usnic/usnic_uiom_interval_tree.h |  73 ++
- drivers/infiniband/hw/usnic/usnic_vnic.c           | 467 +++++++++++++
- drivers/infiniband/hw/usnic/usnic_vnic.h           | 103 +++
- drivers/infiniband/ulp/ipoib/ipoib_main.c          |   4 +-
- drivers/infiniband/ulp/ipoib/ipoib_verbs.c         |   3 +
- drivers/infiniband/ulp/srp/ib_srp.c                |   1 +
- drivers/net/ethernet/mellanox/mlx4/cmd.c           |   9 +
- drivers/net/ethernet/mellanox/mlx4/fw.c            |  10 +
- drivers/net/ethernet/mellanox/mlx4/mcg.c           |  17 +
- drivers/net/ethernet/mellanox/mlx4/mlx4.h          |   5 +
- drivers/net/ethernet/mellanox/mlx4/port.c          |  20 +
- .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  10 +
- drivers/net/ethernet/mellanox/mlx5/core/cq.c       |  17 +-
- drivers/net/ethernet/mellanox/mlx5/core/debugfs.c  |  39 +-
- drivers/net/ethernet/mellanox/mlx5/core/main.c     |  10 +-
- .../net/ethernet/mellanox/mlx5/core/pagealloc.c    |  13 +-
- drivers/net/ethernet/mellanox/mlx5/core/port.c     |   2 +-
- drivers/net/ethernet/mellanox/mlx5/core/qp.c       |   5 +-
- drivers/scsi/scsi_transport_srp.c                  |  95 ++-
- include/linux/mlx4/cmd.h                           |   1 +
- include/linux/mlx4/cq.h                            |  15 +-
- include/linux/mlx4/device.h                        |   7 +-
- include/linux/mlx5/cq.h                            |  18 +-
- include/linux/mlx5/device.h                        |  31 +-
- include/linux/mlx5/qp.h                            |  45 ++
- include/rdma/ib_addr.h                             |  69 +-
- include/rdma/ib_cm.h                               |   1 +
- include/rdma/ib_pack.h                             |   1 +
- include/rdma/ib_sa.h                               |   3 +
- include/rdma/ib_verbs.h                            |  42 +-
- include/scsi/scsi_transport_srp.h                  |  36 +-
- 100 files changed, 7663 insertions(+), 567 deletions(-)
- create mode 100644 Documentation/scsi/scsi_transport_srp/Makefile
- create mode 100644 Documentation/scsi/scsi_transport_srp/rport_state_diagram.dot
- create mode 100644 drivers/infiniband/hw/usnic/Kconfig
- create mode 100644 drivers/infiniband/hw/usnic/Makefile
- create mode 100644 drivers/infiniband/hw/usnic/usnic.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_abi.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_common_pkt_hdr.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_common_util.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_debugfs.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_debugfs.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_fwd.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_fwd.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_main.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_qp_grp.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_sysfs.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_sysfs.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_verbs.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_ib_verbs.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_log.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_transport.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_transport.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_uiom.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_uiom.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_uiom_interval_tree.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_uiom_interval_tree.h
- create mode 100644 drivers/infiniband/hw/usnic/usnic_vnic.c
- create mode 100644 drivers/infiniband/hw/usnic/usnic_vnic.h
+--7AUc2qLy4jB3hD7Z--
