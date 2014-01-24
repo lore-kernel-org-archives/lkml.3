@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaAXNq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 08:46:57 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:46721 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaAXNqz (ORCPT
+	id S1752982AbaAXNrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 08:47:12 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:53519 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaAXNrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 08:46:55 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-87-52e26ecef2a1
-Message-id: <52E26EBE.8080905@samsung.com>
-Date: Fri, 24 Jan 2014 14:46:38 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Mj Embd <mj.embd@gmail.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: Arndale Timer Interrupt Question
-References: <CAPUj1OM=Zn2nd98aXRCRUJrLknkS0o44V1BfuJhz5i19w+M5Ow@mail.gmail.com>
- <1437466.9hkS4zH5MN@amdc1032> <52D02693.1040003@samsung.com>
- <CAPUj1OOvphUhLRO6jDRD4RRUFbYO_my=BZZ1gMJ6d_G9WUN4_w@mail.gmail.com>
-In-reply-to: <CAPUj1OOvphUhLRO6jDRD4RRUFbYO_my=BZZ1gMJ6d_G9WUN4_w@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t/xy7rn8h4FGbzv4LPYOGM9q8X7Q8+Y
-	LS7vmsNmMeP8PiaLAz2H2BxYPXbOusvucfvfY2aPvi2rGD0+b5ILYInisklJzcksSy3St0vg
-	ylgz9wVrwWPOivPbDjE3ML5h72Lk5JAQMJH4vm0tI4QtJnHh3nq2LkYuDiGBpYwSZ6a+ZYZw
-	PjNKvHs7B6yDV0BLYun6yWAdLAKqEo9232UGsdkE1CQ+NzxiA7FFBSIk/s5bzwhRLyjxY/I9
-	FhBbREBe4tKXRkaQocwCFxgldq9tA2sWFtCVeP7lGtS2G4wS937/BNvGKRAs8fXqBbAiZgFr
-	iZWTtjFC2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8ilE0tTS5oDgpPddQrzgxt7g0L10vOT93
-	EyMkmL/sYFx8zOoQowAHoxIP74zAh0FCrIllxZW5hxglOJiVRHi3BjwKEuJNSaysSi3Kjy8q
-	zUktPsTIxMEp1cCYcKX6YMaat//CZ6qeWbw5/Agn88eEKW8u19emvZ1Uvrzsl0DTymhD2zjX
-	vC+X7I1KmBf9njRbLZdF/NHmJqcSwzvHK5xEr2eZzjZ92nmpJOTyDO6ZgWJ6pzawT7dgfs5g
-	fMhfYtbyRztPTmX8+XP96gv5T45d9D5QmDYpaOZvS/4nobMf8NhtVWIpzkg01GIuKk4EAPmx
-	0RlEAgAA
+	Fri, 24 Jan 2014 08:47:08 -0500
+MIME-Version: 1.0
+Date: Fri, 24 Jan 2014 08:47:07 -0500
+X-Google-Sender-Auth: oOHg_f-rE7hfEupImSE2rbngSNo
+Message-ID: <CA+5PVA7P=3b6oGG4pwR-q-Uy+V2hu5N-f5-fO4NdsB8ytvLz7w@mail.gmail.com>
+Subject: Odd 'unable to find transceiver' messages from USB with
+ v3.13-3260-g03d11a0 and later
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
+We've had a report [1] of the USB layer throwing out 'unable to find
+transceiver' messages during boot with the 3.14 merge window kernels.
+I've seen this on my personal machine as well and included the dmesg
+section below.  This does not happen with the 3.13 kernel.
 
-On 23.01.2014 07:10, Mj Embd wrote:
-> On 1/10/14, Tomasz Figa <t.figa@samsung.com> wrote:
->> Hi,
->>
->> On 09.01.2014 13:52, Bartlomiej Zolnierkiewicz wrote:
->>>
->>> added linux-samsung-soc to cc:,
->>> it is a better suited list for this question
->>>
->>> On Thursday, January 09, 2014 10:30:56 AM Mj Embd wrote:
->>>> I am a bit confused on the interrupt number for CNTVIRQ..CNTHPIRQ. Can
->>>> you please help here.
->>>>
->>>> As per the exynos5 public manual
->>>> What is the difference between  CPU_nCNTHPIRQ[0] and CNTHPIRQ.
->>
->> I'm not sure if this is really what I think it is, but looking at the
->> manual, CPU_nCNTHPIRQ[0] and [1] SPI ports and CNTHPIRQ PPI port seem to
->> be the same signals, with the difference that the first two are shared
->> interrupts connected through the combiner, while the last one is a
->> per-processor interrupt, directly connected to GIC PPI port, allowing
->> each CPU to get its own CNTHPIRQ signal ([0] for CPU 0 and [1] for CPU 1).
->
-> So while registering the IRQ which one has to be used Core0:26/33 Core1:26/54 ?
+There are only a handful of files in git that have that error, but I
+haven't seen anything that immediately strikes me as causing this.
+>From the dmesg output it looks like it is spit out right before a host
+controller is registered?  USB seems to be still working OK in my
+minimal testing, so the error message is confusing.
 
-Well, it depends on your driver. If it supports per-CPU interrupts then 
-you use CNTHPIRQ PPI port, othwerise nCNTHPIRQ[0] and [1] SPI ports.
+Thoughts?
 
-Best regards,
-Tomasz
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=1057529
+
+josh
+
+[    1.683368] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    1.683386] ehci-pci: EHCI PCI platform driver
+[    1.684765] unable to find transceiver
+[    1.684993] ehci-pci 0000:00:1a.0: EHCI Host Controller
+[    1.685772] ehci-pci 0000:00:1a.0: new USB bus registered, assigned
+bus number 1
+[    1.685847] ehci-pci 0000:00:1a.0: debug port 2
+[    1.689837] ehci-pci 0000:00:1a.0: cache line size of 64 is not supported
+[    1.689976] ehci-pci 0000:00:1a.0: irq 16, io mem 0xfe707000
+[    1.695158] ehci-pci 0000:00:1a.0: USB 2.0 started, EHCI 1.00
+[    1.695721] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[    1.695722] usb usb1: New USB device strings: Mfr=3, Product=2,
+SerialNumber=1
+[    1.695724] usb usb1: Product: EHCI Host Controller
+[    1.695725] usb usb1: Manufacturer: Linux
+3.14.0-0.rc0.git7.1.fc21.x86_64 ehci_hcd
+[    1.695726] usb usb1: SerialNumber: 0000:00:1a.0
+[    1.697752] hub 1-0:1.0: USB hub found
+[    1.697872] hub 1-0:1.0: 2 ports detected
+[    1.701620] unable to find transceiver
+[    1.701847] ehci-pci 0000:00:1d.0: EHCI Host Controller
+[    1.702424] ehci-pci 0000:00:1d.0: new USB bus registered, assigned
+bus number 2
+[    1.702458] ehci-pci 0000:00:1d.0: debug port 2
+[    1.706417] ehci-pci 0000:00:1d.0: cache line size of 64 is not supported
+[    1.706538] ehci-pci 0000:00:1d.0: irq 23, io mem 0xfe706000
+[    1.712160] ehci-pci 0000:00:1d.0: USB 2.0 started, EHCI 1.00
