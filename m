@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaAXMdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 07:33:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50032 "EHLO mga02.intel.com"
+	id S1752659AbaAXMfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 07:35:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38144 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752466AbaAXMdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 07:33:22 -0500
+	id S1752472AbaAXMf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 07:35:29 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,712,1384329600"; 
-   d="scan'208";a="464101430"
-Date: Fri, 24 Jan 2014 20:33:20 +0800
+   d="scan'208";a="464102097"
+Date: Fri, 24 Jan 2014 20:35:26 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [rcu] c0f4dfd4f9: -53% perf-stat.cpu-migrations
-Message-ID: <20140124123320.GC27801@localhost>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [mac80211] BUG: unable to handle kernel paging request at
+ 6b6b6b8f
+Message-ID: <20140124123526.GA28678@localhost>
+References: <20140124120840.GA25638@localhost>
+ <1390565870.4257.40.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1390565870.4257.40.camel@jlt4.sipsolutions.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Fri, Jan 24, 2014 at 01:17:50PM +0100, Johannes Berg wrote:
+> On Fri, 2014-01-24 at 20:08 +0800, Fengguang Wu wrote:
+> > Hi Johannes,
+> > 
+> > The BUG does not show up in linux-next 20140124, is it fixed now?
+> 
+> It isn't in linux-next yet I believe (mac80211-next isn't in there), but
+> yeah, I fixed it already, ran into it myself yesterday. Hope it didn't
+> cause you too much trouble.
 
-Just FYI, we noticed -53% perf-stat.cpu-migrations in dd write tests
-on btrfs, which looks good. First good commit is
+That's great, you are quick hand! It's not problem at all for me. :)
 
-commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
-Author:     Paul E. McKenney <paul.mckenney@linaro.org>
-AuthorDate: Fri Dec 28 11:30:36 2012 -0800
-Commit:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-CommitDate: Tue Mar 26 08:04:51 2013 -0700
+Thanks,
+Fengguang
 
-    rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
-    
-    Because RCU callbacks are now associated with the number of the grace
-    period that they must wait for, CPUs can now take advance callbacks
-    corresponding to grace periods that ended while a given CPU was in
-    dyntick-idle mode.  This eliminates the need to try forcing the RCU
-    state machine while entering idle, thus reducing the CPU intensiveness
-    of RCU_FAST_NO_HZ, which should increase its energy efficiency.
-    
-    Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
- Documentation/kernel-parameters.txt |  28 ++-
- include/linux/rcupdate.h            |   1 +
- init/Kconfig                        |  17 +-
- kernel/rcutree.c                    |  28 +--
- kernel/rcutree.h                    |  12 +-
- kernel/rcutree_plugin.h             | 374 ++++++++++--------------------------
- kernel/rcutree_trace.c              |   2 -
- 7 files changed, 149 insertions(+), 313 deletions(-)
-
-b11cc5760a9c48c  c0f4dfd4f90f1667d234d21f1  
----------------  -------------------------  
-     86878 ~138%     -90.3%       8397 ~152%   cpuidle.POLL.time
-       154 ~16%     -87.3%         19 ~55%   cpuidle.POLL.usage
-  12177976 ~ 4%     -85.6%    1748244 ~20%   cpuidle.C1-NHM.time
-    381439 ~ 3%     -68.4%     120538 ~ 2%   softirqs.RCU
-      0.53 ~87%    +161.8%       1.40 ~16%   perf-profile.cpu-cycles.copy_user_generic_string.__btrfs_buffered_write.btrfs_file_aio_write.do_sync_write.vfs_write
-   5227241 ~ 4%     -58.3%    2180928 ~ 7%   cpuidle.C1E-NHM.time
-      0.67 ~88%     +88.6%       1.26 ~21%   perf-profile.cpu-cycles.calc_csum_metadata_size.btrfs_delalloc_release_metadata.btrfs_clear_bit_hook.clear_state_bit.clear_extent_bit
-    231531 ~ 2%     -48.3%     119653 ~ 2%   interrupts.LOC
-     91019 ~ 2%     -40.2%      54404 ~ 2%   cpuidle.C3-NHM.usage
- 1.991e+08 ~ 3%     -36.7%   1.26e+08 ~ 7%   cpuidle.C3-NHM.time
-      7.07 ~ 4%     -32.7%       4.76 ~ 8%   turbostat.%c3
-     23380 ~33%     +41.2%      33024 ~ 6%   proc-vmstat.kswapd_low_wmark_hit_quickly
-     62805 ~ 3%     -28.4%      44960 ~ 2%   softirqs.SCHED
-     64678 ~ 1%     -30.1%      45195 ~ 1%   softirqs.TIMER
-     55051 ~ 3%     -22.2%      42823 ~ 2%   interrupts.0:IO-APIC-edge.timer
-       920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.active_objs
-       920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.num_objs
-    361987 ~ 2%      +9.9%     397730 ~ 0%   cpuidle.C6-NHM.usage
-      5.30 ~ 1%      -9.7%       4.78 ~ 1%   turbostat.%c1
-    178105 ~ 3%     -53.5%      82837 ~ 1%   perf-stat.cpu-migrations
-      5763 ~ 8%     -44.7%       3186 ~22%   vmstat.system.cs
-   3566268 ~ 8%     -44.8%    1968744 ~21%   perf-stat.context-switches
-       658 ~ 2%     -30.4%        458 ~ 0%   vmstat.system.in
-  53376814 ~12%     -24.2%   40482438 ~22%   perf-stat.node-load-misses
- 2.996e+10 ~ 3%     -10.8%  2.672e+10 ~ 3%   perf-stat.L1-icache-load-misses
- 1.998e+09 ~ 4%     -11.6%  1.766e+09 ~ 2%   perf-stat.branch-misses
- 1.005e+12 ~ 5%     -11.9%  8.852e+11 ~ 6%   perf-stat.stalled-cycles-frontend
- 6.344e+08 ~ 2%      -6.8%  5.915e+08 ~ 2%   perf-stat.LLC-store-misses
- 2.892e+10 ~ 2%      +5.4%  3.047e+10 ~ 3%   perf-stat.bus-cycles
-
-
-                              perf-stat.cpu-migrations
-
-   90000 ++*----*----------*-*---*------*-----------------------------------+
-         *   **   *.*.**.*     *  *.*.*   **.*.*.*.*   .*.                  |
-   80000 ++                                         *.*   *                 |
-         |                                                                  |
-   70000 ++                                                                 |
-         |                                                                  |
-   60000 ++                                                                 |
-         |                                                                  |
-   50000 ++                                                                 |
-         |                                                                  |
-   40000 ++                                                                 |
-         | O O                                                              |
-   30000 O+     O O O OO O O O O OO O O O OO O O O OO O O O O OO O O O OO O O
-         |    O                                                             |
-   20000 ++-----------------------------------------------------------------+
-
+> The problem was that I misplaced some code
+> because I didn't notice that the if () condition (see below) had no
+> braces.
+> 
+> I replaced that commit with
+> commit 091a69f86862454c282d4a64c9d66074e60514ea
+> Author: Johannes Berg <johannes.berg@intel.com>
+> Date:   Wed Jan 22 10:36:59 2014 +0100
+> 
+>     mac80211: remove module handling from rate control ops
+> 
+> which now contains this change
+> 
+>         list_for_each_entry(alg, &rate_ctrl_algs, list) {
+> -               if (!strcmp(alg->ops->name, name))
+> -                       if (try_module_get(alg->ops->module)) {
+> -                               ops = alg->ops;
+> -                               break;
+> -                       }
+> +               if (!strcmp(alg->ops->name, name)) {
+> +                       ops = alg->ops;
+> +                       break;
+> +               }
+>         }
+> 
+> (note the new set of braces added around the content of the strcmp if)
+> 
+> Sorry!
+> 
+> johannes
+> 
