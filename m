@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaAXVeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 16:34:10 -0500
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:44011 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753217AbaAXVds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 16:33:48 -0500
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>
-Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: [RFC PATCH V3 4/4] MAINTAINERS: entry for APM X-Gene PCIe host driver
-Date: Fri, 24 Jan 2014 13:32:48 -0800
-Message-Id: <1390599168-13150-5-git-send-email-tinamdar@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
-References: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
+	id S1753093AbaAXVjC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 16:39:02 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21718 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290AbaAXVjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 16:39:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,715,1384329600"; 
+   d="scan'208";a="464360913"
+From: Andi Kleen <andi@firstfloor.org>
+To: T Makphaibulchoke <tmac@hp.com>
+Cc: viro@zeniv.linux.org.uk, tytso@mit.edu, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, aswin@hp.com
+Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
+References: <1377186876-57291-1-git-send-email-tmac@hp.com>
+	<1390588288-66930-1-git-send-email-tmac@hp.com>
+Date: Fri, 24 Jan 2014 13:38:58 -0800
+In-Reply-To: <1390588288-66930-1-git-send-email-tmac@hp.com>
+	(T. Makphaibulchoke's message of "Fri, 24 Jan 2014 11:31:25 -0700")
+Message-ID: <87fvodcb65.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add entry for AppliedMicro X-Gene PCIe host driver.
+T Makphaibulchoke <tmac@hp.com> writes:
 
-Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
----
- MAINTAINERS |    7 +++++++
- 1 file changed, 7 insertions(+)
+> The patch consists of three parts.
+>
+> The first part changes the implementation of both the block and hash chains of
+> an mb_cache from list_head to hlist_bl_head and also introduces new members,
+> including a spinlock to mb_cache_entry, as required by the second part.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5c21402..721fec7 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6539,6 +6539,13 @@ L:	linux-pci@vger.kernel.org
- S:	Maintained
- F:	drivers/pci/host/*designware*
- 
-+PCI DRIVER FOR APPLIEDMICRO XGENE
-+M:	Tanmay Inamdar <tinamdar@apm.com>
-+L:	linux-pci@vger.kernel.org
-+L:	linux-arm-kernel@lists.infradead.org
-+S:	Maintained
-+F:	drivers/pci/host/pci-xgene.c
-+
- PCMCIA SUBSYSTEM
- P:	Linux PCMCIA Team
- L:	linux-pcmcia@lists.infradead.org
+spinlock per entry is usually overkill for larger hash tables.
+
+Can you use a second smaller lock table that just has locks and is 
+indexed by a subset of the hash key. Most likely a very small 
+table is good enough.
+
+Also I would be good to have some data on the additional memory consumption.
+
+-Andi
+
 -- 
-1.7.9.5
-
+ak@linux.intel.com -- Speaking for myself only
