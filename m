@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaAXRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:08:56 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:46596 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaAXRIy (ORCPT
+	id S1752145AbaAXRJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:09:51 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:15060 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaAXRJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:08:54 -0500
-Date: Fri, 24 Jan 2014 11:08:49 -0600 (CST)
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-cc: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, alan@linux.intel.com,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH] staging/usbip: Add missing speeds to userspace speed_strings
- array
-In-Reply-To: <1390420383-3933-1-git-send-email-shuah.kh@samsung.com>
-Message-ID: <alpine.DEB.2.10.1401241106380.28215@mint32-virtualbox>
-References: <1390420383-3933-1-git-send-email-shuah.kh@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 24 Jan 2014 12:09:48 -0500
+Date: Fri, 24 Jan 2014 18:09:39 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH 51/73] drivers/i2c: delete non-required instances of
+ include <linux/init.h>
+Message-ID: <20140124180939.167e31a4@endymion.delvare>
+In-Reply-To: <1390339396-3479-52-git-send-email-paul.gortmaker@windriver.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+	<1390339396-3479-52-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Paul,
 
-
-On Wed, 22 Jan 2014, Shuah Khan wrote:
-
-> Add speed strings for usb wireless and 3.0 to speed_strings array.
+On Tue, 21 Jan 2014 16:22:54 -0500, Paul Gortmaker wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
 > 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> Cc: Wolfram Sang <wsa@the-dreams.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: linux-i2c@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 > ---
->  drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> index 66f03cc..8cb4fcc 100644
-> --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> @@ -23,6 +23,8 @@ static const struct speed_string speed_strings[] = {
->  	{ USB_SPEED_LOW,  "1.5", "Low Speed(1.5Mbps)"  },
->  	{ USB_SPEED_FULL, "12",  "Full Speed(12Mbps)" },
->  	{ USB_SPEED_HIGH, "480", "High Speed(480Mbps)" },
-> +	{ USB_SPEED_WIRELESS, "2.5", "Wireless"},
-> +	{ USB_SPEED_SUPER, "5000", "Super Speed(5000Mbps)" },
->  	{ 0, NULL, NULL }
->  };
->  
-> -- 
+>  drivers/i2c/algos/i2c-algo-bit.c           | 1 -
+>  drivers/i2c/algos/i2c-algo-pca.c           | 1 -
+>  drivers/i2c/algos/i2c-algo-pcf.c           | 1 -
+>  drivers/i2c/busses/i2c-ali1535.c           | 1 -
+>  drivers/i2c/busses/i2c-ali1563.c           | 1 -
+>  drivers/i2c/busses/i2c-ali15x3.c           | 1 -
+>  drivers/i2c/busses/i2c-amd756.c            | 1 -
+>  drivers/i2c/busses/i2c-amd8111.c           | 1 -
+>  drivers/i2c/busses/i2c-au1550.c            | 1 -
+>  drivers/i2c/busses/i2c-cbus-gpio.c         | 1 -
+>  drivers/i2c/busses/i2c-cpm.c               | 1 -
+>  drivers/i2c/busses/i2c-eg20t.c             | 1 -
+>  drivers/i2c/busses/i2c-exynos5.c           | 1 -
+>  drivers/i2c/busses/i2c-highlander.c        | 1 -
+>  drivers/i2c/busses/i2c-hydra.c             | 1 -
+>  drivers/i2c/busses/i2c-ibm_iic.c           | 1 -
+>  drivers/i2c/busses/i2c-iop3xx.c            | 1 -
+>  drivers/i2c/busses/i2c-isch.c              | 1 -
+>  drivers/i2c/busses/i2c-ismt.c              | 1 -
+>  drivers/i2c/busses/i2c-mpc.c               | 1 -
+>  drivers/i2c/busses/i2c-nforce2.c           | 1 -
+>  drivers/i2c/busses/i2c-ocores.c            | 1 -
+>  drivers/i2c/busses/i2c-octeon.c            | 1 -
+>  drivers/i2c/busses/i2c-pca-platform.c      | 1 -
+>  drivers/i2c/busses/i2c-piix4.c             | 1 -
+>  drivers/i2c/busses/i2c-pmcmsp.c            | 1 -
+>  drivers/i2c/busses/i2c-powermac.c          | 1 -
+>  drivers/i2c/busses/i2c-puv3.c              | 1 -
+>  drivers/i2c/busses/i2c-rcar.c              | 1 -
+>  drivers/i2c/busses/i2c-scmi.c              | 1 -
+>  drivers/i2c/busses/i2c-sh7760.c            | 1 -
+>  drivers/i2c/busses/i2c-simtec.c            | 1 -
+>  drivers/i2c/busses/i2c-sis630.c            | 1 -
+>  drivers/i2c/busses/i2c-sis96x.c            | 1 -
+>  drivers/i2c/busses/i2c-via.c               | 1 -
+>  drivers/i2c/busses/i2c-xiic.c              | 1 -
+>  drivers/i2c/busses/i2c-xlr.c               | 1 -
+>  drivers/i2c/busses/scx200_i2c.c            | 1 -
+>  drivers/i2c/muxes/i2c-arb-gpio-challenge.c | 1 -
+>  drivers/i2c/muxes/i2c-mux-gpio.c           | 1 -
+>  drivers/i2c/muxes/i2c-mux-pca9541.c        | 1 -
+>  drivers/i2c/muxes/i2c-mux-pca954x.c        | 1 -
+>  drivers/i2c/muxes/i2c-mux-pinctrl.c        | 1 -
+>  43 files changed, 43 deletions(-)
+> (...)
 
-Wireless USB supports variable speeds from 53.3Mbps to 480Mbps.  I'm not 
-sure how you want to represent that but "2.5" doesn't seem to apply.
+Looks good to me, thanks for doing this.
 
-Thanks,
-Thomas
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
+-- 
+Jean Delvare
