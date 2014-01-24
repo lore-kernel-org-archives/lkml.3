@@ -1,103 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaAXCZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 21:25:59 -0500
-Received: from nm15-vm2.access.bullet.mail.gq1.yahoo.com ([216.39.63.43]:28793
-	"EHLO nm15-vm2.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751113AbaAXCZ4 (ORCPT
+	id S1752360AbaAXC3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 21:29:20 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:51255 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750969AbaAXC3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 21:25:56 -0500
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jan 2014 21:25:55 EST
-X-Yahoo-Newman-Id: 82382.19973.bm@smtp115.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 8bLGZ_AVM1koTIhnkS.cPZlzXDsor4AkB.Uip2HhQE3SUCW
- 7.oWr7DjPtFzS3LS7vSKSbAmJ9MUNPk8WiaLZVfpIA3MdY7b8IrVZXcPLoTa
- JX3wzqgyiHOMLYk_YgqJt.mRW98WXuFVM0FFL8l32M7eLF5dkO.a5pBy7Z2N
- lgayDA8zc8zRK2pZuEuGcke5bV.wVrEwRHWxDjMx1P_7oW0Q1TLQY6HODOj.
- u.A8NRRfBfl73Sc4E.onThoEeY8C8sIbiqFCFsl3OM4zpHqz5fcZPzMkOoFS
- Ghv0PmSPJjwSB0Rij_oNtqrxPUTfbQs9NRu9X1PjrLbBQ8EjAWJ8l4GQeDcp
- Qoe8V9QU.eKj3MEE6JA.ZYsCmmfYjzSON13M0Fg5SfVzZ_dDV81nW.hPacKm
- HTyek5HikUTr7JrWZgNv6j5mm4lA8m7Knume.fx0.hd6VyS9QA62LYELICCA
- fIMa8qmUXsAHbdJ5T5FhP8zO3gKzQ73ANdm42JbkD0P3tpcIyRFaKcLLRp9u
- oD.wNTLp2d9ECOaPoJLCahQSxyOPih586_NNEkIsVbPQz9L7mAmdDC2pRVyI
- cld3I1iMLsFd7GGjx9ML2X1tCWEuouWDWUzwd_u3iRiUDWYDhdBHbyZsda2y
- QK3v.FIbT8CCd1GTHqF8vVQqrYPBgpBEnj1_I225nYaE64j5_Ysw1r1FKu.1
- cNMUQTudWzWCLBBOY
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with plain [98.138.31.74])
-        by smtp115.sbc.mail.ne1.yahoo.com with SMTP; 24 Jan 2014 02:20:05 +0000 UTC
-Message-ID: <52E1CE33.7040309@att.net>
-Date: Thu, 23 Jan 2014 20:21:39 -0600
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 23 Jan 2014 21:29:19 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugJAIHP4VJ5LGaB/2dsb2JhbABagwyDOrQ5hVCBCxd0giUBAQEDAScTHCMFCwgDDgoJJQ8FJQMhE4d9B8cqFxaNf2sHhDgElD2DZZIZg0Eo
+Date: Fri, 24 Jan 2014 13:29:03 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Ben Myers <bpm@sgi.com>, sandeen@redhat.com, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: XFS lockdep spew with v3.13-4156-g90804ed
+Message-ID: <20140124022903.GK27606@dastard>
+References: <20140124015855.GM16455@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Daniel Santos <daniel.santos@pobox.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: spidev: fix hang when transfer_one_message fails
-References: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com> <CAMuHMdU0FRi4=YejN+3TLJCwcptHVaaGFTLPyuwzO4NH9=-cUw@mail.gmail.com> <20140123181737.GA11727@sirena.org.uk>
-In-Reply-To: <20140123181737.GA11727@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140124015855.GM16455@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 12:17 PM, Mark Brown wrote:
-> On Thu, Jan 23, 2014 at 05:47:02PM +0100, Geert Uytterhoeven wrote:
->
->> Probably your transfer_one_message() forgot to call
->> spi_finalize_current_message()? Is this allowed in case of failure?
-> Probably not, or at least we should be consistent about requiring it or
-> not.
+On Thu, Jan 23, 2014 at 08:58:56PM -0500, Josh Boyer wrote:
+> Hi All,
+> 
+> I'm hitting an XFS lockdep error with Linus' tree today after the XFS
+> merge.  I wasn't hitting this with v3.13-3995-g0dc3fd0, which seems
+> to backup the "before XFS merge" claim.  Full text below:
 
-Hmm, well it sounds like the core problem is a lack of specificity about 
-the interface.
+Ugh. mmap_sem/inode lock order stupidity.
 
-1. When a message is being rejected, who is responsible for finalizing 
-it, the spi subsystem or the master driver?
-2. What does a non-zero return value from transfer() or 
-transfer_one_message() mean? transfer() is supposed to just queue the 
-message and not sleep, so it would seem appropriate that it would mean 
-that the message was rejected due to something being invalid or 
-unsupported (or an OOM), etc. , but transfer_one_message() is also where 
-*most but not all* drivers transmit the message, so should it mean the 
-message was rejected outright for being invalid/unsupported/OOM or 
-should it mean a failure, such as EIO while xmitting or both?
-3. Is there ever a reason to set the message's status to anything other 
-than the return value of transfer()/transfer_one_message()? From a 
-cursory review of mainline spi drivers, this appears to vary. Some 
-drivers are always returning zero while setting the status upon error, 
-some return the status and others still will set the status to one 
-value, but return a different error code.
+Looks like a false positive. Basically, it's complaining that a page
+fault can occur in getdents() syscall on a user buffer while the
+directory IO lock is held, and then complaining that a this is the
+opposite lock order for a 
+> 
+> 
+> [  132.638044] ======================================================
+> [  132.638045] [ INFO: possible circular locking dependency detected ]
+> [  132.638047] 3.14.0-0.rc0.git7.1.fc21.x86_64 #1 Not tainted
+> [  132.638048] -------------------------------------------------------
+> [  132.638049] gnome-session/1432 is trying to acquire lock:
+> [  132.638050]  (&mm->mmap_sem){++++++}, at: [<ffffffff811b846f>] might_fault+0x
+> 5f/0xb0
+> [  132.638055] 
+> but task is already holding lock:
+> [  132.638056]  (&(&ip->i_lock)->mr_lock){++++..}, at: [<ffffffffa05b3c12>] xfs_
+> ilock+0xf2/0x1c0 [xfs]
+> [  132.638076] 
+> which lock already depends on the new lock.
+> 
+> [  132.638077] 
+> the existing dependency chain (in reverse order) is:
+> [  132.638078] 
+> -> #1 (&(&ip->i_lock)->mr_lock){++++..}:
+> [  132.638080]        [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+> [  132.638083]        [<ffffffff8178312e>] _raw_spin_lock+0x3e/0x80
+> [  132.638085]        [<ffffffff8123c579>] __mark_inode_dirty+0x119/0x440
+> [  132.638088]        [<ffffffff812447fc>] __set_page_dirty+0x6c/0xc0
+> [  132.638090]        [<ffffffff812477e1>] mark_buffer_dirty+0x61/0x180
+> [  132.638092]        [<ffffffff81247a31>] __block_commit_write.isra.21+0x81/0xb0
+> [  132.638094]        [<ffffffff81247be6>] block_write_end+0x36/0x70
+> [  132.638096]        [<ffffffff81247c48>] generic_write_end+0x28/0x90
+> [  132.638097]        [<ffffffffa0554cab>] xfs_vm_write_end+0x2b/0x70 [xfs]
+> [  132.638104]        [<ffffffff8118c4f6>] generic_file_buffered_write+0x156/0x260
+> [  132.638107]        [<ffffffffa05651d7>] xfs_file_buffered_aio_write+0x107/0x250 [xfs]
+> [  132.638115]        [<ffffffffa05653eb>] xfs_file_aio_write+0xcb/0x130 [xfs]
+> [  132.638122]        [<ffffffff8120af8a>] do_sync_write+0x5a/0x90
+> [  132.638125]        [<ffffffff8120b74d>] vfs_write+0xbd/0x1f0
+> [  132.638126]        [<ffffffff8120c15c>] SyS_write+0x4c/0xa0
+> [  132.638128]        [<ffffffff8178db69>] system_call_fastpath+0x16/0x1b
 
-So if a non-zero return value from transfer() or transfer_one_message() 
-should also be the status, I'm thinking we can have a small reduction in 
-the code footprint if it's done in the spi core. However, I suppose that 
-I can't properly discuss this without delving into an almost unrelated 
-issue, which may render the point moot.
+Sorry, what? That trace is taking the ip->i_vnode->i_lock
+*spinlock*, not the ip->i_lock *rwsem*. And it's most definitely not
+currently holding the ip->i_lock rwsem here. I think lockdep has
+dumped the wrong stack trace here, because it most certainly doesn't
+match the unsafe locking scenario that has been detected.
 
-The only reason I'm using transfer_one_message() at all is because 
-transfer() is being deprecated. My driver (currently out-of-tree) 
-supports both but will prefer transfer() as long as it hasn't been 
-removed or become broken ( which I'm managing via a #if 
-LINUX_VERSION_CODE >= KERNEL_VERSION(4,99,99) check: 
-https://github.com/daniel-santos/mcp2210-linux/blob/master/mcp2210-spi.c#L143). 
-The reason is for this is that the mcp2210 driver has an internal 
-command queue that manages (per its requirements) spi messages as well 
-as other types of commands to the remote (via USB) device (which is both 
-an spi master and gpio chip). From a cursory review of other spi drivers 
-in the mainline, I can see that at least two of them do this as well: 
-spi-pxa2xx and spi-bfin-v3. So perhaps we need a non-deprecated 
-mechanism to do our own queuing and avoid the overhead of the spi core 
-providing a thread & queue which we'll just ignore. Then, the core can 
-take care of setting status and finalizing when calls to transfer() fail 
-(since there should be no ambiguity about this here), but leave that up 
-to the driver when calling transfer_one_message()?
+> [  132.638130] 
+> -> #0 (&mm->mmap_sem){++++++}:
+> [  132.638132]        [<ffffffff810de0fc>] __lock_acquire+0x18ec/0x1aa0
+> [  132.638133]        [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+> [  132.638135]        [<ffffffff811b849c>] might_fault+0x8c/0xb0
+> [  132.638136]        [<ffffffff81220a91>] filldir+0x91/0x120
+> [  132.638138]        [<ffffffffa0560f7f>] xfs_dir2_sf_getdents+0x23f/0x2a0 [xfs]
+> [  132.638146]        [<ffffffffa05613fb>] xfs_readdir+0x16b/0x1d0 [xfs]
+> [  132.638154]        [<ffffffffa056383b>] xfs_file_readdir+0x2b/0x40 [xfs]
+> [  132.638161]        [<ffffffff812208d8>] iterate_dir+0xa8/0xe0
+> [  132.638163]        [<ffffffff81220d83>] SyS_getdents+0x93/0x120
+> [  132.638165]        [<ffffffff8178db69>] system_call_fastpath+0x16/0x1b
+> [  132.638166] 
 
-Either way, I think that we need to decide and spell it out in the 
-kerneldocs.
+Ok, that's in the path where we added the ip->i_lock rwsem being held
+in read mode.
 
-Daniel
+> other info that might help us debug this:
+> [  132.638167]  Possible unsafe locking scenario:
+> 
+> [  132.638168]        CPU0                    CPU1
+> [  132.638169]        ----                    ----
+> [  132.638169]   lock(&(&ip->i_lock)->mr_lock);
+> [  132.638171]                                lock(&mm->mmap_sem);
+> [  132.638172]                                lock(&(&ip->i_lock)->mr_lock);
+> [  132.638173]   lock(&mm->mmap_sem);
+
+You can't mmap directories, and so the page fault lock order being
+shown for CPU1 can't happen on a directory. False positive.
+
+*sigh*
+
+More complexity in setting up inode lock order instances is required
+so that lockdep doesn't confuse the lock ordering semantics of
+directories with regular files. As if that code to make lockdep
+happy wasn't complex enough already....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
