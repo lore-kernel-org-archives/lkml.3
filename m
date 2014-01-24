@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaAXPgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:36:53 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:47182 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064AbaAXPgv (ORCPT
+	id S1753310AbaAXPib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:38:31 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42754 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752948AbaAXPia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:36:51 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-c3-52e288904aa1
-Message-id: <52E28881.5080008@samsung.com>
-Date: Fri, 24 Jan 2014 16:36:33 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 6/8 v4] ARM: dts: exynos5250/5420: add dt node for sss
- module
-References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
- <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xK7oTOh4FGeztErC4+/wwo8XLQ5oW
-	3a9kLHoXXGWzuH/vJ5PF5V1z2CxmnN/HZLFo239mi1W7/jBanJ1ziMmBy2PnrLvsHtsOqHr0
-	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXRuOUaSwF31kr9r4/x9rA+Iali5GTQ0LARKKp6xiU
-	LSZx4d56ti5GLg4hgaWMEg1X+pghnM9AzoQzYFW8AloSe369YwWxWQRUJV5P/cYEYrMJqEl8
-	bnjEBmKLCkRI/J23nhGiXlDix+R7YL0iAuUS/26sAdvALHCAUWLd9FNADgeHsECwxNIHhhDL
-	Ghklzj/6CdbAKeAmMfX4RjCbWcBaYuWkbYwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRN
-	LU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ+687GJceszrEKMDBqMTD+yH4YZAQa2JZcWXuIUYJ
-	DmYlEd6drY+ChHhTEiurUovy44tKc1KLDzEycXBKNTDOU3b+p9uzKs5d02jnx2MTFsRsunl9
-	feOKCYaVDa+CBFKuGHKoh++Yu7L20/mV2ytqjoucmTWlyX5Fk+qU5Rez0x5+XsGX9NTdK0Mm
-	gkfjTL7BqlZV2+aSJOa1157vSCyaUOBe80helH1C4i4tfX7l6e127A43esXkTaye3pslfyxb
-	Y/L5u3JKLMUZiYZazEXFiQB6AZs0WQIAAA==
+	Fri, 24 Jan 2014 10:38:30 -0500
+Date: Fri, 24 Jan 2014 15:37:56 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        Somraj Mani <somraj.mani@samsung.com>
+Subject: Re: [PATCH] arm64: fix build error if DMA_CMA is enabled
+Message-ID: <20140124153756.GH19052@arm.com>
+References: <1390551788-6138-1-git-send-email-pankaj.dubey@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390551788-6138-1-git-send-email-pankaj.dubey@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
-
-On 15.01.2014 10:16, Naveen Krishna Chatradhi wrote:
-> This patch adds the device tree node for SSS module
-> found on Exynos5420 and Exynos5250
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> TO: <linux-samsung-soc@vger.kernel.org>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> CC: <linux-crypto@vger.kernel.org>
+On Fri, Jan 24, 2014 at 08:23:08AM +0000, Pankaj Dubey wrote:
+> arm64/include/asm/dma-contiguous.h is trying to include
+> <asm-genric/dma-contiguous.h> which does not exist, and thus failing
+> build for arm64 if we enable CONFIG_DMA_CMA. This patch fixes build 
+> error by removing unwanted header inclusion from arm64's dma-contiguous.h.
+> 
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Signed-off-by: Somraj Mani <somraj.mani@samsung.com>
 > ---
-> Changes since v3:
-> 1. Modified the SSS clock ID as per dt-bindings for Exynos5250 in
->     samsung-clk.git tree.
->
->   arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
->   arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
->   2 files changed, 18 insertions(+)
+>  arch/arm64/include/asm/dma-contiguous.h |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm64/include/asm/dma-contiguous.h b/arch/arm64/include/asm/dma-contiguous.h
+> index d6aacb6..14c4c0c 100644
+> --- a/arch/arm64/include/asm/dma-contiguous.h
+> +++ b/arch/arm64/include/asm/dma-contiguous.h
+> @@ -18,7 +18,6 @@
+>  #ifdef CONFIG_DMA_CMA
+>  
+>  #include <linux/types.h>
+> -#include <asm-generic/dma-contiguous.h>
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Thanks for this.
 
-Best regards,
-Tomasz
+Laura, did you have additional patches adding
+asm-generic/dma-contiguous.h?
 
+-- 
+Catalin
