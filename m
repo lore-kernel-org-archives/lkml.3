@@ -1,56 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaAXQmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 11:42:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42228 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaAXQmf (ORCPT
+	id S1752240AbaAXQoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 11:44:34 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:61636 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaAXQoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 11:42:35 -0500
-Date: Fri, 24 Jan 2014 08:43:26 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/23] 3.10.28-stable review
-Message-ID: <20140124164326.GA26502@kroah.com>
-References: <20140123183859.635713053@linuxfoundation.org>
- <52E28451.7070306@samsung.com>
+	Fri, 24 Jan 2014 11:44:32 -0500
+Message-ID: <52E2986B.802@linaro.org>
+Date: Fri, 24 Jan 2014 17:44:27 +0100
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E28451.7070306@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [PATCH 04/20] ARM64 / ACPI: Introduce arm_core.c
+ and its related head file
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-5-git-send-email-hanjun.guo@linaro.org> <20140122115453.GC24288@e102568-lin.cambridge.arm.com> <52E13BBC.5020005@linaro.org> <52E22DD4.3050807@linaro.org> <20140124125332.GA23274@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140124125332.GA23274@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 08:18:41AM -0700, Shuah Khan wrote:
-> On 01/23/2014 11:39 AM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.28 release.
-> >There are 23 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Sat Jan 25 18:38:43 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> >The whole patch series can be found in one patch at:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.28-rc1.gz
-> >and the diffstat can be found below.
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
-> 
-> Patch testing - passed
-> Compile testing - passed
-> Boot testing - passed
-> dmesg regression testing - passed - no regressions in emerg, crit, alert,
-> err are clean. No regressions in warn.
+Hi Lorenzo,
 
-Thanks for testing both of these and letting me know.
+W dniu 24.01.2014 13:53, Lorenzo Pieralisi pisze:
+> Hi Hanjun,
+>
+> On Fri, Jan 24, 2014 at 09:09:40AM +0000, Hanjun Guo wrote:
+>> On 2014?01?23? 23:56, Tomasz Nowicki wrote:
+>>> Hi Lorenzo,
+>>>
+>>> W dniu 22.01.2014 12:54, Lorenzo Pieralisi pisze:
+>>>> On Fri, Jan 17, 2014 at 12:24:58PM +0000, Hanjun Guo wrote:
+>>>>
+>>>> [...]
+>>>>
+>>>>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>>>>> index bd9bbd0..2210353 100644
+>>>>> --- a/arch/arm64/kernel/setup.c
+>>>>> +++ b/arch/arm64/kernel/setup.c
+>>>>> @@ -41,6 +41,7 @@
+>>>>> #include <linux/memblock.h>
+>>>>> #include <linux/of_fdt.h>
+>>>>> #include <linux/of_platform.h>
+>>>>> +#include <linux/acpi.h>
+>>>>>
+>>>>> #include <asm/cputype.h>
+>>>>> #include <asm/elf.h>
+>>>>> @@ -225,6 +226,11 @@ void __init setup_arch(char **cmdline_p)
+>>>>>
+>>>>> arm64_memblock_init();
+>>>>>
+>>>>> + /* Parse the ACPI tables for possible boot-time configuration */
+>>>>> + acpi_boot_table_init();
+>>>>> + early_acpi_boot_init();
+>>>>> + acpi_boot_init();
+>>>>> +
+>>>>> paging_init();
+>>>>
+>>>> Can I ask you please why we need to parse ACPI tables before
+>>>> paging_init() ?
+>>> This is for future usage and because of couple of reasons. Mainly SRAT
+>>> table parsing should be done (before paging_init()) for proper NUMA
+>>> initialization and then paging_init().
+>
+> Thank you for the explanation. I still have some questions:
+>
+> 1) What are the other reasons ?
+If we agreed that we need SRAT parsing before paging_init() the second 
+reason is all implications related to that. I mean if we want to make 
+ACPI tables parseable before paging_init(), we need early_ioremap 
+mechanism and __acpi_map_table() fixes. In that case, IMHO, it is better 
+to please it in the right place now. early_ioremap is object of UEFI 
+support patch set.
+> 2) NUMA is not supported at the moment and I reckon SRAT needs updating
+>     since the only way to associate a CPU to a memory node is through
+>     a local APIC id that is non-existent on ARM and at least deserves a
+>     new entry.
+Right, that requires further work on SRAT.
+>
+> I am still not sure that providing a hook for parsing the ACPI tables before
+> paging_init() is the main focus at the moment, it is probably best, as we've
+> mentioned manifold times, to make sure that the infrastructure to detect
+> ACPI vs DT at run-time is in place in the kernel and allows us to boot
+> either with ACPI or DT, in a mutual exclusive way (same binary kernel
+> supporting both, runtime detection/decision on what data to use, ACPI tables
+> vs DT nodes, detection made once for all and NOT on a per property basis).
+>
+> I will have a look at SRAT and how it is used on x86, and get back to you on
+> this.
+>
+> [...]
+>
+>>>>> + * acpi_boot_table_init() and acpi_boot_init()
+>>>>> + * called from setup_arch(), always.
+>>>>> + * 1. checksums all tables
+>>>>> + * 2. enumerates lapics
+>>>>> + * 3. enumerates io-apics
+>>>>> + *
+>>>>> + * acpi_table_init() is separated to allow reading SRAT without
+>>>>> + * other side effects.
+>>>>> + */
+>>>>> +void __init acpi_boot_table_init(void)
+>>>>> +{
+>>>>> + /*
+>>>>> + * If acpi_disabled, bail out
+>>>>> + */
+>>>>> + if (acpi_disabled)
+>>>>> + return;
+>>>>> +
+>>>>> + /*
+>>>>> + * Initialize the ACPI boot-time table parser.
+>>>>> + */
+>>>>> + if (acpi_table_init()) {
+>>>>> + disable_acpi();
+>>>>> + return;
+>>>>> + }
+>>>>> +}
+>>>>> +
+>>>>> +int __init early_acpi_boot_init(void)
+>>>>> +{
+>>>>> + /*
+>>>>> + * If acpi_disabled, bail out
+>>>>> + */
+>>>>> + if (acpi_disabled)
+>>>>> + return -ENODEV;
+>>>>> +
+>>>>> + /*
+>>>>> + * Process the Multiple APIC Description Table (MADT), if present
+>>>>> + */
+>>>>> + early_acpi_process_madt();
+>>>>> +
+>>>>> + return 0;
+>>>>> +}
+>>>>> +
+>>>>> +int __init acpi_boot_init(void)
+>>>>> +{
+>>>>> + /*
+>>>>> + * If acpi_disabled, bail out
+>>>>> + */
+>>>>> + if (acpi_disabled)
+>>>>> + return -ENODEV;
+>>>>> +
+>>>>> + acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
+>>>>> +
+>>>>> + /*
+>>>>> + * Process the Multiple APIC Description Table (MADT), if present
+>>>>> + */
+>>>>> + acpi_process_madt();
+>>>>> +
+>>>>> + return 0;
+>>>>> +}
+>>>>
+>>>> Well, apart from having three init calls, one returning void and two
+>>>> returning proper values, do not understand why, and do not understand
+>>>> why we need three calls in the first place...why should we process MADT
+>>>> twice in two separate calls ? What is supposed to change in between that
+>>>> prevents you from merging the two together ?
+>>
+>> Thanks for pointing this out. I can merge acpi_boot_table_init() and
+>> early_acpi_boot_init() together, but can not merge early_acpi_boot_init()
+>> and acpi_boot_init() together.
+>>
+>> early_acpi_boot_init() and acpi_boot_init() was separated intentionally for
+>> memory hotplug reasons. memory allocated in this stage can not be migrated
+>> and cause memory hot-remove failed, in order to keep memory allocated
+>> at base node (general NUMA node 0 in the system) at boot stage, we should
+>> parse SRAT first before CPU is enumerated, does this make sense to you?
+>
+> Are you parsing the SRAT in this series to get memory info or memory is
+> still initialized by DT even when system is supposed to be booted with ACPI
+> (ie there is a valid ACPI root table ?)
+>
+> I have a hunch the latter is what's happening (and that's wrong, because
+> memory information when kernel is booted through ACPI must be retrieved
+> from UEFI - at least that's what has been defined), so I still see an early
+> hook to initialize ACPI tables before paging_init() that has no use as the
+> current patchset stands, please correct me if I am wrong.
+Yes, currently memory is initialized by DT but getting memory map from 
+UEFI is the matter of time (pending upstream process). Also, SRAT table 
+is not parsing in this series but it will, and I think it plays the main 
+role to put it before paging_init.
 
-greg k-h
+Regards,
+Tomasz
