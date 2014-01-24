@@ -1,232 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaAXIsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:48:19 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:37856 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaAXIoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 03:44:18 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 09/14] spi: rspi: Add support for RSPI on RZ/A1H
-Date: Fri, 24 Jan 2014 09:43:59 +0100
-Message-Id: <1390553044-11860-10-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
-References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
+	id S1752771AbaAXIs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:48:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:37029 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752442AbaAXIsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 03:48:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,711,1384329600"; 
+   d="scan'208";a="470131395"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bin Gao <bin.gao@intel.com>,
+        x86@kernel.org, Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2] x86, tsc: Add missing Baytrail frequency to the table
+Date: Fri, 24 Jan 2014 10:46:36 +0200
+Message-Id: <1390553196-15346-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <20140123150912.7ee822a0@alan.etchedpixels.co.uk>
+References: <20140123150912.7ee822a0@alan.etchedpixels.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means that
+the CPU reference clock runs at 83.3MHz. Without this we crash a bit later
+with backtrace looking like:
 
-Add support for the RSPI variant in the RZ/A1H (r7s72100) SoC.
+ divide error: 0000 [#1] PREEMPT SMP
+ Modules linked in:
+ CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.13.0+ #47
+ task: ffff880075508000 ti: ffff880075506000 task.ti: ffff880075506000
+ RIP: 0010:[<ffffffff810aec14>]  [<ffffffff810aec14>] clockevents_config.part.3+0x24/0xa0
+ RSP: 0000:ffff880075507e58  EFLAGS: 00010246
+ RAX: ffffffffffffffff RBX: ffff880079c0cd80 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffffffffff
+ RBP: ffff880075507e70 R08: 0000000000000001 R09: 00000000000000be
+ R10: 00000000000000bd R11: 0000000000000003 R12: 000000000000b008
+ R13: 0000000000000008 R14: 000000000000b010 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: ffff880079fff000 CR3: 0000000001c0b000 CR4: 00000000001006f0
+ Stack:
+  ffff880079c0cd80 000000000000b008 0000000000000008 ffff880075507e88
+  ffffffff810aecb0 ffff880079c0cd80 ffff880075507e98 ffffffff81030168
+  ffff880075507ed8 ffffffff81d1104f 00000000000000c3 0000000000000000
+ Call Trace:
+  [<ffffffff810aecb0>] clockevents_config_and_register+0x20/0x30
+  [<ffffffff81030168>] setup_APIC_timer+0xc8/0xd0
+  [<ffffffff81d1104f>] setup_boot_APIC_clock+0x4cc/0x4d8
+  [<ffffffff81d0f5de>] native_smp_prepare_cpus+0x3dd/0x3f0
+  [<ffffffff81d02ee9>] kernel_init_freeable+0xc3/0x205
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
+  [<ffffffff8177c91e>] kernel_init+0xe/0x120
+  [<ffffffff8178deec>] ret_from_fork+0x7c/0xb0
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
 
-Main differences with RSPI on SH are:
-  - Lack of TX only mode, hence we always have to use full duplex
-    transfers,
-  - The Data Register must be accessed used 8-bit operations.
+This is due the fact that the returned zero TSC value is propagated further
+to clockevents code resulting division by zero.
 
-RSPI on RZ is matched using the new "rspi-rz" platform device name.
+Fix this by adding the missing frequency to freq_desc_tables for Baytrail.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+In addition make sure that this won't happen again by checking the return
+value of try_msr_calibrate_tsc() and in case of zero or error we fallback
+to the non-MSR TSC calibration.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bin Gao <bin.gao@intel.com>
 ---
- drivers/spi/spi-rspi.c |  101 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 92 insertions(+), 9 deletions(-)
+v2: Added fallback to non-TSC calibration.
 
-diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index d2ade5e09f58..0c7556978d2e 100644
---- a/drivers/spi/spi-rspi.c
-+++ b/drivers/spi/spi-rspi.c
-@@ -47,7 +47,7 @@
- #define RSPI_SPCKD		0x0c	/* Clock Delay Register */
- #define RSPI_SSLND		0x0d	/* Slave Select Negation Delay Register */
- #define RSPI_SPND		0x0e	/* Next-Access Delay Register */
--#define RSPI_SPCR2		0x0f	/* Control Register 2 */
-+#define RSPI_SPCR2		0x0f	/* Control Register 2 (SH only) */
- #define RSPI_SPCMD0		0x10	/* Command Register 0 */
- #define RSPI_SPCMD1		0x12	/* Command Register 1 */
- #define RSPI_SPCMD2		0x14	/* Command Register 2 */
-@@ -56,10 +56,12 @@
- #define RSPI_SPCMD5		0x1a	/* Command Register 5 */
- #define RSPI_SPCMD6		0x1c	/* Command Register 6 */
- #define RSPI_SPCMD7		0x1e	/* Command Register 7 */
-+
-+/* RSPI on RZ only */
- #define RSPI_SPBFCR		0x20	/* Buffer Control Register */
- #define RSPI_SPBFDR		0x22	/* Buffer Data Count Setting Register */
+ arch/x86/kernel/tsc.c     | 7 ++++---
+ arch/x86/kernel/tsc_msr.c | 2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a3acbac2ee72..1e54deb56b33 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -655,10 +655,11 @@ unsigned long native_calibrate_tsc(void)
+ 	local_irq_save(flags);
+ 	i = try_msr_calibrate_tsc(&fast_calibrate);
+ 	local_irq_restore(flags);
+-	if (i >= 0) {
+-		if (i == 0)
+-			pr_warn("Fast TSC calibration using MSR failed\n");
++	if (i > 0) {
+ 		return fast_calibrate;
++	} else if (i == 0) {
++		pr_warn("Fast TSC calibration using MSR failed\n");
++		/* Continue with the normal calibration */
+ 	}
  
--/*qspi only */
-+/* QSPI only */
- #define QSPI_SPBFCR		0x18	/* Buffer Control Register */
- #define QSPI_SPBDCR		0x1a	/* Buffer Data Count Register */
- #define QSPI_SPBMUL0		0x1c	/* Transfer Data Length Multiplier Setting Register 0 */
-@@ -102,7 +104,7 @@
- #define SPSR_PERF		0x08	/* Parity Error Flag */
- #define SPSR_MODF		0x04	/* Mode Fault Error Flag */
- #define SPSR_IDLNF		0x02	/* RSPI Idle Flag */
--#define SPSR_OVRF		0x01	/* Overrun Error Flag */
-+#define SPSR_OVRF		0x01	/* Overrun Error Flag (RSPI only) */
- 
- /* SPSCR - Sequence Control Register */
- #define SPSCR_SPSLN_MASK	0x07	/* Sequence Length Specification */
-@@ -119,13 +121,13 @@
- #define SPDCR_SPLWORD		SPDCR_SPLW1
- #define SPDCR_SPLBYTE		SPDCR_SPLW0
- #define SPDCR_SPLW		0x20	/* Access Width Specification (SH) */
--#define SPDCR_SPRDTD		0x10	/* Receive Transmit Data Select */
-+#define SPDCR_SPRDTD		0x10	/* Receive Transmit Data Select (SH) */
- #define SPDCR_SLSEL1		0x08
- #define SPDCR_SLSEL0		0x04
--#define SPDCR_SLSEL_MASK	0x0c	/* SSL1 Output Select */
-+#define SPDCR_SLSEL_MASK	0x0c	/* SSL1 Output Select (SH) */
- #define SPDCR_SPFC1		0x02
- #define SPDCR_SPFC0		0x01
--#define SPDCR_SPFC_MASK		0x03	/* Frame Count Setting (1-4) */
-+#define SPDCR_SPFC_MASK		0x03	/* Frame Count Setting (1-4) (SH) */
- 
- /* SPCKD - Clock Delay Register */
- #define SPCKD_SCKDL_MASK	0x07	/* Clock Delay Setting (1-8) */
-@@ -168,8 +170,8 @@
- #define SPCMD_CPHA		0x0001	/* Clock Phase Setting */
- 
- /* SPBFCR - Buffer Control Register */
--#define SPBFCR_TXRST		0x80	/* Transmit Buffer Data Reset (qspi only) */
--#define SPBFCR_RXRST		0x40	/* Receive Buffer Data Reset (qspi only) */
-+#define SPBFCR_TXRST		0x80	/* Transmit Buffer Data Reset */
-+#define SPBFCR_RXRST		0x40	/* Receive Buffer Data Reset */
- #define SPBFCR_TXTRG_MASK	0x30	/* Transmit Buffer Data Triggering Number */
- #define SPBFCR_RXTRG_MASK	0x07	/* Receive Buffer Data Triggering Number */
- 
-@@ -244,7 +246,7 @@ struct spi_ops {
- };
- 
- /*
-- * functions for RSPI
-+ * functions for RSPI on legacy SH
-  */
- static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
- {
-@@ -280,6 +282,39 @@ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
- }
- 
- /*
-+ * functions for RSPI on RZ
-+ */
-+static int rspi_rz_set_config_register(struct rspi_data *rspi, int access_size)
-+{
-+	int spbr;
-+
-+	/* Sets output mode */
-+	rspi_write8(rspi, 0x00, RSPI_SPPCR);
-+
-+	/* Sets transfer bit rate */
-+	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
-+	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
-+
-+	/* Disable dummy transmission, set byte access */
-+	rspi_write8(rspi, SPDCR_SPLBYTE, RSPI_SPDCR);
-+	rspi->byte_access = 1;
-+
-+	/* Sets RSPCK, SSL, next-access delay value */
-+	rspi_write8(rspi, 0x00, RSPI_SPCKD);
-+	rspi_write8(rspi, 0x00, RSPI_SSLND);
-+	rspi_write8(rspi, 0x00, RSPI_SPND);
-+
-+	/* Sets SPCMD */
-+	rspi->spcmd |= SPCMD_SPB_8_TO_16(access_size);
-+	rspi_write16(rspi, rspi->spcmd, RSPI_SPCMD0);
-+
-+	/* Sets RSPI mode */
-+	rspi_write8(rspi, SPCR_MSTR, RSPI_SPCR);
-+
-+	return 0;
-+}
-+
-+/*
-  * functions for QSPI
-  */
- static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
-@@ -520,6 +555,13 @@ static void rspi_receive_init(const struct rspi_data *rspi)
- 			    RSPI_SPSR);
- }
- 
-+static void rspi_rz_receive_init(const struct rspi_data *rspi)
-+{
-+	rspi_receive_init(rspi);
-+	rspi_write8(rspi, SPBFCR_TXRST | SPBFCR_RXRST, RSPI_SPBFCR);
-+	rspi_write8(rspi, 0, RSPI_SPBFCR);
-+}
-+
- static void qspi_receive_init(const struct rspi_data *rspi)
- {
- 	u8 spsr;
-@@ -706,6 +748,41 @@ static int rspi_transfer_one(struct spi_master *master, struct spi_device *spi,
- 	return 0;
- }
- 
-+static int rspi_rz_transfer_out_in(struct rspi_data *rspi,
-+				   struct spi_transfer *xfer)
-+{
-+	int remain = xfer->len, ret;
-+	const u8 *tx_buf = xfer->tx_buf;
-+	u8 *rx_buf = xfer->rx_buf;
-+	u8 data;
-+
-+	rspi_rz_receive_init(rspi);
-+
-+	while (remain > 0) {
-+		data = tx_buf ? *tx_buf++ : DUMMY_DATA;
-+		ret = rspi_data_out_in(rspi, data);
-+		if (ret < 0)
-+			return ret;
-+		if (rx_buf)
-+			*rx_buf++ = ret;
-+		remain--;
-+	}
-+
-+	/* Wait for the last transmission */
-+	rspi_wait_for_interrupt(rspi, SPSR_SPTEF, SPCR_SPTIE);
-+
-+	return 0;
-+}
-+
-+static int rspi_rz_transfer_one(struct spi_master *master,
-+				struct spi_device *spi,
-+				struct spi_transfer *xfer)
-+{
-+	struct rspi_data *rspi = spi_master_get_devdata(master);
-+
-+	return rspi_rz_transfer_out_in(rspi, xfer);
-+}
-+
- static int qspi_transfer_out_in(struct rspi_data *rspi,
- 				struct spi_transfer *xfer)
- {
-@@ -1041,6 +1118,11 @@ static struct spi_ops rspi_ops = {
- 	.transfer_one =			rspi_transfer_one,
- };
- 
-+static struct spi_ops rspi_rz_ops = {
-+	.set_config_register =		rspi_rz_set_config_register,
-+	.transfer_one =			rspi_rz_transfer_one,
-+};
-+
- static struct spi_ops qspi_ops = {
- 	.set_config_register =		qspi_set_config_register,
- 	.transfer_one =			qspi_transfer_one,
-@@ -1048,6 +1130,7 @@ static struct spi_ops qspi_ops = {
- 
- static struct platform_device_id spi_driver_ids[] = {
- 	{ "rspi",	(kernel_ulong_t)&rspi_ops },
-+	{ "rspi-rz",	(kernel_ulong_t)&rspi_rz_ops },
- 	{ "qspi",	(kernel_ulong_t)&qspi_ops },
- 	{},
+ 	local_irq_save(flags);
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 8b5434f4389f..10a278661fe1 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
  };
 -- 
-1.7.9.5
+1.8.5.2
 
