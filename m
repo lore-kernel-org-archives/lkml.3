@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaAXE3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 23:29:53 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:29857 "EHLO
+	id S1752251AbaAXEaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 23:30:55 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:29842 "EHLO
 	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaAXE3f (ORCPT
+	with ESMTP id S1751995AbaAXE3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 23:29:35 -0500
+	Thu, 23 Jan 2014 23:29:32 -0500
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
@@ -23,9 +23,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Chen <tim.c.chen@linux.intel.com>,
         "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v11 4/4] qrwlock: Use the mcs_spinlock helper functions for MCS queuing
-Date: Thu, 23 Jan 2014 23:28:51 -0500
-Message-Id: <1390537731-45996-5-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v11 2/4] qrwlock, x86: Enable x86 to use queue read/write lock
+Date: Thu, 23 Jan 2014 23:28:49 -0500
+Message-Id: <1390537731-45996-3-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
 References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
@@ -33,170 +33,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a pending MCS lock patch series that adds generic MCS lock
-helper functions to do MCS-style locking. This patch will enable
-the queue rwlock to use that generic MCS lock/unlock primitives for
-internal queuing. This patch should only be merged after the merging
-of that generic MCS locking patch.
+This patch makes the necessary changes at the x86 architecture specific
+layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
+to replace the read/write lock by the queue read/write lock.
+
+It also enables the CONFIG_QUEUE_RWLOCK option by default for x86 which
+will force the use of queue read/write lock. That will greatly improve
+the fairness of read/write lock and eliminate live-lock situation
+where one task may not get the lock for an indefinite period of time.
+
+The code for the old x86 read/write lock will be removed in a later
+release if no problem is found in the new queue read/write lock code.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/asm-generic/qrwlock.h |    7 +---
- kernel/locking/qrwlock.c      |   71 ++++-------------------------------------
- 2 files changed, 9 insertions(+), 69 deletions(-)
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 ++
+ arch/x86/include/asm/spinlock_types.h |    4 ++++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
-index da0efee..7b337b3 100644
---- a/include/asm-generic/qrwlock.h
-+++ b/include/asm-generic/qrwlock.h
-@@ -38,10 +38,7 @@
-  * the writer field. The least significant 8 bits is the writer field
-  * whereas the remaining 24 bits is the reader count.
-  */
--struct qrwnode {
--	struct qrwnode *next;
--	int		wait;	/* Waiting flag */
--};
-+struct mcs_spinlock;
- 
- typedef struct qrwlock {
- 	union qrwcnts {
-@@ -57,7 +54,7 @@ typedef struct qrwlock {
- 		atomic_t    rwa;	/* Reader/writer atomic	*/
- 		u32	    rwc;	/* Reader/writer counts */
- 	} cnts;
--	struct qrwnode *waitq;		/* Tail of waiting queue */
-+	struct mcs_spinlock *waitq;	/* Tail of waiting queue */
- } arch_rwlock_t;
- 
- /*
-diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
-index c76b8ce..cc8d5a1 100644
---- a/kernel/locking/qrwlock.c
-+++ b/kernel/locking/qrwlock.c
-@@ -21,6 +21,7 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/mutex.h>
-+#include <linux/mcs_spinlock.h>
- #include <asm-generic/qrwlock.h>
- 
- /*
-@@ -50,64 +51,6 @@
- #define qrw_xadd(rw, inc)	(u32)(atomic_add_return(inc, &(rw).rwa) - inc)
- 
- /**
-- * wait_in_queue - Add to queue and wait until it is at the head
-- * @lock: Pointer to queue rwlock structure
-- * @node: Node pointer to be added to the queue
-- */
--static inline void wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
--{
--	struct qrwnode *prev;
--
--	node->next = NULL;
--	node->wait = true;
--	prev = xchg(&lock->waitq, node);
--	if (prev) {
--		prev->next = node;
--		/*
--		 * Wait until the waiting flag is off
--		 */
--		while (smp_load_acquire(&node->wait))
--			arch_mutex_cpu_relax();
--	}
--}
--
--/**
-- * signal_next - Signal the next one in queue to be at the head
-- * @lock: Pointer to queue rwlock structure
-- * @node: Node pointer to the current head of queue
-- */
--static inline void signal_next(struct qrwlock *lock, struct qrwnode *node)
--{
--	struct qrwnode *next;
--
--	/*
--	 * Try to notify the next node first without disturbing the cacheline
--	 * of the lock. If that fails, check to see if it is the last node
--	 * and so should clear the wait queue.
--	 */
--	next = ACCESS_ONCE(node->next);
--	if (likely(next))
--		goto notify_next;
--
--	/*
--	 * Clear the wait queue if it is the last node
--	 */
--	if ((ACCESS_ONCE(lock->waitq) == node) &&
--	    (cmpxchg(&lock->waitq, node, NULL) == node))
--			return;
--	/*
--	 * Wait until the next one in queue set up the next field
--	 */
--	while (likely(!(next = ACCESS_ONCE(node->next))))
--		arch_mutex_cpu_relax();
--	/*
--	 * The next one in queue is now at the head
--	 */
--notify_next:
--	smp_store_release(&next->wait, false);
--}
--
--/**
-  * rspin_until_writer_unlock - inc reader count & spin until writer is gone
-  * @lock  : Pointer to queue rwlock structure
-  * @writer: Current queue rwlock writer status byte
-@@ -130,7 +73,7 @@ rspin_until_writer_unlock(struct qrwlock *lock, u32 rwc)
-  */
- void queue_read_lock_slowpath(struct qrwlock *lock)
- {
--	struct qrwnode node;
-+	struct mcs_spinlock node;
- 	union qrwcnts cnts;
- 
- 	/*
-@@ -150,7 +93,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
- 	/*
- 	 * Put the reader into the wait queue
- 	 */
--	wait_in_queue(lock, &node);
-+	mcs_spin_lock(&lock->waitq, &node);
- 
- 	/*
- 	 * At the head of the wait queue now, wait until the writer state
-@@ -167,7 +110,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
- 	/*
- 	 * Signal the next one in queue to become queue head
- 	 */
--	signal_next(lock, &node);
-+	mcs_spin_unlock(&lock->waitq, &node);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d3b9186..5c95257 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -119,6 +119,7 @@ config X86
+ 	select MODULES_USE_ELF_RELA if X86_64
+ 	select CLONE_BACKWARDS if X86_32
+ 	select ARCH_USE_BUILTIN_BSWAP
++	select ARCH_USE_QUEUE_RWLOCK
+ 	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
+ 	select OLD_SIGACTION if X86_32
+ 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index bf156de..8fb88c5 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -188,6 +188,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ 		cpu_relax();
  }
- EXPORT_SYMBOL(queue_read_lock_slowpath);
  
-@@ -223,18 +166,18 @@ static inline void queue_write_3step_lock(struct qrwlock *lock)
-  */
- void queue_write_lock_slowpath(struct qrwlock *lock)
- {
--	struct qrwnode node;
-+	struct mcs_spinlock node;
- 
- 	/*
- 	 * Put the writer into the wait queue
- 	 */
--	wait_in_queue(lock, &node);
-+	mcs_spin_lock(&lock->waitq, &node);
- 
- 	/*
- 	 * At the head of the wait queue now, call queue_write_3step_lock()
- 	 * to acquire the lock until it is done.
- 	 */
- 	queue_write_3step_lock(lock);
--	signal_next(lock, &node);
-+	mcs_spin_unlock(&lock->waitq, &node);
++#ifndef CONFIG_QUEUE_RWLOCK
+ /*
+  * Read-write spinlocks, allowing multiple readers
+  * but only one writer.
+@@ -270,6 +271,7 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
+ 	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
+ 		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
  }
- EXPORT_SYMBOL(queue_write_lock_slowpath);
++#endif /* CONFIG_QUEUE_RWLOCK */
+ 
+ #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
+ #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 4f1bea1..a585635 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -34,6 +34,10 @@ typedef struct arch_spinlock {
+ 
+ #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
+ 
++#ifdef CONFIG_QUEUE_RWLOCK
++#include <asm-generic/qrwlock.h>
++#else
+ #include <asm/rwlock.h>
++#endif
+ 
+ #endif /* _ASM_X86_SPINLOCK_TYPES_H */
 -- 
 1.7.1
 
