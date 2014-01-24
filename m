@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaAXRbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:31:49 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:55524 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaAXRbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:31:47 -0500
-Date: Fri, 24 Jan 2014 11:31:41 -0600 (CST)
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-cc: Thomas Pugliese <thomas.pugliese@gmail.com>, gregkh@linuxfoundation.org,
-        ly80toro@cip.cs.fau.de, alan@linux.intel.com,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH] staging/usbip: Add missing speeds to userspace speed_strings
- array
-In-Reply-To: <52E29F04.2070106@samsung.com>
-Message-ID: <alpine.DEB.2.10.1401241129370.30747@mint32-virtualbox>
-References: <1390420383-3933-1-git-send-email-shuah.kh@samsung.com> <alpine.DEB.2.10.1401241106380.28215@mint32-virtualbox> <52E29F04.2070106@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752138AbaAXRbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:31:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242AbaAXRbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 12:31:51 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: stable@vger.kernel.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>
+Subject: [PATCH] audit: restore order of tty and ses fields in log output
+Date: Fri, 24 Jan 2014 12:31:07 -0500
+Message-Id: <2f2ad1013322c8f6c40fc6dafdbd32442fa730ad.1390584353.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When being refactored from audit_log_start() to audit_log_task_info(), in
+commit e23eb920 the tty and ses fields in the log output got transposed.
+Restore to original order to avoid breaking search tools.
 
+Cc: stable@vger.kernel.org # v3.6
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ kernel/audit.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-On Fri, 24 Jan 2014, Shuah Khan wrote:
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 3d3747b..e88f599 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1716,7 +1716,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 	audit_log_format(ab,
+ 			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
+ 			 " euid=%u suid=%u fsuid=%u"
+-			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
++			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
+ 			 sys_getppid(),
+ 			 tsk->pid,
+ 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
+@@ -1728,7 +1728,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 			 from_kgid(&init_user_ns, cred->egid),
+ 			 from_kgid(&init_user_ns, cred->sgid),
+ 			 from_kgid(&init_user_ns, cred->fsgid),
+-			 audit_get_sessionid(tsk), tty);
++			 tty, audit_get_sessionid(tsk));
+ 
+ 	get_task_comm(name, tsk);
+ 	audit_log_format(ab, " comm=");
+-- 
+1.7.1
 
-> On 01/24/2014 10:08 AM, Thomas Pugliese wrote:
-> > 
-> > 
-> > On Wed, 22 Jan 2014, Shuah Khan wrote:
-> > 
-> > > Add speed strings for usb wireless and 3.0 to speed_strings array.
-> > > 
-> > > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> > > ---
-> > >   drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 ++
-> > >   1 file changed, 2 insertions(+)
-> > > 
-> > > diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> > > b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> > > index 66f03cc..8cb4fcc 100644
-> > > --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> > > +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-> > > @@ -23,6 +23,8 @@ static const struct speed_string speed_strings[] = {
-> > >   	{ USB_SPEED_LOW,  "1.5", "Low Speed(1.5Mbps)"  },
-> > >   	{ USB_SPEED_FULL, "12",  "Full Speed(12Mbps)" },
-> > >   	{ USB_SPEED_HIGH, "480", "High Speed(480Mbps)" },
-> > > +	{ USB_SPEED_WIRELESS, "2.5", "Wireless"},
-> > > +	{ USB_SPEED_SUPER, "5000", "Super Speed(5000Mbps)" },
-> > >   	{ 0, NULL, NULL }
-> > >   };
-> > > 
-> > > --
-> > 
-> > Wireless USB supports variable speeds from 53.3Mbps to 480Mbps.  I'm not
-> > sure how you want to represent that but "2.5" doesn't seem to apply.
-> > 
-> 
-> Would "variable" be better suited in this case?
-> 
-
-Sure.  You could also use something like "53.3-480" since that would more 
-closely match the other entires which are numerical values in Mbps units.
-
-Thomas
