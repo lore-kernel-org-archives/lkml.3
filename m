@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaAXWSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 17:18:31 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:51542
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753317AbaAXWSY (ORCPT
+	id S1752826AbaAXWVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:21:50 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:45489 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaAXWVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 17:18:24 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h1155h)
-X-WSS-ID: 0MZXFAE-08-485-02
-X-M-MSG: 
-Subject: [PATCH 4/4] crypto: ccp - Perform completion callbacks using a tasklet
-To: <linux-crypto@vger.kernel.org>, <herbert@gondor.apana.org.au>,
-        <davem@davemloft.net>
-From: Tom Lendacky <thomas.lendacky@amd.com>
-CC: <linux-kernel@vger.kernel.org>
-Date: Fri, 24 Jan 2014 16:18:14 -0600
-Message-ID: <20140124221814.1894.4001.stgit@tlendack-t1.amdoffice.net>
-In-Reply-To: <20140124221750.1894.48517.stgit@tlendack-t1.amdoffice.net>
-References: <20140124221750.1894.48517.stgit@tlendack-t1.amdoffice.net>
-User-Agent: StGit/0.15
+	Fri, 24 Jan 2014 17:21:48 -0500
+Date: Fri, 24 Jan 2014 17:21:44 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/2] mm: reduce reclaim stalls with heavy anon and dirty
+ cache
+Message-ID: <20140124222144.GA3197@htj.dyndns.org>
+References: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change from scheduling work to scheduling a tasklet to perform
-the callback operations.
+Hello,
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
----
- drivers/crypto/ccp/ccp-dev.c |   21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+On Fri, Jan 24, 2014 at 05:03:02PM -0500, Johannes Weiner wrote:
+> These two patches fix the dirtyable memory calculation to acknowledge
+> the fact that the VM does not really replace anon with dirty cache.
+> As such, anon memory can no longer be considered "dirtyable."
+> 
+> Longer term we probably want to look into reducing some of the bias
+> towards cache.  The problematic workload in particular was not even
+> using any of the anon pages, one swap burst could have resolved it.
 
-diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
-index c3bc212..2c78161 100644
---- a/drivers/crypto/ccp/ccp-dev.c
-+++ b/drivers/crypto/ccp/ccp-dev.c
-@@ -30,6 +30,11 @@ MODULE_LICENSE("GPL");
- MODULE_VERSION("1.0.0");
- MODULE_DESCRIPTION("AMD Cryptographic Coprocessor driver");
- 
-+struct ccp_tasklet_data {
-+	struct completion completion;
-+	struct ccp_cmd *cmd;
-+};
-+
- 
- static struct ccp_device *ccp_dev;
- static inline struct ccp_device *ccp_get_device(void)
-@@ -192,17 +197,23 @@ static struct ccp_cmd *ccp_dequeue_cmd(struct ccp_cmd_queue *cmd_q)
- 	return cmd;
- }
- 
--static void ccp_do_cmd_complete(struct work_struct *work)
-+static void ccp_do_cmd_complete(unsigned long data)
- {
--	struct ccp_cmd *cmd = container_of(work, struct ccp_cmd, work);
-+	struct ccp_tasklet_data *tdata = (struct ccp_tasklet_data *)data;
-+	struct ccp_cmd *cmd = tdata->cmd;
- 
- 	cmd->callback(cmd->data, cmd->ret);
-+	complete(&tdata->completion);
- }
- 
- static int ccp_cmd_queue_thread(void *data)
- {
- 	struct ccp_cmd_queue *cmd_q = (struct ccp_cmd_queue *)data;
- 	struct ccp_cmd *cmd;
-+	struct ccp_tasklet_data tdata;
-+	struct tasklet_struct tasklet;
-+
-+	tasklet_init(&tasklet, ccp_do_cmd_complete, (unsigned long)&tdata);
- 
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	while (!kthread_should_stop()) {
-@@ -220,8 +231,10 @@ static int ccp_cmd_queue_thread(void *data)
- 		cmd->ret = ccp_run_cmd(cmd_q, cmd);
- 
- 		/* Schedule the completion callback */
--		INIT_WORK(&cmd->work, ccp_do_cmd_complete);
--		schedule_work(&cmd->work);
-+		tdata.cmd = cmd;
-+		init_completion(&tdata.completion);
-+		tasklet_schedule(&tasklet);
-+		wait_for_completion(&tdata.completion);
- 	}
- 
- 	__set_current_state(TASK_RUNNING);
+For both patches,
 
+ Tested-by: Tejun Heo <tj@kernel.org>
 
+I don't have much idea what's going on here, but the problem was
+pretty ridiculous.  It's a 8gig machine w/ one ssd and 10k rpm
+harddrive and I could reliably reproduce constant stuttering every
+several seconds for as long as buffered IO was going on on the hard
+drive either with tmpfs occupying somewhere above 4gig or a test
+program which allocates about the same amount of anon memory.
+Although swap usage was zero, turning off swap also made the problem
+go away too.
+
+The trigger conditions seem quite plausible - high anon memory usage
+w/ heavy buffered IO and swap configured - and it's highly likely that
+this is happening in the wild too.  (this can happen with copying
+large files to usb sticks too, right?)
+
+So, if this is the right fix && can be determined not to cause
+noticeable regressions, it probably is worthwhile to cc -stable.
+
+Thanks a lot!
+
+-- 
+tejun
