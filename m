@@ -1,125 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaAXIng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:43:36 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:23208 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189AbaAXIne (ORCPT
+	id S1752507AbaAXIoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:44:20 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:49647 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426AbaAXIoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 03:43:34 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>,
-        <kuninori.morimoto.gx@renesas.com>
-CC: <rob@landley.net>, <perex@perex.cz>, <moinejf@free.fr>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH v2 2/7] ASoC: simple-card: simplify the daifmt code
-Date: Fri, 24 Jan 2014 15:43:01 +0800
-Message-ID: <1390549386-4702-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Fri, 24 Jan 2014 03:44:17 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH 06/14] spi: rspi: Merge rspi_send_pio() and rspi_receive_pio()
+Date: Fri, 24 Jan 2014 09:43:56 +0100
+Message-Id: <1390553044-11860-7-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
+References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the asoc_simple_card_parse_of() will parse the device node's CPU/CODEC
-DAI commone fmts, and then in asoc_simple_card_sub_parse_of() will parse
-the CPU/CODEC DAI's sub-node fmts, so we can combine the info->daifmt and
-info->set.fmt in asoc_simple_card_sub_parse_of() not while just before
-_set_fmt().
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-And this will be more easy to add new functions, such as supporting
-_set_tdm_slot(), etc.
+rspi_send_pio() and rspi_receive_pio() are very similar:
+  - the former only sends data, using TX Only Mode,
+  - the latter sends and receives full duplex data to/from the hardware,
+    but uses dummy transmit data.
+Merge them into rspi_transfer_out_in(), now supporting full duplex if
+needed.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
- sound/soc/generic/simple-card.c | 20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/spi/spi-rspi.c |  101 ++++++++++++++++++++++--------------------------
+ 1 file changed, 46 insertions(+), 55 deletions(-)
 
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index 6366f3f..65833fe 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -24,15 +24,12 @@ struct simple_card_data {
- };
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index d837c5029308..cc90136d02c8 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -389,27 +389,6 @@ static int rspi_data_out_in(struct rspi_data *rspi, u8 data)
+ 	return rspi_data_in(rspi);
+ }
  
- static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
--				       struct asoc_simple_dai *set,
--				       unsigned int daifmt)
-+				       struct asoc_simple_dai *set)
- {
- 	int ret;
- 
--	daifmt |= set->fmt;
+-static int rspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
+-{
+-	int remain = t->len, ret;
+-	const u8 *data = t->tx_buf;
 -
--	if (daifmt) {
--		ret = snd_soc_dai_set_fmt(dai, daifmt);
-+	if (set->fmt) {
-+		ret = snd_soc_dai_set_fmt(dai, set->fmt);
- 		if (ret && ret != -ENOTSUPP) {
- 			dev_err(dai->dev, "simple-card: set_fmt error\n");
- 			goto err;
-@@ -59,14 +56,13 @@ static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
- 				snd_soc_card_get_drvdata(rtd->card);
- 	struct snd_soc_dai *codec = rtd->codec_dai;
- 	struct snd_soc_dai *cpu = rtd->cpu_dai;
--	unsigned int daifmt = priv->daifmt;
- 	int ret;
+-	while (remain > 0) {
+-		rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) | SPCR_TXMD,
+-			    RSPI_SPCR);
+-
+-		ret = rspi_data_out(rspi, *data++);
+-		if (ret < 0)
+-			return ret;
+-		remain--;
+-	}
+-
+-	/* Waiting for the last transmission */
+-	rspi_wait_for_interrupt(rspi, SPSR_SPTEF, SPCR_SPTIE);
+-
+-	return 0;
+-}
+-
+ static int qspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
+ {
+ 	int remain = t->len, ret;
+@@ -563,28 +542,6 @@ static void rspi_receive_init(const struct rspi_data *rspi)
+ 			    RSPI_SPSR);
+ }
  
--	ret = __asoc_simple_card_dai_init(codec, &priv->codec_dai, daifmt);
-+	ret = __asoc_simple_card_dai_init(codec, &priv->codec_dai);
- 	if (ret < 0)
- 		return ret;
+-static int rspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
+-{
+-	int remain = t->len, ret;
+-	u8 *data = t->rx_buf;
+-
+-	rspi_receive_init(rspi);
+-
+-	while (remain > 0) {
+-		rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) & ~SPCR_TXMD,
+-			    RSPI_SPCR);
+-
+-		/* dummy write data for generate clock */
+-		ret = rspi_data_out_in(rspi, DUMMY_DATA);
+-		if (ret < 0)
+-			return ret;
+-		*data++ = ret;
+-		remain--;
+-	}
+-
+-	return 0;
+-}
+-
+ static void qspi_receive_init(const struct rspi_data *rspi)
+ {
+ 	u8 spsr;
+@@ -729,27 +686,61 @@ static int rspi_is_dma(const struct rspi_data *rspi, struct spi_transfer *t)
+ 	return 0;
+ }
  
--	ret = __asoc_simple_card_dai_init(cpu, &priv->cpu_dai, daifmt);
-+	ret = __asoc_simple_card_dai_init(cpu, &priv->cpu_dai);
- 	if (ret < 0)
- 		return ret;
++static int rspi_transfer_out_in(struct rspi_data *rspi,
++				struct spi_transfer *xfer)
++{
++	int remain = xfer->len, ret;
++	const u8 *tx_buf = xfer->tx_buf;
++	u8 *rx_buf = xfer->rx_buf;
++	u8 spcr, data;
++
++	rspi_receive_init(rspi);
++
++	spcr = rspi_read8(rspi, RSPI_SPCR);
++	if (rx_buf)
++		spcr &= ~SPCR_TXMD;
++	else
++		spcr |= SPCR_TXMD;
++	rspi_write8(rspi, spcr, RSPI_SPCR);
++
++	while (remain > 0) {
++		data = tx_buf ? *tx_buf++ : DUMMY_DATA;
++		ret = rspi_data_out(rspi, data);
++		if (ret < 0)
++			return ret;
++		if (rx_buf) {
++			ret = rspi_data_in(rspi);
++			if (ret < 0)
++				return ret;
++			*rx_buf++ = ret;
++		}
++		remain--;
++	}
++
++	/* Wait for the last transmission */
++	rspi_wait_for_interrupt(rspi, SPSR_SPTEF, SPCR_SPTIE);
++
++	return 0;
++}
++
+ static int rspi_transfer_one(struct spi_master *master, struct spi_device *spi,
+ 			     struct spi_transfer *xfer)
+ {
+ 	struct rspi_data *rspi = spi_master_get_devdata(master);
+-	int ret = 0;
++	int ret;
++
++	if (!rspi_is_dma(rspi, xfer))
++		return rspi_transfer_out_in(rspi, xfer);
  
-@@ -75,6 +71,7 @@ static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
+ 	if (xfer->tx_buf) {
+-		if (rspi_is_dma(rspi, xfer))
+-			ret = rspi_send_dma(rspi, xfer);
+-		else
+-			ret = rspi_send_pio(rspi, xfer);
++		ret = rspi_send_dma(rspi, xfer);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	if (xfer->rx_buf) {
+-		if (rspi_is_dma(rspi, xfer))
+-			ret = rspi_receive_dma(rspi, xfer);
+-		else
+-			ret = rspi_receive_pio(rspi, xfer);
+-	}
+-	return ret;
++	if (xfer->rx_buf)
++		return rspi_receive_dma(rspi, xfer);
++
++	return 0;
+ }
  
- static int
- asoc_simple_card_sub_parse_of(struct device_node *np,
-+			      unsigned int daifmt,
- 			      struct asoc_simple_dai *dai,
- 			      const struct device_node **p_node,
- 			      const char **name)
-@@ -103,6 +100,7 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
- 	 * and specific "format" if it has
- 	 */
- 	dai->fmt = snd_soc_of_parse_daifmt(np, NULL);
-+	dai->fmt |= daifmt;
- 
- 	/*
- 	 * dai->sysclk come from
-@@ -161,7 +159,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- 	ret = -EINVAL;
- 	np = of_get_child_by_name(node, "simple-audio-card,cpu");
- 	if (np)
--		ret = asoc_simple_card_sub_parse_of(np,
-+		ret = asoc_simple_card_sub_parse_of(np, priv->daifmt,
- 						  &priv->cpu_dai,
- 						  &dai_link->cpu_of_node,
- 						  &dai_link->cpu_dai_name);
-@@ -172,7 +170,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- 	ret = -EINVAL;
- 	np = of_get_child_by_name(node, "simple-audio-card,codec");
- 	if (np)
--		ret = asoc_simple_card_sub_parse_of(np,
-+		ret = asoc_simple_card_sub_parse_of(np, priv->daifmt,
- 						  &priv->codec_dai,
- 						  &dai_link->codec_of_node,
- 						  &dai_link->codec_dai_name);
+ static int qspi_transfer_one(struct spi_master *master, struct spi_device *spi,
 -- 
-1.8.4
-
+1.7.9.5
 
