@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaAXKzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 05:55:25 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42360 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751475AbaAXKzX (ORCPT
+	id S1752387AbaAXKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 05:55:58 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47132 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752064AbaAXKz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 05:55:23 -0500
-Date: Fri, 24 Jan 2014 10:54:48 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v5 4/8] ARM: do CPU-specific init for Broadcom Brahma15
- cores
-Message-ID: <20140124105448.GA814@e106331-lin.cambridge.arm.com>
-References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com>
- <1390361452-3124-5-git-send-email-marc.ceeeee@gmail.com>
+	Fri, 24 Jan 2014 05:55:56 -0500
+Date: Fri, 24 Jan 2014 10:55:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] irqchip: orion: clear stale interrupts in
+	irq_enable
+Message-ID: <20140124105539.GD15937@n2100.arm.linux.org.uk>
+References: <1390516686-2224-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390516686-2224-4-git-send-email-sebastian.hesselbarth@gmail.com> <20140123225208.GA24778@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390361452-3124-5-git-send-email-marc.ceeeee@gmail.com>
-Thread-Topic: [PATCH v5 4/8] ARM: do CPU-specific init for Broadcom
- Brahma15 cores
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140123225208.GA24778@obsidianresearch.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 03:30:48AM +0000, Marc Carino wrote:
-> Perform any CPU-specific initialization required on the
-> Broadcom Brahma-15 core.
+On Thu, Jan 23, 2014 at 03:52:08PM -0700, Jason Gunthorpe wrote:
+> On Thu, Jan 23, 2014 at 11:38:06PM +0100, Sebastian Hesselbarth wrote:
+> > Bridge IRQ_CAUSE bits are asserted regardless of the corresponding bit in
+> > IRQ_MASK register. To avoid interrupt events on stale irqs, we have to clear
+> > them before unmask. This installs an .irq_enable callback to ensure stale
+> > irqs are cleared before initial unmask.
 > 
-> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-> ---
->  arch/arm/mm/proc-v7.S |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
+> I'm not sure if putting this in irq_enable is correct. I think this
+> should only happen at irq_startup.
 > 
-> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-> index bd17819..98ea423 100644
-> --- a/arch/arm/mm/proc-v7.S
-> +++ b/arch/arm/mm/proc-v7.S
-> @@ -193,6 +193,7 @@ __v7_cr7mp_setup:
->  	b	1f
->  __v7_ca7mp_setup:
->  __v7_ca15mp_setup:
-> +__v7_b15mp_setup:
->  	mov	r10, #0
->  1:
->  #ifdef CONFIG_SMP
-> @@ -494,6 +495,16 @@ __v7_ca15mp_proc_info:
->  	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
->  
->  	/*
-> +	 * Broadcom Corporation Brahma-B15 processor.
-> +	 */
-> +	.type	__v7_b15mp_proc_info, #object
-> +__v7_b15mp_proc_info:
-> +	.long	0x420f00f0
-> +	.long	0xff0ffff0
-> +	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
+> The question boils down to what is supposed to happen with this code
+> sequence:
+> 
+> disable_irq(..);
+> write(.. something to cause an interrupt edge ..);
+> .. synchronize ..
+> enable_irq(..);
+> 
+> Do we get the interrupt or not?
 
-On the third posting, Will Deacon asked if the hwcap override was really
-required [1]. Two postings later there's been no answer.
+The answer is... yes, the interrupt should be delivered after the
+interrupt is re-enabled.
 
-Is your CPUID_EXT_ISAR0 value wrong? If so, please add a comment to that
-effect (as with __krait_proc_info).
+> I found this message from Linus long ago:
+>  http://yarchive.net/comp/linux/edge_triggered_interrupts.html
+> > Btw, the "disable_irq()/enable_irq()" subsystem has been written so that
+> > when you disable an edge-triggered interrupt, and the edge happens while
+> > the interrupt is disabled, we will re-play the interrupt at enable time.
+> > Exactly so that drivers can have an easier time and don't have to
+> > normally worry about whether something is edge or level-triggered.
+> 
+> And found this note in Documentation/DocBook/genericirq.tmpl:
+> 
+> > This prevents losing edge interrupts on hardware which does
+> > not store an edge interrupt event while the interrupt is disabled at
+> > the hardware level. 
+> 
+> So I think it is very clear that the chip driver should not discard
+> edges that happened while the interrupt was disabled.
 
-Thanks,
-Mark.
+Correct.
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/225895.html
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
