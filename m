@@ -1,250 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaAXHya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 02:54:30 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44719 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaAXHy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 02:54:28 -0500
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.orig,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH resend] pwm: Remove obsolete HAVE_PWM Kconfig symbol
-Date: Fri, 24 Jan 2014 08:54:16 +0100
-Message-Id: <1390550056-5924-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.2
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752095AbaAXHyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 02:54:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41073 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082AbaAXHyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 02:54:54 -0500
+Message-ID: <52E21C3B.50107@ti.com>
+Date: Fri, 24 Jan 2014 02:54:35 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Dave Hansen <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Panic on 8-node system in memblock_virt_alloc_try_nid()
+References: <52E19C7D.7050603@intel.com> <CAE9FiQX9kTxnaqpWNgg3dUzr7+60YCrEx3q3xxO-G1n6z64xVQ@mail.gmail.com> <52E20A56.1000507@ti.com> <52E20E98.7010703@ti.com> <CAE9FiQWRkP1Hir6UFuPRGu6bXNd_SHonuaC-MG1UD-tSeE0teQ@mail.gmail.com> <52E214C7.9050309@ti.com> <CAE9FiQXEYb5bkLTS9oMUWB_tQ=2-0EUeRDb0DHPS_YH83CC7nA@mail.gmail.com>
+In-Reply-To: <CAE9FiQXEYb5bkLTS9oMUWB_tQ=2-0EUeRDb0DHPS_YH83CC7nA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before we had the PWM framework we used to have a barebone PWM api. The
-HAVE_PWM Kconfig symbol used to be selected by the PWM drivers to specify
-the PWM API is present in the kernel. Since the last legacy driver is gone
-the HAVE_PWM symbol can go aswell.
-
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-pwm@vger.kernel.orig
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ralf Baechle <ralf@linux-mips.org>
----
-
-Thierry as PWM maintainer has agreed to take this patch. Would be nice
-to get some Acks from affected architectures. Russell, Ralf?
-
- arch/arm/Kconfig           |  4 ----
- arch/arm/mach-pxa/Kconfig  | 15 ---------------
- arch/mips/Kconfig          |  1 -
- drivers/input/misc/Kconfig |  4 ++--
- include/linux/pwm.h        |  2 +-
- 5 files changed, 3 insertions(+), 23 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c1f1a7e..1b6f499 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -109,9 +109,6 @@ config ARM_DMA_IOMMU_ALIGNMENT
+On Friday 24 January 2014 02:46 AM, Yinghai Lu wrote:
+>> OK. So we need '__alloc_bootmem_low()' equivalent memblock API. We will try
+>> > to come up with a patch for the same. Thanks for inputs.
+> Yes,
+> 
+> Andrew, can you try attached two patches in your setup?
+> 
+> Assume your system does not have intel iommu support?
+> 
+You are fast.. I was cooking up very similar patch as yours.
+Thanks for help. Its should mostly fix the issue on Andrew's
+box after the revert of commit 5b6e529521
  
- endif
- 
--config HAVE_PWM
--	bool
--
- config MIGHT_HAVE_PCI
- 	bool
- 
-@@ -606,7 +603,6 @@ config ARCH_LPC32XX
- 	select CPU_ARM926T
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_IDE
--	select HAVE_PWM
- 	select USB_ARCH_HAS_OHCI
- 	select USE_OF
- 	help
-diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
-index 96100db..b96244c 100644
---- a/arch/arm/mach-pxa/Kconfig
-+++ b/arch/arm/mach-pxa/Kconfig
-@@ -7,7 +7,6 @@ comment "Intel/Marvell Dev Platforms (sorted by hardware release time)"
- config MACH_PXA3XX_DT
- 	bool "Support PXA3xx platforms from device tree"
- 	select CPU_PXA300
--	select HAVE_PWM
- 	select POWER_SUPPLY
- 	select PXA3xx
- 	select USE_OF
-@@ -23,12 +22,10 @@ config ARCH_LUBBOCK
- 
- config MACH_MAINSTONE
- 	bool "Intel HCDDBBVA0 Development Platform (aka Mainstone)"
--	select HAVE_PWM
- 	select PXA27x
- 
- config MACH_ZYLONITE
- 	bool
--	select HAVE_PWM
- 	select PXA3xx
- 
- config MACH_ZYLONITE300
-@@ -69,7 +66,6 @@ config ARCH_PXA_IDP
- config ARCH_VIPER
- 	bool "Arcom/Eurotech VIPER SBC"
- 	select ARCOM_PCMCIA
--	select HAVE_PWM
- 	select I2C_GPIO
- 	select ISA
- 	select PXA25x
-@@ -120,7 +116,6 @@ config MACH_CM_X300
- 	bool "CompuLab CM-X300 modules"
- 	select CPU_PXA300
- 	select CPU_PXA310
--	select HAVE_PWM
- 	select PXA3xx
- 
- config MACH_CAPC7117
-@@ -211,7 +206,6 @@ config TRIZEPS_PCMCIA
- 
- config MACH_LOGICPD_PXA270
- 	bool "LogicPD PXA270 Card Engine Development Platform"
--	select HAVE_PWM
- 	select PXA27x
- 
- config MACH_PCM027
-@@ -222,7 +216,6 @@ config MACH_PCM027
- config MACH_PCM990_BASEBOARD
- 	bool "PHYTEC PCM-990 development board"
- 	depends on MACH_PCM027
--	select HAVE_PWM
- 
- choice
- 	prompt "display on pcm990"
-@@ -246,7 +239,6 @@ config MACH_COLIBRI
- config MACH_COLIBRI_PXA270_INCOME
- 	bool "Income s.r.o. PXA270 SBC"
- 	depends on MACH_COLIBRI
--	select HAVE_PWM
- 	select PXA27x
- 
- config MACH_COLIBRI300
-@@ -275,7 +267,6 @@ comment "End-user Products (sorted by vendor name)"
- 
- config MACH_H4700
- 	bool "HP iPAQ hx4700"
--	select HAVE_PWM
- 	select IWMMXT
- 	select PXA27x
- 
-@@ -289,14 +280,12 @@ config MACH_HIMALAYA
- 
- config MACH_MAGICIAN
- 	bool "Enable HTC Magician Support"
--	select HAVE_PWM
- 	select IWMMXT
- 	select PXA27x
- 
- config MACH_MIOA701
- 	bool "Mitac Mio A701 Support"
- 	select GPIO_SYSFS
--	select HAVE_PWM
- 	select IWMMXT
- 	select PXA27x
- 	help
-@@ -306,7 +295,6 @@ config MACH_MIOA701
- 
- config PXA_EZX
- 	bool "Motorola EZX Platform"
--	select HAVE_PWM
- 	select IWMMXT
- 	select PXA27x
- 
-@@ -346,7 +334,6 @@ config MACH_MP900C
- 
- config ARCH_PXA_PALM
- 	bool "PXA based Palm PDAs"
--	select HAVE_PWM
- 
- config MACH_PALM27X
- 	bool
-@@ -444,7 +431,6 @@ config MACH_TREO680
- config MACH_RAUMFELD_RC
- 	bool "Raumfeld Controller"
- 	select CPU_PXA300
--	select HAVE_PWM
- 	select POWER_SUPPLY
- 	select PXA3xx
- 
-@@ -608,7 +594,6 @@ config MACH_E800
- 
- config MACH_ZIPIT2
- 	bool "Zipit Z2 Handheld"
--	select HAVE_PWM
- 	select PXA27x
- endmenu
- 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 650de39..ce62af8 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -233,7 +233,6 @@ config MACH_JZ4740
- 	select IRQ_CPU
- 	select ARCH_REQUIRE_GPIOLIB
- 	select SYS_HAS_EARLY_PRINTK
--	select HAVE_PWM
- 	select HAVE_CLK
- 	select GENERIC_IRQ_CHIP
- 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 5f4967d..bc6ec8e 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -156,7 +156,7 @@ config INPUT_MAX8925_ONKEY
- 
- config INPUT_MAX8997_HAPTIC
- 	tristate "MAXIM MAX8997 haptic controller support"
--	depends on PWM && HAVE_PWM && MFD_MAX8997
-+	depends on PWM && MFD_MAX8997
- 	select INPUT_FF_MEMLESS
- 	help
- 	  This option enables device driver support for the haptic controller
-@@ -461,7 +461,7 @@ config INPUT_PCF8574
- 
- config INPUT_PWM_BEEPER
- 	tristate "PWM beeper support"
--	depends on PWM && HAVE_PWM
-+	depends on PWM
- 	help
- 	  Say Y here to get support for PWM based beeper devices.
- 
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index f0feafd..4717f54 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -7,7 +7,7 @@
- struct pwm_device;
- struct seq_file;
- 
--#if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
-+#if IS_ENABLED(CONFIG_PWM)
- /*
-  * pwm_request - request a PWM device
-  */
--- 
-1.8.5.2
+> 
+> ---
+>  arch/arm/kernel/setup.c |    2 +-
+>  include/linux/bootmem.h |   37 +++++++++++++++++++++++++++++++++++++
+>  lib/swiotlb.c           |    4 ++--
+>  3 files changed, 40 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/include/linux/bootmem.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/bootmem.h
+> +++ linux-2.6/include/linux/bootmem.h
+> @@ -175,6 +175,27 @@ static inline void * __init memblock_vir
+>  						    NUMA_NO_NODE);
+>  }
+>  
+> +#ifndef ARCH_LOW_ADDRESS_LIMIT
+> +#define ARCH_LOW_ADDRESS_LIMIT  0xffffffffUL
+> +#endif
+> +
+> +static inline void * __init memblock_virt_alloc_low(
+> +                                        phys_addr_t size, phys_addr_t align)
+> +{
+> +        return memblock_virt_alloc_try_nid(size, align,
+> +						   BOOTMEM_LOW_LIMIT,
+> +						   ARCH_LOW_ADDRESS_LIMIT,
+> +						   NUMA_NO_NODE);
+> +}
+> +static inline void * __init memblock_virt_alloc_low_nopanic(
+> +                                        phys_addr_t size, phys_addr_t align)
+> +{
+> +        return memblock_virt_alloc_try_nid_nopanic(size, align,
+> +						   BOOTMEM_LOW_LIMIT,
+> +						   ARCH_LOW_ADDRESS_LIMIT,
+> +						   NUMA_NO_NODE);
+> +}
+> +
+>  static inline void * __init memblock_virt_alloc_from_nopanic(
+>  		phys_addr_t size, phys_addr_t align, phys_addr_t min_addr)
+>  {
+> @@ -238,6 +259,22 @@ static inline void * __init memblock_vir
+>  	return __alloc_bootmem_nopanic(size, align, BOOTMEM_LOW_LIMIT);
+>  }
+>  
+> +static inline void * __init memblock_virt_alloc_low(
+> +                                        phys_addr_t size, phys_addr_t align)
+> +{
+> +	if (!align)
+> +		align = SMP_CACHE_BYTES;
+> +	return __alloc_bootmem_low(size, align, BOOTMEM_LOW_LIMIT);
+> +}
+> +
+> +static inline void * __init memblock_virt_alloc_low_nopanic(
+> +                                        phys_addr_t size, phys_addr_t align)
+> +{
+> +	if (!align)
+> +		align = SMP_CACHE_BYTES;
+> +	return __alloc_bootmem_low_nopanic(size, align, BOOTMEM_LOW_LIMIT);
+> +}
+> +
+>  static inline void * __init memblock_virt_alloc_from_nopanic(
+>  		phys_addr_t size, phys_addr_t align, phys_addr_t min_addr)
+>  {
+> Index: linux-2.6/lib/swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/lib/swiotlb.c
+> +++ linux-2.6/lib/swiotlb.c
+> @@ -172,7 +172,7 @@ int __init swiotlb_init_with_tbl(char *t
+>  	/*
+>  	 * Get the overflow emergency buffer
+>  	 */
+> -	v_overflow_buffer = memblock_virt_alloc_nopanic(
+> +	v_overflow_buffer = memblock_virt_alloc_low_nopanic(
+>  						PAGE_ALIGN(io_tlb_overflow),
+>  						PAGE_SIZE);
+>  	if (!v_overflow_buffer)
+> @@ -220,7 +220,7 @@ swiotlb_init(int verbose)
+>  	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+>  
+>  	/* Get IO TLB memory from the low pages */
+> -	vstart = memblock_virt_alloc_nopanic(PAGE_ALIGN(bytes), PAGE_SIZE);
+> +	vstart = memblock_virt_alloc_low_nopanic(PAGE_ALIGN(bytes), PAGE_SIZE);
+>  	if (vstart && !swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose))
+>  		return;
+>  
+> Index: linux-2.6/arch/arm/kernel/setup.c
+> ===================================================================
+> --- linux-2.6.orig/arch/arm/kernel/setup.c
+> +++ linux-2.6/arch/arm/kernel/setup.c
+> @@ -717,7 +717,7 @@ static void __init request_standard_reso
+>  	kernel_data.end     = virt_to_phys(_end - 1);
+>  
+>  	for_each_memblock(memory, region) {
+> -		res = memblock_virt_alloc(sizeof(*res), 0);
+> +		res = memblock_virt_alloc_low(sizeof(*res), 0);
+>  		res->name  = "System RAM";
+>  		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
+>  		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
 
