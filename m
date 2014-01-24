@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaAXPg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:36:27 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27991 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064AbaAXPg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:36:26 -0500
-X-IronPort-AV: E=Sophos;i="4.95,713,1384300800"; 
-   d="scan'208";a="96206346"
-Message-ID: <1390577782.13513.8.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen-blkback: fix memory leak when
- persistent grants are used
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Matt Wilson <msw@linux.com>
-CC: Matt Wilson <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>, Matt Rushton <mrushton@amazon.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        Roger Pau =?ISO-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
-Date: Fri, 24 Jan 2014 15:36:22 +0000
-In-Reply-To: <1390555293.2124.6.camel@kazak.uk.xensource.com>
-References: <1390505326-9368-1-git-send-email-msw@linux.com>
-	 <1390555293.2124.6.camel@kazak.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+	id S1753306AbaAXPgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:36:53 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:47182 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064AbaAXPgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:36:51 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-c3-52e288904aa1
+Message-id: <52E28881.5080008@samsung.com>
+Date: Fri, 24 Jan 2014 16:36:33 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 6/8 v4] ARM: dts: exynos5250/5420: add dt node for sss
+ module
+References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
+ <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xK7oTOh4FGeztErC4+/wwo8XLQ5oW
+	3a9kLHoXXGWzuH/vJ5PF5V1z2CxmnN/HZLFo239mi1W7/jBanJ1ziMmBy2PnrLvsHtsOqHr0
+	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXRuOUaSwF31kr9r4/x9rA+Iali5GTQ0LARKKp6xiU
+	LSZx4d56ti5GLg4hgaWMEg1X+pghnM9AzoQzYFW8AloSe369YwWxWQRUJV5P/cYEYrMJqEl8
+	bnjEBmKLCkRI/J23nhGiXlDix+R7YL0iAuUS/26sAdvALHCAUWLd9FNADgeHsECwxNIHhhDL
+	Ghklzj/6CdbAKeAmMfX4RjCbWcBaYuWkbYwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRN
+	LU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ+687GJceszrEKMDBqMTD+yH4YZAQa2JZcWXuIUYJ
+	DmYlEd6drY+ChHhTEiurUovy44tKc1KLDzEycXBKNTDOU3b+p9uzKs5d02jnx2MTFsRsunl9
+	feOKCYaVDa+CBFKuGHKoh++Yu7L20/mV2ytqjoucmTWlyX5Fk+qU5Rez0x5+XsGX9NTdK0Mm
+	gkfjTL7BqlZV2+aSJOa1157vSCyaUOBe80helH1C4i4tfX7l6e127A43esXkTaye3pslfyxb
+	Y/L5u3JKLMUZiYZazEXFiQB6AZs0WQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-24 at 09:21 +0000, Ian Campbell wrote:
-> On Thu, 2014-01-23 at 11:28 -0800, Matt Wilson wrote:
-> > From: Matt Rushton <mrushton@amazon.com>
-> > 
-> > Currently shrink_free_pagepool() is called before the pages used for
-> > persistent grants are released via free_persistent_gnts(). This
-> > results in a memory leak when a VBD that uses persistent grants is
-> > torn down.
-> 
-> This may well be the explanation for the memory leak I was observing on
-> ARM last night. I'll give it a go and let you know.
+Hi Naveen,
 
-Results are a bit inconclusive unfortunately, it seems like I am seeing
-some other leak too (or instead).
+On 15.01.2014 10:16, Naveen Krishna Chatradhi wrote:
+> This patch adds the device tree node for SSS module
+> found on Exynos5420 and Exynos5250
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> TO: <linux-samsung-soc@vger.kernel.org>
+> CC: Kukjin Kim <kgene.kim@samsung.com>
+> CC: <linux-crypto@vger.kernel.org>
+> ---
+> Changes since v3:
+> 1. Modified the SSS clock ID as per dt-bindings for Exynos5250 in
+>     samsung-clk.git tree.
+>
+>   arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
+>   arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
+>   2 files changed, 18 insertions(+)
 
-Totally unscientifically it does seem to be leaking more slowly than
-before, so perhaps this patch has helped, but nothing conclusive I'm
-afraid.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-I don't think that quite qualifies for a Tested-by though, sorry.
-
-Ian. 
-
-> 
-> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Cc: "Roger Pau Monné" <roger.pau@citrix.com>
-> > Cc: Ian Campbell <Ian.Campbell@citrix.com>
-> > Cc: David Vrabel <david.vrabel@citrix.com>
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: xen-devel@lists.xen.org
-> > Cc: Anthony Liguori <aliguori@amazon.com>
-> > Signed-off-by: Matt Rushton <mrushton@amazon.com>
-> > Signed-off-by: Matt Wilson <msw@amazon.com>
-> > ---
-> >  drivers/block/xen-blkback/blkback.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> > index 6620b73..30ef7b3 100644
-> > --- a/drivers/block/xen-blkback/blkback.c
-> > +++ b/drivers/block/xen-blkback/blkback.c
-> > @@ -625,9 +625,6 @@ purge_gnt_list:
-> >  			print_stats(blkif);
-> >  	}
-> >  
-> > -	/* Since we are shutting down remove all pages from the buffer */
-> > -	shrink_free_pagepool(blkif, 0 /* All */);
-> > -
-> >  	/* Free all persistent grant pages */
-> >  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
-> >  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
-> > @@ -636,6 +633,9 @@ purge_gnt_list:
-> >  	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
-> >  	blkif->persistent_gnt_c = 0;
-> >  
-> > +	/* Since we are shutting down remove all pages from the buffer */
-> > +	shrink_free_pagepool(blkif, 0 /* All */);
-> > +
-> >  	if (log_stats)
-> >  		print_stats(blkif);
-> >  
-> 
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-
+Best regards,
+Tomasz
 
