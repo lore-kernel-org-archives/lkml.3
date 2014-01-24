@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaAXKRD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 05:17:03 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:44780 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaAXKRA (ORCPT
+	id S1752307AbaAXKSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 05:18:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41076 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaAXKSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 05:17:00 -0500
-Date: Fri, 24 Jan 2014 11:16:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Subject: Re: [PATCH 02/11] x86: sysfb: remove sysfb when probing real hw
-Message-ID: <20140124101657.GB5755@gmail.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
- <1390486503-1504-3-git-send-email-dh.herrmann@gmail.com>
- <20140123165115.GB23869@gmail.com>
- <CANq1E4QQE2qeEz1AaN1NO3p2TE006jHfz8uaJ_LLHptKdHecxQ@mail.gmail.com>
- <20140123171436.GA27345@gmail.com>
- <CANq1E4SyciabqonrFMRa8cMSDxkFuvfqexTBMxKPih+XreF_=A@mail.gmail.com>
+	Fri, 24 Jan 2014 05:18:48 -0500
+Date: Fri, 24 Jan 2014 11:18:39 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Chris Ruehl <chris.ruehl@gtsys.com.hk>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: Regression on next-20140116 [Was: [PATCH 3/3 v4] usb: chipidea:
+ hw_phymode_configure moved before ci_usb_phy_init]
+Message-ID: <20140124101839.GA26766@pengutronix.de>
+References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk>
+ <20140122094951.GO26766@pengutronix.de>
+ <20140122214133.GP26766@pengutronix.de>
+ <20140123012240.GA8679@shlinux1.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CANq1E4SyciabqonrFMRa8cMSDxkFuvfqexTBMxKPih+XreF_=A@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140123012240.GA8679@shlinux1.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Peter,
 
-* David Herrmann <dh.herrmann@gmail.com> wrote:
-
-> Hi
+On Thu, Jan 23, 2014 at 09:22:41AM +0800, Peter Chen wrote:
+> On Wed, Jan 22, 2014 at 10:41:33PM +0100, Uwe Kleine-König wrote:
+> > On Wed, Jan 22, 2014 at 10:49:51AM +0100, Uwe Kleine-König wrote:
+> > > On Tue, Dec 03, 2013 at 04:01:50PM +0800, Chris Ruehl wrote:
+> > > > usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
+> > > > hw_phymode_configure configures the PORTSC registers and allow the
+> > > > following phy_inits to operate on the right parameters. This fix a problem
+> > > > where the UPLI (ISP1504) could not detected, because the Viewport was not
+> > > > available and read the viewport return 0's only.
+> > > This patch (or a later revision of it to be more exact) made it into
+> > > mainline as cd0b42c2a6d2.
+> > > 
+> > > On an i.MX27 based machine I'm hitting an oops (see below) on
+> > > next-20140116 + a few patches. (I didn't switch to 3.13+ yet, as I think
+> > > not everything I need has landed there.) The oops goes away (and still
+> > > better, lsusb reports my connected devices instead of "unable to
+> > > initialize libusb: -99") when I do at least one of the following:
+> > > 
+> > >  - set CONFIG_USB_CHIPIDEA=y instead of =m
+> > >  - revert commit
+> > >       cd0b42c2a6d2 (usb: chipidea: put hw_phymode_configure before ci_usb_phy_init)
+> > I debugged that a bit further and the problem is that
+> > hw_phymode_configure depends on the phy's clk being enabled (i.e.
+> > usb_ipg_gate) and this is only enforced in ci_usb_phy_init (via
+> > usb_phy_init -> usb_gen_phy_init). When CONFIG_USB_CHIPIDEA=y the init
+> > call to disable all unused clocks wasn't run yet and so the clock is
+> > still on as this is the boot default.
 > 
-> On Thu, Jan 23, 2014 at 6:14 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * David Herrmann <dh.herrmann@gmail.com> wrote:
-> >
-> >> >> +#ifdef CONFIG_X86_SYSFB
-> >> >> +#  include <asm/sysfb.h>
-> >> >> +#endif
-> >> >
-> >> > I guess a single space is sufficient?
-> >> >
-> >> > Better yet, I'd include sysfb.h unconditionally:
-> >>
-> >> Unconditionally won't work as only x86 has this header. [...]
-> >
-> > Well, in non-x86 code an #ifdef x86 looks ugly as well - but I guess
-> > better than not building.
-> >
-> >> [...] If there's a way to place a dummy into asm-generic which is
-> >> picked if arch/xy/include/asm/ doesn't have the header, let me know.
-> >
-> > Not that I know of.
-> >
-> >> But if I include it unconditionally without any fallback, this will
-> >> fail on non-x86. And adding the header to all archs seems overkill.
-> >
-> > So why not drop the x86-ism and rename it to CONFIG_PLATFORM_SYSFB?
-> > Some platforms configure it, some don't. Then the prototypes could
-> > move into include/linux/sysfb.h or so and would be platform agnostic.
+> I am a little puzzled at your platform
 > 
-> This is almost exactly what patch #6 does. [...]
+> - Which phy you have used? ulpi phy ,internal phy or other external phy?
+I'm using an ISP1504 (i.e. ULPI) phy.
 
-Indeed - I never got so far down into the series.
+> - If you use ulpi phy, why you still need to use nop phy driver?
+I don't need to, that's just how I made it running. If you have a better
+suggestion, don't hesitate to tell me. :-)
 
-> [...] But it also adds ~400 lines of kernel-doc and ~400 lines of 
-> Documentation/. Given your remarks, I guess I will just split this 
-> patch into code and docs, so we can just pick it up for stable in 
-> case patch #1 does not fix all issues.
+>  Besides, according to chris patch, the ulpi can only be visited after
+> hw_phymode_configure?
+It seems so, yes. For writing the PORTSC register the usb_ipg_gate clock
+must be on. hw_phymode_configure writes the register and ci_usb_phy_init
+enables the clock.
 
-I have no objections to this form if it's fixed in a later patch and 
-this one is easier to backport. I just missed that aspect.
+> - Do you have some hardware related operation at phy's probe? If it exists,
+> why not move it to phy->init?
+I guess that would work and the culprit is that I just took Chris' patch
+because I don't have a clue about USB.
 
-Thanks,
+Best regards
+Uwe
 
-	Ingo
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
