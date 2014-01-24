@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbaAXWDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 17:03:54 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:52213 "EHLO zene.cmpxchg.org"
+	id S1753050AbaAXWDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:03:52 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:52210 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171AbaAXWDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 17:03:23 -0500
+	id S1751743AbaAXWDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 17:03:22 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/2] mm: page-writeback: do not count anon pages as dirtyable memory
-Date: Fri, 24 Jan 2014 17:03:04 -0500
-Message-Id: <1390600984-13925-3-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 1/2] mm: page-writeback: fix dirty_balance_reserve subtraction from dirtyable memory
+Date: Fri, 24 Jan 2014 17:03:03 -0500
+Message-Id: <1390600984-13925-2-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
 References: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
@@ -21,120 +21,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VM is currently heavily tuned to avoid swapping.  Whether that is
-good or bad is a separate discussion, but as long as the VM won't swap
-to make room for dirty cache, we can not consider anonymous pages when
-calculating the amount of dirtyable memory, the baseline to which
+The dirty_balance_reserve is an approximation of the fraction of free
+pages that the page allocator does not make available for page cache
+allocations.  As a result, it has to be taken into account when
+calculating the amount of "dirtyable memory", the baseline to which
 dirty_background_ratio and dirty_ratio are applied.
 
-A simple workload that occupies a significant size (40+%, depending on
-memory layout, storage speeds etc.) of memory with anon/tmpfs pages
-and uses the remainder for a streaming writer demonstrates this
-problem.  In that case, the actual cache pages are a small fraction of
-what is considered dirtyable overall, which results in an relatively
-large portion of the cache pages to be dirtied.  As kswapd starts
-rotating these, random tasks enter direct reclaim and stall on IO.
+However, currently the reserve is subtracted from the sum of free and
+reclaimable pages, which is non-sensical and leads to erroneous
+results when the system is dominated by unreclaimable pages and the
+dirty_balance_reserve is bigger than free+reclaimable.  In that case,
+at least the already allocated cache should be considered dirtyable.
 
-Only consider free pages and file pages dirtyable.
+Fix the calculation by subtracting the reserve from the amount of free
+pages, then adding the reclaimable pages on top.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/vmstat.h |  2 --
- mm/internal.h          |  1 -
- mm/page-writeback.c    |  6 ++++--
- mm/vmscan.c            | 23 +----------------------
- 4 files changed, 5 insertions(+), 27 deletions(-)
+ mm/page-writeback.c | 52 +++++++++++++++++++++++-----------------------------
+ 1 file changed, 23 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index e4b948080d20..a67b38415768 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -142,8 +142,6 @@ static inline unsigned long zone_page_state_snapshot(struct zone *zone,
- 	return x;
- }
- 
--extern unsigned long global_reclaimable_pages(void);
--
- #ifdef CONFIG_NUMA
- /*
-  * Determine the per node value of a stat item. This function
-diff --git a/mm/internal.h b/mm/internal.h
-index 684f7aa9692a..8b6cfd63b5a5 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -85,7 +85,6 @@ extern unsigned long highest_memmap_pfn;
-  */
- extern int isolate_lru_page(struct page *page);
- extern void putback_lru_page(struct page *page);
--extern unsigned long zone_reclaimable_pages(struct zone *zone);
- extern bool zone_reclaimable(struct zone *zone);
- 
- /*
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 79cf52b058a7..29e129478644 100644
+index 63807583d8e8..79cf52b058a7 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -205,7 +205,8 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
- 	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
- 	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+@@ -191,6 +191,25 @@ static unsigned long writeout_period_time = 0;
+  * global dirtyable memory first.
+  */
  
--	nr_pages += zone_reclaimable_pages(zone);
-+	nr_pages += zone_page_state(zone, NR_INACTIVE_FILE);
-+	nr_pages += zone_page_state(zone, NR_ACTIVE_FILE);
++/**
++ * zone_dirtyable_memory - number of dirtyable pages in a zone
++ * @zone: the zone
++ *
++ * Returns the zone's number of pages potentially available for dirty
++ * page cache.  This is the base value for the per-zone dirty limits.
++ */
++static unsigned long zone_dirtyable_memory(struct zone *zone)
++{
++	unsigned long nr_pages;
++
++	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
++	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
++
++	nr_pages += zone_reclaimable_pages(zone);
++
++	return nr_pages;
++}
++
+ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ {
+ #ifdef CONFIG_HIGHMEM
+@@ -201,8 +220,7 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 		struct zone *z =
+ 			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
  
- 	return nr_pages;
- }
-@@ -259,7 +260,8 @@ static unsigned long global_dirtyable_memory(void)
- 	x = global_page_state(NR_FREE_PAGES);
+-		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
++		x += zone_dirtyable_memory(zone);
+ 	}
+ 	/*
+ 	 * Unreclaimable memory (kernel memory or anonymous memory
+@@ -238,9 +256,11 @@ static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x = global_page_state(NR_FREE_PAGES);
  	x -= min(x, dirty_balance_reserve);
  
--	x += global_reclaimable_pages();
-+	x += global_page_state(NR_INACTIVE_FILE);
-+	x += global_page_state(NR_ACTIVE_FILE);
- 
++	x += global_reclaimable_pages();
++
  	if (!vm_highmem_is_dirtyable)
  		x -= highmem_dirtyable_memory(x);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eea668d9cff6..05e6095159dc 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -147,7 +147,7 @@ static bool global_reclaim(struct scan_control *sc)
- }
- #endif
  
--unsigned long zone_reclaimable_pages(struct zone *zone)
-+static unsigned long zone_reclaimable_pages(struct zone *zone)
- {
- 	int nr;
- 
-@@ -3297,27 +3297,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- 	wake_up_interruptible(&pgdat->kswapd_wait);
+@@ -289,32 +309,6 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
  }
  
--/*
-- * The reclaimable count would be mostly accurate.
-- * The less reclaimable pages may be
-- * - mlocked pages, which will be moved to unevictable list when encountered
-- * - mapped pages, which may require several travels to be reclaimed
-- * - dirty pages, which is not "instantly" reclaimable
+ /**
+- * zone_dirtyable_memory - number of dirtyable pages in a zone
+- * @zone: the zone
+- *
+- * Returns the zone's number of pages potentially available for dirty
+- * page cache.  This is the base value for the per-zone dirty limits.
 - */
--unsigned long global_reclaimable_pages(void)
+-static unsigned long zone_dirtyable_memory(struct zone *zone)
 -{
--	int nr;
+-	/*
+-	 * The effective global number of dirtyable pages may exclude
+-	 * highmem as a big-picture measure to keep the ratio between
+-	 * dirty memory and lowmem reasonable.
+-	 *
+-	 * But this function is purely about the individual zone and a
+-	 * highmem zone can hold its share of dirty pages, so we don't
+-	 * care about vm_highmem_is_dirtyable here.
+-	 */
+-	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
+-		zone_reclaimable_pages(zone);
 -
--	nr = global_page_state(NR_ACTIVE_FILE) +
--	     global_page_state(NR_INACTIVE_FILE);
--
--	if (get_nr_swap_pages() > 0)
--		nr += global_page_state(NR_ACTIVE_ANON) +
--		      global_page_state(NR_INACTIVE_ANON);
--
--	return nr;
+-	/* don't allow this to underflow */
+-	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+-	return nr_pages;
 -}
 -
- #ifdef CONFIG_HIBERNATION
- /*
-  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
+-/**
+  * zone_dirty_limit - maximum number of dirty pages allowed in a zone
+  * @zone: the zone
+  *
 -- 
 1.8.4.2
 
