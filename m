@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaAXFon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 00:44:43 -0500
-Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:51472 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751226AbaAXFok (ORCPT
+	id S1751242AbaAXFsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 00:48:36 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:45394 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaAXFse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 00:44:40 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3876:3877:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4659:5007:6114:6642:7652:7809:7875:7901:9012:9025:10004:10049:10400:10848:11232:11257:11658:11914:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: veil74_287ec1db04730
-X-Filterd-Recvd-Size: 1662
-Message-ID: <1390542276.32356.22.camel@joe-AO722>
-Subject: Re: [PATCH 5/5] lustre: add myself to list of people to CC on
- lustre patches
-From: Joe Perches <joe@perches.com>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Oleg Drokin <oleg.drokin@intel.com>
-Date: Thu, 23 Jan 2014 21:44:36 -0800
-In-Reply-To: <1390538708-4120-6-git-send-email-green@linuxhacker.ru>
-References: <1390538708-4120-1-git-send-email-green@linuxhacker.ru>
-	 <1390538708-4120-6-git-send-email-green@linuxhacker.ru>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Jan 2014 00:48:34 -0500
+Date: Thu, 23 Jan 2014 21:48:29 -0800
+From: Matt Wilson <msw@linux.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com,
+        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>
+Subject: Re: [PATCH v6] xen/grant-table: Avoid m2p_override during mapping
+Message-ID: <20140124054828.GA18522@u109add4315675089e695.ant.amazon.com>
+References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a MAINTAINERS entry too?
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+On Thu, Jan 23, 2014 at 09:23:44PM +0000, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> 
+> It also removes a stray space from page.h and change ret to 0 if
+> XENFEAT_auto_translated_physmap, as that is the only possible return value
+> there.
+> 
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
+> 
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
+> 
+> v4:
+> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> - clear page->private before doing anything with the page, so m2p_find_override
+>   won't race with this
+> 
+> v5:
+> - change return value handling in __gnttab_[un]map_refs
+> - remove a stray space in page.h
+> - add detail why ret = 0 now at some places
+> 
+> v6:
+> - don't pass pfn to m2p* functions, just get it locally
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Suggested-by: David Vrabel <david.vrabel@citrix.com>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5c5d554..9ca5de8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8284,6 +8284,14 @@ W:	http://www.lirc.org/
- S:	Odd Fixes
- F:	drivers/staging/media/lirc/
- 
-+STAGING - LUSTRE
-+M:	Andreas Dilger <andreas.dilger@intel.com>
-+M:	Oleg Drokin <oleg.drokin@intel.com>
-+M:	Peng Tao <tao.peng@emc.com>.
-+L:	hpdd-discuss <hpdd-discuss@lists.01.org>
-+S:	Odd Fixes
-+F:	drivers/staging/lustre/
-+
- STAGING - NVIDIA COMPLIANT EMBEDDED CONTROLLER INTERFACE (nvec)
- M:	Julian Andres Klode <jak@jak-linux.org>
- M:	Marc Dietrich <marvin24@gmx.de>
+Apologies for coming in late on this thread. I'm quite behind on
+xen-devel mail that isn't CC: to me.
 
+It seems to have been forgotten that Anthony and I proposed a similar
+change last November.
 
+https://lkml.kernel.org/r/1384307336-5328-1-git-send-email-anthony@codemonkey.ws
+
+Or am I misunderstanding the change?
+
+--msw
