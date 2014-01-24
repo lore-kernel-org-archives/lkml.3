@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaAXRUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:20:31 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:26191 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaAXRU3 (ORCPT
+	id S1751890AbaAXRUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:20:49 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51590 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210AbaAXRUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:20:29 -0500
-X-IronPort-AV: E=Sophos;i="4.95,713,1384300800"; 
-   d="scan'208";a="94221208"
-Message-ID: <52E2A0C6.4030801@citrix.com>
-Date: Fri, 24 Jan 2014 17:20:06 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 24 Jan 2014 12:20:48 -0500
+Date: Fri, 24 Jan 2014 17:17:55 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Adrien =?iso-8859-1?Q?Verg=E9?= <adrienverge@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Michel Dagenais <michel.dagenais@polymtl.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 4/6] ARM: Make PID_IN_CONTEXTIDR incompatible with
+ PID_NS
+Message-ID: <20140124171754.GM31040@mudshark.cambridge.arm.com>
+References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com>
+ <1390581656-16372-5-git-send-email-adrienverge@gmail.com>
+ <20140124164343.GJ31040@mudshark.cambridge.arm.com>
+ <CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com>
 MIME-Version: 1.0
-To: Matt Wilson <msw@linux.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
-        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>
-Subject: Re: [PATCH v6] xen/grant-table: Avoid m2p_override during mapping
-References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com> <20140124054828.GA18522@u109add4315675089e695.ant.amazon.com>
-In-Reply-To: <20140124054828.GA18522@u109add4315675089e695.ant.amazon.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/14 05:48, Matt Wilson wrote:
-> On Thu, Jan 23, 2014 at 09:23:44PM +0000, Zoltan Kiss wrote:
-> Apologies for coming in late on this thread. I'm quite behind on
-> xen-devel mail that isn't CC: to me.
->
-> It seems to have been forgotten that Anthony and I proposed a similar
-> change last November.
->
-> https://lkml.kernel.org/r/1384307336-5328-1-git-send-email-anthony@codemonkey.ws
->
-> Or am I misunderstanding the change?
+On Fri, Jan 24, 2014 at 05:16:28PM +0000, Adrien Vergé wrote:
+> 2014/1/24 Will Deacon <will.deacon@arm.com>:
+> > Are you sure about this? The value we write is actually task_pid_nr, which I
+> > believe to be globally unique.
+> 
+> You are right: the task_pid_nr is unique in the system. However when
+> using namespaces, the so called "PID" is the virtual number that
+> processes in different namespaces can share.
+> 
+> This PID is the one visible by user-space tasks, in particular
+> user-space tracers and debuggers. These programs would expect to find
+> the PID of the traced process in the Context ID reg, while it is not.
+> I think it is better to remove confusion by making PID_IN_CONTEXTIDR
+> and PID_NS incompatible.
+> 
+> What do you think?
 
-I didn't know about this patch, but yes, both of them do basically the 
-same. One subtle difference that you store the old mfn in page->private, 
-while my patch keeps the original behaviour, and store it in 
-page->index. page->private is used instead to store the new mfn we got 
-from Xen, however I haven't checked where do we use that.
-Your approach might be better, we also talked with David that we should 
-stop using page->index, as e.g. with the netback grant mapping patches I 
-spent a lot of time to figure out a packet drop issue, which eventually 
-boiled down to the fact that index is in union with pfmemalloc, and if 
-you don't set mapping, the local IP stack will think it is a pfmemalloc 
-page. (see the comment in my second patch, xenvif_fill_frags)
-However I think that should be a separate patch, I tried to keep the 
-original behaviour as much as possible, and focus just on avoiding 
-m2p_override when possible.
+I think I'd rather have the global ID than disable a potentially useful
+feature, especially since this is likely to be consumed by external trace
+tools as opposed to user-space tasks.
 
-Regards,
-
-Zoli
+Will
