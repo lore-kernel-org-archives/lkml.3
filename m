@@ -1,177 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaAXLQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 06:16:10 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:58300 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274AbaAXLQI (ORCPT
+	id S1752457AbaAXLSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 06:18:07 -0500
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:52737 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751053AbaAXLSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 06:16:08 -0500
+	Fri, 24 Jan 2014 06:18:04 -0500
+X-Greylist: delayed 654 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jan 2014 06:18:04 EST
+X-Yandex-Uniq: 588f20b5-21ed-4baf-bcd7-198801b1d2d1
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <52E24956.3000007@yandex-team.ru>
+Date: Fri, 24 Jan 2014 15:07:02 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <52E0FC22.8060903@metafoo.de>
-References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
-	<1390409565-4200-2-git-send-email-sthokal@xilinx.com>
-	<52E0FC22.8060903@metafoo.de>
-Date: Fri, 24 Jan 2014 16:46:05 +0530
-X-Google-Sender-Auth: l_T1tkoqi3hsVdSbizksEcZ_cnY
-Message-ID: <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
-Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
- driver support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
-        vinod.koul@intel.com, michal.simek@xilinx.com,
-        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
+Hi, Michal!
 
-On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
-> [...]
->> +/**
->> + * xilinx_vdma_device_control - Configure DMA channel of the device
->> + * @dchan: DMA Channel pointer
->> + * @cmd: DMA control command
->> + * @arg: Channel configuration
->> + *
->> + * Return: '0' on success and failure value on error
->> + */
->> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
->> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
->> +{
->> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->> +
->> +     switch (cmd) {
->> +     case DMA_TERMINATE_ALL:
->> +             xilinx_vdma_terminate_all(chan);
->> +             return 0;
->> +     case DMA_SLAVE_CONFIG:
->> +             return xilinx_vdma_slave_config(chan,
->> +                                     (struct xilinx_vdma_config *)arg);
+As you can remember, I've proposed to introduce low limits about a year ago.
+
+We had a small discussion at that time: http://marc.info/?t=136195226600004 .
+
+Since that time we intensively use low limits in our production
+(on thousands of machines). So, I'm very interested to merge this
+functionality into upstream.
+
+In my experience, low limits also require some changes in memcg page accounting
+policy. For instance, an application in protected cgroup should have a guarantee
+that it's filecache belongs to it's cgroup and is protected by low limit
+therefore. If the filecache was created by another application in other cgroup,
+it can be not so. I've solved this problem by implementing optional page
+reaccouting on pagefaults and read/writes.
+
+I can prepare my current version of patchset, if someone is interested.
+
+Regards,
+Roman
+
+On 11.12.2013 18:15, Michal Hocko wrote:
+> Hi,
+> previous discussions have shown that soft limits cannot be reformed
+> (http://lwn.net/Articles/555249/). This series introduces an alternative
+> approach to protecting memory allocated to processes executing within
+> a memory cgroup controller. It is based on a new tunable that was
+> discussed with Johannes and Tejun held during the last kernel summit.
 >
-> You really shouldn't be overloading the generic API with your own semantics.
-> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
-
-Ok.  The driver needs few additional configuration from the slave
-device like Vertical
-Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
-suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
-defined for Freescale drivers?
-
+> This patchset introduces such low limit that is functionally similar to a
+> minimum guarantee. Memcgs which are under their lowlimit are not considered
+> eligible for the reclaim (both global and hardlimit). The default value of
+> the limit is 0 so all groups are eligible by default and an interested
+> party has to explicitly set the limit.
 >
->> +     default:
->> +             return -ENXIO;
->> +     }
->> +}
->> +
-> [...]
->> +
->> +     /* Request the interrupt */
->> +     chan->irq = irq_of_parse_and_map(node, 0);
->> +     err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
->> +                            IRQF_SHARED, "xilinx-vdma-controller", chan);
+> The primary use case is to protect an amount of memory allocated to a
+> workload without it being reclaimed by an unrelated activity. In some
+> cases this requirement can be fulfilled by mlock but it is not suitable
+> for many loads and generally requires application awareness. Such
+> application awareness can be complex. It effectively forbids the
+> use of memory overcommit as the application must explicitly manage
+> memory residency.
+> With low limits, such workloads can be placed in a memcg with a low
+> limit that protects the estimated working set.
 >
-> This is a clasic example of where to not use devm_request_irq. 'chan' is
-> accessed in the interrupt handler, but if you use devm_request_irq 'chan'
-> will be freed before the interrupt handler has been released, which means
-> there is now a race condition where the interrupt handler can access already
-> freed memory.
-
-Ok, thank you for the clarification on this thread.  I will fix it in v3.
-
+> Another use case might be unreclaimable groups. Some loads might be so
+> sensitive to reclaim that it is better to kill and start it again (or
+> since checkpoint) rather than trash. This would be trivial with low
+> limit set to unlimited and the OOM killer will handle the situation as
+> required (e.g. kill and restart).
 >
->> +     if (err) {
->> +             dev_err(xdev->dev, "unable to request IRQ\n");
->> +             return err;
->> +     }
->> +
->> +     /* Initialize the DMA channel and add it to the DMA engine channels
->> +      * list.
->> +      */
->> +     chan->common.device = &xdev->common;
->> +
->> +     list_add_tail(&chan->common.device_node, &xdev->common.channels);
->> +     xdev->chan[chan->id] = chan;
->> +
->> +     /* Reset the channel */
->> +     err = xilinx_vdma_chan_reset(chan);
->> +     if (err < 0) {
->> +             dev_err(xdev->dev, "Reset channel failed\n");
->> +             return err;
->> +     }
->> +
->> +     return 0;
->> +}
->> +
->> +/**
->> + * struct of_dma_filter_xilinx_args - Channel filter args
->> + * @dev: DMA device structure
->> + * @chan_id: Channel id
->> + */
->> +struct of_dma_filter_xilinx_args {
->> +     struct dma_device *dev;
->> +     u32 chan_id;
->> +};
->> +
->> +/**
->> + * xilinx_vdma_dt_filter - VDMA channel filter function
->> + * @chan: DMA channel pointer
->> + * @param: Filter match value
->> + *
->> + * Return: true/false based on the result
->> + */
->> +static bool xilinx_vdma_dt_filter(struct dma_chan *chan, void *param)
->> +{
->> +     struct of_dma_filter_xilinx_args *args = param;
->> +
->> +     return chan->device == args->dev && chan->chan_id == args->chan_id;
->> +}
->> +
->> +/**
->> + * of_dma_xilinx_xlate - Translation function
->> + * @dma_spec: Pointer to DMA specifier as found in the device tree
->> + * @ofdma: Pointer to DMA controller data
->> + *
->> + * Return: DMA channel pointer on success and NULL on error
->> + */
->> +static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
->> +                                             struct of_dma *ofdma)
->> +{
->> +     struct of_dma_filter_xilinx_args args;
->> +     dma_cap_mask_t cap;
->> +
->> +     args.dev = ofdma->of_dma_data;
->> +     if (!args.dev)
->> +             return NULL;
->> +
->> +     if (dma_spec->args_count != 1)
->> +             return NULL;
->> +
->> +     dma_cap_zero(cap);
->> +     dma_cap_set(DMA_SLAVE, cap);
->> +
->> +     args.chan_id = dma_spec->args[0];
->> +
->> +     return dma_request_channel(cap, xilinx_vdma_dt_filter, &args);
+> The hierarchical behavior of the lowlimit is described in the first
+> patch. It is followed by a direct reclaim fix which is necessary to
+> handle situation when a no group is eligible because all groups are
+> below low limit. This is not a big deal for hardlimit reclaim because
+> we simply retry the reclaim few times and then trigger memcg OOM killer
+> path. It would blow up in the global case when we would loop without
+> doing any progress or trigger OOM killer. I would consider configuration
+> leading to this state invalid but we should handle that gracefully.
 >
-> There is a new helper function called dma_get_slave_channel, which makes
-> this much easier. Take a look at the k3dma.c driver for an example.
-
-Ok.  I will check and fix it in v3.
-
-Srikanth
-
->> +}
+> The third patch finally allows setting the lowlimit.
+>
+> The last patch tries expedites OOM if it is clear that no group is
+> eligible for reclaim. It basically breaks out of loops in the direct
+> reclaim and lets kswapd sleep because it wouldn't do any progress anyway.
+>
+> Thoughts?
+>
+> Short log says:
+> Michal Hocko (4):
+>        memcg, mm: introduce lowlimit reclaim
+>        mm, memcg: allow OOM if no memcg is eligible during direct reclaim
+>        memcg: Allow setting low_limit
+>        mm, memcg: expedite OOM if no memcg is reclaimable
+>
+> And a diffstat
+>   include/linux/memcontrol.h  | 14 +++++++++++
+>   include/linux/res_counter.h | 40 ++++++++++++++++++++++++++++++
+>   kernel/res_counter.c        |  2 ++
+>   mm/memcontrol.c             | 60 ++++++++++++++++++++++++++++++++++++++++++++-
+>   mm/vmscan.c                 | 59 +++++++++++++++++++++++++++++++++++++++++---
+>   5 files changed, 170 insertions(+), 5 deletions(-)
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
