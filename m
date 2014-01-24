@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaAXRwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:52:43 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51258 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaAXRwl (ORCPT
+	id S1752173AbaAXRwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:52:55 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:29349 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaAXRww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:52:41 -0500
-Message-ID: <52E2A866.1050400@codeaurora.org>
-Date: Fri, 24 Jan 2014 12:52:38 -0500
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: =?ISO-8859-1?Q?Adrien_Verg=E9?= <adrienverge@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Michel Dagenais <michel.dagenais@polymtl.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 4/6] ARM: Make PID_IN_CONTEXTIDR incompatible with
- PID_NS
-References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com> <1390581656-16372-5-git-send-email-adrienverge@gmail.com> <20140124164343.GJ31040@mudshark.cambridge.arm.com> <CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com> <20140124171754.GM31040@mudshark.cambridge.arm.com>
-In-Reply-To: <20140124171754.GM31040@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Fri, 24 Jan 2014 12:52:52 -0500
+X-AuditID: cbfec37b-b7f216d000006a8d-1c-52e2a873d584
+Message-id: <52E2A86E.1000804@samsung.com>
+Date: Fri, 24 Jan 2014 10:52:46 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>,
+        "thomas.pugliese@gmail.com >> Thomas Pugliese" 
+	<thomas.pugliese@gmail.com>
+Subject: Re: [PATCH] staging/usbip: Change userspace to use linux include for
+ usb_device_speed enum
+References: <1390413372-3451-1-git-send-email-shuah.kh@samsung.com>
+In-reply-to: <1390413372-3451-1-git-send-email-shuah.kh@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.10]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9hP93iFY+CDB53c1nsOfOL3aJ58Xo2
+	i8u75rBZLFrWymzx7FqOxdefDhZfJr1kc2D3WHLhDpPHvX2HWTx2zrrL7rF/7hp2j8+b5AJY
+	o7hsUlJzMstSi/TtErgyru7/wFpwnLfi1eQOpgbGm1xdjJwcEgImEnMuPmaGsMUkLtxbz9bF
+	yMUhJLCMUeL/8Z3sEE4vk0TvgvUsEM4mRokzD1exg7TwCmhJbDgzA6idg4NFQFVixRRukDCb
+	gLrE59c7wEqEBOQkmpasBtsgKhAh8ersRBaIVkGJH5PvsYC0igiYSUzbVg8ynlmghUni1Ll/
+	TCBxYYFUiRWnOSDGOEu8u7GOCcTmFHCReP5rBSuIzSxgLbFy0jZGCFteYvOat8wQ9coSfy6f
+	AhsjIaAo8eKh1QRGkVlIFs9C0j0LSfcCRuZVjGKlxckFxUnpqRVGesWJucWleel6yfm5mxgh
+	EVS9g/HuV5tDjAIcjEo8vB+CHwYJsSaWFVfmHmKU4GBWEuGtXPooSIg3JbGyKrUoP76oNCe1
+	+BAjEwenVAOj88kt3zlutVkJ5t/ZP/Ha4jOBe28vyCz30dD5oeF+Zr6nM9s+w2SzoJIddizh
+	li9nJIWWm7HNd1E2/Lbv+YOiWGejKctvtGtP+tvOaxTI2B1V8TUj4F+EjEB7+eueKaob3Bdw
+	3Kw8Y6F+8tXDXLF9WooBx8SbJ2ROeOHpKFIaHCdy/eIi0UdKLMUZiYZazEXFiQBQzzznfgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2014 12:17 PM, Will Deacon wrote:
-> On Fri, Jan 24, 2014 at 05:16:28PM +0000, Adrien Vergé wrote:
->> 2014/1/24 Will Deacon <will.deacon@arm.com>:
->>> Are you sure about this? The value we write is actually task_pid_nr, which I
->>> believe to be globally unique.
->>
->> You are right: the task_pid_nr is unique in the system. However when
->> using namespaces, the so called "PID" is the virtual number that
->> processes in different namespaces can share.
->>
->> This PID is the one visible by user-space tasks, in particular
->> user-space tracers and debuggers. These programs would expect to find
->> the PID of the traced process in the Context ID reg, while it is not.
->> I think it is better to remove confusion by making PID_IN_CONTEXTIDR
->> and PID_NS incompatible.
->>
->> What do you think?
-> 
-> I think I'd rather have the global ID than disable a potentially useful
-> feature, especially since this is likely to be consumed by external trace
-> tools as opposed to user-space tasks.
+On 01/22/2014 10:56 AM, Shuah Khan wrote:
+> Remove usb_device_speed enum define from usbip_common.h and change it to
+> include linux/usb/ch9.h instead.
+>
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>   drivers/staging/usbip/userspace/libsrc/usbip_common.h | 8 +-------
+>   1 file changed, 1 insertion(+), 7 deletions(-)
+>
+> diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+> index 938ad1c..2cb81b3 100644
+> --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+> +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+> @@ -14,6 +14,7 @@
+>
+>   #include <syslog.h>
+>   #include <unistd.h>
+> +#include <linux/usb/ch9.h>
+>
+>   #ifndef USBIDS_FILE
+>   #define USBIDS_FILE "/usr/share/hwdata/usb.ids"
+> @@ -76,13 +77,6 @@ extern int usbip_use_debug ;
+>   		abort();				\
+>   	} while (0)
+>
+> -enum usb_device_speed {
+> -	USB_SPEED_UNKNOWN = 0,                  /* enumerating */
+> -	USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
+> -	USB_SPEED_HIGH,                         /* usb 2.0 */
+> -	USB_SPEED_VARIABLE                      /* wireless (usb 2.5) */
+> -};
+> -
+>   /* FIXME: how to sync with drivers/usbip_common.h ? */
+>   enum usbip_device_status {
+>   	/* sdev is available. */
+>
 
-We've discussed before that the ARM architecture doesn't say what should be
-written to the CONTEXTIDR, so it's up to us to decide. Will has a use case
-where the global PID is useful. Adrien's patches present a use case where I
-think the virtual PID would be useful. I've done work in the past where
-writing the process group ID was useful. Would it be reasonable to make what's
-written to the CONTEXTIDR run-time configurable? If so, what would be the best
-interface for configuring it?
+I just realized the following two userspace patches should be combined 
+or sent as a series. I will send them together addressing Thomas 
+Pugliese's review comments.
 
-Thanks,
-Christopher
+https://lkml.org/lkml/2014/1/22/336
+https://lkml.org/lkml/2014/1/22/420
+
+-- Shuah
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
