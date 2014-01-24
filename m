@@ -1,40 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaAXMYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 07:24:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40755 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaAXMYL (ORCPT
+	id S1752581AbaAXM2B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 07:28:01 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:57605 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaAXM2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 07:24:11 -0500
-Date: Fri, 24 Jan 2014 12:24:09 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: fix locking bug in __dentry_path()
-Message-ID: <20140124122409.GT10323@ZenIV.linux.org.uk>
-References: <1390558886-4152-1-git-send-email-dvlasenk@redhat.com>
+	Fri, 24 Jan 2014 07:28:00 -0500
+X-IronPort-AV: E=Sophos;i="4.95,712,1384300800"; 
+   d="scan'208";a="94109518"
+Date: Fri, 24 Jan 2014 12:04:52 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Matt Wilson <msw@linux.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <jonathan.davies@citrix.com>,
+        <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Anthony Liguori <aliguori@amazon.com>,
+        <xen-devel@lists.xenproject.org>, Matt Wilson <msw@amazon.com>
+Subject: Re: [Xen-devel] [PATCH v6] xen/grant-table: Avoid m2p_override during
+ mapping
+In-Reply-To: <20140124054828.GA18522@u109add4315675089e695.ant.amazon.com>
+Message-ID: <alpine.DEB.2.02.1401241200380.15917@kaball.uk.xensource.com>
+References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com> <20140124054828.GA18522@u109add4315675089e695.ant.amazon.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390558886-4152-1-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 11:21:26AM +0100, Denys Vlasenko wrote:
-> If given buffer size is zero, we forget to rcu_read_unlock()
-> on error path.
+On Thu, 23 Jan 2014, Matt Wilson wrote:
+> On Thu, Jan 23, 2014 at 09:23:44PM +0000, Zoltan Kiss wrote:
+> > The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> > for blkback and future netback patches it just cause a lock contention, as
+> > those pages never go to userspace. Therefore this series does the following:
+> > - the original functions were renamed to __gnttab_[un]map_refs, with a new
+> >   parameter m2p_override
+> > - based on m2p_override either they follow the original behaviour, or just set
+> >   the private flag and call set_phys_to_machine
+> > - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+> >   m2p_override false
+> > - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> > 
+> > It also removes a stray space from page.h and change ret to 0 if
+> > XENFEAT_auto_translated_physmap, as that is the only possible return value
+> > there.
+> > 
+> > v2:
+> > - move the storing of the old mfn in page->index to gnttab_map_refs
+> > - move the function header update to a separate patch
+> > 
+> > v3:
+> > - a new approach to retain old behaviour where it needed
+> > - squash the patches into one
+> > 
+> > v4:
+> > - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> > - clear page->private before doing anything with the page, so m2p_find_override
+> >   won't race with this
+> > 
+> > v5:
+> > - change return value handling in __gnttab_[un]map_refs
+> > - remove a stray space in page.h
+> > - add detail why ret = 0 now at some places
+> > 
+> > v6:
+> > - don't pass pfn to m2p* functions, just get it locally
+> > 
+> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> > Suggested-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> Apologies for coming in late on this thread. I'm quite behind on
+> xen-devel mail that isn't CC: to me.
+> 
+> It seems to have been forgotten that Anthony and I proposed a similar
+> change last November.
+> 
+> https://lkml.kernel.org/r/1384307336-5328-1-git-send-email-anthony@codemonkey.ws
+> 
+> Or am I misunderstanding the change?
 
-Er...  Where could we ever get called with size zero?  IOW, the
-real question is whether that check makes any sense.  If nothing
-else, a much more obvious fix (again, assuming there is a call
-chain that could have triggered that in the first place), would
-be to take that
-        if (buflen < 1)
-                goto Elong;
-on the very top of __dentry_path().  Note that buflen never
-change, so this check could bloody well be handled once - and
-earlier.  But again, the callers shouldn't be calling it that
-way...
+Matt, you are correct, it is very similar. I had forgotten about
+Anthony's patch, otherwise I would have CC'ed him in the discussion.
