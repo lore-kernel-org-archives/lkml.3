@@ -1,77 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaAXOMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:12:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28966 "EHLO mga09.intel.com"
+	id S1752727AbaAXOOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:14:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51122 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359AbaAXOMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:12:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,712,1384329600"; 
-   d="scan'208";a="471875853"
-Date: Fri, 24 Jan 2014 16:19:23 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT][PATCH v2 0/6] PM / QoS: Introduce latency tolerance
- device PM QoS type
-Message-ID: <20140124141923.GQ18029@intel.com>
-References: <5434847.aCyiWHNRe7@vostro.rjw.lan>
- <1447517.8AFrWcAgld@vostro.rjw.lan>
+	id S1752359AbaAXOOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 09:14:39 -0500
+Date: Fri, 24 Jan 2014 14:14:34 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 2/6] numa,sched: track from which nodes NUMA faults are
+ triggered
+Message-ID: <20140124141434.GX4963@suse.de>
+References: <1390245667-24193-1-git-send-email-riel@redhat.com>
+ <1390245667-24193-3-git-send-email-riel@redhat.com>
+ <20140121122130.GG4963@suse.de>
+ <52DEF41F.1040105@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1447517.8AFrWcAgld@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <52DEF41F.1040105@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 02:34:59PM +0100, Rafael J. Wysocki wrote:
-> On Friday, January 17, 2014 03:42:13 PM Rafael J. Wysocki wrote:
-> > Hi All,
-> > 
-> > On some platforms hardware may switch to an energy-saving mode on the fly
-> > on the basis of certain utilization metrics used by it.  That usually is
-> > desirable from the energy conservation standpoint, but it generally causes
-> > latencies to increase which may adversely affect some operations.  For this
-> > reason, the platforms in question usually provide some interfaces for software
-> > to indicate its latency tolerance and possibly to prevent the energy-saving
-> > modes from being selected too aggressively.
-> > 
-> > The following series of patches introduces a device PM QoS type allowing
-> > those interfaces to be used by kernel code and user space.  It is designed
-> > in analogy with the existing resume latency device PM QoS type, which allows
-> > some pieces of the existing device PM QoS code to be re-used and makes the
-> > new user space interface fit into the existing framework.
-> > 
-> > Patch [1/5] modifies the names of symbols, variables, functions and structure
-> > fields associated with the existing resume latency device PM QoS type to
-> > avoid any confusion with the new one introduced by the subsequent patches.
-> > 
-> > Patch [2/5] introduces a new field in struct pm_qos_constraints for specifying
-> > a special value to be returned as the effective requirement when the given list
-> > of PM QoS requirements is empty.  That field is necessary for the new latency
-> > tolerance device PM QoS type.
-> > 
-> > Patch [3/5] introduces the latency tolerance device PM QoS type along with
-> > documentation.
-> > 
-> > Patch [4/5] modifies the ACPI LPSS (Low-Power Subsystem) driver to hook up
-> > LPSS devices to the new latency tolerance device PM QoS interface.
-> > 
-> > Patch [5/5] modifies the dev_pm_qos_add_ancestor_request() routine so that it
-> > can be used by drivers of devices without hardware latency tolerance support
-> > for specifying their requirements via the ancestors of those devies.
+On Tue, Jan 21, 2014 at 05:26:39PM -0500, Rik van Riel wrote:
+> On 01/21/2014 07:21 AM, Mel Gorman wrote:
+> > On Mon, Jan 20, 2014 at 02:21:03PM -0500, riel@redhat.com wrote:
 > 
-> As usual, testing uncovered some issues, so an updated series follows.
+> >> +++ b/include/linux/sched.h
+> >> @@ -1492,6 +1492,14 @@ struct task_struct {
+> >>  	unsigned long *numa_faults_buffer;
+> >>  
+> >>  	/*
+> >> +	 * Track the nodes where faults are incurred. This is not very
+> >> +	 * interesting on a per-task basis, but it help with smarter
+> >> +	 * numa memory placement for groups of processes.
+> >> +	 */
+> >> +	unsigned long *numa_faults_from;
+> >> +	unsigned long *numa_faults_from_buffer;
+> >> +
+> > 
+> > As an aside I wonder if we can derive any useful metric from this
+> 
+> It may provide for a better way to tune the numa scan interval
+> than the current code, since the "local vs remote" ratio is not
+> going to provide us much useful info when dealing with a workload
+> that is spread across multiple numa nodes.
+> 
 
-I tested this series on HSWULT and adding/removing QoS LTR requests from
-both userspace and from a modified i2c-hid driver (calling
-dev_pm_qos_add_ancestor_request()) and seems to work nicely -- When I read
-back the HW LTR values they are what is expected.
+Agreed. Local vs Remote handles the easier cases, particularly where the
+workload has been configured to have aspects of it fit within NUMA nodes
+(e.g. multiple JVMs, multiple virtual machines etc) but it's nowhere near
+as useful for large single-image workloads spanning the full machine
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+I think in this New World Order that for single instance workloads we
+would instead take into account the balance of all remote nodes. So if
+all remote nodes are roughly even in terms of usage and we've decided to
+interleave then slow the scan rate if the remote active nodes are evenly used
+
+It's not something for this series just yet but I have observed a higher
+system CPU usage as a result of this series. It's still far lower than
+the overhead we had in the past but this is one potential idea that would
+allow us to reduce the system overhead again in the future.
+
+> >>  		grp->total_faults = p->total_numa_faults;
+> >> @@ -1526,7 +1536,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+> >>  
+> >>  	double_lock(&my_grp->lock, &grp->lock);
+> >>  
+> >> -	for (i = 0; i < 2*nr_node_ids; i++) {
+> >> +	for (i = 0; i < 4*nr_node_ids; i++) {
+> >>  		my_grp->faults[i] -= p->numa_faults[i];
+> >>  		grp->faults[i] += p->numa_faults[i];
+> >>  	}
+> > 
+> > The same obscure trick is used throughout and I'm not sure how
+> > maintainable that will be. Would it be better to be explicit about this?
+> 
+> I have made a cleanup patch for this, using the defines you
+> suggested.
+> 
+> >> @@ -1634,6 +1649,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+> >>  		p->numa_pages_migrated += pages;
+> >>  
+> >>  	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+> >> +	p->numa_faults_from_buffer[task_faults_idx(this_node, priv)] += pages;
+> >>  	p->numa_faults_locality[!!(flags & TNF_FAULT_LOCAL)] += pages;
+> > 
+> > this_node and node is similarly ambiguous in terms of name. Rename of
+> > data_node and cpu_node would have been clearer.
+> 
+> I added a patch in the next version of the series.
+> 
+> Don't want to make the series too large, though :)
+> 
+
+Understood, it's a bit of a mouthful already.
+
+-- 
+Mel Gorman
+SUSE Labs
