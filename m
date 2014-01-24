@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaAXIro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:47:44 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:49663 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaAXIoS (ORCPT
+	id S1752754AbaAXIsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:48:19 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:37856 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442AbaAXIoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Jan 2014 03:44:18 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -12,9 +12,9 @@ To: Mark Brown <broonie@kernel.org>
 Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH v3 10/14] spi: rspi: Add support for loopback mode
-Date: Fri, 24 Jan 2014 09:44:00 +0100
-Message-Id: <1390553044-11860-11-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 09/14] spi: rspi: Add support for RSPI on RZ/A1H
+Date: Fri, 24 Jan 2014 09:43:59 +0100
+Message-Id: <1390553044-11860-10-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
 References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
@@ -24,86 +24,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Add support for specifying loopback mode.
+Add support for the RSPI variant in the RZ/A1H (r7s72100) SoC.
+
+Main differences with RSPI on SH are:
+  - Lack of TX only mode, hence we always have to use full duplex
+    transfers,
+  - The Data Register must be accessed used 8-bit operations.
+
+RSPI on RZ is matched using the new "rspi-rz" platform device name.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
-v3:
-  - This became a lot simpler after merging the send_pio() and
-    receive_pio() methods
-
- drivers/spi/spi-rspi.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+ drivers/spi/spi-rspi.c |  101 +++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 92 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 0c7556978d2e..28db8770aaf3 100644
+index d2ade5e09f58..0c7556978d2e 100644
 --- a/drivers/spi/spi-rspi.c
 +++ b/drivers/spi/spi-rspi.c
-@@ -183,8 +183,9 @@ struct rspi_data {
- 	struct spi_master *master;
- 	wait_queue_head_t wait;
- 	struct clk *clk;
--	u8 spsr;
- 	u16 spcmd;
-+	u8 spsr;
-+	u8 sppcr;
- 	int rx_irq, tx_irq;
- 	const struct spi_ops *ops;
- 
-@@ -252,8 +253,8 @@ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
- {
- 	int spbr;
- 
--	/* Sets output mode(CMOS) and MOSI signal(from previous transfer) */
--	rspi_write8(rspi, 0x00, RSPI_SPPCR);
-+	/* Sets output mode, MOSI signal, and (optionally) loopback */
-+	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
- 
- 	/* Sets transfer bit rate */
- 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
-@@ -288,8 +289,8 @@ static int rspi_rz_set_config_register(struct rspi_data *rspi, int access_size)
- {
- 	int spbr;
- 
--	/* Sets output mode */
--	rspi_write8(rspi, 0x00, RSPI_SPPCR);
-+	/* Sets output mode, MOSI signal, and (optionally) loopback */
-+	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
- 
- 	/* Sets transfer bit rate */
- 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
-@@ -322,8 +323,8 @@ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
- 	u16 spcmd;
- 	int spbr;
- 
--	/* Sets output mode(CMOS) and MOSI signal(from previous transfer) */
--	rspi_write8(rspi, 0x00, RSPI_SPPCR);
-+	/* Sets output mode, MOSI signal, and (optionally) loopback */
-+	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
- 
- 	/* Sets transfer bit rate */
- 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz);
-@@ -829,6 +830,11 @@ static int rspi_setup(struct spi_device *spi)
- 	if (spi->mode & SPI_CPHA)
- 		rspi->spcmd |= SPCMD_CPHA;
- 
-+	/* CMOS output mode and MOSI signal from previous transfer */
-+	rspi->sppcr = 0;
-+	if (spi->mode & SPI_LOOP)
-+		rspi->sppcr |= SPPCR_SPLP;
+@@ -47,7 +47,7 @@
+ #define RSPI_SPCKD		0x0c	/* Clock Delay Register */
+ #define RSPI_SSLND		0x0d	/* Slave Select Negation Delay Register */
+ #define RSPI_SPND		0x0e	/* Next-Access Delay Register */
+-#define RSPI_SPCR2		0x0f	/* Control Register 2 */
++#define RSPI_SPCR2		0x0f	/* Control Register 2 (SH only) */
+ #define RSPI_SPCMD0		0x10	/* Command Register 0 */
+ #define RSPI_SPCMD1		0x12	/* Command Register 1 */
+ #define RSPI_SPCMD2		0x14	/* Command Register 2 */
+@@ -56,10 +56,12 @@
+ #define RSPI_SPCMD5		0x1a	/* Command Register 5 */
+ #define RSPI_SPCMD6		0x1c	/* Command Register 6 */
+ #define RSPI_SPCMD7		0x1e	/* Command Register 7 */
 +
- 	set_config_register(rspi, 8);
++/* RSPI on RZ only */
+ #define RSPI_SPBFCR		0x20	/* Buffer Control Register */
+ #define RSPI_SPBFDR		0x22	/* Buffer Data Count Setting Register */
  
+-/*qspi only */
++/* QSPI only */
+ #define QSPI_SPBFCR		0x18	/* Buffer Control Register */
+ #define QSPI_SPBDCR		0x1a	/* Buffer Data Count Register */
+ #define QSPI_SPBMUL0		0x1c	/* Transfer Data Length Multiplier Setting Register 0 */
+@@ -102,7 +104,7 @@
+ #define SPSR_PERF		0x08	/* Parity Error Flag */
+ #define SPSR_MODF		0x04	/* Mode Fault Error Flag */
+ #define SPSR_IDLNF		0x02	/* RSPI Idle Flag */
+-#define SPSR_OVRF		0x01	/* Overrun Error Flag */
++#define SPSR_OVRF		0x01	/* Overrun Error Flag (RSPI only) */
+ 
+ /* SPSCR - Sequence Control Register */
+ #define SPSCR_SPSLN_MASK	0x07	/* Sequence Length Specification */
+@@ -119,13 +121,13 @@
+ #define SPDCR_SPLWORD		SPDCR_SPLW1
+ #define SPDCR_SPLBYTE		SPDCR_SPLW0
+ #define SPDCR_SPLW		0x20	/* Access Width Specification (SH) */
+-#define SPDCR_SPRDTD		0x10	/* Receive Transmit Data Select */
++#define SPDCR_SPRDTD		0x10	/* Receive Transmit Data Select (SH) */
+ #define SPDCR_SLSEL1		0x08
+ #define SPDCR_SLSEL0		0x04
+-#define SPDCR_SLSEL_MASK	0x0c	/* SSL1 Output Select */
++#define SPDCR_SLSEL_MASK	0x0c	/* SSL1 Output Select (SH) */
+ #define SPDCR_SPFC1		0x02
+ #define SPDCR_SPFC0		0x01
+-#define SPDCR_SPFC_MASK		0x03	/* Frame Count Setting (1-4) */
++#define SPDCR_SPFC_MASK		0x03	/* Frame Count Setting (1-4) (SH) */
+ 
+ /* SPCKD - Clock Delay Register */
+ #define SPCKD_SCKDL_MASK	0x07	/* Clock Delay Setting (1-8) */
+@@ -168,8 +170,8 @@
+ #define SPCMD_CPHA		0x0001	/* Clock Phase Setting */
+ 
+ /* SPBFCR - Buffer Control Register */
+-#define SPBFCR_TXRST		0x80	/* Transmit Buffer Data Reset (qspi only) */
+-#define SPBFCR_RXRST		0x40	/* Receive Buffer Data Reset (qspi only) */
++#define SPBFCR_TXRST		0x80	/* Transmit Buffer Data Reset */
++#define SPBFCR_RXRST		0x40	/* Receive Buffer Data Reset */
+ #define SPBFCR_TXTRG_MASK	0x30	/* Transmit Buffer Data Triggering Number */
+ #define SPBFCR_RXTRG_MASK	0x07	/* Receive Buffer Data Triggering Number */
+ 
+@@ -244,7 +246,7 @@ struct spi_ops {
+ };
+ 
+ /*
+- * functions for RSPI
++ * functions for RSPI on legacy SH
+  */
+ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ {
+@@ -280,6 +282,39 @@ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ }
+ 
+ /*
++ * functions for RSPI on RZ
++ */
++static int rspi_rz_set_config_register(struct rspi_data *rspi, int access_size)
++{
++	int spbr;
++
++	/* Sets output mode */
++	rspi_write8(rspi, 0x00, RSPI_SPPCR);
++
++	/* Sets transfer bit rate */
++	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
++	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
++
++	/* Disable dummy transmission, set byte access */
++	rspi_write8(rspi, SPDCR_SPLBYTE, RSPI_SPDCR);
++	rspi->byte_access = 1;
++
++	/* Sets RSPCK, SSL, next-access delay value */
++	rspi_write8(rspi, 0x00, RSPI_SPCKD);
++	rspi_write8(rspi, 0x00, RSPI_SSLND);
++	rspi_write8(rspi, 0x00, RSPI_SPND);
++
++	/* Sets SPCMD */
++	rspi->spcmd |= SPCMD_SPB_8_TO_16(access_size);
++	rspi_write16(rspi, rspi->spcmd, RSPI_SPCMD0);
++
++	/* Sets RSPI mode */
++	rspi_write8(rspi, SPCR_MSTR, RSPI_SPCR);
++
++	return 0;
++}
++
++/*
+  * functions for QSPI
+  */
+ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
+@@ -520,6 +555,13 @@ static void rspi_receive_init(const struct rspi_data *rspi)
+ 			    RSPI_SPSR);
+ }
+ 
++static void rspi_rz_receive_init(const struct rspi_data *rspi)
++{
++	rspi_receive_init(rspi);
++	rspi_write8(rspi, SPBFCR_TXRST | SPBFCR_RXRST, RSPI_SPBFCR);
++	rspi_write8(rspi, 0, RSPI_SPBFCR);
++}
++
+ static void qspi_receive_init(const struct rspi_data *rspi)
+ {
+ 	u8 spsr;
+@@ -706,6 +748,41 @@ static int rspi_transfer_one(struct spi_master *master, struct spi_device *spi,
  	return 0;
-@@ -1050,7 +1056,7 @@ static int rspi_probe(struct platform_device *pdev)
- 	master->cleanup = rspi_cleanup;
- 	master->prepare_message = rspi_prepare_message;
- 	master->unprepare_message = rspi_unprepare_message;
--	master->mode_bits = SPI_CPHA | SPI_CPOL;
-+	master->mode_bits = SPI_CPHA | SPI_CPOL | SPI_LOOP;
+ }
  
- 	ret = platform_get_irq_byname(pdev, "rx");
- 	if (ret < 0) {
++static int rspi_rz_transfer_out_in(struct rspi_data *rspi,
++				   struct spi_transfer *xfer)
++{
++	int remain = xfer->len, ret;
++	const u8 *tx_buf = xfer->tx_buf;
++	u8 *rx_buf = xfer->rx_buf;
++	u8 data;
++
++	rspi_rz_receive_init(rspi);
++
++	while (remain > 0) {
++		data = tx_buf ? *tx_buf++ : DUMMY_DATA;
++		ret = rspi_data_out_in(rspi, data);
++		if (ret < 0)
++			return ret;
++		if (rx_buf)
++			*rx_buf++ = ret;
++		remain--;
++	}
++
++	/* Wait for the last transmission */
++	rspi_wait_for_interrupt(rspi, SPSR_SPTEF, SPCR_SPTIE);
++
++	return 0;
++}
++
++static int rspi_rz_transfer_one(struct spi_master *master,
++				struct spi_device *spi,
++				struct spi_transfer *xfer)
++{
++	struct rspi_data *rspi = spi_master_get_devdata(master);
++
++	return rspi_rz_transfer_out_in(rspi, xfer);
++}
++
+ static int qspi_transfer_out_in(struct rspi_data *rspi,
+ 				struct spi_transfer *xfer)
+ {
+@@ -1041,6 +1118,11 @@ static struct spi_ops rspi_ops = {
+ 	.transfer_one =			rspi_transfer_one,
+ };
+ 
++static struct spi_ops rspi_rz_ops = {
++	.set_config_register =		rspi_rz_set_config_register,
++	.transfer_one =			rspi_rz_transfer_one,
++};
++
+ static struct spi_ops qspi_ops = {
+ 	.set_config_register =		qspi_set_config_register,
+ 	.transfer_one =			qspi_transfer_one,
+@@ -1048,6 +1130,7 @@ static struct spi_ops qspi_ops = {
+ 
+ static struct platform_device_id spi_driver_ids[] = {
+ 	{ "rspi",	(kernel_ulong_t)&rspi_ops },
++	{ "rspi-rz",	(kernel_ulong_t)&rspi_rz_ops },
+ 	{ "qspi",	(kernel_ulong_t)&qspi_ops },
+ 	{},
+ };
 -- 
 1.7.9.5
 
