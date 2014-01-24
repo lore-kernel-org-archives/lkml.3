@@ -1,129 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaAXHeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 02:34:11 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:35935 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaAXHeJ (ORCPT
+	id S1751940AbaAXHlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 02:41:32 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51636 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaAXHlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 02:34:09 -0500
+	Fri, 24 Jan 2014 02:41:31 -0500
+Date: Fri, 24 Jan 2014 08:41:03 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, linux-pwm@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
+Message-ID: <20140124074103.GJ16215@pengutronix.de>
+References: <20140123083714.3c6e86ae@ipc1.ka-ro>
+ <1390467898-9216-1-git-send-email-s.hauer@pengutronix.de>
+ <1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
+ <20140123115632.6d3f1a58@ipc1.ka-ro>
+ <20140123110444.GI16215@pengutronix.de>
+ <20140123165349.GY15937@n2100.arm.linux.org.uk>
+ <20140123173642.GZ15937@n2100.arm.linux.org.uk>
+ <20140124064254.0369084d@ipc1.ka-ro>
 MIME-Version: 1.0
-In-Reply-To: <878uu6gle8.wl%kuninori.morimoto.gx@gmail.com>
-References: <878uu6gle8.wl%kuninori.morimoto.gx@gmail.com>
-Date: Fri, 24 Jan 2014 08:34:08 +0100
-X-Google-Sender-Auth: GedBHxPFQp6cKysZHBVlRFudFt8
-Message-ID: <CAMuHMdX14rktzRtV9bqHFHZV6bsmQ_k=vAZFaPeNjcJsWeX42w@mail.gmail.com>
-Subject: Re: [PATCH] shdma: add R-Car Audio DMAC peri peri driver
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux-SH <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140124064254.0369084d@ipc1.ka-ro>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:29:31 up 152 days, 17:00, 41 users,  load average: 0.05, 0.05,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Morimoto-san,
+On Fri, Jan 24, 2014 at 06:42:54AM +0100, Lothar Waßmann wrote:
+> Hi,
+> 
+> > Okay, this works, but there's a problem with pwm-leds.
+> > 
+> > When the duty cycle is set to zero (when you set the brightness to zero)
+> > pwm-leds decides to disable the PWM after configuring it.  This causes
+> > the PWM output to be driven low, causing the LED to go to maximum
+> > brightness.
+> > 
+> > So, using the inversion at PWM level doesn't work.
+> > 
+> The problem is that the driver calls pwm_disable() when the duty cycle is 0.
+> This sets the PWM output low independent from the output polarity setting.
+> 
+> > To make this work correctly, we really need pwm-leds to do the inversion
+> > rather than setting the inversion bit in hardware.
+> > 
+> The same holds for the pwm-backlight driver.
+> 
+> The easiest fix would be not to call pwm_disable() even for a zero duty
+> cycle.
 
-On Fri, Jan 24, 2014 at 3:32 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@gmail.com> wrote:
-> --- a/drivers/dma/sh/Kconfig
-> +++ b/drivers/dma/sh/Kconfig
-> @@ -29,6 +29,12 @@ config RCAR_HPB_DMAE
->         help
->           Enable support for the Renesas R-Car series DMA controllers.
->
-> +config RCAR_AUDMAC_PP
-> +       tristate "Renesas R-Car Audio DMAC Peripheral Peripheral support"
+IMO that's the right thing to do anyway due to the different PWM
+hardware controllers we have. I'm thinking about the following patch
+for some time.
 
-double "Peripheral"
+Sascha
 
-> +       depends on SH_DMAE_BASE
-> +       help
-> +         Enable support for the Renesas R-Car Audio DMAC Peripheral Peripheral controllers.
+--------------------8<--------------------------
 
-idem.
+>From 9ebbc3d72c71bd97d7fc4458f60ae3ecd5876984 Mon Sep 17 00:00:00 2001
+From: Sascha Hauer <s.hauer@pengutronix.de>
+Date: Fri, 24 Jan 2014 08:34:16 +0100
+Subject: [PATCH] PWM: Document disabled PWM output as undefined
 
-> --- /dev/null
-> +++ b/drivers/dma/sh/rcar-audmapp.c
-> @@ -0,0 +1,325 @@
+When disabled PWM hardware reacts differently. Some controllers
+just stop with their current value, others produce a constant high
+or low output, sometimes depending on the output inversion bit. Update
+the documentation to reflect that and request from the PWM consumer
+drivers to set a constant high/low value with duty cycles of 0/100%
+instead of disabling the PWM.
 
-> +static void audmapp_halt(struct shdma_chan *schan)
-> +{
-> +       struct audmapp_chan *auchan = to_chan(schan);
-> +       int i;
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ Documentation/pwm.txt | 2 ++
+ 1 file changed, 2 insertions(+)
 
-unsigned int
+diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+index 93cb979..b7e8a31 100644
+--- a/Documentation/pwm.txt
++++ b/Documentation/pwm.txt
+@@ -44,6 +44,8 @@ After being requested, a PWM has to be configured using:
+ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+ 
+ To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
++The output of a disabled PWM is undefined. Set the duty cycle to 100%
++for a constant high output and to 0 for constant low output.
+ 
+ Using PWMs with the sysfs interface
+ -----------------------------------
+-- 
+1.8.5.2
 
-> +
-> +       audmapp_write(auchan, 0, PDMACHCR);
-> +
-> +       for(i = 0; i < 1024; i++) {
-
-Missing space between "for" and "(" (have you run checkpatch.pl?)
-
-What's a typical value of i when leaving the loop?
-
-> +               if (0 == audmapp_read(auchan, PDMACHCR))
-> +                       return;
-> +               udelay(1);
-> +       }
-> +}
-> +
-> +
-> +static struct audmapp_slave_config *
-> +audmapp_find_slave(struct audmapp_chan *auchan, int slave_id)
-> +{
-> +       struct audmapp_device *audev = to_dev(auchan);
-> +       struct audmapp_pdata *pdata = audev->pdata;
-> +       struct audmapp_slave_config *cfg;
-> +       int i;
-
-unsigned int
-
-> +
-> +       if (slave_id >= AUDMAPP_SLAVE_NUMBER)
-
-So slave_id should be unsigned int, too, and AUDMAPP_SLAVE_NUMBER
-too ("29U").
-
-> +               return NULL;
-> +
-> +       for (i = 0, cfg = pdata->slave; i < pdata->slave_num; i++, cfg++)
-> +               if (cfg->slave_id == slave_id)
-> +                       return cfg;
-> +
-> +       return NULL;
-> +}
-
-> +static int audmapp_desc_setup(struct shdma_chan *schan,
-> +                             struct shdma_desc *sdecs,
-> +                             dma_addr_t src, dma_addr_t dst, size_t *len)
-> +{
-> +       struct audmapp_chan *auchan = to_chan(schan);
-> +       struct audmapp_slave_config *cfg = auchan->config;
-> +
-> +       if (!cfg)
-> +               return -ENODEV;
-> +
-> +       if (*len > (size_t)AUDMAPP_LEN_MAX)
-
-I think you can get rid of the cast by adding a "U" suffix to one of
-the constants in the definition of AUDMAPP_LEN_MAX.
-
-> +               *len = (size_t)AUDMAPP_LEN_MAX;
-
-The cast is not needed (I think even without the change above).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
