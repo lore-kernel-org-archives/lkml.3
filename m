@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaAXOJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:09:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53971 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359AbaAXOJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:09:44 -0500
-Message-ID: <52E27408.8060808@ti.com>
-Date: Fri, 24 Jan 2014 19:39:12 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <george.cherian@ti.com>, <heikki.krogerus@linux.intel.com>,
-        <rogerq@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1390299099-14764-1-git-send-email-kishon@ti.com> <20140121144725.GF30451@saruman.home>
-In-Reply-To: <20140121144725.GF30451@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752800AbaAXOKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:10:18 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:35615 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359AbaAXOKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 09:10:15 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-25-52e27445735d
+Message-id: <52E27436.5040908@samsung.com>
+Date: Fri, 24 Jan 2014 15:09:58 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3/8 v4] crypto:s5p-sss: Add support for SSS module on Exynos
+References: <1389243569-13161-1-git-send-email-ch.naveen@samsung.com>
+ <1389777316-15070-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1389777316-15070-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xy7quJY+CDNpnKVjcfX6Y0eLlIU2L
+	OedbWCy6X8lY3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFl5U0mj52z7rJ7
+	bDug6tG3ZRWjx+dNcgGsUVw2Kak5mWWpRfp2CVwZb6ZdYCy4zV1x7U8TcwPjTM4uRk4OCQET
+	iY/7rzJB2GISF+6tZ+ti5OIQEljKKNG7YBMrhPOZUeL4ibVADgcHr4CWROfxIJAGFgFVid19
+	69hBbDYBNYnPDY/YQGxRgQiJv/PWM4LYvAKCEj8m32MBsUUEyiX+3VgDtoBZ4CijxOc5F5lA
+	ZgoLBEg82JYNsauRUeJAy0ywZk4BN4mp89aDXccsYC2xctI2RghbXmLzmrfMExgFZiHZMQtJ
+	2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihIT/lx2Mi49ZHWIU4GBU4uGdEfgw
+	SIg1say4MvcQowQHs5II79aAR0FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGCXdPk7jTPjel1Fz
+	/oRkxbEnS+707Cl5bP/BOurnhRWPzjw83LH+QvsKv1JLZ+mW59eatzoFr137dH39hL4et+23
+	rvUk23A1MmbYmHu0B1odLjbIX954P8aNbf75Gqmo7jwpHba5V30eFwdN/h56If+LcY/R6n6W
+	ZbsffUvYHjvLIvOXlrvyHCWW4oxEQy3mouJEALPgxixdAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Naveen,
 
-On Tuesday 21 January 2014 08:17 PM, Felipe Balbi wrote:
-> On Tue, Jan 21, 2014 at 03:41:38PM +0530, Kishon Vijay Abraham I wrote:
->> Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs),
->> do not return from probe if the USB PHY library returns -ENODEV as that
-> 
-> this isn't correct, they all have PHYs, some of them might not be
-> controllable.
+On 15.01.2014 10:15, Naveen Krishna Chatradhi wrote:
+> This patch adds new compatible and variant struct to support the SSS
+> module on Exynos4 (Exynos4210), Exynos5 (Exynos5420 and Exynos5250)
+> for which
+> 1. AES register are at an offset of 0x200 and
+> 2. hash interrupt is not available
+[snip]
+>   Required properties:
+>
+>   - compatible : Should contain entries for this and backward compatible
+>     SSS versions:
+>     - "samsung,s5pv210-secss" for S5PV210 SoC.
+> +  - "samsung,exynos4210-secss" for Exynos4210, Exynos4212, Exynos4412, Exynos5250,
+> +		Exynos5260 and Exynos5420 SoCs.
+>   - reg : Offset and length of the register set for the module
+>   - interrupts : the interrupt-specifier for the SSS module.
+> -		Two interrupts "feed control and hash" in case of S5PV210
+> -- clocks : the required gating clock for the SSS module.
+> -- clock-names : the gating clock name to be requested in the SSS driver.
+> +		-- Two interrupts "feed control and hash" in case of
+> +		   "samsung,s5pv210-secss"
+> +		-- One interrupts "feed control" in case of
+> +		   "samsung,exynos4210-secss".
+> +- clocks : list of clock phandle and specifier pairs for all clocks  listed in
+> +		clock-names property.
+> +- clock-names : list of device clock input names; should contain one entry
+> +		"secss".
 
-right, but we use USB PHY library only for controllable PHYs (apart from using
-nop).
-> 
->> indicates the platform does not have PHY.
-> 
-> not really, that indicates the current platform tried to grab a PHY and
-> the PHY doesn't exist. If there's anybody with a non-controllable PHY
-> and someone gives me a really good reason for not using the generic
-> no-op PHY, then we should add a flag and we could:
-> 
-> 	if (!likely(dwc->flags & DWC3_USB2PHY_DRIVER_NOT_NEEDED))
-> 		dwc3_grab_phys(dwc);
-> 
-> But I really want to see the argument against using no-op. As far as I
-> could see, everybody needs a PHY driver one way or another, some
-> platforms just haven't sent any PHY driver upstream and have their own
-> hacked up solution to avoid using the PHY layer.
+Hmm, I guess this is a rebase error, because this should rather be 
+squashed with patch 2/8.
 
-I was trying to address Heikki concerns in my previous version [1] where I used
-quirks to identify if the platform does not have PHY.
+Otherwise the patch looks good to me.
 
-[1] -> https://lkml.org/lkml/2013/12/5/32
-
-Thanks
-Kishon
+Best regards,
+Tomasz
