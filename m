@@ -1,123 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaAXMdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 07:33:04 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44929 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751185AbaAXMdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 07:33:01 -0500
-Date: Fri, 24 Jan 2014 12:32:59 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro
- CLOCKSOURCE_ACPI_DECLARE
-Message-ID: <20140124123259.GI814@e106331-lin.cambridge.arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
- <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
- <52E1AFE8.40601@linaro.org>
+	id S1752648AbaAXMdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 07:33:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50032 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752466AbaAXMdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 07:33:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,712,1384329600"; 
+   d="scan'208";a="464101430"
+Date: Fri, 24 Jan 2014 20:33:20 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [rcu] c0f4dfd4f9: -53% perf-stat.cpu-migrations
+Message-ID: <20140124123320.GC27801@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52E1AFE8.40601@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 12:12:24AM +0000, Hanjun Guo wrote:
-> Hi Linus,
-> 
-> Sorry for the late reply.
-> 
-> On 2014年01月22日 16:26, Linus Walleij wrote:
-> > On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> >
-> >> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> >>
-> >> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
-> >> name from the ACPI timer table is matched with all the registered
-> >> timer controllers and matching initialisation routine is invoked.
-> >>
-> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
-> > to TIMER_OF_DECLARE() and I think this macro, if needed, should
-> > be named TIMER_ACPI_DECLARE().
-> >
-> > The reason is that "clocksource" is a Linux-internal name and this
-> > macro pertains to the hardware name in respective system
-> > description type.
-> 
-> That make sense to me too, I will update in next version if
-> this patch is still needed.
-> 
-> >
-> >> +#ifdef CONFIG_ACPI
-> >> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
-> >> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
-> >> +               __used __section(__clksrc_acpi_table)                   \
-> >> +                = { .id = compat,                              \
-> >> +                    .driver_data = (kernel_ulong_t)fn }
-> >> +#else
-> >> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
-> >> +#endif
-> > This hammers down the world to compile one binary for ACPI
-> > and one binary for device tree. Maybe that's fine, I don't know.
-> 
-> This is a problem we can have some discussion on it.
-> I prefer mutually exclusive ACPI and DT support.
+Hi Paul,
 
-A lot of work has been put into making a single kernel boot everywhere.
-It's forced duplicated code to be factored out, and it's made the kernel
-more flexible. While it has been painful, it's forced a far higher
-quality standard across the board(s).
+Just FYI, we noticed -53% perf-stat.cpu-migrations in dd write tests
+on btrfs, which looks good. First good commit is
 
-Having a separate ACPI-capable or DT-capable kernels goes completely
-against that, and it's completely broken:
+commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+Author:     Paul E. McKenney <paul.mckenney@linaro.org>
+AuthorDate: Fri Dec 28 11:30:36 2012 -0800
+Commit:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+CommitDate: Tue Mar 26 08:04:51 2013 -0700
 
-* It doubles the testing effort required for a particular kernel. I can
-  guarantee that we will miss bugs (even amazingly bad build bugs)
-  because no-one will be able to test a full suite of kernels.
+    rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
+    
+    Because RCU callbacks are now associated with the number of the grace
+    period that they must wait for, CPUs can now take advance callbacks
+    corresponding to grace periods that ended while a given CPU was in
+    dyntick-idle mode.  This eliminates the need to try forcing the RCU
+    state machine while entering idle, thus reducing the CPU intensiveness
+    of RCU_FAST_NO_HZ, which should increase its energy efficiency.
+    
+    Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-* It introduces the possibility of completely pointles arbitrary
-  differences between the two. How long until we see the first bug-fix
-  that only works in one configuration?
+ Documentation/kernel-parameters.txt |  28 ++-
+ include/linux/rcupdate.h            |   1 +
+ init/Kconfig                        |  17 +-
+ kernel/rcutree.c                    |  28 +--
+ kernel/rcutree.h                    |  12 +-
+ kernel/rcutree_plugin.h             | 374 ++++++++++--------------------------
+ kernel/rcutree_trace.c              |   2 -
+ 7 files changed, 149 insertions(+), 313 deletions(-)
 
-* It creates additional work for distributions, which need to build more
-  kernels test them, distribute them, and document which platforms which
-  kernels are supported on. This creates more pain for end-users too.
-  
-Eventually we _will_ get fed up with all of those, and we'll have to do
-painful invasive work to make the kernel decide at runtime.
+b11cc5760a9c48c  c0f4dfd4f90f1667d234d21f1  
+---------------  -------------------------  
+     86878 ~138%     -90.3%       8397 ~152%   cpuidle.POLL.time
+       154 ~16%     -87.3%         19 ~55%   cpuidle.POLL.usage
+  12177976 ~ 4%     -85.6%    1748244 ~20%   cpuidle.C1-NHM.time
+    381439 ~ 3%     -68.4%     120538 ~ 2%   softirqs.RCU
+      0.53 ~87%    +161.8%       1.40 ~16%   perf-profile.cpu-cycles.copy_user_generic_string.__btrfs_buffered_write.btrfs_file_aio_write.do_sync_write.vfs_write
+   5227241 ~ 4%     -58.3%    2180928 ~ 7%   cpuidle.C1E-NHM.time
+      0.67 ~88%     +88.6%       1.26 ~21%   perf-profile.cpu-cycles.calc_csum_metadata_size.btrfs_delalloc_release_metadata.btrfs_clear_bit_hook.clear_state_bit.clear_extent_bit
+    231531 ~ 2%     -48.3%     119653 ~ 2%   interrupts.LOC
+     91019 ~ 2%     -40.2%      54404 ~ 2%   cpuidle.C3-NHM.usage
+ 1.991e+08 ~ 3%     -36.7%   1.26e+08 ~ 7%   cpuidle.C3-NHM.time
+      7.07 ~ 4%     -32.7%       4.76 ~ 8%   turbostat.%c3
+     23380 ~33%     +41.2%      33024 ~ 6%   proc-vmstat.kswapd_low_wmark_hit_quickly
+     62805 ~ 3%     -28.4%      44960 ~ 2%   softirqs.SCHED
+     64678 ~ 1%     -30.1%      45195 ~ 1%   softirqs.TIMER
+     55051 ~ 3%     -22.2%      42823 ~ 2%   interrupts.0:IO-APIC-edge.timer
+       920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.active_objs
+       920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.num_objs
+    361987 ~ 2%      +9.9%     397730 ~ 0%   cpuidle.C6-NHM.usage
+      5.30 ~ 1%      -9.7%       4.78 ~ 1%   turbostat.%c1
+    178105 ~ 3%     -53.5%      82837 ~ 1%   perf-stat.cpu-migrations
+      5763 ~ 8%     -44.7%       3186 ~22%   vmstat.system.cs
+   3566268 ~ 8%     -44.8%    1968744 ~21%   perf-stat.context-switches
+       658 ~ 2%     -30.4%        458 ~ 0%   vmstat.system.in
+  53376814 ~12%     -24.2%   40482438 ~22%   perf-stat.node-load-misses
+ 2.996e+10 ~ 3%     -10.8%  2.672e+10 ~ 3%   perf-stat.L1-icache-load-misses
+ 1.998e+09 ~ 4%     -11.6%  1.766e+09 ~ 2%   perf-stat.branch-misses
+ 1.005e+12 ~ 5%     -11.9%  8.852e+11 ~ 6%   perf-stat.stalled-cycles-frontend
+ 6.344e+08 ~ 2%      -6.8%  5.915e+08 ~ 2%   perf-stat.LLC-store-misses
+ 2.892e+10 ~ 2%      +5.4%  3.047e+10 ~ 3%   perf-stat.bus-cycles
 
-Having separate kernels is a lazy shortcut. It's painful for everyone,
-leads to a greater maintenance overhead, it's not what we want now and
-not what we want in future.
 
-No thanks.
+                              perf-stat.cpu-migrations
 
-Either the kernel figures out whether or not to deal with ACPI at
-runtime, or it doesn't deal with it at all.
+   90000 ++*----*----------*-*---*------*-----------------------------------+
+         *   **   *.*.**.*     *  *.*.*   **.*.*.*.*   .*.                  |
+   80000 ++                                         *.*   *                 |
+         |                                                                  |
+   70000 ++                                                                 |
+         |                                                                  |
+   60000 ++                                                                 |
+         |                                                                  |
+   50000 ++                                                                 |
+         |                                                                  |
+   40000 ++                                                                 |
+         | O O                                                              |
+   30000 O+     O O O OO O O O O OO O O O OO O O O OO O O O O OO O O O OO O O
+         |    O                                                             |
+   20000 ++-----------------------------------------------------------------+
 
-Thanks,
-Mark.
