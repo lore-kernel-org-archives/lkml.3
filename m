@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaAXIrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:47:15 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:56739 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452AbaAXIoT (ORCPT
+	id S1752748AbaAXIrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:47:45 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:49570 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383AbaAXIoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 03:44:19 -0500
+	Fri, 24 Jan 2014 03:44:18 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Mark Brown <broonie@kernel.org>
 Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 03/14] spi: rspi: Abstract 8/16-bit Data Register access
-Date: Fri, 24 Jan 2014 09:43:53 +0100
-Message-Id: <1390553044-11860-4-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 14/14] spi: rspi: Add support for Quad and Dual SPI Transfers on QSPI
+Date: Fri, 24 Jan 2014 09:44:04 +0100
+Message-Id: <1390553044-11860-15-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
 References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
@@ -24,178 +24,309 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Add rspi_{write,read}_data(), to abstract 8-bit (QSPI, and RSPI on RZ/A1H)
-versus 16-bit (RSPI) Data Register access.
+Add support for Quad and Dual SPI Transfers on the Renesas Quad Serial
+Peripheral Interface, as found in R-Car Gen2 SoCs like R-Car H2 (r8a7790)
+and R-Car M2 (r8a7791):
+  - Add unidirectional transfer methods for Quad/Dual SPI Transfers.
+  - Program the sequencer to handle SPI messages with multiple transfer
+    modes when Quad or Dual transfers are enabled for an SPI slave.
+    Up to 4 transfer modes per SPI message are supported by the hardware.
+  - Advertise the availability of Quad and Dual SPI modes on QSPI.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
- drivers/spi/spi-rspi.c |   56 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 35 insertions(+), 21 deletions(-)
+ drivers/spi/spi-rspi.c |  162 +++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 148 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 0e4d169c90d7..a0bb3c28ae91 100644
+index e56fcb5f7f99..34ad4bca8a41 100644
 --- a/drivers/spi/spi-rspi.c
 +++ b/drivers/spi/spi-rspi.c
-@@ -192,6 +192,7 @@ struct rspi_data {
+@@ -2,6 +2,7 @@
+  * SH RSPI driver
+  *
+  * Copyright (C) 2012, 2013  Renesas Solutions Corp.
++ * Copyright (C) 2014 Glider bvba
+  *
+  * Based on spi-sh.c:
+  * Copyright (C) 2011 Renesas Solutions Corp.
+@@ -57,6 +58,10 @@
+ #define RSPI_SPCMD5		0x1a	/* Command Register 5 */
+ #define RSPI_SPCMD6		0x1c	/* Command Register 6 */
+ #define RSPI_SPCMD7		0x1e	/* Command Register 7 */
++#define RSPI_SPCMD(i)		(RSPI_SPCMD0 + (i) * 2)
++#define RSPI_NUM_SPCMD		8
++#define RSPI_RZ_NUM_SPCMD	4
++#define QSPI_NUM_SPCMD		4
  
- 	unsigned dma_width_16bit:1;
- 	unsigned dma_callbacked:1;
-+	unsigned byte_access:1;
+ /* RSPI on RZ only */
+ #define RSPI_SPBFCR		0x20	/* Buffer Control Register */
+@@ -69,6 +74,7 @@
+ #define QSPI_SPBMUL1		0x20	/* Transfer Data Length Multiplier Setting Register 1 */
+ #define QSPI_SPBMUL2		0x24	/* Transfer Data Length Multiplier Setting Register 2 */
+ #define QSPI_SPBMUL3		0x28	/* Transfer Data Length Multiplier Setting Register 3 */
++#define QSPI_SPBMUL(i)		(QSPI_SPBMUL0 + (i) * 4)
+ 
+ /* SPCR - Control Register */
+ #define SPCR_SPRIE		0x80	/* Receive Interrupt Enable */
+@@ -152,7 +158,7 @@
+ #define SPCMD_LSBF		0x1000	/* LSB First */
+ #define SPCMD_SPB_MASK		0x0f00	/* Data Length Setting */
+ #define SPCMD_SPB_8_TO_16(bit)	(((bit - 1) << 8) & SPCMD_SPB_MASK)
+-#define SPCMD_SPB_8BIT		0x0000	/* qspi only */
++#define SPCMD_SPB_8BIT		0x0000	/* QSPI only */
+ #define SPCMD_SPB_16BIT		0x0100
+ #define SPCMD_SPB_20BIT		0x0000
+ #define SPCMD_SPB_24BIT		0x0100
+@@ -245,6 +251,7 @@ struct spi_ops {
+ 	int (*set_config_register)(struct rspi_data *rspi, int access_size);
+ 	int (*transfer_one)(struct spi_master *master, struct spi_device *spi,
+ 			    struct spi_transfer *xfer);
++	u16 mode_bits;
  };
  
- static void rspi_write8(const struct rspi_data *rspi, u8 data, u16 offset)
-@@ -219,10 +220,25 @@ static u16 rspi_read16(const struct rspi_data *rspi, u16 offset)
- 	return ioread16(rspi->addr + offset);
- }
- 
-+static void rspi_write_data(const struct rspi_data *rspi, u16 data)
-+{
-+	if (rspi->byte_access)
-+		rspi_write8(rspi, data, RSPI_SPDR);
-+	else /* 16 bit */
-+		rspi_write16(rspi, data, RSPI_SPDR);
-+}
-+
-+static u16 rspi_read_data(const struct rspi_data *rspi)
-+{
-+	if (rspi->byte_access)
-+		return rspi_read8(rspi, RSPI_SPDR);
-+	else /* 16 bit */
-+		return rspi_read16(rspi, RSPI_SPDR);
-+}
-+
- /* optional functions */
- struct spi_ops {
--	int (*set_config_register)(const struct rspi_data *rspi,
--				   int access_size);
-+	int (*set_config_register)(struct rspi_data *rspi, int access_size);
- 	int (*send_pio)(struct rspi_data *rspi, struct spi_transfer *t);
- 	int (*receive_pio)(struct rspi_data *rspi, struct spi_transfer *t);
- };
-@@ -230,8 +246,7 @@ struct spi_ops {
  /*
-  * functions for RSPI
+@@ -274,8 +281,8 @@ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ 	rspi_write8(rspi, 0x00, RSPI_SPCR2);
+ 
+ 	/* Sets SPCMD */
+-	rspi_write16(rspi, SPCMD_SPB_8_TO_16(access_size) | rspi->spcmd,
+-		     RSPI_SPCMD0);
++	rspi->spcmd |= SPCMD_SPB_8_TO_16(access_size);
++	rspi_write16(rspi, rspi->spcmd, RSPI_SPCMD0);
+ 
+ 	/* Sets RSPI mode */
+ 	rspi_write8(rspi, SPCR_MSTR, RSPI_SPCR);
+@@ -321,7 +328,6 @@ static int rspi_rz_set_config_register(struct rspi_data *rspi, int access_size)
   */
--static int rspi_set_config_register(const struct rspi_data *rspi,
--				    int access_size)
-+static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
  {
+-	u16 spcmd;
  	int spbr;
  
-@@ -242,8 +257,9 @@ static int rspi_set_config_register(const struct rspi_data *rspi,
- 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
- 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+ 	/* Sets output mode, MOSI signal, and (optionally) loopback */
+@@ -342,13 +348,13 @@ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
  
--	/* Sets number of frames to be used: 1 frame */
--	rspi_write8(rspi, 0x00, RSPI_SPDCR);
-+	/* Disable dummy transmission, set 16-bit word access, 1 frame */
-+	rspi_write8(rspi, 0, RSPI_SPDCR);
-+	rspi->byte_access = 0;
+ 	/* Data Length Setting */
+ 	if (access_size == 8)
+-		spcmd = SPCMD_SPB_8BIT;
++		rspi->spcmd |= SPCMD_SPB_8BIT;
+ 	else if (access_size == 16)
+-		spcmd = SPCMD_SPB_16BIT;
++		rspi->spcmd |= SPCMD_SPB_16BIT;
+ 	else
+-		spcmd = SPCMD_SPB_32BIT;
++		rspi->spcmd |= SPCMD_SPB_32BIT;
  
- 	/* Sets RSPCK, SSL, next-access delay value */
- 	rspi_write8(rspi, 0x00, RSPI_SPCKD);
-@@ -266,8 +282,7 @@ static int rspi_set_config_register(const struct rspi_data *rspi,
- /*
-  * functions for QSPI
-  */
--static int qspi_set_config_register(const struct rspi_data *rspi,
--				    int access_size)
-+static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
- {
- 	u16 spcmd;
- 	int spbr;
-@@ -279,8 +294,9 @@ static int qspi_set_config_register(const struct rspi_data *rspi,
- 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz);
- 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+-	spcmd |= SPCMD_SCKDEN | SPCMD_SLNDEN | rspi->spcmd | SPCMD_SPNDEN;
++	rspi->spcmd |= SPCMD_SCKDEN | SPCMD_SLNDEN | SPCMD_SPNDEN;
  
--	/* Sets number of frames to be used: 1 frame */
--	rspi_write8(rspi, 0x00, RSPI_SPDCR);
-+	/* Disable dummy transmission, set byte access */
-+	rspi_write8(rspi, 0, RSPI_SPDCR);
-+	rspi->byte_access = 1;
- 
- 	/* Sets RSPCK, SSL, next-access delay value */
- 	rspi_write8(rspi, 0x00, RSPI_SPCKD);
-@@ -354,7 +370,7 @@ static int rspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 			return -ETIMEDOUT;
- 		}
- 
--		rspi_write16(rspi, *data, RSPI_SPDR);
-+		rspi_write_data(rspi, *data);
- 		data++;
- 		remain--;
- 	}
-@@ -380,14 +396,14 @@ static int qspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 				"%s: tx empty timeout\n", __func__);
- 			return -ETIMEDOUT;
- 		}
--		rspi_write8(rspi, *data++, RSPI_SPDR);
-+		rspi_write_data(rspi, *data++);
- 
- 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
- 			dev_err(&rspi->master->dev,
- 				"%s: receive timeout\n", __func__);
- 			return -ETIMEDOUT;
- 		}
--		rspi_read8(rspi, RSPI_SPDR);
-+		rspi_read_data(rspi);
- 
- 		remain--;
- 	}
-@@ -525,7 +541,7 @@ static void rspi_receive_init(const struct rspi_data *rspi)
- 
- 	spsr = rspi_read8(rspi, RSPI_SPSR);
- 	if (spsr & SPSR_SPRF)
--		rspi_read16(rspi, RSPI_SPDR);	/* dummy read */
-+		rspi_read_data(rspi);	/* dummy read */
- 	if (spsr & SPSR_OVRF)
- 		rspi_write8(rspi, rspi_read8(rspi, RSPI_SPSR) & ~SPSR_OVRF,
- 			    RSPI_SPSR);
-@@ -549,15 +565,14 @@ static int rspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 			return -ETIMEDOUT;
- 		}
- 		/* dummy write for generate clock */
--		rspi_write16(rspi, DUMMY_DATA, RSPI_SPDR);
-+		rspi_write_data(rspi, DUMMY_DATA);
- 
- 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
- 			dev_err(&rspi->master->dev,
- 				"%s: receive timeout\n", __func__);
- 			return -ETIMEDOUT;
- 		}
--		/* SPDR allows 16 or 32-bit access only */
--		*data = (u8)rspi_read16(rspi, RSPI_SPDR);
-+		*data = rspi_read_data(rspi);
- 
- 		data++;
- 		remain--;
-@@ -572,7 +587,7 @@ static void qspi_receive_init(const struct rspi_data *rspi)
- 
- 	spsr = rspi_read8(rspi, RSPI_SPSR);
- 	if (spsr & SPSR_SPRF)
--		rspi_read8(rspi, RSPI_SPDR);   /* dummy read */
-+		rspi_read_data(rspi);   /* dummy read */
- 	rspi_write8(rspi, SPBFCR_TXRST | SPBFCR_RXRST, QSPI_SPBFCR);
+ 	/* Resets transfer data length */
+ 	rspi_write32(rspi, 0, QSPI_SPBMUL0);
+@@ -359,9 +365,9 @@ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
  	rspi_write8(rspi, 0x00, QSPI_SPBFCR);
+ 
+ 	/* Sets SPCMD */
+-	rspi_write16(rspi, spcmd, RSPI_SPCMD0);
++	rspi_write16(rspi, rspi->spcmd, RSPI_SPCMD0);
+ 
+-	/* Enables SPI function in a master mode */
++	/* Enables SPI function in master mode */
+ 	rspi_write8(rspi, SPCR_SPE | SPCR_MSTR, RSPI_SPCR);
+ 
+ 	return 0;
+@@ -811,12 +817,55 @@ static int qspi_transfer_out_in(struct rspi_data *rspi,
+ 	return 0;
  }
-@@ -593,15 +608,14 @@ static int qspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 			return -ETIMEDOUT;
- 		}
- 		/* dummy write for generate clock */
--		rspi_write8(rspi, DUMMY_DATA, RSPI_SPDR);
-+		rspi_write_data(rspi, DUMMY_DATA);
  
- 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
- 			dev_err(&rspi->master->dev,
- 				"%s: receive timeout\n", __func__);
- 			return -ETIMEDOUT;
- 		}
--		/* SPDR allows 8, 16 or 32-bit access */
--		*data++ = rspi_read8(rspi, RSPI_SPDR);
-+		*data++ = rspi_read_data(rspi);
- 		remain--;
- 	}
++static int qspi_transfer_out(struct rspi_data *rspi, struct spi_transfer *xfer)
++{
++	const u8 *buf = xfer->tx_buf;
++	unsigned int i;
++	int ret;
++
++	for (i = 0; i < xfer->len; i++) {
++		ret = rspi_data_out(rspi, *buf++);
++		if (ret < 0)
++			return ret;
++	}
++
++	/* Wait for the last transmission */
++	rspi_wait_for_interrupt(rspi, SPSR_SPTEF, SPCR_SPTIE);
++
++	return 0;
++}
++
++static int qspi_transfer_in(struct rspi_data *rspi, struct spi_transfer *xfer)
++{
++	u8 *buf = xfer->rx_buf;
++	unsigned int i;
++	int ret;
++
++	for (i = 0; i < xfer->len; i++) {
++		ret = rspi_data_in(rspi);
++		if (ret < 0)
++			return ret;
++		*buf++ = ret;
++	}
++
++	return 0;
++}
++
+ static int qspi_transfer_one(struct spi_master *master, struct spi_device *spi,
+ 			     struct spi_transfer *xfer)
+ {
+ 	struct rspi_data *rspi = spi_master_get_devdata(master);
  
+-	return qspi_transfer_out_in(rspi, xfer);
++	if (xfer->tx_buf && xfer->tx_nbits > SPI_NBITS_SINGLE) {
++		/* Quad or Dual SPI Write */
++		return qspi_transfer_out(rspi, xfer);
++	} else if (xfer->rx_buf && xfer->rx_nbits > SPI_NBITS_SINGLE) {
++		/* Quad or Dual SPI Read */
++		return qspi_transfer_in(rspi, xfer);
++	} else {
++		/* Single SPI Transfer */
++		return qspi_transfer_out_in(rspi, xfer);
++	}
+ }
+ 
+ static int rspi_setup(struct spi_device *spi)
+@@ -845,21 +894,101 @@ static void rspi_cleanup(struct spi_device *spi)
+ {
+ }
+ 
++static u16 qspi_transfer_mode(const struct spi_transfer *xfer)
++{
++	if (xfer->tx_buf)
++		switch (xfer->tx_nbits) {
++		case SPI_NBITS_QUAD:
++			return SPCMD_SPIMOD_QUAD;
++		case SPI_NBITS_DUAL:
++			return SPCMD_SPIMOD_DUAL;
++		default:
++			return 0;
++		}
++	if (xfer->rx_buf)
++		switch (xfer->rx_nbits) {
++		case SPI_NBITS_QUAD:
++			return SPCMD_SPIMOD_QUAD | SPCMD_SPRW;
++		case SPI_NBITS_DUAL:
++			return SPCMD_SPIMOD_DUAL | SPCMD_SPRW;
++		default:
++			return 0;
++		}
++
++	return 0;
++}
++
++static int qspi_setup_sequencer(struct rspi_data *rspi,
++				const struct spi_message *msg)
++{
++	const struct spi_transfer *xfer;
++	unsigned int i = 0, len = 0;
++	u16 current_mode = 0xffff, mode;
++
++	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
++		mode = qspi_transfer_mode(xfer);
++		if (mode == current_mode) {
++			len += xfer->len;
++			continue;
++		}
++
++		/* Transfer mode change */
++		if (i) {
++			/* Set transfer data length of previous transfer */
++			rspi_write32(rspi, len, QSPI_SPBMUL(i - 1));
++		}
++
++		if (i >= QSPI_NUM_SPCMD) {
++			dev_err(&msg->spi->dev,
++				"Too many different transfer modes");
++			return -EINVAL;
++		}
++
++		/* Program transfer mode for this transfer */
++		rspi_write16(rspi, rspi->spcmd | mode, RSPI_SPCMD(i));
++		current_mode = mode;
++		len = xfer->len;
++		i++;
++	}
++	if (i) {
++		/* Set final transfer data length and sequence length */
++		rspi_write32(rspi, len, QSPI_SPBMUL(i - 1));
++		rspi_write8(rspi, i - 1, RSPI_SPSCR);
++	}
++
++	return 0;
++}
++
+ static int rspi_prepare_message(struct spi_master *master,
+-				struct spi_message *message)
++				struct spi_message *msg)
+ {
+ 	struct rspi_data *rspi = spi_master_get_devdata(master);
++	int ret;
+ 
++	if (msg->spi->mode &
++	    (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD)) {
++		/* Setup sequencer for messages with multiple transfer modes */
++		ret = qspi_setup_sequencer(rspi, msg);
++		if (ret < 0)
++			return ret;
++	}
++
++	/* Enable SPI function in master mode */
+ 	rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) | SPCR_SPE, RSPI_SPCR);
+ 	return 0;
+ }
+ 
+ static int rspi_unprepare_message(struct spi_master *master,
+-				  struct spi_message *message)
++				  struct spi_message *msg)
+ {
+ 	struct rspi_data *rspi = spi_master_get_devdata(master);
+ 
++	/* Disable SPI function */
+ 	rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) & ~SPCR_SPE, RSPI_SPCR);
++
++	/* Reset sequencer for Single SPI Transfers */
++	rspi_write16(rspi, rspi->spcmd, RSPI_SPCMD0);
++	rspi_write8(rspi, 0, RSPI_SPSCR);
+ 	return 0;
+ }
+ 
+@@ -989,16 +1118,21 @@ static int rspi_remove(struct platform_device *pdev)
+ static const struct spi_ops rspi_ops = {
+ 	.set_config_register =		rspi_set_config_register,
+ 	.transfer_one =			rspi_transfer_one,
++	.mode_bits =			SPI_CPHA | SPI_CPOL | SPI_LOOP,
+ };
+ 
+ static const struct spi_ops rspi_rz_ops = {
+ 	.set_config_register =		rspi_rz_set_config_register,
+ 	.transfer_one =			rspi_rz_transfer_one,
++	.mode_bits =			SPI_CPHA | SPI_CPOL | SPI_LOOP,
+ };
+ 
+ static const struct spi_ops qspi_ops = {
+ 	.set_config_register =		qspi_set_config_register,
+ 	.transfer_one =			qspi_transfer_one,
++	.mode_bits =			SPI_CPHA | SPI_CPOL | SPI_LOOP |
++					SPI_TX_DUAL | SPI_TX_QUAD |
++					SPI_RX_DUAL | SPI_RX_QUAD,
+ };
+ 
+ #ifdef CONFIG_OF
+@@ -1120,7 +1254,7 @@ static int rspi_probe(struct platform_device *pdev)
+ 	master->cleanup = rspi_cleanup;
+ 	master->prepare_message = rspi_prepare_message;
+ 	master->unprepare_message = rspi_unprepare_message;
+-	master->mode_bits = SPI_CPHA | SPI_CPOL | SPI_LOOP;
++	master->mode_bits = ops->mode_bits;
+ 	master->dev.of_node = pdev->dev.of_node;
+ 
+ 	ret = platform_get_irq_byname(pdev, "rx");
 -- 
 1.7.9.5
 
