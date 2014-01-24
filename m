@@ -1,118 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaAXXgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 18:36:41 -0500
-Received: from cloud.peff.net ([50.56.180.127]:38457 "HELO peff.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750903AbaAXXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 18:36:38 -0500
-Date: Fri, 24 Jan 2014 18:36:36 -0500
-From: Jeff King <peff@peff.net>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Ken Moffat <zarniwhoop@ntlworld.com>,
-        Vicent =?utf-8?B?TWFydMOt?= <tanoku@gmail.com>,
-        Stefan =?utf-8?B?TsOkd2U=?= <stefan.naewe@atlas-elektronik.com>,
-        Javier Domingo Cansino <javierdo1@gmail.com>,
-        "git@vger.kernel.org" <git@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.9-rc0
-Message-ID: <20140124233635.GA31371@sigill.intra.peff.net>
-References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com>
- <xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
- <CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
- <52DFE882.2040605@atlas-elektronik.com>
- <xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
- <CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
- <xmqqlhy7yjjp.fsf@gitster.dls.corp.google.com>
- <20140122203030.GB14211@milliways>
- <20140123020913.GF17254@sigill.intra.peff.net>
- <xmqqha8uva2i.fsf@gitster.dls.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <xmqqha8uva2i.fsf@gitster.dls.corp.google.com>
+	id S1751792AbaAXXlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 18:41:53 -0500
+Received: from mail-pb0-f73.google.com ([209.85.160.73]:64679 "EHLO
+	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaAXXlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 18:41:50 -0500
+From: Dylan Reid <dgreid@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, Dylan Reid <dgreid@chromium.org>
+Subject: [PATCH] regmap: cache: Handle stride > 1 in sync_block_raw_flush
+Date: Fri, 24 Jan 2014 15:40:39 -0800
+Message-Id: <1390606839-1044-1-git-send-email-dgreid@chromium.org>
+X-Mailer: git-send-email 1.8.1.3.605.g02339dd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 10:15:33AM -0800, Junio C Hamano wrote:
+regcache_sync_block_raw_flush takes the address of the base register
+and the address of one past the last register to write to.  "count" is
+the number of registers in the range, not the number of bytes, it
+should be (end addr - start addr) / stride. Without accounting for
+strides greater than one, registers past the end might be synced or
+the writeable_reg callback at the beginning of _regmap_raw_write will
+fail and nothing will be written.
 
-> Jeff King <peff@peff.net> writes:
-> 
-> > Junio, since you prepare such tarballs[1] anyway for kernel.org, it
-> > might be worth uploading them to the "Releases" page of git/git.  I
-> > imagine there is a programmatic way to do so via GitHub's API, but I
-> > don't know offhand. I can look into it if you are interested.
-> 
-> I already have a script that takes the three tarballs and uploads
-> them to two places, so adding GitHub as the third destination should
-> be a natural and welcome way to automate it.
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+---
+ drivers/base/regmap/regcache.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I came up with the script below, which you can use like:
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index d4dd771..dd56177 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -636,10 +636,10 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
+ 	if (*data == NULL)
+ 		return 0;
+ 
+-	count = cur - base;
++	count = (cur - base) / map->reg_stride;
+ 
+ 	dev_dbg(map->dev, "Writing %zu bytes for %d registers from 0x%x-0x%x\n",
+-		count * val_bytes, count, base, cur - 1);
++		count * val_bytes, count, base, cur - map->reg_stride);
+ 
+ 	map->cache_bypass = 1;
+ 
+-- 
+1.8.1.3.605.g02339dd
 
-  ./script v1.8.2.3 git-1.8.2.3.tar.gz
-
-It expects the tag to already be pushed up to GitHub.  I'll leave
-sticking it on the "todo" branch and integrating it into RelUpload to
-you. This can also be used to backfill the old releases (though I looked
-on k.org and it seems to have only partial coverage).
-
-It sets the "prerelease" flag for -rc releases, but I did not otherwise
-fill in any fields, including the summary and description. GitHub seems
-to display reasonably if they are not set.
-
--- >8 --
-#!/bin/sh
-#
-# usage: $0 <tag> <tarball>
-
-repo=git/git
-
-# replace this with however you store your oauth token
-# if you don't have one, make one here:
-# https://github.com/settings/tokens/new
-token() {
-  pass -n github.web.oauth
-}
-
-post() {
-  curl -H "Authorization: token $(token)" "$@"
-}
-
-# usage: create <tag-name>
-create() {
-  case "$1" in
-  *-rc*)
-    prerelease=true
-    ;;
-  *)
-    prerelease=false
-    ;;
-  esac
-
-  post -d '
-  {
-    "tag_name": "'"$1"'",
-    "prerelease": '"$prerelease"'
-  }' "https://api.github.com/repos/$repo/releases"
-}
-
-# use: upload <release-id> <filename>
-upload() {
-  url="https://uploads.github.com/repos/$repo/releases/$1/assets" &&
-  url="$url?name=$(basename $2)" &&
-  post -H "Content-Type: $(file -b --mime-type "$2")" \
-       --data-binary "@$2" \
-       "$url"
-}
-
-# This is a hack. If you don't mind a dependency on
-# perl's JSON (or another parser), we can do a lot better.
-extract_id() {
-  perl -lne '/"id":\s*(\d+)/ or next; print $1; exit 0'
-}
-
-create "$1" >release.json &&
-id=$(extract_id <release.json) &&
-upload "$id" "$2" >/dev/null &&
-rm -f release.json
