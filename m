@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaAXPPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:15:54 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59397 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752541AbaAXPPv (ORCPT
+	id S1753214AbaAXPQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:16:18 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53065 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753184AbaAXPQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:15:51 -0500
-Date: Fri, 24 Jan 2014 15:15:13 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Fri, 24 Jan 2014 10:16:16 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro
- CLOCKSOURCE_ACPI_DECLARE
-Message-ID: <20140124151513.GD19052@arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
- <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
- <20140122114537.GA15591@e106331-lin.cambridge.arm.com>
- <52E1B1DE.5050507@linaro.org>
- <20140124120815.GH814@e106331-lin.cambridge.arm.com>
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT][PATCH v2 0/6] PM / QoS: Introduce latency tolerance device PM QoS type
+Date: Fri, 24 Jan 2014 16:30:28 +0100
+Message-ID: <1603022.bSUdZfxtWV@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140124141923.GQ18029@intel.com>
+References: <5434847.aCyiWHNRe7@vostro.rjw.lan> <1447517.8AFrWcAgld@vostro.rjw.lan> <20140124141923.GQ18029@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140124120815.GH814@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 12:08:15PM +0000, Mark Rutland wrote:
-> On Fri, Jan 24, 2014 at 12:20:46AM +0000, Hanjun Guo wrote:
-> > On 2014年01月22日 19:45, Mark Rutland wrote:
-> > > On Wed, Jan 22, 2014 at 08:26:50AM +0000, Linus Walleij wrote:
-> > >> On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > >>
-> > >>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> > >>>
-> > >>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
-> > >>> name from the ACPI timer table is matched with all the registered
-> > >>> timer controllers and matching initialisation routine is invoked.
-> > >>>
-> > >>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> > >>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > >> Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
-> > >> to TIMER_OF_DECLARE() and I think this macro, if needed, should
-> > >> be named TIMER_ACPI_DECLARE().
-> > >>
-> > >> The reason is that "clocksource" is a Linux-internal name and this
-> > >> macro pertains to the hardware name in respective system
-> > >> description type.
-> > >>
-> > >>> +#ifdef CONFIG_ACPI
-> > >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
-> > >>> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
-> > >>> +               __used __section(__clksrc_acpi_table)                   \
-> > >>> +                = { .id = compat,                              \
-> > >>> +                    .driver_data = (kernel_ulong_t)fn }
-> > >>> +#else
-> > >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
-> > >>> +#endif
-> > >> This hammers down the world to compile one binary for ACPI
-> > >> and one binary for device tree. Maybe that's fine, I don't know.
-> > > How does it do that?
-> > >
-> > > As far as I could tell CONFIG_ACPI and CONFIG_OF are not mutually
-> > > exclusive, and this just means that we only build the datastructures for
-> > > matching from ACPI when CONFIG_ACPI is enabled.
-> > >
-> > > Have I missed something?
-> > >
-> > > I definitely don't want to see mutually exclusive ACPI and DT support.
+On Friday, January 24, 2014 04:19:23 PM Mika Westerberg wrote:
+> On Thu, Jan 23, 2014 at 02:34:59PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, January 17, 2014 03:42:13 PM Rafael J. Wysocki wrote:
+> > > Hi All,
+> > > 
+> > > On some platforms hardware may switch to an energy-saving mode on the fly
+> > > on the basis of certain utilization metrics used by it.  That usually is
+> > > desirable from the energy conservation standpoint, but it generally causes
+> > > latencies to increase which may adversely affect some operations.  For this
+> > > reason, the platforms in question usually provide some interfaces for software
+> > > to indicate its latency tolerance and possibly to prevent the energy-saving
+> > > modes from being selected too aggressively.
+> > > 
+> > > The following series of patches introduces a device PM QoS type allowing
+> > > those interfaces to be used by kernel code and user space.  It is designed
+> > > in analogy with the existing resume latency device PM QoS type, which allows
+> > > some pieces of the existing device PM QoS code to be re-used and makes the
+> > > new user space interface fit into the existing framework.
+> > > 
+> > > Patch [1/5] modifies the names of symbols, variables, functions and structure
+> > > fields associated with the existing resume latency device PM QoS type to
+> > > avoid any confusion with the new one introduced by the subsequent patches.
+> > > 
+> > > Patch [2/5] introduces a new field in struct pm_qos_constraints for specifying
+> > > a special value to be returned as the effective requirement when the given list
+> > > of PM QoS requirements is empty.  That field is necessary for the new latency
+> > > tolerance device PM QoS type.
+> > > 
+> > > Patch [3/5] introduces the latency tolerance device PM QoS type along with
+> > > documentation.
+> > > 
+> > > Patch [4/5] modifies the ACPI LPSS (Low-Power Subsystem) driver to hook up
+> > > LPSS devices to the new latency tolerance device PM QoS interface.
+> > > 
+> > > Patch [5/5] modifies the dev_pm_qos_add_ancestor_request() routine so that it
+> > > can be used by drivers of devices without hardware latency tolerance support
+> > > for specifying their requirements via the ancestors of those devies.
 > > 
-> > ACPI and DT did the same job so I think they should mutually exclusive.
-> > if we enable both DT and ACPI in one system, this will leading confusions.
+> > As usual, testing uncovered some issues, so an updated series follows.
 > 
-> ACPI and DT do similar jobs, and we should be mutually exclusive at
-> runtime. However, they should not be mutually exclusive at compile-time.
+> I tested this series on HSWULT and adding/removing QoS LTR requests from
+> both userspace and from a modified i2c-hid driver (calling
+> dev_pm_qos_add_ancestor_request()) and seems to work nicely -- When I read
+> back the HW LTR values they are what is expected.
 > 
-> Being mutually exclusive at compile-time is just broken. It creates more
-> work for distributions (who need to ship double the number of kernels),
-> it increases the number of configurations requiring testing, and it
-> makes it easier for bugs to be introduced. It's just painful, and
-> there's no reason for it.
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-I fully agree (IOW, I'll NAK patches that break this assumption; we want
-single kernel image whether it uses DT or ACPI).
+Great, thanks a lot for doing that!
 
-> At boot time the kernel needs to decide which to use for hardware
-> description, and completely ignore the other (which should not be
-> present, but lets not assume that or inevitably someone will break that
-> assumption for a quick hack).
-> 
-> The same kernel should boot on a system that has a DTB or a system that
-> has ACPI tables. On a system that's provided both it should use one or
-> the other, but not both.
+Rafael
 
-Do we still need the chosen node to be passed via DT for command line,
-even if the kernel uses ACPI?
-
--- 
-Catalin
