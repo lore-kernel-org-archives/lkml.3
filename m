@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaAXVls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 16:41:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57005 "EHLO mx1.redhat.com"
+	id S1752373AbaAXWD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:03:26 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:52209 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486AbaAXVll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 16:41:41 -0500
-Date: Fri, 24 Jan 2014 16:41:36 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Fix overflow when HZ is smaller than 60
-In-Reply-To: <alpine.LRH.2.02.1401241218470.16419@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401241218470.16419@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751621AbaAXWDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 17:03:22 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 0/2] mm: reduce reclaim stalls with heavy anon and dirty cache
+Date: Fri, 24 Jan 2014 17:03:02 -0500
+Message-Id: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch that I sent before had wrong numbers in it, it could result in 
-"Clocksource jiffies might overflow on 11% adjustment" message. This is 
-the patch with correct numbers.
+Tejun reported stuttering and latency spikes on a system where random
+tasks would enter direct reclaim and get stuck on dirty pages.  Around
+50% of memory was occupied by tmpfs backed by an SSD, and another disk
+(rotating) was reading and writing at max speed to shrink a partition.
 
-> +#if HZ < 30
-> +#define JIFFIES_SHIFT	6
-> +#elif HZ < 60
-> +#define JIFFIES_SHIFT	7
-> +#else
->  #define JIFFIES_SHIFT	8
-> +#endif
+Analysis:
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+When calculating the amount of dirtyable memory, the VM considers all
+free memory and all file and anon pages as baseline to which to apply
+dirty limits.  This implies that, given memory pressure from dirtied
+cache, the VM would actually start swapping to make room.  But alas,
+this is not really the case and page reclaim tries very hard not to
+swap as long as there is any used-once cache available.  The dirty
+limit may have been 10-15% of main memory, but page cache was less
+than 50% of that, which means that a third of the pages that the
+reclaimers actually looked at were dirty.  Kswapd stopped making
+progress, and in turn allocators were forced into direct reclaim only
+to get stuck on dirty/writeback congestion.
 
-Fix overflow when HZ is 32
+These two patches fix the dirtyable memory calculation to acknowledge
+the fact that the VM does not really replace anon with dirty cache.
+As such, anon memory can no longer be considered "dirtyable."
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
+Longer term we probably want to look into reducing some of the bias
+towards cache.  The problematic workload in particular was not even
+using any of the anon pages, one swap burst could have resolved it.
 
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
-
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Cc: stable@vger.kernel.org
-
----
- kernel/time/jiffies.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-2.6-ia64/kernel/time/jiffies.c
-===================================================================
---- linux-2.6-ia64.orig/kernel/time/jiffies.c	2014-01-24 22:34:17.000000000 +0100
-+++ linux-2.6-ia64/kernel/time/jiffies.c	2014-01-24 22:36:56.000000000 +0100
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
- 
- static cycle_t jiffies_read(struct clocksource *cs)
- {
