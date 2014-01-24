@@ -1,122 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaAXPpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:45:20 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44465 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbaAXPpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:45:18 -0500
-Message-ID: <52E28A7F.2010803@linaro.org>
-Date: Fri, 24 Jan 2014 23:45:03 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753271AbaAXPuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:50:07 -0500
+Received: from [82.166.156.133] ([82.166.156.133]:52987 "EHLO
+	mail.BEER-YACKOV.ORG.IL" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753227AbaAXPuF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:50:05 -0500
+X-Greylist: delayed 925 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jan 2014 10:50:04 EST
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org> <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com> <52E1AFE8.40601@linaro.org> <20140124123259.GI814@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140124123259.GI814@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Contact Me Please 
+To: Recipients <sunzh@live.cn>
+From: "Mr. SUN Zhijun" <sunzh@live.cn>
+Date: Fri, 24 Jan 2014 16:33:52 +0100
+Reply-To: sun.zhijun@yahoo.com.hk
+Message-ID: <BY-EXCHANGEX3melfSu00003997@mail.BEER-YACKOV.ORG.IL>
+X-OriginalArrivalTime: 24 Jan 2014 15:31:57.0079 (UTC) FILETIME=[6AA02270:01CF1919]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Guten Tag,
 
-On 2014å¹´01æœˆ24æ—¥ 20:32, Mark Rutland wrote:
-> On Fri, Jan 24, 2014 at 12:12:24AM +0000, Hanjun Guo wrote:
->> Hi Linus,
->>
->> Sorry for the late reply.
->>
->> On 2014å¹´01æœˆ22æ—¥ 16:26, Linus Walleij wrote:
->>> On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>>
->>>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>>
->>>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
->>>> name from the ACPI timer table is matched with all the registered
->>>> timer controllers and matching initialisation routine is invoked.
->>>>
->>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>> Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
->>> to TIMER_OF_DECLARE() and I think this macro, if needed, should
->>> be named TIMER_ACPI_DECLARE().
->>>
->>> The reason is that "clocksource" is a Linux-internal name and this
->>> macro pertains to the hardware name in respective system
->>> description type.
->> That make sense to me too, I will update in next version if
->> this patch is still needed.
->>
->>>> +#ifdef CONFIG_ACPI
->>>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
->>>> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
->>>> +               __used __section(__clksrc_acpi_table)                   \
->>>> +                = { .id = compat,                              \
->>>> +                    .driver_data = (kernel_ulong_t)fn }
->>>> +#else
->>>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
->>>> +#endif
->>> This hammers down the world to compile one binary for ACPI
->>> and one binary for device tree. Maybe that's fine, I don't know.
->> This is a problem we can have some discussion on it.
->> I prefer mutually exclusive ACPI and DT support.
-> A lot of work has been put into making a single kernel boot everywhere.
-> It's forced duplicated code to be factored out, and it's made the kernel
-> more flexible. While it has been painful, it's forced a far higher
-> quality standard across the board(s).
->
-> Having a separate ACPI-capable or DT-capable kernels goes completely
-> against that, and it's completely broken:
->
-> * It doubles the testing effort required for a particular kernel. I can
->    guarantee that we will miss bugs (even amazingly bad build bugs)
->    because no-one will be able to test a full suite of kernels.
->
-> * It introduces the possibility of completely pointles arbitrary
->    differences between the two. How long until we see the first bug-fix
->    that only works in one configuration?
->
-> * It creates additional work for distributions, which need to build more
->    kernels test them, distribute them, and document which platforms which
->    kernels are supported on. This creates more pain for end-users too.
->    
-> Eventually we _will_ get fed up with all of those, and we'll have to do
-> painful invasive work to make the kernel decide at runtime.
->
-> Having separate kernels is a lazy shortcut. It's painful for everyone,
-> leads to a greater maintenance overhead, it's not what we want now and
-> not what we want in future.
->
-> No thanks.
->
-> Either the kernel figures out whether or not to deal with ACPI at
-> runtime, or it doesn't deal with it at all.
+Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun.zhijun@yahoo.com.hk
 
-I fully agree with you for the single kernel image, I didn't notice this 
-before, sorry for
-my noise about the exclusive ACPI and DT support.
+1. Vollständiger Name
+2.Private Telefonnummer
+3.Current Wohnadresse
 
-Thank you very much to let things much more clearer :)
-
-Hanjun
+Mit freundlichen Grüßen,
+Mr.SUN Zhijun
