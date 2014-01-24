@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaAXRbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:31:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24929 "EHLO mx1.redhat.com"
+	id S1752189AbaAXRdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:33:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242AbaAXRbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:31:51 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: stable@vger.kernel.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>
-Subject: [PATCH] audit: restore order of tty and ses fields in log output
-Date: Fri, 24 Jan 2014 12:31:07 -0500
-Message-Id: <2f2ad1013322c8f6c40fc6dafdbd32442fa730ad.1390584353.git.rgb@redhat.com>
+	id S1750997AbaAXRdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 12:33:50 -0500
+Date: Fri, 24 Jan 2014 12:33:47 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Mikael Pettersson <mikpelinux@gmail.com>
+cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ia64 ski emulator patches
+In-Reply-To: <21218.28095.779306.523187@gargle.gargle.HOWL>
+Message-ID: <alpine.LRH.2.02.1401241232090.23466@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401232041520.16873@file01.intranet.prod.int.rdu2.redhat.com> <21218.28095.779306.523187@gargle.gargle.HOWL>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When being refactored from audit_log_start() to audit_log_task_info(), in
-commit e23eb920 the tty and ses fields in the log output got transposed.
-Restore to original order to avoid breaking search tools.
 
-Cc: stable@vger.kernel.org # v3.6
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
- kernel/audit.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 3d3747b..e88f599 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1716,7 +1716,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 	audit_log_format(ab,
- 			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
- 			 " euid=%u suid=%u fsuid=%u"
--			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
-+			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
- 			 sys_getppid(),
- 			 tsk->pid,
- 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
-@@ -1728,7 +1728,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 			 from_kgid(&init_user_ns, cred->egid),
- 			 from_kgid(&init_user_ns, cred->sgid),
- 			 from_kgid(&init_user_ns, cred->fsgid),
--			 audit_get_sessionid(tsk), tty);
-+			 tty, audit_get_sessionid(tsk));
- 
- 	get_task_comm(name, tsk);
- 	audit_log_format(ab, " comm=");
--- 
-1.7.1
+On Fri, 24 Jan 2014, Mikael Pettersson wrote:
 
+> Mikulas Patocka writes:
+>  > Hi
+>  > 
+>  > Here I'm sending some ia64 patches to make it work in the ski emulator. 
+>  > This has been broken for a long time.
+> 
+> Thanks.  I've recently started running 3.x kernels on ia64 via ski,
+> but I'm getting random kernel crashes with 3.13.  I'll give your
+> patches a try shortly.
+
+BTW. does the kernel boot for you without that _STK_LIM_MAX change? For 
+me, _STK_LIM_MAX was a showstopper, it wasn't able to spawn any userspace 
+process without this patch.
+
+Mikulkas
