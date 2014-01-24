@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114AbaAXPJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:09:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53226 "EHLO mga09.intel.com"
+	id S1753174AbaAXPJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:09:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:26769 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082AbaAXPJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:09:36 -0500
+	id S1753119AbaAXPJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:09:41 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,713,1384329600"; 
-   d="scan'208";a="471901337"
+   d="scan'208";a="471901169"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 8/8] perf tools: Adjust kallsyms for relocated kernel
-Date: Fri, 24 Jan 2014 17:10:18 +0200
-Message-Id: <1390576218-1463-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 2/8] perf tools: Add kallsyms__get_function_start()
+Date: Fri, 24 Jan 2014 17:10:12 +0200
+Message-Id: <1390576218-1463-3-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
 References: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
@@ -28,109 +28,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the kernel is relocated at boot time, kallsyms
-will not match data recorded previously.  That
-does not matter for modules because they are
-corrected anyway.  It also does not matter if
-vmlinux is being used for symbols. But if perf
-tools has only kallsyms then the symbols will not
-match.  Fix by applying the delta gained by
-comparing the old and current addresses of the
-relocation reference symbol.
+Separate out the logic used to find the start
+address of the reference symbol used to track
+kernel relocation.  kallsyms__get_function_start()
+is used in subsequent patches.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/symbol.c | 40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
+ tools/perf/util/event.c | 18 +++++++++++++++---
+ tools/perf/util/event.h |  3 +++
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 4ac1f87..a9d758a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -627,7 +627,7 @@ static int dso__split_kallsyms_for_kcore(struct dso *dso, struct map *map,
-  * kernel range is broken in several maps, named [kernel].N, as we don't have
-  * the original ELF section names vmlinux have.
-  */
--static int dso__split_kallsyms(struct dso *dso, struct map *map,
-+static int dso__split_kallsyms(struct dso *dso, struct map *map, u64 delta,
- 			       symbol_filter_t filter)
- {
- 	struct map_groups *kmaps = map__kmap(map)->kmaps;
-@@ -692,6 +692,12 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
- 			char dso_name[PATH_MAX];
- 			struct dso *ndso;
- 
-+			if (delta) {
-+				/* Kernel was relocated at boot time */
-+				pos->start -= delta;
-+				pos->end -= delta;
-+			}
-+
- 			if (count == 0) {
- 				curr_map = map;
- 				goto filter_symbol;
-@@ -721,6 +727,10 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
- 			curr_map->map_ip = curr_map->unmap_ip = identity__map_ip;
- 			map_groups__insert(kmaps, curr_map);
- 			++kernel_range;
-+		} else if (delta) {
-+			/* Kernel was relocated at boot time */
-+			pos->start -= delta;
-+			pos->end -= delta;
- 		}
- filter_symbol:
- 		if (filter && filter(curr_map, pos)) {
-@@ -1130,15 +1140,41 @@ out_err:
- 	return -EINVAL;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 1fc1c2f..17476df 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -470,6 +470,17 @@ static int find_symbol_cb(void *arg, const char *name, char type,
+ 	return 1;
  }
  
-+/*
-+ * If the kernel is relocated at boot time, kallsyms won't match.  Compute the
-+ * delta based on the relocation reference symbol.
-+ */
-+static int kallsyms__delta(struct map *map, const char *filename, u64 *delta)
++u64 kallsyms__get_function_start(const char *kallsyms_filename,
++				 const char *symbol_name)
 +{
-+	struct kmap *kmap = map__kmap(map);
-+	u64 addr;
++	struct process_symbol_args args = { .name = symbol_name, };
 +
-+	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->name)
++	if (kallsyms__parse(kallsyms_filename, &args, find_symbol_cb) <= 0)
 +		return 0;
 +
-+	addr = kallsyms__get_function_start(filename,
-+					    kmap->ref_reloc_sym->name);
-+	if (!addr)
-+		return -1;
-+
-+	*delta = addr - kmap->ref_reloc_sym->addr;
-+	return 0;
++	return args.start;
 +}
 +
- int dso__load_kallsyms(struct dso *dso, const char *filename,
- 		       struct map *map, symbol_filter_t filter)
- {
-+	u64 delta = 0;
+ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 				       perf_event__handler_t process,
+ 				       struct machine *machine,
+@@ -480,13 +491,13 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 	char path[PATH_MAX];
+ 	char name_buff[PATH_MAX];
+ 	struct map *map;
++	u64 start;
+ 	int err;
+ 	/*
+ 	 * We should get this from /sys/kernel/sections/.text, but till that is
+ 	 * available use this, and after it is use this as a fallback for older
+ 	 * kernels.
+ 	 */
+-	struct process_symbol_args args = { .name = symbol_name, };
+ 	union perf_event *event = zalloc((sizeof(event->mmap) +
+ 					  machine->id_hdr_size));
+ 	if (event == NULL) {
+@@ -513,7 +524,8 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 		}
+ 	}
+ 
+-	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
++	start = kallsyms__get_function_start(filename, symbol_name);
++	if (!start) {
+ 		free(event);
+ 		return -ENOENT;
+ 	}
+@@ -525,7 +537,7 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 	event->mmap.header.type = PERF_RECORD_MMAP;
+ 	event->mmap.header.size = (sizeof(event->mmap) -
+ 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
+-	event->mmap.pgoff = args.start;
++	event->mmap.pgoff = start;
+ 	event->mmap.start = map->start;
+ 	event->mmap.len   = map->end - event->mmap.start;
+ 	event->mmap.pid   = machine->pid;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index faf6e21..66a0c03 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -279,4 +279,7 @@ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf(union perf_event *event, FILE *fp);
+ 
++u64 kallsyms__get_function_start(const char *kallsyms_filename,
++				 const char *symbol_name);
 +
- 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
- 		return -1;
- 
- 	if (dso__load_all_kallsyms(dso, filename, map) < 0)
- 		return -1;
- 
-+	if (kallsyms__delta(map, filename, &delta))
-+		return -1;
-+
- 	symbols__fixup_duplicate(&dso->symbols[map->type]);
- 	symbols__fixup_end(&dso->symbols[map->type]);
- 
-@@ -1150,7 +1186,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
- 	if (!dso__load_kcore(dso, map, filename))
- 		return dso__split_kallsyms_for_kcore(dso, map, filter);
- 	else
--		return dso__split_kallsyms(dso, map, filter);
-+		return dso__split_kallsyms(dso, map, delta, filter);
- }
- 
- static int dso__load_perf_map(struct dso *dso, struct map *map,
+ #endif /* __PERF_RECORD_H */
 -- 
 1.7.11.7
 
