@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaAXNrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 08:47:37 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:38450 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaAXNrg (ORCPT
+	id S1752742AbaAXNwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 08:52:40 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:58606 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaAXNwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 08:47:36 -0500
-Message-ID: <52E26EF3.1090901@linux.vnet.ibm.com>
-Date: Fri, 24 Jan 2014 14:47:31 +0100
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+	Fri, 24 Jan 2014 08:52:38 -0500
 MIME-Version: 1.0
-To: Meelis Roos <mroos@linux.ee>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 3.13: BUG: unable to handle kernel paging request at 00000000b4343e88
-References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee> <20140121141037.f76dba61212c5597ff733207@linux-foundation.org> <alpine.SOC.1.00.1401221731150.3033@math.ut.ee>
-In-Reply-To: <alpine.SOC.1.00.1401221731150.3033@math.ut.ee>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012413-4966-0000-0000-0000082B8256
+Date: Fri, 24 Jan 2014 11:52:37 -0200
+Message-ID: <CAOMZO5ASeLoa3s2PqaPqA-zd83hc8qQCHyfedP+KEzvitBpqog@mail.gmail.com>
+Subject: Warning at mm/slub.c
+From: Fabio Estevam <festevam@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: penberg@kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.01.2014 16:33, Meelis Roos wrote:
->> It looks like gcov exploded when running a module's constructors or
->> init function, but I'm unable to work out which module it was :(
-> [...]
-> 
->> Maybe it's tg3.
->>
->> Could you add `ignore_loglevel' to the kernel boot parameters?  That
->> should make all pr_debug()s come out and they include the module's
->> name.
+Peter,
 
-I'm not sure if this related, but all 3 kernel logs consistently contain
-this error message:
+Commit c65c1877bd68 (slub: use lockdep_assert_held) introduced the following
+warning on mx5/mx6 systems (ARMv7) running linux-next 20140124:
 
-> [    0.617401] gcov: could not create file
+Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xa0800000 - 0xff000000   (1512 MB)
+    lowmem  : 0x80000000 - 0xa0000000   ( 512 MB)
+    pkmap   : 0x7fe00000 - 0x80000000   (   2 MB)
+    modules : 0x7f000000 - 0x7fe00000   (  14 MB)
+      .text : 0x80008000 - 0x807e0edc   (8036 kB)
+      .init : 0x807e1000 - 0x8082e300   ( 309 kB)
+      .data : 0x80830000 - 0x8088b900   ( 367 kB)
+       .bss : 0x8088b908 - 0x80debdb0   (5506 kB)
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 0 at mm/slub.c:1511 __kmem_cache_create+0x24c/0x318()
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.13.0-next-20140124 #685
+Backtrace:
+[<8001235c>] (dump_backtrace) from [<800124f8>] (show_stack+0x18/0x1c)
+ r6:800da30c r5:00000009 r4:00000000 r3:00000000
+[<800124e0>] (show_stack) from [<805e56d8>] (dump_stack+0x80/0x9c)
+[<805e5658>] (dump_stack) from [<80027834>] (warn_slowpath_common+0x70/0x94)
+ r4:00000000 r3:8083bcf0
+[<800277c4>] (warn_slowpath_common) from [<8002787c>] (warn_slowpath_null+0x24/0
+x2c)
+ r8:80dbeb18 r7:00002000 r6:80821c94 r5:9ffd8000 r4:9f000000
+[<80027858>] (warn_slowpath_null) from [<800da30c>] (__kmem_cache_create+0x24c/0
+x318)
+[<800da0c0>] (__kmem_cache_create) from [<80801d34>] (create_boot_cache+0x50/0x7
+8)
+ r10:9fffcb80 r9:412fc085 r8:80838880 r7:80821d08 r6:8073e360 r5:80821c94
+ r4:0000002c
+[<80801ce4>] (create_boot_cache) from [<80803544>] (kmem_cache_init+0x3c/0xe0)
+ r6:80dbeb14 r5:80821c94 r4:80dc41a4 r3:00002000
+[<80803508>] (kmem_cache_init) from [<807e19cc>] (start_kernel+0x198/0x384)
+ r8:80838880 r7:8081f4c0 r6:ffffffff r5:8088b940 r4:00000001
+[<807e1834>] (start_kernel) from [<90008074>] (0x90008074)
+ r10:00000000 r8:90004059 r7:8083d3ac r6:8081f4bc r5:80838928 r4:10c53c7d
+---[ end trace 3406ff24bd97382e ]---
 
-which should only be shown in case of severe out-of-memory situations or
-duplicate object file names.
+If I revert this commit, the warning goes away.
 
-Could you retry with the following patch applied (2 times if possible)
-and send dmesg output?
+It also goes away if this only line is removed:
 
------
-diff -Naurp a/kernel/gcov/base.c b/kernel/gcov/base.c
---- a/kernel/gcov/base.c
-+++ b/kernel/gcov/base.c
-@@ -31,6 +31,7 @@ void __gcov_init(struct gcov_info *info)
+diff --git a/mm/slub.c b/mm/slub.c
+index d2388c8..fde5852 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1508,8 +1508,6 @@ static void discard_slab(struct kmem_cache *s,
+struct page *page)
+ static inline void add_partial(struct kmem_cache_node *n,
+                 struct page *page, int tail)
  {
- 	static unsigned int gcov_version;
+-    lockdep_assert_held(&n->list_lock);
+-
+     n->nr_partial++;
+     if (tail == DEACTIVATE_TO_TAIL)
+         list_add_tail(&page->lru, &n->partial);
 
-+	pr_warn("__gcov_init(%s): enter\n", gcov_info_filename(info));
- 	mutex_lock(&gcov_lock);
- 	if (gcov_version == 0) {
- 		gcov_version = gcov_info_version(info);
-@@ -48,6 +49,7 @@ void __gcov_init(struct gcov_info *info)
- 	if (gcov_events_enabled)
- 		gcov_event(GCOV_ADD, info);
- 	mutex_unlock(&gcov_lock);
-+	pr_warn("__gcov_init(%s): exit\n", gcov_info_filename(info));
- }
- EXPORT_SYMBOL(__gcov_init);
+Regards,
 
-diff -Naurp a/kernel/gcov/fs.c b/kernel/gcov/fs.c
---- a/kernel/gcov/fs.c
-+++ b/kernel/gcov/fs.c
-@@ -450,7 +450,7 @@ static struct gcov_node *new_node(struct
- 	} else
- 		node->dentry = debugfs_create_dir(node->name, parent->dentry);
- 	if (!node->dentry) {
--		pr_warn("could not create file\n");
-+		pr_warn("could not create file (%s)\n", node->name);
- 		kfree(node);
- 		return NULL;
- 	}
-
+Fabio Estevam
