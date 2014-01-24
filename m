@@ -1,42 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbaAXVeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 16:34:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44994 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204AbaAXVe3 (ORCPT
+	id S1753279AbaAXVeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 16:34:15 -0500
+Received: from exprod5og119.obsmtp.com ([64.18.0.189]:49219 "HELO
+	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753211AbaAXVdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 16:34:29 -0500
-Date: Fri, 24 Jan 2014 13:35:20 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jason Baron <jbaron@akamai.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] dynamic_debug: replace obselete simple_strtoul()
- with kstrtouint()
-Message-ID: <20140124213520.GA11310@kroah.com>
-References: <1390483232-7160-1-git-send-email-a.ryabinin@samsung.com>
- <1390483232-7160-3-git-send-email-a.ryabinin@samsung.com>
- <52E2C71A.7040002@akamai.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E2C71A.7040002@akamai.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 24 Jan 2014 16:33:45 -0500
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>
+Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: [RFC PATCH V3 3/4] dt-bindings: pci: xgene pcie device tree bindings
+Date: Fri, 24 Jan 2014 13:32:47 -0800
+Message-Id: <1390599168-13150-4-git-send-email-tinamdar@apm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
+References: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 03:03:38PM -0500, Jason Baron wrote:
-> Hi,
-> 
-> I think we want some sort of commit message for this patch. But they
-> all look good to me and they tested fine.
-> 
-> Acked-by: Jason Baron <jbaron@akamai.com>
-> 
-> Greg, Can you pick up this series?
+This patch adds the bindings for X-Gene PCIe driver. The driver resides
+under 'drivers/pci/host/pci-xgene.c' file.
 
-Will do, after 3.14-rc1 is out, thanks.
+Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+ .../devicetree/bindings/pci/xgene-pci.txt          |   52 ++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
 
-greg k-h
+diff --git a/Documentation/devicetree/bindings/pci/xgene-pci.txt b/Documentation/devicetree/bindings/pci/xgene-pci.txt
+new file mode 100644
+index 0000000..60e4a54
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/xgene-pci.txt
+@@ -0,0 +1,52 @@
++* AppliedMicro X-Gene PCIe interface
++
++Required properties:
++- device_type: set to "pci"
++- compatible: should contain "xgene,pcie" to identify the core.
++- reg: A list of physical base address and length for each set of controller
++       registers. Must contain an entry for each entry in the reg-names
++       property.
++- reg-names: Must include the following entries:
++  "csr": controller configuration registers.
++  "cfg": pcie configuration space registers.
++- #address-cells: set to <3>
++- #size-cells: set to <2>
++- ranges: ranges for the outbound memory, I/O regions.
++- dma-ranges: ranges for the inbound memory regions.
++- #interrupt-cells: set to <1>
++- interrupt-map-mask and interrupt-map: standard PCI properties
++	to define the mapping of the PCIe interface to interrupt
++	numbers.
++- clocks: from common clock binding: handle to pci clock.
++
++Optional properties:
++- status: Either "ok" or "disabled".
++
++Example:
++
++SoC specific DT Entry:
++	pcie0: pcie@1f2b0000 {
++		status = "disabled";
++		device_type = "pci";
++		compatible = "apm,xgene-pcie";
++		#interrupt-cells = <1>;
++		#size-cells = <2>;
++		#address-cells = <3>;
++		reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
++			0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
++		reg-names = "csr", "cfg";
++		ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
++			  0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
++		dma-ranges = <0x42000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
++		interrupt-map-mask = <0x0 0x0 0x0 0x7>;
++		interrupt-map = <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
++				 0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
++				 0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
++				 0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
++		clocks = <&pcie0clk 0>;
++	};
++
++Board specific DT Entry:
++	&pcie0 {
++		status = "ok";
++	};
+-- 
+1.7.9.5
+
