@@ -1,133 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaAXIth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:49:37 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:37756 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaAXIoQ (ORCPT
+	id S1752819AbaAXItw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:49:52 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:58703
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752398AbaAXIoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Jan 2014 03:44:16 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 05/14] spi: rspi: Abstract transfer_one() for RSPI and QSPI
-Date: Fri, 24 Jan 2014 09:43:55 +0100
-Message-Id: <1390553044-11860-6-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
-References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097h84d07hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>,
+        <kuninori.morimoto.gx@renesas.com>
+CC: <rob@landley.net>, <perex@perex.cz>, <moinejf@free.fr>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2 3/7] ASoC: simple-card: Add snd_card's name parsing from DT node support
+Date: Fri, 24 Jan 2014 15:43:02 +0800
+Message-ID: <1390549386-4702-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+If the DT is used and the CPU DAI device has only one DAI, the card
+name will be like :
 
-Split off qspi_transfer_one() (which doesn't support DMA yet) from
-rspi_transfer_one().
-Replace the abstraction of send_pio()/receive_pio() by the abstracrion of
-transfer_one().
+ALSA device list:
+0: 40031000.sai-sgtl5000
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+And this name maybe a little ugly to some customers, so here the
+card name parsing from DT node is supported.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- drivers/spi/spi-rspi.c |   36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
+ sound/soc/generic/simple-card.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 4b27513e7204..d837c5029308 100644
---- a/drivers/spi/spi-rspi.c
-+++ b/drivers/spi/spi-rspi.c
-@@ -239,8 +239,8 @@ static u16 rspi_read_data(const struct rspi_data *rspi)
- /* optional functions */
- struct spi_ops {
- 	int (*set_config_register)(struct rspi_data *rspi, int access_size);
--	int (*send_pio)(struct rspi_data *rspi, struct spi_transfer *t);
--	int (*receive_pio)(struct rspi_data *rspi, struct spi_transfer *t);
-+	int (*transfer_one)(struct spi_master *master, struct spi_device *spi,
-+			    struct spi_transfer *xfer);
- };
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 65833fe..0890fcd 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -143,6 +143,9 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 	char *name;
+ 	int ret;
  
- /*
-@@ -432,8 +432,6 @@ static int qspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 	return 0;
- }
- 
--#define send_pio(spi, t) spi->ops->send_pio(spi, t)
--
- static void rspi_dma_complete(void *arg)
- {
- 	struct rspi_data *rspi = arg;
-@@ -617,8 +615,6 @@ static int qspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
- 	return 0;
- }
- 
--#define receive_pio(spi, t) spi->ops->receive_pio(spi, t)
--
- static int rspi_receive_dma(struct rspi_data *rspi, struct spi_transfer *t)
- {
- 	struct scatterlist sg, sg_dummy;
-@@ -743,7 +739,7 @@ static int rspi_transfer_one(struct spi_master *master, struct spi_device *spi,
- 		if (rspi_is_dma(rspi, xfer))
- 			ret = rspi_send_dma(rspi, xfer);
- 		else
--			ret = send_pio(rspi, xfer);
-+			ret = rspi_send_pio(rspi, xfer);
- 		if (ret < 0)
- 			return ret;
- 	}
-@@ -751,8 +747,24 @@ static int rspi_transfer_one(struct spi_master *master, struct spi_device *spi,
- 		if (rspi_is_dma(rspi, xfer))
- 			ret = rspi_receive_dma(rspi, xfer);
- 		else
--			ret = receive_pio(rspi, xfer);
-+			ret = rspi_receive_pio(rspi, xfer);
-+	}
-+	return ret;
-+}
++	/* parsing the card name from DT */
++	snd_soc_of_parse_card_name(&priv->snd_card, "simple-audio-card,name");
 +
-+static int qspi_transfer_one(struct spi_master *master, struct spi_device *spi,
-+			     struct spi_transfer *xfer)
-+{
-+	struct rspi_data *rspi = spi_master_get_devdata(master);
-+	int ret = 0;
-+
-+	if (xfer->tx_buf) {
-+		ret = qspi_send_pio(rspi, xfer);
-+		if (ret < 0)
-+			return ret;
- 	}
-+	if (xfer->rx_buf)
-+		ret = qspi_receive_pio(rspi, xfer);
- 	return ret;
- }
+ 	/* get CPU/CODEC common format via simple-audio-card,format */
+ 	priv->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
+ 		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
+@@ -187,7 +190,8 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 			    GFP_KERNEL);
+ 	sprintf(name, "%s-%s", dai_link->cpu_dai_name,
+ 				dai_link->codec_dai_name);
+-	priv->snd_card.name = name;
++	if (!priv->snd_card.name)
++		priv->snd_card.name = name;
+ 	dai_link->name = dai_link->stream_name = name;
  
-@@ -948,7 +960,7 @@ static int rspi_probe(struct platform_device *pdev)
- 
- 	master->bus_num = pdev->id;
- 	master->setup = rspi_setup;
--	master->transfer_one = rspi_transfer_one;
-+	master->transfer_one = ops->transfer_one;
- 	master->cleanup = rspi_cleanup;
- 	master->prepare_message = rspi_prepare_message;
- 	master->unprepare_message = rspi_unprepare_message;
-@@ -990,14 +1002,12 @@ error1:
- 
- static struct spi_ops rspi_ops = {
- 	.set_config_register =		rspi_set_config_register,
--	.send_pio =			rspi_send_pio,
--	.receive_pio =			rspi_receive_pio,
-+	.transfer_one =			rspi_transfer_one,
- };
- 
- static struct spi_ops qspi_ops = {
- 	.set_config_register =		qspi_set_config_register,
--	.send_pio =			qspi_send_pio,
--	.receive_pio =			qspi_receive_pio,
-+	.transfer_one =			qspi_transfer_one,
- };
- 
- static struct platform_device_id spi_driver_ids[] = {
+ 	/* simple-card assumes platform == cpu */
 -- 
-1.7.9.5
+1.8.4
+
 
