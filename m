@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaAXBxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 20:53:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22813 "EHLO mx1.redhat.com"
+	id S1752122AbaAXBxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 20:53:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39801 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843AbaAXBxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 20:53:04 -0500
-Date: Thu, 23 Jan 2014 20:53:02 -0500 (EST)
+	id S1751843AbaAXBxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 20:53:12 -0500
+Date: Thu, 23 Jan 2014 20:53:09 -0500 (EST)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] ia64 simserial: fix sleeping with interrupts disabled
-In-Reply-To: <alpine.LRH.2.02.1401232044180.16873@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1401232045350.16873@file01.intranet.prod.int.rdu2.redhat.com>
+cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 4/5] ia64 simscsi: fix race condition and simplify the code
+In-Reply-To: <alpine.LRH.2.02.1401232045350.16873@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1401232046500.16873@file01.intranet.prod.int.rdu2.redhat.com>
 References: <alpine.LRH.2.02.1401232041520.16873@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401232043320.16873@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1401232044180.16873@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1401232045350.16873@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,101 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sleeping with interrupts disabled warning in simserial.c:
+The simscsi driver processes the requests in the request routine and then
+offloads the completion callback to a tasklet. This is buggy because there
+is parallel unsynchronized access to the completion queue from the request
+routine and from the tasklet.
 
-BUG: sleeping function called from invalid context at mm/slub.c:925
-in_atomic(): 0, irqs_disabled(): 1, pid: 1, name: init
-
-Call Trace:
- [<a000000100011180>] show_stack+0x40/0x90
-                                sp=e0000000070b7b40 bsp=e0000000070b12c8
- [<a000000100563e20>] dump_stack+0x20/0x40
-                                sp=e0000000070b7d10 bsp=e0000000070b12b0
- [<a000000100090220>] __might_sleep+0x1e0/0x200
-                                sp=e0000000070b7d10 bsp=e0000000070b1280
- [<a00000010012f060>] kmem_cache_alloc+0x70/0x430
-                                sp=e0000000070b7d10 bsp=e0000000070b1230
- [<a0000001000af8c0>] request_threaded_irq+0x150/0x370
-                                sp=e0000000070b7d20 bsp=e0000000070b11c0
- [<a0000001003c3b30>] activate+0x180/0x350
-                                sp=e0000000070b7d20 bsp=e0000000070b1188
- [<a00000010033d2b0>] tty_port_open+0x1b0/0x280
-                                sp=e0000000070b7d20 bsp=e0000000070b1140
- [<a0000001003c42b0>] rs_open+0x150/0x1a0
-                                sp=e0000000070b7d20 bsp=e0000000070b1118
- [<a00000010032d930>] tty_open+0x790/0xb00
-                                sp=e0000000070b7d20 bsp=e0000000070b1038
- [<a000000100144d10>] chrdev_open+0x250/0x2d0
-                                sp=e0000000070b7d30 bsp=e0000000070b0ff0
- [<a000000100138b40>] do_dentry_open.isra.14+0x3d0/0x650
-                                sp=e0000000070b7d40 bsp=e0000000070b0f80
- [<a00000010013a8e0>] finish_open+0x90/0xc0
-                                sp=e0000000070b7d40 bsp=e0000000070b0f48
- [<a0000001001579d0>] do_last.isra.41+0x1490/0x18c0
-                                sp=e0000000070b7d40 bsp=e0000000070b0e60
- [<a000000100157f60>] path_openat.isra.42+0x160/0xa00
-                                sp=e0000000070b7d60 bsp=e0000000070b0d58
- [<a000000100158830>] do_filp_open+0x30/0xb0
-                                sp=e0000000070b7d90 bsp=e0000000070b0d20
- [<a00000010013b190>] do_sys_open+0x200/0x330
-                                sp=e0000000070b7e20 bsp=e0000000070b0cb8
- [<a00000010013b310>] sys_open+0x50/0x70
-                                sp=e0000000070b7e30 bsp=e0000000070b0c60
- [<a00000010000b340>] ia64_ret_from_syscall+0x0/0x20
-                                sp=e0000000070b7e30 bsp=e0000000070b0c60
- [<a000000000040720>] ia64_ivt+0xffffffff00040720/0x400
-                                sp=e0000000070b8000 bsp=e0000000070b0c60
+With current SCSI architecture, requests can be completed directly from
+the requets routine. So I removed the tasklet code.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
 ---
- arch/ia64/hp/sim/simserial.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ arch/ia64/hp/sim/simscsi.c |   34 ++--------------------------------
+ 1 file changed, 2 insertions(+), 32 deletions(-)
 
-Index: linux-2.6-ia64/arch/ia64/hp/sim/simserial.c
+Index: linux-2.6-ia64/arch/ia64/hp/sim/simscsi.c
 ===================================================================
---- linux-2.6-ia64.orig/arch/ia64/hp/sim/simserial.c	2014-01-23 23:06:12.000000000 +0100
-+++ linux-2.6-ia64/arch/ia64/hp/sim/simserial.c	2014-01-23 23:13:44.000000000 +0100
-@@ -365,7 +365,6 @@ static int activate(struct tty_port *por
- 	struct serial_state *state = container_of(port, struct serial_state,
- 			port);
- 	unsigned long flags, page;
--	int retval = 0;
+--- linux-2.6-ia64.orig/arch/ia64/hp/sim/simscsi.c	2014-01-24 01:23:08.000000000 +0100
++++ linux-2.6-ia64/arch/ia64/hp/sim/simscsi.c	2014-01-24 01:26:16.000000000 +0100
+@@ -47,9 +47,6 @@
  
- 	page = get_zeroed_page(GFP_KERNEL);
- 	if (!page)
-@@ -378,13 +377,6 @@ static int activate(struct tty_port *por
- 	else
- 		state->xmit.buf = (unsigned char *) page;
+ static struct Scsi_Host *host;
  
--	if (state->irq) {
--		retval = request_irq(state->irq, rs_interrupt_single, 0,
--				"simserial", state);
--		if (retval)
--			goto errout;
+-static void simscsi_interrupt (unsigned long val);
+-static DECLARE_TASKLET(simscsi_tasklet, simscsi_interrupt, 0);
+-
+ struct disk_req {
+ 	unsigned long addr;
+ 	unsigned len;
+@@ -64,13 +61,6 @@ static int desc[16] = {
+ 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+ };
+ 
+-static struct queue_entry {
+-	struct scsi_cmnd *sc;
+-} queue[SIMSCSI_REQ_QUEUE_LEN];
+-
+-static int rd, wr;
+-static atomic_t num_reqs = ATOMIC_INIT(0);
+-
+ /* base name for default disks */
+ static char *simscsi_root = DEFAULT_SIMSCSI_ROOT;
+ 
+@@ -95,21 +85,6 @@ simscsi_setup (char *s)
+ 
+ __setup("simscsi=", simscsi_setup);
+ 
+-static void
+-simscsi_interrupt (unsigned long val)
+-{
+-	struct scsi_cmnd *sc;
+-
+-	while ((sc = queue[rd].sc) != NULL) {
+-		atomic_dec(&num_reqs);
+-		queue[rd].sc = NULL;
+-		if (DBG)
+-			printk("simscsi_interrupt: done with %ld\n", sc->serial_number);
+-		(*sc->scsi_done)(sc);
+-		rd = (rd + 1) % SIMSCSI_REQ_QUEUE_LEN;
 -	}
+-}
 -
- 	state->xmit.head = state->xmit.tail = 0;
+ static int
+ simscsi_biosparam (struct scsi_device *sdev, struct block_device *n,
+ 		sector_t capacity, int ip[])
+@@ -315,14 +290,9 @@ simscsi_queuecommand_lck (struct scsi_cm
+ 		sc->sense_buffer[0] = 0x70;
+ 		sc->sense_buffer[2] = 0x00;
+ 	}
+-	if (atomic_read(&num_reqs) >= SIMSCSI_REQ_QUEUE_LEN) {
+-		panic("Attempt to queue command while command is pending!!");
+-	}
+-	atomic_inc(&num_reqs);
+-	queue[wr].sc = sc;
+-	wr = (wr + 1) % SIMSCSI_REQ_QUEUE_LEN;
  
- 	/*
-@@ -398,10 +390,16 @@ static int activate(struct tty_port *por
- 		tty->alt_speed = 230400;
- 	if ((port->flags & ASYNC_SPD_MASK) == ASYNC_SPD_WARP)
- 		tty->alt_speed = 460800;
--
--errout:
- 	local_irq_restore(flags);
--	return retval;
+-	tasklet_schedule(&simscsi_tasklet);
++	(*sc->scsi_done)(sc);
 +
-+	if (state->irq) {
-+		int retval = request_irq(state->irq, rs_interrupt_single, 0,
-+				"simserial", state);
-+		if (retval)
-+			return retval;
-+	}
-+
-+	return 0;
+ 	return 0;
  }
- 
  
 
