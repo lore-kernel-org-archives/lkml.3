@@ -1,84 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaAXPPH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:15:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41439 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477AbaAXPPF (ORCPT
+	id S1753168AbaAXPPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:15:54 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59397 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752541AbaAXPPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:15:05 -0500
-Date: Fri, 24 Jan 2014 16:14:37 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: kmo@daterainc.com, target-devel <target-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH-v2 1/3] percpu_ida: Make percpu_ida_alloc + callers
- accept task state bitmask
-Message-ID: <20140124151437.GZ13532@twins.programming.kicks-ass.net>
-References: <1390189486-13579-1-git-send-email-nab@linux-iscsi.org>
- <1390189486-13579-2-git-send-email-nab@linux-iscsi.org>
- <20140120113415.GE30183@twins.programming.kicks-ass.net>
- <20140121221852.GT9037@kmo>
- <1390420413.5567.949.camel@haakon3.risingtidesystems.com>
- <1390502404.5567.994.camel@haakon3.risingtidesystems.com>
- <20140123191229.GW11314@laptop.programming.kicks-ass.net>
- <1390505486.5567.1014.camel@haakon3.risingtidesystems.com>
- <1390505904.5567.1019.camel@haakon3.risingtidesystems.com>
+	Fri, 24 Jan 2014 10:15:51 -0500
+Date: Fri, 24 Jan 2014 15:15:13 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro
+ CLOCKSOURCE_ACPI_DECLARE
+Message-ID: <20140124151513.GD19052@arm.com>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+ <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
+ <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
+ <20140122114537.GA15591@e106331-lin.cambridge.arm.com>
+ <52E1B1DE.5050507@linaro.org>
+ <20140124120815.GH814@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1390505904.5567.1019.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140124120815.GH814@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 11:38:24AM -0800, Nicholas A. Bellinger wrote:
-> > AFAICT, those changes don't address the original bug that the series was
-> > trying to address, allowing the percpu_ida_alloc() tag stealing slow
-> > path to be interrupted by a signal..
+On Fri, Jan 24, 2014 at 12:08:15PM +0000, Mark Rutland wrote:
+> On Fri, Jan 24, 2014 at 12:20:46AM +0000, Hanjun Guo wrote:
+> > On 2014年01月22日 19:45, Mark Rutland wrote:
+> > > On Wed, Jan 22, 2014 at 08:26:50AM +0000, Linus Walleij wrote:
+> > >> On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> > >>
+> > >>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > >>>
+> > >>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
+> > >>> name from the ACPI timer table is matched with all the registered
+> > >>> timer controllers and matching initialisation routine is invoked.
+> > >>>
+> > >>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > >>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> > >> Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
+> > >> to TIMER_OF_DECLARE() and I think this macro, if needed, should
+> > >> be named TIMER_ACPI_DECLARE().
+> > >>
+> > >> The reason is that "clocksource" is a Linux-internal name and this
+> > >> macro pertains to the hardware name in respective system
+> > >> description type.
+> > >>
+> > >>> +#ifdef CONFIG_ACPI
+> > >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
+> > >>> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
+> > >>> +               __used __section(__clksrc_acpi_table)                   \
+> > >>> +                = { .id = compat,                              \
+> > >>> +                    .driver_data = (kernel_ulong_t)fn }
+> > >>> +#else
+> > >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
+> > >>> +#endif
+> > >> This hammers down the world to compile one binary for ACPI
+> > >> and one binary for device tree. Maybe that's fine, I don't know.
+> > > How does it do that?
+> > >
+> > > As far as I could tell CONFIG_ACPI and CONFIG_OF are not mutually
+> > > exclusive, and this just means that we only build the datastructures for
+> > > matching from ACPI when CONFIG_ACPI is enabled.
+> > >
+> > > Have I missed something?
+> > >
+> > > I definitely don't want to see mutually exclusive ACPI and DT support.
 > > 
-> > Also, keep in mind this change needs to be backported to >= v3.12, which
-> > is why the percpu_ida changes have been kept to a minimum.
-
-Well, the other option is to revert whatever caused the issue in the
-first place :-)
-
-I'm not much for making ugly fixes just because its easier to backport.
-
-> <A little too eager to SEND>
+> > ACPI and DT did the same job so I think they should mutually exclusive.
+> > if we enable both DT and ACPI in one system, this will leading confusions.
 > 
-> So would you prefer the following addition to the original bugfix
-> instead..?
-
-I'll make a right old mess out of percpu_ida.c, but yeah.
-
-> diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-> index a48ce2e..58b6714 100644
-> --- a/lib/percpu_ida.c
-> +++ b/lib/percpu_ida.c
-> @@ -174,7 +174,8 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
->                  *
->                  * global lock held and irqs disabled, don't need percpu lock
->                  */
-> -               prepare_to_wait(&pool->wait, &wait, state);
-> +               if (state != TASK_RUNNING)
-> +                       prepare_to_wait(&pool->wait, &wait, state);
->  
->                 if (!tags->nr_free)
->                         alloc_global_tags(pool, tags);
-> @@ -199,8 +200,9 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
->                 local_irq_save(flags);
->                 tags = this_cpu_ptr(pool->tag_cpu);
->         }
-> +       if (state != TASK_RUNNING)
-> +               finish_wait(&pool->wait, &wait);
->  
-> -       finish_wait(&pool->wait, &wait);
->         return tag;
->  }
->  EXPORT_SYMBOL_GPL(percpu_ida_alloc);
+> ACPI and DT do similar jobs, and we should be mutually exclusive at
+> runtime. However, they should not be mutually exclusive at compile-time.
 > 
+> Being mutually exclusive at compile-time is just broken. It creates more
+> work for distributions (who need to ship double the number of kernels),
+> it increases the number of configurations requiring testing, and it
+> makes it easier for bugs to be introduced. It's just painful, and
+> there's no reason for it.
+
+I fully agree (IOW, I'll NAK patches that break this assumption; we want
+single kernel image whether it uses DT or ACPI).
+
+> At boot time the kernel needs to decide which to use for hardware
+> description, and completely ignore the other (which should not be
+> present, but lets not assume that or inevitably someone will break that
+> assumption for a quick hack).
 > 
+> The same kernel should boot on a system that has a DTB or a system that
+> has ACPI tables. On a system that's provided both it should use one or
+> the other, but not both.
+
+Do we still need the chosen node to be passed via DT for command line,
+even if the kernel uses ACPI?
+
+-- 
+Catalin
