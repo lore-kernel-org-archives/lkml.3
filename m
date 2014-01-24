@@ -1,157 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaAXPij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:38:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53176 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795AbaAXPih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:38:37 -0500
-Date: Fri, 24 Jan 2014 15:38:33 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 4/9] numa,sched: build per numa_group active node mask
- from numa_faults_cpu statistics
-Message-ID: <20140124153833.GA4963@suse.de>
-References: <1390342811-11769-1-git-send-email-riel@redhat.com>
- <1390342811-11769-5-git-send-email-riel@redhat.com>
+	id S1753232AbaAXPkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:40:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42435 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaAXPkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:40:21 -0500
+Date: Fri, 24 Jan 2014 16:40:02 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: tools/perf: Fix AAAAARGH64 memory barriers
+Message-ID: <20140124154002.GF31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390342811-11769-5-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 05:20:06PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> The numa_faults_cpu statistics are used to maintain an active_nodes nodemask
-> per numa_group. This allows us to be smarter about when to do numa migrations.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Chegu Vinod <chegu_vinod@hp.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  kernel/sched/fair.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 51 insertions(+)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b98ed61..d4f6df5 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -885,6 +885,7 @@ struct numa_group {
->  	struct list_head task_list;
->  
->  	struct rcu_head rcu;
-> +	nodemask_t active_nodes;
->  	unsigned long total_faults;
->  	unsigned long *faults_cpu;
->  	unsigned long faults[0];
-> @@ -918,6 +919,12 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
->  		p->numa_group->faults[task_faults_idx(nid, 1)];
->  }
->  
-> +static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
-> +{
-> +	return group->faults_cpu[task_faults_idx(nid, 0)] +
-> +		group->faults_cpu[task_faults_idx(nid, 1)];
-> +}
-> +
->  /*
->   * These return the fraction of accesses done by a particular task, or
->   * task group, on a particular numa node.  The group weight is given a
-> @@ -1275,6 +1282,40 @@ static void numa_migrate_preferred(struct task_struct *p)
->  }
->  
->  /*
-> + * Find the nodes on which the workload is actively running. We do this by
-> + * tracking the nodes from which NUMA hinting faults are triggered. This can
-> + * be different from the set of nodes where the workload's memory is currently
-> + * located.
-> + *
-> + * The bitmask is used to make smarter decisions on when to do NUMA page
-> + * migrations, To prevent flip-flopping, and excessive page migrations, nodes
-> + * are added when they cause over 6/16 of the maximum number of faults, but
-> + * only removed when they drop below 3/16.
-> + */
-> +static void update_numa_active_node_mask(struct numa_group *numa_group)
-> +{
-> +	unsigned long faults, max_faults = 0;
-> +	int nid;
-> +
-> +	for_each_online_node(nid) {
-> +		faults = numa_group->faults_cpu[task_faults_idx(nid, 0)] +
-> +			 numa_group->faults_cpu[task_faults_idx(nid, 1)];
+Someone got the load and store barriers mixed up for AAAAARGH64.
+Turn them the right side up.
 
-faults = group_faults_cpu(numa_group, nid)
+Fixes: a94d342b9cb0 ("tools/perf: Add required memory barriers")
+Reported-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ tools/perf/perf.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-?
-
-> +		if (faults > max_faults)
-> +			max_faults = faults;
-> +	}
-> +
-> +	for_each_online_node(nid) {
-> +		faults = numa_group->faults_cpu[task_faults_idx(nid, 0)] +
-> +			 numa_group->faults_cpu[task_faults_idx(nid, 1)];
-
-Same?
-
-> +		if (!node_isset(nid, numa_group->active_nodes)) {
-> +			if (faults > max_faults * 6 / 16)
-> +				node_set(nid, numa_group->active_nodes);
-> +		} else if (faults < max_faults * 3 / 16)
-> +			node_clear(nid, numa_group->active_nodes);
-> +	}
-> +}
-> +
-> +/*
->   * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
->   * increments. The more local the fault statistics are, the higher the scan
->   * period will be for the next scan window. If local/remote ratio is below
-> @@ -1416,6 +1457,7 @@ static void task_numa_placement(struct task_struct *p)
->  	update_task_scan_period(p, fault_types[0], fault_types[1]);
->  
->  	if (p->numa_group) {
-> +		update_numa_active_node_mask(p->numa_group);
->  		/*
->  		 * If the preferred task and group nids are different,
->  		 * iterate over the nodes again to find the best place.
-> @@ -1478,6 +1520,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
->  		/* Second half of the array tracks nids where faults happen */
->  		grp->faults_cpu = grp->faults + 2 * nr_node_ids;
->  
-> +		node_set(task_node(current), grp->active_nodes);
-> +
->  		for (i = 0; i < 4*nr_node_ids; i++)
->  			grp->faults[i] = p->numa_faults_memory[i];
->  
-> @@ -1547,6 +1591,13 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
->  	my_grp->nr_tasks--;
->  	grp->nr_tasks++;
->  
-> +	/*
-> +	 * We just joined a new group, the set of active nodes may have
-> +	 * changed. Do not update the nodemask of the old group, since
-> +	 * the tasks in that group will probably join the new group soon.
-> +	 */
-> +	update_numa_active_node_mask(grp);
-> +
->  	spin_unlock(&my_grp->lock);
->  	spin_unlock(&grp->lock);
->  
-
-Ok, I guess this stops the old group making very different migration
-decisions just because one task left the group. That has difficult to
-predict consequences so assuming the new group_faults_cpu helper gets used
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 3c2f213e979d..dd4c0d32fbae 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -100,8 +100,8 @@
+ 
+ #ifdef __aarch64__
+ #define mb()		asm volatile("dmb ish" ::: "memory")
+-#define wmb()		asm volatile("dmb ishld" ::: "memory")
+-#define rmb()		asm volatile("dmb ishst" ::: "memory")
++#define wmb()		asm volatile("dmb ishst" ::: "memory")
++#define rmb()		asm volatile("dmb ishld" ::: "memory")
+ #define cpu_relax()	asm volatile("yield" ::: "memory")
+ #endif
+ 
