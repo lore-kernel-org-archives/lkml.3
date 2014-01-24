@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaAXIoR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:44:17 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:37754 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371AbaAXIoO (ORCPT
+	id S1752810AbaAXIsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:48:55 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:38900 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaAXIoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 03:44:14 -0500
+	Fri, 24 Jan 2014 03:44:17 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Mark Brown <broonie@kernel.org>
 Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 01/14] spi: rspi: Remove unused mesg parameter from {send,receive}_pio()
-Date: Fri, 24 Jan 2014 09:43:51 +0100
-Message-Id: <1390553044-11860-2-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH v3 08/14] spi: rspi: Add support for more than one interrupt
+Date: Fri, 24 Jan 2014 09:43:58 +0100
+Message-Id: <1390553044-11860-9-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
 References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
@@ -24,105 +24,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
+Add support for multiple interrupts, based on the SDK reference code.
+This is needed for RZ/A1H, which supports 3 interrupts.
+
+When using multiple interrupts, they must be called "rx" (SPRI) and "tx"
+(SPTI). The error interrupt (SPEI) is not used, as it matters for slave
+mode only.
+
+When using a single interrupt, it may be called "mux". If it cannot be
+found, the first interrupt in the device's resources will be used.
+
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
- drivers/spi/spi-rspi.c |   27 ++++++++++-----------------
- 1 file changed, 10 insertions(+), 17 deletions(-)
+v2:
+  - s/irq[]/irqs[]/
+  - s/numirq/num_irqs/
+  - Use unsigned int for loop counters that cannot be negative
+  - Merge the platform_get_irq() and devm_request_irq() loops
+  - Do not update copyright header in further untouched rspi.h
+v3:
+  - Do not request the unused error interrupt
+  - Add suffixes ":mux", ":rx" and ":tx" to the registered interrupt names
+  - Use named interrupts
+
+ drivers/spi/spi-rspi.c |  106 +++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 87 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 28987d9fcfe5..ccd5cf201d04 100644
+index 5d39cd3eba62..d2ade5e09f58 100644
 --- a/drivers/spi/spi-rspi.c
 +++ b/drivers/spi/spi-rspi.c
-@@ -228,11 +228,8 @@ static u16 rspi_read16(const struct rspi_data *rspi, u16 offset)
- struct spi_ops {
- 	int (*set_config_register)(const struct rspi_data *rspi,
- 				   int access_size);
--	int (*send_pio)(struct rspi_data *rspi, struct spi_message *mesg,
--			struct spi_transfer *t);
--	int (*receive_pio)(struct rspi_data *rspi, struct spi_message *mesg,
--			   struct spi_transfer *t);
--
-+	int (*send_pio)(struct rspi_data *rspi, struct spi_transfer *t);
-+	int (*receive_pio)(struct rspi_data *rspi, struct spi_transfer *t);
- };
- 
+@@ -1,7 +1,7 @@
  /*
-@@ -358,8 +355,7 @@ static void rspi_negate_ssl(const struct rspi_data *rspi)
- 	rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) & ~SPCR_SPE, RSPI_SPCR);
- }
+  * SH RSPI driver
+  *
+- * Copyright (C) 2012  Renesas Solutions Corp.
++ * Copyright (C) 2012, 2013  Renesas Solutions Corp.
+  *
+  * Based on spi-sh.c:
+  * Copyright (C) 2011 Renesas Solutions Corp.
+@@ -183,12 +183,12 @@ struct rspi_data {
+ 	struct clk *clk;
+ 	u8 spsr;
+ 	u16 spcmd;
++	int rx_irq, tx_irq;
+ 	const struct spi_ops *ops;
  
--static int rspi_send_pio(struct rspi_data *rspi, struct spi_message *mesg,
--			 struct spi_transfer *t)
-+static int rspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
- {
- 	int remain = t->len;
- 	const u8 *data = t->tx_buf;
-@@ -384,8 +380,7 @@ static int rspi_send_pio(struct rspi_data *rspi, struct spi_message *mesg,
+ 	/* for dmaengine */
+ 	struct dma_chan *chan_tx;
+ 	struct dma_chan *chan_rx;
+-	int irq;
+ 
+ 	unsigned dma_width_16bit:1;
+ 	unsigned dma_callbacked:1;
+@@ -440,7 +440,7 @@ static int rspi_send_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 	struct scatterlist sg;
+ 	const void *buf = NULL;
+ 	struct dma_async_tx_descriptor *desc;
+-	unsigned len;
++	unsigned int len;
+ 	int ret = 0;
+ 
+ 	if (rspi->dma_width_16bit) {
+@@ -478,7 +478,7 @@ static int rspi_send_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 	 * DMAC needs SPTIE, but if SPTIE is set, this IRQ routine will be
+ 	 * called. So, this driver disables the IRQ while DMA transfer.
+ 	 */
+-	disable_irq(rspi->irq);
++	disable_irq(rspi->tx_irq);
+ 
+ 	rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) | SPCR_TXMD, RSPI_SPCR);
+ 	rspi_enable_irq(rspi, SPCR_SPTIE);
+@@ -497,7 +497,7 @@ static int rspi_send_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 		ret = -ETIMEDOUT;
+ 	rspi_disable_irq(rspi, SPCR_SPTIE);
+ 
+-	enable_irq(rspi->irq);
++	enable_irq(rspi->tx_irq);
+ 
+ end:
+ 	rspi_dma_unmap_sg(&sg, rspi->chan_tx, DMA_TO_DEVICE);
+@@ -536,7 +536,7 @@ static int rspi_receive_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 	struct scatterlist sg, sg_dummy;
+ 	void *dummy = NULL, *rx_buf = NULL;
+ 	struct dma_async_tx_descriptor *desc, *desc_dummy;
+-	unsigned len;
++	unsigned int len;
+ 	int ret = 0;
+ 
+ 	if (rspi->dma_width_16bit) {
+@@ -594,7 +594,9 @@ static int rspi_receive_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 	 * DMAC needs SPTIE, but if SPTIE is set, this IRQ routine will be
+ 	 * called. So, this driver disables the IRQ while DMA transfer.
+ 	 */
+-	disable_irq(rspi->irq);
++	disable_irq(rspi->tx_irq);
++	if (rspi->rx_irq != rspi->tx_irq)
++		disable_irq(rspi->rx_irq);
+ 
+ 	rspi_write8(rspi, rspi_read8(rspi, RSPI_SPCR) & ~SPCR_TXMD, RSPI_SPCR);
+ 	rspi_enable_irq(rspi, SPCR_SPTIE | SPCR_SPRIE);
+@@ -617,7 +619,9 @@ static int rspi_receive_dma(struct rspi_data *rspi, struct spi_transfer *t)
+ 		ret = -ETIMEDOUT;
+ 	rspi_disable_irq(rspi, SPCR_SPTIE | SPCR_SPRIE);
+ 
+-	enable_irq(rspi->irq);
++	enable_irq(rspi->tx_irq);
++	if (rspi->rx_irq != rspi->tx_irq)
++		enable_irq(rspi->rx_irq);
+ 
+ end:
+ 	rspi_dma_unmap_sg(&sg, rspi->chan_rx, DMA_FROM_DEVICE);
+@@ -775,7 +779,7 @@ static int rspi_unprepare_message(struct spi_master *master,
  	return 0;
  }
  
--static int qspi_send_pio(struct rspi_data *rspi, struct spi_message *mesg,
--			 struct spi_transfer *t)
-+static int qspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
+-static irqreturn_t rspi_irq(int irq, void *_sr)
++static irqreturn_t rspi_irq_mux(int irq, void *_sr)
  {
- 	int remain = t->len;
- 	const u8 *data = t->tx_buf;
-@@ -418,7 +413,7 @@ static int qspi_send_pio(struct rspi_data *rspi, struct spi_message *mesg,
+ 	struct rspi_data *rspi = _sr;
+ 	u8 spsr;
+@@ -797,6 +801,36 @@ static irqreturn_t rspi_irq(int irq, void *_sr)
+ 	return ret;
+ }
+ 
++static irqreturn_t rspi_irq_rx(int irq, void *_sr)
++{
++	struct rspi_data *rspi = _sr;
++	u8 spsr;
++
++	rspi->spsr = spsr = rspi_read8(rspi, RSPI_SPSR);
++	if (spsr & SPSR_SPRF) {
++		rspi_disable_irq(rspi, SPCR_SPRIE);
++		wake_up(&rspi->wait);
++		return IRQ_HANDLED;
++	}
++
++	return 0;
++}
++
++static irqreturn_t rspi_irq_tx(int irq, void *_sr)
++{
++	struct rspi_data *rspi = _sr;
++	u8 spsr;
++
++	rspi->spsr = spsr = rspi_read8(rspi, RSPI_SPSR);
++	if (spsr & SPSR_SPTEF) {
++		rspi_disable_irq(rspi, SPCR_SPTIE);
++		wake_up(&rspi->wait);
++		return IRQ_HANDLED;
++	}
++
++	return 0;
++}
++
+ static int rspi_request_dma(struct rspi_data *rspi,
+ 				      struct platform_device *pdev)
+ {
+@@ -868,12 +902,25 @@ static int rspi_remove(struct platform_device *pdev)
  	return 0;
  }
  
--#define send_pio(spi, mesg, t) spi->ops->send_pio(spi, mesg, t)
-+#define send_pio(spi, t) spi->ops->send_pio(spi, t)
- 
- static void rspi_dma_complete(void *arg)
++static int rspi_request_irq(struct device *dev, unsigned int irq,
++			    irq_handler_t handler, const char *suffix,
++			    void *dev_id)
++{
++	const char *base = dev_name(dev);
++	size_t len = strlen(base) + strlen(suffix) + 2;
++	char *name = devm_kzalloc(dev, len, GFP_KERNEL);
++	if (!name)
++		return -ENOMEM;
++	snprintf(name, len, "%s:%s", base, suffix);
++	return devm_request_irq(dev, irq, handler, 0, name, dev_id);
++}
++
+ static int rspi_probe(struct platform_device *pdev)
  {
-@@ -551,8 +546,7 @@ static void rspi_receive_init(const struct rspi_data *rspi)
- 			    RSPI_SPSR);
- }
+ 	struct resource *res;
+ 	struct spi_master *master;
+ 	struct rspi_data *rspi;
+-	int ret, irq;
++	int ret;
+ 	char clk_name[16];
+ 	const struct rspi_plat_data *rspi_pd = dev_get_platdata(&pdev->dev);
+ 	const struct spi_ops *ops;
+@@ -886,12 +933,6 @@ static int rspi_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
  
--static int rspi_receive_pio(struct rspi_data *rspi, struct spi_message *mesg,
--			    struct spi_transfer *t)
-+static int rspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
- {
- 	int remain = t->len;
- 	u8 *data;
-@@ -598,8 +592,7 @@ static void qspi_receive_init(const struct rspi_data *rspi)
- 	rspi_write8(rspi, 0x00, QSPI_SPBFCR);
- }
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0) {
+-		dev_err(&pdev->dev, "platform_get_irq error\n");
+-		return -ENODEV;
+-	}
+-
+ 	master = spi_alloc_master(&pdev->dev, sizeof(struct rspi_data));
+ 	if (master == NULL) {
+ 		dev_err(&pdev->dev, "spi_alloc_master error.\n");
+@@ -934,14 +975,41 @@ static int rspi_probe(struct platform_device *pdev)
+ 	master->unprepare_message = rspi_unprepare_message;
+ 	master->mode_bits = SPI_CPHA | SPI_CPOL;
  
--static int qspi_receive_pio(struct rspi_data *rspi, struct spi_message *mesg,
--			    struct spi_transfer *t)
-+static int qspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
- {
- 	int remain = t->len;
- 	u8 *data;
-@@ -630,7 +623,7 @@ static int qspi_receive_pio(struct rspi_data *rspi, struct spi_message *mesg,
- 	return 0;
- }
+-	ret = devm_request_irq(&pdev->dev, irq, rspi_irq, 0,
+-			       dev_name(&pdev->dev), rspi);
++	ret = platform_get_irq_byname(pdev, "rx");
++	if (ret < 0) {
++		ret = platform_get_irq_byname(pdev, "mux");
++		if (ret < 0)
++			ret = platform_get_irq(pdev, 0);
++		if (ret >= 0)
++			rspi->rx_irq = rspi->tx_irq = ret;
++	} else {
++		rspi->rx_irq = ret;
++		ret = platform_get_irq_byname(pdev, "tx");
++		if (ret >= 0)
++			rspi->tx_irq = ret;
++	}
++	if (ret < 0) {
++		dev_err(&pdev->dev, "platform_get_irq error\n");
++		goto error2;
++	}
++
++	if (rspi->rx_irq == rspi->tx_irq) {
++		/* Single multiplexed interrupt */
++		ret = rspi_request_irq(&pdev->dev, rspi->rx_irq, rspi_irq_mux,
++				       "mux", rspi);
++	} else {
++		/* Multi-interrupt mode, only SPRI and SPTI are used */
++		ret = rspi_request_irq(&pdev->dev, rspi->rx_irq, rspi_irq_rx,
++				       "rx", rspi);
++		if (!ret)
++			ret = rspi_request_irq(&pdev->dev, rspi->tx_irq,
++					       rspi_irq_tx, "tx", rspi);
++	}
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "request_irq error\n");
+ 		goto error2;
+ 	}
  
--#define receive_pio(spi, mesg, t) spi->ops->receive_pio(spi, mesg, t)
-+#define receive_pio(spi, t) spi->ops->receive_pio(spi, t)
- 
- static int rspi_receive_dma(struct rspi_data *rspi, struct spi_transfer *t)
- {
-@@ -771,7 +764,7 @@ static void rspi_work(struct work_struct *work)
- 				if (rspi_is_dma(rspi, t))
- 					ret = rspi_send_dma(rspi, t);
- 				else
--					ret = send_pio(rspi, mesg, t);
-+					ret = send_pio(rspi, t);
- 				if (ret < 0)
- 					goto error;
- 			}
-@@ -779,7 +772,7 @@ static void rspi_work(struct work_struct *work)
- 				if (rspi_is_dma(rspi, t))
- 					ret = rspi_receive_dma(rspi, t);
- 				else
--					ret = receive_pio(rspi, mesg, t);
-+					ret = receive_pio(rspi, t);
- 				if (ret < 0)
- 					goto error;
- 			}
+-	rspi->irq = irq;
+ 	ret = rspi_request_dma(rspi, pdev);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "rspi_request_dma failed.\n");
 -- 
 1.7.9.5
 
