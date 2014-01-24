@@ -1,112 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300AbaAXCdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 21:33:16 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54246 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751718AbaAXCdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 21:33:15 -0500
-X-Sasl-enc: I21ZOsfnHd7AYwL/7v2QdpzlwwpdwCnhiQrVsayeZL4l 1390530793
-Date: Thu, 23 Jan 2014 18:34:05 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20140124023405.GA27360@kroah.com>
-References: <20140124130122.017195b49e852e4e42b77997@canb.auug.org.au>
+	id S1751674AbaAXCqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 21:46:49 -0500
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:4160
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750969AbaAXCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 21:46:48 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "moinejf@free.fr" <moinejf@free.fr>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH Resend 7/8] ASoC: add
+ snd_soc_of_parse_audio_simple_widgets for DeviceTree
+Thread-Topic: [PATCH Resend 7/8] ASoC: add
+ snd_soc_of_parse_audio_simple_widgets for DeviceTree
+Thread-Index: AQHPGACs90QsyiOhrEWLbv1Hg0tOIZqStbuAgABvx4A=
+Date: Fri, 24 Jan 2014 02:46:33 +0000
+Message-ID: <638679dfd176409680c962cdeb3704ef@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
+ <1390453370-29194-8-git-send-email-Li.Xiubo@freescale.com>
+ <20140123193945.GH11727@sirena.org.uk>
+In-Reply-To: <20140123193945.GH11727@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 01018CB5B3
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(164054003)(189002)(80022001)(47446002)(74502001)(74316001)(81342001)(85306002)(4396001)(76576001)(87936001)(31966008)(90146001)(81542001)(56816005)(2656002)(93516002)(74366001)(77982001)(94316002)(69226001)(85852003)(86362001)(83072002)(74706001)(65816001)(87266001)(76796001)(74662001)(49866001)(47736001)(74876001)(83322001)(81686001)(33646001)(66066001)(47976001)(46102001)(80976001)(63696002)(53806001)(51856001)(59766001)(79102001)(54316002)(92566001)(50986001)(81816001)(76786001)(54356001)(56776001)(76482001)(93136001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140124130122.017195b49e852e4e42b77997@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0O2kxPe028019
 
-On Fri, Jan 24, 2014 at 01:01:22PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/staging/rtl8821ae/regd.c: In function '_rtl_reg_apply_beaconing_flags':
-> drivers/staging/rtl8821ae/regd.c:200:20: error: 'IEEE80211_CHAN_NO_IBSS' undeclared (first use in this function)
->       ch->flags &= ~IEEE80211_CHAN_NO_IBSS;
->                     ^
-> drivers/staging/rtl8821ae/regd.c:200:20: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/staging/rtl8821ae/regd.c:204:11: error: 'IEEE80211_CHAN_PASSIVE_SCAN' undeclared (first use in this function)
->           ~IEEE80211_CHAN_PASSIVE_SCAN;
->            ^
-> drivers/staging/rtl8821ae/regd.c: In function '_rtl_reg_apply_active_scan_flags':
-> drivers/staging/rtl8821ae/regd.c:237:19: error: 'IEEE80211_CHAN_PASSIVE_SCAN' undeclared (first use in this function)
->    if (ch->flags & IEEE80211_CHAN_PASSIVE_SCAN)
->                    ^
-> drivers/staging/rtl8821ae/regd.c: In function '_rtl_reg_apply_radar_flags':
-> drivers/staging/rtl8821ae/regd.c:312:8: error: 'IEEE80211_CHAN_NO_IBSS' undeclared (first use in this function)
->         IEEE80211_CHAN_NO_IBSS |
->         ^
-> drivers/staging/rtl8821ae/regd.c:313:8: error: 'IEEE80211_CHAN_PASSIVE_SCAN' undeclared (first use in this function)
->         IEEE80211_CHAN_PASSIVE_SCAN;
->         ^
-> drivers/staging/rtl8821ae/regd.c: In function '_rtl_regd_init_wiphy':
-> drivers/staging/rtl8821ae/regd.c:410:18: error: 'WIPHY_FLAG_CUSTOM_REGULATORY' undeclared (first use in this function)
->   wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
->                   ^
-> drivers/staging/rtl8821ae/regd.c:411:19: error: 'WIPHY_FLAG_STRICT_REGULATORY' undeclared (first use in this function)
->   wiphy->flags &= ~WIPHY_FLAG_STRICT_REGULATORY;
->                    ^
-> drivers/staging/rtl8821ae/regd.c:412:19: error: 'WIPHY_FLAG_DISABLE_BEACON_HINTS' undeclared (first use in this function)
->   wiphy->flags &= ~WIPHY_FLAG_DISABLE_BEACON_HINTS;
->                    ^
-> drivers/staging/rtl8821ae/base.c: In function '_rtl_init_mac80211':
-> drivers/staging/rtl8821ae/base.c:372:4: error: 'struct ieee80211_hw' has no member named 'channel_change_time'
->   hw->channel_change_time = 100;
->     ^
-> drivers/staging/rtl8821ae/base.c: In function 'rtl_beacon_statistic':
-> drivers/staging/rtl8821ae/base.c:1185:2: error: implicit declaration of function 'compare_ether_addr' [-Werror=implicit-function-declaration]
->   if (compare_ether_addr(hdr->addr3, rtlpriv->mac80211.bssid))
->   ^
-> drivers/staging/rtl8821ae/ps.c: In function 'rtl_swlps_beacon':
-> drivers/staging/rtl8821ae/ps.c:530:2: error: implicit declaration of function 'compare_ether_addr' [-Werror=implicit-function-declaration]
->   if (compare_ether_addr(hdr->addr3, rtlpriv->mac80211.bssid))
->   ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8812ae_dm_txpwr_track_set_pwr':
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:1476:5: warning: array subscript has type 'char' [-Wchar-subscripts]
->      rtl_set_bbreg(hw, RA_TXSCALE, 0xFFE00000, rtl8812ae_txscaling_table[final_ofdm_swing_index]);
->      ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:1525:5: warning: array subscript has type 'char' [-Wchar-subscripts]
->      rtl_set_bbreg(hw, RB_TXSCALE, 0xFFE00000, rtl8812ae_txscaling_table[final_ofdm_swing_index]);
->      ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8821ae_dm_txpwr_track_set_pwr':
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:2113:5: warning: array subscript has type 'char' [-Wchar-subscripts]
->      rtl_set_bbreg(hw, RA_TXSCALE, 0xFFE00000, rtl8812ae_txscaling_table[final_ofdm_swing_index]);
->      ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8821ae_dm_check_edca_turbo':
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:2656:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 2 has type 'u64' [-Wformat=]
->    RT_TRACE(COMP_TURBO, DBG_LOUD,
->    ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:2658:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 2 has type 'u64' [-Wformat=]
->    RT_TRACE(COMP_TURBO, DBG_LOUD,
->    ^
-> drivers/staging/rtl8821ae/rtl8821ae/trx.c: In function '_rtl8821ae_translate_rx_signal_stuff':
-> drivers/staging/rtl8821ae/rtl8821ae/trx.c:461:7: error: implicit declaration of function 'compare_ether_addr' [-Werror=implicit-function-declaration]
->        (!compare_ether_addr(mac->bssid, (fc & IEEE80211_FCTL_TODS) ?
->        ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8821ae_dm_clear_txpower_tracking_state':
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:487:31: warning: iteration 2u invokes undefined behavior [-Waggressive-loop-optimizations]
->    rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
->                                ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:485:2: note: containing loop
->   for (p = RF90_PATH_A; p < MAX_RF_PATH; ++p) {
->   ^
-> 
-> Caused by commit 3c05bedb5fef ("Staging: rtl8812ae: Add Realtek 8821 PCI
-> WIFI driver").  Did you really want to merge a new driver right now, not
-> wait until after the merge window?
 
-Yes, it's stand-alone and worked for me and is shipping in at least one
-distro already.  Looks like I need another depends option in the Kconfig
-file, I'll fix this up, thanks.
+> > +static struct snd_soc_dapm_widget simple_widgets[] = {
+> > +	SND_SOC_DAPM_MIC("Mic", NULL),
+> > +	SND_SOC_DAPM_LINE("Line", NULL),
+> > +	SND_SOC_DAPM_HP("Hp", NULL),
+> > +	SND_SOC_DAPM_SPK("Spk", NULL),
+> > +};
+> 
 
-greg k-h
+This is the templates for "Microphone XXX", "Line XXX", "Headphone XXX"
+and "Spk XXX" .
+
+
+
+> Does this mean we're restricted to a particular set of names?  That
+> seems sad and won't work if there's a desire for more than one of a
+> given widget - the main use case I can see is multiple microphones with
+> separate microphone biases.  How about having some templates that we
+> copy and then replace the name with the one the user supplied?
+> 
+
+This code has already supplied this I think.
+
+Using this API, the only limitation is that, for example if the user has
+multiple Microphones, it should set the name in DT file like:
+
+"Mic XXX", "Mic YYY", "Mic ZZZ"...
+
+And these widgets will use the template of : SND_SOC_DAPM_MIC("Mic", NULL),
+And the widgets' names will be replaced with "Mic XXX", "Mic YYY",
+"Mic ZZZ"... from the user's DT node.
+
+
+
+Or your suggestion is £∫
+
+The templates is:
++static struct snd_soc_dapm_widget simple_widgets[] = {
++	SND_SOC_DAPM_MIC("Mic", NULL),
++	SND_SOC_DAPM_LINE("Line", NULL),
++	SND_SOC_DAPM_HP("Hp", NULL),
++	SND_SOC_DAPM_SPK("Spk", NULL),
++};
+
+And in the DT node:
+simple-off-codec-widgets = 
+/*	template-name	user-supplied-name	*/
+	"Mic",		"Microphone XXX",
+	"Mic",		"UUU Microphone YYY",
+	"Hp",		"TTT Headphone XXX",
+	"Hp",		"Headphone YYY";
+
+And then just replace the template's name with the user supplied name?
+
+
+Thanks,
+
+Best Regards,
+Xiubo
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
