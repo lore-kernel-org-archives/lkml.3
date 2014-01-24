@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaAXIqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:46:42 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:56750 "EHLO
+	id S1752708AbaAXIrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:47:15 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:56739 "EHLO
 	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaAXIoT (ORCPT
+	with ESMTP id S1752452AbaAXIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Jan 2014 03:44:19 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -12,9 +12,9 @@ To: Mark Brown <broonie@kernel.org>
 Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH v2 11/14] spi: rspi: Convert to clk_prepare_enable/disable_unprepare
-Date: Fri, 24 Jan 2014 09:44:01 +0100
-Message-Id: <1390553044-11860-12-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 03/14] spi: rspi: Abstract 8/16-bit Data Register access
+Date: Fri, 24 Jan 2014 09:43:53 +0100
+Message-Id: <1390553044-11860-4-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
 References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
@@ -24,52 +24,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Get the driver ready for the migration to the common clock framework by
-calling clk_prepare_enable() and clk_disable_unprepare().
+Add rspi_{write,read}_data(), to abstract 8-bit (QSPI, and RSPI on RZ/A1H)
+versus 16-bit (RSPI) Data Register access.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
-v2:
-  - No changes
-
- drivers/spi/spi-rspi.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/spi/spi-rspi.c |   56 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 35 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 28db8770aaf3..a648b40c271b 100644
+index 0e4d169c90d7..a0bb3c28ae91 100644
 --- a/drivers/spi/spi-rspi.c
 +++ b/drivers/spi/spi-rspi.c
-@@ -980,7 +980,7 @@ static int rspi_remove(struct platform_device *pdev)
- 	struct rspi_data *rspi = platform_get_drvdata(pdev);
+@@ -192,6 +192,7 @@ struct rspi_data {
  
- 	rspi_release_dma(rspi);
--	clk_disable(rspi->clk);
-+	clk_disable_unprepare(rspi->clk);
+ 	unsigned dma_width_16bit:1;
+ 	unsigned dma_callbacked:1;
++	unsigned byte_access:1;
+ };
  
- 	return 0;
+ static void rspi_write8(const struct rspi_data *rspi, u8 data, u16 offset)
+@@ -219,10 +220,25 @@ static u16 rspi_read16(const struct rspi_data *rspi, u16 offset)
+ 	return ioread16(rspi->addr + offset);
  }
-@@ -1041,7 +1041,12 @@ static int rspi_probe(struct platform_device *pdev)
- 		ret = PTR_ERR(rspi->clk);
- 		goto error1;
- 	}
--	clk_enable(rspi->clk);
+ 
++static void rspi_write_data(const struct rspi_data *rspi, u16 data)
++{
++	if (rspi->byte_access)
++		rspi_write8(rspi, data, RSPI_SPDR);
++	else /* 16 bit */
++		rspi_write16(rspi, data, RSPI_SPDR);
++}
 +
-+	ret = clk_prepare_enable(rspi->clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "unable to prepare/enable clock\n");
-+		goto error1;
-+	}
++static u16 rspi_read_data(const struct rspi_data *rspi)
++{
++	if (rspi->byte_access)
++		return rspi_read8(rspi, RSPI_SPDR);
++	else /* 16 bit */
++		return rspi_read16(rspi, RSPI_SPDR);
++}
++
+ /* optional functions */
+ struct spi_ops {
+-	int (*set_config_register)(const struct rspi_data *rspi,
+-				   int access_size);
++	int (*set_config_register)(struct rspi_data *rspi, int access_size);
+ 	int (*send_pio)(struct rspi_data *rspi, struct spi_transfer *t);
+ 	int (*receive_pio)(struct rspi_data *rspi, struct spi_transfer *t);
+ };
+@@ -230,8 +246,7 @@ struct spi_ops {
+ /*
+  * functions for RSPI
+  */
+-static int rspi_set_config_register(const struct rspi_data *rspi,
+-				    int access_size)
++static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ {
+ 	int spbr;
  
- 	init_waitqueue_head(&rspi->wait);
+@@ -242,8 +257,9 @@ static int rspi_set_config_register(const struct rspi_data *rspi,
+ 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
+ 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
  
-@@ -1112,7 +1117,7 @@ static int rspi_probe(struct platform_device *pdev)
- error3:
- 	rspi_release_dma(rspi);
- error2:
--	clk_disable(rspi->clk);
-+	clk_disable_unprepare(rspi->clk);
- error1:
- 	spi_master_put(master);
+-	/* Sets number of frames to be used: 1 frame */
+-	rspi_write8(rspi, 0x00, RSPI_SPDCR);
++	/* Disable dummy transmission, set 16-bit word access, 1 frame */
++	rspi_write8(rspi, 0, RSPI_SPDCR);
++	rspi->byte_access = 0;
+ 
+ 	/* Sets RSPCK, SSL, next-access delay value */
+ 	rspi_write8(rspi, 0x00, RSPI_SPCKD);
+@@ -266,8 +282,7 @@ static int rspi_set_config_register(const struct rspi_data *rspi,
+ /*
+  * functions for QSPI
+  */
+-static int qspi_set_config_register(const struct rspi_data *rspi,
+-				    int access_size)
++static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
+ {
+ 	u16 spcmd;
+ 	int spbr;
+@@ -279,8 +294,9 @@ static int qspi_set_config_register(const struct rspi_data *rspi,
+ 	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz);
+ 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+ 
+-	/* Sets number of frames to be used: 1 frame */
+-	rspi_write8(rspi, 0x00, RSPI_SPDCR);
++	/* Disable dummy transmission, set byte access */
++	rspi_write8(rspi, 0, RSPI_SPDCR);
++	rspi->byte_access = 1;
+ 
+ 	/* Sets RSPCK, SSL, next-access delay value */
+ 	rspi_write8(rspi, 0x00, RSPI_SPCKD);
+@@ -354,7 +370,7 @@ static int rspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
+ 			return -ETIMEDOUT;
+ 		}
+ 
+-		rspi_write16(rspi, *data, RSPI_SPDR);
++		rspi_write_data(rspi, *data);
+ 		data++;
+ 		remain--;
+ 	}
+@@ -380,14 +396,14 @@ static int qspi_send_pio(struct rspi_data *rspi, struct spi_transfer *t)
+ 				"%s: tx empty timeout\n", __func__);
+ 			return -ETIMEDOUT;
+ 		}
+-		rspi_write8(rspi, *data++, RSPI_SPDR);
++		rspi_write_data(rspi, *data++);
+ 
+ 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
+ 			dev_err(&rspi->master->dev,
+ 				"%s: receive timeout\n", __func__);
+ 			return -ETIMEDOUT;
+ 		}
+-		rspi_read8(rspi, RSPI_SPDR);
++		rspi_read_data(rspi);
+ 
+ 		remain--;
+ 	}
+@@ -525,7 +541,7 @@ static void rspi_receive_init(const struct rspi_data *rspi)
+ 
+ 	spsr = rspi_read8(rspi, RSPI_SPSR);
+ 	if (spsr & SPSR_SPRF)
+-		rspi_read16(rspi, RSPI_SPDR);	/* dummy read */
++		rspi_read_data(rspi);	/* dummy read */
+ 	if (spsr & SPSR_OVRF)
+ 		rspi_write8(rspi, rspi_read8(rspi, RSPI_SPSR) & ~SPSR_OVRF,
+ 			    RSPI_SPSR);
+@@ -549,15 +565,14 @@ static int rspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
+ 			return -ETIMEDOUT;
+ 		}
+ 		/* dummy write for generate clock */
+-		rspi_write16(rspi, DUMMY_DATA, RSPI_SPDR);
++		rspi_write_data(rspi, DUMMY_DATA);
+ 
+ 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
+ 			dev_err(&rspi->master->dev,
+ 				"%s: receive timeout\n", __func__);
+ 			return -ETIMEDOUT;
+ 		}
+-		/* SPDR allows 16 or 32-bit access only */
+-		*data = (u8)rspi_read16(rspi, RSPI_SPDR);
++		*data = rspi_read_data(rspi);
+ 
+ 		data++;
+ 		remain--;
+@@ -572,7 +587,7 @@ static void qspi_receive_init(const struct rspi_data *rspi)
+ 
+ 	spsr = rspi_read8(rspi, RSPI_SPSR);
+ 	if (spsr & SPSR_SPRF)
+-		rspi_read8(rspi, RSPI_SPDR);   /* dummy read */
++		rspi_read_data(rspi);   /* dummy read */
+ 	rspi_write8(rspi, SPBFCR_TXRST | SPBFCR_RXRST, QSPI_SPBFCR);
+ 	rspi_write8(rspi, 0x00, QSPI_SPBFCR);
+ }
+@@ -593,15 +608,14 @@ static int qspi_receive_pio(struct rspi_data *rspi, struct spi_transfer *t)
+ 			return -ETIMEDOUT;
+ 		}
+ 		/* dummy write for generate clock */
+-		rspi_write8(rspi, DUMMY_DATA, RSPI_SPDR);
++		rspi_write_data(rspi, DUMMY_DATA);
+ 
+ 		if (rspi_wait_for_interrupt(rspi, SPSR_SPRF, SPCR_SPRIE) < 0) {
+ 			dev_err(&rspi->master->dev,
+ 				"%s: receive timeout\n", __func__);
+ 			return -ETIMEDOUT;
+ 		}
+-		/* SPDR allows 8, 16 or 32-bit access */
+-		*data++ = rspi_read8(rspi, RSPI_SPDR);
++		*data++ = rspi_read_data(rspi);
+ 		remain--;
+ 	}
  
 -- 
 1.7.9.5
