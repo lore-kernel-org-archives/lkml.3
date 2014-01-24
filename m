@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaAXIui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 03:50:38 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:38900 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaAXIoP (ORCPT
+	id S1751429AbaAXIxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 03:53:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56181 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825AbaAXIxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 03:44:15 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/14] spi: rspi: Add support for RZ/A1H, DT, and Quad/Dual on QSPI
-Date: Fri, 24 Jan 2014 09:43:50 +0100
-Message-Id: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 24 Jan 2014 03:53:07 -0500
+Date: Fri, 24 Jan 2014 09:52:48 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, eparis@redhat.com,
+        sgrubb@redhat.com, akpm@linux-foundation.org, oleg@redhat.com
+Subject: Re: [PATCH 0/7][RFC] pid: changes to support audit
+Message-ID: <20140124085248.GY30183@twins.programming.kicks-ass.net>
+References: <20131220140417.GE14884@madcap2.tricolour.ca>
+ <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
+ <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+ <20131217095801.GF21999@twins.programming.kicks-ass.net>
+ <20131220044826.GF14944@madcap2.tricolour.ca>
+ <20131220085846.GA21999@twins.programming.kicks-ass.net>
+ <cover.1390495874.git.rgb@redhat.com>
+ <20140123212535.GX11314@laptop.programming.kicks-ass.net>
+ <20140124061447.GH7084@madcap2.tricolour.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140124061447.GH7084@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Mark,
+On Fri, Jan 24, 2014 at 01:14:47AM -0500, Richard Guy Briggs wrote:
+> On 14/01/23, Peter Zijlstra wrote:
+> > On Thu, Jan 23, 2014 at 02:32:33PM -0500, Richard Guy Briggs wrote:
+> > > These are a number of patches inspired by ebiederman's container work that were
+> > > included by me 2013-08-20 as the patchset:
+> > > 	RFC: steps to make audit pid namespace-safe
+> > > 
+> > > They have been seperated out for the pid maintainer since there are no direct
+> > > dependencies from the audit pid namespace patchset with the exception of:
+> > > 	pid: get pid_t ppid of task in init_pid_ns
+> > > 
+> > > Andrew, are you willing to adopt these?
+> > > 
+> > > In particular, there is discussion around read-only task_struct::pid here:
+> > > 	https://lkml.org/lkml/2013/12/16/552
+> > 
+> > I would have ordered them slightly different, but:
+> 
+> Can you briefly explain how and why so I can understand for next time?
+> I originally had the ppid patch first...
 
-This patch series
-  1. refactors the Renesas RSPI/QSPI driver,
-  2. adds support for RSPI in the r7s72100 aka RZ/A1H SoC,
-  3. adds support for DT binding,
-  4. adds support for Quad/Dual SPI Transfers on QSPI in the r8a7790/r8a7791
-     aka R-Car H2/M2 SoCs.
-
-SoC and board integration patches will be posted in a separate series.
-
-It was tested on the r7s72100-based Genmai reference board using loopback
-mode, and on the r8a7791-based Koelsch reference board using the Spansion
-s25fl512s SPI FLASH.
-
-Quad Write Transfers were not tested, as this needs support in the m25p80
-driver first. Also, it's of limited use, as FLASH programming is slow.
-
-Overview:
-    [   01/14] spi: rspi: Remove unused mesg parameter from
-    			  {send,receive}_pio()
-    [   02/14] spi: rspi: Use core message handling
-    [   03/14] spi: rspi: Abstract 8/16-bit Data Register access
-    [   04/14] spi: rspi: Add rspi_data_{out,in,out_in}() helpers
-    [   05/14] spi: rspi: Abstract transfer_one() for RSPI and QSPI
-    [   06/14] spi: rspi: Merge rspi_send_pio() and rspi_receive_pio()
-    [   07/14] spi: rspi: Merge qspi_send_pio() and qspi_receive_pio()
-    [v3 08/14] spi: rspi: Add support for more than one interrupt
-    [   09/14] spi: rspi: Add support for RSPI on RZ/A1H
-    [v3 10/14] spi: rspi: Add support for loopback mode
-    [v2 11/14] spi: rspi: Convert to clk_prepare_enable/disable_unprepare
-    [v2 12/14] spi: rspi: Use NULL as the clock ID
-    [v4 13/14] spi: rspi: Add DT support
-    [   14/14] spi: rspi: Add support for Quad and Dual SPI Transfers on QSPI
-
-The series contains new work, and remaining/rebased/updated patches from the
-following series that had been posted before:
-    [PATCH v2 0/8] spi: rspi: Add support for RZ/A1H
-    [PATCH v3 0/9] Renesas RSPI/QSPI DT support
-
-Patches [03/14] and [09/14] completely replace the old handling using
-platform data in
-    [4/8 V2] spi: rspi: Add support for 8-bit Data Register access
-    [5/8 V2] spi: rspi: Add support for no TX only mode
-    [6/8 V2] spi: rspi: Add support for missing SPCR2 register
-by a new "rspi-rz" platform device name binding.
-
-Please review, thanks!
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
-
+Ah, I would have introduced CONST_CAST() earlier, then used it in the
+make pid const and then avoided the conversion patch.
