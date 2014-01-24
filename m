@@ -1,154 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaAXCZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 21:25:51 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:65039 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaAXCZs (ORCPT
+	id S1752188AbaAXCZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 21:25:59 -0500
+Received: from nm15-vm2.access.bullet.mail.gq1.yahoo.com ([216.39.63.43]:28793
+	"EHLO nm15-vm2.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751113AbaAXCZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 21:25:48 -0500
-X-AuditID: cbfee68e-b7f566d000002344-9f-52e1cf211e5e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Liu Ying'" <Ying.Liu@freescale.com>
-Cc: "'Jani Nikula'" <jani.nikula@linux.intel.com>, linux-fbdev@vger.kernel.org,
-        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1390196846-15304-1-git-send-email-Ying.Liu@freescale.com>
- <87sisg5pfo.fsf@intel.com> <000101cf17fe$20ac79a0$62056ce0$%han@samsung.com>
- <52E0E093.1070803@freescale.com>
-In-reply-to: <52E0E093.1070803@freescale.com>
-Subject: Re: [PATCH v2] backlight: turn backlight on/off when necessary
-Date: Fri, 24 Jan 2014 11:25:36 +0900
-Message-id: <001501cf18ab$910d35b0$b327a110$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8YHTIPZbPje0PxSviQL0C4Zu4eAwAjUmfQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t8zI13F8w+DDBZN5rS48vU9m8Xyy+sZ
-	LS4vvMRqcaLvA6vF5V1z2CzWPXzBZLF+/i02iydPTBw4PP4d7mfyeHXhDovHvJOBHve7jzN5
-	9G1Zxehx/MZ2Jo/Pm+QC2KO4bFJSczLLUov07RK4Mj4cPsdacFauYsKPyUwNjGskuhg5OSQE
-	TCSeTP/NAmGLSVy4t56ti5GLQ0hgGaPEyjvtTDBFvevfMEEkFjFKtG3Yyg7h/GKUuDjtGStI
-	FZuAmsSXL4fZQWwRAXWJY4cXgXUwCzxklPi9bS8jSEJIYAejxK8PRiA2p4CuxNO1T8BWCAu4
-	SzROO8QMYrMIqErsb3nFBmLzCthKfGibywxhC0r8mHwP7FZmAS2JzduaWCFseYnNa94C1XAA
-	naou8eivLsQNRhIXTl1ihCgRkdj34h0jxDedHBINS1MgVglIfJt8iAWiVVZi0wFmiBJJiYMr
-	brBMYJSYhWTxLCSLZyFZPAvJhgWMLKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxQiK7bwfj
-	zQPWhxiTgdZPZJYSTc4HJoa8knhDYzMjC1MTU2Mjc0sz0oSVxHkXPUwKEhJITyxJzU5NLUgt
-	ii8qzUktPsTIxMEp1cCYk3Eqqe1x56Z7AZszM7Pddj5nDvzTnfIhgn+7O8vN3zrJkft2nZr/
-	82jDtWr/6EutezrXlbBEWvpp6c6ufnt3unia35zqqUyBZTcaTvOJHMhdGPeEV9xDPXXvsiMV
-	nAyqNi3rVxvM0y+/XfBVYULzomSBhmvu59P57rzc5MvUsPi78XsxjjQlluKMREMt5qLiRACG
-	epoxAgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLKsWRmVeSWpSXmKPExsVy+t9jAV3F8w+DDOYvYrG48vU9m8Xyy+sZ
-	LS4vvMRqcaLvA6vF5V1z2CzWPXzBZLF+/i02iydPTBw4PP4d7mfyeHXhDovHvJOBHve7jzN5
-	9G1Zxehx/MZ2Jo/Pm+QC2KMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTy
-	EnNTbZVcfAJ03TJzgI5SUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZ8
-	OHyOteCsXMWEH5OZGhjXSHQxcnJICJhI9K5/wwRhi0lcuLeerYuRi0NIYBGjRNuGrewQzi9G
-	iYvTnrGCVLEJqEl8+XKYHcQWEVCXOHZ4ERNIEbPAQ0aJ39v2MoIkhAR2MEr8+mAEYnMK6Eo8
-	XfsEbIWwgLtE47RDzCA2i4CqxP6WV2wgNq+ArcSHtrnMELagxI/J91hAbGYBLYnN25pYIWx5
-	ic1r3gLVcACdqi7x6K8uxA1GEhdOXWKEKBGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUo
-	mlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnDieSe1gXNlgcYhRgINRiYd3RuDDICHWxLLiytxD
-	jBIczEoivAkzgUK8KYmVValF+fFFpTmpxYcYk4EencgsJZqcD0xqeSXxhsYmZkaWRmYWRibm
-	5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAeHjLmakv7p44wfuRad8tBYaHLHb/Nib9
-	in/8ONB86okN+RPj3x3i6w2tnWo65XSA4/YFEzTfOPfZaF2Q4V3XJ9TF2JdSdDGgsJBX8vyU
-	7MNVi+WK+V8+uCHIuvjWvxClpn/TguWr656yNB7Zdkhkxyyx7/lTl4RZzROvk7t5yfa6+JzT
-	v7+FOCuxFGckGmoxFxUnAgC3n/eXYAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 23 Jan 2014 21:25:56 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jan 2014 21:25:55 EST
+X-Yahoo-Newman-Id: 82382.19973.bm@smtp115.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 8bLGZ_AVM1koTIhnkS.cPZlzXDsor4AkB.Uip2HhQE3SUCW
+ 7.oWr7DjPtFzS3LS7vSKSbAmJ9MUNPk8WiaLZVfpIA3MdY7b8IrVZXcPLoTa
+ JX3wzqgyiHOMLYk_YgqJt.mRW98WXuFVM0FFL8l32M7eLF5dkO.a5pBy7Z2N
+ lgayDA8zc8zRK2pZuEuGcke5bV.wVrEwRHWxDjMx1P_7oW0Q1TLQY6HODOj.
+ u.A8NRRfBfl73Sc4E.onThoEeY8C8sIbiqFCFsl3OM4zpHqz5fcZPzMkOoFS
+ Ghv0PmSPJjwSB0Rij_oNtqrxPUTfbQs9NRu9X1PjrLbBQ8EjAWJ8l4GQeDcp
+ Qoe8V9QU.eKj3MEE6JA.ZYsCmmfYjzSON13M0Fg5SfVzZ_dDV81nW.hPacKm
+ HTyek5HikUTr7JrWZgNv6j5mm4lA8m7Knume.fx0.hd6VyS9QA62LYELICCA
+ fIMa8qmUXsAHbdJ5T5FhP8zO3gKzQ73ANdm42JbkD0P3tpcIyRFaKcLLRp9u
+ oD.wNTLp2d9ECOaPoJLCahQSxyOPih586_NNEkIsVbPQz9L7mAmdDC2pRVyI
+ cld3I1iMLsFd7GGjx9ML2X1tCWEuouWDWUzwd_u3iRiUDWYDhdBHbyZsda2y
+ QK3v.FIbT8CCd1GTHqF8vVQqrYPBgpBEnj1_I225nYaE64j5_Ysw1r1FKu.1
+ cNMUQTudWzWCLBBOY
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with plain [98.138.31.74])
+        by smtp115.sbc.mail.ne1.yahoo.com with SMTP; 24 Jan 2014 02:20:05 +0000 UTC
+Message-ID: <52E1CE33.7040309@att.net>
+Date: Thu, 23 Jan 2014 20:21:39 -0600
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Daniel Santos <daniel.santos@pobox.com>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: spidev: fix hang when transfer_one_message fails
+References: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com> <CAMuHMdU0FRi4=YejN+3TLJCwcptHVaaGFTLPyuwzO4NH9=-cUw@mail.gmail.com> <20140123181737.GA11727@sirena.org.uk>
+In-Reply-To: <20140123181737.GA11727@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 23, 2014 6:28 PM, Liu Ying wrote:
-> On 01/23/2014 01:44 PM, Jingoo Han wrote:
-> > On Wednesday, January 22, 2014 6:36 PM, Jani Nikula wrote:
-> >> On Mon, 20 Jan 2014, Liu Ying <Ying.Liu@freescale.com> wrote:
-> >>> We don't have to turn backlight on/off everytime a blanking
-> >>> or unblanking event comes because the backlight status may
-> >>> have already been what we want. Another thought is that one
-> >>> backlight device may be shared by multiple framebuffers. We
-> >>> don't hope blanking one of the framebuffers may turn the
-> >>> backlight off for all the other framebuffers, since they are
-> >>> likely being active to display something. This patch adds
-> >>> some logics to record each framebuffer's backlight usage to
-> >>> determine the backlight device use count and whether the
-> >>> backlight should be turned on or off. To be more specific,
-> >>> only one unblank operation on a certain blanked framebuffer
-> >>> may increase the backlight device's use count by one, while
-> >>> one blank operation on a certain unblanked framebuffer may
-> >>> decrease the use count by one, because the userspace is
-> >>> likely to unblank a unblanked framebuffer or blank a blanked
-> >>> framebuffer.
-> >>>
-> >>> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
-> >>> ---
-> >>> v1 can be found at https://lkml.org/lkml/2013/5/30/139
-> >>>
-> >>> v1->v2:
-> >>> * Make the commit message be more specific about the condition
-> >>>   in which backlight device use count can be increased/decreased.
-> >>> * Correct the setting for bd->props.fb_blank.
-> >>>
-> >>>  drivers/video/backlight/backlight.c |   28 +++++++++++++++++++++-------
-> >>>  include/linux/backlight.h           |    6 ++++++
-> >>>  2 files changed, 27 insertions(+), 7 deletions(-)
-> >>>
-> >
-> > [.....]
-> >>
-> >> Anything backlight worries me a little, and there are actually three
-> >> changes bundled into one patch here:
-> >>
-> >> 1. Changing bd->props.state and bd->props.fb_blank only when use_count
-> >>    changes from 0->1 or 1->0.
-> >>
-> >> 2. Calling backlight_update_status() only with the above change, and not
-> >>    on all notifier callbacks.
-> >>
-> >> 3. Setting bd->props.fb_blank always to either FB_BLANK_UNBLANK or
-> >>    FB_BLANK_POWERDOWN instead of *(int *)evdata->data.
-> 
-> Since I have already post v3(https://lkml.org/lkml/2014/1/22/126)
-> to change the setting for bd->props.fb_blank, the idea of the 3rd point
-> is not very appropriate any more.
+On 01/23/2014 12:17 PM, Mark Brown wrote:
+> On Thu, Jan 23, 2014 at 05:47:02PM +0100, Geert Uytterhoeven wrote:
+>
+>> Probably your transfer_one_message() forgot to call
+>> spi_finalize_current_message()? Is this allowed in case of failure?
+> Probably not, or at least we should be consistent about requiring it or
+> not.
 
-OK, I see.
+Hmm, well it sounds like the core problem is a lack of specificity about 
+the interface.
 
-> 
-> >>
-> >> The rationale in the commit message seems plausible, and AFAICT the code
-> >> does what it says on the box, so for that (and for that alone) you can
-> >> have my
-> >>
-> >> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> >>
-> >> *BUT* it would be laborous to figure out whether this change in
-> >> behaviour might regress some drivers. I'm just punting on that. And that
-> >> brings us back to the three changes above - in a bisect POV it might be
-> >> helpful to split the patch up. Up to the maintainers.
-> >
-> > I agree with Jani Nikula's opinion.
-> > Please split this patch into three patches as above mentioned.
-> >
-> 
-> I am open to split the patch up.
-> However, IMHO, this patch is somewhat self-contained.
-> For example, if we try to create 2 patches for the 1st point and
->  the 2nd point Jani mentioned, one patch would invent the use_count
->  and call backlight_update_status() on all notifier callbacks(just
-> ignore the use_count).
-> Do you think this is a good patch?
+1. When a message is being rejected, who is responsible for finalizing 
+it, the spi subsystem or the master driver?
+2. What does a non-zero return value from transfer() or 
+transfer_one_message() mean? transfer() is supposed to just queue the 
+message and not sleep, so it would seem appropriate that it would mean 
+that the message was rejected due to something being invalid or 
+unsupported (or an OOM), etc. , but transfer_one_message() is also where 
+*most but not all* drivers transmit the message, so should it mean the 
+message was rejected outright for being invalid/unsupported/OOM or 
+should it mean a failure, such as EIO while xmitting or both?
+3. Is there ever a reason to set the message's status to anything other 
+than the return value of transfer()/transfer_one_message()? From a 
+cursory review of mainline spi drivers, this appears to vary. Some 
+drivers are always returning zero while setting the status upon error, 
+some return the status and others still will set the status to one 
+value, but return a different error code.
 
-The calling backlight_update_status() regardless the use_count
-Will make the critical side effect? I don't think so.
-Also, these two patches will be merged at the same time.
-Please, split the patch into two patches. It would be clearer.
+So if a non-zero return value from transfer() or transfer_one_message() 
+should also be the status, I'm thinking we can have a small reduction in 
+the code footprint if it's done in the spi core. However, I suppose that 
+I can't properly discuss this without delving into an almost unrelated 
+issue, which may render the point moot.
 
-One more thing, please keep the indent using "Enter", when
-sending your reply mail.
+The only reason I'm using transfer_one_message() at all is because 
+transfer() is being deprecated. My driver (currently out-of-tree) 
+supports both but will prefer transfer() as long as it hasn't been 
+removed or become broken ( which I'm managing via a #if 
+LINUX_VERSION_CODE >= KERNEL_VERSION(4,99,99) check: 
+https://github.com/daniel-santos/mcp2210-linux/blob/master/mcp2210-spi.c#L143). 
+The reason is for this is that the mcp2210 driver has an internal 
+command queue that manages (per its requirements) spi messages as well 
+as other types of commands to the remote (via USB) device (which is both 
+an spi master and gpio chip). From a cursory review of other spi drivers 
+in the mainline, I can see that at least two of them do this as well: 
+spi-pxa2xx and spi-bfin-v3. So perhaps we need a non-deprecated 
+mechanism to do our own queuing and avoid the overhead of the spi core 
+providing a thread & queue which we'll just ignore. Then, the core can 
+take care of setting status and finalizing when calls to transfer() fail 
+(since there should be no ambiguity about this here), but leave that up 
+to the driver when calling transfer_one_message()?
 
-Best regards,
-Jingoo Han
+Either way, I think that we need to decide and spell it out in the 
+kerneldocs.
 
+Daniel
