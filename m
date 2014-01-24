@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaAXNFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 08:05:49 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46577 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaAXNFr (ORCPT
+	id S1752630AbaAXNNF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 08:13:05 -0500
+Received: from smtp-fw-9102.amazon.com ([207.171.184.29]:4924 "EHLO
+	smtp-fw-9102.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112AbaAXNND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 08:05:47 -0500
+	Fri, 24 Jan 2014 08:13:03 -0500
+X-IronPort-AV: E=Sophos;i="4.95,712,1384300800"; 
+   d="scan'208";a="67768427"
+Message-ID: <52E266D6.20208@amazon.de>
+Date: Fri, 24 Jan 2014 14:12:54 +0100
+From: "Egger, Christoph" <chegger@amazon.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140124093349.GK15586@e106331-lin.cambridge.arm.com>
-References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
-	<1390553044-11860-14-git-send-email-geert@linux-m68k.org>
-	<20140124093349.GK15586@e106331-lin.cambridge.arm.com>
-Date: Fri, 24 Jan 2014 14:05:46 +0100
-X-Google-Sender-Auth: BRYcM5x4uF1nDiEY9AJXU_vPYBY
-Message-ID: <CAMuHMdWFzJ-PfFQz-mgbtYdV9d_8=mr+F51=1Jhx0K-HrGrwFg@mail.gmail.com>
-Subject: Re: [PATCH v4 13/14] spi: rspi: Add DT support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Matt Wilson <msw@linux.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>, Matt Rushton <mrushton@amazon.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>,
+        =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] xen-blkback: fix memory leak when persistent
+ grants are used
+References: <1390505326-9368-1-git-send-email-msw@linux.com>
+In-Reply-To: <1390505326-9368-1-git-send-email-msw@linux.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 10:33 AM, Mark Rutland <mark.rutland@arm.com> wrote:
->> +- interrupts       : 1 interrupt for RSPI cores using a single multiplexed
->> +                  interrupt,
->> +                  3 interrupts (SPEI, SPRI, SPTI) for RSPI cores using
->> +                  separate interrupts.
->> +- interrupt-names  : Array of strings associated with the interrupt numbers:
->> +                  "error" for SPEI, "rx" for SPRI, and "tx" for SPTI.
->> +                  For RSPI cores using a single multiplexed interrupt, the
->> +                  name "mux" is optional.
->
-> Rather than defining the set of interrupts twice, it would be nice to
-> have interrupts defined in terms of interrupt-names:
->
-> - interrupts: a list of interrupt-specifiers, one for each entry in
->   interrupt-names. If interrupt-names is not present, an interrupt
->   specifier for a single muxed interrupt.
->
-> - interrupt-names: A list of interrupt names. Should contain (if
->   present):
->   * "error" for SPEI
->   * "rx" for SPRI
->   * "tx" to SPTI
->   * "mux" for a single muxed interrupt
+On 23.01.14 20:28, Matt Wilson wrote:
+> From: Matt Rushton <mrushton@amazon.com>
+> 
+> Currently shrink_free_pagepool() is called before the pages used for
+> persistent grants are released via free_persistent_gnts(). This
+> results in a memory leak when a VBD that uses persistent grants is
+> torn down.
 
-Yes, that sounds much better, thank you.
-Will update.
+This memory leak was introduced with commit
+c6cc142dac52e62e1e8a2aff5de1300202b96c66 xen-blkback: use balloon pages
+for all mappings
 
-Gr{oetje,eeting}s,
+Christoph
 
-                        Geert
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: "Roger Pau Monné" <roger.pau@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xen.org
+> Cc: Anthony Liguori <aliguori@amazon.com>
+> Signed-off-by: Matt Rushton <mrushton@amazon.com>
+> Signed-off-by: Matt Wilson <msw@amazon.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 6620b73..30ef7b3 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -625,9 +625,6 @@ purge_gnt_list:
+>  			print_stats(blkif);
+>  	}
+>  
+> -	/* Since we are shutting down remove all pages from the buffer */
+> -	shrink_free_pagepool(blkif, 0 /* All */);
+> -
+>  	/* Free all persistent grant pages */
+>  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
+>  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
+> @@ -636,6 +633,9 @@ purge_gnt_list:
+>  	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
+>  	blkif->persistent_gnt_c = 0;
+>  
+> +	/* Since we are shutting down remove all pages from the buffer */
+> +	shrink_free_pagepool(blkif, 0 /* All */);
+> +
+>  	if (log_stats)
+>  		print_stats(blkif);
+>  
+> 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
