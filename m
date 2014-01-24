@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaAXQl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 11:41:28 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:47310 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaAXQl0 (ORCPT
+	id S1752104AbaAXQme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 11:42:34 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57317 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaAXQlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 11:41:26 -0500
+	Fri, 24 Jan 2014 11:41:23 -0500
 From: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>,
@@ -21,9 +21,9 @@ Cc: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>,
         Dirk Behme <dirk.behme@de.bosch.com>,
         Michel Dagenais <michel.dagenais@polymtl.ca>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 3/6] ARM CoreSight: ETM: Add address control support
-Date: Fri, 24 Jan 2014 11:40:53 -0500
-Message-Id: <1390581656-16372-4-git-send-email-adrienverge@gmail.com>
+Subject: [PATCH V2 2/6] ARM CoreSight: ETM: Rename 'comparator' to 'address comparator'
+Date: Fri, 24 Jan 2014 11:40:52 -0500
+Message-Id: <1390581656-16372-3-git-send-email-adrienverge@gmail.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1390581656-16372-1-git-send-email-adrienverge@gmail.com>
 References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com>
@@ -34,126 +34,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the same manner as for enabling tracing, an entry is created
-in sysfs to set the address range that triggers tracing.
+Since there are different types of comparators, and other kinds will
+be used (such as Context ID comparators), rename them properly.
 
 Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
 ---
- arch/arm/kernel/etm.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 49 insertions(+), 3 deletions(-)
+ arch/arm/include/asm/hardware/coresight.h |  4 ++--
+ arch/arm/kernel/etm.c                     | 19 ++++++++++---------
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
+diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
+index ad774f3..8c50cf6 100644
+--- a/arch/arm/include/asm/hardware/coresight.h
++++ b/arch/arm/include/asm/hardware/coresight.h
+@@ -95,8 +95,8 @@
+ #define ETMAAT_NSONLY		(1 << 10)
+ #define ETMAAT_SONLY		(2 << 10)
+ 
+-#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
+-#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
++#define ETMR_ADDRCOMP_VAL(x)	(0x40 + (x) * 4)
++#define ETMR_ADDRCOMP_ACC_TYPE(x)	(0x80 + (x) * 4)
+ 
+ /* ETM status register, "ETM Architecture", 3.3.2 */
+ #define ETMR_STATUS		(0x10)
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 7f7a0ee..4442e5c 100644
+index 2b1a307..7f7a0ee 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -44,6 +44,8 @@ struct tracectx {
+@@ -39,7 +39,7 @@ struct tracectx {
+ 	void __iomem	*etb_regs;
+ 	void __iomem	*etm_regs;
+ 	unsigned long	flags;
+-	int		ncmppairs;
++	int		naddrcmppairs;
+ 	int		etm_portsz;
  	struct device	*dev;
  	struct clk	*emu_clk;
- 	struct mutex	mutex;
-+	unsigned long	addrrange_start;
-+	unsigned long	addrrange_end;
- };
+@@ -59,7 +59,7 @@ static int etm_setup_address_range(struct tracectx *t, int n,
+ 	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
+ 		    ETMAAT_NOVALCMP;
  
- static struct tracectx tracer;
-@@ -53,6 +55,13 @@ static inline bool trace_isrunning(struct tracectx *t)
- 	return !!(t->flags & TRACER_RUNNING);
- }
+-	if (n < 1 || n > t->ncmppairs)
++	if (n < 1 || n > t->naddrcmppairs)
+ 		return -EINVAL;
  
-+/*
-+ * Setups ETM to trace only when:
-+ *   - address between start and end
-+ *     or address not between start and end (if exclude)
-+ *   - trace executed instructions
-+ *     or trace loads and stores (if data)
-+ */
- static int etm_setup_address_range(struct tracectx *t, int n,
- 		unsigned long start, unsigned long end, int exclude, int data)
- {
-@@ -115,8 +124,8 @@ static int trace_start(struct tracectx *t)
- 		return -EFAULT;
- 	}
+ 	/* comparators and ranges are numbered starting with 1 as opposed
+@@ -72,12 +72,12 @@ static int etm_setup_address_range(struct tracectx *t, int n,
+ 		flags |= ETMAAT_IEXEC;
  
--	etm_setup_address_range(t, 1, (unsigned long)_stext,
--			(unsigned long)_etext, 0, 0);
-+	etm_setup_address_range(t, 1, t->addrrange_start, t->addrrange_end,
-+				0, 0);
- 	etm_writel(t, 0, ETMR_TRACEENCTRL2);
- 	etm_writel(t, 0, ETMR_TRACESSCTRL);
- 	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
-@@ -527,6 +536,36 @@ static ssize_t trace_mode_store(struct device *dev,
+ 	/* first comparator for the range */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
+-	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
++	etm_writel(t, flags, ETMR_ADDRCOMP_ACC_TYPE(n * 2));
++	etm_writel(t, start, ETMR_ADDRCOMP_VAL(n * 2));
  
- DEVICE_ATTR(trace_mode, S_IRUGO|S_IWUSR, trace_mode_show, trace_mode_store);
+ 	/* second comparator is right next to it */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
+-	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
++	etm_writel(t, flags, ETMR_ADDRCOMP_ACC_TYPE(n * 2 + 1));
++	etm_writel(t, end, ETMR_ADDRCOMP_VAL(n * 2 + 1));
  
-+static ssize_t trace_addrrange_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%08lx - %08lx\n", tracer.addrrange_start,
-+		       tracer.addrrange_end);
-+}
-+
-+static ssize_t trace_addrrange_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t n)
-+{
-+	unsigned long start, end;
-+
-+	if (tracer.flags & TRACER_RUNNING)
-+		return -EBUSY;
-+
-+	if (sscanf(buf, "%08lx - %08lx", &start, &end) != 2)
-+		return -EINVAL;
-+
-+	mutex_lock(&tracer.mutex);
-+	tracer.addrrange_start = start;
-+	tracer.addrrange_end = end;
-+	mutex_unlock(&tracer.mutex);
-+
-+	return n;
-+}
-+
-+DEVICE_ATTR(trace_addrrange, S_IRUGO|S_IWUSR,
-+	    trace_addrrange_show, trace_addrrange_store);
-+
- static int etm_probe(struct amba_device *dev, const struct amba_id *id)
- {
- 	struct tracectx *t = &tracer;
-@@ -554,6 +593,8 @@ static int etm_probe(struct amba_device *dev, const struct amba_id *id)
- 	t->dev = &dev->dev;
- 	t->flags = TRACER_CYCLE_ACC;
- 	t->etm_portsz = 1;
-+	t->addrrange_start = (unsigned long) _stext;
-+	t->addrrange_end = (unsigned long) _etext;
+ 	flags = exclude ? ETMTE_INCLEXCL : 0;
+ 	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
+@@ -475,7 +475,8 @@ static ssize_t trace_info_show(struct device *dev,
+ 	etm_st = etm_readl(&tracer, ETMR_STATUS);
+ 	etm_lock(&tracer);
  
- 	etm_unlock(t);
- 	(void)etm_readl(t, ETMMR_PDSR);
-@@ -568,7 +609,7 @@ static int etm_probe(struct amba_device *dev, const struct amba_id *id)
- 	if (ret)
- 		goto out_unmap;
+-	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
++	return sprintf(buf, "Trace buffer len: %d\n"
++			"Addr comparator pairs: %d\n"
+ 			"ETBR_WRITEADDR:\t%08x\n"
+ 			"ETBR_READADDR:\t%08x\n"
+ 			"ETBR_STATUS:\t%08x\n"
+@@ -483,7 +484,7 @@ static ssize_t trace_info_show(struct device *dev,
+ 			"ETMR_CTRL:\t%08x\n"
+ 			"ETMR_STATUS:\t%08x\n",
+ 			datalen,
+-			tracer.ncmppairs,
++			tracer.naddrcmppairs,
+ 			etb_wa,
+ 			etb_ra,
+ 			etb_st,
+@@ -559,7 +560,7 @@ static int etm_probe(struct amba_device *dev, const struct amba_id *id)
+ 	/* dummy first read */
+ 	(void)etm_readl(&tracer, ETMMR_OSSRR);
  
--	/* failing to create any of these two is not fatal */
-+	/* failing to create any of these three is not fatal */
- 	ret = device_create_file(&dev->dev, &dev_attr_trace_info);
- 	if (ret)
- 		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
-@@ -577,6 +618,10 @@ static int etm_probe(struct amba_device *dev, const struct amba_id *id)
- 	if (ret)
- 		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
+-	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
++	t->naddrcmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
+ 	etm_writel(t, 0x440, ETMR_CTRL);
+ 	etm_lock(t);
  
-+	ret = device_create_file(&dev->dev, &dev_attr_trace_addrrange);
-+	if (ret)
-+		dev_dbg(&dev->dev, "Failed to create trace_addrrange in sysfs\n");
-+
- 	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
- 
- out:
-@@ -606,6 +651,7 @@ static int etm_remove(struct amba_device *dev)
- 	device_remove_file(&dev->dev, &dev_attr_trace_running);
- 	device_remove_file(&dev->dev, &dev_attr_trace_info);
- 	device_remove_file(&dev->dev, &dev_attr_trace_mode);
-+	device_remove_file(&dev->dev, &dev_attr_trace_addrrange);
- 
- 	return 0;
- }
 -- 
 1.8.5.2
 
