@@ -1,71 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaAXSxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 13:53:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47786 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaAXSxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 13:53:51 -0500
-Message-ID: <52E2B6BB.5040806@infradead.org>
-Date: Fri, 24 Jan 2014 10:53:47 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752600AbaAXTJw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:09:52 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40655 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997AbaAXTJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 14:09:49 -0500
+Date: Fri, 24 Jan 2014 13:08:31 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <stern@rowland.harvard.edu>, <linux-usb@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: Odd 'unable to find transceiver' messages from USB with
+ v3.13-3260-g03d11a0 and later
+Message-ID: <20140124190831.GA6449@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <CA+5PVA7P=3b6oGG4pwR-q-Uy+V2hu5N-f5-fO4NdsB8ytvLz7w@mail.gmail.com>
 MIME-Version: 1.0
-To: Aaron Tomlin <atomlin@redhat.com>, mingo@kernel.org
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, mingo@redhat.com, oleg@redhat.com,
-        riel@redhat.com, bmr@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] mm: Document improved handling of swappiness==0
-References: <1390576408-16673-1-git-send-email-atomlin@redhat.com>
-In-Reply-To: <1390576408-16673-1-git-send-email-atomlin@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7P=3b6oGG4pwR-q-Uy+V2hu5N-f5-fO4NdsB8ytvLz7w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2014 07:13 AM, Aaron Tomlin wrote:
-> Prior to upstream commit fe35004f ("[mm] avoid swapping out
-> with swappiness==0") setting swappiness to 0, reclaim code
-> could still evict recently used user anonymous memory to swap
-> even though there is a significant amount of RAM used for page
-> cache.
-> 
-> The behaviour of setting swappiness to 0 has since changed.
-> When set, the reclaim code does not initiate swap until the
-> amount of free pages and file-backed pages, is less than the
-> high water mark in a zone.
-> 
-> Let's update the documentation to reflect this.
-> 
-> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Bryn M. Reeves <bmr@redhat.com>
-> ---
->  Documentation/sysctl/vm.txt | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index 9f5481b..38388ee 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -696,7 +696,9 @@ swappiness
->  
->  This control is used to define how aggressive the kernel will swap
->  memory pages.  Higher values will increase agressiveness, lower values
-> -decrease the amount of swap.
-> +decrease the amount of swap.  A value of 0 instructs the kernel not to
-> +initiate swap until the amount of free and file-backed pages, is less
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-drop the comma                                                 ^
+Hi,
 
-> +than the high water mark in a zone.
->  
->  The default value is 60.
->  
-> 
+On Fri, Jan 24, 2014 at 08:47:07AM -0500, Josh Boyer wrote:
+> We've had a report [1] of the USB layer throwing out 'unable to find
+> transceiver' messages during boot with the 3.14 merge window kernels.
+> I've seen this on my personal machine as well and included the dmesg
+> section below.  This does not happen with the 3.13 kernel.
+>=20
+> There are only a handful of files in git that have that error, but I
+> haven't seen anything that immediately strikes me as causing this.
+> From the dmesg output it looks like it is spit out right before a host
+> controller is registered?  USB seems to be still working OK in my
+> minimal testing, so the error message is confusing.
+>=20
+> Thoughts?
 
+looks like it was caused because of this commit:
 
--- 
-~Randy
+commit 1ae5799ef63176cc75ec10e545cb65f620a82747
+Author: Valentine Barshak <valentine.barshak@cogentembedded.com>
+Date:   Wed Dec 4 01:42:22 2013 +0400
+
+    usb: hcd: Initialize USB phy if needed
+   =20
+    This adds external USB phy support to USB HCD driver that
+    allows to find and initialize external USB phy, bound to
+    the HCD, when the HCD is added.
+    The usb_add_hcd function returns -EPROBE_DEFER if the USB
+    phy, bound to the HCD, is not ready.
+    If no USB phy is bound, the HCD is initialized as usual.
+   =20
+    Signed-off-by: Valentine Barshak <valentine.barshak@cogentembedded.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 7527c8e..d3a9bcd 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2589,6 +2589,24 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	int retval;
+ 	struct usb_device *rhdev;
+=20
++	if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy) {
++		struct usb_phy *phy =3D usb_get_phy_dev(hcd->self.controller, 0);
++
++		if (IS_ERR(phy)) {
++			retval =3D PTR_ERR(phy);
++			if (retval =3D=3D -EPROBE_DEFER)
++				return retval;
++		} else {
++			retval =3D usb_phy_init(phy);
++			if (retval) {
++				usb_put_phy(phy);
++				return retval;
++			}
++			hcd->phy =3D phy;
++			hcd->remove_phy =3D 1;
++		}
++	}
++
+ 	dev_info(hcd->self.controller, "%s\n", hcd->product_desc);
+=20
+ 	/* Keep old behaviour if authorized_default is not in [0, 1]. */
+
+usb_get_phy_device() will pr_err() when a PHY isn't found. Looks like
+that should be pr_debug() since everything still works even without a
+PHY.
+
+--=20
+balbi
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJS4rovAAoJEIaOsuA1yqRE9n4P+QH4jHuBjfUPCN3t2zcyNgVR
+LZSzIQTTNt28qYLFbBXlLhAbROaKQyMmfhuUac/wNMVDkcdq55jRYxa8X0ymmUdk
+v3ALrYgTJy2bSKriEQ0w1Rstt5LkWfNPxbnV7hmUggIshdaskofkY4HKHQB74lpe
+cQ3aYP87Mafty7G1jyjNR80fDghHsNTxF/kXwuPdx5EvO2ebyOQc3G5QpsleZ3Jv
+SIjberURNEW/2kTOC1dT/lAr5kN06yGbWLyXEIg0n19EmKS2KMPZjMd77lxMdtbz
+xTN8lCVZo3ay3FXz6UUdKsegVwD4fDddRl5Acfm3uS8zGziAHDp01o9q6oCQ3wle
+gYlOeR15/AjrmHLPNoAYJevPqzvPCQatE1/UKRaUGGB2j/K0bhYWE+s7rcDRV2BN
+s972no/NQLEf3zHsoxqZJ6TCmrZA9yzS8lTCYVG1mccWuwYPJqbeF8UZW01MGmFP
+hFYJfdzV4QtdOL8JiTo8vQ1cARe8GFt1LzKAxT9y3ZMuCLkbek2EhurNrh5MPFHW
+3l9RCCZeem/IGZIUf2euxstB0A0e1jmQeUnbp0RisBA1Ofk2VFnz7wwfwAI7iMs0
+hIz2Zwyde5YfeCQoUvNPcem/FJ/BfswgA+eEgsqGa5AqZNP+Pc/yEQ644f76aUYU
+osCk29xyKVCI7s+Sx9g9
+=gY8u
+-----END PGP SIGNATURE-----
+
+--cWoXeonUoKmBZSoM--
