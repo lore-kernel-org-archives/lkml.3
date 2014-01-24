@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaAXTLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:11:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35002 "EHLO
+	id S1752850AbaAXTLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:11:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34839 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800AbaAXTK5 (ORCPT
+	with ESMTP id S1751997AbaAXTKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:10:57 -0500
+	Fri, 24 Jan 2014 14:10:37 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Dave Hansen <dave.hansen@intel.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-Date: Fri, 24 Jan 2014 11:11:10 -0800
-Message-Id: <1390590670-25901-4-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 2/3] x86: Revert wrong memblock current limit setting.
+Date: Fri, 24 Jan 2014 11:11:08 -0800
+Message-Id: <1390590670-25901-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
 References: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new memblock_virt APIs are used to replaced old bootmem API.
+Dave reported big numa system booting is broken.
 
-We need to allocate page below 4G for swiotlb.
+It turns out
+| commit 5b6e529521d35e1bcaa0fe43456d1bbb335cae5d
+| Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
+| Date:   Tue Jan 21 15:50:03 2014 -0800
+|
+|    x86: memblock: set current limit to max low memory address
 
-That should fix regression on Andrew's system that is using swiotlb.
+set limit to low wrongly.
 
+max_low_pfn_mapped is different from max_pfn_mapped.
+max_low_pfn_mapped is always under 4G.
+
+That will memblock_alloc_nid all go under 4G.
+
+Revert that offending patch.
+
+Reported-by: Dave Hansen <dave.hansen@intel.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
 ---
- arch/arm/kernel/setup.c |    2 +-
- include/linux/bootmem.h |   37 +++++++++++++++++++++++++++++++++++++
- lib/swiotlb.c           |    4 ++--
- 3 files changed, 40 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/page_types.h |    4 ++--
+ arch/x86/kernel/setup.c           |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/include/linux/bootmem.h
+Index: linux-2.6/arch/x86/include/asm/page_types.h
 ===================================================================
---- linux-2.6.orig/include/linux/bootmem.h
-+++ linux-2.6/include/linux/bootmem.h
-@@ -175,6 +175,27 @@ static inline void * __init memblock_vir
- 						    NUMA_NO_NODE);
+--- linux-2.6.orig/arch/x86/include/asm/page_types.h
++++ linux-2.6/arch/x86/include/asm/page_types.h
+@@ -51,9 +51,9 @@ extern int devmem_is_allowed(unsigned lo
+ extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
+ 
+-static inline phys_addr_t get_max_low_mapped(void)
++static inline phys_addr_t get_max_mapped(void)
+ {
+-	return (phys_addr_t)max_low_pfn_mapped << PAGE_SHIFT;
++	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
  }
  
-+#ifndef ARCH_LOW_ADDRESS_LIMIT
-+#define ARCH_LOW_ADDRESS_LIMIT  0xffffffffUL
-+#endif
-+
-+static inline void * __init memblock_virt_alloc_low(
-+					phys_addr_t size, phys_addr_t align)
-+{
-+	return memblock_virt_alloc_try_nid(size, align,
-+						   BOOTMEM_LOW_LIMIT,
-+						   ARCH_LOW_ADDRESS_LIMIT,
-+						   NUMA_NO_NODE);
-+}
-+static inline void * __init memblock_virt_alloc_low_nopanic(
-+					phys_addr_t size, phys_addr_t align)
-+{
-+	return memblock_virt_alloc_try_nid_nopanic(size, align,
-+						   BOOTMEM_LOW_LIMIT,
-+						   ARCH_LOW_ADDRESS_LIMIT,
-+						   NUMA_NO_NODE);
-+}
-+
- static inline void * __init memblock_virt_alloc_from_nopanic(
- 		phys_addr_t size, phys_addr_t align, phys_addr_t min_addr)
- {
-@@ -238,6 +259,22 @@ static inline void * __init memblock_vir
- 	return __alloc_bootmem_nopanic(size, align, BOOTMEM_LOW_LIMIT);
- }
- 
-+static inline void * __init memblock_virt_alloc_low(
-+					phys_addr_t size, phys_addr_t align)
-+{
-+	if (!align)
-+		align = SMP_CACHE_BYTES;
-+	return __alloc_bootmem_low(size, align, BOOTMEM_LOW_LIMIT);
-+}
-+
-+static inline void * __init memblock_virt_alloc_low_nopanic(
-+					phys_addr_t size, phys_addr_t align)
-+{
-+	if (!align)
-+		align = SMP_CACHE_BYTES;
-+	return __alloc_bootmem_low_nopanic(size, align, BOOTMEM_LOW_LIMIT);
-+}
-+
- static inline void * __init memblock_virt_alloc_from_nopanic(
- 		phys_addr_t size, phys_addr_t align, phys_addr_t min_addr)
- {
-Index: linux-2.6/lib/swiotlb.c
+ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
+Index: linux-2.6/arch/x86/kernel/setup.c
 ===================================================================
---- linux-2.6.orig/lib/swiotlb.c
-+++ linux-2.6/lib/swiotlb.c
-@@ -172,7 +172,7 @@ int __init swiotlb_init_with_tbl(char *t
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -1173,7 +1173,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	setup_real_mode();
+ 
+-	memblock_set_current_limit(get_max_low_mapped());
++	memblock_set_current_limit(get_max_mapped());
+ 	dma_contiguous_reserve(0);
+ 
  	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	v_overflow_buffer = memblock_virt_alloc_nopanic(
-+	v_overflow_buffer = memblock_virt_alloc_low_nopanic(
- 						PAGE_ALIGN(io_tlb_overflow),
- 						PAGE_SIZE);
- 	if (!v_overflow_buffer)
-@@ -220,7 +220,7 @@ swiotlb_init(int verbose)
- 	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
- 
- 	/* Get IO TLB memory from the low pages */
--	vstart = memblock_virt_alloc_nopanic(PAGE_ALIGN(bytes), PAGE_SIZE);
-+	vstart = memblock_virt_alloc_low_nopanic(PAGE_ALIGN(bytes), PAGE_SIZE);
- 	if (vstart && !swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose))
- 		return;
- 
-Index: linux-2.6/arch/arm/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/arm/kernel/setup.c
-+++ linux-2.6/arch/arm/kernel/setup.c
-@@ -717,7 +717,7 @@ static void __init request_standard_reso
- 	kernel_data.end     = virt_to_phys(_end - 1);
- 
- 	for_each_memblock(memory, region) {
--		res = memblock_virt_alloc(sizeof(*res), 0);
-+		res = memblock_virt_alloc_low(sizeof(*res), 0);
- 		res->name  = "System RAM";
- 		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
- 		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
