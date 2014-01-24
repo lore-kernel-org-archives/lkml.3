@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaAXRpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:45:03 -0500
-Received: from mail.windriver.com ([147.11.1.11]:61045 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaAXRpA (ORCPT
+	id S1752215AbaAXRpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:45:23 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54653 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaAXRpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:45:00 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paul Mundt <lethal@linux-sh.org>, <linux-sh@vger.kernel.org>
-Subject: [PATCH] sh: mach-highlander/psw.c is tristate and should use module.h
-Date: Fri, 24 Jan 2014 12:44:44 -0500
-Message-ID: <1390585484-5736-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Fri, 24 Jan 2014 12:45:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <52E28067.1060507@intel.com>
+References: <52E19C7D.7050603@intel.com>
+	<CAE9FiQX9kTxnaqpWNgg3dUzr7+60YCrEx3q3xxO-G1n6z64xVQ@mail.gmail.com>
+	<52E28067.1060507@intel.com>
+Date: Fri, 24 Jan 2014 09:45:17 -0800
+X-Google-Sender-Auth: yxhOjQX5nJ2rPt9mrL6NX1lCaYI
+Message-ID: <CAE9FiQVy+8CF5qwnyL8YGzqwKOJF+y7N_+reAXWw7p8-BaVQPg@mail.gmail.com>
+Subject: Re: Panic on 8-node system in memblock_virt_alloc_try_nid()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is controlled by a tristate Kconfig option, and hence
-needs to include module.h so that it can get module_init() once
-we relocate it from init.h into module.h in the future.
+On Fri, Jan 24, 2014 at 7:01 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+> There are two failure modes I'm seeing: one when (failing to) allocate
+> the first node's mem_map[], and a second where it oopses accessing the
+> numa_distance[] table.  This is the numa_distance[] one, and it happens
+> even with the patch you suggested applied.
+>
+>> [    0.000000] memblock_find_in_range_node():239
+>> [    0.000000] __memblock_find_range_top_down():150
+>> [    0.000000] __memblock_find_range_top_down():152 i: 600000001
+>> [    0.000000] memblock_find_in_range_node():241 ret: 2147479552
+>> [    0.000000] memblock_reserve: [0x0000007ffff000-0x0000007ffff03f] flags 0x0 numa_set_distance+0xd2/0x252
 
-Note that module_exit() appears to be missing from the driver, so
-it is questionable whether it would actually work for a removal
-and reload cycle if it was configured for a modular build.
+that address is wrong.
 
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-sh@vger.kernel.org
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+Can you post whole log with current linus' tree + two patches that I
+sent out yesterday?
 
-[patch will be added to init cleanup series:
-   http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git/  ]
-
- arch/sh/boards/mach-highlander/psw.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/sh/boards/mach-highlander/psw.c b/arch/sh/boards/mach-highlander/psw.c
-index 522786318d36..40e2b585d488 100644
---- a/arch/sh/boards/mach-highlander/psw.c
-+++ b/arch/sh/boards/mach-highlander/psw.c
-@@ -10,7 +10,7 @@
-  * for more details.
-  */
- #include <linux/io.h>
--#include <linux/init.h>
-+#include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <mach/highlander.h>
--- 
-1.8.5.2
-
+>> [    0.000000] numa_distance phys: 7ffff000
+>> [    0.000000] numa_distance virt: ffff88007ffff000
+>> [    0.000000] numa_distance size: 64
+>> [    0.000000] numa_alloc_distance() accessing numa_distance[] at byte: 0
+>> [    0.000000] BUG: unable to handle kernel paging request at ffff88007ffff000
