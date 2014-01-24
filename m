@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaAXMDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 07:03:33 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58897 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaAXMDb (ORCPT
+	id S1752504AbaAXMIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 07:08:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44404 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752112AbaAXMIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 07:03:31 -0500
-Date: Fri, 24 Jan 2014 12:03:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tomasz Figa <t.figa@samsung.com>, Tushar Behera <tushar.behera@linaro.org>,
+	Fri, 24 Jan 2014 07:08:18 -0500
+Date: Fri, 24 Jan 2014 12:08:15 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Message-ID: <20140124120309.GU11727@sirena.org.uk>
-References: <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
- <20140120100530.GY15937@n2100.arm.linux.org.uk>
- <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
- <20140123180423.1a62611a@www.etchedpixels.co.uk>
- <20140123184022.GC11727@sirena.org.uk>
- <52E163DC.1090002@samsung.com>
- <20140123193633.GG11727@sirena.org.uk>
- <20140123195144.2d3aa44d@www.etchedpixels.co.uk>
- <20140123200509.GO11727@sirena.org.uk>
- <20140123213321.372ce82b@www.etchedpixels.co.uk>
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro
+ CLOCKSOURCE_ACPI_DECLARE
+Message-ID: <20140124120815.GH814@e106331-lin.cambridge.arm.com>
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
+ <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org>
+ <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
+ <20140122114537.GA15591@e106331-lin.cambridge.arm.com>
+ <52E1B1DE.5050507@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gn1ylXQ+YRNuZICZ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140123213321.372ce82b@www.etchedpixels.co.uk>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52E1B1DE.5050507@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 24, 2014 at 12:20:46AM +0000, Hanjun Guo wrote:
+> On 2014年01月22日 19:45, Mark Rutland wrote:
+> > On Wed, Jan 22, 2014 at 08:26:50AM +0000, Linus Walleij wrote:
+> >> On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> >>
+> >>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >>>
+> >>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
+> >>> name from the ACPI timer table is matched with all the registered
+> >>> timer controllers and matching initialisation routine is invoked.
+> >>>
+> >>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> >> Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
+> >> to TIMER_OF_DECLARE() and I think this macro, if needed, should
+> >> be named TIMER_ACPI_DECLARE().
+> >>
+> >> The reason is that "clocksource" is a Linux-internal name and this
+> >> macro pertains to the hardware name in respective system
+> >> description type.
+> >>
+> >>> +#ifdef CONFIG_ACPI
+> >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
+> >>> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
+> >>> +               __used __section(__clksrc_acpi_table)                   \
+> >>> +                = { .id = compat,                              \
+> >>> +                    .driver_data = (kernel_ulong_t)fn }
+> >>> +#else
+> >>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
+> >>> +#endif
+> >> This hammers down the world to compile one binary for ACPI
+> >> and one binary for device tree. Maybe that's fine, I don't know.
+> > How does it do that?
+> >
+> > As far as I could tell CONFIG_ACPI and CONFIG_OF are not mutually
+> > exclusive, and this just means that we only build the datastructures for
+> > matching from ACPI when CONFIG_ACPI is enabled.
+> >
+> > Have I missed something?
+> >
+> > I definitely don't want to see mutually exclusive ACPI and DT support.
+> 
+> ACPI and DT did the same job so I think they should mutually exclusive.
+> if we enable both DT and ACPI in one system, this will leading confusions.
 
---gn1ylXQ+YRNuZICZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ACPI and DT do similar jobs, and we should be mutually exclusive at
+runtime. However, they should not be mutually exclusive at compile-time.
 
-On Thu, Jan 23, 2014 at 09:33:21PM +0000, Alan Cox wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+Being mutually exclusive at compile-time is just broken. It creates more
+work for distributions (who need to ship double the number of kernels),
+it increases the number of configurations requiring testing, and it
+makes it easier for bugs to be introduced. It's just painful, and
+there's no reason for it.
 
-> > I don't see how we can meaningfully test this on a platform - the kernel
-> > would have to be pretty demented to care, it's userspace that cares and
-> > that's not really tied to individual serial drivers but is where we
-> > mainly need coverage.
+At boot time the kernel needs to decide which to use for hardware
+description, and completely ignore the other (which should not be
+present, but lets not assume that or inevitably someone will break that
+assumption for a quick hack).
 
-> Which is why I think we want to enable it gradually and platform by
-> platform as that platform or arch maintainer judges it appropriate given
-> their knowledge of their platform(s).
+The same kernel should boot on a system that has a DTB or a system that
+has ACPI tables. On a system that's provided both it should use one or
+the other, but not both.
 
-I don't see how that follows?  For the most part architecture
-maintainers aren't going to be able to say too much about which
-userspaces are being run on their platforms if the architecture
-has any kind of widespread use.
-
---gn1ylXQ+YRNuZICZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS4lZ6AAoJELSic+t+oim9OPUQAJG4Z+j/lirrJAWlmFxJXBHZ
-bmzofKXrOShsBFBOFUDrIKYZ6FNlr8YuU+5Pggr9IT52fc7gGUeU3j9U075nQMgx
-9Bx8rOBSh4WxNiGFDkf6PK5S3PkaXTvrNtrnx5TA57LtqzueEhErD8KsofaKdp1G
-51Z5fr+DRiceauRBnRAN8ozN1fjJnHUMyXwZoKZYFh1vHlRc0OJBxuUsmTkZvoj7
-6ZfDUa/Sl5Z6d7GXyQDZlZLwJY8Sfm/oO9FzLqMlAkn6rzWnkw6suvqXxBUuqrBr
-eKzeDAZCd7zf8M4r/KWBmFS6mwkGjDdY8+eoP+JOLG7BpUQmBdvMrzUXbcouEqEz
-unsCFxJ0SqQgMehq7jK8uccqguzN0odc5pcLL3dlOaAbKROGL8tYsDoex72yqm2I
-dCZBNiqLbLmz7/kl8FoMcbAPZUH/B246XunYtg9O1oaFXlTH0Wamm9hXbhGrcj5p
-C/GzxErdLM8ZaCWwLStU4InTQzK2vmJPbqT5fkvKGdX2Wx80DHixVkvX6pFFuFX1
-aTgGtXbB04M4IJGk4j0wQ1uBWTHVWpcAjN3wHJej34P6g73h+82GHAd/cqEi4RGv
-MhJBtCuHkhPHJJlJf0Hx/nee6KDDlR672QRULlKKag7Zpz1YzUCnKxDciSw6PFjU
-P5QLeU5DIwmMpXnJNgvi
-=+gPQ
------END PGP SIGNATURE-----
-
---gn1ylXQ+YRNuZICZ--
+Thanks,
+Mark.
