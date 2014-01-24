@@ -1,35 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaAXWXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 17:23:25 -0500
-Received: from webmail.schroeder.nl ([82.204.41.35]:9622 "EHLO
-	MAIL01.schroeder.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751609AbaAXWXW convert rfc822-to-8bit (ORCPT
+	id S1753029AbaAXWaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:30:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45344 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbaAXWaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 17:23:22 -0500
-X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jan 2014 17:23:21 EST
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Contact Me Please !
-To: Recipients <sunzhii@live.cn>
-From: "Mr. SUN Zhijun" <sunzhii@live.cn>
-Date: Fri, 24 Jan 2014 23:13:58 +0100
-Reply-To: sun.zhijun@yahoo.com.hk
-Message-ID: <MAIL01BwSNsiXxfzhBw000020a6@MAIL01.schroeder.local>
-X-OriginalArrivalTime: 24 Jan 2014 22:14:06.0840 (UTC) FILETIME=[99157780:01CF1951]
+	Fri, 24 Jan 2014 17:30:05 -0500
+Date: Fri, 24 Jan 2014 14:30:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/2] mm: reduce reclaim stalls with heavy anon and dirty
+ cache
+Message-Id: <20140124143003.2629e9c2c8c2595e805c8c25@linux-foundation.org>
+In-Reply-To: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
+References: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+On Fri, 24 Jan 2014 17:03:02 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun.zhijun@yahoo.com.hk
+> Tejun reported stuttering and latency spikes on a system where random
+> tasks would enter direct reclaim and get stuck on dirty pages.  Around
+> 50% of memory was occupied by tmpfs backed by an SSD, and another disk
+> (rotating) was reading and writing at max speed to shrink a partition.
 
-1. Vollständiger Name
-2.Private Telefonnummer
-3.Current Wohnadresse
-
-Mit freundlichen Grüßen,
-Mr.SUN Zhijun
+Do you think this is serious enough to squeeze these into 3.14?
