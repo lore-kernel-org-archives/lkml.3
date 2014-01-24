@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaAXR3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:29:21 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59480 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaAXR3U (ORCPT
+	id S1751936AbaAXRbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:31:49 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:55524 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaAXRbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:29:20 -0500
-Message-ID: <52E2A2E8.50806@gmail.com>
-Date: Fri, 24 Jan 2014 18:29:12 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>
-CC: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 15/24] drm/i2c: tda998x: use irq for connection status
- and EDID read
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195843.7ae9753d@armhf> <20140122222705.GL15937@n2100.arm.linux.org.uk>
-In-Reply-To: <20140122222705.GL15937@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Jan 2014 12:31:47 -0500
+Date: Fri, 24 Jan 2014 11:31:41 -0600 (CST)
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+cc: Thomas Pugliese <thomas.pugliese@gmail.com>, gregkh@linuxfoundation.org,
+        ly80toro@cip.cs.fau.de, alan@linux.intel.com,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH] staging/usbip: Add missing speeds to userspace speed_strings
+ array
+In-Reply-To: <52E29F04.2070106@samsung.com>
+Message-ID: <alpine.DEB.2.10.1401241129370.30747@mint32-virtualbox>
+References: <1390420383-3933-1-git-send-email-shuah.kh@samsung.com> <alpine.DEB.2.10.1401241106380.28215@mint32-virtualbox> <52E29F04.2070106@samsung.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/14 23:27, Russell King - ARM Linux wrote:
-> On Sun, Jan 19, 2014 at 07:58:43PM +0100, Jean-Francois Moine wrote:
->> This patch adds the optional treatment of the tda998x IRQ.
->>
->> The interrupt function is used to know the display connection status
->> without polling and to speedup reading the EDID.
->>
->> The interrupt number may be defined either in the DT or at encoder set
->> config time for non-DT boards.
->>
->> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
->> ---
-[...]
->> @@ -720,6 +787,10 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
->>   		priv->audio_port = p->audio_cfg;
->>   		priv->audio_format = p->audio_format;
->>   	}
->> +
->> +	priv->irq = p->irq;
->> +	if (p->irq)
->> +		tda_irq_init(priv);
->
-> If we're going to do it this way, this should probably release the IRQ if
-> there was one before re-claiming it, just in case this function gets called
-> more than once by some driver using it.
->
-> The alternative is, as I said before, to use the infrastructure which is
-> already there, namely setting the interrupt via struct i2c_client's
-> irq member.  Yes, that doesn't satisfy Sebastian's comment about using
-> a GPIO, but there's no sign of GPIO usage in here at the moment anyway.
-> So we might as well use what's already provided.
 
-Russell,
 
-I am fine with using an irq instead of gpio here. I remember you telling
-me on a similar patch, that from the gpio you can derive the irq but
-not the other way round. Anyway, I also remember reading discussions
-about DT gpios vs interrupts, and IIRC the outcome was that passing
-interrupts is fine, too.
+On Fri, 24 Jan 2014, Shuah Khan wrote:
 
-We usually have both interrupt-controller; and gpio-controller; set on
-DT gpio controllers, so let's stick with irq.
+> On 01/24/2014 10:08 AM, Thomas Pugliese wrote:
+> > 
+> > 
+> > On Wed, 22 Jan 2014, Shuah Khan wrote:
+> > 
+> > > Add speed strings for usb wireless and 3.0 to speed_strings array.
+> > > 
+> > > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> > > ---
+> > >   drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 ++
+> > >   1 file changed, 2 insertions(+)
+> > > 
+> > > diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+> > > b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+> > > index 66f03cc..8cb4fcc 100644
+> > > --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+> > > +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+> > > @@ -23,6 +23,8 @@ static const struct speed_string speed_strings[] = {
+> > >   	{ USB_SPEED_LOW,  "1.5", "Low Speed(1.5Mbps)"  },
+> > >   	{ USB_SPEED_FULL, "12",  "Full Speed(12Mbps)" },
+> > >   	{ USB_SPEED_HIGH, "480", "High Speed(480Mbps)" },
+> > > +	{ USB_SPEED_WIRELESS, "2.5", "Wireless"},
+> > > +	{ USB_SPEED_SUPER, "5000", "Super Speed(5000Mbps)" },
+> > >   	{ 0, NULL, NULL }
+> > >   };
+> > > 
+> > > --
+> > 
+> > Wireless USB supports variable speeds from 53.3Mbps to 480Mbps.  I'm not
+> > sure how you want to represent that but "2.5" doesn't seem to apply.
+> > 
+> 
+> Would "variable" be better suited in this case?
+> 
 
-And: Thanks for reviewing this again, I am still too busy to keep up
-with it.
+Sure.  You could also use something like "53.3-480" since that would more 
+closely match the other entires which are numerical values in Mbps units.
 
-Sebastian
-
+Thomas
