@@ -1,217 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaAXXcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 18:32:04 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:42861 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaAXXb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 18:31:58 -0500
-Date: Fri, 24 Jan 2014 18:31:53 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/2] mm: reduce reclaim stalls with heavy anon and dirty
- cache
-Message-ID: <20140124233153.GA3422@htj.dyndns.org>
-References: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
- <20140124222144.GA3197@htj.dyndns.org>
+	id S1751528AbaAXXgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 18:36:41 -0500
+Received: from cloud.peff.net ([50.56.180.127]:38457 "HELO peff.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750903AbaAXXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 18:36:38 -0500
+Date: Fri, 24 Jan 2014 18:36:36 -0500
+From: Jeff King <peff@peff.net>
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Ken Moffat <zarniwhoop@ntlworld.com>,
+        Vicent =?utf-8?B?TWFydMOt?= <tanoku@gmail.com>,
+        Stefan =?utf-8?B?TsOkd2U=?= <stefan.naewe@atlas-elektronik.com>,
+        Javier Domingo Cansino <javierdo1@gmail.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.9-rc0
+Message-ID: <20140124233635.GA31371@sigill.intra.peff.net>
+References: <xmqq61pjzljn.fsf@gitster.dls.corp.google.com>
+ <xmqqha8xt22p.fsf@gitster.dls.corp.google.com>
+ <CALZVapmqcFjjKeURHdP4chkB+T2--caJZYiJBzdwq7Ou=HzO5w@mail.gmail.com>
+ <52DFE882.2040605@atlas-elektronik.com>
+ <xmqq7g9syp1m.fsf@gitster.dls.corp.google.com>
+ <CAFFjANTNLnc4GcVeSEvuWpfYVXJchJqkHwvUVdREdXmWx6e4=Q@mail.gmail.com>
+ <xmqqlhy7yjjp.fsf@gitster.dls.corp.google.com>
+ <20140122203030.GB14211@milliways>
+ <20140123020913.GF17254@sigill.intra.peff.net>
+ <xmqqha8uva2i.fsf@gitster.dls.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="7JfCtLOvnd9MIVvH"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140124222144.GA3197@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <xmqqha8uva2i.fsf@gitster.dls.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 23, 2014 at 10:15:33AM -0800, Junio C Hamano wrote:
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Jeff King <peff@peff.net> writes:
+> 
+> > Junio, since you prepare such tarballs[1] anyway for kernel.org, it
+> > might be worth uploading them to the "Releases" page of git/git.  I
+> > imagine there is a programmatic way to do so via GitHub's API, but I
+> > don't know offhand. I can look into it if you are interested.
+> 
+> I already have a script that takes the three tarballs and uploads
+> them to two places, so adding GitHub as the third destination should
+> be a natural and welcome way to automate it.
 
-On Fri, Jan 24, 2014 at 05:21:44PM -0500, Tejun Heo wrote:
-> The trigger conditions seem quite plausible - high anon memory usage
-> w/ heavy buffered IO and swap configured - and it's highly likely that
-> this is happening in the wild too.  (this can happen with copying
-> large files to usb sticks too, right?)
+I came up with the script below, which you can use like:
 
-So, just tested with the usb stick and these two patches, while not
-perfect, make a world of difference.  The problem is really easy to
-reproduce on my machine which has 8gig of memory with the two attached
-test programs.
+  ./script v1.8.2.3 git-1.8.2.3.tar.gz
 
-* run "test-membloat 4300" and wait for it to report completion.
+It expects the tag to already be pushed up to GitHub.  I'll leave
+sticking it on the "todo" branch and integrating it into RelUpload to
+you. This can also be used to backfill the old releases (though I looked
+on k.org and it seems to have only partial coverage).
 
-* run "test-latency"
+It sets the "prerelease" flag for -rc releases, but I did not otherwise
+fill in any fields, including the summary and description. GitHub seems
+to display reasonably if they are not set.
 
-Mount a slow USB stick and copy a large (multi-gig) file to it.
-test-latency tries to print out a dot every 10ms but will report a
-log2 number if the latency becomes more than twice high - ie. 4 means
-it took 2^4 * 10ms to complete a loop which is supposed to take
-slightly longer than 10ms (10ms sleep + 4 page fault).  My USB stick
-only can do a couple mbytes/s and without these patches the machine
-becomes basically useless.  It's just not useable, it stutters more
-than it runs until the whole file finishes copying.
+-- >8 --
+#!/bin/sh
+#
+# usage: $0 <tag> <tarball>
 
-Because I've been using tmpfs as build target for a while, I've been
-experiencing this occassionally and secretly growing bitter
-disappointment towards the linux kernel which developed into
-self-loathing to the point where I found booting into win8 consoling
-after looking at my machine stuttering for 45mins while it was
-repartitioning the hard drive to make room for steamos.  Oh the irony.
-I had to stay in fetal position for a while afterwards.  It was a
-crisis.
+repo=git/git
 
-With the patches applied, for both heavy harddrive IO and
-copy-large-file-to-slow-USB cases, the behavior is vastly improved.
-It does stutter for a while once memory is filled up but stabilizes in
-somewhere above ten seconds and then stays responsive.  While it isn't
-perfect, it's not completely ridiculous as before.
-
-So, lots of kudos to Johannes for *finally* fixing the issue and I
-strongly believe this is something we should consider for -stable even
-if that takes considerable amount of effort to verify it's not too
-harmful for other workloads.
-
-Thanks a lot.
-
--- 
-tejun
-
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="test-latency.c"
-
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/mman.h>
-#include <time.h>
-#include <math.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#define NR_ALPHAS	('z' - 'a' + 1)
-
-int main(int argc, char **argv)
-{
-	struct timespec intv_ts = { }, ts;
-	unsigned long long time0, time1;
-	long long msecs = 10;
-	const size_t map_size = 4096 * 4;
-
-	if (argc > 1) {
-		msecs = atoll(argv[1]);
-		if (msecs <= 0) {
-			fprintf(stderr, "test-latency [interval-in-msecs]\n");
-			return 1;
-		}
-	}
-
-	intv_ts.tv_sec = msecs / 1000;
-	intv_ts.tv_nsec = (msecs % 1000) * 1000000;
-
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	time1 = ts.tv_sec * 1000000000LLU + ts.tv_nsec;
-
-	while (1) {
-		void *map, *p;
-		int idx;
-		char c;
-
-		nanosleep(&intv_ts, NULL);
-		map = mmap(NULL, map_size, PROT_READ | PROT_WRITE,
-			   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-		if (map == MAP_FAILED) {
-			perror("mmap");
-			return 1;
-		}
-
-		for (p = map; p < map + map_size; p += 4096)
-			*(volatile unsigned long *)p = 0xdeadbeef;
-
-		munmap(map, map_size);
-
-		time0 = time1;
-		clock_gettime(CLOCK_MONOTONIC, &ts);
-		time1 = ts.tv_sec * 1000000000LLU + ts.tv_nsec;
-
-		idx = (time1 - time0) / msecs / 1000000;
-		idx = log2(idx);
-		if (idx <= 1) {
-			c = '.';
-		} else {
-			if (idx > 9)
-				idx = 9;
-			c = '0' + idx;
-		}
-		write(1, &c, 1);
-	}
+# replace this with however you store your oauth token
+# if you don't have one, make one here:
+# https://github.com/settings/tokens/new
+token() {
+  pass -n github.web.oauth
 }
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="test-membloat.c"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-int main(int argc, char **argv)
-{
-	struct timespec ts_100s = { .tv_sec = 100 };
-	long mbytes, cnt;
-	void *map, *p;
-	int fd = -1;
-	int flags;
-
-	if (argc < 2 || (mbytes = atol(argv[1])) <= 0) {
-		fprintf(stderr, "test-membloat SIZE_IN_MBYTES [FILENAME]\n");
-		return 1;
-	}
-
-	if (argc >= 3) {
-		fd = open(argv[2], O_CREAT|O_TRUNC|O_RDWR, S_IRWXU);
-		if (fd < 0) {
-			perror("open");
-			return 1;
-		}
-
-		if (ftruncate(fd, mbytes << 20)) {
-			perror("ftruncate");
-			return 1;
-		}
-
-		flags = MAP_SHARED;
-	} else {
-		flags = MAP_ANONYMOUS | MAP_PRIVATE;
-	}
-
-	map = mmap(NULL, (size_t)mbytes << 20, PROT_READ | PROT_WRITE,
-		   flags, fd, 0);
-	if (map == MAP_FAILED) {
-		perror("mmap");
-		return 1;
-	}
-
-	for (p = map, cnt = 0; p < map + (mbytes << 20); p += 4096) {
-		*(volatile unsigned long *)p = 0xdeadbeef;
-		cnt++;
-	}
-
-	printf("faulted in %ld mbytes, %ld pages\n", mbytes, cnt);
-
-	while (1)
-		nanosleep(&ts_100s, NULL);
-
-	return 0;
+post() {
+  curl -H "Authorization: token $(token)" "$@"
 }
 
---7JfCtLOvnd9MIVvH--
+# usage: create <tag-name>
+create() {
+  case "$1" in
+  *-rc*)
+    prerelease=true
+    ;;
+  *)
+    prerelease=false
+    ;;
+  esac
+
+  post -d '
+  {
+    "tag_name": "'"$1"'",
+    "prerelease": '"$prerelease"'
+  }' "https://api.github.com/repos/$repo/releases"
+}
+
+# use: upload <release-id> <filename>
+upload() {
+  url="https://uploads.github.com/repos/$repo/releases/$1/assets" &&
+  url="$url?name=$(basename $2)" &&
+  post -H "Content-Type: $(file -b --mime-type "$2")" \
+       --data-binary "@$2" \
+       "$url"
+}
+
+# This is a hack. If you don't mind a dependency on
+# perl's JSON (or another parser), we can do a lot better.
+extract_id() {
+  perl -lne '/"id":\s*(\d+)/ or next; print $1; exit 0'
+}
+
+create "$1" >release.json &&
+id=$(extract_id <release.json) &&
+upload "$id" "$2" >/dev/null &&
+rm -f release.json
