@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaAXQTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 11:19:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634AbaAXQTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 11:19:04 -0500
-Date: Fri, 24 Jan 2014 17:19:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: error out if the name buffer is too short
-Message-ID: <20140124161922.GA14195@redhat.com>
-References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753047AbaAXQUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 11:20:48 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:42509 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaAXQUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 11:20:46 -0500
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
+        devel@acpica.org, patches@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH 1/2] ACPI / ACPICA: refactor acpi_evaluate_object() to reduce nesting if
+Date: Sat, 25 Jan 2014 00:20:06 +0800
+Message-Id: <1390580407-14525-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24, Denys Vlasenko wrote:
->
-> This change makes __dentry_path() and d_path()
-> immediately return ENAMETOOLONG if buflen < 2.
+acpi_evaluate_object() has nesting if judgement to make code a little
+bit complicated, refactor it to make things simple.
 
-I am not sure about d_path, but as for __dentry_path:
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/acpi/acpica/nsxfeval.c |  104 +++++++++++++++++++---------------------
+ 1 file changed, 50 insertions(+), 54 deletions(-)
 
-> @@ -3122,13 +3125,14 @@ static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
->  	int len, seq = 0;
->  	int error = 0;
->  
-> +	if (buflen < 2)
-> +		goto Elong;
-> +
->  	rcu_read_lock();
->  restart:
->  	end = buf + buflen;
->  	len = buflen;
->  	prepend(&end, &len, "\0", 1);
-> -	if (buflen < 1)
-> -		goto Elong;
-
-you forgot to mention that this change fixes a bug, this "goto Elong"
-leaks rcu_read_lock().
-
-And probably you are right, the fix should be as simple as possible.
-But can't we also simplify __dentry_path? Unless I missed something
-we can move prepend() up, before rcu_read_lock(), "move Get '/' right"
-into that prepend, and even kill retval... OK, most probably I missed
-something, but at first glance we can do something like
-
-	static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
-	{
-		int len, seq = 0;
-		int error = 0;
-		char *end;
-
-		buf += buflen;
-		/* Get '/' right, write "/\0" at the end */
-		if (prepend(&buf, &buflen, "/", 2))
-			goto Elong;
-
-		rcu_read_lock();
-	restart:
-		end = buf;
-		len = buflen;
-		read_seqbegin_or_lock(&rename_lock, &seq);
-		while (!IS_ROOT(dentry)) {
-			struct dentry *parent = dentry->d_parent;
-			int error;
-
-			prefetch(parent);
-			error = prepend_name(&end, &len, &dentry->d_name);
-			if (error)
-				break;
-
-			dentry = parent;
-		}
-		if (!(seq & 1))
-			rcu_read_unlock();
-		if (need_seqretry(&rename_lock, seq)) {
-			seq = 1;
-			goto restart;
-		}
-		done_seqretry(&rename_lock, seq);
-		if (!error)
-			return end;
-	Elong:
-		return ERR_PTR(-ENAMETOOLONG);
-	}
-
-Oleg.
+diff --git a/drivers/acpi/acpica/nsxfeval.c b/drivers/acpi/acpica/nsxfeval.c
+index 1f0c28b..a1b0b88 100644
+--- a/drivers/acpi/acpica/nsxfeval.c
++++ b/drivers/acpi/acpica/nsxfeval.c
+@@ -370,68 +370,64 @@ acpi_evaluate_object(acpi_handle handle,
+ 	 * If we are expecting a return value, and all went well above,
+ 	 * copy the return value to an external object.
+ 	 */
+-	if (return_buffer) {
+-		if (!info->return_object) {
+-			return_buffer->length = 0;
+-		} else {
+-			if (ACPI_GET_DESCRIPTOR_TYPE(info->return_object) ==
+-			    ACPI_DESC_TYPE_NAMED) {
+-				/*
+-				 * If we received a NS Node as a return object, this means that
+-				 * the object we are evaluating has nothing interesting to
+-				 * return (such as a mutex, etc.)  We return an error because
+-				 * these types are essentially unsupported by this interface.
+-				 * We don't check up front because this makes it easier to add
+-				 * support for various types at a later date if necessary.
+-				 */
+-				status = AE_TYPE;
+-				info->return_object = NULL;	/* No need to delete a NS Node */
+-				return_buffer->length = 0;
+-			}
++	if (!return_buffer)
++		goto out;
+ 
+-			if (ACPI_SUCCESS(status)) {
++	if (!info->return_object) {
++		return_buffer->length = 0;
++		goto out;
++	}
+ 
+-				/* Dereference Index and ref_of references */
++	if (ACPI_GET_DESCRIPTOR_TYPE(info->return_object) ==
++		ACPI_DESC_TYPE_NAMED) {
++		/*
++		 * If we received a NS Node as a return object, this means that
++		 * the object we are evaluating has nothing interesting to
++		 * return (such as a mutex, etc.)  We return an error because
++		 * these types are essentially unsupported by this interface.
++		 * We don't check up front because this makes it easier to add
++		 * support for various types at a later date if necessary.
++		 */
++		status = AE_TYPE;
++		info->return_object = NULL;	/* No need to delete a NS Node */
++		return_buffer->length = 0;
++	}
+ 
+-				acpi_ns_resolve_references(info);
++	if (ACPI_FAILURE(status))
++		goto out;
+ 
+-				/* Get the size of the returned object */
++	/* Dereference Index and ref_of references */
+ 
+-				status =
+-				    acpi_ut_get_object_size(info->return_object,
+-							    &buffer_space_needed);
+-				if (ACPI_SUCCESS(status)) {
+-
+-					/* Validate/Allocate/Clear caller buffer */
+-
+-					status =
+-					    acpi_ut_initialize_buffer
+-					    (return_buffer,
+-					     buffer_space_needed);
+-					if (ACPI_FAILURE(status)) {
+-						/*
+-						 * Caller's buffer is too small or a new one can't
+-						 * be allocated
+-						 */
+-						ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-								  "Needed buffer size %X, %s\n",
+-								  (u32)
+-								  buffer_space_needed,
+-								  acpi_format_exception
+-								  (status)));
+-					} else {
+-						/* We have enough space for the object, build it */
+-
+-						status =
+-						    acpi_ut_copy_iobject_to_eobject
+-						    (info->return_object,
+-						     return_buffer);
+-					}
+-				}
+-			}
++	acpi_ns_resolve_references(info);
++
++	/* Get the size of the returned object */
++
++	status = acpi_ut_get_object_size(info->return_object,
++						&buffer_space_needed);
++	if (ACPI_SUCCESS(status)) {
++
++		/* Validate/Allocate/Clear caller buffer */
++
++		status = acpi_ut_initialize_buffer(return_buffer,
++							buffer_space_needed);
++		if (ACPI_FAILURE(status)) {
++			/*
++			 * Caller's buffer is too small or a new one can't
++			 * be allocated
++			 */
++			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++					"Needed buffer size %X, %s\n",
++					(u32)buffer_space_needed,
++					 acpi_format_exception(status)));
++		} else {
++			/* We have enough space for the object, build it */
++
++			status = acpi_ut_copy_iobject_to_eobject(
++					info->return_object, return_buffer);
+ 		}
+ 	}
+ 
++out:
+ 	if (info->return_object) {
+ 		/*
+ 		 * Delete the internal return object. NOTE: Interpreter must be
+-- 
+1.7.9.5
 
