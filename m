@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbaAXSbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 13:31:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720AbaAXSbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 13:31:24 -0500
-Date: Fri, 24 Jan 2014 13:31:14 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: konrad.wilk@oracle.com
-Subject: Fix misplaced kfree from xlated_setup_gnttab_pages
-Message-ID: <20140124183114.GA31844@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	konrad.wilk@oracle.com
-References: <20140123064242.09E68660D05@gitolite.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123064242.09E68660D05@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752536AbaAXScE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 13:32:04 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:11439 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaAXScB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 13:32:01 -0500
+From: T Makphaibulchoke <tmac@hp.com>
+To: viro@zeniv.linux.org.uk, tytso@mit.edu, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: aswin@hp.com, T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH v4 0/3] ext4: increase mbcache scalability
+Date: Fri, 24 Jan 2014 11:31:25 -0700
+Message-Id: <1390588288-66930-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1377186876-57291-1-git-send-email-tmac@hp.com>
+References: <1377186876-57291-1-git-send-email-tmac@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing a freed 'pages' to free_xenballooned_pages will end badly
-on kernels with slub debug enabled.
+The patch consists of three parts.
 
-This looks out of place between the rc assign and the check, and
-was likely a cut-and-paste error.
+The first part changes the implementation of both the block and hash chains of
+an mb_cache from list_head to hlist_bl_head and also introduces new members,
+including a spinlock to mb_cache_entry, as required by the second part.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+The second part introduces higher degree of parallelism to the usages of the
+mb_cache and mb_cache_entries and impacts all ext filesystems.
 
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 103c93f874b2..28990cc97304 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -161,12 +161,11 @@ static int __init xlated_setup_gnttab_pages(void)
- 
- 	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, nr_grant_frames,
- 				    &xen_auto_xlat_grant_frames.vaddr);
--
--	kfree(pages);
- 	if (rc) {
- 		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
- 			nr_grant_frames, rc);
- 		free_xenballooned_pages(nr_grant_frames, pages);
-+		kfree(pages);
- 		kfree(pfns);
- 		return rc;
- 	}
+The third part of the patch further increases the scalablity of an ext4
+filesystem by having each ext4 fielsystem allocate and use its own private
+mbcache structure, instead of sharing a single mcache structures across all
+ext4 filesystems, and increases the size of its mbcache hash tables.
+
+Here are some of the benchmark results with the changes.
+
+Using ram disk, there seems to be no peformance differences with aim7 for all
+workloads on all platforms tested.
+
+With regular disk filesystems with inode size of 128 bytes, forcing the uses
+of external xattr, there seems to be some good peformance increases with
+some of the aim7's workloads on all platforms tested.
+
+Here are some of the performance improvement on aim7 with 2000 users.
+
+On a 60 core machine:
+
+---------------------------
+|             | % increase |
+---------------------------
+| alltests    |     30.97  |
+---------------------------
+| custom      |     41.18  |
+---------------------------
+| dbase       |     32.06  |
+---------------------------
+| disk        |    125.02  |
+---------------------------
+| fserver     |     10.23  |
+---------------------------
+| new_dbase   |     14.58  |
+---------------------------
+| new_fserve  |      9.62  |
+---------------------------
+| shared      |     52.56  |
+---------------------------
+
+On an 40 core machine:
+
+---------------------------
+|             | % increase |
+---------------------------
+| custom      |     63.45  |
+---------------------------
+| disk        |     133.25  |
+---------------------------
+| fserver     |     78.29  |
+---------------------------
+| new_fserver |     80.66  |
+---------------------------
+| shared      |     56.34  |
+---------------------------
+
+The changes have been tested with ext4 xfstests to verify that no regression
+has been introduced.
+
+Changed in v4:
+        - New performance data
+	- New diff summary
+	- New patch architecture
+
+Changed in v3:
+	- New idff summary
+
+Changed in v2:
+        - New performance data
+	- New diff summary
+T Makphaibulchoke (3):
+  fs/mbcache.c change block and index hash chain to hlist_bl_node
+  mbcache: decoupling the locking of local from global data
+  ext4: each filesystem creates and uses its own mc_cache
+
+ fs/ext4/ext4.h          |   1 +
+ fs/ext4/super.c         |  24 ++-
+ fs/ext4/xattr.c         |  51 ++---
+ fs/ext4/xattr.h         |   6 +-
+ fs/mbcache.c            | 491 ++++++++++++++++++++++++++++++++++--------------
+ include/linux/mbcache.h |  11 +-
+ 6 files changed, 402 insertions(+), 182 deletions(-)
+
+-- 
+1.7.11.3
+
