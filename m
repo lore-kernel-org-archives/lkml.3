@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaAXDn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 22:43:58 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59900 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112AbaAXDn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 22:43:56 -0500
-Message-ID: <52E1E174.9040107@ti.com>
-Date: Thu, 23 Jan 2014 22:43:48 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752241AbaAXDwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 22:52:24 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45068 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769AbaAXDwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 22:52:22 -0500
+X-Sasl-enc: o4Il5R1LbJ3ITjOd0RwQiUt3TqychXHDNuRDxmEL3jnR 1390535540
+Date: Thu, 23 Jan 2014 19:53:12 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20140124035312.GA31095@kroah.com>
+References: <20140124130122.017195b49e852e4e42b77997@canb.auug.org.au>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Panic on 8-node system in memblock_virt_alloc_try_nid()
-References: <52E19C7D.7050603@intel.com>
-In-Reply-To: <52E19C7D.7050603@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140124130122.017195b49e852e4e42b77997@canb.auug.org.au>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
-
-On Thursday 23 January 2014 05:49 PM, Dave Hansen wrote:
-> Linus's current tree doesn't boot on an 8-node/1TB NUMA system that I
-> have.  Its reboots are *LONG*, so I haven't fully bisected it, but it's
-> down to a just a few commits, most of which are changes to the memblock
-> code.  Since the panic is in the memblock code, it looks like a
-> no-brainer.  It's almost certainly the code from Santosh or Grygorii
-> that's triggering this.
+On Fri, Jan 24, 2014 at 01:01:22PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Config and good/bad dmesg with memblock=debug are here:
+> After merging the staging tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> 	http://sr71.net/~dave/intel/3.13/
-> 
-> Please let me know if you need it bisected further than this.
-> 
-Thanks a lot for debug information. Its pretty useful. The oops
-seems to be actually side effect of not setting up the numa nodes
-correctly first place. At least the setup_node_data() results
-indicate that. Actually setup_node_data() operates on the physical
-memblock interfaces which are untouched except the alignment change
-and thats potentially reason for the change in behavior.
+> drivers/staging/rtl8821ae/regd.c: In function '_rtl_reg_apply_beaconing_flags':
+> drivers/staging/rtl8821ae/regd.c:200:20: error: 'IEEE80211_CHAN_NO_IBSS' undeclared (first use in this function)
+>       ch->flags &= ~IEEE80211_CHAN_NO_IBSS;
 
-Will you be able revert below commit and give a quick try to see
-if the behavior changes ? It might impact other APIs since they
-assume the default alignment as SMP_CACHE_BYTES but at least
-I want to see if with below revert at least setup_node_data()
-reserves correct memory space. 
+Wait, I can't duplicate this at all here, either on just my staging-next
+branch, or when merged together with Linus's tree.
 
-79f40fa mm/memblock: drop WARN and use SMP_CACHE_BYTES as a default alignment
+Can you send me your .config that you used to cause this to fail
+(allmodconfig works just fine here.)
 
-Regards,
-Santosh
+Could this all be due to some wireless patches that aren't merged with
+Linus yet but are in linux-next?
+
+If this is going to be a pain, I can easily drop it all and just wait
+for 3.15-rc1, but it being a stand-alone driver, that works for hardware
+I have here (and rumor has it, Linus also has this box), I figured I
+would try to stay ahead of the curve and get it merged :)
+
+thanks,
+
+greg k-h
