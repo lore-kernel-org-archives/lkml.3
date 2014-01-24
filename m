@@ -1,126 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139AbaAXPWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:22:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53777 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752525AbaAXPWI (ORCPT
+	id S1753204AbaAXPXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:23:43 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20700 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752628AbaAXPXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:22:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yijing Wang <wangyijing@huawei.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH v5] ACPI: Fix acpi_evaluate_object() return value check
-Date: Fri, 24 Jan 2014 16:36:21 +0100
-Message-ID: <11909895.7rJ1jejxPI@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <CAErSpo5VGy9nCnrOAZtU9OjMsXxz5q_x2rVn596mqg1TWTT64g@mail.gmail.com>
-References: <1390448559-33896-1-git-send-email-wangyijing@huawei.com> <38648196.Uh7omNjHIu@vostro.rjw.lan> <CAErSpo5VGy9nCnrOAZtU9OjMsXxz5q_x2rVn596mqg1TWTT64g@mail.gmail.com>
+	Fri, 24 Jan 2014 10:23:41 -0500
+Date: Fri, 24 Jan 2014 15:23:08 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: delete non-required instances of <linux/init.h>
+Message-ID: <20140124152308.GE19052@arm.com>
+References: <1390501611-31691-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390501611-31691-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 24, 2014 07:54:29 AM Bjorn Helgaas wrote:
-> On Thu, Jan 23, 2014 at 5:33 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Thursday, January 23, 2014 11:21:01 AM Bjorn Helgaas wrote:
-> >> On Wed, Jan 22, 2014 at 8:42 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> >> > Since acpi_evaluate_object() returns acpi_status and not plain int,
-> >> > ACPI_FAILURE() should be used for checking its return value. Also
-> >> > add some detailed debug info when acpi_evaluate_object() failed.
-> >> >
-> >> > Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> >> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> >> > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> >> > ---
-> >> > v4->v5: Add some detailed debug info for acpi_evaluate_object()
-> >> >         failure suggested by Bjorn.
-> >> > v3->v4: Fix spell error, add Jani Nikula reviewed-by.
-> >> > v2->v3: Fix compile error pointed out by Hanjun.
-> >> > v1->v2: Add CC to related subsystem MAINTAINERS
-> >> > ---
-> >> >  drivers/gpu/drm/i915/intel_acpi.c              |   33 ++++++++++++++++-------
-> >> >  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |   13 ++++++---
-> >> >  drivers/gpu/drm/nouveau/nouveau_acpi.c         |   25 +++++++++++-------
-> >> >  drivers/pci/pci-label.c                        |   10 +++++--
-> >> >  4 files changed, 54 insertions(+), 27 deletions(-)
-> >> >
-> >> > diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
-> >> > index dfff090..e7b526b 100644
-> >> > --- a/drivers/gpu/drm/i915/intel_acpi.c
-> >> > +++ b/drivers/gpu/drm/i915/intel_acpi.c
-> >> > @@ -31,11 +31,13 @@ static const u8 intel_dsm_guid[] = {
-> >> >  static int intel_dsm(acpi_handle handle, int func)
-> >> >  {
-> >> >         struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> >> > +       struct acpi_buffer string = { ACPI_ALLOCATE_BUFFER, NULL };
-> >> >         struct acpi_object_list input;
-> >> >         union acpi_object params[4];
-> >> >         union acpi_object *obj;
-> >> >         u32 result;
-> >> > -       int ret = 0;
-> >> > +       acpi_status status;
-> >> > +       int ret;
-> >> >
-> >> >         input.count = 4;
-> >> >         input.pointer = params;
-> >> > @@ -50,10 +52,14 @@ static int intel_dsm(acpi_handle handle, int func)
-> >> >         params[3].package.count = 0;
-> >> >         params[3].package.elements = NULL;
-> >> >
-> >> > -       ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
-> >> > -       if (ret) {
-> >> > -               DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
-> >> > -               return ret;
-> >> > +       status = acpi_evaluate_object(handle, "_DSM", &input, &output);
-> >> > +       if (ACPI_FAILURE(status)) {
-> >> > +               acpi_get_name(handle, ACPI_FULL_PATHNAME, &string);
-> >> > +               DRM_DEBUG_DRIVER(
-> >> > +                       "failed to evaluate _DSM for %s, exit status %u\n",
-> >> > +                       (char *)string.pointer, (unsigned int)status);
-> >> > +               kfree(string.pointer);
-> >> > +               return -EINVAL;
-> >>
-> >> I said "too bad there isn't an *easy* way" to include more
-> >> information.  IMHO this is too ugly and error-prone to use
-> >> consistently.  And if you are going to add more information, why did
-> >> you only do it for some of the calls and not others?
-> >>
-> >> I considered adding a %p extension to print the pathname; I don't know
-> >> if that's worthwhile or not.  I think it would be ideal if we had a
-> >> struct device and could use dev_info(), and then a way to connect the
-> >> struct device with an ACPI path, like maybe a dmesg note when we
-> >> create the struct device corresponding to an ACPI Device node.
-> >
-> > Well, we can generally print something like that from pci_acpi_setup().
-> >
-> > What about the below?  Wouldn't it generate too much output on some systems?
+On Thu, Jan 23, 2014 at 06:26:51PM +0000, Paul Gortmaker wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one place to the next.
 > 
-> Yeah, that probably would generate an awful lot of output.  I was just
-> hoping to avoid treating ACPI pathnames as first-class objects.  What
-> do you think about a %p extension?  I played with that once, but I
-> seem to have lost the patch.
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+> 
+> [Build tested on today's linux-next ; thanks to Will for the pointer
+>  to a prebuilt toolchain.  Patch to be added to init cleanup series:
+>    http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git   ]
 
-Well, it may be worth doing.  However, that information is readily available from
-sysfs anyway, you only need to follow the firmware_node link in the PCI device's
-sysfs directory and read the path attribute from there.  For example, on my
-system:
+I assume you are pushing this upstream as part of your cleanup series.
 
-$ cat /sys/devices/pci0000:00/0000:00:1c.4/0000:0b:00.0/firmware_node/path
-\_SB_.PCI0.RP05.PXSX
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
