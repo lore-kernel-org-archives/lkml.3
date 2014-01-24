@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaAXSHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 13:07:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40240 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaAXSHq (ORCPT
+	id S1752229AbaAXSIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 13:08:43 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38137 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094AbaAXSIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 13:07:46 -0500
-Date: Fri, 24 Jan 2014 13:06:35 -0500
+	Fri, 24 Jan 2014 13:08:41 -0500
+Date: Fri, 24 Jan 2014 13:07:41 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Akinobu Mita <akinobu.mita@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,77 +17,43 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
         x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH v2 2/5] x86: enable DMA CMA with swiotlb
-Message-ID: <20140124180635.GB15785@phenom.dumpdata.com>
+Subject: Re: [PATCH v2 1/5] x86: make dma_alloc_coherent() return zeroed
+ memory if CMA is enabled
+Message-ID: <20140124180741.GC15785@phenom.dumpdata.com>
 References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
- <1389708830-5841-3-git-send-email-akinobu.mita@gmail.com>
- <20140115201224.GD5201@phenom.dumpdata.com>
- <CAC5umyitWHvWiWn9B3wtTNBhbO7Rz_ghqmxhwu9caq40msnfAA@mail.gmail.com>
+ <1389708830-5841-2-git-send-email-akinobu.mita@gmail.com>
+ <20140115200934.GC5201@phenom.dumpdata.com>
+ <CAC5umygcr0a_BfDJ9tB1EDry4UEwThG7WvkA8Dn27zO9RQab8Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAC5umyitWHvWiWn9B3wtTNBhbO7Rz_ghqmxhwu9caq40msnfAA@mail.gmail.com>
+In-Reply-To: <CAC5umygcr0a_BfDJ9tB1EDry4UEwThG7WvkA8Dn27zO9RQab8Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 08:32:09AM +0900, Akinobu Mita wrote:
+On Fri, Jan 17, 2014 at 08:34:38AM +0900, Akinobu Mita wrote:
 > 2014/1/16 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
-> > On Tue, Jan 14, 2014 at 11:13:47PM +0900, Akinobu Mita wrote:
-> >> The DMA Contiguous Memory Allocator support on x86 is disabled when
-> >> swiotlb config option is enabled.  So DMA CMA is always disabled on
-> >> x86_64 because swiotlb is always enabled.  This attempts to support
-> >> for DMA CMA with enabling swiotlb config option.
+> > On Tue, Jan 14, 2014 at 11:13:46PM +0900, Akinobu Mita wrote:
+> >> Calling dma_alloc_coherent() with __GFP_ZERO must return zeroed memory.
 > >>
-> >> The contiguous memory allocator on x86 is integrated in the function
-> >> dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
-> >> for dma_alloc_coherent().
-> >>
-> >> x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
-> >> tries to allocate with dma_generic_alloc_coherent() firstly and then
-> >> swiotlb_alloc_coherent() is called as a fallback.
-> >>
-> >> The main part of supporting DMA CMA with swiotlb is that changing
-> >> x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
-> >> for dma_free_coherent() so that it can distinguish memory allocated by
-> >> dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
-> >> and release it with dma_generic_free_coherent() which can handle contiguous
-> >> memory.  This change requires making is_swiotlb_buffer() global function.
-> >>
-> >> This also needs to change .free callback in the dma_map_ops for amd_gart
-> >> and sta2x11, because these dma_ops are also using
-> >> dma_generic_alloc_coherent().
-> >>
-> >> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> >> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >> Cc: David Woodhouse <dwmw2@infradead.org>
-> >> Cc: Don Dutile <ddutile@redhat.com>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: Ingo Molnar <mingo@redhat.com>
-> >> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> >> Cc: Andi Kleen <andi@firstfloor.org>
-> >> Cc: x86@kernel.org
-> >> Cc: iommu@lists.linux-foundation.org
-> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> >> Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> >> ---
-> >> No change from the previous version
-> >>
-> >>  arch/x86/Kconfig               | 2 +-
-> >>  arch/x86/include/asm/swiotlb.h | 7 +++++++
-> >>  arch/x86/kernel/amd_gart_64.c  | 2 +-
-> >>  arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
-> >>  arch/x86/pci/sta2x11-fixup.c   | 6 ++----
-> >>  include/linux/swiotlb.h        | 2 ++
-> >>  lib/swiotlb.c                  | 2 +-
+> >> But when the contiguous memory allocator (CMA) is enabled on x86 and
+> >> the memory region is allocated by dma_alloc_from_contiguous(), it
+> >> doesn't return zeroed memory.  Because dma_generic_alloc_coherent()
 > >
-> > It looks reasonable from my perspective (as swiotlb maintainer).
-> >
-> > Not too thrilled about the  'is_swiotlb_buffer' but that code is
-> > quite small so it should be fast enough.
+> > So why not fix it there to return zeroed out memory?
 > 
-> Thanks.  Can I get your Acked-by for this patch?
+> I thought it looked nicer than this patch as we can remove memset
+> from all caller of dma_alloc_from_contiguous().  But if I look at
+> the caller on arm, we can't simply remove the memset because
+> __dma_clear_buffer() is used there for ensuring cache flushing and
+> it is used in many places.
 
-Yes. Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+OK, that should be part of the commit description.
+> 
+> Of course we can do redundant memset in dma_alloc_from_contiguous(),
+> but now I think this patch is less impact for fixing this problem.
+
+OK.
