@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065AbaAXTef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:34:35 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:48264 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024AbaAXTeb (ORCPT
+	id S1753124AbaAXTet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:34:49 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:48205 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaAXTeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:34:31 -0500
+	Fri, 24 Jan 2014 14:34:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140124192536.GC17156@phenom.dumpdata.com>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
-	<1390590670-25901-4-git-send-email-yinghai@kernel.org>
-	<20140124192536.GC17156@phenom.dumpdata.com>
-Date: Fri, 24 Jan 2014 11:34:28 -0800
-X-Google-Sender-Auth: wyY-DaGgOR7NhU5Jrc3UTQYSB5Y
-Message-ID: <CAE9FiQWOhc+kavN5dDNLjFkBiYQkaU0_Br2YVN+-7-Ls0RGV9A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <52E2A866.1050400@codeaurora.org>
+References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com>
+	<1390581656-16372-5-git-send-email-adrienverge@gmail.com>
+	<20140124164343.GJ31040@mudshark.cambridge.arm.com>
+	<CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com>
+	<20140124171754.GM31040@mudshark.cambridge.arm.com>
+	<52E2A866.1050400@codeaurora.org>
+Date: Fri, 24 Jan 2014 14:34:41 -0500
+Message-ID: <CANsc=4X+8He-w9wr0xbtDkJhxw8H13kk_-OV07jMZ7govTnmxQ@mail.gmail.com>
+Subject: Re: [PATCH V2 4/6] ARM: Make PID_IN_CONTEXTIDR incompatible with PID_NS
+From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Michel Dagenais <michel.dagenais@polymtl.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 11:25 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Fri, Jan 24, 2014 at 11:11:10AM -0800, Yinghai Lu wrote:
->> The new memblock_virt APIs are used to replaced old bootmem API.
->>
->> We need to allocate page below 4G for swiotlb.
->>
->> That should fix regression on Andrew's system that is using swiotlb.
->
-> Please include the title of the patch that caused the regression.
-> I presume it is "mm/lib/swiotlb: Use memblock apis for early memory allocations"
->
-> Interestingly enough when I asked about it:
->
-> https://lkml.org/lkml/2013/11/9/280
->
->
->         >> v_overflow_buffer = memblock_virt_alloc_align_nopanic(
->         >> +                                            PAGE_ALIGN(io_tlb_overflow),
->         >> +                                            PAGE_SIZE);
->         >
->         > Does this guarantee that the pages will be allocated below 4GB?
->         >
->         Yes. The memblock layer still allocates memory from lowmem. As I
->         mentioned, there is no change in the behavior than what is today
->         apart from just the interface change.
->
-> How did that happend? Was there another patch in the series that altered
-> such assumption?
->
+2014/1/24 Will Deacon <will.deacon@arm.com>:
+> I think I'd rather have the global ID than disable a potentially useful
+> feature, especially since this is likely to be consumed by external trace
+> tools as opposed to user-space tasks.
 
-Yes, that is one.
+I understand.
 
-He chose to set memblock.current_limit to max_low_mapped. (that is under 4g).
+2014/1/24 Christopher Covington <cov@codeaurora.org>:
+> Would it be reasonable to make what's
+> written to the CONTEXTIDR run-time configurable? If so, what would be the best
+> interface for configuring it?
 
-but it broke big numa system as all boot mem is under 4G and system
-with lots of memory will need to
-have big chunk for vmemmap .
+This is an interesting option.
 
-Before that patch, we need to add another API to make sure those
-swiotlb under 4G.
-
-Thanks
-
-Yinghai
+An other option would be to keep the global PID in the Context ID
+register, and rely on kernel support to translate virtual PID to
+global PID when needed. Then, it would be possible to select a task to
+trace via its PID, by asking the kernel to write its global ID to the
+Context ID comparator.
