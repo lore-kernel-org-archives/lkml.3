@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaAXO3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 09:29:32 -0500
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:56651 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaAXO3b convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 09:29:31 -0500
-X-Greylist: delayed 2152 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jan 2014 09:29:31 EST
-From: Shawn Starr <Shawn.Starr@statpro.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [3.13-rc/78] random SIGBUS errors + 3.14-rc0 - KVM/QEMU - CPU hang
- issues
-Thread-Topic: [3.13-rc/78] random SIGBUS errors + 3.14-rc0 - KVM/QEMU - CPU
- hang issues
-Thread-Index: Ac8ZCylrAWL4nXvWS/WqFt/urjmRag==
-Date: Fri, 24 Jan 2014 13:53:28 +0000
-Message-ID: <2D0D6BCF6E60AC409111CEB14208943C0104BA28@TORINTEXCMBXP1.STATNET.statpro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.10.52]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752859AbaAXOcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 09:32:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359AbaAXOcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 09:32:18 -0500
+Date: Fri, 24 Jan 2014 09:31:45 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, eparis@redhat.com,
+        sgrubb@redhat.com, akpm@linux-foundation.org, oleg@redhat.com
+Subject: Re: [PATCH 0/7][RFC] pid: changes to support audit
+Message-ID: <20140124143145.GI7084@madcap2.tricolour.ca>
+References: <20131220140417.GE14884@madcap2.tricolour.ca>
+ <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
+ <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+ <20131217095801.GF21999@twins.programming.kicks-ass.net>
+ <20131220044826.GF14944@madcap2.tricolour.ca>
+ <20131220085846.GA21999@twins.programming.kicks-ass.net>
+ <cover.1390495874.git.rgb@redhat.com>
+ <20140123212535.GX11314@laptop.programming.kicks-ass.net>
+ <20140124061447.GH7084@madcap2.tricolour.ca>
+ <20140124085248.GY30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140124085248.GY30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello folks,
+On 14/01/24, Peter Zijlstra wrote:
+> On Fri, Jan 24, 2014 at 01:14:47AM -0500, Richard Guy Briggs wrote:
+> > On 14/01/23, Peter Zijlstra wrote:
+> > > On Thu, Jan 23, 2014 at 02:32:33PM -0500, Richard Guy Briggs wrote:
+> > > > These are a number of patches inspired by ebiederman's container work that were
+> > > > included by me 2013-08-20 as the patchset:
+> > > > 	RFC: steps to make audit pid namespace-safe
+> > > > 
+> > > > They have been seperated out for the pid maintainer since there are no direct
+> > > > dependencies from the audit pid namespace patchset with the exception of:
+> > > > 	pid: get pid_t ppid of task in init_pid_ns
+> > > > 
+> > > > Andrew, are you willing to adopt these?
+> > > > 
+> > > > In particular, there is discussion around read-only task_struct::pid here:
+> > > > 	https://lkml.org/lkml/2013/12/16/552
+> > > 
+> > > I would have ordered them slightly different, but:
+> > 
+> > Can you briefly explain how and why so I can understand for next time?
+> > I originally had the ppid patch first...
+> 
+> Ah, I would have introduced CONST_CAST() earlier, then used it in the
+> make pid const and then avoided the conversion patch.
 
-After a couple days of uptime, with Google Chrome + Flash. This has happened twice, will crash with a SIGBUS and subsequent launches of Google Chrome will SIGBUS. In addition other programs may or may not SIGBUS but the whole system becomes unstable until a full reboot. I only see kaudit logs from kernel but nothing looks unusual and there are no other noticed messages indicating anything wrong.
+Ah, fair enough.  It does serve to show how much ugliness can be avoided
+though...
 
-Anyone else noticed SIGBUS issues w/ 3.13-rcX (-rc8 or final?)
+- RGB
 
-For 3.14-rc0 in Fedora (rawhide non-debug repo), spinning up a VM w/ KVM causes kernel to report CPU hang by 'qemu' process, it's early in the 3.14 cycle so I expect things to be wild a bit but wanted to report that if anyone else hasn't noticed yet.
-
-Thanks,
-
-Shawn Starr
-Sr. Linux Administrator 
-StatPro | Toronto
-Tel. +1 (416) 619-3972 | Fax. +1 (416) 598-9530
-Twitter. @statprogroup
-www.statpro.com
-
-Looking for a bit of holiday cheer? Watch StatPro's latest video
-
-StatPro Canada Inc. registered Office: 33 Yonge Street, Suite 1101, Toronto ON, M5E 1G4. StatPro Canada Inc. is a member of StatPro Group plc. 
-
-
-
-This message is private and confidential. If you have received this message in error, please notify us and remove it from your system. Any views or opinions presented in this email are solely those of the author and might not represent those of StatPro. Warning: Although StatPro has taken reasonable precautions to ensure no viruses are present in this email, the company cannot accept responsibility for any loss or damage arising from the use of this email or attachments.
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
