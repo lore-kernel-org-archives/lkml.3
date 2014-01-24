@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaAXNqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 08:46:16 -0500
-Received: from smtp-out-210.synserver.de ([212.40.185.210]:1102 "EHLO
-	smtp-out-209.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752359AbaAXNqO (ORCPT
+	id S1752792AbaAXNq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 08:46:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46721 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaAXNqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 08:46:14 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1831
-Message-ID: <52E26E9A.9040002@metafoo.de>
-Date: Fri, 24 Jan 2014 14:46:02 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: adis16400: Set timestamp as the last element in
- chan_spec
-References: <marcus.folkesson@gmail.com> <1390562644-25124-1-git-send-email-marcus.folkesson@gmail.com> <1390562644-25124-2-git-send-email-marcus.folkesson@gmail.com>
-In-Reply-To: <1390562644-25124-2-git-send-email-marcus.folkesson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Jan 2014 08:46:55 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-87-52e26ecef2a1
+Message-id: <52E26EBE.8080905@samsung.com>
+Date: Fri, 24 Jan 2014 14:46:38 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Mj Embd <mj.embd@gmail.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: Arndale Timer Interrupt Question
+References: <CAPUj1OM=Zn2nd98aXRCRUJrLknkS0o44V1BfuJhz5i19w+M5Ow@mail.gmail.com>
+ <1437466.9hkS4zH5MN@amdc1032> <52D02693.1040003@samsung.com>
+ <CAPUj1OOvphUhLRO6jDRD4RRUFbYO_my=BZZ1gMJ6d_G9WUN4_w@mail.gmail.com>
+In-reply-to: <CAPUj1OOvphUhLRO6jDRD4RRUFbYO_my=BZZ1gMJ6d_G9WUN4_w@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t/xy7rn8h4FGbzv4LPYOGM9q8X7Q8+Y
+	LS7vmsNmMeP8PiaLAz2H2BxYPXbOusvucfvfY2aPvi2rGD0+b5ILYInisklJzcksSy3St0vg
+	ylgz9wVrwWPOivPbDjE3ML5h72Lk5JAQMJH4vm0tI4QtJnHh3nq2LkYuDiGBpYwSZ6a+ZYZw
+	PjNKvHs7B6yDV0BLYun6yWAdLAKqEo9232UGsdkE1CQ+NzxiA7FFBSIk/s5bzwhRLyjxY/I9
+	FhBbREBe4tKXRkaQocwCFxgldq9tA2sWFtCVeP7lGtS2G4wS937/BNvGKRAs8fXqBbAiZgFr
+	iZWTtjFC2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8ilE0tTS5oDgpPddQrzgxt7g0L10vOT93
+	EyMkmL/sYFx8zOoQowAHoxIP74zAh0FCrIllxZW5hxglOJiVRHi3BjwKEuJNSaysSi3Kjy8q
+	zUktPsTIxMEp1cCYcKX6YMaat//CZ6qeWbw5/Agn88eEKW8u19emvZ1Uvrzsl0DTymhD2zjX
+	vC+X7I1KmBf9njRbLZdF/NHmJqcSwzvHK5xEr2eZzjZ92nmpJOTyDO6ZgWJ6pzawT7dgfs5g
+	fMhfYtbyRztPTmX8+XP96gv5T45d9D5QmDYpaOZvS/4nobMf8NhtVWIpzkg01GIuKk4EAPmx
+	0RlEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2014 12:24 PM, Marcus Folkesson wrote:
-> This is necessary since timestamp is calculated as the last element
-> in iio_compute_scan_bytes().
-> 
-> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
 
-Looks good, thanks.
 
-Acked-by: Lars-Peter Clausen
+On 23.01.2014 07:10, Mj Embd wrote:
+> On 1/10/14, Tomasz Figa <t.figa@samsung.com> wrote:
+>> Hi,
+>>
+>> On 09.01.2014 13:52, Bartlomiej Zolnierkiewicz wrote:
+>>>
+>>> added linux-samsung-soc to cc:,
+>>> it is a better suited list for this question
+>>>
+>>> On Thursday, January 09, 2014 10:30:56 AM Mj Embd wrote:
+>>>> I am a bit confused on the interrupt number for CNTVIRQ..CNTHPIRQ. Can
+>>>> you please help here.
+>>>>
+>>>> As per the exynos5 public manual
+>>>> What is the difference between  CPU_nCNTHPIRQ[0] and CNTHPIRQ.
+>>
+>> I'm not sure if this is really what I think it is, but looking at the
+>> manual, CPU_nCNTHPIRQ[0] and [1] SPI ports and CNTHPIRQ PPI port seem to
+>> be the same signals, with the difference that the first two are shared
+>> interrupts connected through the combiner, while the last one is a
+>> per-processor interrupt, directly connected to GIC PPI port, allowing
+>> each CPU to get its own CNTHPIRQ signal ([0] for CPU 0 and [1] for CPU 1).
+>
+> So while registering the IRQ which one has to be used Core0:26/33 Core1:26/54 ?
 
-That said, I think we should try to modify the core code so that the scan
-index for the timestamp is auto assigned to be always the last one.
+Well, it depends on your driver. If it supports per-CPU interrupts then 
+you use CNTHPIRQ PPI port, othwerise nCNTHPIRQ[0] and [1] SPI ports.
 
-> ---
->  drivers/iio/imu/adis16400.h      |    1 +
->  drivers/iio/imu/adis16400_core.c |   10 +++++-----
->  2 files changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/iio/imu/adis16400.h b/drivers/iio/imu/adis16400.h
-> index 2f8f9d6..0916bf6 100644
-> --- a/drivers/iio/imu/adis16400.h
-> +++ b/drivers/iio/imu/adis16400.h
-> @@ -189,6 +189,7 @@ enum {
->  	ADIS16300_SCAN_INCLI_X,
->  	ADIS16300_SCAN_INCLI_Y,
->  	ADIS16400_SCAN_ADC,
-> +	ADIS16400_SCAN_TIMESTAMP,
->  };
->  
->  #ifdef CONFIG_IIO_BUFFER
-> diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
-> index 3fb7757..7f98657 100644
-> --- a/drivers/iio/imu/adis16400_core.c
-> +++ b/drivers/iio/imu/adis16400_core.c
-> @@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16400_channels[] = {
->  	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
->  	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
->  	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
-> -	IIO_CHAN_SOFT_TIMESTAMP(12)
-> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->  };
->  
->  static const struct iio_chan_spec adis16448_channels[] = {
-> @@ -654,7 +654,7 @@ static const struct iio_chan_spec adis16448_channels[] = {
->  		.scan_type = IIO_ST('s', 16, 16, 0),
->  	},
->  	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
-> -	IIO_CHAN_SOFT_TIMESTAMP(11)
-> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->  };
->  
->  static const struct iio_chan_spec adis16350_channels[] = {
-> @@ -672,7 +672,7 @@ static const struct iio_chan_spec adis16350_channels[] = {
->  	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
->  	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
->  	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
-> -	IIO_CHAN_SOFT_TIMESTAMP(11)
-> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->  };
->  
->  static const struct iio_chan_spec adis16300_channels[] = {
-> @@ -685,7 +685,7 @@ static const struct iio_chan_spec adis16300_channels[] = {
->  	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
->  	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
->  	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
-> -	IIO_CHAN_SOFT_TIMESTAMP(14)
-> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->  };
->  
->  static const struct iio_chan_spec adis16334_channels[] = {
-> @@ -696,7 +696,7 @@ static const struct iio_chan_spec adis16334_channels[] = {
->  	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
->  	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
->  	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
-> -	IIO_CHAN_SOFT_TIMESTAMP(8)
-> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->  };
->  
->  static struct attribute *adis16400_attributes[] = {
-> 
-
+Best regards,
+Tomasz
