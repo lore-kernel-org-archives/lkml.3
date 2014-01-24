@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaAXTuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:50:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59250 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaAXTuR (ORCPT
+	id S1752240AbaAXTwH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:52:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64195 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751139AbaAXTwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:50:17 -0500
-Date: Fri, 24 Jan 2014 20:50:14 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-rt-users@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-Message-ID: <20140124195014.GB29981@linutronix.de>
-References: <20131221193900.GA8427@linutronix.de>
- <1387681647.5412.25.camel@marge.simpson.net>
- <1387702631.5412.101.camel@marge.simpson.net>
- <1387773533.5369.16.camel@marge.simpson.net>
- <20131224193636.GD19211@linux.vnet.ibm.com>
- <1387940854.5373.8.camel@marge.simpson.net>
- <20131225075544.GE19211@linux.vnet.ibm.com>
- <1387993057.5346.17.camel@marge.simpson.net>
- <20140117171441.GG5785@linutronix.de>
- <1390015514.5444.46.camel@marge.simpson.net>
+	Fri, 24 Jan 2014 14:52:04 -0500
+Date: Fri, 24 Jan 2014 14:51:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>,
+        Joakim Hernberg <jbh@alchemy.lu>, Joe Korty <joe.korty@ccur.com>,
+        Muli Baron <muli.baron@gmail.com>
+Subject: [PATCH RT] timer: Run irq_work() even if there are no active timers
+Message-ID: <20140124145157.1f30d447@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1390015514.5444.46.camel@marge.simpson.net>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith | 2014-01-18 04:25:14 [+0100]:
+After trying hard to figure out why my i7 box was locking up with the
+new active_timers code, that does not run the timer softirq if there
+are no active timers, I took an extra look at the softirq handler and
+noticed that it doesn't just run timer softirqs, it also runs irq work.
 
->> ># timers-do-not-raise-softirq-unconditionally.patch
->> ># rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
->> >
->> >..those two out does seem to have stabilized the thing.
->> 
->> timers-do-not-raise-softirq-unconditionally.patch is on its way out.
->> 
->> rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch confues me.
->> Didn't you report once that your box deadlocks without this patch? Now
->> your 64way box on the other hand does not work with it?
->
->If 'do not raise' is applied, 'use a trylock' won't save you.  If 'do
-is this just an observation or you do know why it won't save me?
-Currently I think to go back to the version where the waiter_lock was
-taken with irqs off. However I would prefer to trigger this myself so I
-would know what is going on instead blindly apply patches.
+This was the bug that was locking up the system. It wasn't missing a
+timer, it was missing irq work. By always doing the irq work callbacks,
+the system boots fine.
 
->-Mike
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Sebastian
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 46467be..7c5026e 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1464,8 +1464,12 @@ void run_local_timers(void)
+ 		raise_softirq(TIMER_SOFTIRQ);
+ 		return;
+ 	}
+-	if (!base->active_timers)
++	if (!base->active_timers) {
++#if defined(CONFIG_IRQ_WORK) && defined(CONFIG_PREEMPT_RT_FULL)
++		irq_work_run();
++#endif
+ 		goto out;
++	}
+ 
+ 	/* Check whether the next pending timer has expired */
+ 	if (time_before_eq(base->next_timer, jiffies))
