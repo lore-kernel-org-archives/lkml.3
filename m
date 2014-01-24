@@ -1,120 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaAXHlc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 02:41:32 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51636 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaAXHlb (ORCPT
+	id S1751938AbaAXHqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 02:46:32 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:39109 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaAXHqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 02:41:31 -0500
-Date: Fri, 24 Jan 2014 08:41:03 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, linux-pwm@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
-Message-ID: <20140124074103.GJ16215@pengutronix.de>
-References: <20140123083714.3c6e86ae@ipc1.ka-ro>
- <1390467898-9216-1-git-send-email-s.hauer@pengutronix.de>
- <1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
- <20140123115632.6d3f1a58@ipc1.ka-ro>
- <20140123110444.GI16215@pengutronix.de>
- <20140123165349.GY15937@n2100.arm.linux.org.uk>
- <20140123173642.GZ15937@n2100.arm.linux.org.uk>
- <20140124064254.0369084d@ipc1.ka-ro>
+	Fri, 24 Jan 2014 02:46:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140124064254.0369084d@ipc1.ka-ro>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:29:31 up 152 days, 17:00, 41 users,  load average: 0.05, 0.05,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <52E214C7.9050309@ti.com>
+References: <52E19C7D.7050603@intel.com>
+	<CAE9FiQX9kTxnaqpWNgg3dUzr7+60YCrEx3q3xxO-G1n6z64xVQ@mail.gmail.com>
+	<52E20A56.1000507@ti.com>
+	<52E20E98.7010703@ti.com>
+	<CAE9FiQWRkP1Hir6UFuPRGu6bXNd_SHonuaC-MG1UD-tSeE0teQ@mail.gmail.com>
+	<52E214C7.9050309@ti.com>
+Date: Thu, 23 Jan 2014 23:46:29 -0800
+X-Google-Sender-Auth: 8m-QnpvjTts1wuazM-3Irh8o_DE
+Message-ID: <CAE9FiQXEYb5bkLTS9oMUWB_tQ=2-0EUeRDb0DHPS_YH83CC7nA@mail.gmail.com>
+Subject: Re: Panic on 8-node system in memblock_virt_alloc_try_nid()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: multipart/mixed; boundary=089e011849e662a27104f0b28e05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 06:42:54AM +0100, Lothar Waßmann wrote:
-> Hi,
-> 
-> > Okay, this works, but there's a problem with pwm-leds.
-> > 
-> > When the duty cycle is set to zero (when you set the brightness to zero)
-> > pwm-leds decides to disable the PWM after configuring it.  This causes
-> > the PWM output to be driven low, causing the LED to go to maximum
-> > brightness.
-> > 
-> > So, using the inversion at PWM level doesn't work.
-> > 
-> The problem is that the driver calls pwm_disable() when the duty cycle is 0.
-> This sets the PWM output low independent from the output polarity setting.
-> 
-> > To make this work correctly, we really need pwm-leds to do the inversion
-> > rather than setting the inversion bit in hardware.
-> > 
-> The same holds for the pwm-backlight driver.
-> 
-> The easiest fix would be not to call pwm_disable() even for a zero duty
-> cycle.
+--089e011849e662a27104f0b28e05
+Content-Type: text/plain; charset=ISO-8859-1
 
-IMO that's the right thing to do anyway due to the different PWM
-hardware controllers we have. I'm thinking about the following patch
-for some time.
+On Thu, Jan 23, 2014 at 11:22 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Friday 24 January 2014 02:04 AM, Yinghai Lu wrote:
+>> On Thu, Jan 23, 2014 at 10:56 PM, Santosh Shilimkar
+>> <santosh.shilimkar@ti.com> wrote:
+>>> On Friday 24 January 2014 01:38 AM, Santosh Shilimkar wrote:
+>>
+>>> The patch which is now commit 457ff1d {lib/swiotlb.c: use
+>>> memblock apis for early memory allocations} was the breaking the
+>>> boot on Andrew's machine. Now if I look back the patch, based on your
+>>> above description, I believe below hunk waS/is the culprit.
+>>>
+>>> @@ -172,8 +172,9 @@ int __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+>>>         /*
+>>>          * Get the overflow emergency buffer
+>>>          */
+>>> -       v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
+>>> -                                               PAGE_ALIGN(io_tlb_overflow));
+>>> +       v_overflow_buffer = memblock_virt_alloc_nopanic(
+>>> +                                               PAGE_ALIGN(io_tlb_overflow),
+>>> +                                               PAGE_SIZE);
+>>>         if (!v_overflow_buffer)
+>>>                 return -ENOMEM;
+>>>
+>>>
+>>> Looks like 'v_overflow_buffer' must be allocated from low memory in this
+>>> case. Is that correct ?
+>>
+>> yes.
+>>
+>> but should the change like following
+>>
+>> commit 457ff1de2d247d9b8917c4664c2325321a35e313
+>> Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Date:   Tue Jan 21 15:50:30 2014 -0800
+>>
+>>     lib/swiotlb.c: use memblock apis for early memory allocations
+>>
+>>
+>> @@ -215,13 +220,13 @@ swiotlb_init(int verbose)
+>>         bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+>>
+>>         /* Get IO TLB memory from the low pages */
+>> -       vstart = alloc_bootmem_low_pages_nopanic(PAGE_ALIGN(bytes));
+>> +       vstart = memblock_virt_alloc_nopanic(PAGE_ALIGN(bytes), PAGE_SIZE);
+>>         if (vstart && !swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose))
+>>                 return;
+>>
+> OK. So we need '__alloc_bootmem_low()' equivalent memblock API. We will try
+> to come up with a patch for the same. Thanks for inputs.
 
-Sascha
+Yes,
 
---------------------8<--------------------------
+Andrew, can you try attached two patches in your setup?
 
->From 9ebbc3d72c71bd97d7fc4458f60ae3ecd5876984 Mon Sep 17 00:00:00 2001
-From: Sascha Hauer <s.hauer@pengutronix.de>
-Date: Fri, 24 Jan 2014 08:34:16 +0100
-Subject: [PATCH] PWM: Document disabled PWM output as undefined
+Assume your system does not have intel iommu support?
 
-When disabled PWM hardware reacts differently. Some controllers
-just stop with their current value, others produce a constant high
-or low output, sometimes depending on the output inversion bit. Update
-the documentation to reflect that and request from the PWM consumer
-drivers to set a constant high/low value with duty cycles of 0/100%
-instead of disabling the PWM.
+Thanks
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- Documentation/pwm.txt | 2 ++
- 1 file changed, 2 insertions(+)
+Yinghai
 
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 93cb979..b7e8a31 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -44,6 +44,8 @@ After being requested, a PWM has to be configured using:
- int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
- 
- To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
-+The output of a disabled PWM is undefined. Set the duty cycle to 100%
-+for a constant high output and to 0 for constant low output.
- 
- Using PWMs with the sysfs interface
- -----------------------------------
--- 
-1.8.5.2
+--089e011849e662a27104f0b28e05
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_numa_x.patch"
+Content-Disposition: attachment; filename="fix_numa_x.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hqt5bvnn0
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+U3ViamVjdDogW1BBVENIXSB4ODY6IEZpeCBudW1hIHdpdGggcmV2ZXJ0aW5nIHdyb25nIG1lbWJs
+b2NrIHNldHRpbmcuCgpEYXZlIHJlcG9ydGVkIE51bWEgb24geDg2IGlzIGJyb2tlbiBvbiBzeXN0
+ZW0gd2l0aCAxVCBtZW1vcnkuCgpJdCB0dXJucyBvdXQKfCBjb21taXQgNWI2ZTUyOTUyMWQzNWUx
+YmNhYTBmZTQzNDU2ZDFiYmIzMzVjYWU1ZAp8IEF1dGhvcjogU2FudG9zaCBTaGlsaW1rYXIgPHNh
+bnRvc2guc2hpbGlta2FyQHRpLmNvbT4KfCBEYXRlOiAgIFR1ZSBKYW4gMjEgMTU6NTA6MDMgMjAx
+NCAtMDgwMAp8CnwgICAgeDg2OiBtZW1ibG9jazogc2V0IGN1cnJlbnQgbGltaXQgdG8gbWF4IGxv
+dyBtZW1vcnkgYWRkcmVzcwoKc2V0IGxpbWl0IHRvIGxvdyB3cm9uZ2x5LgoKbWF4X2xvd19wZm5f
+bWFwcGVkIGlzIGRpZmZlcmVudCBmcm9tIG1heF9wZm5fbWFwcGVkLgptYXhfbG93X3Bmbl9tYXBw
+ZWQgaXMgYWx3YXlzIHVuZGVyIDRHLgoKVGhhdCB3aWxsIG1lbWJsb2NrX2FsbG9jX25pZCBhbGwg
+Z28gdW5kZXIgNEcuCgpSZXZlcnQgdGhhdCBvZmZlbmRpbmcgcGF0Y2guCgpSZXBvcnRlZC1ieTog
+RGF2ZSBIYW5zZW4gPGRhdmUuaGFuc2VuQGludGVsLmNvbT4KU2lnbmVkLW9mZi1ieTogWWluZ2hh
+aSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKCi0tLQogYXJjaC94ODYvaW5jbHVkZS9hc20vcGFn
+ZV90eXBlcy5oIHwgICAgNCArKy0tCiBhcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYyAgICAgICAgICAg
+fCAgICAyICstCiAyIGZpbGVzIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMo
+LSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcGFnZV90eXBlcy5oCj09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BhZ2VfdHlw
+ZXMuaAorKysgbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BhZ2VfdHlwZXMuaApAQCAt
+NTEsOSArNTEsOSBAQCBleHRlcm4gaW50IGRldm1lbV9pc19hbGxvd2VkKHVuc2lnbmVkIGxvCiBl
+eHRlcm4gdW5zaWduZWQgbG9uZyBtYXhfbG93X3Bmbl9tYXBwZWQ7CiBleHRlcm4gdW5zaWduZWQg
+bG9uZyBtYXhfcGZuX21hcHBlZDsKIAotc3RhdGljIGlubGluZSBwaHlzX2FkZHJfdCBnZXRfbWF4
+X2xvd19tYXBwZWQodm9pZCkKK3N0YXRpYyBpbmxpbmUgcGh5c19hZGRyX3QgZ2V0X21heF9tYXBw
+ZWQodm9pZCkKIHsKLQlyZXR1cm4gKHBoeXNfYWRkcl90KW1heF9sb3dfcGZuX21hcHBlZCA8PCBQ
+QUdFX1NISUZUOworCXJldHVybiAocGh5c19hZGRyX3QpbWF4X3Bmbl9tYXBwZWQgPDwgUEFHRV9T
+SElGVDsKIH0KIAogYm9vbCBwZm5fcmFuZ2VfaXNfbWFwcGVkKHVuc2lnbmVkIGxvbmcgc3RhcnRf
+cGZuLCB1bnNpZ25lZCBsb25nIGVuZF9wZm4pOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tl
+cm5lbC9zZXR1cC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5l
+bC9zZXR1cC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVwLmMKQEAgLTExNzMs
+NyArMTE3Myw3IEBAIHZvaWQgX19pbml0IHNldHVwX2FyY2goY2hhciAqKmNtZGxpbmVfcCkKIAog
+CXNldHVwX3JlYWxfbW9kZSgpOwogCi0JbWVtYmxvY2tfc2V0X2N1cnJlbnRfbGltaXQoZ2V0X21h
+eF9sb3dfbWFwcGVkKCkpOworCW1lbWJsb2NrX3NldF9jdXJyZW50X2xpbWl0KGdldF9tYXhfbWFw
+cGVkKCkpOwogCWRtYV9jb250aWd1b3VzX3Jlc2VydmUoMCk7CiAKIAkvKgo=
+--089e011849e662a27104f0b28e05
+Content-Type: text/x-patch; charset=US-ASCII; name="revert_memblock_swiotlb_change.patch"
+Content-Disposition: attachment; 
+	filename="revert_memblock_swiotlb_change.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hqt5ck3l1
+
+LS0tCiBhcmNoL2FybS9rZXJuZWwvc2V0dXAuYyB8ICAgIDIgKy0KIGluY2x1ZGUvbGludXgvYm9v
+dG1lbS5oIHwgICAzNyArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrCiBsaWIv
+c3dpb3RsYi5jICAgICAgICAgICB8ICAgIDQgKystLQogMyBmaWxlcyBjaGFuZ2VkLCA0MCBpbnNl
+cnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4
+L2Jvb3RtZW0uaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L2Jv
+b3RtZW0uaAorKysgbGludXgtMi42L2luY2x1ZGUvbGludXgvYm9vdG1lbS5oCkBAIC0xNzUsNiAr
+MTc1LDI3IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCAqIF9faW5pdCBtZW1ibG9ja192aXIKIAkJCQkJ
+CSAgICBOVU1BX05PX05PREUpOwogfQogCisjaWZuZGVmIEFSQ0hfTE9XX0FERFJFU1NfTElNSVQK
+KyNkZWZpbmUgQVJDSF9MT1dfQUREUkVTU19MSU1JVCAgMHhmZmZmZmZmZlVMCisjZW5kaWYKKwor
+c3RhdGljIGlubGluZSB2b2lkICogX19pbml0IG1lbWJsb2NrX3ZpcnRfYWxsb2NfbG93KAorICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBoeXNfYWRkcl90IHNpemUsIHBo
+eXNfYWRkcl90IGFsaWduKQoreworICAgICAgICByZXR1cm4gbWVtYmxvY2tfdmlydF9hbGxvY190
+cnlfbmlkKHNpemUsIGFsaWduLAorCQkJCQkJICAgQk9PVE1FTV9MT1dfTElNSVQsCisJCQkJCQkg
+ICBBUkNIX0xPV19BRERSRVNTX0xJTUlULAorCQkJCQkJICAgTlVNQV9OT19OT0RFKTsKK30KK3N0
+YXRpYyBpbmxpbmUgdm9pZCAqIF9faW5pdCBtZW1ibG9ja192aXJ0X2FsbG9jX2xvd19ub3Bhbmlj
+KAorICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBoeXNfYWRkcl90IHNp
+emUsIHBoeXNfYWRkcl90IGFsaWduKQoreworICAgICAgICByZXR1cm4gbWVtYmxvY2tfdmlydF9h
+bGxvY190cnlfbmlkX25vcGFuaWMoc2l6ZSwgYWxpZ24sCisJCQkJCQkgICBCT09UTUVNX0xPV19M
+SU1JVCwKKwkJCQkJCSAgIEFSQ0hfTE9XX0FERFJFU1NfTElNSVQsCisJCQkJCQkgICBOVU1BX05P
+X05PREUpOworfQorCiBzdGF0aWMgaW5saW5lIHZvaWQgKiBfX2luaXQgbWVtYmxvY2tfdmlydF9h
+bGxvY19mcm9tX25vcGFuaWMoCiAJCXBoeXNfYWRkcl90IHNpemUsIHBoeXNfYWRkcl90IGFsaWdu
+LCBwaHlzX2FkZHJfdCBtaW5fYWRkcikKIHsKQEAgLTIzOCw2ICsyNTksMjIgQEAgc3RhdGljIGlu
+bGluZSB2b2lkICogX19pbml0IG1lbWJsb2NrX3ZpcgogCXJldHVybiBfX2FsbG9jX2Jvb3RtZW1f
+bm9wYW5pYyhzaXplLCBhbGlnbiwgQk9PVE1FTV9MT1dfTElNSVQpOwogfQogCitzdGF0aWMgaW5s
+aW5lIHZvaWQgKiBfX2luaXQgbWVtYmxvY2tfdmlydF9hbGxvY19sb3coCisgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgcGh5c19hZGRyX3Qgc2l6ZSwgcGh5c19hZGRyX3Qg
+YWxpZ24pCit7CisJaWYgKCFhbGlnbikKKwkJYWxpZ24gPSBTTVBfQ0FDSEVfQllURVM7CisJcmV0
+dXJuIF9fYWxsb2NfYm9vdG1lbV9sb3coc2l6ZSwgYWxpZ24sIEJPT1RNRU1fTE9XX0xJTUlUKTsK
+K30KKworc3RhdGljIGlubGluZSB2b2lkICogX19pbml0IG1lbWJsb2NrX3ZpcnRfYWxsb2NfbG93
+X25vcGFuaWMoCisgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGh5c19h
+ZGRyX3Qgc2l6ZSwgcGh5c19hZGRyX3QgYWxpZ24pCit7CisJaWYgKCFhbGlnbikKKwkJYWxpZ24g
+PSBTTVBfQ0FDSEVfQllURVM7CisJcmV0dXJuIF9fYWxsb2NfYm9vdG1lbV9sb3dfbm9wYW5pYyhz
+aXplLCBhbGlnbiwgQk9PVE1FTV9MT1dfTElNSVQpOworfQorCiBzdGF0aWMgaW5saW5lIHZvaWQg
+KiBfX2luaXQgbWVtYmxvY2tfdmlydF9hbGxvY19mcm9tX25vcGFuaWMoCiAJCXBoeXNfYWRkcl90
+IHNpemUsIHBoeXNfYWRkcl90IGFsaWduLCBwaHlzX2FkZHJfdCBtaW5fYWRkcikKIHsKSW5kZXg6
+IGxpbnV4LTIuNi9saWIvc3dpb3RsYi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2xp
+Yi9zd2lvdGxiLmMKKysrIGxpbnV4LTIuNi9saWIvc3dpb3RsYi5jCkBAIC0xNzIsNyArMTcyLDcg
+QEAgaW50IF9faW5pdCBzd2lvdGxiX2luaXRfd2l0aF90YmwoY2hhciAqdAogCS8qCiAJICogR2V0
+IHRoZSBvdmVyZmxvdyBlbWVyZ2VuY3kgYnVmZmVyCiAJICovCi0Jdl9vdmVyZmxvd19idWZmZXIg
+PSBtZW1ibG9ja192aXJ0X2FsbG9jX25vcGFuaWMoCisJdl9vdmVyZmxvd19idWZmZXIgPSBtZW1i
+bG9ja192aXJ0X2FsbG9jX2xvd19ub3BhbmljKAogCQkJCQkJUEFHRV9BTElHTihpb190bGJfb3Zl
+cmZsb3cpLAogCQkJCQkJUEFHRV9TSVpFKTsKIAlpZiAoIXZfb3ZlcmZsb3dfYnVmZmVyKQpAQCAt
+MjIwLDcgKzIyMCw3IEBAIHN3aW90bGJfaW5pdChpbnQgdmVyYm9zZSkKIAlieXRlcyA9IGlvX3Rs
+Yl9uc2xhYnMgPDwgSU9fVExCX1NISUZUOwogCiAJLyogR2V0IElPIFRMQiBtZW1vcnkgZnJvbSB0
+aGUgbG93IHBhZ2VzICovCi0JdnN0YXJ0ID0gbWVtYmxvY2tfdmlydF9hbGxvY19ub3BhbmljKFBB
+R0VfQUxJR04oYnl0ZXMpLCBQQUdFX1NJWkUpOworCXZzdGFydCA9IG1lbWJsb2NrX3ZpcnRfYWxs
+b2NfbG93X25vcGFuaWMoUEFHRV9BTElHTihieXRlcyksIFBBR0VfU0laRSk7CiAJaWYgKHZzdGFy
+dCAmJiAhc3dpb3RsYl9pbml0X3dpdGhfdGJsKHZzdGFydCwgaW9fdGxiX25zbGFicywgdmVyYm9z
+ZSkpCiAJCXJldHVybjsKIApJbmRleDogbGludXgtMi42L2FyY2gvYXJtL2tlcm5lbC9zZXR1cC5j
+Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gvYXJtL2tlcm5lbC9zZXR1cC5jCisr
+KyBsaW51eC0yLjYvYXJjaC9hcm0va2VybmVsL3NldHVwLmMKQEAgLTcxNyw3ICs3MTcsNyBAQCBz
+dGF0aWMgdm9pZCBfX2luaXQgcmVxdWVzdF9zdGFuZGFyZF9yZXNvCiAJa2VybmVsX2RhdGEuZW5k
+ICAgICA9IHZpcnRfdG9fcGh5cyhfZW5kIC0gMSk7CiAKIAlmb3JfZWFjaF9tZW1ibG9jayhtZW1v
+cnksIHJlZ2lvbikgewotCQlyZXMgPSBtZW1ibG9ja192aXJ0X2FsbG9jKHNpemVvZigqcmVzKSwg
+MCk7CisJCXJlcyA9IG1lbWJsb2NrX3ZpcnRfYWxsb2NfbG93KHNpemVvZigqcmVzKSwgMCk7CiAJ
+CXJlcy0+bmFtZSAgPSAiU3lzdGVtIFJBTSI7CiAJCXJlcy0+c3RhcnQgPSBfX3Bmbl90b19waHlz
+KG1lbWJsb2NrX3JlZ2lvbl9tZW1vcnlfYmFzZV9wZm4ocmVnaW9uKSk7CiAJCXJlcy0+ZW5kID0g
+X19wZm5fdG9fcGh5cyhtZW1ibG9ja19yZWdpb25fbWVtb3J5X2VuZF9wZm4ocmVnaW9uKSkgLSAx
+Owo=
+--089e011849e662a27104f0b28e05--
