@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaAXFcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 00:32:08 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:44284 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaAXFbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 00:31:41 -0500
-X-Greylist: delayed 2738 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jan 2014 00:31:40 EST
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Oleg Drokin <green@linuxhacker.ru>
-Subject: [PATCH 0/5] Lustre fixes from my testing
-Date: Thu, 23 Jan 2014 23:45:03 -0500
-Message-Id: <1390538708-4120-1-git-send-email-green@linuxhacker.ru>
-X-Mailer: git-send-email 1.8.5.3
-MIME-Version: 1.0
+	id S1751115AbaAXFo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 00:44:26 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:58958 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaAXFoY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 00:44:24 -0500
+Date: Fri, 24 Jan 2014 06:42:54 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Mark Rutland <mark.rutland@arm.com>,
+        linux-pwm@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
+Message-ID: <20140124064254.0369084d@ipc1.ka-ro>
+In-Reply-To: <20140123173642.GZ15937@n2100.arm.linux.org.uk>
+References: <20140123083714.3c6e86ae@ipc1.ka-ro>
+	<1390467898-9216-1-git-send-email-s.hauer@pengutronix.de>
+	<1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
+	<20140123115632.6d3f1a58@ipc1.ka-ro>
+	<20140123110444.GI16215@pengutronix.de>
+	<20140123165349.GY15937@n2100.arm.linux.org.uk>
+	<20140123173642.GZ15937@n2100.arm.linux.org.uk>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just deployed a mainline lustre client in my test system.
-These patches below are for stuff that causes crashes or other issues
-in my (so far) very basic sanity testing (more to come).
+Hi,
 
-The patches mostly originate from our main tree, but I decided to
-prioritize these as they disrupt my testing, obviously.
+Russell King - ARM Linux wrote:
+> On Thu, Jan 23, 2014 at 04:53:50PM +0000, Russell King - ARM Linux wrote:
+> > On Thu, Jan 23, 2014 at 12:04:44PM +0100, Sascha Hauer wrote:
+> > > On Thu, Jan 23, 2014 at 11:56:32AM +0100, Lothar Waßmann wrote:
+> > > > Hi,
+> > > > 
+> > > > Sascha Hauer wrote:
+> > > > > of_pwm_n_cells for the of_xlate handler is stored in struct pwm_chip,
+> > > > > but it is only ever used by the of_xlate handler itsel. Remove
+> > > > > of_pwm_n_cells from struct pwm_chip and let the handler do the argument
+> > > > > count checking to simplify the code.
+> > > > > 
+> > > > This still does not make the PWM_POLARITY flag in the pwms node
+> > > > optional as was the goal because of_parse_phandle_with_args() requires
+> > > > at least #pwm-cells arguments in the node.
+> > > > 
+> > > > So, with a DT configuration like:
+> > > > pwm0: pwm@0 {
+> > > > 	#pwm-cells = <3>;
+> > > > };
+> > > > backlight {
+> > > > 	pwms = <&pwm0 0 100000>;
+> > > > };
+> > > 
+> > > We misunderstood each other. My goal was to allow the driver to also
+> > > work with old devicetrees which specify #pwm-cells = <2>, not to allow
+> > > inconsistent devicetrees like the snippet above.
+> > 
+> > In which case, the patch I've posted seems to do that job too... I'm
+> > just about to test out the three-cell version.
+> 
+> Okay, this works, but there's a problem with pwm-leds.
+> 
+> When the duty cycle is set to zero (when you set the brightness to zero)
+> pwm-leds decides to disable the PWM after configuring it.  This causes
+> the PWM output to be driven low, causing the LED to go to maximum
+> brightness.
+> 
+> So, using the inversion at PWM level doesn't work.
+> 
+The problem is that the driver calls pwm_disable() when the duty cycle is 0.
+This sets the PWM output low independent from the output polarity setting.
 
-Also adding myself as one of the people who others would hopefully
-CC all lustre patches to.
+> To make this work correctly, we really need pwm-leds to do the inversion
+> rather than setting the inversion bit in hardware.
+> 
+The same holds for the pwm-backlight driver.
 
-Please consider.
+The easiest fix would be not to call pwm_disable() even for a zero duty
+cycle.
 
-Oleg Drokin (5):
-  staging/lustre: fix compile warning with is_vmalloc_addr
-  staging/lustre/lnet: Fix use after free in ksocknal_send
-  lustre: Account for changelog_ext_rec in CR_MAXSIZE
-  lustre: Correct KUC code max changelog msg size
-  lustre: add myself to list of people to CC on lustre patches
 
- drivers/staging/lustre/TODO                                     | 5 +++--
- drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h | 2 ++
- drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c          | 2 +-
- drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c          | 5 +++--
- drivers/staging/lustre/lustre/include/lustre/lustre_user.h      | 3 ++-
- drivers/staging/lustre/lustre/mdc/mdc_request.c                 | 6 +++---
- 6 files changed, 14 insertions(+), 9 deletions(-)
-
+Lothar Waßmann
 -- 
-1.8.5.3
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
