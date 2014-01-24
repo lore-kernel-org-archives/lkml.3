@@ -1,104 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaAXCqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 21:46:49 -0500
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:4160
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750969AbaAXCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 21:46:48 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "moinejf@free.fr" <moinejf@free.fr>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH Resend 7/8] ASoC: add
- snd_soc_of_parse_audio_simple_widgets for DeviceTree
-Thread-Topic: [PATCH Resend 7/8] ASoC: add
- snd_soc_of_parse_audio_simple_widgets for DeviceTree
-Thread-Index: AQHPGACs90QsyiOhrEWLbv1Hg0tOIZqStbuAgABvx4A=
-Date: Fri, 24 Jan 2014 02:46:33 +0000
-Message-ID: <638679dfd176409680c962cdeb3704ef@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1390453370-29194-1-git-send-email-Li.Xiubo@freescale.com>
- <1390453370-29194-8-git-send-email-Li.Xiubo@freescale.com>
- <20140123193945.GH11727@sirena.org.uk>
-In-Reply-To: <20140123193945.GH11727@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.216]
-x-forefront-prvs: 01018CB5B3
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(164054003)(189002)(80022001)(47446002)(74502001)(74316001)(81342001)(85306002)(4396001)(76576001)(87936001)(31966008)(90146001)(81542001)(56816005)(2656002)(93516002)(74366001)(77982001)(94316002)(69226001)(85852003)(86362001)(83072002)(74706001)(65816001)(87266001)(76796001)(74662001)(49866001)(47736001)(74876001)(83322001)(81686001)(33646001)(66066001)(47976001)(46102001)(80976001)(63696002)(53806001)(51856001)(59766001)(79102001)(54316002)(92566001)(50986001)(81816001)(76786001)(54356001)(56776001)(76482001)(93136001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="gb2312"
+	id S1752051AbaAXCvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 21:51:09 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:57415 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaAXCvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 21:51:06 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140124022903.GK27606@dastard>
+References: <20140124015855.GM16455@hansolo.jdub.homelinux.org>
+	<20140124022903.GK27606@dastard>
+Date: Thu, 23 Jan 2014 21:51:05 -0500
+X-Google-Sender-Auth: 82o4QYflGMD6m1C4YPUJU1wfUe0
+Message-ID: <CA+5PVA4i0xp7jqcR=yMG3BjucXfkbM+yXP7YoDHWZgbLtdej-Q@mail.gmail.com>
+Subject: Re: XFS lockdep spew with v3.13-4156-g90804ed
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Ben Myers <bpm@sgi.com>, Eric Sandeen <sandeen@redhat.com>,
+        xfs@oss.sgi.com,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0O2kxPe028019
 
+On Thu, Jan 23, 2014 at 9:29 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Thu, Jan 23, 2014 at 08:58:56PM -0500, Josh Boyer wrote:
+>> Hi All,
+>>
+>> I'm hitting an XFS lockdep error with Linus' tree today after the XFS
+>> merge.  I wasn't hitting this with v3.13-3995-g0dc3fd0, which seems
+>> to backup the "before XFS merge" claim.  Full text below:
+>
+> Ugh. mmap_sem/inode lock order stupidity.
+>
+> Looks like a false positive. Basically, it's complaining that a page
+> fault can occur in getdents() syscall on a user buffer while the
+> directory IO lock is held, and then complaining that a this is the
+> opposite lock order for a
+>>
+>>
+>> [  132.638044] ======================================================
+>> [  132.638045] [ INFO: possible circular locking dependency detected ]
+>> [  132.638047] 3.14.0-0.rc0.git7.1.fc21.x86_64 #1 Not tainted
+>> [  132.638048] -------------------------------------------------------
+>> [  132.638049] gnome-session/1432 is trying to acquire lock:
+>> [  132.638050]  (&mm->mmap_sem){++++++}, at: [<ffffffff811b846f>] might_fault+0x
+>> 5f/0xb0
+>> [  132.638055]
+>> but task is already holding lock:
+>> [  132.638056]  (&(&ip->i_lock)->mr_lock){++++..}, at: [<ffffffffa05b3c12>] xfs_
+>> ilock+0xf2/0x1c0 [xfs]
+>> [  132.638076]
+>> which lock already depends on the new lock.
+>>
+>> [  132.638077]
+>> the existing dependency chain (in reverse order) is:
+>> [  132.638078]
+>> -> #1 (&(&ip->i_lock)->mr_lock){++++..}:
+>> [  132.638080]        [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+>> [  132.638083]        [<ffffffff8178312e>] _raw_spin_lock+0x3e/0x80
+>> [  132.638085]        [<ffffffff8123c579>] __mark_inode_dirty+0x119/0x440
+>> [  132.638088]        [<ffffffff812447fc>] __set_page_dirty+0x6c/0xc0
+>> [  132.638090]        [<ffffffff812477e1>] mark_buffer_dirty+0x61/0x180
+>> [  132.638092]        [<ffffffff81247a31>] __block_commit_write.isra.21+0x81/0xb0
+>> [  132.638094]        [<ffffffff81247be6>] block_write_end+0x36/0x70
+>> [  132.638096]        [<ffffffff81247c48>] generic_write_end+0x28/0x90
+>> [  132.638097]        [<ffffffffa0554cab>] xfs_vm_write_end+0x2b/0x70 [xfs]
+>> [  132.638104]        [<ffffffff8118c4f6>] generic_file_buffered_write+0x156/0x260
+>> [  132.638107]        [<ffffffffa05651d7>] xfs_file_buffered_aio_write+0x107/0x250 [xfs]
+>> [  132.638115]        [<ffffffffa05653eb>] xfs_file_aio_write+0xcb/0x130 [xfs]
+>> [  132.638122]        [<ffffffff8120af8a>] do_sync_write+0x5a/0x90
+>> [  132.638125]        [<ffffffff8120b74d>] vfs_write+0xbd/0x1f0
+>> [  132.638126]        [<ffffffff8120c15c>] SyS_write+0x4c/0xa0
+>> [  132.638128]        [<ffffffff8178db69>] system_call_fastpath+0x16/0x1b
+>
+> Sorry, what? That trace is taking the ip->i_vnode->i_lock
+> *spinlock*, not the ip->i_lock *rwsem*. And it's most definitely not
+> currently holding the ip->i_lock rwsem here. I think lockdep has
+> dumped the wrong stack trace here, because it most certainly doesn't
+> match the unsafe locking scenario that has been detected.
 
-> > +static struct snd_soc_dapm_widget simple_widgets[] = {
-> > +	SND_SOC_DAPM_MIC("Mic", NULL),
-> > +	SND_SOC_DAPM_LINE("Line", NULL),
-> > +	SND_SOC_DAPM_HP("Hp", NULL),
-> > +	SND_SOC_DAPM_SPK("Spk", NULL),
-> > +};
-> 
+I rebooted again with the same kernel and lockdep spit out a different
+stacktrace for this part.  See below.  The rest looks mostly the same,
+and it spews when I log into gnome, so at least it's recreatable.
 
-This is the templates for "Microphone XXX", "Line XXX", "Headphone XXX"
-and "Spk XXX" .
+> You can't mmap directories, and so the page fault lock order being
+> shown for CPU1 can't happen on a directory. False positive.
+>
+> *sigh*
+>
+> More complexity in setting up inode lock order instances is required
+> so that lockdep doesn't confuse the lock ordering semantics of
+> directories with regular files. As if that code to make lockdep
+> happy wasn't complex enough already....
 
+So the summary is basically: false positive with additional annotations needed?
 
+josh
 
-> Does this mean we're restricted to a particular set of names?  That
-> seems sad and won't work if there's a desire for more than one of a
-> given widget - the main use case I can see is multiple microphones with
-> separate microphone biases.  How about having some templates that we
-> copy and then replace the name with the one the user supplied?
-> 
+Full output of the lockdep report after I rebooted (sorry if the
+formatting is off, I'm on a different machine and doing this remotely
+until tomorrow.)
 
-This code has already supplied this I think.
+[  104.565930] ======================================================
+[  104.565931] [ INFO: possible circular locking dependency detected ]
+[  104.565933] 3.14.0-0.rc0.git7.1.fc21.x86_64 #1 Not tainted
+[  104.565934] -------------------------------------------------------
+[  104.565935] gnome-session/1450 is trying to acquire lock:
+[  104.565936]  (&mm->mmap_sem){++++++}, at: [<ffffffff811b846f>]
+might_fault+0x5f/0xb0
+[  104.565942]
+but task is already holding lock:
+[  104.565943]  (&(&ip->i_lock)->mr_lock){++++..}, at:
+[<ffffffffa05f4c12>] xfs_ilock+0xf2/0x1c0 [xfs]
+[  104.565963]
+which lock already depends on the new lock.
 
-Using this API, the only limitation is that, for example if the user has
-multiple Microphones, it should set the name in DT file like:
+[  104.565964]
+the existing dependency chain (in reverse order) is:
+[  104.565965]
+-> #1 (&(&ip->i_lock)->mr_lock){++++..}:
+[  104.565967]        [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+[  104.565970]        [<ffffffff810d7d27>] down_read_nested+0x57/0xa0
+[  104.565972]        [<ffffffffa05f4c12>] xfs_ilock+0xf2/0x1c0 [xfs]
+[  104.565983]        [<ffffffffa05f4cff>]
+xfs_ilock_data_map_shared+0x1f/0x40 [xfs]
+[  104.565995]        [<ffffffffa0597367>] __xfs_get_blocks+0x87/0x730 [xfs]
+[  104.566002]        [<ffffffffa0597a21>] xfs_get_blocks+0x11/0x20 [xfs]
+[  104.566008]        [<ffffffff812531e7>] do_mpage_readpage+0x447/0x670
+[  104.566011]        [<ffffffff812534eb>] mpage_readpages+0xdb/0x130
+[  104.566012]        [<ffffffffa0595ddd>] xfs_vm_readpages+0x1d/0x20 [xfs]
+[  104.566019]        [<ffffffff8119b222>] __do_page_cache_readahead+0x2c2/0x360
+[  104.566022]        [<ffffffff8119b9b1>] ra_submit+0x21/0x30
+[  104.566023]        [<ffffffff8118ed7d>] filemap_fault+0x37d/0x420
+[  104.566026]        [<ffffffff811b8a9f>] __do_fault+0x6f/0x520
+[  104.566027]        [<ffffffff811bcd91>] handle_mm_fault+0x3b1/0xe60
+[  104.566029]        [<ffffffff81787e94>] __do_page_fault+0x174/0x5e0
+[  104.566031]        [<ffffffff8178830e>] do_page_fault+0xe/0x10
+[  104.566032]        [<ffffffff81784538>] page_fault+0x28/0x30
+[  104.566034]
+-> #0 (&mm->mmap_sem){++++++}:
+[  104.566036]        [<ffffffff810de0fc>] __lock_acquire+0x18ec/0x1aa0
+[  104.566038]        [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+[  104.566040]        [<ffffffff811b849c>] might_fault+0x8c/0xb0
+[  104.566041]        [<ffffffff81220a91>] filldir+0x91/0x120
+[  104.566043]        [<ffffffffa05a1f7f>]
+xfs_dir2_sf_getdents+0x23f/0x2a0 [xfs]
+[  104.566051]        [<ffffffffa05a23fb>] xfs_readdir+0x16b/0x1d0 [xfs]
+[  104.566059]        [<ffffffffa05a483b>] xfs_file_readdir+0x2b/0x40 [xfs]
+[  104.566066]        [<ffffffff812208d8>] iterate_dir+0xa8/0xe0
+[  104.566068]        [<ffffffff81220d83>] SyS_getdents+0x93/0x120
+[  104.566070]        [<ffffffff8178db69>] system_call_fastpath+0x16/0x1b
+[  104.566072]
+other info that might help us debug this:
 
-"Mic XXX", "Mic YYY", "Mic ZZZ"...
+[  104.566073]  Possible unsafe locking scenario:
 
-And these widgets will use the template of : SND_SOC_DAPM_MIC("Mic", NULL),
-And the widgets' names will be replaced with "Mic XXX", "Mic YYY",
-"Mic ZZZ"... from the user's DT node.
+[  104.566074]        CPU0                    CPU1
+[  104.566075]        ----                    ----
+[  104.566075]   lock(&(&ip->i_lock)->mr_lock);
+[  104.566077]                                lock(&mm->mmap_sem);
+[  104.566078]                                lock(&(&ip->i_lock)->mr_lock);
+[  104.566079]   lock(&mm->mmap_sem);
+[  104.566081]
+ *** DEADLOCK ***
 
-
-
-Or your suggestion is £º
-
-The templates is:
-+static struct snd_soc_dapm_widget simple_widgets[] = {
-+	SND_SOC_DAPM_MIC("Mic", NULL),
-+	SND_SOC_DAPM_LINE("Line", NULL),
-+	SND_SOC_DAPM_HP("Hp", NULL),
-+	SND_SOC_DAPM_SPK("Spk", NULL),
-+};
-
-And in the DT node:
-simple-off-codec-widgets = 
-/*	template-name	user-supplied-name	*/
-	"Mic",		"Microphone XXX",
-	"Mic",		"UUU Microphone YYY",
-	"Hp",		"TTT Headphone XXX",
-	"Hp",		"Headphone YYY";
-
-And then just replace the template's name with the user supplied name?
-
-
-Thanks,
-
-Best Regards,
-Xiubo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+[  104.566082] 2 locks held by gnome-session/1450:
+[  104.566083]  #0:  (&type->i_mutex_dir_key#4){+.+.+.}, at:
+[<ffffffff81220892>] iterate_dir+0x62/0xe0
+[  104.566087]  #1:  (&(&ip->i_lock)->mr_lock){++++..}, at:
+[<ffffffffa05f4c12>] xfs_ilock+0xf2/0x1c0 [xfs]
+[  104.566099]
+stack backtrace:
+[  104.566101] CPU: 4 PID: 1450 Comm: gnome-session Not tainted
+3.14.0-0.rc0.git7.1.fc21.x86_64 #1
+[  104.566102] Hardware name: Dell Inc. XPS 8300  /0Y2MRG, BIOS A06 10/17/2011
+[  104.566103]  ffffffff825ba040 ffff8800b8dedc60 ffffffff8177a8c9
+ffffffff825ba040
+[  104.566106]  ffff8800b8dedca0 ffffffff8177616c ffff8800b8dedcf0
+ffff8802fb842648
+[  104.566108]  ffff8802fb841ab0 0000000000000002 0000000000000002
+ffff8802fb842648
+[  104.566110] Call Trace:
+[  104.566113]  [<ffffffff8177a8c9>] dump_stack+0x4d/0x66
+[  104.566115]  [<ffffffff8177616c>] print_circular_bug+0x201/0x20f
+[  104.566117]  [<ffffffff810de0fc>] __lock_acquire+0x18ec/0x1aa0
+[  104.566119]  [<ffffffff810deaa2>] lock_acquire+0xa2/0x1d0
+[  104.566121]  [<ffffffff811b846f>] ? might_fault+0x5f/0xb0
+[  104.566123]  [<ffffffff811b849c>] might_fault+0x8c/0xb0
+[  104.566124]  [<ffffffff811b846f>] ? might_fault+0x5f/0xb0
+[  104.566126]  [<ffffffff81220a91>] filldir+0x91/0x120
+[  104.566134]  [<ffffffffa05a1f7f>] xfs_dir2_sf_getdents+0x23f/0x2a0 [xfs]
+[  104.566145]  [<ffffffffa05f4c12>] ? xfs_ilock+0xf2/0x1c0 [xfs]
+[  104.566153]  [<ffffffffa05a23fb>] xfs_readdir+0x16b/0x1d0 [xfs]
+[  104.566161]  [<ffffffffa05a483b>] xfs_file_readdir+0x2b/0x40 [xfs]
+[  104.566163]  [<ffffffff812208d8>] iterate_dir+0xa8/0xe0
+[  104.566166]  [<ffffffff8122ca7c>] ? fget_light+0x3c/0x4f0
+[  104.566168]  [<ffffffff81220d83>] SyS_getdents+0x93/0x120
+[  104.566170]  [<ffffffff81220a00>] ? fillonedir+0xf0/0xf0
+[  104.566172]  [<ffffffff81134ecc>] ? __audit_syscall_entry+0x9c/0xf0
+[  104.566174]  [<ffffffff8178db69>] system_call_fastpath+0x16/0x1b
