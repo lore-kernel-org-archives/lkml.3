@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaAXPJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:09:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64433 "EHLO mga09.intel.com"
+	id S1752852AbaAXPOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:14:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41421 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752500AbaAXPI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:08:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,713,1384329600"; 
-   d="scan'208";a="471901077"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 0/8] perf tools: kaslr fixes
-Date: Fri, 24 Jan 2014 17:10:10 +0200
-Message-Id: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752477AbaAXPOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:14:10 -0500
+From: Aaron Tomlin <atomlin@redhat.com>
+To: mingo@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rientjes@google.com, mingo@redhat.com, oleg@redhat.com,
+        riel@redhat.com, bmr@redhat.com, akpm@linux-foundation.org,
+        atomlin@redhat.com
+Subject: [PATCH] mm: Document improved handling of swappiness==0
+Date: Fri, 24 Jan 2014 15:13:28 +0000
+Message-Id: <1390576408-16673-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Prior to upstream commit fe35004f ("[mm] avoid swapping out
+with swappiness==0") setting swappiness to 0, reclaim code
+could still evict recently used user anonymous memory to swap
+even though there is a significant amount of RAM used for page
+cache.
 
-Here are some patches that improve perf tools
-handling of relocation.
+The behaviour of setting swappiness to 0 has since changed.
+When set, the reclaim code does not initiate swap until the
+amount of free pages and file-backed pages, is less than the
+high water mark in a zone.
 
-This has become an issue as mentioned in this
-thread:
+Let's update the documentation to reflect this.
 
-	http://marc.info/?l=linux-kernel&m=139030004314756
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Bryn M. Reeves <bmr@redhat.com>
+---
+ Documentation/sysctl/vm.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 9f5481b..38388ee 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -696,7 +696,9 @@ swappiness
+ 
+ This control is used to define how aggressive the kernel will swap
+ memory pages.  Higher values will increase agressiveness, lower values
+-decrease the amount of swap.
++decrease the amount of swap.  A value of 0 instructs the kernel not to
++initiate swap until the amount of free and file-backed pages, is less
++than the high water mark in a zone.
+ 
+ The default value is 60.
+ 
+-- 
+1.8.4.2
 
-It looks like the changes I made to vmlinux and
-module mapping to allow object code to be read
-broke the symbol annotation for relocated kernels.
-The first patch fixes that.
-
-There were some other issues though:
-	- ref_reloc_sym was not always set up
-	- mustn't use kcore if the kernel has moved
-	- kallsyms is not unique for a given
-	buildid
-
-These things need more testing but I thought it was
-worth getting comments now.
-
-
-Adrian Hunter (8):
-      perf tools: Fix symbol annotation for relocated kernel
-      perf tools: Add kallsyms__get_function_start()
-      perf tools: Add machine__get_kallsyms_filename()
-      perf tools: Set up ref_reloc_sym in machine__create_kernel_maps()
-      perf report: Get ref_reloc_sym from kernel map
-      perf tools: Prevent the use of kcore if the kernel has moved
-      perf tools: test does not need to set up ref_reloc_sym
-      perf tools: Adjust kallsyms for relocated kernel
-
- tools/perf/builtin-record.c         | 10 ++----
- tools/perf/tests/vmlinux-kallsyms.c | 10 ------
- tools/perf/util/event.c             | 36 ++++++++++----------
- tools/perf/util/event.h             |  6 ++--
- tools/perf/util/machine.c           | 40 ++++++++++++++++++-----
- tools/perf/util/map.c               |  5 +--
- tools/perf/util/map.h               |  1 +
- tools/perf/util/symbol-elf.c        |  2 ++
- tools/perf/util/symbol.c            | 65 +++++++++++++++++++++++++++++++++----
- 9 files changed, 120 insertions(+), 55 deletions(-)
-
-
-Regards
-Adrian
