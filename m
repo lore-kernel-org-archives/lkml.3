@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115AbaAXFo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 00:44:26 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:58958 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaAXFoY convert rfc822-to-8bit (ORCPT
+	id S1751408AbaAXFon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 00:44:43 -0500
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:51472 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751226AbaAXFok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 00:44:24 -0500
-Date: Fri, 24 Jan 2014 06:42:54 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Mark Rutland <mark.rutland@arm.com>,
-        linux-pwm@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] PWM: let of_xlate handlers check args count
-Message-ID: <20140124064254.0369084d@ipc1.ka-ro>
-In-Reply-To: <20140123173642.GZ15937@n2100.arm.linux.org.uk>
-References: <20140123083714.3c6e86ae@ipc1.ka-ro>
-	<1390467898-9216-1-git-send-email-s.hauer@pengutronix.de>
-	<1390467898-9216-2-git-send-email-s.hauer@pengutronix.de>
-	<20140123115632.6d3f1a58@ipc1.ka-ro>
-	<20140123110444.GI16215@pengutronix.de>
-	<20140123165349.GY15937@n2100.arm.linux.org.uk>
-	<20140123173642.GZ15937@n2100.arm.linux.org.uk>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 24 Jan 2014 00:44:40 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3876:3877:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4659:5007:6114:6642:7652:7809:7875:7901:9012:9025:10004:10049:10400:10848:11232:11257:11658:11914:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: veil74_287ec1db04730
+X-Filterd-Recvd-Size: 1662
+Message-ID: <1390542276.32356.22.camel@joe-AO722>
+Subject: Re: [PATCH 5/5] lustre: add myself to list of people to CC on
+ lustre patches
+From: Joe Perches <joe@perches.com>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Oleg Drokin <oleg.drokin@intel.com>
+Date: Thu, 23 Jan 2014 21:44:36 -0800
+In-Reply-To: <1390538708-4120-6-git-send-email-green@linuxhacker.ru>
+References: <1390538708-4120-1-git-send-email-green@linuxhacker.ru>
+	 <1390538708-4120-6-git-send-email-green@linuxhacker.ru>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add a MAINTAINERS entry too?
+---
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Russell King - ARM Linux wrote:
-> On Thu, Jan 23, 2014 at 04:53:50PM +0000, Russell King - ARM Linux wrote:
-> > On Thu, Jan 23, 2014 at 12:04:44PM +0100, Sascha Hauer wrote:
-> > > On Thu, Jan 23, 2014 at 11:56:32AM +0100, Lothar Waßmann wrote:
-> > > > Hi,
-> > > > 
-> > > > Sascha Hauer wrote:
-> > > > > of_pwm_n_cells for the of_xlate handler is stored in struct pwm_chip,
-> > > > > but it is only ever used by the of_xlate handler itsel. Remove
-> > > > > of_pwm_n_cells from struct pwm_chip and let the handler do the argument
-> > > > > count checking to simplify the code.
-> > > > > 
-> > > > This still does not make the PWM_POLARITY flag in the pwms node
-> > > > optional as was the goal because of_parse_phandle_with_args() requires
-> > > > at least #pwm-cells arguments in the node.
-> > > > 
-> > > > So, with a DT configuration like:
-> > > > pwm0: pwm@0 {
-> > > > 	#pwm-cells = <3>;
-> > > > };
-> > > > backlight {
-> > > > 	pwms = <&pwm0 0 100000>;
-> > > > };
-> > > 
-> > > We misunderstood each other. My goal was to allow the driver to also
-> > > work with old devicetrees which specify #pwm-cells = <2>, not to allow
-> > > inconsistent devicetrees like the snippet above.
-> > 
-> > In which case, the patch I've posted seems to do that job too... I'm
-> > just about to test out the three-cell version.
-> 
-> Okay, this works, but there's a problem with pwm-leds.
-> 
-> When the duty cycle is set to zero (when you set the brightness to zero)
-> pwm-leds decides to disable the PWM after configuring it.  This causes
-> the PWM output to be driven low, causing the LED to go to maximum
-> brightness.
-> 
-> So, using the inversion at PWM level doesn't work.
-> 
-The problem is that the driver calls pwm_disable() when the duty cycle is 0.
-This sets the PWM output low independent from the output polarity setting.
-
-> To make this work correctly, we really need pwm-leds to do the inversion
-> rather than setting the inversion bit in hardware.
-> 
-The same holds for the pwm-backlight driver.
-
-The easiest fix would be not to call pwm_disable() even for a zero duty
-cycle.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5c5d554..9ca5de8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8284,6 +8284,14 @@ W:	http://www.lirc.org/
+ S:	Odd Fixes
+ F:	drivers/staging/media/lirc/
+ 
++STAGING - LUSTRE
++M:	Andreas Dilger <andreas.dilger@intel.com>
++M:	Oleg Drokin <oleg.drokin@intel.com>
++M:	Peng Tao <tao.peng@emc.com>.
++L:	hpdd-discuss <hpdd-discuss@lists.01.org>
++S:	Odd Fixes
++F:	drivers/staging/lustre/
++
+ STAGING - NVIDIA COMPLIANT EMBEDDED CONTROLLER INTERFACE (nvec)
+ M:	Julian Andres Klode <jak@jak-linux.org>
+ M:	Marc Dietrich <marvin24@gmx.de>
 
 
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
