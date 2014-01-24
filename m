@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaAXRnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:43:32 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44228 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaAXRna (ORCPT
+	id S1752103AbaAXRpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:45:03 -0500
+Received: from mail.windriver.com ([147.11.1.11]:61045 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaAXRpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:43:30 -0500
-Message-ID: <52E2A643.6050209@cogentembedded.com>
-Date: Fri, 24 Jan 2014 21:43:31 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 24 Jan 2014 12:45:00 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mundt <lethal@linux-sh.org>, <linux-sh@vger.kernel.org>
+Subject: [PATCH] sh: mach-highlander/psw.c is tristate and should use module.h
+Date: Fri, 24 Jan 2014 12:44:44 -0500
+Message-ID: <1390585484-5736-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org
-CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] usb: musb: musb_host: Enable ISOCH IN handling for
- AM335x host
-References: <1390572895-26428-1-git-send-email-george.cherian@ti.com> <1390572895-26428-2-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1390572895-26428-2-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This file is controlled by a tristate Kconfig option, and hence
+needs to include module.h so that it can get module_init() once
+we relocate it from init.h into module.h in the future.
 
-On 24-01-2014 18:14, George Cherian wrote:
+Note that module_exit() appears to be missing from the driver, so
+it is questionable whether it would actually work for a removal
+and reload cycle if it was configured for a modular build.
 
-> Enable the isochrounous IN handling for AM335x HOST.
-> Reprogram CPPI to receive consecutive ISOCH frames in the same URB.
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
-    Sigh, I knew CPPI ISO path was broken for years but didn't have time to 
-fix it. :-(
+[patch will be added to init cleanup series:
+   http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git/  ]
 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   drivers/usb/musb/musb_host.c | 29 ++++++++++++++++++++++++++---
->   1 file changed, 26 insertions(+), 3 deletions(-)
+ arch/sh/boards/mach-highlander/psw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-> index ed45572..5b6482c 100644
-> --- a/drivers/usb/musb/musb_host.c
-> +++ b/drivers/usb/musb/musb_host.c
-> @@ -1689,9 +1689,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
->   			| MUSB_RXCSR_H_AUTOREQ
->   			| MUSB_RXCSR_AUTOCLEAR
->   			| MUSB_RXCSR_RXPKTRDY);
-> +
-
-    Not needed.
-
->   		musb_writew(hw_ep->regs, MUSB_RXCSR, val);
->
-> -#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
-> +#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA) || \
-> +	defined(CONFIG_USB_TI_CPPI41_DMA)
-
-    The DaVinci CPPI 3.0 should probably also be included here...
-
->   		if (usb_pipeisoc(pipe)) {
->   			struct usb_iso_packet_descriptor *d;
->
-> @@ -1706,8 +1708,28 @@ void musb_host_rx(struct musb *musb, u8 epnum)
->
->   			if (++qh->iso_idx >= urb->number_of_packets)
->   				done = true;
-> -			else
-> +			else {
-
-    If you're making the *else* arm use {}, you should make all the other arms 
-of *if* statement also have them -- see Documentation/CodingStyle.
-
-WBR, Sergei
+diff --git a/arch/sh/boards/mach-highlander/psw.c b/arch/sh/boards/mach-highlander/psw.c
+index 522786318d36..40e2b585d488 100644
+--- a/arch/sh/boards/mach-highlander/psw.c
++++ b/arch/sh/boards/mach-highlander/psw.c
+@@ -10,7 +10,7 @@
+  * for more details.
+  */
+ #include <linux/io.h>
+-#include <linux/init.h>
++#include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <mach/highlander.h>
+-- 
+1.8.5.2
 
