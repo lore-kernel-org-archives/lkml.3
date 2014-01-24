@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaAXP05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:26:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:39520 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaAXP0z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:26:55 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-3e-52e2863d039c
-Message-id: <52E2862E.9020402@samsung.com>
-Date: Fri, 24 Jan 2014 16:26:38 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 5/8 v4] clk: samsung: exynos5250/5420: Add gate clock for
- SSS module
-References: <1389354229-31936-1-git-send-email-ch.naveen@samsung.com>
- <1389777366-15147-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389777366-15147-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xq7q2bY+CDK71S1vcfX6Y0eLlIU2L
-	7lcyFr0LrrJZ3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFz1l12j20HVD36
-	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr43nPdcaCY9wVG46eYmxg3MbZxcjOISFgIjEnr4uR
-	E8gSk7hwbz1bFyMXh5DAUkaJG9Mfs0A4nxkllv28yA5SxSugJfFiz102EJtFQFVi17aNYDab
-	gJrE54ZHYLaoQITE33nrGSHqBSV+TL7HAmKLCJRL/LuxBmwDs8ABRol100+BNQgLREn0vF4N
-	tbqRUWL12k9MXYwcHJwCbhLdSyxBapgFrCVWTtrGCGHLS2xe85Z5AqPALCQ7ZiEpm4WkbAEj
-	8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkJD/uoNx6TGrQ4wCHIxKPLwfgh8GCbEmlhVX
-	5h5ilOBgVhLhlap+FCTEm5JYWZValB9fVJqTWnyIkYmDU6qBUWKB2NdbPXsM2IxO9e7RWvGa
-	d2V82SLxIG7xNMsT/+Lbff00DgSY255M3Cbf7PTzaN3pP3mp8mpWV2q1Za784Vrh+nJvc03g
-	jKBteWaMK/4XKe1Mi/8VUSD//n+l6fvzC9vcpuyX1z719nZj89qTBxsiSvI+174subLdyFzb
-	V0271OpqUsdhJZbijERDLeai4kQA1WbtiFcCAAA=
+	id S1752954AbaAXPbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:31:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53021 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752500AbaAXPbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:31:38 -0500
+Date: Fri, 24 Jan 2014 15:31:35 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 3/9] numa,sched: track from which nodes NUMA faults are
+ triggered
+Message-ID: <20140124153135.GZ4963@suse.de>
+References: <1390342811-11769-1-git-send-email-riel@redhat.com>
+ <1390342811-11769-4-git-send-email-riel@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1390342811-11769-4-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
-
-Exynos5250 specific part looks good, but I have a little doubt in case 
-of Exynos5420.
-
-On 15.01.2014 10:16, Naveen Krishna Chatradhi wrote:
-> This patch adds gating clock for SSS(Security SubSystem)
-> module on Exynos5250/5420.
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> TO: <linux-samsung-soc@vger.kernel.org>
-> TO: Tomasz Figa <t.figa@samsung.com>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> CC: <linux-crypto@vger.kernel.org>
+On Tue, Jan 21, 2014 at 05:20:05PM -0500, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
+> 
+> Track which nodes NUMA faults are triggered from, in other words
+> the CPUs on which the NUMA faults happened. This uses a similar
+> mechanism to what is used to track the memory involved in numa faults.
+> 
+> The next patches use this to build up a bitmap of which nodes a
+> workload is actively running on.
+> 
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Chegu Vinod <chegu_vinod@hp.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 > ---
-> Changes since v3:
-> 1. Rebased on to https://git.kernel.org/pub/scm/linux/kernel/git/tfiga/samsung-clk.git
-> 2. Added new ID for SSS clock on Exynos5250, with Documentation and
-> 3. Added gate clocks definitions for SSS on Exynos5420 and Exynos5250
-[snip]
-> --- a/drivers/clk/samsung/clk-exynos5420.c
-> +++ b/drivers/clk/samsung/clk-exynos5420.c
-> @@ -26,6 +26,7 @@
->   #define DIV_CPU1		0x504
->   #define GATE_BUS_CPU		0x700
->   #define GATE_SCLK_CPU		0x800
-> +#define GATE_BUS_G2D		0x8700
->   #define CPLL_LOCK		0x10020
->   #define DPLL_LOCK		0x10030
->   #define EPLL_LOCK		0x10040
-> @@ -702,6 +703,9 @@ static struct samsung_gate_clock exynos5420_gate_clks[] __initdata = {
->   		0),
->   	GATE(CLK_SMMU_MIXER, "smmu_mixer", "aclk200_disp1", GATE_IP_DISP1, 9, 0,
->   		0),
+>  include/linux/sched.h | 10 ++++++++--
+>  kernel/sched/fair.c   | 30 +++++++++++++++++++++++-------
+>  2 files changed, 31 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index b8f8476..d14d9fe 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1492,6 +1492,14 @@ struct task_struct {
+>  	unsigned long *numa_faults_buffer_memory;
+>  
+>  	/*
+> +	 * Track the nodes where faults are incurred. This is not very
+> +	 * interesting on a per-task basis, but it help with smarter
+> +	 * numa memory placement for groups of processes.
+> +	 */
+> +	unsigned long *numa_faults_cpu;
+> +	unsigned long *numa_faults_buffer_cpu;
 > +
-> +	/* SSS */
-> +	GATE(CLK_SSS, "sss", "aclk266_g2d", GATE_BUS_G2D, 2, 0, 0),
 
-Isn't there a combined gate for all SSS clocks in one of GATE_IP_* 
-registers?
+/*
+ * Track the nodes the process was running on when a NUMA hinting fault
+ * was incurred ......
+ */
 
-Best regards,
-Tomasz
+?
+
+Otherwise the comment is very similar to numa_faults_memory. I'm not
+that bothered because the name is descriptive enough.
+
+
+> +	/*
+>  	 * numa_faults_locality tracks if faults recorded during the last
+>  	 * scan window were remote/local. The task scan period is adapted
+>  	 * based on the locality of the faults with different weights
+> @@ -1594,8 +1602,6 @@ extern void task_numa_fault(int last_node, int node, int pages, int flags);
+>  extern pid_t task_numa_group_id(struct task_struct *p);
+>  extern void set_numabalancing_state(bool enabled);
+>  extern void task_numa_free(struct task_struct *p);
+> -
+> -extern unsigned int sysctl_numa_balancing_migrate_deferred;
+>  #else
+>  static inline void task_numa_fault(int last_node, int node, int pages,
+>  				   int flags)
+
+Should this hunk move to patch 1?
+
+Whether you make the changes or not
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+In my last review I complained about magic numbers but I see a later
+patch has a subject that at least implies it deals with the numbers.
+
+-- 
+Mel Gorman
+SUSE Labs
