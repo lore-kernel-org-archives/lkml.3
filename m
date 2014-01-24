@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773AbaAXAFO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jan 2014 19:05:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32840 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323AbaAXAFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jan 2014 19:05:12 -0500
-Message-ID: <52E1AE28.9050007@zytor.com>
-Date: Thu, 23 Jan 2014 16:04:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932266AbaAXAMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jan 2014 19:12:43 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:45388 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955AbaAXAMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jan 2014 19:12:40 -0500
+Message-ID: <52E1AFE8.40601@linaro.org>
+Date: Fri, 24 Jan 2014 08:12:24 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [GIT PULL] regulator updates for v3.13-rc1
-References: <20131125174037.GR14725@sirena.org.uk>	<CA+55aFwPcr8TYpLUg5NP9x3RGCv4+U7vz-nNH6Br5ku3MDwaDw@mail.gmail.com>	<20131126003919.GT14725@sirena.org.uk> <CA+55aFxX3odNLBt1L6iAPGybekioqaW3SREmXywd_jnz_tDBeQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxX3odNLBt1L6iAPGybekioqaW3SREmXywd_jnz_tDBeQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
+References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <1389961514-13562-19-git-send-email-hanjun.guo@linaro.org> <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
+In-Reply-To: <CACRpkdYKwaH5DX27irzmcTDAMhQMUhuzz6N7mjKWv9tZchv0Ug@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2014 11:16 AM, Linus Torvalds wrote:
-> On Mon, Nov 25, 2013 at 4:39 PM, Mark Brown <broonie@kernel.org> wrote:
+Hi Linus,
+
+Sorry for the late reply.
+
+On 2014年01月22日 16:26, Linus Walleij wrote:
+> On Fri, Jan 17, 2014 at 1:25 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>
+>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 >>
->> If you're OK with octopus merges for things like this I'll definitely
->> take another look at using them, the enormous stack of merge commits
->> always looks noisy to me in the logs and pull requests and for things
->> like driver updates there's unlikely to be much doubt about which branch
->> it was if there's a problem.
-> 
-> Christ. When you start doing octopus merges, you don't do it by half
-> measures, do you?
-> 
-> I just pulled the sound updates from Takashi, and as a result got your
-> merge commit 2cde51fbd0f3. That one has 66 parents.
-> 
+>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
+>> name from the ACPI timer table is matched with all the registered
+>> timer controllers and matching initialisation routine is invoked.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> Actually I have a fat patch renaming CLOCKSOURCE_OF_DECLARE()
+> to TIMER_OF_DECLARE() and I think this macro, if needed, should
+> be named TIMER_ACPI_DECLARE().
+>
+> The reason is that "clocksource" is a Linux-internal name and this
+> macro pertains to the hardware name in respective system
+> description type.
 
-For sheer amusement value: the tip-bot uses a private git tree to keep
-track of what it has mailed and not mailed.  At least once it produced a
-243-input octopus merge.
+That make sense to me too, I will update in next version if
+this patch is still needed.
 
-	-hpa
+>
+>> +#ifdef CONFIG_ACPI
+>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)                     \
+>> +       static const struct acpi_device_id __clksrc_acpi_table_##name   \
+>> +               __used __section(__clksrc_acpi_table)                   \
+>> +                = { .id = compat,                              \
+>> +                    .driver_data = (kernel_ulong_t)fn }
+>> +#else
+>> +#define CLOCKSOURCE_ACPI_DECLARE(name, compat, fn)
+>> +#endif
+> This hammers down the world to compile one binary for ACPI
+> and one binary for device tree. Maybe that's fine, I don't know.
 
+This is a problem we can have some discussion on it.
+I prefer mutually exclusive ACPI and DT support.
+
+Thanks
+Hanjun
 
