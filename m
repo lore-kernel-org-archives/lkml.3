@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaAXT1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:27:52 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:45208 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaAXT1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:27:45 -0500
-Date: Fri, 24 Jan 2014 11:27:42 -0800
-From: Curt Brune <curt@cumulusnetworks.com>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Thomas De Schampheleire <patrickdepinguin@gmail.com>,
-        gregkh@linuxfoundation.org,
-        Shrijeet Mukherjee <shm@cumulusnetworks.com>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] Create eeprom_dev hardware class for EEPROM
- devices
-Message-ID: <20140124192742.GU29955@cumulusnetworks.com>
-References: <1390504562-20333-1-git-send-email-curt@cumulusnetworks.com>
- <CAOMwXhMfd8uw8n2Oa_BKW8UGzrUttD1L3=ATUGyDJMFy3kPUjQ@mail.gmail.com>
+	id S1752771AbaAXTa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:30:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42112 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448AbaAXTa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 14:30:58 -0500
+Message-ID: <52E2BF5C.8060009@ti.com>
+Date: Fri, 24 Jan 2014 14:30:36 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhMfd8uw8n2Oa_BKW8UGzrUttD1L3=ATUGyDJMFy3kPUjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Hansen <dave.hansen@intel.com>, <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
+References: <1390590670-25901-1-git-send-email-yinghai@kernel.org> <1390590670-25901-4-git-send-email-yinghai@kernel.org> <20140124192536.GC17156@phenom.dumpdata.com>
+In-Reply-To: <20140124192536.GC17156@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri Jan 24 18:42, Laszlo Papp wrote:
-> > Note: The class cannot be called 'eeprom' as that is the name of the
-> > I/O file created by the driver.  The class name appears as a
-> > sub-directory within the main device directory.  Hence the class name
-> > 'eeprom_dev'.
+On Friday 24 January 2014 02:25 PM, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jan 24, 2014 at 11:11:10AM -0800, Yinghai Lu wrote:
+>> The new memblock_virt APIs are used to replaced old bootmem API.
+>>
+>> We need to allocate page below 4G for swiotlb.
+>>
+>> That should fix regression on Andrew's system that is using swiotlb.
 > 
-> I am not sure I follow the reasoning here, but it is possibly because
-> I lack some knowledge. Could you please describe bad thing would
-> happen if "/sys/class/eeprom/eeprom0/label" would be used as opposed
-> to "/sys/class/eeprom_dev/eeprom0/label"?
+> Please include the title of the patch that caused the regression.
+> I presume it is "mm/lib/swiotlb: Use memblock apis for early memory allocations"
+> 
+> Interestingly enough when I asked about it:
+> 
+> https://lkml.org/lkml/2013/11/9/280
+> 
+> 
+> 	>> v_overflow_buffer = memblock_virt_alloc_align_nopanic(
+> 	>> +						PAGE_ALIGN(io_tlb_overflow),
+> 	>> +						PAGE_SIZE);
+> 	> 
+> 	> Does this guarantee that the pages will be allocated below 4GB?
+> 	> 
+> 	Yes. The memblock layer still allocates memory from lowmem. As I
+> 	mentioned, there is no change in the behavior than what is today
+> 	apart from just the interface change.
+> 
+> How did that happend? Was there another patch in the series that altered
+> such assumption?
+> 
+Actually it didn't. It was the misunderstanding on my side about the
+low_mem_max_addr being under 4GB, which is not always true especially
+for 64-bit systems which have no addressing limitations. 
 
-By way of example -- let's say I have an at24 device on i2c bus 2,
-with address 0x54.  In sysfs the device can be found by its bus
-address as:
+Regards,
+Santosh
 
-  $ cd /sys/bus/i2c/devices/2-0054
-  $ ls -l
-
-  total 0
-  lrwxrwxrwx 1 root root    0 Jan 24 19:11 driver ->  ../../../../../../bus/i2c/drivers/at24
-  -rw------- 1 root root  256 Jan 23 23:33 eeprom
-  drwxr-xr-x 3 root root    0 Jan 23 23:33 eeprom_dev
-  -r--r--r-- 1 root root 4096 Jan 24 19:11 modalias
-  -r--r--r-- 1 root root 4096 Jan 24 19:11 name
-  lrwxrwxrwx 1 root root    0 Jan 24 19:11 subsystem ->  ../../../../../../bus/i2c
-  -rw-r--r-- 1 root root 4096 Jan 24 19:11 uevent
-
-The file "/sys/bus/i2c/devices/2-0054/eeprom" comes from the at24
-driver.  That is the file name the EEPROM driver exports for I/O to
-the device.  User space applications read/write this file to
-read/write the physical EEPROM via the at24 driver.
-
-The directory "/sys/bus/i2c/devices/2-0054/eeprom_dev" comes from the
-sysfs class name "eeprom_dev".  All sysfs class names appear as
-directories with the corresponding device directory.
-
-See the conflict?  If the class was also called "eeprom" it would
-clash with the existing "eeprom" file.  There cannot be two things
-named /sys/bus/i2c/devices/2-0054/eeprom.
-
-The files under /sys/class/eeprom_dev are symlinks to the "eeprom_dev"
-directories of the physical devices.  For this example:
-
-  $ cd /sys/class/eeprom_dev
-  $ ls -l eeprom0
-  lrwxrwxrwx 1 root root 0 Jan 23 23:33 eeprom0 -> ../../devices/soc.0/ffe03000.i2c/i2c-0/i2c-2/2-0054/eeprom_dev/eeprom0
-
-Believe me I wanted to use "eeprom" as the class name originally, as
-it makes a lot of sense.  But the sysfs file creation failed due to
-the duplicate name.
-
-I was not about to change the at24 driver as user space expects the
-"eeprom" name.
-
-Hence the class name is eeprom_dev.
-
-Hope that helps.
-
-Cheers,
-Curt
