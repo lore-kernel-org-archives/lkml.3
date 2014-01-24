@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaAXL4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 06:56:34 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:64684 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480AbaAXL4d (ORCPT
+	id S1752556AbaAXL73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 06:59:29 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:40054 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265AbaAXL71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 06:56:33 -0500
-Date: Fri, 24 Jan 2014 15:56:29 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, gnome@rvzt.net,
-        alan@lxorguk.ukuu.org.uk, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging, v2
-Message-ID: <20140124115629.GI1992@moon>
-References: <20140122190816.GB4963@suse.de>
- <20140122191928.GQ1574@moon>
- <20140122223325.GA30637@moon>
- <20140123095541.GD4963@suse.de>
- <20140123103606.GU1574@moon>
- <20140123121555.GV1574@moon>
- <20140123125543.GW1574@moon>
- <20140123151445.GX1574@moon>
- <20140124101416.GP4963@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140124101416.GP4963@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Jan 2014 06:59:27 -0500
+Message-ID: <1390564761.25470.4.camel@maxim-aspire-5720>
+Subject: Re: [PATCH v2] memstick: rtsx: fix ms card data transfer bug
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: micky_ching@realsil.com.cn
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, gregkh@linuxfoundation.org, oakad@yahoo.com,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Date: Fri, 24 Jan 2014 13:59:21 +0200
+In-Reply-To: <1384941293-16520-1-git-send-email-micky_ching@realsil.com.cn>
+References: <1384941293-16520-1-git-send-email-micky_ching@realsil.com.cn>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 10:14:16AM +0000, Mel Gorman wrote:
-> > From: Cyrill Gorcunov <gorcunov@gmail.com>
-> > Subject: [PATCH] mm: Ignore VM_SOFTDIRTY on VMA merging, v2
-> > 
+On Wed, 2013-11-20 at 17:54 +0800, micky_ching@realsil.com.cn wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
 > 
-> It passed the gimp launching test. Patch looks sane but I confess I did
-> not put a whole lot of thought into it because I see that Andrew is
-> already reviewing it so
+> This patch is used to add support for ms card. The main difference
+> between ms card and mspro card is long data transfer mode. mspro card
+> can use auto mode DMA for long data transfer, but ms can not use this
+> mode, it should use normal mode DMA.
 > 
-> Tested-by: Mel Gorman <mgorman@suse.de>
-> 
-> If this is merged then remember that it should be tagged for 3.12-stable
-> as 3.12.7 and 3.12.8 are affected by this bug.
+> The memstick core add support for ms card, but the original driver will
+> make ms card fail at initialize, because it use auto mode DMA. This
+> patch can make ms card work properly.
+Due to unexpected turn of events I bought an laptop with this card
+reader.
 
-Thanks a huge, Mel! Andrew has picked it up and CC'ed stable@ team.
+So as soon as I have some time, I will too test this code
+Really big thanks for writing this driver!
+
+Best regards,
+       Maxim Levitsky 
+
