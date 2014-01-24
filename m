@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaAXTet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 14:34:49 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:48205 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088AbaAXTeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 14:34:46 -0500
+	id S1752759AbaAXTlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 14:41:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448AbaAXTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 14:41:35 -0500
+Date: Fri, 24 Jan 2014 20:39:50 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.12 00/27] 3.12.9-stable review
+Message-ID: <20140124193950.GA21365@hpx.cz>
+References: <20140123190648.720195687@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <52E2A866.1050400@codeaurora.org>
-References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com>
-	<1390581656-16372-5-git-send-email-adrienverge@gmail.com>
-	<20140124164343.GJ31040@mudshark.cambridge.arm.com>
-	<CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com>
-	<20140124171754.GM31040@mudshark.cambridge.arm.com>
-	<52E2A866.1050400@codeaurora.org>
-Date: Fri, 24 Jan 2014 14:34:41 -0500
-Message-ID: <CANsc=4X+8He-w9wr0xbtDkJhxw8H13kk_-OV07jMZ7govTnmxQ@mail.gmail.com>
-Subject: Re: [PATCH V2 4/6] ARM: Make PID_IN_CONTEXTIDR incompatible with PID_NS
-From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Michel Dagenais <michel.dagenais@polymtl.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140123190648.720195687@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/24 Will Deacon <will.deacon@arm.com>:
-> I think I'd rather have the global ID than disable a potentially useful
-> feature, especially since this is likely to be consumed by external trace
-> tools as opposed to user-space tasks.
+Hello,
 
-I understand.
+could 3.12.9 and 3.10.28 include
+  0dce7cd kvm: x86: fix apic_base enable check
+?  It fixes a regression applied to 3.10.26 and 3.12.7.
 
-2014/1/24 Christopher Covington <cov@codeaurora.org>:
-> Would it be reasonable to make what's
-> written to the CONTEXTIDR run-time configurable? If so, what would be the best
-> interface for configuring it?
+Stable was mentioned on kvm-list[1], but it might have been forgotten.
+More information is in bugzilla[2].
 
-This is an interesting option.
+Thanks.
 
-An other option would be to keep the global PID in the Context ID
-register, and rely on kernel support to translate virtual PID to
-global PID when needed. Then, it would be possible to select a task to
-trace via its PID, by asking the kernel to write its global ID to the
-Context ID comparator.
+
+---
+1: http://www.spinics.net/lists/kvm/msg99343.html
+2: https://bugzilla.redhat.com/show_bug.cgi?id=1055872
