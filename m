@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaAXRsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 12:48:04 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47890 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750997AbaAXRsC (ORCPT
+	id S1752008AbaAXRwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 12:52:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:51258 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaAXRwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 12:48:02 -0500
-Date: Fri, 24 Jan 2014 17:47:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 15/24] drm/i2c: tda998x: use irq for connection
-	status and EDID read
-Message-ID: <20140124174752.GF15937@n2100.arm.linux.org.uk>
-References: <cover.1390153344.git.moinejf@free.fr> <20140119195843.7ae9753d@armhf> <20140122222705.GL15937@n2100.arm.linux.org.uk> <52E2A2E8.50806@gmail.com>
+	Fri, 24 Jan 2014 12:52:41 -0500
+Message-ID: <52E2A866.1050400@codeaurora.org>
+Date: Fri, 24 Jan 2014 12:52:38 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E2A2E8.50806@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Will Deacon <will.deacon@arm.com>
+CC: =?ISO-8859-1?Q?Adrien_Verg=E9?= <adrienverge@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Michel Dagenais <michel.dagenais@polymtl.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 4/6] ARM: Make PID_IN_CONTEXTIDR incompatible with
+ PID_NS
+References: <1390581656-16372-1-git-send-email-adrienverge@gmail.com> <1390581656-16372-5-git-send-email-adrienverge@gmail.com> <20140124164343.GJ31040@mudshark.cambridge.arm.com> <CANsc=4UgWrFis6hi-0mXZAfery7YGDJ2F+NdZBzq6afwx_i58A@mail.gmail.com> <20140124171754.GM31040@mudshark.cambridge.arm.com>
+In-Reply-To: <20140124171754.GM31040@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 06:29:12PM +0100, Sebastian Hesselbarth wrote:
-> On 01/22/14 23:27, Russell King - ARM Linux wrote:
->> On Sun, Jan 19, 2014 at 07:58:43PM +0100, Jean-Francois Moine wrote:
->>> This patch adds the optional treatment of the tda998x IRQ.
->>>
->>> The interrupt function is used to know the display connection status
->>> without polling and to speedup reading the EDID.
->>>
->>> The interrupt number may be defined either in the DT or at encoder set
->>> config time for non-DT boards.
->>>
->>> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
->>> ---
-> [...]
->>> @@ -720,6 +787,10 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
->>>   		priv->audio_port = p->audio_cfg;
->>>   		priv->audio_format = p->audio_format;
->>>   	}
->>> +
->>> +	priv->irq = p->irq;
->>> +	if (p->irq)
->>> +		tda_irq_init(priv);
+On 01/24/2014 12:17 PM, Will Deacon wrote:
+> On Fri, Jan 24, 2014 at 05:16:28PM +0000, Adrien Vergé wrote:
+>> 2014/1/24 Will Deacon <will.deacon@arm.com>:
+>>> Are you sure about this? The value we write is actually task_pid_nr, which I
+>>> believe to be globally unique.
 >>
->> If we're going to do it this way, this should probably release the IRQ if
->> there was one before re-claiming it, just in case this function gets called
->> more than once by some driver using it.
+>> You are right: the task_pid_nr is unique in the system. However when
+>> using namespaces, the so called "PID" is the virtual number that
+>> processes in different namespaces can share.
 >>
->> The alternative is, as I said before, to use the infrastructure which is
->> already there, namely setting the interrupt via struct i2c_client's
->> irq member.  Yes, that doesn't satisfy Sebastian's comment about using
->> a GPIO, but there's no sign of GPIO usage in here at the moment anyway.
->> So we might as well use what's already provided.
->
-> Russell,
->
-> I am fine with using an irq instead of gpio here. I remember you telling
-> me on a similar patch, that from the gpio you can derive the irq but
-> not the other way round. Anyway, I also remember reading discussions
-> about DT gpios vs interrupts, and IIRC the outcome was that passing
-> interrupts is fine, too.
+>> This PID is the one visible by user-space tasks, in particular
+>> user-space tracers and debuggers. These programs would expect to find
+>> the PID of the traced process in the Context ID reg, while it is not.
+>> I think it is better to remove confusion by making PID_IN_CONTEXTIDR
+>> and PID_NS incompatible.
+>>
+>> What do you think?
+> 
+> I think I'd rather have the global ID than disable a potentially useful
+> feature, especially since this is likely to be consumed by external trace
+> tools as opposed to user-space tasks.
 
-Sebastian,
+We've discussed before that the ARM architecture doesn't say what should be
+written to the CONTEXTIDR, so it's up to us to decide. Will has a use case
+where the global PID is useful. Adrien's patches present a use case where I
+think the virtual PID would be useful. I've done work in the past where
+writing the process group ID was useful. Would it be reasonable to make what's
+written to the CONTEXTIDR run-time configurable? If so, what would be the best
+interface for configuring it?
 
-You can derive the irq from a gpio (using gpio_to_irq()), but you can't
-derive a gpio from an irq.
-
-It's annoying that i2c_client and the i2c board data do not allow a GPIO
-to be specified, but only an IRQ, but that's a separate problem which when
-solved will also get solved here.  So, I'm not too worried about the
-"should this be an IRQ or should it be a GPIO" question here.
-
-For us on ARM, it's less of a problem because we can just deal with GPIOs
-or IRQs at the DT level, and so we don't care what's in i2c_client.
+Thanks,
+Christopher
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
