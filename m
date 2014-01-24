@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaAXW6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 17:58:55 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:60362 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaAXW6x (ORCPT
+	id S1752226AbaAXW7g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 17:59:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9109 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281AbaAXW7e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 17:58:53 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>
-Date: Fri, 24 Jan 2014 14:58:45 -0800
-Message-ID: <8761p9rnq2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 24 Jan 2014 17:59:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,715,1384329600"; 
+   d="scan'208";a="444297255"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mikael Pettersson <mikpelinux@gmail.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/5] ia64 ski emulator patches
+Thread-Topic: [PATCH 0/5] ia64 ski emulator patches
+Thread-Index: AQHPGKb+JFOSUiMwU0OkA9mJI3PIepqUaQaAgAAUOJA=
+Date: Fri, 24 Jan 2014 22:59:33 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31DB8B73@ORSMSX106.amr.corp.intel.com>
+References: <alpine.LRH.2.02.1401232041520.16873@file01.intranet.prod.int.rdu2.redhat.com>
+ <21218.28095.779306.523187@gargle.gargle.HOWL>
+In-Reply-To: <21218.28095.779306.523187@gargle.gargle.HOWL>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+iz+2hxFL0ABbmGmXJdOBnZRtcfHF+Auc=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0695]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] user namespaces work for 3.14-rc1
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mikulas:
+>> Here I'm sending some ia64 patches to make it work in the ski emulator. 
+>> This has been broken for a long time.
 
-Linus,
+Thanks - There are questions from time to time on how to test ia64
+for those people who do not have hardware.
 
-Please pull the for-linus branch from the git tree:
+Mikael:
+> Thanks.  I've recently started running 3.x kernels on ia64 via ski,
+> but I'm getting random kernel crashes with 3.13.  I'll give your
+> patches a try shortly.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+Let me know how that goes - I haven't used ski in a decade and
+have quite forgotten how to set it up.
 
-   HEAD: f58437f1f9161847c636e4fed5569ed5b908af36 MIPS: VPE: Remove vpe_getuid and vpe_getgid
+> I've written a few patches to improve other aspects of running the
+> kernel on ski:
+> - kernel patch to turn PAL_HALT_LIGHT into a new SSC_HALT_LIGHT,
+>   and a corresponing ski patch to pause() on SSC_HALT_LIGHT; this
+>   together with the fixed-frequency ITC patch allows ski to idle
+>   with very low host CPU overhead when the guest kernel idles
+> - kernel patch to bump the RAM size from 130MB to 2GB
+>
+> I'd be happy to share these patches if there's interest in them.
 
-The work to convert the kernel to use kuid_t and kgid_t has been
-finished since 3.12 so it is time to remove the scaffolding that allowed
-the work to progress incrementally.
+It seems that there are at least two of you out there - so I'm happy
+to take kernel patches that make things better.  Not sure where the
+ski patches go - is someone maintaining that?
 
-The first patch on this branch just removes the scaffolding, ensuring we
-will always get compile errors if people accidentally try the userspace
-and the kernel uid and gid types.  The second patch an overlooked and
-unused chunk of mips code that that fails to build after the first
-patch.
-
-The code hasn't been in linux-next for long (as I was out of it and could
-not sheppared the cold properly) but the patch has been around for a
-long time just waiting for the day when I had finished the uid/gid
-conversions.  Putting the code in linux-next did find the compile
-failure on mips so I took the time to get that fix reviewed and
-included.  Beyond that I am not too worried about errors because all
-these two patches do is delete a modest amount of code.
-
-Eric
-
-
-Eric W. Biederman (2):
-      userns:  userns: Remove UIDGID_STRICT_TYPE_CHECKS
-      MIPS: VPE: Remove vpe_getuid and vpe_getgid
-
- arch/mips/include/asm/vpe.h |    2 --
- arch/mips/kernel/vpe.c      |   28 ----------------------------
- include/linux/posix_acl.h   |    3 ---
- include/linux/projid.h      |   15 ---------------
- include/linux/uidgid.h      |   22 ----------------------
- init/Kconfig                |   11 -----------
- 6 files changed, 0 insertions(+), 81 deletions(-)
-
-
+-Tony
