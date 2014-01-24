@@ -1,127 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaAXHaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 02:30:10 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35551 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaAXHaI (ORCPT
+	id S1751780AbaAXHeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 02:34:11 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:35935 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaAXHeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 02:30:08 -0500
-Message-ID: <52E21677.9090907@linaro.org>
-Date: Fri, 24 Jan 2014 15:29:59 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 24 Jan 2014 02:34:09 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: top-down balance purpose discussion -- resend
-References: <52DE7E6A.90401@linaro.org> <20140121145708.GY31570@twins.programming.kicks-ass.net> <52DF75FD.5080304@linaro.org>
-In-Reply-To: <52DF75FD.5080304@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <878uu6gle8.wl%kuninori.morimoto.gx@gmail.com>
+References: <878uu6gle8.wl%kuninori.morimoto.gx@gmail.com>
+Date: Fri, 24 Jan 2014 08:34:08 +0100
+X-Google-Sender-Auth: GedBHxPFQp6cKysZHBVlRFudFt8
+Message-ID: <CAMuHMdX14rktzRtV9bqHFHZV6bsmQ_k=vAZFaPeNjcJsWeX42w@mail.gmail.com>
+Subject: Re: [PATCH] shdma: add R-Car Audio DMAC peri peri driver
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux-SH <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Morimoto-san,
 
-Any more comments for this idea? :)
+On Fri, Jan 24, 2014 at 3:32 AM, Kuninori Morimoto
+<kuninori.morimoto.gx@gmail.com> wrote:
+> --- a/drivers/dma/sh/Kconfig
+> +++ b/drivers/dma/sh/Kconfig
+> @@ -29,6 +29,12 @@ config RCAR_HPB_DMAE
+>         help
+>           Enable support for the Renesas R-Car series DMA controllers.
+>
+> +config RCAR_AUDMAC_PP
+> +       tristate "Renesas R-Car Audio DMAC Peripheral Peripheral support"
 
-On 01/22/2014 03:40 PM, Alex Shi wrote:
-> On 01/21/2014 10:57 PM, Peter Zijlstra wrote:
->> On Tue, Jan 21, 2014 at 10:04:26PM +0800, Alex Shi wrote:
->>>
->>> Current scheduler load balance is bottom-up mode, each CPU need
->>> initiate the balance by self.
->>>
->>> 1, Like in a integrate computer system, it has smt/core/cpu/numa, 4
->>> level scheduler domains. If there is just 2 tasks in whole system that
->>> both running on cpu0. Current load balance need to pull task to another
->>> smt in smt domain, then pull task to another core, then pull task to
->>> another cpu, finally pull task to another numa. Totally it is need 4
->>> times task moving to get system balance.
->>
->> Except the idle load balancer, and esp. the newidle can totally by-pass
->> this.
->>
->> If you do the packing right in the newidle pass, you'd get there in 1
->> step.
-> 
-> It give me a huge pressure to argue with you a great experts. I am
-> waiting and very appreciate for any comments and corrections. :)
-> 
-> Yes, a newidle will kindly relief this. but it can not eliminate it. If
-> a newidle happens on another numa group. It just needs 1 step. But if it
-> happens on another smt group, it still needs 4 steps. So generally, we
-> still need one more steps before well balance.
-> 
-> In this example, if a newidle is in the same smallest group, maybe we
-> should wakeup a remotest cpu in system/llc to avoid extra task moving in
-> near future for best performance.
-> And for power saving, maybe we'd better kick the task to smallest group,
-> then let the remote cpu group idle.
-> But for current newidle, it's impossible to do this because newidle is
-> also bottom-up mode.
->>
->>> Generally, the task moving complexity is
->>> 	O(nm log n),  n := nr_cpus, m := nr_tasks
->>>
->>> There is a excellent summary and explanation for this in
->>> kernel/sched/fair.c:4605
->>
->> Which is a perfectly fine scheme for a busy system.
->>
->>> Another weakness of current LB is that every cpu need to get the other
->>> cpus' load info repeatedly and try to figure out busiest sched
->>> group/queue on every sched domain level. But it just waste time, since
->>> it may not conduct a task moving. One of reasons is that cpu can only
->>> pull task, not pushing.
->>
->> This doesn't make sense.. and in fact, we do a limited amount of 3rd
->> party movements.
-> 
-> Yes, but the 3rd party movements is too limited, just for task pinned.
->>
->> Whatever you do, you have to repeat the information gathering anyhow,
->> because it constantly changes.
->>
-> 
-> Yes, it is good to collection the load info once for once balance. but
-> if the balance cpu is busiest cpu, current balance still keep collecting
-> every group load info from bottom to up, and then do nothing on this
-> imbalance system. This is bad.
-> 
->> Trying to serialize that doesn't make any kind of sense. The only thing
->> you want is that the system converges.
-> 
-> Sorry, would you like to give a bit more details of 'serialize' is no sense?
->>
->> Skipped the rest because it seems build on a fundament I don't agree
->> with. That 4 move thing is just silly for an idle system, and we
->> shouldn't do that.
->>
->> I also very much do not want a single CPU balancing the entire system,
->> that's the anti-thesis of scalable.
-> 
-> Sorry. IMHO, single cpu is possible to handle 1000 cpu balancing. And it
-> is far more scalable than every cpu do balance in system, since there is
-> only one cpu need to pick other cpu load info.
-> 
-> BTW, there is no organize among all cpus' balancing currently. That's a
-> a bit mess. Like if 2 cpus in a small cpu group just do balance for
-> whole system at the same time, then both of them think self group is
-> light and want more load. then they have the chance to over pull load to
-> self group. That is bad. And single balancing has no such problem.
-> 
+double "Peripheral"
 
+> +       depends on SH_DMAE_BASE
+> +       help
+> +         Enable support for the Renesas R-Car Audio DMAC Peripheral Peripheral controllers.
 
--- 
-Thanks
-    Alex
+idem.
+
+> --- /dev/null
+> +++ b/drivers/dma/sh/rcar-audmapp.c
+> @@ -0,0 +1,325 @@
+
+> +static void audmapp_halt(struct shdma_chan *schan)
+> +{
+> +       struct audmapp_chan *auchan = to_chan(schan);
+> +       int i;
+
+unsigned int
+
+> +
+> +       audmapp_write(auchan, 0, PDMACHCR);
+> +
+> +       for(i = 0; i < 1024; i++) {
+
+Missing space between "for" and "(" (have you run checkpatch.pl?)
+
+What's a typical value of i when leaving the loop?
+
+> +               if (0 == audmapp_read(auchan, PDMACHCR))
+> +                       return;
+> +               udelay(1);
+> +       }
+> +}
+> +
+> +
+> +static struct audmapp_slave_config *
+> +audmapp_find_slave(struct audmapp_chan *auchan, int slave_id)
+> +{
+> +       struct audmapp_device *audev = to_dev(auchan);
+> +       struct audmapp_pdata *pdata = audev->pdata;
+> +       struct audmapp_slave_config *cfg;
+> +       int i;
+
+unsigned int
+
+> +
+> +       if (slave_id >= AUDMAPP_SLAVE_NUMBER)
+
+So slave_id should be unsigned int, too, and AUDMAPP_SLAVE_NUMBER
+too ("29U").
+
+> +               return NULL;
+> +
+> +       for (i = 0, cfg = pdata->slave; i < pdata->slave_num; i++, cfg++)
+> +               if (cfg->slave_id == slave_id)
+> +                       return cfg;
+> +
+> +       return NULL;
+> +}
+
+> +static int audmapp_desc_setup(struct shdma_chan *schan,
+> +                             struct shdma_desc *sdecs,
+> +                             dma_addr_t src, dma_addr_t dst, size_t *len)
+> +{
+> +       struct audmapp_chan *auchan = to_chan(schan);
+> +       struct audmapp_slave_config *cfg = auchan->config;
+> +
+> +       if (!cfg)
+> +               return -ENODEV;
+> +
+> +       if (*len > (size_t)AUDMAPP_LEN_MAX)
+
+I think you can get rid of the cast by adding a "U" suffix to one of
+the constants in the definition of AUDMAPP_LEN_MAX.
+
+> +               *len = (size_t)AUDMAPP_LEN_MAX;
+
+The cast is not needed (I think even without the change above).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
