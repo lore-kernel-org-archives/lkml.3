@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaAXSIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 13:08:43 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38137 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094AbaAXSIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 13:08:41 -0500
-Date: Fri, 24 Jan 2014 13:07:41 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH v2 1/5] x86: make dma_alloc_coherent() return zeroed
- memory if CMA is enabled
-Message-ID: <20140124180741.GC15785@phenom.dumpdata.com>
-References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
- <1389708830-5841-2-git-send-email-akinobu.mita@gmail.com>
- <20140115200934.GC5201@phenom.dumpdata.com>
- <CAC5umygcr0a_BfDJ9tB1EDry4UEwThG7WvkA8Dn27zO9RQab8Q@mail.gmail.com>
+	id S1752316AbaAXSKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 13:10:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62824 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067AbaAXSKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 13:10:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,714,1384329600"; 
+   d="scan'208";a="471986215"
+Message-ID: <52E2AC5A.3000005@intel.com>
+Date: Fri, 24 Jan 2014 10:09:30 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC5umygcr0a_BfDJ9tB1EDry4UEwThG7WvkA8Dn27zO9RQab8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Panic on 8-node system in memblock_virt_alloc_try_nid()
+References: <52E19C7D.7050603@intel.com>	<CAE9FiQX9kTxnaqpWNgg3dUzr7+60YCrEx3q3xxO-G1n6z64xVQ@mail.gmail.com>	<52E28067.1060507@intel.com> <CAE9FiQVy+8CF5qwnyL8YGzqwKOJF+y7N_+reAXWw7p8-BaVQPg@mail.gmail.com>
+In-Reply-To: <CAE9FiQVy+8CF5qwnyL8YGzqwKOJF+y7N_+reAXWw7p8-BaVQPg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 08:34:38AM +0900, Akinobu Mita wrote:
-> 2014/1/16 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
-> > On Tue, Jan 14, 2014 at 11:13:46PM +0900, Akinobu Mita wrote:
-> >> Calling dma_alloc_coherent() with __GFP_ZERO must return zeroed memory.
-> >>
-> >> But when the contiguous memory allocator (CMA) is enabled on x86 and
-> >> the memory region is allocated by dma_alloc_from_contiguous(), it
-> >> doesn't return zeroed memory.  Because dma_generic_alloc_coherent()
-> >
-> > So why not fix it there to return zeroed out memory?
+On 01/24/2014 09:45 AM, Yinghai Lu wrote:
+> On Fri, Jan 24, 2014 at 7:01 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+>> There are two failure modes I'm seeing: one when (failing to) allocate
+>> the first node's mem_map[], and a second where it oopses accessing the
+>> numa_distance[] table.  This is the numa_distance[] one, and it happens
+>> even with the patch you suggested applied.
+>>
+>>> [    0.000000] memblock_find_in_range_node():239
+>>> [    0.000000] __memblock_find_range_top_down():150
+>>> [    0.000000] __memblock_find_range_top_down():152 i: 600000001
+>>> [    0.000000] memblock_find_in_range_node():241 ret: 2147479552
+>>> [    0.000000] memblock_reserve: [0x0000007ffff000-0x0000007ffff03f] flags 0x0 numa_set_distance+0xd2/0x252
 > 
-> I thought it looked nicer than this patch as we can remove memset
-> from all caller of dma_alloc_from_contiguous().  But if I look at
-> the caller on arm, we can't simply remove the memset because
-> __dma_clear_buffer() is used there for ensuring cache flushing and
-> it is used in many places.
-
-OK, that should be part of the commit description.
+> that address is wrong.
 > 
-> Of course we can do redundant memset in dma_alloc_from_contiguous(),
-> but now I think this patch is less impact for fixing this problem.
+> Can you post whole log with current linus' tree + two patches that I
+> sent out yesterday?
 
-OK.
+Here you go.  It's still spitting out memblock_reserve messages to the
+console.  I'm not sure if it's making _some_ progress or not.
+
+	https://www.sr71.net/~dave/intel/3.13/dmesg.with-2-patches
+
+But, it's certainly not booting.  Do you want to see it without
+memblock=debug?
