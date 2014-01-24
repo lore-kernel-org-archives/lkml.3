@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaAXSDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 13:03:13 -0500
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:58358 "HELO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751574AbaAXSDM (ORCPT
+	id S1752082AbaAXSHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 13:07:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40240 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaAXSHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 13:03:12 -0500
+	Fri, 24 Jan 2014 13:07:46 -0500
+Date: Fri, 24 Jan 2014 13:06:35 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH v2 2/5] x86: enable DMA CMA with swiotlb
+Message-ID: <20140124180635.GB15785@phenom.dumpdata.com>
+References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
+ <1389708830-5841-3-git-send-email-akinobu.mita@gmail.com>
+ <20140115201224.GD5201@phenom.dumpdata.com>
+ <CAC5umyitWHvWiWn9B3wtTNBhbO7Rz_ghqmxhwu9caq40msnfAA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140124113920.GF814@e106331-lin.cambridge.arm.com>
-References: <1390504801-24483-1-git-send-email-fkan@apm.com>
-	<1390504801-24483-6-git-send-email-fkan@apm.com>
-	<20140124113920.GF814@e106331-lin.cambridge.arm.com>
-Date: Fri, 24 Jan 2014 10:03:10 -0800
-Message-ID: <CAL85gmDJeUY0zUjkmpMo7g_hLj34RsgU1VEF80wouLzOFGAdqQ@mail.gmail.com>
-Subject: Re: [PATCH V4 5/5] Documentation: power: reset: Add documentation for
- generic SYSCON reboot driver
-From: Feng Kan <fkan@apm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAC5umyitWHvWiWn9B3wtTNBhbO7Rz_ghqmxhwu9caq40msnfAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 3:39 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Jan 23, 2014 at 07:20:01PM +0000, Feng Kan wrote:
->> Add documentation for generic SYSCON reboot driver.
->>
->> Signed-off-by: Feng Kan <fkan@apm.com>
->> ---
->>  .../bindings/power/reset/syscon-reboot.txt         |   16 ++++++++++++++++
->>  1 files changed, 16 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->>
->> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->> new file mode 100644
->> index 0000000..e9eb1fe
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->> @@ -0,0 +1,16 @@
->> +Generic SYSCON mapped register reset driver
->
-> Bindings should describe hardware, not drivers.
->
-> What precisely does this binding describe?
->
->> +
->> +Required properties:
->> +- compatible: should contain "syscon-reboot"
->> +- regmap: this is phandle to the register map node
->> +- offset: offset in the register map for the reboot register
->> +- mask: the reset value written to the reboot register
->> +
->> +Examples:
->> +
->> +reboot {
->> +   compatible = "syscon-reboot";
->> +   regmap = <&regmapnode>;
->> +   offset = <0x0>;
->> +   mask = <0x1>;
->> +};
->
-> Access size? Endianness?
-FKAN: are you asking for documentation? I don't see alot of example of
-support for these.
+On Fri, Jan 17, 2014 at 08:32:09AM +0900, Akinobu Mita wrote:
+> 2014/1/16 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
+> > On Tue, Jan 14, 2014 at 11:13:47PM +0900, Akinobu Mita wrote:
+> >> The DMA Contiguous Memory Allocator support on x86 is disabled when
+> >> swiotlb config option is enabled.  So DMA CMA is always disabled on
+> >> x86_64 because swiotlb is always enabled.  This attempts to support
+> >> for DMA CMA with enabling swiotlb config option.
+> >>
+> >> The contiguous memory allocator on x86 is integrated in the function
+> >> dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
+> >> for dma_alloc_coherent().
+> >>
+> >> x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
+> >> tries to allocate with dma_generic_alloc_coherent() firstly and then
+> >> swiotlb_alloc_coherent() is called as a fallback.
+> >>
+> >> The main part of supporting DMA CMA with swiotlb is that changing
+> >> x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
+> >> for dma_free_coherent() so that it can distinguish memory allocated by
+> >> dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
+> >> and release it with dma_generic_free_coherent() which can handle contiguous
+> >> memory.  This change requires making is_swiotlb_buffer() global function.
+> >>
+> >> This also needs to change .free callback in the dma_map_ops for amd_gart
+> >> and sta2x11, because these dma_ops are also using
+> >> dma_generic_alloc_coherent().
+> >>
+> >> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >> Cc: David Woodhouse <dwmw2@infradead.org>
+> >> Cc: Don Dutile <ddutile@redhat.com>
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: Ingo Molnar <mingo@redhat.com>
+> >> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >> Cc: Andi Kleen <andi@firstfloor.org>
+> >> Cc: x86@kernel.org
+> >> Cc: iommu@lists.linux-foundation.org
+> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> >> Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> ---
+> >> No change from the previous version
+> >>
+> >>  arch/x86/Kconfig               | 2 +-
+> >>  arch/x86/include/asm/swiotlb.h | 7 +++++++
+> >>  arch/x86/kernel/amd_gart_64.c  | 2 +-
+> >>  arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
+> >>  arch/x86/pci/sta2x11-fixup.c   | 6 ++----
+> >>  include/linux/swiotlb.h        | 2 ++
+> >>  lib/swiotlb.c                  | 2 +-
+> >
+> > It looks reasonable from my perspective (as swiotlb maintainer).
+> >
+> > Not too thrilled about the  'is_swiotlb_buffer' but that code is
+> > quite small so it should be fast enough.
+> 
+> Thanks.  Can I get your Acked-by for this patch?
 
->
-> Why can we not have a binding for the register bank this exists in, and
-> have that pass on the appropriate details to a syscon-reboot driver?
-
-FKAN: Thats a good idea. But the hardware in this case (SCU) system
-clock unit has a bunch of registers used for different functions. If syscon is
-used alot in this case and we pile more attribute into it. It would get kinda
-messy after a while.
-
-FKAN: I still haven't figured out how to generically tie to
-the reset handler? Maybe the next person can use #define to bridge in the
-reset handler they want to use.
-
->
-> That way we can change the way we poke things without requiring changes
-> to bindings or dts.
->
-> Thanks,
-> Mark.
+Yes. Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
