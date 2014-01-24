@@ -1,679 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaAXV0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 16:26:14 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51184 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaAXV0K (ORCPT
+	id S1753141AbaAXV20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 16:28:26 -0500
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:34270 "HELO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752657AbaAXV2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 16:26:10 -0500
-Message-ID: <52E2DA6F.7050107@gmail.com>
-Date: Fri, 24 Jan 2014 13:26:07 -0800
-From: Marc C <marc.ceeeee@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 24 Jan 2014 16:28:23 -0500
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Porter <matt.porter@linaro.org>,
+In-Reply-To: <CACoXjc=ZT9fEm_KdY4WFSoS8n5FmO+hn9LjsR4m8YZG2iBbt5A@mail.gmail.com>
+References: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
+	<1389742458-7693-2-git-send-email-tinamdar@apm.com>
+	<201401151339.58593.arnd@arndb.de>
+	<CACoXjc=ZT9fEm_KdY4WFSoS8n5FmO+hn9LjsR4m8YZG2iBbt5A@mail.gmail.com>
+Date: Fri, 24 Jan 2014 13:28:22 -0800
+Message-ID: <CACoXjc=-JtpiM3m4DSA_DeOxYr3sihGGf4FSaJ2yC08rpm6ANQ@mail.gmail.com>
+Subject: Re: [RFC PATCH V2 1/4] pci: APM X-Gene PCIe controller driver
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
+        devicetree@vger.kernel.org,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 1/8] ARM: brcmstb: add infrastructure for ARM-based
- Broadcom STB SoCs
-References: <1390361452-3124-1-git-send-email-marc.ceeeee@gmail.com> <1390361452-3124-2-git-send-email-marc.ceeeee@gmail.com> <20140124101407.GL15586@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140124101407.GL15586@e106331-lin.cambridge.arm.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
->> +static void __init brcmstb_init_early(void)
->> +{
->> +       add_preferred_console("ttyS", 0, "115200");
->> +}
+On Thu, Jan 16, 2014 at 5:10 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> On Wed, Jan 15, 2014 at 4:39 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Wednesday 15 January 2014, Tanmay Inamdar wrote:
+>>> This patch adds the AppliedMicro X-Gene SOC PCIe controller driver.
+>>> X-Gene PCIe controller supports maxmum upto 8 lanes and GEN3 speed.
+>>> X-Gene has maximum 5 PCIe ports supported.
+>>>
+>>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>>
+>> This already looks much better than the first version, but I have a more
+>> comments. Most importantly, it would help to know how the root ports
+>> are structured. Is this a standard root complex and multiple ports,
+>> multiple root complexes with one port each, or a nonstandard organization
+>> that is a mix of those two models?
 >
-> Is this really required?
-
-I think I can drop this. It was a holdover from our older kernels.
-
->> +       /*
->> +       * set the reset vector to point to the secondary_startup
->> +       * routine
->> +       */
->> +       cpu_set_boot_addr(cpu, virt_to_phys(brcmstb_secondary_startup));
->> +
->> +       flush_cache_all();
+> This is multiple root complexes with one port each.
 >
-> Why? What does the new CPU need before its caches are coherent and up?
-
-Absolutely nothing! I should be able to drop this as well.
-
-Regarding the CPU power-down sequence, I'll review it and make sure it follows the
-"Processor power domain" sequence in the A15 TRM. For any deviations, I'll double-check
-with our H/W designers to ensure there aren't any magic requirements unaccounted for.
-
-Thank you for taking a deep-dive into the code! I'll make the appropriate modifications
-per your suggestions.
-
-Regards,
-Marc C
-
-
-On 01/24/2014 02:14 AM, Mark Rutland wrote:
-> On Wed, Jan 22, 2014 at 03:30:45AM +0000, Marc Carino wrote:
->> The BCM7xxx series of Broadcom SoCs are used primarily in set-top boxes.
 >>
->> This patch adds machine support for the ARM-based Broadcom SoCs.
+>>> +
+>>> +/* When the address bit [17:16] is 2'b01, the Configuration access will be
+>>> + * treated as Type 1 and it will be forwarded to external PCIe device.
+>>> + */
+>>> +static void __iomem *xgene_pcie_get_cfg_base(struct pci_bus *bus)
+>>> +{
+>>> +     struct xgene_pcie_port *port = xgene_pcie_bus_to_port(bus);
+>>> +     u64 addr = (u64)port->cfg_base;
+>>> +
+>>> +     if (bus->number >= (port->first_busno + 1))
+>>> +             addr |= AXI_EP_CFG_ACCESS;
+>>> +
+>>> +     return (void *)addr;
+>>> +}
 >>
->> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
->> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
->> ---
->>  arch/arm/configs/multi_v7_defconfig |    1 +
->>  arch/arm/mach-bcm/Kconfig           |   14 ++
->>  arch/arm/mach-bcm/Makefile          |    4 +
->>  arch/arm/mach-bcm/brcmstb.c         |  110 ++++++++++++
->>  arch/arm/mach-bcm/brcmstb.h         |   38 ++++
->>  arch/arm/mach-bcm/headsmp-brcmstb.S |   34 ++++
->>  arch/arm/mach-bcm/hotplug-brcmstb.c |  334 +++++++++++++++++++++++++++++++++++
->>  7 files changed, 535 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/arm/mach-bcm/brcmstb.c
->>  create mode 100644 arch/arm/mach-bcm/brcmstb.h
->>  create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
->>  create mode 100644 arch/arm/mach-bcm/hotplug-brcmstb.c
+>> Wrong type, it should be 'void __iomem *'. Also you can't assume that
+>> bit operations work on virtual __iomem addresses, so it should be better
+>> to just add a constant integer to the pointer, which is a valid
+>> operation.
+>
+> ok.
+>
 >>
->> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
->> index c1df4e9..7028d11 100644
->> --- a/arch/arm/configs/multi_v7_defconfig
->> +++ b/arch/arm/configs/multi_v7_defconfig
->> @@ -7,6 +7,7 @@ CONFIG_MACH_ARMADA_370=y
->>  CONFIG_MACH_ARMADA_XP=y
->>  CONFIG_ARCH_BCM=y
->>  CONFIG_ARCH_BCM_MOBILE=y
->> +CONFIG_ARCH_BRCMSTB=y
->>  CONFIG_GPIO_PCA953X=y
->>  CONFIG_ARCH_HIGHBANK=y
->>  CONFIG_ARCH_KEYSTONE=y
->> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
->> index 9fe6d88..2c1ae83 100644
->> --- a/arch/arm/mach-bcm/Kconfig
->> +++ b/arch/arm/mach-bcm/Kconfig
->> @@ -31,6 +31,20 @@ config ARCH_BCM_MOBILE
->>           BCM11130, BCM11140, BCM11351, BCM28145 and
->>           BCM28155 variants.
+>> I also wonder why you need to do this at all. If there isn't a global
+>> config space for all ports, but rather a separate type0/type1 config
+>> cycle based on the bus number, I see that as an indication that the
+>> ports are in fact separate domains and should each start with bus 0.
+>
+> It is not a standard ECAM layout. We also have a separate RTDID
+> register as well to program bus, device, function. While accessing EP
+> config space, we have to set the bit 17:16 as 2b'01. The same config
+> space address is utilized for enabling a customized nonstandard PCIe
+> DMA feature. The bits are defined to differentiate the access purpose.
+> The feature is not supported in this driver yet.
+>
+> Secondly I don't think it will matter if each port starts with bus 0.
+> As long as we set the correct BDF in RTDID and set correct bits in
+> config address, the config reads and writes would work. Right?
+>
 >>
->> +config ARCH_BRCMSTB
->> +       bool "Broadcom BCM7XXX based boards" if ARCH_MULTI_V7
->> +       depends on MMU
->> +       select ARM_GIC
->> +       select MIGHT_HAVE_PCI
->> +       select HAVE_SMP
->> +       select HAVE_ARM_ARCH_TIMER
->> +       help
->> +         Say Y if you intend to run the kernel on a Broadcom ARM-based STB
->> +         chipset.
->> +
->> +         This enables support for Broadcom ARM-based set-top box chipsets,
->> +         including the 7445 family of chips.
->> +
->>  endmenu
+>>> +static void xgene_pcie_setup_lanes(struct xgene_pcie_port *port)
+>>> +{
+>>> +     void *csr_base = port->csr_base;
+>>> +     u32 val;
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_8);
+>>> +     val = eq_pre_cursor_lane0_set(val, 0x7);
+>>> +     val = eq_pre_cursor_lane1_set(val, 0x7);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_8);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_9);
+>>> +     val = eq_pre_cursor_lane0_set(val, 0x7);
+>>> +     val = eq_pre_cursor_lane1_set(val, 0x7);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_9);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_10);
+>>> +     val = eq_pre_cursor_lane0_set(val, 0x7);
+>>> +     val = eq_pre_cursor_lane1_set(val, 0x7);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_10);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_11);
+>>> +     val = eq_pre_cursor_lane0_set(val, 0x7);
+>>> +     val = eq_pre_cursor_lane1_set(val, 0x7);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_11);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_4);
+>>> +     val = (val & ~0x30) | (1 << 4);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_4);
+>>> +}
 >>
->>  endif
->> diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
->> index c2ccd5a..b744a12 100644
->> --- a/arch/arm/mach-bcm/Makefile
->> +++ b/arch/arm/mach-bcm/Makefile
->> @@ -13,3 +13,7 @@
->>  obj-$(CONFIG_ARCH_BCM_MOBILE)  := board_bcm281xx.o bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
->>  plus_sec := $(call as-instr,.arch_extension sec,+sec)
->>  AFLAGS_bcm_kona_smc_asm.o      :=-Wa,-march=armv7-a$(plus_sec)
->> +
->> +obj-$(CONFIG_ARCH_BRCMSTB)     := brcmstb.o
->> +obj-$(CONFIG_SMP)              += headsmp-brcmstb.o
->> +obj-$(CONFIG_HOTPLUG_CPU)      += hotplug-brcmstb.o
->> diff --git a/arch/arm/mach-bcm/brcmstb.c b/arch/arm/mach-bcm/brcmstb.c
->> new file mode 100644
->> index 0000000..7a6093d
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/brcmstb.c
->> @@ -0,0 +1,110 @@
->> +/*
->> + * Copyright (C) 2013 Broadcom Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/clk-provider.h>
->> +#include <linux/console.h>
->> +#include <linux/clocksource.h>
->> +#include <linux/delay.h>
->> +#include <linux/device.h>
->> +#include <linux/errno.h>
->> +#include <linux/init.h>
->> +#include <linux/io.h>
->> +#include <linux/jiffies.h>
->> +#include <linux/of_address.h>
->> +#include <linux/of_irq.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/printk.h>
->> +#include <linux/smp.h>
->> +
->> +#include <asm/cacheflush.h>
->> +#include <asm/mach-types.h>
->> +#include <asm/mach/arch.h>
->> +#include <asm/mach/map.h>
->> +#include <asm/mach/time.h>
->> +
->> +#include "brcmstb.h"
->> +
->> +/***********************************************************************
->> + * STB CPU (main application processor)
->> + ***********************************************************************/
->> +
->> +static const char *brcmstb_match[] __initconst = {
->> +       "brcm,bcm7445",
->> +       "brcm,brcmstb",
->> +       NULL
->> +};
->> +
->> +static void __init brcmstb_init_early(void)
->> +{
->> +       add_preferred_console("ttyS", 0, "115200");
->> +}
-> 
-> Is this really required?
-> 
->> +
->> +/***********************************************************************
->> + * SMP boot
->> + ***********************************************************************/
->> +
->> +#ifdef CONFIG_SMP
->> +static DEFINE_SPINLOCK(boot_lock);
->> +
->> +static void __cpuinit brcmstb_secondary_init(unsigned int cpu)
->> +{
->> +       /*
->> +        * Synchronise with the boot thread.
->> +        */
->> +       spin_lock(&boot_lock);
->> +       spin_unlock(&boot_lock);
->> +}
->> +
->> +static int __cpuinit brcmstb_boot_secondary(unsigned int cpu,
->> +                                           struct task_struct *idle)
->> +{
->> +       /*
->> +        * set synchronisation state between this boot processor
->> +        * and the secondary one
->> +        */
->> +       spin_lock(&boot_lock);
->> +
->> +       /* Bring up power to the core if necessary */
->> +       if (brcmstb_cpu_get_power_state(cpu) == 0)
->> +               brcmstb_cpu_power_on(cpu);
->> +
->> +       brcmstb_cpu_boot(cpu);
->> +
->> +       /*
->> +        * now the secondary core is starting up let it run its
->> +        * calibrations, then wait for it to finish
->> +        */
->> +       spin_unlock(&boot_lock);
->> +
->> +       return 0;
->> +}
->> +
->> +struct smp_operations brcmstb_smp_ops __initdata = {
->> +       .smp_prepare_cpus       = brcmstb_cpu_ctrl_setup,
->> +       .smp_secondary_init     = brcmstb_secondary_init,
->> +       .smp_boot_secondary     = brcmstb_boot_secondary,
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +       .cpu_kill               = brcmstb_cpu_kill,
->> +       .cpu_die                = brcmstb_cpu_die,
->> +#endif
->> +};
->> +#endif
->> +
->> +DT_MACHINE_START(BRCMSTB, "Broadcom STB (Flattened Device Tree)")
->> +       .dt_compat      = brcmstb_match,
->> +#ifdef CONFIG_SMP
->> +       .smp            = smp_ops(brcmstb_smp_ops),
->> +#endif
->> +       .init_early     = brcmstb_init_early,
->> +MACHINE_END
->> diff --git a/arch/arm/mach-bcm/brcmstb.h b/arch/arm/mach-bcm/brcmstb.h
->> new file mode 100644
->> index 0000000..e49bde6
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/brcmstb.h
->> @@ -0,0 +1,38 @@
->> +/*
->> + * Copyright (C) 2013 Broadcom Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#ifndef __BRCMSTB_H__
->> +#define __BRCMSTB_H__
->> +
->> +#if !defined(__ASSEMBLY__)
->> +#include <linux/smp.h>
->> +#endif
->> +
->> +#if !defined(__ASSEMBLY__)
->> +extern void brcmstb_secondary_startup(void);
->> +extern void brcmstb_cpu_boot(unsigned int cpu);
->> +extern void brcmstb_cpu_power_on(unsigned int cpu);
->> +extern int brcmstb_cpu_get_power_state(unsigned int cpu);
->> +extern struct smp_operations brcmstb_smp_ops;
->> +#if defined(CONFIG_HOTPLUG_CPU)
->> +extern void brcmstb_cpu_die(unsigned int cpu);
->> +extern int brcmstb_cpu_kill(unsigned int cpu);
->> +void __init brcmstb_cpu_ctrl_setup(unsigned int max_cpus);
->> +#else
->> +static inline void brcmstb_cpu_die(unsigned int cpu) {}
->> +static inline int brcmstb_cpu_kill(unsigned int cpu) {}
->> +static inline void __init brcmstb_cpu_ctrl_setup(unsigned int max_cpus) {}
->> +#endif
->> +#endif
->> +
->> +#endif /* __BRCMSTB_H__ */
->> diff --git a/arch/arm/mach-bcm/headsmp-brcmstb.S b/arch/arm/mach-bcm/headsmp-brcmstb.S
->> new file mode 100644
->> index 0000000..57ec438
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/headsmp-brcmstb.S
->> @@ -0,0 +1,34 @@
->> +/*
->> + * SMP boot code for secondary CPUs
->> + * Based on arch/arm/mach-tegra/headsmp.S
->> + *
->> + * Copyright (C) 2010 NVIDIA, Inc.
->> + * Copyright (C) 2013 Broadcom Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <asm/assembler.h>
->> +#include <linux/linkage.h>
->> +#include <linux/init.h>
->> +
->> +        .section ".text.head", "ax"
->> +       __CPUINIT
-> 
-> __CPUINIT is either going or gone by now. This should disappear.
-> 
->> +
->> +ENTRY(brcmstb_secondary_startup)
->> +        /*
->> +         * Ensure CPU is in a sane state by disabling all IRQs and switching
->> +         * into SVC mode.
->> +         */
->> +        setmode        PSR_I_BIT | PSR_F_BIT | SVC_MODE, r0
->> +
->> +        bl      v7_invalidate_l1
->> +        b       secondary_startup
->> +ENDPROC(brcmstb_secondary_startup)
->> diff --git a/arch/arm/mach-bcm/hotplug-brcmstb.c b/arch/arm/mach-bcm/hotplug-brcmstb.c
->> new file mode 100644
->> index 0000000..ff4a732
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/hotplug-brcmstb.c
->> @@ -0,0 +1,334 @@
->> +/*
->> + * Broadcom STB CPU hotplug support for ARM
->> + *
->> + * Copyright (C) 2013 Broadcom Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/delay.h>
->> +#include <linux/device.h>
->> +#include <linux/errno.h>
->> +#include <linux/init.h>
->> +#include <linux/io.h>
->> +#include <linux/jiffies.h>
->> +#include <linux/of_address.h>
->> +#include <linux/of_irq.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/printk.h>
->> +#include <linux/regmap.h>
->> +#include <linux/smp.h>
->> +#include <linux/mfd/syscon.h>
->> +
->> +#include <asm/cacheflush.h>
->> +#include <asm/mach-types.h>
->> +
->> +#include "brcmstb.h"
->> +
->> +enum {
->> +       ZONE_MAN_CLKEN_MASK             = BIT(0),
->> +       ZONE_MAN_RESET_CNTL_MASK        = BIT(1),
->> +       ZONE_MAN_MEM_PWR_MASK           = BIT(4),
->> +       ZONE_RESERVED_1_MASK            = BIT(5),
->> +       ZONE_MAN_ISO_CNTL_MASK          = BIT(6),
->> +       ZONE_MANUAL_CONTROL_MASK        = BIT(7),
->> +       ZONE_PWR_DN_REQ_MASK            = BIT(9),
->> +       ZONE_PWR_UP_REQ_MASK            = BIT(10),
->> +       ZONE_BLK_RST_ASSERT_MASK        = BIT(10),
->> +       ZONE_PWR_OFF_STATE_MASK         = BIT(26),
->> +       ZONE_PWR_ON_STATE_MASK          = BIT(26),
->> +       ZONE_DPG_PWR_STATE_MASK         = BIT(28),
->> +       ZONE_MEM_PWR_STATE_MASK         = BIT(29),
->> +       ZONE_RESET_STATE_MASK           = BIT(31),
->> +};
->> +
->> +static void __iomem *cpubiuctrl_block;
->> +static void __iomem *hif_cont_block;
->> +static u32 cpu0_pwr_zone_ctrl_reg;
->> +static u32 cpu_rst_cfg_reg;
->> +static u32 hif_cont_reg;
->> +DEFINE_PER_CPU(int, per_cpu_sw_state);
->> +
->> +static void __iomem *pwr_ctrl_get_base(unsigned int cpu)
->> +{
->> +       void __iomem *base = cpubiuctrl_block + cpu0_pwr_zone_ctrl_reg;
->> +       base += (cpu * 4);
-> 
-> CPU isn't guaranteed to be the physical CPU ID (MPIDR.Aff*). While it
-> almost certainly will be, we can't guarantee it in the face of a kexec,
-> for example.
-> 
-> You can use cpu_logical_map(cpu) to get the physical ID.
-> 
->> +       return base;
->> +}
->> +
->> +static u32 pwr_ctrl_rd(unsigned int cpu)
->> +{
->> +       void __iomem *base = pwr_ctrl_get_base(cpu);
->> +       return readl_relaxed(base);
->> +}
->> +
->> +static void pwr_ctrl_wr(unsigned int cpu, u32 val)
->> +{
->> +       void __iomem *base = pwr_ctrl_get_base(cpu);
->> +       writel(val, base);
->> +}
->> +
->> +static void cpu_rst_cfg_set(int cpu, int set)
->> +{
->> +       u32 val;
->> +       val = readl_relaxed(cpubiuctrl_block + cpu_rst_cfg_reg);
->> +       if (set)
->> +               val |= BIT(cpu);
->> +       else
->> +               val &= ~BIT(cpu);
-> 
-> Likewise here.
-> 
->> +       writel_relaxed(val, cpubiuctrl_block + cpu_rst_cfg_reg);
->> +}
->> +
->> +static void cpu_set_boot_addr(int cpu, unsigned long boot_addr)
->> +{
->> +       const int reg_ofs = cpu * 8;
-> 
-> And here.
-> 
->> +       writel_relaxed(0, hif_cont_block + hif_cont_reg + reg_ofs);
->> +       writel_relaxed(boot_addr, hif_cont_block + hif_cont_reg + 4 + reg_ofs);
->> +}
->> +
->> +void brcmstb_cpu_boot(unsigned int cpu)
->> +{
->> +       pr_info("SMP: Booting CPU%d...\n", cpu);
->> +
->> +       /*
->> +       * set the reset vector to point to the secondary_startup
->> +       * routine
->> +       */
->> +       cpu_set_boot_addr(cpu, virt_to_phys(brcmstb_secondary_startup));
->> +
->> +       flush_cache_all();
-> 
-> Why? What does the new CPU need before its caches are coherent and up?
-> 
->> +
->> +       /* unhalt the cpu */
->> +       cpu_rst_cfg_set(cpu, 0);
->> +}
->> +
->> +void brcmstb_cpu_power_on(unsigned int cpu)
->> +{
->> +       /*
->> +        * The secondary cores power was cut, so we must go through
->> +        * power-on initialization.
->> +        */
->> +       u32 tmp;
->> +
->> +       pr_info("SMP: Powering up CPU%d...\n", cpu);
->> +
->> +       /* Request zone power up */
->> +       pwr_ctrl_wr(cpu, ZONE_PWR_UP_REQ_MASK);
->> +
->> +       /* Wait for the power up FSM to complete */
->> +       do {
->> +               tmp = pwr_ctrl_rd(cpu);
->> +       } while (!(tmp & ZONE_PWR_ON_STATE_MASK));
->> +
->> +       per_cpu(per_cpu_sw_state, cpu) = 1;
->> +}
->> +
->> +int brcmstb_cpu_get_power_state(unsigned int cpu)
->> +{
->> +       int tmp = pwr_ctrl_rd(cpu);
->> +       return (tmp & ZONE_RESET_STATE_MASK) ? 0 : 1;
->> +}
->> +
->> +void __ref brcmstb_cpu_die(unsigned int cpu)
->> +{
->> +       /* Derived from misc_bpcm_arm.c */
->> +
->> +       /* Clear SCTLR.C bit */
->> +       __asm__(
->> +               "mrc    p15, 0, r0, c1, c0, 0\n"
->> +               "bic    r0, r0, #(1 << 2)\n"
->> +               "mcr    p15, 0, r0, c1, c0, 0\n"
->> +               : /* no output */
->> +               : /* no input */
->> +               : "r0"  /* clobber r0 */
->> +       );
-> 
-> This is odd. Why not allow GCC to allocate the register?
-> 
->> +
->> +       /*
->> +        * Instruction barrier to ensure cache is really disabled before
->> +        * cleaning/invalidating the caches
->> +        */
->> +       isb();
-> 
-> I think you could use:
-> 
-> set_cr(get_cr() & ~CR_C))
-> 
-> Which would do all of the above (including the isb), and will get GCC to
-> allocate the register.
-> 
->> +
->> +       flush_cache_all();
->> +
->> +       /* Invalidate all instruction caches to PoU (ICIALLU) */
->> +       /* Data sync. barrier to ensure caches have emptied out */
->> +       __asm__("mcr    p15, 0, r0, c7, c5, 0\n" : : : "r0");
->> +       dsb();
-> 
-> Why do you need to invalidate the I-cache?
-> 
->> +
->> +       /*
->> +        * Clear ACTLR.SMP bit to prevent broadcast TLB messages from reaching
->> +        * this core
->> +        */
->> +       __asm__(
->> +               "mrc    p15, 0, r0, c1, c0, 1\n"
->> +               "bic    r0, r0, #(1 << 6)\n"
->> +               "mcr    p15, 0, r0, c1, c0, 1\n"
->> +               : /* no output */
->> +               : /* no input */
->> +               : "r0"  /* clobber r0 */
->> +       );
-> 
-> Surely you can use an output operand to get GCC to allocate the register
-> for you?
-> 
->> +
->> +       /* Disable all IRQs for this CPU */
->> +       arch_local_irq_disable();
->> +
->> +       per_cpu(per_cpu_sw_state, cpu) = 0;
-> 
-> Your caches are off at this point, so this could be going straight to
-> memory. Yet readers of this value aren't cleaning their caches before
-> reading this, so they could hit a stale cached copy.
-> 
->> +
->> +       /*
->> +        * Final full barrier to ensure everything before this instruction has
->> +        * quiesced.
->> +        */
->> +       isb();
->> +       dsb();
->> +
->> +       /* Sit and wait to die */
->> +       wfi();
->> +
->> +       /* We should never get here... */
->> +       nop();
-> 
-> Why the nop first?
-> 
->> +       panic("Spurious interrupt on CPU %d received!\n", cpu);
->> +}
->> +
->> +int brcmstb_cpu_kill(unsigned int cpu)
->> +{
->> +       u32 tmp;
->> +
->> +       pr_info("SMP: Powering down CPU%d...\n", cpu);
->> +
->> +       while (per_cpu(per_cpu_sw_state, cpu))
->> +               ;
-> 
-> As this was written to with caches disabled, the cached copy of the
-> value (which this is reading) could be stale. Surely you need to
-> clean+invalidate the line for this value each time you read it to give
-> it a chance to update?
-> 
->> +
->> +       /* Program zone reset */
->> +       pwr_ctrl_wr(cpu, ZONE_RESET_STATE_MASK | ZONE_BLK_RST_ASSERT_MASK |
->> +                             ZONE_PWR_DN_REQ_MASK);
->> +
->> +       /* Verify zone reset */
->> +       tmp = pwr_ctrl_rd(cpu);
->> +       if (!(tmp & ZONE_RESET_STATE_MASK))
->> +               pr_err("%s: Zone reset bit for CPU %d not asserted!\n",
->> +                       __func__, cpu);
->> +
->> +       /* Wait for power down */
->> +       do {
->> +               tmp = pwr_ctrl_rd(cpu);
->> +       } while (!(tmp & ZONE_PWR_OFF_STATE_MASK));
->> +
->> +       /* Settle-time from Broadcom-internal DVT reference code */
->> +       udelay(7);
->> +
->> +       /* Assert reset on the CPU */
->> +       cpu_rst_cfg_set(cpu, 1);
->> +
->> +       return 1;
->> +}
->> +
->> +static int __init setup_hifcpubiuctrl_regs(struct device_node *np)
->> +{
->> +       int rc = 0;
->> +       char *name;
->> +       int index;
->> +       struct device_node *syscon_np = NULL;
->> +
->> +       name = "syscon-cpu";
->> +
->> +       syscon_np = of_parse_phandle(np, name, 0);
->> +       if (!syscon_np) {
->> +               pr_err("can't find phandle %s\n", name);
->> +               rc = -EINVAL;
->> +               goto cleanup;
->> +       }
->> +
->> +       cpubiuctrl_block = of_iomap(syscon_np, 0);
->> +       if (!cpubiuctrl_block) {
->> +               pr_err("iomap failed for cpubiuctrl_block\n");
->> +               rc = -EINVAL;
->> +               goto cleanup;
->> +       }
->> +
->> +       index = 1;
->> +       rc = of_property_read_u32_index(np, name, index,
->> +                                       &cpu0_pwr_zone_ctrl_reg);
-> 
-> The index variable seems rather pointless. Why not just use the value
-> in-place?
-> 
->> +       if (rc) {
->> +               pr_err("failed to read %d from %s property (%d)\n", index, name,
->> +                       rc);
-> 
-> It might be better to state _what_ you're looking for (what does the
-> value represent?).
-> 
->> +               rc = -EINVAL;
->> +               goto cleanup;
->> +       }
->> +
->> +       index = 2;
->> +       rc = of_property_read_u32_index(np, name, index, &cpu_rst_cfg_reg);
-> 
-> Likewise for all of the above.
-> 
-> Thanks,
-> Mark.
-> 
+>> Please document what you are actually setting here. If the configuration
+>> of the lanes is always the same, why do you have to set it here. If not,
+>> why do you set constant values?
+>
+> Good point. Let me check if these values should be constant or tune-able.
+>
+>>
+>>> +static void xgene_pcie_setup_link(struct xgene_pcie_port *port)
+>>> +{
+>>> +     void *csr_base = port->csr_base;
+>>> +     u32 val;
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_CFG_14);
+>>> +     val |= DIRECT_TO_8GTS_MASK;
+>>> +     val |= SUPPORT_5GTS_MASK;
+>>> +     val |= SUPPORT_8GTS_MASK;
+>>> +     val |= DIRECT_TO_5GTS_MASK;
+>>> +     writel(val, csr_base + BRIDGE_CFG_14);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_CFG_14);
+>>> +     val &= ~ADVT_INFINITE_CREDITS;
+>>> +     writel(val, csr_base + BRIDGE_CFG_14);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_0);
+>>> +     val |= (val & ~0xf) | 7;
+>>> +     val |= (val & ~0xf00) | ((7 << 8) & 0xf00);
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_0);
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_8G_CFG_0);
+>>> +     val |= DWNSTRM_EQ_SKP_PHS_2_3;
+>>> +     writel(val, csr_base + BRIDGE_8G_CFG_0);
+>>> +}
+>>
+>> Same here.
+>>
+>>> +static void xgene_pcie_program_core(void *csr_base)
+>>> +{
+>>> +     u32 val;
+>>> +
+>>> +     val = readl(csr_base + BRIDGE_CFG_0);
+>>> +     val |= AER_OPTIONAL_ERROR_EN;
+>>> +     writel(val, csr_base + BRIDGE_CFG_0);
+>>> +     writel(0x0, csr_base + INTXSTATUSMASK);
+>>> +     val = readl(csr_base + BRIDGE_CTRL_1);
+>>> +     val = (val & ~0xffff) | XGENE_PCIE_DEV_CTRL;
+>>> +     writel(val, csr_base + BRIDGE_CTRL_1);
+>>> +}
+>>
+>> 'program_core'?
+>
+> Some of the PCIe core related misc configurations.
+>
+>>
+>>> +static void xgene_pcie_poll_linkup(struct xgene_pcie_port *port, u32 *lanes)
+>>> +{
+>>> +     void *csr_base = port->csr_base;
+>>> +     u32 val32;
+>>> +     u64 start_time, time;
+>>> +
+>>> +     /*
+>>> +      * A component enters the LTSSM Detect state within
+>>> +      * 20ms of the end of fundamental core reset.
+>>> +      */
+>>> +     msleep(XGENE_LTSSM_DETECT_WAIT);
+>>> +     port->link_up = 0;
+>>> +     start_time = jiffies;
+>>> +     do {
+>>> +             val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
+>>> +             if (val32 & LINK_UP_MASK) {
+>>> +                     port->link_up = 1;
+>>> +                     port->link_speed = PIPE_PHY_RATE_RD(val32);
+>>> +                     val32 = readl(csr_base + BRIDGE_STATUS_0);
+>>> +                     *lanes = val32 >> 26;
+>>> +             }
+>>> +             time = jiffies_to_msecs(jiffies - start_time);
+>>> +     } while ((!port->link_up) || (time <= XGENE_LTSSM_L0_WAIT));
+>>> +}
+>>
+>> Maybe another msleep() in the loop? It seems weird to first do an
+>> unconditional sleep but then busy-wait for the result.
+>
+> ok.
 
+This loop can execute for maximum 4 msec. So putting msleep(1) won't
+get us much.
+
+>
+>>
+>>> +static void xgene_pcie_setup_primary_bus(struct xgene_pcie_port *port,
+>>> +                                      u32 first_busno, u32 last_busno)
+>>> +{
+>>> +     u32 val;
+>>> +     void *cfg_addr = port->cfg_base;
+>>> +
+>>> +     val = readl(cfg_addr + PCI_PRIMARY_BUS);
+>>> +     val &= ~PCI_PRIMARY_BUS_MASK;
+>>> +     val |= (last_busno << 16) | ((first_busno + 1) << 8) | (first_busno);
+>>> +     writel(val, cfg_addr + PCI_PRIMARY_BUS);
+>>> +}
+>>
+>> Please explain what you are doing here. As mentioned above, I would expect
+>> that each domain has visibility of all 255 buses. You shouldn't need any hacks
+>> where you try to artificially squeeze the ports into a single domain when
+>> they are separate in hardware.
+>
+> ok. I will check and get back.
+
+You are right. I have removed this hack. It will be fixed in next version.
+
+>
+>>
+>>> +/*
+>>> + * read configuration values from DTS
+>>> + */
+>>> +static int xgene_pcie_read_dts_config(struct xgene_pcie_port *port)
+>>
+>> The comment and function name don't seem to match what the function
+>> does. The main purpose of this function seems to be to ioremap
+>> the resources, which have nothing to with configuration.
+>
+> ok.
+>
+>>
+>>> +{
+>>> +     struct device_node *np = port->node;
+>>> +     struct resource csr_res;
+>>> +     struct resource cfg_res;
+>>> +
+>>> +     /* Get CSR space registers address */
+>>> +     if (of_address_to_resource(np, 0, &csr_res))
+>>> +             return -EINVAL;
+>>> +
+>>> +     port->csr_base = devm_ioremap_nocache(port->dev, csr_res.start,
+>>> +                                           resource_size(&csr_res));
+>>
+>> You can also use platform_get_resource() to access the resource
+>> that is already there, rather than creating another one.
+>
+> ok.
+>
+>>
+>>> +static void xgene_pcie_setup_ob_reg(struct xgene_pcie_port *port,
+>>> +                                 u32 addr, u32 restype)
+>>> +{
+>>> +     struct resource *res = NULL;
+>>> +     void *base = port->csr_base + addr;
+>>> +     resource_size_t size;
+>>> +     u64 cpu_addr = 0;
+>>> +     u64 pci_addr = 0;
+>>> +     u64 mask = 0;
+>>> +     u32 min_size = 0;
+>>
+>> A general note: don't initialize local variables to a bogus valus (e.g. 0)
+>> in their declaration. It prevents the compiler from warning about
+>> incorrect uses.
+>
+> ok.
+>
+>>
+>>> +     u32 flag = EN_REG;
+>>
+>> This one on the other hand is ok, because you are actually going to
+>> use that value.
+>>
+>>> +     switch (restype) {
+>>> +     case IORESOURCE_MEM:
+>>> +             res = &port->mem.res;
+>>> +             pci_addr = port->mem.pci_addr;
+>>> +             min_size = SZ_128M;
+>>> +             break;
+>>> +     case IORESOURCE_IO:
+>>> +             res = &port->io.res;
+>>> +             pci_addr = port->io.pci_addr;
+>>> +             min_size = 128;
+>>> +             flag |= OB_LO_IO;
+>>> +             break;
+>>> +     }
+>>
+>> I assume this works ok, but seems wrong in one detail: If the resource
+>> is marked IORESOURCE_IO, res->start is supposed to be in I/O space, not
+>> in memory space, which would make it the wrong number to program
+>> into the hardware registers.
+>
+> Yes for using ioport resource. However we have decided to defer using
+> it since 'pci_ioremap_io' is not yet supported from arm64 side.
+>
+> From HW point of view, for memory mapped IO space, it is nothing but a
+> piece taken out of the ranges in address map for outbound accesses. So
+> while configuring registers from SOC side, it should take the CPU
+> address which is address from SOC address map. Right?
+>
+> Later on we can have a separate io resource like 'realio' similar to
+> what pci-mvebu.c does.
+>
+>>
+>>> +static int xgene_pcie_parse_map_ranges(struct xgene_pcie_port *port)
+>>> +{
+>>> +     struct device_node *np = port->node;
+>>> +     struct of_pci_range range;
+>>> +     struct of_pci_range_parser parser;
+>>> +     struct device *dev = port->dev;
+>>> +
+>>> +     if (of_pci_range_parser_init(&parser, np)) {
+>>> +             dev_err(dev, "missing ranges property\n");
+>>> +             return -EINVAL;
+>>> +     }
+>>> +
+>>> +     /* Get the I/O, memory, config ranges from DT */
+>>
+>> The comment needs updating now that you don't read config space here any more.
+>
+> ok.
+>
+>>
+>>> +/* X-Gene PCIe support maximum 3 inbound memory regions
+>>> + * This function helps to select a region based on size of region
+>>> + */
+>>> +static int xgene_pcie_select_ib_reg(u64 size)
+>>> +{
+>>> +     static u8 ib_reg_mask;
+>>> +
+>>> +     if ((size > 4) && (size < SZ_16M) && !(ib_reg_mask & (1 << 1))) {
+>>> +             ib_reg_mask |= (1 << 1);
+>>> +             return 1;
+>>> +     }
+>>> +
+>>> +     if ((size > SZ_1K) && (size < SZ_1T) && !(ib_reg_mask & (1 << 0))) {
+>>> +             ib_reg_mask |= (1 << 0);
+>>> +             return 0;
+>>> +     }
+>>> +
+>>> +     if ((size > SZ_1M) && (size < SZ_1T) && !(ib_reg_mask & (1 << 2))) {
+>>> +             ib_reg_mask |= (1 << 2);
+>>> +             return 2;
+>>> +     }
+>>> +     return -EINVAL;
+>>> +}
+>>
+>> Shouldn't the ib_reg_mask variable be per host bridge? Static variables
+>> are dangerous if you ever get multiple instances of the hardware in one
+>> system.
+>
+> Yes. You are right. Thanks.
+>
+>>
+>>> +static int xgene_pcie_parse_map_dma_ranges(struct xgene_pcie_port *port)
+>>> +{
+>>> +     struct device_node *np = port->node;
+>>> +     struct of_pci_range range;
+>>> +     struct of_pci_range_parser parser;
+>>> +     struct device *dev = port->dev;
+>>> +     int region;
+>>> +
+>>> +     if (pci_dma_range_parser_init(&parser, np)) {
+>>> +             dev_err(dev, "missing dma-ranges property\n");
+>>> +             return -EINVAL;
+>>> +     }
+>>> +
+>>> +     /* Get the dma-ranges from DT */
+>>> +     for_each_of_pci_range(&parser, &range) {
+>>> +             u64 restype = range.flags & IORESOURCE_TYPE_BITS;
+>>> +             u64 end = range.cpu_addr + range.size - 1;
+>>> +             dev_dbg(port->dev, "0x%08x 0x%016llx..0x%016llx -> 0x%016llx\n",
+>>> +                     range.flags, range.cpu_addr, end, range.pci_addr);
+>>> +             region = xgene_pcie_select_ib_reg(range.size);
+>>> +             if (region == -EINVAL) {
+>>> +                     dev_warn(port->dev, "invalid pcie dma-range config\n");
+>>> +                     continue;
+>>> +             }
+>>> +             xgene_pcie_setup_ib_reg(port, &range, restype, region);
+>>> +     }
+>>> +     return 0;
+>>> +}
+>>
+>> I guess is could even be a local variable in this function, which you pass
+>> by reference.
+>>
+>>> +
+>>> +static int xgene_pcie_setup(int nr, struct pci_sys_data *sys)
+>>> +{
+>>> +     struct xgene_pcie_port *pp = xgene_pcie_sys_to_port(sys);
+>>> +
+>>> +     if (pp == NULL)
+>>> +             return 0;
+>>> +
+>>> +     sys->mem_offset = pp->mem.res.start - pp->mem.pci_addr;
+>>> +     pci_add_resource_offset(&sys->resources, &pp->mem.res,
+>>> +                             sys->mem_offset);
+>>> +     return 1;
+>>> +}
+>>
+>> Please follow the regular error handling conventions, which are to
+>> pass a negative errno value on error and zero on success.
+>
+> ok.
+>
+>>
+>> Also, what would be a reason for the port to be zero here? If
+>> it's something that can't happen in practice, don't try to handle
+>> it gracefully. You can use BUG_ON() for fatal conditions that
+>> are supposed to be impossible to reach.
+>
+> This function is a hook to upper layer. We register nr_controllers in
+> hw_pci structure as MAX_PORTS we support. It can happen that number of
+> ports actually enabled from device tree are less than the number in
+> nr_controllers.
+>
+>>
+>>> +static struct pci_bus __init *xgene_pcie_scan_bus(int nr,
+>>> +                                               struct pci_sys_data *sys)
+>>> +{
+>>> +     struct xgene_pcie_port *pp = xgene_pcie_sys_to_port(sys);
+>>> +
+>>> +     pp->first_busno = sys->busnr;
+>>> +     xgene_pcie_setup_primary_bus(pp, sys->busnr, 0xff);
+>>> +     return pci_scan_root_bus(NULL, sys->busnr, &xgene_pcie_ops,
+>>> +                              sys, &sys->resources);
+>>> +}
+>>
+>> You have a number of helper functions that don't seem to gain
+>> much at all. Just move the call to pci_scan_root_bus() into
+>> xgene_pcie_setup_primary_bus() here, and use that as the .scan
+>> callback.
+>>
+>
+> I can do that if I can get rid of setup_primary_bus api. Let me check.
+>
+>>
+>>> +     if (!port->link_up)
+>>> +             dev_info(port->dev, "(rc) link down\n");
+>>> +     else
+>>> +             dev_info(port->dev, "(rc) x%d gen-%d link up\n",
+>>> +                             lanes, port->link_speed + 1);
+>>> +#ifdef CONFIG_PCI_DOMAINS
+>>> +     xgene_pcie_hw.domain++;
+>>> +#endif
+>>> +     xgene_pcie_hw.private_data[index++] = port;
+>>> +     platform_set_drvdata(pdev, port);
+>>> +     return 0;
+>>> +}
+>>
+>> Do you have multiple domains or not? I don't see how it can work if you
+>> make the domain setup conditional on a kernel configuration option.
+>> If you in fact have multiple domains, make sure in Kconfig that
+>> CONFIG_PCI_DOMAINS is enabled. Otherwise don't mess with the domain
+>> number...
+>
+> It is enabled in Kconfig.
+>
+>>
+>>> +static const struct of_device_id xgene_pcie_match_table[] __initconst = {
+>>> +     {.compatible = "apm,xgene-pcie",},
+>>> +     {},
+>>> +};
+>>
+>> Another general note: Your "compatible" strings are rather unspecific.
+>> Do you have a version number for this IP block? I suppose that it's related
+>> to one that has been used in other chips before, or will be used in future
+>> chips, if it's not actually licensed from some other company.
+>
+> I will have to check this.
+>
+
+We have decided to stick with current compatible string for now.
+
+>>
+>>> +static int __init xgene_pcie_init(void)
+>>> +{
+>>> +     void *private;
+>>> +     int ret;
+>>> +
+>>> +     pr_info("X-Gene: PCIe driver\n");
+>>> +
+>>> +     /* allocate private data to keep xgene_pcie_port information */
+>>> +     private = kzalloc((XGENE_PCIE_MAX_PORTS * sizeof(void *)), GFP_KERNEL);
+>>
+>> This should not be done unconditionally: There is no point in printing
+>> a message or allocating memory if you don't actually run on a system
+>> with this device.
+>
+> I am doing this here because I have one instance of hw_pci structure
+> with multiple pcie controllers. I can't do it from probe since it will
+> be called once per instance in device tree.
+>
+>>
+>>> +     if (private == NULL)
+>>> +             return -ENOMEM;
+>>
+>> Style: if you are testing for an object, just write 'if (private)' or
+>> 'if (!private)', but don't compare against NULL.
+>
+> ok.
+>
+>>
+>>> +     xgene_pcie_hw.private_data = private;
+>>> +     ret = platform_driver_probe(&xgene_pcie_driver,
+>>> +                                 xgene_pcie_probe_bridge);
+>>> +     if (ret)
+>>> +             return ret;
+>>> +     pci_common_init(&xgene_pcie_hw);
+>>> +     return 0;
+>>
+>> This seems wrong: You should not use platform_driver_probe() because
+>> that has issues with deferred probing.
+>
+> I think 'platform_driver_probe' prevents the deferred probing.
+> 'pci_common_init' needs to be called only once with current driver
+> structure. The probes for all pcie ports should be finished (ports
+> initialized) before 'pci_common_init' gets called.
+>
+>>
+>>         Arnd
