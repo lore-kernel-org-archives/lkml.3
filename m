@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaAXJUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 04:20:00 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:59466 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaAXJT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 04:19:57 -0500
-Message-ID: <52E2302D.5040001@linaro.org>
-Date: Fri, 24 Jan 2014 17:19:41 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752008AbaAXJVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 04:21:39 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:47215 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853AbaAXJVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 04:21:36 -0500
+X-IronPort-AV: E=Sophos;i="4.95,711,1384300800"; 
+   d="scan'208";a="96100279"
+Message-ID: <1390555293.2124.6.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] xen-blkback: fix memory leak when persistent grants are
+ used
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Matt Wilson <msw@linux.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Matt Rushton <mrushton@amazon.com>,
+        Roger Pau =?ISO-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>, Anthony Liguori <aliguori@amazon.com>,
+        Matt Wilson <msw@amazon.com>
+Date: Fri, 24 Jan 2014 09:21:33 +0000
+In-Reply-To: <1390505326-9368-1-git-send-email-msw@linux.com>
+References: <1390505326-9368-1-git-send-email-msw@linux.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 18/20] clocksource / acpi: Add macro CLOCKSOURCE_ACPI_DECLARE
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org> <52DCE790.6080809@linaro.org> <20140122114616.GB15591@e106331-lin.cambridge.arm.com> <3140612.0s75qS6VKb@wuerfel>
-In-Reply-To: <3140612.0s75qS6VKb@wuerfel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年01月22日 22:56, Arnd Bergmann wrote:
-> On Wednesday 22 January 2014 11:46:16 Mark Rutland wrote:
->> On Mon, Jan 20, 2014 at 09:08:32AM +0000, Hanjun Guo wrote:
->>> On 2014-1-17 22:21, Arnd Bergmann wrote:
->>>> On Friday 17 January 2014, Hanjun Guo wrote:
->>>>> From: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>>>
->>>>> This macro does the same job as CLOCKSOURCE_OF_DECLARE. The device
->>>>> name from the ACPI timer table is matched with all the registered
->>>>> timer controllers and matching initialisation routine is invoked.
->>>> I wouldn't anticipate this infrastructure to be required. Shouldn't all
->>>> ARMv8 machines have an architected timer?
->>> I not sure of this, could anyone can give some guidance? if only arch
->>> timer is available for ARM64, this will make thing very simple.
->> All ARMv8 systems should have an architected timer.
->>
->> However, they may also have other timers (e.g. global timers for use
->> when CPUs are in low power states and their local architected timers
->> aren't active).
-> But all other timers could be regular platform drivers I suppose. No
-> need for special infrastructure for those.
+On Thu, 2014-01-23 at 11:28 -0800, Matt Wilson wrote:
+> From: Matt Rushton <mrushton@amazon.com>
+> 
+> Currently shrink_free_pagepool() is called before the pages used for
+> persistent grants are released via free_persistent_gnts(). This
+> results in a memory leak when a VBD that uses persistent grants is
+> torn down.
 
-One more information, acpi_early_init() is run before timekeeping_init()
-now, and that patch was merged into 3.14-rc1. So we can initialize
-timers for scanning the DSDT table, and it also means that timer defined
-in DSDT can be initialized early enough.
+This may well be the explanation for the memory leak I was observing on
+ARM last night. I'll give it a go and let you know.
 
-Thanks
-Hanjun
-
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: "Roger Pau Monné" <roger.pau@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xen.org
+> Cc: Anthony Liguori <aliguori@amazon.com>
+> Signed-off-by: Matt Rushton <mrushton@amazon.com>
+> Signed-off-by: Matt Wilson <msw@amazon.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 6620b73..30ef7b3 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -625,9 +625,6 @@ purge_gnt_list:
+>  			print_stats(blkif);
+>  	}
+>  
+> -	/* Since we are shutting down remove all pages from the buffer */
+> -	shrink_free_pagepool(blkif, 0 /* All */);
+> -
+>  	/* Free all persistent grant pages */
+>  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
+>  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
+> @@ -636,6 +633,9 @@ purge_gnt_list:
+>  	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
+>  	blkif->persistent_gnt_c = 0;
+>  
+> +	/* Since we are shutting down remove all pages from the buffer */
+> +	shrink_free_pagepool(blkif, 0 /* All */);
+> +
+>  	if (log_stats)
+>  		print_stats(blkif);
+>  
 
 
