@@ -1,230 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaAXPgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 10:36:07 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34098 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113AbaAXPgE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 10:36:04 -0500
-Date: Fri, 24 Jan 2014 15:35:57 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH 10/20] ARM64 / ACPI: Enumerate possible/present CPU set
- and map logical cpu id to APIC id
-Message-ID: <20140124153557.GB23274@e102568-lin.cambridge.arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-11-git-send-email-hanjun.guo@linaro.org>
- <20140122155331.GD24288@e102568-lin.cambridge.arm.com>
- <52E27AA8.8040105@linaro.org>
+	id S1753284AbaAXPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 10:36:27 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:27991 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064AbaAXPg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jan 2014 10:36:26 -0500
+X-IronPort-AV: E=Sophos;i="4.95,713,1384300800"; 
+   d="scan'208";a="96206346"
+Message-ID: <1390577782.13513.8.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen-blkback: fix memory leak when
+ persistent grants are used
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Matt Wilson <msw@linux.com>
+CC: Matt Wilson <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>, Matt Rushton <mrushton@amazon.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        Roger Pau =?ISO-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+Date: Fri, 24 Jan 2014 15:36:22 +0000
+In-Reply-To: <1390555293.2124.6.camel@kazak.uk.xensource.com>
+References: <1390505326-9368-1-git-send-email-msw@linux.com>
+	 <1390555293.2124.6.camel@kazak.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-In-Reply-To: <52E27AA8.8040105@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 24 Jan 2014 15:35:59.0022 (UTC) FILETIME=[FAD5B4E0:01CF1919]
-X-MC-Unique: 114012415360102101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 02:37:28PM +0000, Hanjun Guo wrote:
-> Hi Lorenzo,
+On Fri, 2014-01-24 at 09:21 +0000, Ian Campbell wrote:
+> On Thu, 2014-01-23 at 11:28 -0800, Matt Wilson wrote:
+> > From: Matt Rushton <mrushton@amazon.com>
+> > 
+> > Currently shrink_free_pagepool() is called before the pages used for
+> > persistent grants are released via free_persistent_gnts(). This
+> > results in a memory leak when a VBD that uses persistent grants is
+> > torn down.
 > 
-> On 2014?01?22? 23:53, Lorenzo Pieralisi wrote:
-> > On Fri, Jan 17, 2014 at 12:25:04PM +0000, Hanjun Guo wrote:
-> >
-> > [...]
-> >
-> >> +/* map logic cpu id to physical GIC id */
-> >> +extern int arm_cpu_to_apicid[NR_CPUS];
-> >> +#define cpu_physical_id(cpu) arm_cpu_to_apicid[cpu]
-> > Sudeep already commented on this, please update it accordingly.
-> 
-> Actually after some careful review of the ACPI code, I can't
-> update it as MPIDR here.
-> 
-> MPIDR can be the ACPI uid and NOT the GIC id, the mapping
-> of them are something like this in ACPI driver now:
-> 
-> logic cpu id <---> APIC Id (GIC ID) <---> ACPI uid (MPIDR on ARM)
-> but not logic cpu id <---> ACPI uid directly, you can refer to
-> the code of processor_core.c
-> 
-> So here I can only map GIC id to logical cpu id.
+> This may well be the explanation for the memory leak I was observing on
+> ARM last night. I'll give it a go and let you know.
 
-On ARM platforms GIC CPU IF id is probeable, you do not need to parse
-it (ie it is not information that you will find in DT). Please have a look
-at drivers/irqchip/irq-gic.c.
+Results are a bit inconclusive unfortunately, it seems like I am seeing
+some other leak too (or instead).
 
-We have to understand what's really required and when in ACPI, or to put it
-differently, why cpu_physical_id(cpu) is required and at what time at
-boot, I will have a look on my side too.
+Totally unscientifically it does seem to be leaking more slowly than
+before, so perhaps this patch has helped, but nothing conclusive I'm
+afraid.
 
-> >
-> >> +
-> >>   #else	/* !CONFIG_ACPI */
-> >>   #define acpi_disabled 1		/* ACPI sometimes enabled on ARM */
-> >>   #define acpi_noirq 1		/* ACPI sometimes enabled on ARM */
-> >> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-> >> index 8ba3e6f..1d9b789 100644
-> >> --- a/drivers/acpi/plat/arm-core.c
-> >> +++ b/drivers/acpi/plat/arm-core.c
-> >> @@ -31,6 +31,7 @@
-> >>   #include <linux/smp.h>
-> >>   
-> >>   #include <asm/pgtable.h>
-> >> +#include <asm/cputype.h>
-> >>   
-> >>   /*
-> >>    * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
-> >> @@ -52,6 +53,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
-> >>    */
-> >>   static u64 acpi_lapic_addr __initdata;
-> > Is this variable actually needed ?
+I don't think that quite qualifies for a Tested-by though, sorry.
+
+Ian. 
+
 > 
-> Yes, needed for GIC initialization.
-> 
-> >
-> >>   
-> >> +/* available_cpus here means enabled cpu in MADT */
-> >> +static int available_cpus;
-> > Ditto.
-> >
-> >> +
-> >> +/* Map logic cpu id to physical GIC id (physical CPU id). */
-> >> +int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
-> >> +static int boot_cpu_apic_id = -1;
-> > Do we need all these variables ? I think we should reuse cpu_logical_map
-> > data structures for that, it looks suspiciously familiar.
-> 
-> MPIDR is the different part. if we use MPIDR as GIC id, i think
-> we can reuse cpu_logical_map, but Sudeep suggested not
-> use MPIDR as GIC id.
-
-It is not about *reusing* cpu_logical_map, it is about setting it up
-properly. cpu_logical_map must be initialized by ACPI for the spin table
-method to work properly (and PSCI too).
-
-And yes, cpu_physical_id(cpu) is expected to be the GIC CPU IF id on
-ARM, at least it looks like, I had a look too. But this does not change
-anything as far as cpu_logical_map is concerned, it must contain a list
-of MPIDRs in the system and must be retrieved via ACPI, not DT CPU nodes
-when ACPI is used for booting.
-
-I will have a further look, since this discrepancy is annoying.
-
-[...]
-
-> >> +
-> >> +	available_cpus++;
-> >> +
-> > Is available_cpus != num_possible_cpus() ? It does not look like hence
-> > available_cpus can go.
-> 
-> No, possible cpus include available cpus and disabled cpus
-> this is useful for ACPI based CPU hot-plug features.
-> 
-> >
-> >> +	/* allocate a logic cpu id for the new comer */
-> >> +	if (boot_cpu_apic_id == id) {
-> >> +		/*
-> >> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
-> >> +		 * for BSP, no need to allocte again.
-> >> +		 */
-> >> +		cpu = 0;
-> >> +	} else {
-> >> +		cpu = cpumask_next_zero(-1, cpu_present_mask);
-> >> +	}
-> >> +
-> >> +	/* map the logic cpu id to APIC id */
-> >> +	arm_cpu_to_apicid[cpu] = id;
-> >> +
-> >> +	set_cpu_present(cpu, true);
-> >> +	set_cpu_possible(cpu, true);
-> > This is getting nasty. Before adding this patch and previous ones we
-> > need to put in place a method for the kernel to make a definite choice between
-> > ACPI and DT and stick to that. We can't initialize the logical map twice
-> > (which will happen if your DT has valid cpu nodes and a chosen node pointing
-> > to proper ACPI tables) or even having some entries initialized from DT and
-> > others by ACPI. It is a big fat no-no, please update the series accordingly.
-> 
-> really good catch here :)
-> so the problem here is that should we use both ACPI and DT in one system?
+> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Cc: "Roger Pau Monné" <roger.pau@citrix.com>
+> > Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> > Cc: David Vrabel <david.vrabel@citrix.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: xen-devel@lists.xen.org
+> > Cc: Anthony Liguori <aliguori@amazon.com>
+> > Signed-off-by: Matt Rushton <mrushton@amazon.com>
+> > Signed-off-by: Matt Wilson <msw@amazon.com>
+> > ---
+> >  drivers/block/xen-blkback/blkback.c |    6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> > index 6620b73..30ef7b3 100644
+> > --- a/drivers/block/xen-blkback/blkback.c
+> > +++ b/drivers/block/xen-blkback/blkback.c
+> > @@ -625,9 +625,6 @@ purge_gnt_list:
+> >  			print_stats(blkif);
+> >  	}
+> >  
+> > -	/* Since we are shutting down remove all pages from the buffer */
+> > -	shrink_free_pagepool(blkif, 0 /* All */);
+> > -
+> >  	/* Free all persistent grant pages */
+> >  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
+> >  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
+> > @@ -636,6 +633,9 @@ purge_gnt_list:
+> >  	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
+> >  	blkif->persistent_gnt_c = 0;
+> >  
+> > +	/* Since we are shutting down remove all pages from the buffer */
+> > +	shrink_free_pagepool(blkif, 0 /* All */);
+> > +
+> >  	if (log_stats)
+> >  		print_stats(blkif);
+> >  
 > 
 > 
-> >
-> >> +
-> >> +	return cpu;
-> >> +}
-> >> +
-> >>   static int __init
-> >>   acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
-> >>   {
-> >> @@ -144,6 +201,16 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
-> >>   
-> >>   	acpi_table_print_madt_entry(header);
-> >>   
-> >> +	/*
-> >> +	 * We need to register disabled CPU as well to permit
-> >> +	 * counting disabled CPUs. This allows us to size
-> >> +	 * cpus_possible_map more accurately, to permit
-> >> +	 * to not preallocating memory for all NR_CPUS
-> >> +	 * when we use CPU hotplug.
-> >> +	 */
-> >> +	acpi_register_gic_cpu_interface(processor->gic_id,
-> >> +			processor->flags & ACPI_MADT_ENABLED);
-> >> +
-> >>   	return 0;
-> >>   }
-> >>   
-> >> @@ -186,6 +253,19 @@ static int __init acpi_parse_madt_gic_entries(void)
-> >>   		return count;
-> >>   	}
-> >>   
-> >> +#ifdef CONFIG_SMP
-> >> +	if (available_cpus == 0) {
-> >> +		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
-> >> +		arm_cpu_to_apicid[available_cpus] =
-> >> +			read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
-> >> +		available_cpus = 1;	/* We've got at least one of these */
-> >> +	}
-> > I'd rather check the MADT for at least the boot cpu to present, if it is
-> > not ACPI tables are horribly buggy and the kernel should barf on that.
-> >
-> >> +#endif
-> >> +
-> >> +	/* Make boot-up look pretty */
-> >> +	pr_info("%d CPUs available, %d CPUs total\n", available_cpus,
-> >> +		total_cpus);
-> > Ok, now, how can we use the "disabled" CPUs == (total_cpus - available_cpus) ?
 > 
-> For cpus can be hot-added later when system is running.
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-I do not see any usage in the patchset and certainly those variables are
-not used in this patch, apart from printing messages whose usefulness is
-debatable. If, as you say, you are using those variables for something
-else, please add code in the patch where they are introduced for it to be
-self-contained and to simplify the review.
-
-Thanks,
-Lorenzo
 
