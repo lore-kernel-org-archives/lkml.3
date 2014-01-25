@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaAYST6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 13:19:58 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:58965 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaAYST3 (ORCPT
+	id S1752763AbaAYSUg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 13:20:36 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:61506 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaAYST1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 13:19:29 -0500
+	Sat, 25 Jan 2014 13:19:27 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Mike Turquette <mturquette@linaro.org>,
@@ -15,9 +15,9 @@ Cc: Mike Turquette <mturquette@linaro.org>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] clk: mvebu: dove: maintain clock init order
-Date: Sat, 25 Jan 2014 19:19:09 +0100
-Message-Id: <1390673950-4521-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 1/4] clk: mvebu: armada-370: maintain clock init order
+Date: Sat, 25 Jan 2014 19:19:07 +0100
+Message-Id: <1390673950-4521-2-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,45 +43,47 @@ Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/mvebu/dove.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/clk/mvebu/dove.c b/drivers/clk/mvebu/dove.c
-index 38aee1e3f242..b8c2424ac926 100644
---- a/drivers/clk/mvebu/dove.c
-+++ b/drivers/clk/mvebu/dove.c
-@@ -154,12 +154,6 @@ static const struct coreclk_soc_desc dove_coreclks = {
- 	.num_ratios = ARRAY_SIZE(dove_coreclk_ratios),
+diff --git a/drivers/clk/mvebu/armada-370.c b/drivers/clk/mvebu/armada-370.c
+index 81a202d12a7a..bef198a83863 100644
+--- a/drivers/clk/mvebu/armada-370.c
++++ b/drivers/clk/mvebu/armada-370.c
+@@ -141,13 +141,6 @@ static const struct coreclk_soc_desc a370_coreclks = {
+ 	.num_ratios = ARRAY_SIZE(a370_coreclk_ratios),
  };
  
--static void __init dove_coreclk_init(struct device_node *np)
+-static void __init a370_coreclk_init(struct device_node *np)
 -{
--	mvebu_coreclk_setup(np, &dove_coreclks);
+-	mvebu_coreclk_setup(np, &a370_coreclks);
 -}
--CLK_OF_DECLARE(dove_core_clk, "marvell,dove-core-clock", dove_coreclk_init);
+-CLK_OF_DECLARE(a370_core_clk, "marvell,armada-370-core-clock",
+-	       a370_coreclk_init);
 -
  /*
   * Clock Gating Control
   */
-@@ -186,9 +180,14 @@ static const struct clk_gating_soc_desc dove_gating_desc[] __initconst = {
+@@ -168,9 +161,15 @@ static const struct clk_gating_soc_desc a370_gating_desc[] __initconst = {
  	{ }
  };
  
--static void __init dove_clk_gating_init(struct device_node *np)
-+static void __init dove_clk_init(struct device_node *np)
+-static void __init a370_clk_gating_init(struct device_node *np)
++static void __init a370_clk_init(struct device_node *np)
  {
--	mvebu_clk_gating_setup(np, dove_gating_desc);
+-	mvebu_clk_gating_setup(np, a370_gating_desc);
 +	struct device_node *cgnp =
-+		of_find_compatible_node(NULL, NULL, "marvell,dove-gating-clock");
++		of_find_compatible_node(NULL, NULL, "marvell,armada-370-gating-clock");
 +
-+	mvebu_coreclk_setup(np, &dove_coreclks);
++	mvebu_coreclk_setup(np, &a370_coreclks);
 +
 +	if (cgnp)
-+		mvebu_clk_gating_setup(cgnp, dove_gating_desc);
++		mvebu_clk_gating_setup(cgnp, a370_gating_desc);
  }
--CLK_OF_DECLARE(dove_clk_gating, "marvell,dove-gating-clock",
--	       dove_clk_gating_init);
-+CLK_OF_DECLARE(dove_clk, "marvell,dove-core-clock", dove_clk_init);
+-CLK_OF_DECLARE(a370_clk_gating, "marvell,armada-370-gating-clock",
+-	       a370_clk_gating_init);
++CLK_OF_DECLARE(a370_clk, "marvell,armada-370-core-clock", a370_clk_init);
++
 -- 
 1.8.5.2
 
