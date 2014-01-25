@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaAYPhk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 10:37:40 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:44995 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752010AbaAYPhi (ORCPT
+	id S1752132AbaAYQJn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 11:09:43 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40621 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaAYQJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 10:37:38 -0500
-Date: Sat, 25 Jan 2014 10:37:37 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Josh Boyer <jwboyer@fedoraproject.org>
-cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <valentine.barshak@cogentembedded.com>
-Subject: Re: [PATCH] usb: phy: Quiet unable to find transceiver message
-In-Reply-To: <20140125150559.GN16455@hansolo.jdub.homelinux.org>
-Message-ID: <Pine.LNX.4.44L0.1401251035570.7061-100000@netrider.rowland.org>
+	Sat, 25 Jan 2014 11:09:40 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
+References: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
+Date: Sat, 25 Jan 2014 09:09:39 -0700
+Message-ID: <CALdTtnsEo74UeYgoQ0DF7=LN074b_0bL0vg6Bxs02B9nDkRTNA@mail.gmail.com>
+Subject: Re: [RFC PATCH V3 0/4] APM X-Gene PCIe controller
+From: Dann Frazier <dann.frazier@canonical.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@apm.com, jcm@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Jan 2014, Josh Boyer wrote:
+On Fri, Jan 24, 2014 at 2:32 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+> cards.
+>
+> X-Gene PCIe controller driver has depedency on the pcie arch support for
+> arm64. The arm64 pcie arch support is not yet part of mainline Linux kernel
+> and approach for arch support is under discussion with arm64 maintainers.
+> The reference patch can be found here --> https://lkml.org/lkml/2013/10/23/244
 
-> commit 1ae5799ef6317 ("usb: hcd: Initialize USB phy if needed") allows
-> the USB layer to initialize external PHYs if needed.  However, a PHY is
-> not needed in all cases.  The usb_get_phy_device function will print
-> an error message, "unable to find transceiver" but everything still
-> functions normally.
-> 
-> Drop the severity of this message to pr_debug.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> ---
->  drivers/usb/phy/phy.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-> index e6f61e4..c7fe880 100644
-> --- a/drivers/usb/phy/phy.c
-> +++ b/drivers/usb/phy/phy.c
-> @@ -228,7 +228,7 @@ struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
->  
->  	phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
->  	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
-> -		pr_err("unable to find transceiver\n");
-> +		pr_debug("unable to find transceiver\n");
->  		goto err0;
->  	}
+The reference patch looks corrupted (pcibios.c has no includes, etc),
+would you mind reposting?
 
-Wouldn't it make more sense to change this to dev_debug?  As it stands, 
-the user has no idea which device is lacking a transceiver.
+  -dann
 
-(The same is probably true for other log messages in this source file.)
-
-Alan Stern
-
+> If someone wishes to test PCIe on X-Gene, arch support patch must be applied
+> before the patches in this patch set.
+>
+> changes since V2:
+> 1. redefined each PCI port in different PCI domain correctly.
+> 2. removed setup_lane and setup_link functions from driver.
+> 3. removed scan_bus wrapper and set_primary_bus hack.
+> 4. added pci_ioremap_io for io resources.
+>
+> changes since V1:
+> 1. added PCI domain support
+> 2. reading cpu and pci addresses from device tree to configure regions.
+> 3. got rid of unnecessary wrappers for readl and writel.
+> 4. got rid of endpoint configuration code.
+> 5. added 'dma-ranges' property support to read inbound region configuration.
+> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+> 7. dropped 'clock-names' property from bindings
+> 8. added comments whereever requested.
+>
+> Tanmay Inamdar (4):
+>   pci: APM X-Gene PCIe controller driver
+>   arm64: dts: APM X-Gene PCIe device tree nodes
+>   dt-bindings: pci: xgene pcie device tree bindings
+>   MAINTAINERS: entry for APM X-Gene PCIe host driver
+>
+>  .../devicetree/bindings/pci/xgene-pci.txt          |   52 ++
+>  MAINTAINERS                                        |    7 +
+>  arch/arm64/boot/dts/apm-mustang.dts                |    8 +
+>  arch/arm64/boot/dts/apm-storm.dtsi                 |  155 ++++
+>  drivers/pci/host/Kconfig                           |   10 +
+>  drivers/pci/host/Makefile                          |    1 +
+>  drivers/pci/host/pci-xgene.c                       |  784 ++++++++++++++++++++
+>  7 files changed, 1017 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
+>  create mode 100644 drivers/pci/host/pci-xgene.c
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
