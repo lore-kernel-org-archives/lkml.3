@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaAYCAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jan 2014 21:00:19 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:40978 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaAYCAQ (ORCPT
+	id S1751331AbaAYCRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jan 2014 21:17:04 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2888 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750970AbaAYCRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jan 2014 21:00:16 -0500
+	Fri, 24 Jan 2014 21:17:00 -0500
+Date: Fri, 24 Jan 2014 21:16:55 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>,
+        Joakim Hernberg <jbh@alchemy.lu>, Joe Korty <joe.korty@ccur.com>,
+        Muli Baron <muli.baron@gmail.com>
+Subject: Re: [PATCH RT v2] timer: Raise softirq if there's irq_work
+Message-ID: <20140124211655.0a684f31@gandalf.local.home>
+In-Reply-To: <20140125001936.GB9012@linux.vnet.ibm.com>
+References: <20140124145157.1f30d447@gandalf.local.home>
+	<20140124150933.22d8c20a@gandalf.local.home>
+	<20140124202039.GA32662@linutronix.de>
+	<20140124153542.6a92ef27@gandalf.local.home>
+	<20140125001936.GB9012@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1390534568.12771.58.camel@rzhang1-mobl4>
-References: <1390534568.12771.58.camel@rzhang1-mobl4>
-Date: Fri, 24 Jan 2014 18:00:15 -0800
-X-Google-Sender-Auth: wdGjV8XiapyxwBbnJGcCMcgniRI
-Message-ID: <CA+55aFyPGdJEP3fpZxVqQNp_BtJ3vqqq_0xst_3H8Pf9QV627Q@mail.gmail.com>
-Subject: Re: [GIT PULL] Thermal management updates for v3.14-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Zhang Rui <rui.zhang@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-devicetree <devicetree@vger.kernel.org>,
-        linux-lmsensor <lm-sensors@lm-sensors.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 7:36 PM, Zhang Rui <rui.zhang@intel.com> wrote:
->
-> Please pull from the git repository at
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
->
-> to receive Thermal management updates for v3.14-rc1
+On Fri, 24 Jan 2014 16:19:36 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+ 
+> Failing to invoke rsp_wakeup() when it was needed could potentially
+> stop RCU grace periods from happening, so having rsp_wakeup() happen
+> when it is needed is pretty important...
+> 
+> But I would guess that you knew that already.  ;-)
 
-This annoys me _enormously_:
+Yep, I did. But it's always nice to hear confirmation, which is why I
+Cc'd you ;-)
 
-  CONFIG_ACPI_INT3403_THERMAL:
-
-  This driver uses ACPI INT3403 device objects. If present, it will
-  register each INT3403 thermal sensor as a thermal zone.
-
-This is the "help" text for the new ACPI thermal driver.
-
-WTF?
-
-Really, whoever wrote that "help" text wasn't thinking of helping
-users. What the f*ck is an INT3403 device object? Is is common? Where?
-Is it a standard? Is it something normal people should expect?
-
-              Linus
+-- Steve
