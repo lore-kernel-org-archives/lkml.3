@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaAYO1U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 09:27:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52573 "EHLO
+	id S1752504AbaAYOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 09:24:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52408 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaAYO0G (ORCPT
+	with ESMTP id S1752167AbaAYOXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 09:26:06 -0500
-Date: Sat, 25 Jan 2014 06:25:18 -0800
-From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        alex.shi@linaro.org, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, davidlohr@hp.com
+	Sat, 25 Jan 2014 09:23:37 -0500
+Date: Sat, 25 Jan 2014 06:23:07 -0800
+From: tip-bot for Josh Boyer <tipbot@zytor.com>
+Message-ID: <tip-b935a58dbff457c27fd63e1e1bb29db20b2ee6a8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@redhat.com, jwboyer@fedoraproject.org,
+        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        alex.shi@linaro.org, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, davidlohr@hp.com
+        acme@redhat.com, jolsa@redhat.com, jwboyer@fedoraproject.org,
+        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20140122150147.GK16455@hansolo.jdub.homelinux.org>
+References: <20140122150147.GK16455@hansolo.jdub.homelinux.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: mm: change tlb_flushall_shift for IvyBridge
-Git-Commit-ID: f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3
+Subject: [tip:perf/urgent] perf tools:
+  Fix traceevent plugin path definitions
+Git-Commit-ID: b935a58dbff457c27fd63e1e1bb29db20b2ee6a8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,164 +30,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:25:24 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:23:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3
-Gitweb:     http://git.kernel.org/tip/f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3
-Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Tue, 21 Jan 2014 14:33:21 -0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 25 Jan 2014 09:10:43 +0100
+Commit-ID:  b935a58dbff457c27fd63e1e1bb29db20b2ee6a8
+Gitweb:     http://git.kernel.org/tip/b935a58dbff457c27fd63e1e1bb29db20b2ee6a8
+Author:     Josh Boyer <jwboyer@fedoraproject.org>
+AuthorDate: Wed, 22 Jan 2014 10:01:48 -0500
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 23 Jan 2014 15:48:12 -0300
 
-x86: mm: change tlb_flushall_shift for IvyBridge
+perf tools: Fix traceevent plugin path definitions
 
-There was a large performance regression that was bisected to
-commit 611ae8e3 ("x86/tlb: enable tlb flush range support for
-x86").  This patch simply changes the default balance point
-between a local and global flush for IvyBridge.
+The plugindir_SQ definition contains $(prefix) which is not needed as
+the $(libdir) definition already contains prefix in it.  This leads to
+the path including an extra prefix in it, e.g. /usr/usr/lib64.
 
-In the interest of allowing the tests to be reproduced, this
-patch was tested using mmtests 0.15 with the following
-configurations
+The -DPLUGIN_DIR defintion includes DESTDIR.  This is incorrect, as it
+sets the plugin search path to include the value of DESTDIR.  DESTDIR is
+a mechanism to install in a non-standard location such as a chroot or an
+RPM build root.  In the RPM case, this leads to the search path being
+incorrect after the resulting RPM is installed (or in some cases an RPM
+build failure).
 
-	configs/config-global-dhp__tlbflush-performance
-	configs/config-global-dhp__scheduler-performance
-	configs/config-global-dhp__network-performance
+Remove both of these unnecessary inclusions.
 
-Results are from two machines
-
-Ivybridge   4 threads:  Intel(R) Core(TM) i3-3240 CPU @ 3.40GHz
-Ivybridge   8 threads:  Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz
-
-Page fault microbenchmark showed nothing interesting.
-
-Ebizzy was configured to run multiple iterations and threads.
-Thread counts ranged from 1 to NR_CPUS*2. For each thread count,
-it ran 100 iterations and each iteration lasted 10 seconds.
-
-Ivybridge 4 threads
-                    3.13.0-rc7            3.13.0-rc7
-                       vanilla           altshift-v3
-Mean   1     6395.44 (  0.00%)     6789.09 (  6.16%)
-Mean   2     7012.85 (  0.00%)     8052.16 ( 14.82%)
-Mean   3     6403.04 (  0.00%)     6973.74 (  8.91%)
-Mean   4     6135.32 (  0.00%)     6582.33 (  7.29%)
-Mean   5     6095.69 (  0.00%)     6526.68 (  7.07%)
-Mean   6     6114.33 (  0.00%)     6416.64 (  4.94%)
-Mean   7     6085.10 (  0.00%)     6448.51 (  5.97%)
-Mean   8     6120.62 (  0.00%)     6462.97 (  5.59%)
-
-Ivybridge 8 threads
-                     3.13.0-rc7            3.13.0-rc7
-                        vanilla           altshift-v3
-Mean   1      7336.65 (  0.00%)     7787.02 (  6.14%)
-Mean   2      8218.41 (  0.00%)     9484.13 ( 15.40%)
-Mean   3      7973.62 (  0.00%)     8922.01 ( 11.89%)
-Mean   4      7798.33 (  0.00%)     8567.03 (  9.86%)
-Mean   5      7158.72 (  0.00%)     8214.23 ( 14.74%)
-Mean   6      6852.27 (  0.00%)     7952.45 ( 16.06%)
-Mean   7      6774.65 (  0.00%)     7536.35 ( 11.24%)
-Mean   8      6510.50 (  0.00%)     6894.05 (  5.89%)
-Mean   12     6182.90 (  0.00%)     6661.29 (  7.74%)
-Mean   16     6100.09 (  0.00%)     6608.69 (  8.34%)
-
-Ebizzy hits the worst case scenario for TLB range flushing every
-time and it shows for these Ivybridge CPUs at least that the
-default choice is a poor on.  The patch addresses the problem.
-
-Next was a tlbflush microbenchmark written by Alex Shi at
-http://marc.info/?l=linux-kernel&m=133727348217113 .  It
-measures access costs while the TLB is being flushed.  The
-expectation is that if there are always full TLB flushes that
-the benchmark would suffer and it benefits from range flushing
-
-There are 320 iterations of the test per thread count.  The
-number of entries is randomly selected with a min of 1 and max
-of 512.  To ensure a reasonably even spread of entries, the full
-range is broken up into 8 sections and a random number selected
-within that section.
-
-iteration 1, random number between 0-64
-iteration 2, random number between 64-128 etc
-
-This is still a very weak methodology.  When you do not know
-what are typical ranges, random is a reasonable choice but it
-can be easily argued that the opimisation was for smaller ranges
-and an even spread is not representative of any workload that
-matters.  To improve this, we'd need to know the probability
-distribution of TLB flush range sizes for a set of workloads
-that are considered "common", build a synthetic trace and feed
-that into this benchmark.  Even that is not perfect because it
-would not account for the time between flushes but there are
-limits of what can be reasonably done and still be doing
-something useful.  If a representative synthetic trace is
-provided then this benchmark could be revisited and the shift values retuned.
-
-Ivybridge 4 threads
-                        3.13.0-rc7            3.13.0-rc7
-                           vanilla           altshift-v3
-Mean       1       10.50 (  0.00%)       10.50 (  0.03%)
-Mean       2       17.59 (  0.00%)       17.18 (  2.34%)
-Mean       3       22.98 (  0.00%)       21.74 (  5.41%)
-Mean       5       47.13 (  0.00%)       46.23 (  1.92%)
-Mean       8       43.30 (  0.00%)       42.56 (  1.72%)
-
-Ivybridge 8 threads
-                         3.13.0-rc7            3.13.0-rc7
-                            vanilla           altshift-v3
-Mean       1         9.45 (  0.00%)        9.36 (  0.93%)
-Mean       2         9.37 (  0.00%)        9.70 ( -3.54%)
-Mean       3         9.36 (  0.00%)        9.29 (  0.70%)
-Mean       5        14.49 (  0.00%)       15.04 ( -3.75%)
-Mean       8        41.08 (  0.00%)       38.73 (  5.71%)
-Mean       13       32.04 (  0.00%)       31.24 (  2.49%)
-Mean       16       40.05 (  0.00%)       39.04 (  2.51%)
-
-For both CPUs, average access time is reduced which is good as
-this is the benchmark that was used to tune the shift values in
-the first place albeit it is now known *how* the benchmark was
-used.
-
-The scheduler benchmarks were somewhat inconclusive.  They
-showed gains and losses and makes me reconsider how stable those
-benchmarks really are or if something else might be interfering
-with the test results recently.
-
-Network benchmarks were inconclusive.  Almost all results were
-flat except for netperf-udp tests on the 4 thread machine.
-These results were unstable and showed large variations between
-reboots.  It is unknown if this is a recent problems but I've
-noticed before that netperf-udp results tend to vary.
-
-Based on these results, changing the default for Ivybridge seems
-like a logical choice.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Tested-by: Davidlohr Bueso <davidlohr@hp.com>
-Reviewed-by: Alex Shi <alex.shi@linaro.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-cqnadffh1tiqrshthRj3Esge@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20140122150147.GK16455@hansolo.jdub.homelinux.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/lib/traceevent/Makefile | 2 +-
+ tools/perf/config/Makefile    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index ea04b34..bbe1b8b 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -628,7 +628,7 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
- 		tlb_flushall_shift = 5;
- 		break;
- 	case 0x63a: /* Ivybridge */
--		tlb_flushall_shift = 1;
-+		tlb_flushall_shift = 2;
- 		break;
- 	default:
- 		tlb_flushall_shift = 6;
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 56d52a3..005c9cc 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -63,7 +63,7 @@ endif
+ endif
+ 
+ ifeq ($(set_plugin_dir),1)
+-PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
++PLUGIN_DIR = -DPLUGIN_DIR="$(plugin_dir)"
+ PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
+ endif
+ 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index d604e50..c48d449 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -600,5 +600,5 @@ perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+ # Otherwise we install plugins into the global $(libdir).
+ ifdef DESTDIR
+ plugindir=$(libdir)/traceevent/plugins
+-plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
++plugindir_SQ= $(subst ','\'',$(plugindir))
+ endif
