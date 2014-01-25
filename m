@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaAYVrs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 16:47:48 -0500
-Received: from mout.gmx.net ([212.227.15.15]:61501 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688AbaAYVrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 16:47:47 -0500
-Date: Sat, 25 Jan 2014 22:47:44 +0100
-From: Christian Engelmayer <cengelma@gmx.at>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] misc: genwqe: Fix potential memory leak when pinning memory
-Message-ID: <20140125224744.0a9c360c@spike>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:mmK3BDoL57GJTNp3rSVwjiIGRolhXvANg560atEqGyrNMwN79Tu
- MyBlBkof9Y37hwzLwcI1+mMiyi7rkWAihhnbd34RV2z1yR62Xdre/CGPJuVEZ8CoJen6PUl
- rX603dlsepp3PUQCXQiz2AGtYD+ahSmdqtJxI3aLJb0iu1k2IwiRqswWgYJQyRZj/kO/YWt
- 95SsHpiWZNIfy8igXWI/A==
+	id S1752553AbaAYVuk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 16:50:40 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:38796 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103AbaAYVuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 16:50:39 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH RESEND] perf: design.txt: remove mention of set_perf_event_pending
+Date: Sat, 25 Jan 2014 23:50:23 +0200
+Message-Id: <4c54761865d40210be0628cb84701afc5d57b5d8.1390686193.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a memory leak in the genwqe_pin_mem() error path as called by
-ioctl GENWQE_PIN_MEM. In case there is an error encountered when
-mapping memory, the already allocated dma_mapping struct needs to
-be freed correctly.
+set_perf_event_pending() was removed in e360adbe (irq_work: Add generic hardirq
+context callbacks)
 
-Detected by Coverity: CID 1162606.
-
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
 ---
- drivers/misc/genwqe/card_dev.c | 1 +
- 1 file changed, 1 insertion(+)
+Resending with lkml added to Cc.
+---
+ tools/perf/design.txt | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
-index 8f8a6b3..2c2c9cc 100644
---- a/drivers/misc/genwqe/card_dev.c
-+++ b/drivers/misc/genwqe/card_dev.c
-@@ -787,6 +787,7 @@ static int genwqe_pin_mem(struct genwqe_file *cfile, struct genwqe_mem *m)
- 	if (rc != 0) {
- 		dev_err(&pci_dev->dev,
- 			"[%s] genwqe_user_vmap rc=%d\n", __func__, rc);
-+		kfree(dma_map);
- 		return rc;
- 	}
+diff --git a/tools/perf/design.txt b/tools/perf/design.txt
+index 67e5d0cace85..63a0e6f04a01 100644
+--- a/tools/perf/design.txt
++++ b/tools/perf/design.txt
+@@ -454,7 +454,6 @@ So to start with, in order to add HAVE_PERF_EVENTS to your Kconfig, you
+ will need at least this:
+ 	- asm/perf_event.h - a basic stub will suffice at first
+ 	- support for atomic64 types (and associated helper functions)
+-	- set_perf_event_pending() implemented
  
+ If your architecture does have hardware capabilities, you can override the
+ weak stub hw_perf_event_init() to register hardware counters.
 -- 
-1.8.3.2
+1.8.5.2
+
