@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaAYRSn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 12:18:43 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:54785 "EHLO smtp3-g21.free.fr"
+	id S1753376AbaAYRSz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 12:18:55 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:55331 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507AbaAYRSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 12:18:41 -0500
+	id S1752507AbaAYRSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 12:18:52 -0500
 Date: Sat, 25 Jan 2014 18:14:45 +0100
 From: Jean-Francois Moine <moinejf@free.fr>
 To: dri-devel@lists.freedesktop.org
 Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v4 06/24] drm/i2c: tda998x: force the page register at
- startup time
-Message-ID: <20140125181445.4e852a79@armhf>
+Subject: [PATCH v4 02/24] drm/i2c: tda998x: check more I/O errors
+Message-ID: <20140125181445.38f8b30b@armhf>
 In-Reply-To: <cover.1390646891.git.moinejf@free.fr>
 References: <cover.1390646891.git.moinejf@free.fr>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
@@ -25,28 +24,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch forces the page register to be set on the first I/O operation.
+This patch adds more error checking inn I2C I/O functions.
+In case of I/O error, this permits to avoid writing in bad controller
+pages, a bad chipset detection or looping when getting the EDID.
 
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c | 57 +++++++++++++++++++++++++++++----------
+ 1 file changed, 43 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 96b5966..b688801 100644
+index 26dd299..11f0607 100644
 --- a/drivers/gpu/drm/i2c/tda998x_drv.c
 +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -1170,7 +1170,7 @@ tda998x_encoder_init(struct i2c_client *client,
- 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
- 	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
+@@ -362,7 +362,7 @@ fail:
+ 	return 0;
+ }
  
--	priv->current_page = 0;
-+	priv->current_page = 0xff;
- 	priv->hdmi = client;
- 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
- 	priv->dpms = DRM_MODE_DPMS_OFF;
+-static void
++static int
+ set_page(struct tda998x_priv *priv, uint16_t reg)
+ {
+ 	if (REG2PAGE(reg) != priv->current_page) {
+@@ -371,11 +371,14 @@ set_page(struct tda998x_priv *priv, uint16_t reg)
+ 				REG_CURPAGE, REG2PAGE(reg)
+ 		};
+ 		int ret = i2c_master_send(client, buf, sizeof(buf));
+-		if (ret < 0)
++		if (ret < 0) {
+ 			dev_err(&client->dev, "Error %d writing to REG_CURPAGE\n", ret);
++			return ret;
++		}
+ 
+ 		priv->current_page = REG2PAGE(reg);
+ 	}
++	return 0;
+ }
+ 
+ static int
+@@ -385,7 +388,9 @@ reg_read_range(struct tda998x_priv *priv, uint16_t reg, char *buf, int cnt)
+ 	uint8_t addr = REG2ADDR(reg);
+ 	int ret;
+ 
+-	set_page(priv, reg);
++	ret = set_page(priv, reg);
++	if (ret < 0)
++		return ret;
+ 
+ 	ret = i2c_master_send(client, &addr, sizeof(addr));
+ 	if (ret < 0)
+@@ -412,18 +417,24 @@ reg_write_range(struct tda998x_priv *priv, uint16_t reg, uint8_t *p, int cnt)
+ 	buf[0] = REG2ADDR(reg);
+ 	memcpy(&buf[1], p, cnt);
+ 
+-	set_page(priv, reg);
++	ret = set_page(priv, reg);
++	if (ret < 0)
++		return;
+ 
+ 	ret = i2c_master_send(client, buf, cnt + 1);
+ 	if (ret < 0)
+ 		dev_err(&client->dev, "Error %d writing to 0x%x\n", ret, reg);
+ }
+ 
+-static uint8_t
++static int
+ reg_read(struct tda998x_priv *priv, uint16_t reg)
+ {
+ 	uint8_t val = 0;
+-	reg_read_range(priv, reg, &val, sizeof(val));
++	int ret;
++
++	ret = reg_read_range(priv, reg, &val, sizeof(val));
++	if (ret < 0)
++		return ret;
+ 	return val;
+ }
+ 
+@@ -434,7 +445,9 @@ reg_write(struct tda998x_priv *priv, uint16_t reg, uint8_t val)
+ 	uint8_t buf[] = {REG2ADDR(reg), val};
+ 	int ret;
+ 
+-	set_page(priv, reg);
++	ret = set_page(priv, reg);
++	if (ret < 0)
++		return;
+ 
+ 	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
+ 	if (ret < 0)
+@@ -448,7 +461,9 @@ reg_write16(struct tda998x_priv *priv, uint16_t reg, uint16_t val)
+ 	uint8_t buf[] = {REG2ADDR(reg), val >> 8, val};
+ 	int ret;
+ 
+-	set_page(priv, reg);
++	ret = set_page(priv, reg);
++	if (ret < 0)
++		return;
+ 
+ 	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
+ 	if (ret < 0)
+@@ -458,13 +473,21 @@ reg_write16(struct tda998x_priv *priv, uint16_t reg, uint16_t val)
+ static void
+ reg_set(struct tda998x_priv *priv, uint16_t reg, uint8_t val)
+ {
+-	reg_write(priv, reg, reg_read(priv, reg) | val);
++	int old_val;
++
++	old_val = reg_read(priv, reg);
++	if (old_val >= 0)
++		reg_write(priv, reg, old_val | val);
+ }
+ 
+ static void
+ reg_clear(struct tda998x_priv *priv, uint16_t reg, uint8_t val)
+ {
+-	reg_write(priv, reg, reg_read(priv, reg) & ~val);
++	int old_val;
++
++	old_val = reg_read(priv, reg);
++	if (old_val >= 0)
++		reg_write(priv, reg, old_val & ~val);
+ }
+ 
+ static void
+@@ -970,8 +993,10 @@ read_edid_block(struct drm_encoder *encoder, uint8_t *buf, int blk)
+ 
+ 	/* wait for block read to complete: */
+ 	for (i = 100; i > 0; i--) {
+-		uint8_t val = reg_read(priv, REG_INT_FLAGS_2);
+-		if (val & INT_FLAGS_2_EDID_BLK_RD)
++		ret = reg_read(priv, REG_INT_FLAGS_2);
++		if (ret < 0)
++			return ret;
++		if (ret & INT_FLAGS_2_EDID_BLK_RD)
+ 			break;
+ 		msleep(1);
+ 	}
+@@ -1134,6 +1159,7 @@ tda998x_encoder_init(struct i2c_client *client,
+ 		    struct drm_encoder_slave *encoder_slave)
+ {
+ 	struct tda998x_priv *priv;
++	int ret;
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+@@ -1158,8 +1184,11 @@ tda998x_encoder_init(struct i2c_client *client,
+ 	tda998x_reset(priv);
+ 
+ 	/* read version: */
+-	priv->rev = reg_read(priv, REG_VERSION_LSB) |
+-			reg_read(priv, REG_VERSION_MSB) << 8;
++	ret = reg_read(priv, REG_VERSION_LSB) |
++		(reg_read(priv, REG_VERSION_MSB) << 8);
++	if (ret < 0)
++		goto fail;
++	priv->rev = ret;
+ 
+ 	/* mask off feature bits: */
+ 	priv->rev &= ~0x30; /* not-hdcp and not-scalar bit */
 -- 
 1.8.5.3
 
