@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaAYQcW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 11:32:22 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:41839 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaAYQcU convert rfc822-to-8bit (ORCPT
+	id S1752316AbaAYQgF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 11:36:05 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40343 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751934AbaAYQgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 11:32:20 -0500
+	Sat, 25 Jan 2014 11:36:03 -0500
+X-Sasl-enc: fNXipq5KNIaoLF86xAgZxbBk1vHb7EEfB8XFZJAQ43rl 1390667762
+Date: Sat, 25 Jan 2014 14:35:58 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Add option to allow downgrading of
+ microcode
+Message-ID: <20140125163558.GC25531@khazad-dum.debian.net>
+References: <1390598339-18740-1-git-send-email-andi@firstfloor.org>
+ <1390598339-18740-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <9739501.rBu7tJQIYj@vostro.rjw.lan>
-References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com>
-	<9739501.rBu7tJQIYj@vostro.rjw.lan>
-Date: Sat, 25 Jan 2014 17:32:19 +0100
-Message-ID: <CADDKRnBFvfHcuEY8TA=nfyP-WSotkj9wkXxE2QS8h+22cyk_0w@mail.gmail.com>
-Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390598339-18740-2-git-send-email-andi@firstfloor.org>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-25 Rafael J. Wysocki <rjw@rjwysocki.net>:
-> On Saturday, January 25, 2014 11:03:09 AM Jörg Otte wrote:
->> Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
->>
->> ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
->> ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
->> ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
->> ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
->>
->> I don't have CPUs 4..7! Error messages regarding not existing
->> CPUs should not be displayed.
->> kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
->>
->> This is a regression. I never saw this messages before.
->
-> Does your system show any other suspicious symptoms or are you worried about
-> those messages only?
->
-> Rafael
->
+On Fri, 24 Jan 2014, Andi Kleen wrote:
+> For testing purposes it can be useful to downgrade microcode.
+> Normally the driver only allows upgrading.
 
-what's looking badly is this:
+The code is not prepared to work correctly when downgrading is allowed, in
+the presence of shadowed microcode.  When a firmware request results in more
+than one microcode for the same cpuid, with overlapping pf_mask, the code
+*depends* on the "never downgrade" logic to work.
 
-ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S1_]
-(20131218/hwxface-580)
-ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S2_]
-(20131218/hwxface-580)
+Shadowed microcode *is* currently distributed by Intel, and as an artifact
+of the f-m-s grouping, it is *guaranteed* to trigger the issue.  When the
+issue triggers, what microcode will be selected to be uploaded to the core
+depends *only* on the order of the microcodes in the firmware file.
 
-and this:
+I see no documentation of this fact anywhere, and it is *anything* but
+obvious.
 
-acpi PNP0A08:00: _OSC: OS supports [ASPM ClockPM Segments MSI]
- \_SB_.PCI0:_OSC invalid UUID
- _OSC request data:1 1e 0
-acpi PNP0A08:00: _OSC failed (AE_ERROR); disabling ASPM
+That extremely obnoxious Intel microcode license forbids anyone to fix the
+pf_mask metadata fields to remove shadowing, so we ship that stuff as-is to
+in the distros.  It *will* hit users.
 
-but these messages are not new.
+Also, since you're going to mess with this, why don't you implement the
+correct semanthics for microcode with the sign bit set?  Making it signed
+actually makes the current code behaviour worse.
 
-Jörg
+Refer to: http://lkml.org/lkml/2011/3/21/522
+
+Note that I was wrong about negative revision microcode not being found in
+the wild.  Intel has shipped entry-level server boards with pre-release
+microcode several times, even on BIOS updates, and you're likely to get
+access to such pre-release microcode if you're dealing with Intel firmware
+partners that has full access to microcode updates.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
