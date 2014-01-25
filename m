@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513AbaAYUY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 15:24:58 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42937 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486AbaAYUY4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 15:24:56 -0500
+	id S1752850AbaAYUlG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 15:41:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20475 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379AbaAYUlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 15:41:04 -0500
+Date: Sat, 25 Jan 2014 15:41:00 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Mikael Pettersson <mikpelinux@gmail.com>
+cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ia64 ski emulator patches
+In-Reply-To: <21219.63903.326798.277717@gargle.gargle.HOWL>
+Message-ID: <alpine.LRH.2.02.1401251536550.27200@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401232041520.16873@file01.intranet.prod.int.rdu2.redhat.com> <21218.28095.779306.523187@gargle.gargle.HOWL> <alpine.LRH.2.02.1401240937020.28468@file01.intranet.prod.int.rdu2.redhat.com>
+ <21219.63903.326798.277717@gargle.gargle.HOWL>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1401251035570.7061-100000@netrider.rowland.org>
-References: <20140125150559.GN16455@hansolo.jdub.homelinux.org>
-	<Pine.LNX.4.44L0.1401251035570.7061-100000@netrider.rowland.org>
-Date: Sat, 25 Jan 2014 15:24:55 -0500
-X-Google-Sender-Auth: FwHeTjrqXp-Y3KofvO-_4eALqiE
-Message-ID: <CA+5PVA7iFPHXz1Mn+Ri07Ajr1FYpm1ubVoq-twrFC1Rbu=p_HA@mail.gmail.com>
-Subject: Re: [PATCH] usb: phy: Quiet unable to find transceiver message
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        valentine.barshak@cogentembedded.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 10:37 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 25 Jan 2014, Josh Boyer wrote:
->
->> commit 1ae5799ef6317 ("usb: hcd: Initialize USB phy if needed") allows
->> the USB layer to initialize external PHYs if needed.  However, a PHY is
->> not needed in all cases.  The usb_get_phy_device function will print
->> an error message, "unable to find transceiver" but everything still
->> functions normally.
->>
->> Drop the severity of this message to pr_debug.
->>
->> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
->> ---
->>  drivers/usb/phy/phy.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
->> index e6f61e4..c7fe880 100644
->> --- a/drivers/usb/phy/phy.c
->> +++ b/drivers/usb/phy/phy.c
->> @@ -228,7 +228,7 @@ struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
->>
->>       phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
->>       if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
->> -             pr_err("unable to find transceiver\n");
->> +             pr_debug("unable to find transceiver\n");
->>               goto err0;
->>       }
->
-> Wouldn't it make more sense to change this to dev_debug?  As it stands,
-> the user has no idea which device is lacking a transceiver.
 
-Quite possibly, yes.  I'm not overly familiar with the subsystem and
-was just writing up what Felipe suggested.
 
-> (The same is probably true for other log messages in this source file.)
+On Sat, 25 Jan 2014, Mikael Pettersson wrote:
 
-I don't disagree, but I'd rather someone with more experience in the
-USB subsystem do that kind of broader audit/change.  I'd be happy to
-test.
+> My ski patches are in <http://user.it.uu.se/~mikpe/linux/patches/ia64/ski-1.3.2/>
+> for now.  I'll post the kernel patches to linux-ia64 @ vger in a few minutes.
+> 
+> /Mikael
 
-josh
+Thanks for the patches.
+
+Isn't this subject to races? - could it lock up if the signal happens just 
+before the pause syscall?
+
++    case SSC_HALT_LIGHT:
++      /* Sleep until SIGIO or SIGALRM is received; this relies on
++        keyboard/ethernet input being detected via SIGIO, and the
++        ITC now being emulated via setitimer() and SIGALRM.  */
++      pause ();
++      break;
++
+
+Mikulas
