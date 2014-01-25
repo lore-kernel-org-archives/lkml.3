@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaAYO2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 09:28:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52463 "EHLO
+	id S1752465AbaAYOYZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 09:24:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52425 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341AbaAYOY1 (ORCPT
+	with ESMTP id S1752324AbaAYOXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 09:24:27 -0500
-Date: Sat, 25 Jan 2014 06:24:03 -0800
-From: tip-bot for Mike Travis <tipbot@zytor.com>
-Message-ID: <tip-fc8b13740b2978b34872650cc8e928392e3758aa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
-        travis@sgi.com, acme@ghostprotocols.net, hedi@sgi.com, rja@sgi.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, travis@sgi.com,
-        jason.wessel@windriver.com, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, hedi@sgi.com, rja@sgi.com, tglx@linutronix.de
-In-Reply-To: <20140114162551.318251993@asylum.americas.sgi.com>
-References: <20140114162551.318251993@asylum.americas.sgi.com>
+	Sat, 25 Jan 2014 09:23:54 -0500
+Date: Sat, 25 Jan 2014 06:23:29 -0800
+From: tip-bot for Aravind Gopalakrishnan <tipbot@zytor.com>
+Message-ID: <tip-fb53a1ab88d14848dc292842e35c3bda3a665997@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        Aravind.Gopalakrishnan@amd.com, sherry.hurwitz@amd.com,
+        Kim.Naru@amd.com, hmh@hmh.eng.br, Suravee.Suthikulpanit@amd.com,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Aravind.Gopalakrishnan@amd.com, Kim.Naru@amd.com,
+        sherry.hurwitz@amd.com, hmh@hmh.eng.br, Suravee.Suthikulpanit@amd.com,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1390515212-1824-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+References: <1390515212-1824-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] kgdb/kdb: Fix no KDB config problem
-Git-Commit-ID: fc8b13740b2978b34872650cc8e928392e3758aa
+Subject: [tip:x86/urgent] x86/quirks:
+  Add workaround for AMD F16h Erratum792
+Git-Commit-ID: fb53a1ab88d14848dc292842e35c3bda3a665997
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,108 +32,88 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:24:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:23:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc8b13740b2978b34872650cc8e928392e3758aa
-Gitweb:     http://git.kernel.org/tip/fc8b13740b2978b34872650cc8e928392e3758aa
-Author:     Mike Travis <travis@sgi.com>
-AuthorDate: Tue, 14 Jan 2014 10:25:52 -0600
+Commit-ID:  fb53a1ab88d14848dc292842e35c3bda3a665997
+Gitweb:     http://git.kernel.org/tip/fb53a1ab88d14848dc292842e35c3bda3a665997
+Author:     Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+AuthorDate: Thu, 23 Jan 2014 16:13:32 -0600
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 25 Jan 2014 08:55:09 +0100
+CommitDate: Sat, 25 Jan 2014 08:44:19 +0100
 
-kgdb/kdb: Fix no KDB config problem
+x86/quirks: Add workaround for AMD F16h Erratum792
 
-Some code added to the debug_core module had KDB dependencies
-that it shouldn't have.  Move the KDB dependent REASON back to
-the caller to remove the dependency in the debug core code.
+The workaround for this Erratum is included in AGESA. But BIOSes
+spun only after Jan2014 will have the fix (atleast server
+versions of the chip). The erratum affects both embedded and
+server platforms and since we cannot say with certainity that
+ALL BIOSes on systems out in the field will have the fix, we
+should probably insulate ourselves in case BIOS does not do the
+right thing or someone is using old BIOSes.
 
-Update the call from the UV NMI handler to conform to the new
-interface.
+Refer to Revision Guide for AMD F16h models 00h-0fh, document 51810
+Rev. 3.04, November2013 for details on the Erratum.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Hedi Berriche <hedi@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/20140114162551.318251993@asylum.americas.sgi.com
+Tested the patch on Fam16h server platform and it works fine.
+
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: <hmh@hmh.eng.br>
+Cc: <Kim.Naru@amd.com>
+Cc: <Suravee.Suthikulpanit@amd.com>
+Cc: <bp@suse.de>
+Cc: <sherry.hurwitz@amd.com>
+Link: http://lkml.kernel.org/r/1390515212-1824-1-git-send-email-Aravind.Gopalakrishnan@amd.com
+[ Minor edits. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/uv/uv_nmi.c | 2 +-
- include/linux/kgdb.h          | 3 ++-
- kernel/debug/debug_core.c     | 5 +++--
- kernel/debug/debug_core.h     | 2 --
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/quirks.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index 8eeccba..7486c21 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -546,7 +546,7 @@ static void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
- 	if (master) {
- 		/* call KGDB NMI handler as MASTER */
- 		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
--					&uv_nmi_slave_continue);
-+			KDB_REASON_SYSTEM_NMI, &uv_nmi_slave_continue);
- 		if (ret) {
- 			pr_alert("KDB returned error, is kgdboc set?\n");
- 			atomic_set(&uv_nmi_slave_continue, SLAVE_EXIT);
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index dfb4f2f..6b06d37 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -310,7 +310,8 @@ extern int
- kgdb_handle_exception(int ex_vector, int signo, int err_code,
- 		      struct pt_regs *regs);
- extern int kgdb_nmicallback(int cpu, void *regs);
--extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *snd_rdy);
-+extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, int err_code,
-+			  atomic_t *snd_rdy);
- extern void gdbstub_exit(int status);
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index 04ee1e2..7c6acd4 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -571,3 +571,40 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
+ 			quirk_amd_nb_node);
  
- extern int			kgdb_single_step;
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 7d2f35e..334b398 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -736,7 +736,8 @@ int kgdb_nmicallback(int cpu, void *regs)
- 	return 1;
- }
- 
--int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
-+int kgdb_nmicallin(int cpu, int trapnr, void *regs, int err_code,
-+							atomic_t *send_ready)
- {
- #ifdef CONFIG_SMP
- 	if (!kgdb_io_ready(0) || !send_ready)
-@@ -750,7 +751,7 @@ int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
- 		ks->cpu			= cpu;
- 		ks->ex_vector		= trapnr;
- 		ks->signo		= SIGTRAP;
--		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
-+		ks->err_code		= err_code;
- 		ks->linux_regs		= regs;
- 		ks->send_ready		= send_ready;
- 		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-diff --git a/kernel/debug/debug_core.h b/kernel/debug/debug_core.h
-index 572aa4f..127d9bc 100644
---- a/kernel/debug/debug_core.h
-+++ b/kernel/debug/debug_core.h
-@@ -75,13 +75,11 @@ extern int kdb_stub(struct kgdb_state *ks);
- extern int kdb_parse(const char *cmdstr);
- extern int kdb_common_init_state(struct kgdb_state *ks);
- extern int kdb_common_deinit_state(void);
--#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
- #else /* ! CONFIG_KGDB_KDB */
- static inline int kdb_stub(struct kgdb_state *ks)
- {
- 	return DBG_PASS_EVENT;
- }
--#define KGDB_KDB_REASON_SYSTEM_NMI 0
- #endif /* CONFIG_KGDB_KDB */
- 
- #endif /* _DEBUG_CORE_H_ */
+ #endif
++
++#ifdef CONFIG_PCI
++/*
++ * Processor does not ensure DRAM scrub read/write sequence
++ * is atomic wrt accesses to CC6 save state area. Therefore
++ * if a concurrent scrub read/write access is to same address
++ * the entry may appear as if it is not written. This quirk
++ * applies to Fam16h models 00h-0Fh
++ *
++ * See "Revision Guide" for AMD F16h models 00h-0fh,
++ * document 51810 rev. 3.04, Nov 2013
++ */
++static void amd_disable_seq_and_redirect_scrub(struct pci_dev *dev)
++{
++	u32 val;
++
++	/*
++	 * Suggested workaround:
++	 * set D18F3x58[4:0] = 00h and set D18F3x5C[0] = 0b
++	 */
++	pci_read_config_dword(dev, 0x58, &val);
++	if (val & 0x1F) {
++		val &= ~(0x1F);
++		pci_write_config_dword(dev, 0x58, val);
++	}
++
++	pci_read_config_dword(dev, 0x5C, &val);
++	if (val & BIT(0)) {
++		val &= ~BIT(0);
++		pci_write_config_dword(dev, 0x5c, val);
++	}
++}
++
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3,
++			amd_disable_seq_and_redirect_scrub);
++
++#endif
