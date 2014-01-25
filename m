@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaAYRTH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 12:19:07 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:56041 "EHLO smtp3-g21.free.fr"
+	id S1753411AbaAYRTS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 12:19:18 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:56742 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507AbaAYRTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 12:19:04 -0500
+	id S1752507AbaAYRTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 12:19:16 -0500
 Date: Sat, 25 Jan 2014 18:14:46 +0100
 From: Jean-Francois Moine <moinejf@free.fr>
 To: dri-devel@lists.freedesktop.org
 Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v4 03/24] drm/i2c: tda998x: code cleanup
-Message-ID: <20140125181446.5f208656@armhf>
+Subject: [PATCH v4 04/24] drm/i2c: tda998x: change probe message origin
+Message-ID: <20140125181446.146fbb0a@armhf>
 In-Reply-To: <cover.1390646891.git.moinejf@free.fr>
 References: <cover.1390646891.git.moinejf@free.fr>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
@@ -24,76 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch:
-- replaces ARRAY_SIZE() by sizeof() when a number of bytes is needed,
-- adds a linefeed in an error message and
-- removes an useless variable setting.
+On probe, a message giving the TDA chip version seems to come from the
+DRM driver:
+
+	armada-drm armada-510-drm: found TDA19988
+
+This patch changes the originator of the message to the TDA driver:
+
+	tda998x 0-0070: found TDA19988
 
 Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 11f0607..320b37f 100644
+index 320b37f..fbd7937 100644
 --- a/drivers/gpu/drm/i2c/tda998x_drv.c
 +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -335,7 +335,7 @@ cec_write(struct tda998x_priv *priv, uint16_t addr, uint8_t val)
- 	uint8_t buf[] = {addr, val};
- 	int ret;
+@@ -1195,12 +1195,21 @@ tda998x_encoder_init(struct i2c_client *client,
+ 	priv->rev &= ~0x30; /* not-hdcp and not-scalar bit */
  
--	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
-+	ret = i2c_master_send(client, buf, sizeof(buf));
- 	if (ret < 0)
- 		dev_err(&client->dev, "Error %d writing to cec:0x%x\n", ret, addr);
- }
-@@ -372,7 +372,8 @@ set_page(struct tda998x_priv *priv, uint16_t reg)
- 		};
- 		int ret = i2c_master_send(client, buf, sizeof(buf));
- 		if (ret < 0) {
--			dev_err(&client->dev, "Error %d writing to REG_CURPAGE\n", ret);
-+			dev_err(&client->dev, "setpage %04x err %d\n",
-+					reg, ret);
- 			return ret;
- 		}
- 
-@@ -449,7 +450,7 @@ reg_write(struct tda998x_priv *priv, uint16_t reg, uint8_t val)
- 	if (ret < 0)
- 		return;
- 
--	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
-+	ret = i2c_master_send(client, buf, sizeof(buf));
- 	if (ret < 0)
- 		dev_err(&client->dev, "Error %d writing to 0x%x\n", ret, reg);
- }
-@@ -465,7 +466,7 @@ reg_write16(struct tda998x_priv *priv, uint16_t reg, uint16_t val)
- 	if (ret < 0)
- 		return;
- 
--	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
-+	ret = i2c_master_send(client, buf, sizeof(buf));
- 	if (ret < 0)
- 		dev_err(&client->dev, "Error %d writing to 0x%x\n", ret, reg);
- }
-@@ -1006,7 +1007,7 @@ read_edid_block(struct drm_encoder *encoder, uint8_t *buf, int blk)
- 
- 	ret = reg_read_range(priv, REG_EDID_DATA_0, buf, EDID_LENGTH);
- 	if (ret != EDID_LENGTH) {
--		dev_err(encoder->dev->dev, "failed to read edid block %d: %d",
-+		dev_err(encoder->dev->dev, "failed to read edid block %d: %d\n",
- 				blk, ret);
- 		return ret;
+ 	switch (priv->rev) {
+-	case TDA9989N2:  dev_info(dev->dev, "found TDA9989 n2");  break;
+-	case TDA19989:   dev_info(dev->dev, "found TDA19989");    break;
+-	case TDA19989N2: dev_info(dev->dev, "found TDA19989 n2"); break;
+-	case TDA19988:   dev_info(dev->dev, "found TDA19988");    break;
++	case TDA9989N2:
++		dev_info(&client->dev, "found TDA9989 n2");
++		break;
++	case TDA19989:
++		dev_info(&client->dev, "found TDA19989");
++		break;
++	case TDA19989N2:
++		dev_info(&client->dev, "found TDA19989 n2");
++		break;
++	case TDA19988:
++		dev_info(&client->dev, "found TDA19988");
++		break;
+ 	default:
+-		DBG("found unsupported device: %04x", priv->rev);
++		dev_err(&client->dev, "found unsupported device: %04x\n",
++			priv->rev);
+ 		goto fail;
  	}
-@@ -1020,7 +1021,7 @@ static uint8_t *
- do_get_edid(struct drm_encoder *encoder)
- {
- 	struct tda998x_priv *priv = to_tda998x_priv(encoder);
--	int j = 0, valid_extensions = 0;
-+	int j, valid_extensions = 0;
- 	uint8_t *block, *new;
- 	bool print_bad_edid = drm_debug & DRM_UT_KMS;
  
 -- 
 1.8.5.3
