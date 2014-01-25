@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaAYWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 17:11:25 -0500
-Received: from yotta.elopez.com.ar ([31.220.24.173]:45543 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355AbaAYWLY (ORCPT
+	id S1753170AbaAYWOx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 17:14:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58776 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752426AbaAYWOv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 17:11:24 -0500
-Message-ID: <52E4367B.3090608@elopez.com.ar>
-Date: Sat, 25 Jan 2014 19:11:07 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 25 Jan 2014 17:14:51 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
+Date: Sat, 25 Jan 2014 23:29:04 +0100
+Message-ID: <1691151.Vu0Ye8lgsC@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <CADDKRnBFvfHcuEY8TA=nfyP-WSotkj9wkXxE2QS8h+22cyk_0w@mail.gmail.com>
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <9739501.rBu7tJQIYj@vostro.rjw.lan> <CADDKRnBFvfHcuEY8TA=nfyP-WSotkj9wkXxE2QS8h+22cyk_0w@mail.gmail.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <52E42D6A.5050508@elopez.com.ar> <52E43046.1030105@gmail.com>
-In-Reply-To: <52E43046.1030105@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On Saturday, January 25, 2014 05:32:19 PM JÃ¶rg Otte wrote:
+> 2014-01-25 Rafael J. Wysocki <rjw@rjwysocki.net>:
+> > On Saturday, January 25, 2014 11:03:09 AM JÃ¶rg Otte wrote:
+> >> Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
+> >>
+> >> ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
+> >> ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
+> >> ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
+> >> ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
+> >>
+> >> I don't have CPUs 4..7! Error messages regarding not existing
+> >> CPUs should not be displayed.
+> >> kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
+> >>
+> >> This is a regression. I never saw this messages before.
+> >
+> > Does your system show any other suspicious symptoms or are you worried about
+> > those messages only?
+> >
+> > Rafael
+> >
+> 
+> what's looking badly is this:
+> 
+> ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S1_]
+> (20131218/hwxface-580)
+> ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S2_]
+> (20131218/hwxface-580)
 
-El 25/01/14 18:44, Sebastian Hesselbarth escribió:
-> On 01/25/2014 10:32 PM, Emilio López wrote:
->> El 25/01/14 15:19, Sebastian Hesselbarth escribió:
->>> This patch set fixes clk init order that went upside-down with
->>> v3.14. I haven't really investigated what caused this, but I assume
->>> it is related with DT node reordering by addresses.
->>
->> The framework should be able to deal with unordered registration. I am
->> not very familiar with the mvebu driver though, do you have a valid
->> reason to require a specific order?
->
-> Emilio,
->
-> I rather think that everthing registered with CLK_OF_DECLARE cannot
-> deal with unordered registration. The callback passed to CLK_OF_DECLARE
-> has to have void as return value, so there is no way to pass errors,
-> e.g. -EPROBE_DEFER, back to of_clk_init.
+That means your BIOS doesn't support system sleep states S1 and S2, but we
+should be able to suppress those messages I think.
 
-Indeed. What I meant is that the framework works fine if you first 
-register a child clock that refers to a not yet registered parent, and 
-then register the parent. The registration need not be strictly ordered.
+> and this:
+> 
+> acpi PNP0A08:00: _OSC: OS supports [ASPM ClockPM Segments MSI]
+>  \_SB_.PCI0:_OSC invalid UUID
+>  _OSC request data:1 1e 0
+> acpi PNP0A08:00: _OSC failed (AE_ERROR); disabling ASPM
 
-> The reason for this ordering is that the clock gates depend on core
-> clocks. It is always that way, so merging both init functions isn't
-> that odd.
+That means the BIOS doesn't want to grant the kernel control of extended
+PCIe features on your system.
 
-If your only dependency is the parent name, and you can use DT or 
-something else to get it, then you don't need to enforce an order.
+> but these messages are not new.
 
->>> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
->>> registered before core clocks driver. Unfortunately, we cannot
->>> return -EPROBE_DEFER in drivers initialized by clk_of_init.
->>
->> Why would you need to do so? After a quick inspection on the code, I see
->> you may have problems on mvebu_clk_gating_setup() when getting the
->> default parent clock name, but I believe you could solve it in an easier
->> way by using of_clk_get_parent_name().
->
-> Ok, I'll look if using of_clk_get_parent_name will help here. But again,
-> I can see that clk-gating driver gets registered before core-clk driver.
-> There may be no code to give you the parent name at that time.
+They indicate things that are not supported by the BIOS, but I agree that the
+messages are a bit cryptic.
 
-After looking at some of the armada*.dtsi, I see you don't list the 
-clock names on the coreclk node, so of_clk_get_parent_name may not be of 
-much value after all.
+Thanks!
 
-Cheers,
-
-Emilio
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
