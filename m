@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaAYRRA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 12:17:00 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:48884 "EHLO smtp3-g21.free.fr"
+	id S1753207AbaAYRRM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 12:17:12 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:49573 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324AbaAYRQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 12:16:58 -0500
-Date: Sat, 25 Jan 2014 18:14:40 +0100
+	id S1752324AbaAYRRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 12:17:09 -0500
+Date: Sat, 25 Jan 2014 18:14:41 +0100
 From: Jean-Francois Moine <moinejf@free.fr>
 To: dri-devel@lists.freedesktop.org
 Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v4 19/24] drm/i2c: tda998x: make the audio code more
- readable
-Message-ID: <20140125181440.5117854e@armhf>
+Subject: [PATCH v4 13/24] drm/i2c: tda998x: add DT support
+Message-ID: <20140125181441.52161a91@armhf>
 In-Reply-To: <cover.1390646891.git.moinejf@free.fr>
 References: <cover.1390646891.git.moinejf@free.fr>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
@@ -25,71 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a definition of the values of the MUX_AP register and
-simplifies the macro's defining the fields of the AIP_CLKSEL register.
-This makes the format specific audio init sequence more readable.
+This patch adds DT support to the tda998x.
 
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
 diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 077b954..ebfb653 100644
+index a3ebc08..0231e44 100644
 --- a/drivers/gpu/drm/i2c/tda998x_drv.c
 +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -125,6 +125,8 @@ struct tda998x_priv {
- # define VIP_CNTRL_5_CKCASE       (1 << 0)
- # define VIP_CNTRL_5_SP_CNT(x)    (((x) & 3) << 1)
- #define REG_MUX_AP                REG(0x00, 0x26)     /* read/write */
-+# define MUX_AP_SELECT_I2S	  0x64
-+# define MUX_AP_SELECT_SPDIF	  0x40
- #define REG_MUX_VP_VIP_OUT        REG(0x00, 0x27)     /* read/write */
- #define REG_MAT_CONTRL            REG(0x00, 0x80)     /* write */
- # define MAT_CONTRL_MAT_SC(x)     (((x) & 3) << 0)
-@@ -202,10 +204,11 @@ struct tda998x_priv {
- #define REG_I2S_FORMAT            REG(0x00, 0xfc)     /* read/write */
- # define I2S_FORMAT(x)            (((x) & 3) << 0)
- #define REG_AIP_CLKSEL            REG(0x00, 0xfd)     /* write */
--# define AIP_CLKSEL_FS(x)         (((x) & 3) << 0)
--# define AIP_CLKSEL_CLK_POL(x)    (((x) & 1) << 2)
--# define AIP_CLKSEL_AIP(x)        (((x) & 7) << 3)
--
-+# define AIP_CLKSEL_AIP_SPDIF	  (0 << 3)
-+# define AIP_CLKSEL_AIP_I2S	  (1 << 3)
-+# define AIP_CLKSEL_FS_ACLK	  (0 << 0)
-+# define AIP_CLKSEL_FS_MCLK	  (1 << 0)
-+# define AIP_CLKSEL_FS_FS64SPDIF  (2 << 0)
+@@ -1164,6 +1164,8 @@ tda998x_encoder_init(struct i2c_client *client,
+ 		    struct drm_encoder_slave *encoder_slave)
+ {
+ 	struct tda998x_priv *priv;
++	struct device_node *np = client->dev.of_node;
++	u32 video;
+ 	int ret;
  
- /* Page 02h: PLL settings */
- #define REG_PLL_SERIAL_1          REG(0x02, 0x00)     /* read/write */
-@@ -644,19 +647,17 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	/* Set audio input source */
- 	switch (p->audio_format) {
- 	case AFMT_SPDIF:
--		reg_write(priv, REG_MUX_AP, 0x40);
--		clksel_aip = AIP_CLKSEL_AIP(0);
--		/* FS64SPDIF */
--		clksel_fs = AIP_CLKSEL_FS(2);
-+		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_SPDIF);
-+		clksel_aip = AIP_CLKSEL_AIP_SPDIF;
-+		clksel_fs = AIP_CLKSEL_FS_FS64SPDIF;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
- 		ca_i2s = 0;
- 		break;
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+@@ -1232,6 +1234,17 @@ tda998x_encoder_init(struct i2c_client *client,
+ 	cec_write(priv, REG_CEC_FRO_IM_CLK_CTRL,
+ 			CEC_FRO_IM_CLK_CTRL_GHOST_DIS | CEC_FRO_IM_CLK_CTRL_IMCLK_SEL);
  
- 	case AFMT_I2S:
--		reg_write(priv, REG_MUX_AP, 0x64);
--		clksel_aip = AIP_CLKSEL_AIP(1);
--		/* ACLK */
--		clksel_fs = AIP_CLKSEL_FS(0);
-+		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
-+		clksel_aip = AIP_CLKSEL_AIP_I2S;
-+		clksel_fs = AIP_CLKSEL_FS_ACLK;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
- 		ca_i2s = CA_I2S_CA_I2S(0);
- 		break;
++	if (!np)
++		return 0;		/* non-DT */
++
++	/* get the optional video properties */
++	ret = of_property_read_u32(np, "video-ports", &video);
++	if (ret == 0) {
++		priv->vip_cntrl_0 = video >> 16;
++		priv->vip_cntrl_1 = video >> 8;
++		priv->vip_cntrl_2 = video;
++	}
++
+ 	return 0;
+ 
+ fail:
+@@ -1246,6 +1259,14 @@ fail:
+ 	return -ENXIO;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id tda998x_dt_ids[] = {
++	{ .compatible = "nxp,tda998x", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, tda998x_dt_ids);
++#endif
++
+ static struct i2c_device_id tda998x_ids[] = {
+ 	{ "tda998x", 0 },
+ 	{ }
+@@ -1258,6 +1279,7 @@ static struct drm_i2c_encoder_driver tda998x_driver = {
+ 		.remove = tda998x_remove,
+ 		.driver = {
+ 			.name = "tda998x",
++			.of_match_table = of_match_ptr(tda998x_dt_ids),
+ 		},
+ 		.id_table = tda998x_ids,
+ 	},
 -- 
 1.8.5.3
 
