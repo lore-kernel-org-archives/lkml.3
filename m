@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaAYPET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 10:04:19 -0500
-Received: from ares08.inai.de ([46.4.84.70]:50313 "EHLO ares08.inai.de"
+	id S1752244AbaAYPGY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 10:06:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19741 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441AbaAYPES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 10:04:18 -0500
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jan 2014 10:04:18 EST
-Date: Sat, 25 Jan 2014 15:54:29 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Peter Chen <peter.chen@freescale.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] module: Make wait module's refcount to zero
- procedure as async
-In-Reply-To: <87wqmh1l8b.fsf@rustcorp.com.au>
-Message-ID: <alpine.LSU.2.11.1401251550580.4334@nerf08.vanv.qr>
-References: <1378955676-12708-1-git-send-email-peter.chen@freescale.com> <87ioy536mu.fsf@rustcorp.com.au> <CAKi4VAJ5=zsJzyQNprchB2wnwh0+gg2oNP2PFsa4Lcw++3mSig@mail.gmail.com> <87wqmh1l8b.fsf@rustcorp.com.au>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752131AbaAYPGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 10:06:23 -0500
+Date: Sat, 25 Jan 2014 10:05:59 -0500
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        valentine.barshak@cogentembedded.com
+Subject: [PATCH] usb: phy: Quiet unable to find transceiver message
+Message-ID: <20140125150559.GN16455@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+commit 1ae5799ef6317 ("usb: hcd: Initialize USB phy if needed") allows
+the USB layer to initialize external PHYs if needed.  However, a PHY is
+not needed in all cases.  The usb_get_phy_device function will print
+an error message, "unable to find transceiver" but everything still
+functions normally.
 
-On Monday 2013-09-16 05:47, Rusty Russell wrote:
->
->Here's what I've got in my pending-rebases tree.
->
->@@ -842,6 +818,11 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
-> 		return -EFAULT;
-> 	name[MODULE_NAME_LEN-1] = '\0';
-> 
->+	if (!(flags & O_NONBLOCK)) {
->+		printk(KERN_WARNING
->+		       "waiting module removal not supported: please upgrade");
->+	}
->+
+Drop the severity of this message to pr_debug.
 
-This patch has come to my attention via the opensuse lists, where
-a poster reported about this new user-visible message (it appears
-in dmesg!) and rightfully asked: upgrade what component?
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+---
+ drivers/usb/phy/phy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It's probably the userspace module loading utility, but it _really_
-should say so. There's good room to read that message - a few months
-into the future - as "upgrade your kernel" instead ;)
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index e6f61e4..c7fe880 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -228,7 +228,7 @@ struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
+ 
+ 	phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
+ 	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+-		pr_err("unable to find transceiver\n");
++		pr_debug("unable to find transceiver\n");
+ 		goto err0;
+ 	}
+ 
+-- 
+1.8.5.3
+
