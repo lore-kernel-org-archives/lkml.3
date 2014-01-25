@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaAYQJn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 11:09:43 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:40621 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaAYQJk (ORCPT
+	id S1752198AbaAYQS2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 11:18:28 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:52084 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751843AbaAYQSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 11:09:40 -0500
+	Sat, 25 Jan 2014 11:18:24 -0500
+X-Sasl-enc: /8WSxR9QpX5HP8CS1vmGq0f8tV3Nd1GOXWdCE1Q2TA79 1390666703
+Date: Sat, 25 Jan 2014 14:18:17 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
+Message-ID: <20140125161817.GB25531@khazad-dum.debian.net>
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com>
+ <9739501.rBu7tJQIYj@vostro.rjw.lan>
+ <4387759.ffnsEjDaad@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
-References: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
-Date: Sat, 25 Jan 2014 09:09:39 -0700
-Message-ID: <CALdTtnsEo74UeYgoQ0DF7=LN074b_0bL0vg6Bxs02B9nDkRTNA@mail.gmail.com>
-Subject: Re: [RFC PATCH V3 0/4] APM X-Gene PCIe controller
-From: Dann Frazier <dann.frazier@canonical.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@apm.com, jcm@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4387759.ffnsEjDaad@vostro.rjw.lan>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 2:32 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
-> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
-> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
-> cards.
->
-> X-Gene PCIe controller driver has depedency on the pcie arch support for
-> arm64. The arm64 pcie arch support is not yet part of mainline Linux kernel
-> and approach for arch support is under discussion with arm64 maintainers.
-> The reference patch can be found here --> https://lkml.org/lkml/2013/10/23/244
+On Sat, 25 Jan 2014, Rafael J. Wysocki wrote:
+> On Saturday, January 25, 2014 02:53:24 PM Rafael J. Wysocki wrote:
+> > On Saturday, January 25, 2014 11:03:09 AM Jörg Otte wrote:
+> > > Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
+> > > 
+> > > ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
+> > > ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
+> > > ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
+> > > ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
+> > > 
+> > > I don't have CPUs 4..7! Error messages regarding not existing
+> > > CPUs should not be displayed.
+> > > kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
+> > > 
+> > > This is a regression. I never saw this messages before.
+> > 
+> > Does your system show any other suspicious symptoms or are you worried about
+> > those messages only?
+> 
+> Gerry, this is your commit b981513f806d (ACPI / scan: bail out early if failed
+> to parse APIC ID for CPU).  Apparently, the BIOS has room for 4 CPUs more than
+> there actually are in the system.  Maybe we can reduce the log level of those
+> messages to avoid ringing bells unnecessarily?
 
-The reference patch looks corrupted (pcibios.c has no includes, etc),
-would you mind reposting?
+It is standard practice (at least in SuperMicro boxes, but I've also seen it
+elsewhere) for the BIOS to have ACPI tables mentioning all cores supported
+by the biggest core-count CPU topology possible by the motherboard.  The
+cores you don't have are reported as if they were hotpluggable but absent,
+even if they will *never* show up at runtime.  Meh.
 
-  -dann
+So yes, such warnings will get annoying *very* quickly.
 
-> If someone wishes to test PCIe on X-Gene, arch support patch must be applied
-> before the patches in this patch set.
->
-> changes since V2:
-> 1. redefined each PCI port in different PCI domain correctly.
-> 2. removed setup_lane and setup_link functions from driver.
-> 3. removed scan_bus wrapper and set_primary_bus hack.
-> 4. added pci_ioremap_io for io resources.
->
-> changes since V1:
-> 1. added PCI domain support
-> 2. reading cpu and pci addresses from device tree to configure regions.
-> 3. got rid of unnecessary wrappers for readl and writel.
-> 4. got rid of endpoint configuration code.
-> 5. added 'dma-ranges' property support to read inbound region configuration.
-> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
-> 7. dropped 'clock-names' property from bindings
-> 8. added comments whereever requested.
->
-> Tanmay Inamdar (4):
->   pci: APM X-Gene PCIe controller driver
->   arm64: dts: APM X-Gene PCIe device tree nodes
->   dt-bindings: pci: xgene pcie device tree bindings
->   MAINTAINERS: entry for APM X-Gene PCIe host driver
->
->  .../devicetree/bindings/pci/xgene-pci.txt          |   52 ++
->  MAINTAINERS                                        |    7 +
->  arch/arm64/boot/dts/apm-mustang.dts                |    8 +
->  arch/arm64/boot/dts/apm-storm.dtsi                 |  155 ++++
->  drivers/pci/host/Kconfig                           |   10 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-xgene.c                       |  784 ++++++++++++++++++++
->  7 files changed, 1017 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
->  create mode 100644 drivers/pci/host/pci-xgene.c
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
