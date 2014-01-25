@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaA2Jb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:31:26 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16462 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaA2JY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:24:57 -0500
-X-AuditID: cbfee690-b7f266d00000287c-ab-52e8c8e8c732
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 6/9 v5] ARM: dts: exynos5250/5420: add dt node for sss module
-Date: Wed, 29 Jan 2014 14:54:47 +0530
-Message-id: <1390987487-18830-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
-References: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkWvfFiRdBBqs/8Fi8PKRpMf/IOVaL
-	7lcyFr0LrrJZ3L/3k8ni8q45bBYzzu9jsli07T+zxdk5h5gcOD12zrrL7rHtgKpH35ZVjB6f
-	N8kFsERx2aSk5mSWpRbp2yVwZTzcf5Ot4DlPxdZdU5gaGE9xdTFyckgImEjMu9PCDGGLSVy4
-	t56ti5GLQ0hgKaNET+sydpii/gc72CES0xklDtxdzAKSEBLoZ5LY9tMXxGYTMJM4uGg1WIOI
-	gLPE7+Y1rCANzAJHGSUu7z4ElhAW8JVYu6GBDcRmEVCV6F3zkBHE5hVwlZgx+S/QGRxA2xQk
-	5kyyAQlzCrhJTD2+EWqXq8STv/9YIQ5axi5x6pcvxBgBiW+TD7FAtMpKbDoA9YykxMEVN1gm
-	MAovYGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREY6Kf/PZuwg/HeAetDjMlA4yYyS4km
-	5wMjJa8k3tDYzMjC1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUa
-	GKcuOtjieKucaZ5B8swVbLa2n2w1c0qnsyz+sT5+jfGs/CmWf62LwvZ8LPnUmNdpZRfHLv+k
-	d+7CawsUKpfu2HHg9kGj+CkXhBvfh8/1M5XpNFv8Lt8gxUH4R3y+X9GErq1Z4i4pH70eMtjO
-	uObk0qP7LV5bb+f0U/LvbuiVxwhO/v69iXNDnRJLcUaioRZzUXEiAGuneamKAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jQd0XJ14EGcx/y2zx8pCmxfwj51gt
-	ul/JWPQuuMpmcf/eTyaLy7vmsFnMOL+PyWLRtv/MFmfnHGJy4PTYOesuu8e2A6oefVtWMXp8
-	3iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZ
-	A3SJkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj4f6bbAXPeSq27prC
-	1MB4iquLkZNDQsBEov/BDnYIW0ziwr31bF2MXBxCAtMZJQ7cXcwCkhAS6GeS2PbTF8RmEzCT
-	OLhoNViDiICzxO/mNawgDcwCRxklLu8+BJYQFvCVWLuhgQ3EZhFQlehd85ARxOYVcJWYMfkv
-	cxcjB9A2BYk5k2xAwpwCbhJTj2+E2uUq8eTvP9YJjLwLGBlWMYqmFiQXFCel5xrqFSfmFpfm
-	pesl5+duYgRH0jOpHYwrGywOMQpwMCrx8K64+DxIiDWxrLgy9xCjBAezkgjviU0vgoR4UxIr
-	q1KL8uOLSnNSiw8xJgMdNZFZSjQ5HxjleSXxhsYm5qbGppYmFiZmlqQJK4nzHmi1DhQSSE8s
-	Sc1OTS1ILYLZwsTBKdXAuPScl0/+yt8rVxqU5d7XPCMm8CI69du1Km+73fIhHIp7tPYYJs14
-	V/u5tezw64vS5dq9hSc9TjjbXwpKthI64rP2zpLl97/X/jvLMq/XaIOmhXnYGc25W5gnW1YJ
-	uOh7vLiZ7M7hmnovvj5ry247v8nl38WqvHZoMrc9njcz7mfZTNYXkVu3KLEUZyQaajEXFScC
-	AHoGq0DoAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752645AbaA2JcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:32:14 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:36010 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843AbaA2JYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:24:43 -0500
+X-Mailbox-Line: From 00c290bee957202e291810e295755efc3fecec0f Mon Sep 17 00:00:00 2001
+Message-Id: <00c290bee957202e291810e295755efc3fecec0f.1390986083.git.moinejf@free.fr>
+In-Reply-To: <cover.1390986082.git.moinejf@free.fr>
+References: <cover.1390986082.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Sat, 25 Jan 2014 18:14:41 +0100
+Subject: [PATCH v5 12/23] drm/i2c: tda998x: add DT support
+To: dri-devel@lists.freedesktop.org
+Cc: Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the device tree node for SSS module
-found on Exynos5420 and Exynos5250
+This patch adds DT support to the tda998x.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-TO: <linux-samsung-soc@vger.kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: <linux-crypto@vger.kernel.org>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
-Changes since v4:
-None
-Changes since v3:
-1. Modified the SSS clock ID as per dt-bindings for Exynos5250 in
-   samsung-clk.git tree.
+ drivers/gpu/drm/i2c/tda998x_drv.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
- arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
- arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
- 2 files changed, 18 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index c341e55..1d249df 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -704,4 +704,12 @@
- 		io-channel-ranges;
- 		status = "disabled";
- 	};
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index 351da92..d4074e0 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -1164,6 +1164,8 @@ tda998x_encoder_init(struct i2c_client *client,
+ 		    struct drm_encoder_slave *encoder_slave)
+ {
+ 	struct tda998x_priv *priv;
++	struct device_node *np = client->dev.of_node;
++	u32 video;
+ 	int ret;
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+@@ -1232,6 +1234,17 @@ tda998x_encoder_init(struct i2c_client *client,
+ 	cec_write(priv, REG_CEC_FRO_IM_CLK_CTRL,
+ 			CEC_FRO_IM_CLK_CTRL_GHOST_DIS | CEC_FRO_IM_CLK_CTRL_IMCLK_SEL);
+ 
++	if (!np)
++		return 0;		/* non-DT */
 +
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 348>;
-+		clock-names = "secss";
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 11dd202..56a3f3e 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -652,4 +652,14 @@
- 		clocks = <&clock 319>, <&clock 318>;
- 		clock-names = "tmu_apbif", "tmu_triminfo_apbif";
- 	};
++	/* get the optional video properties */
++	ret = of_property_read_u32(np, "video-ports", &video);
++	if (ret == 0) {
++		priv->vip_cntrl_0 = video >> 16;
++		priv->vip_cntrl_1 = video >> 8;
++		priv->vip_cntrl_2 = video;
++	}
 +
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 471>;
-+		clock-names = "secss";
-+		samsung,power-domain = <&g2d_pd>;
-+	};
+ 	return 0;
+ 
+ fail:
+@@ -1246,6 +1259,14 @@ fail:
+ 	return -ENXIO;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id tda998x_dt_ids[] = {
++	{ .compatible = "nxp,tda998x", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, tda998x_dt_ids);
++#endif
 +
- };
+ static struct i2c_device_id tda998x_ids[] = {
+ 	{ "tda998x", 0 },
+ 	{ }
+@@ -1258,6 +1279,7 @@ static struct drm_i2c_encoder_driver tda998x_driver = {
+ 		.remove = tda998x_remove,
+ 		.driver = {
+ 			.name = "tda998x",
++			.of_match_table = of_match_ptr(tda998x_dt_ids),
+ 		},
+ 		.id_table = tda998x_ids,
+ 	},
 -- 
-1.7.9.5
+1.9.rc1
 
