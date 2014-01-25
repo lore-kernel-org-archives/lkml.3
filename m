@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbaAYSOM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 13:14:12 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:48680 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbaAYSOL (ORCPT
+	id S1752444AbaAYST1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 13:19:27 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48917 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaAYST0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 13:14:11 -0500
-Date: Sat, 25 Jan 2014 19:14:09 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] x86, microcode: Add option to allow downgrading of
- microcode
-Message-ID: <20140125181409.GE20765@two.firstfloor.org>
-References: <1390598339-18740-1-git-send-email-andi@firstfloor.org>
- <1390598339-18740-2-git-send-email-andi@firstfloor.org>
- <20140125163558.GC25531@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140125163558.GC25531@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 25 Jan 2014 13:19:26 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] clk: mvebu: fix clk init order
+Date: Sat, 25 Jan 2014 19:19:06 +0100
+Message-Id: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 02:35:58PM -0200, Henrique de Moraes Holschuh wrote:
-> On Fri, 24 Jan 2014, Andi Kleen wrote:
-> > For testing purposes it can be useful to downgrade microcode.
-> > Normally the driver only allows upgrading.
-> 
-> The code is not prepared to work correctly when downgrading is allowed, in
-> the presence of shadowed microcode.  When a firmware request results in more
+This patch set fixes clk init order that went upside-down with
+v3.14. I haven't really investigated what caused this, but I assume
+it is related with DT node reordering by addresses.
 
-As I wrote it's only for testing purposes when you know what you're doing
-(typically with a special micro code file)
+Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+registered before core clocks driver. Unfortunately, we cannot
+return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+init order for our drivers is always core clocks before clock gating,
+we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+init function that will register core clocks before clock gating
+driver.
 
-Your whole argument is irrelevant, as it only applies to normal users
-who should never use this option.
+This patch is based on pre-v3.14-rc1 mainline and should go in as
+fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+I suggest Jason picks it up as a topic branch.
 
-> Also, since you're going to mess with this, why don't you implement the
-> correct semanthics for microcode with the sign bit set?  Making it signed
-> actually makes the current code behaviour worse.
-> 
-> Refer to: http://lkml.org/lkml/2011/3/21/522
+The patches have been boot tested on Dove and compile-tested only
+for Kirkwood, Armada 370 and XP.
 
-I don't think it makes it worse. In fact I'm essentially implementing
-Burt's request "for explicit user action" with the new override option.
+Sebastian Hesselbarth (4):
+  clk: mvebu: armada-370: maintain clock init order
+  clk: mvebu: armada-xp: maintain clock init order
+  clk: mvebu: dove: maintain clock init order
+  clk: mvebu: kirkwood: maintain clock init order
 
-Anyways I suppose your rant killed the patch anyways. Congratulations!
+ drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+ drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+ drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+ drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+ 4 files changed, 44 insertions(+), 50 deletions(-)
 
--Andi
+---
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+-- 
+1.8.5.2
+
