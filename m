@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaAYV3f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 16:29:35 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:60823 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaAYV3d (ORCPT
+	id S1752754AbaAYV3i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 16:29:38 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:36850 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341AbaAYV3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 16:29:33 -0500
+	Sat, 25 Jan 2014 16:29:35 -0500
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
@@ -14,35 +14,39 @@ To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
         linux@arm.linux.org.uk
 Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        neilb@suse.de, hns@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 0/9] ARM: dts: omap3-gta04: Various devicetree updates.
-Date: Sat, 25 Jan 2014 22:28:54 +0100
-Message-Id: <1390685343-11663-1-git-send-email-marek@goldelico.com>
+        neilb@suse.de, hns@goldelico.com
+Subject: [PATCH 1/9] ARM: dts: omap3-gta04: Fix 'aux' gpio key flags.
+Date: Sat, 25 Jan 2014 22:28:55 +0100
+Message-Id: <1390685343-11663-2-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1390685343-11663-1-git-send-email-marek@goldelico.com>
+References: <1390685343-11663-1-git-send-email-marek@goldelico.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pathes fix some wrong property issues and add some new devices to
-devicetree. This was tested on linux-next (next-20140124).
+From: NeilBrown <neilb@suse.de>
 
-Marek Belisko (6):
-  ARM: dts: omap3-gta04: Fix mmc1 properties.
-  ARM: dts: omap3-gta04: Add basic sound support.
-  ARM: dts: omap3-gta04: Add twl4030 charger.
-  ARM: dts: omap3-gta04: Add touchscreen properties.
-  ARM: dts: omap3-gta04: Add support for magnetometer.
-  ARM: dts: omap3-gta04: Add ti,omap36xx to compatible property to avoid
-    problems with booting.
+It should be ACTIVE_HIGH.
 
-NeilBrown (3):
-  ARM: dts: omap3-gta04: Fix 'aux' gpio key flags.
-  ARM: dts: omap3-gta04: Add bma180 accelerometer.
-  ARM: dts: omap3-gta04: Enable mmc2 for wifi.
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ arch/arm/boot/dts/omap3-gta04.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/arm/boot/dts/omap3-gta04.dts | 58 ++++++++++++++++++++++++++++++++++++---
- 1 file changed, 54 insertions(+), 4 deletions(-)
-
+diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+index b9b55c9..9d37184 100644
+--- a/arch/arm/boot/dts/omap3-gta04.dts
++++ b/arch/arm/boot/dts/omap3-gta04.dts
+@@ -32,7 +32,7 @@
+ 		aux-button {
+ 			label = "aux";
+ 			linux,code = <169>;
+-			gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
++			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+ 			gpio-key,wakeup;
+ 		};
+ 	};
 -- 
 1.8.3.2
 
