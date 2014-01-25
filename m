@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaAYWRa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 17:17:30 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52950 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752322AbaAYWR2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 17:17:28 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
-Date: Sat, 25 Jan 2014 23:31:43 +0100
-Message-ID: <2010872.ETICEKhYmO@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-rc8+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140125161817.GB25531@khazad-dum.debian.net>
-References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <4387759.ffnsEjDaad@vostro.rjw.lan> <20140125161817.GB25531@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	id S1752435AbaAYW2S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 17:28:18 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752104AbaAYW2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 17:28:17 -0500
+From: Richard Weinberger <richard@nod.at>
+To: kishon@ti.com
+Cc: linux-kernel@vger.kernel.org, mporter@linaro.org, balbi@ti.com,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/2] phy,phy-bcm-kona-usb2.c: Add dependency on HAS_IOMEM
+Date: Sat, 25 Jan 2014 23:28:02 +0100
+Message-Id: <1390688882-4885-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 25, 2014 02:18:17 PM Henrique de Moraes Holschuh wrote:
-> On Sat, 25 Jan 2014, Rafael J. Wysocki wrote:
-> > On Saturday, January 25, 2014 02:53:24 PM Rafael J. Wysocki wrote:
-> > > On Saturday, January 25, 2014 11:03:09 AM Jörg Otte wrote:
-> > > > Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
-> > > > 
-> > > > ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
-> > > > ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
-> > > > ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
-> > > > ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
-> > > > 
-> > > > I don't have CPUs 4..7! Error messages regarding not existing
-> > > > CPUs should not be displayed.
-> > > > kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
-> > > > 
-> > > > This is a regression. I never saw this messages before.
-> > > 
-> > > Does your system show any other suspicious symptoms or are you worried about
-> > > those messages only?
-> > 
-> > Gerry, this is your commit b981513f806d (ACPI / scan: bail out early if failed
-> > to parse APIC ID for CPU).  Apparently, the BIOS has room for 4 CPUs more than
-> > there actually are in the system.  Maybe we can reduce the log level of those
-> > messages to avoid ringing bells unnecessarily?
-> 
-> It is standard practice (at least in SuperMicro boxes, but I've also seen it
-> elsewhere) for the BIOS to have ACPI tables mentioning all cores supported
-> by the biggest core-count CPU topology possible by the motherboard.  The
-> cores you don't have are reported as if they were hotpluggable but absent,
-> even if they will *never* show up at runtime.  Meh.
-> 
-> So yes, such warnings will get annoying *very* quickly.
+On archs like S390 or um this driver cannot build nor work.
+Make it depend on HAS_IOMEM to bypass build failures.
 
-Well, what about using acpi_handle_debug() in there, then?
+drivers/phy/phy-bcm-kona-usb2.c:114: undefined reference to `devm_ioremap_resource'
 
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/phy/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index afa2354..79e3c70 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -61,6 +61,7 @@ config PHY_EXYNOS_DP_VIDEO
+ config BCM_KONA_USB2_PHY
+ 	tristate "Broadcom Kona USB2 PHY Driver"
+ 	depends on GENERIC_PHY
++	depends on HAS_IOMEM
+ 	help
+ 	  Enable this to support the Broadcom Kona USB 2.0 PHY.
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.4
+
