@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaAYHlM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 02:41:12 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:59843 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaAYHlK (ORCPT
+	id S1751802AbaAYHrn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 02:47:43 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46357 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaAYHrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 02:41:10 -0500
-Date: Sat, 25 Jan 2014 08:41:07 +0100
+	Sat, 25 Jan 2014 02:47:42 -0500
+Date: Sat, 25 Jan 2014 08:47:38 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabled APICs being counted as processors ?
-Message-ID: <20140125074107.GA10565@gmail.com>
-References: <20140123221316.GA23367@redhat.com>
+To: Kees Cook <keescook@chromium.org>, Adrian Hunter <adrian.hunter@intel.com>
+Cc: crash-utility@redhat.com, linux-kernel@vger.kernel.org,
+        Dave Anderson <anderson@redhat.com>, Andrew Honig <ahonig@google.com>,
+        Eugene Surovegin <surovegin@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
+Message-ID: <20140125074738.GB10565@gmail.com>
+References: <20140123173120.GA25474@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140123221316.GA23367@redhat.com>
+In-Reply-To: <20140123173120.GA25474@www.outflux.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dave Jones <davej@redhat.com> wrote:
+* Kees Cook <keescook@chromium.org> wrote:
 
-> I have a system with 4 cores (configured with CONFIG_NR_CPUS=4) that shows during boot..
+> From: Eugene Surovegin <surovegin@google.com>
 > 
-> [    0.000000] smpboot: 8 Processors exceeds NR_CPUS limit of 4
+> Include kASLR offset in VMCOREINFO ELF notes to assist in debugging.
 > 
-> it looks like this is because..
+> Signed-off-by: Eugene Surovegin <surovegin@google.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> v2:
+>  - make sure "From:" got sent correctly
+> ---
+>  arch/x86/kernel/machine_kexec_64.c |    2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x04] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x06] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0xff] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0xff] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0xff] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0xff] disabled)
-> 
-> Should the CPU counting code be ignoring those disabled APICs ?
+> diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+> index 4eabc160696f..679cef0791cd 100644
+> --- a/arch/x86/kernel/machine_kexec_64.c
+> +++ b/arch/x86/kernel/machine_kexec_64.c
+> @@ -279,5 +279,7 @@ void arch_crash_save_vmcoreinfo(void)
+>  	VMCOREINFO_SYMBOL(node_data);
+>  	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
+>  #endif
+> +	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
+> +			      (unsigned long)&_text - __START_KERNEL);
+>  }
 
-Hm, so to the kernel it looks like as if those were 'possible CPUs', 
-in theory hotpluggable. Not sure what they are - disabled cores in an 
-8-core system? Or BIOS reporting crap?
+I've Cc:-ed Adrian Hunter, who has sent the following kaslr fixes for 
+perf yesterday:
 
-But perhaps the boot message could be improved to say something like:
+  http://lkml.org/lkml/2014/1/24/220
 
-> [    0.000000] smpboot: 8 possible processors exceeds NR_CPUS limit of 4
-
-?
+Adrian, is this patch the right solution from the perf tooling 
+perspective?
 
 Thanks,
 
