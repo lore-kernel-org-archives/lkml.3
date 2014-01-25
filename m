@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaAYVb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 16:31:56 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:59771 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341AbaAYV3m (ORCPT
+	id S1753287AbaAYVfD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 16:35:03 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57318 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaAYVfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 16:29:42 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk
-Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        neilb@suse.de, hns@goldelico.com
-Subject: [PATCH 4/9] ARM: dts: omap3-gta04: Enable mmc2 for wifi.
-Date: Sat, 25 Jan 2014 22:28:58 +0100
-Message-Id: <1390685343-11663-5-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1390685343-11663-1-git-send-email-marek@goldelico.com>
-References: <1390685343-11663-1-git-send-email-marek@goldelico.com>
+	Sat, 25 Jan 2014 16:35:00 -0500
+Message-ID: <1390685686.5522.21.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.12.8-rt11
+From: Mike Galbraith <bitbucket@online.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Date: Sat, 25 Jan 2014 22:34:46 +0100
+In-Reply-To: <20140125134519.GA9845@linutronix.de>
+References: <20140125134519.GA9845@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:N74lBdLL1s8s7+ojs4GJ2XwAJVUHY4R4s2iEE9p4Qzz
+ +w6BD6x4k5PxCBrJFDzG/+i4CeFPHY6y6ypmumn/wYqOzHDlc3
+ qYi4kkvfp6534nMXMIJhKpZBR9p+SApVvIBegh8jksxzSMuwSc
+ G9KNn2uu0LuLuOmTL6JG8PxC1X5HJ32a1r0Q8IW5tgxK7h34vP
+ y9zmPt+Ggi75WT2OVPMGU+aZezrx0jBBiaO5Pf+6mDxsuAzY7D
+ XW9y4HvpdVRHlhCXuvRAPw9Wtb1poHZ8SwMc+BpaSb3tnI88pb
+ gZnLydseVzqW+p7rltbKRBFJpbjvx2f1UPLsWeZV0T/DvmoBWx
+ SspYLqLpyKIKkSZhSS5MV/EROlVzLr6yc5Oh5TJ21aNkPtDK+Q
+ Y4l/Osf5qq3cQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+On Sat, 2014-01-25 at 14:45 +0100, Sebastian Andrzej Siewior wrote: 
+> Dear RT folks!
+> 
+> I'm pleased to announce the v3.12.8-rt11 patch set.
+> 
+> Changes since v3.12.8-rt10
+> - The "do not to raise the timer softirq unconditionally" resulted a few
+>   boot lockups on a few boxes. Steven found the problem and sent a fix.
+>   Thank you Steven.
 
-This requires vaux4.
+That fix _appears_ to have fixed up the runtime lockups I was hitting on
+64 core box as well.  I don't have nohz_full enabled atm, but the nmi
+watchdog was reliably barking either way, and while box could remain up
+for quite a while, it should have died by now.  I'll let it grind away
+for the rest of the weekend.
 
-Reset line isn't used yet, so wifi isn't reliable.
-But it does work once per boot.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- arch/arm/boot/dts/omap3-gta04.dts | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 6011151..7e09410 100644
---- a/arch/arm/boot/dts/omap3-gta04.dts
-+++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -79,6 +79,11 @@
- 		reg = <0x48>;
- 		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
- 		interrupt-parent = <&intc>;
-+		vaux4: regulator-vaux4 {
-+			compatible = "ti,twl4030-vaux4";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <3150000>;
-+		};
- 	};
- };
- 
-@@ -154,7 +159,9 @@
- };
- 
- &mmc2 {
--	status = "disabled";
-+	vmmc-supply = <&vaux4>;
-+	bus-width = <4>;
-+	ti,non-removable;
- };
- 
- &mmc3 {
--- 
-1.8.3.2
+-Mike
 
