@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaAYWCD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 17:02:03 -0500
-Received: from mail-oa0-f67.google.com ([209.85.219.67]:53437 "EHLO
-	mail-oa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaAYWCB (ORCPT
+	id S1752705AbaAYWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 17:11:25 -0500
+Received: from yotta.elopez.com.ar ([31.220.24.173]:45543 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355AbaAYWLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 17:02:01 -0500
-From: "Network Nut" <sillystack@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: WaitForMultipleObjects/etc. In Kernel
-Date: Sat, 25 Jan 2014 16:01:53 -0600
-Message-ID: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com>
+	Sat, 25 Jan 2014 17:11:24 -0500
+Message-ID: <52E4367B.3090608@elopez.com.ar>
+Date: Sat, 25 Jan 2014 19:11:07 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac8aGPoR6zLRzcPoSoO7y+ylNcQ9tA==
-Content-Language: en-us
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <52E42D6A.5050508@elopez.com.ar> <52E43046.1030105@gmail.com>
+In-Reply-To: <52E43046.1030105@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Sebastian,
 
-This is my first post to anything Linux, so if there is a better mailing
-list, please let me know.
+El 25/01/14 18:44, Sebastian Hesselbarth escribió:
+> On 01/25/2014 10:32 PM, Emilio López wrote:
+>> El 25/01/14 15:19, Sebastian Hesselbarth escribió:
+>>> This patch set fixes clk init order that went upside-down with
+>>> v3.14. I haven't really investigated what caused this, but I assume
+>>> it is related with DT node reordering by addresses.
+>>
+>> The framework should be able to deal with unordered registration. I am
+>> not very familiar with the mvebu driver though, do you have a valid
+>> reason to require a specific order?
+>
+> Emilio,
+>
+> I rather think that everthing registered with CLK_OF_DECLARE cannot
+> deal with unordered registration. The callback passed to CLK_OF_DECLARE
+> has to have void as return value, so there is no way to pass errors,
+> e.g. -EPROBE_DEFER, back to of_clk_init.
 
-I think that the facility by which a thread can block while waiting for any
-of several synchronization primitives (*mutex*, *semaphore*, *event*,
-*waitable
-timer*)...is not only "nice to have", but fundamental to complex (clean)
-multi-threaded programming. Of course, this facility is available on
-Windows as *WaitForMultipleObjects *with all the associated functions.
+Indeed. What I meant is that the framework works fine if you first 
+register a child clock that refers to a not yet registered parent, and 
+then register the parent. The registration need not be strictly ordered.
 
-That said, I have a C++ project on Windows that is nearly 100% portable.
-The part that is not portable is mostly the synchronization elements. Every
-year or so I take a cursory look at Linux's (Unix's) synchronization model,
-and the process thread model, and...I guess you have heard it before - it's
-simply not the same.
+> The reason for this ordering is that the clock gates depend on core
+> clocks. It is always that way, so merging both init functions isn't
+> that odd.
 
-I have also seen various attempts on the web to create wrapper functions
-that provide a Windows synchro API on Linux, but again, the result is never
-quite the same. IBM, in their attempt and exposition, admits this. It is
-clear, at least to me, that if one wants true ability to wait for any of
-the various synchronization objects simultaneously, there needs to be
-deliberate, explicit kernel support.
+If your only dependency is the parent name, and you can use DT or 
+something else to get it, then you don't need to enforce an order.
 
-I was wondering:
+>>> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+>>> registered before core clocks driver. Unfortunately, we cannot
+>>> return -EPROBE_DEFER in drivers initialized by clk_of_init.
+>>
+>> Why would you need to do so? After a quick inspection on the code, I see
+>> you may have problems on mvebu_clk_gating_setup() when getting the
+>> default parent clock name, but I believe you could solve it in an easier
+>> way by using of_clk_get_parent_name().
+>
+> Ok, I'll look if using of_clk_get_parent_name will help here. But again,
+> I can see that clk-gating driver gets registered before core-clk driver.
+> There may be no code to give you the parent name at that time.
 
-   1. What is the likelihood that the guardians of the kernel would even
-   allow something so fundamentally different inside?
-   2. My gut feeling is that adding such support would fundamentally change
+After looking at some of the armada*.dtsi, I see you don't list the 
+clock names on the coreclk node, so of_clk_get_parent_name may not be of 
+much value after all.
 
+Cheers,
 
-   other aspects of Linux. For example, I am vaguely familiar with asio, but
-   to do it the way it was done in Windows...
-
-Finally, this is not a situation where the end-game is having a kernel of
-my own that has such support. Support would need to be pre-existing for the
-users of my project.
-
-Please note that I am not a Windows bigot trying to impose a
-Microsoft-centric world-view on Linux. I think this facility transcends any
-particular OS, and I feel that it is merely fortunate coincidence that the
-Microsoft (DEC) engineers had the inclination to do it.
-
--Nut
-
+Emilio
