@@ -1,192 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaAYSfn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 13:35:43 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:61763 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaAYSef (ORCPT
+	id S1753043AbaAYSgJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 13:36:09 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:34329 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752985AbaAYSgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 13:34:35 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/11] pinctrl: mvebu: dove: use remapped mpp4 register
-Date: Sat, 25 Jan 2014 19:34:14 +0100
-Message-Id: <1390674856-4993-10-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Sat, 25 Jan 2014 13:36:03 -0500
+Date: Sat, 25 Jan 2014 13:36:00 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: [BUG - v3.10.27] sit: Bad list pointer
+Message-ID: <20140125133600.7482d428@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have an ioremapped mpp4 register, get rid of hardcoded
-physical addresses. While at it, also remove DOVE_ prefix from those
-macros.
+On 3.10.27, loading and then unloading the sit module gives me the
+following bug:
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/pinctrl/mvebu/pinctrl-dove.c | 54 +++++++++++++++++++-----------------
- 1 file changed, 28 insertions(+), 26 deletions(-)
+[   35.400878] sit: IPv6 over IPv4 tunneling driver
+[   36.959308] ------------[ cut here ]------------
+[   36.963983] WARNING: at /home/rostedt/work/git/linux-rt.git/lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+[   36.973874] list_del corruption. prev->next should be ffff88011656d070, but was ffff880115fe5ea8
+[   36.982684] Modules linked in: sit(-) ip_tunnel tunnel4 bnep lockd bluetooth nf_conntrack_ipv4 ip6t_REJECT nf_defrag_ipv4 nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec tpm_infineon snd_hwdep hp_wmi rfkill tpm_tis tpm coretemp snd_seq lpc_ich snd_seq_device snd_pcm sparse_keymap uinput serio_raw pcspkr mfd_core tpm_bios i2c_i801 microcode wmi snd_page_alloc snd_timer snd soundcore i915 e1000e i2c_algo_bit ptp drm_kms_helper crc32c_intel drm pps_core i2c_core video sunrpc
+[   37.034430] CPU: 0 PID: 1071 Comm: rmmod Not tainted 3.10.27-test #143
+[   37.040972] Hardware name: Hewlett-Packard HP Compaq Pro 6300 SFF/339A, BIOS K01 v02.05 05/07/2012
+[   37.049962]  ffffffff81a10e78 ffff880115fe5d18 ffffffff8161b3c7 ffff880115fe5d58
+[   37.057439]  ffffffff8104b2a0 ffff880115fe5dd8 ffff880115fe5df8 ffff88011656d070
+[   37.064911]  0000000000000080 0000000000000018 ffff880115cb4000 ffff880115fe5db8
+[   37.072405] Call Trace:
+[   37.074869]  [<ffffffff8161b3c7>] dump_stack+0x19/0x1b
+[   37.080031]  [<ffffffff8104b2a0>] warn_slowpath_common+0x70/0xa0
+[   37.086051]  [<ffffffff8104b386>] warn_slowpath_fmt+0x46/0x50
+[   37.091814]  [<ffffffff812f56a1>] __list_del_entry+0xa1/0xd0
+[   37.097491]  [<ffffffff815168a5>] unregister_netdevice_queue+0x35/0xa0
+[   37.104036]  [<ffffffffa038df82>] sit_exit_net+0xc2/0xf0 [sit]
+[   37.109893]  [<ffffffff81511278>] ops_exit_list.isra.4+0x38/0x60
+[   37.115917]  [<ffffffff815113d0>] unregister_pernet_operations+0x70/0xb0
+[   37.122633]  [<ffffffff8151143e>] unregister_pernet_device+0x2e/0x60
+[   37.129005]  [<ffffffffa038f86f>] sit_cleanup+0x2d/0x7be [sit]
+[   37.134864]  [<ffffffff810b0aee>] SyS_delete_module+0x19e/0x2a0
+[   37.140801]  [<ffffffff8162983b>] tracesys+0xdd/0xe2
+[   37.145779] ---[ end trace e45e22e840e55d00 ]---
+[   37.150427] ------------[ cut here ]------------
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index 79106e7ecdd0..0c7616e086b2 100644
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -46,18 +46,20 @@
- #define  DOVE_AU1_SPDIFO_GPIO_EN	BIT(1)
- #define  DOVE_NAND_GPIO_EN		BIT(0)
- #define DOVE_GPIO_LO_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0400)
--#define DOVE_MPP_CTRL4_VIRT_BASE	(DOVE_GPIO_LO_VIRT_BASE + 0x40)
--#define  DOVE_SPI_GPIO_SEL		BIT(5)
--#define  DOVE_UART1_GPIO_SEL		BIT(4)
--#define  DOVE_AU1_GPIO_SEL		BIT(3)
--#define  DOVE_CAM_GPIO_SEL		BIT(2)
--#define  DOVE_SD1_GPIO_SEL		BIT(1)
--#define  DOVE_SD0_GPIO_SEL		BIT(0)
+Investigating differences between 3.10.27 and newer kernels, I found
+that the below change is not there. It was part of commit 205983c43700
+"sit: allow to use rtnl ops on fb tunnel" which happens to be
+backported to 3.10 but in 3.10 backport commit 20300db1bd1b9 this part
+of the commit is missing.
+
+When I add this change, the removing of the module no longer gives this
+bug.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 0491264..02300e8 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1592,7 +1592,6 @@ static void __net_exit sit_exit_net(struct net *net)
  
- /* MPP Base registers */
- #define PMU_MPP_GENERAL_CTRL	0x10
- #define  AU0_AC97_SEL		BIT(16)
- 
-+/* MPP Control 4 register */
-+#define MPP_CTRL4		0x40
-+#define  SPI_GPIO_SEL		BIT(5)
-+#define  UART1_GPIO_SEL		BIT(4)
-+#define  AU1_GPIO_SEL		BIT(3)
-+#define  CAM_GPIO_SEL		BIT(2)
-+#define  SD1_GPIO_SEL		BIT(1)
-+#define  SD0_GPIO_SEL		BIT(0)
-+
- #define MPPS_PER_REG	8
- #define MPP_BITS	4
- #define MPP_MASK	0xf
-@@ -117,24 +119,24 @@ static int dove_pmu_mpp_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- static int dove_mpp4_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
- 			      unsigned long *config)
- {
--	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
-+	unsigned long mpp4 = readl(mpp4_base + MPP_CTRL4);
- 	unsigned long mask;
- 
- 	switch (ctrl->pid) {
- 	case 24: /* mpp_camera */
--		mask = DOVE_CAM_GPIO_SEL;
-+		mask = CAM_GPIO_SEL;
- 		break;
- 	case 40: /* mpp_sdio0 */
--		mask = DOVE_SD0_GPIO_SEL;
-+		mask = SD0_GPIO_SEL;
- 		break;
- 	case 46: /* mpp_sdio1 */
--		mask = DOVE_SD1_GPIO_SEL;
-+		mask = SD1_GPIO_SEL;
- 		break;
- 	case 58: /* mpp_spi0 */
--		mask = DOVE_SPI_GPIO_SEL;
-+		mask = SPI_GPIO_SEL;
- 		break;
- 	case 62: /* mpp_uart1 */
--		mask = DOVE_UART1_GPIO_SEL;
-+		mask = UART1_GPIO_SEL;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -148,24 +150,24 @@ static int dove_mpp4_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
- static int dove_mpp4_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 			      unsigned long config)
- {
--	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
-+	unsigned long mpp4 = readl(mpp4_base + MPP_CTRL4);
- 	unsigned long mask;
- 
- 	switch (ctrl->pid) {
- 	case 24: /* mpp_camera */
--		mask = DOVE_CAM_GPIO_SEL;
-+		mask = CAM_GPIO_SEL;
- 		break;
- 	case 40: /* mpp_sdio0 */
--		mask = DOVE_SD0_GPIO_SEL;
-+		mask = SD0_GPIO_SEL;
- 		break;
- 	case 46: /* mpp_sdio1 */
--		mask = DOVE_SD1_GPIO_SEL;
-+		mask = SD1_GPIO_SEL;
- 		break;
- 	case 58: /* mpp_spi0 */
--		mask = DOVE_SPI_GPIO_SEL;
-+		mask = SPI_GPIO_SEL;
- 		break;
- 	case 62: /* mpp_uart1 */
--		mask = DOVE_UART1_GPIO_SEL;
-+		mask = UART1_GPIO_SEL;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -175,7 +177,7 @@ static int dove_mpp4_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 	if (config)
- 		mpp4 |= mask;
- 
--	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
-+	writel(mpp4, mpp4_base + MPP_CTRL4);
- 
- 	return 0;
+ 	rtnl_lock();
+ 	sit_destroy_tunnels(sitn, &list);
+-	unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
+ 	unregister_netdevice_many(&list);
+ 	rtnl_unlock();
  }
-@@ -230,13 +232,13 @@ static int dove_audio0_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- static int dove_audio1_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
- 				unsigned long *config)
- {
--	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
-+	unsigned long mpp4 = readl(mpp4_base + MPP_CTRL4);
- 	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
- 	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
- 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
- 
- 	*config = 0;
--	if (mpp4 & DOVE_AU1_GPIO_SEL)
-+	if (mpp4 & AU1_GPIO_SEL)
- 		*config |= BIT(3);
- 	if (sspc1 & DOVE_SSP_ON_AU1)
- 		*config |= BIT(2);
-@@ -257,7 +259,7 @@ static int dove_audio1_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
- static int dove_audio1_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 				unsigned long config)
- {
--	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
-+	unsigned long mpp4 = readl(mpp4_base + MPP_CTRL4);
- 	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
- 	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
- 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
-@@ -268,7 +270,7 @@ static int dove_audio1_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 	gcfg2 &= ~DOVE_TWSI_OPTION3_GPIO;
- 	gmpp &= ~DOVE_AU1_SPDIFO_GPIO_EN;
- 	sspc1 &= ~DOVE_SSP_ON_AU1;
--	mpp4 &= ~DOVE_AU1_GPIO_SEL;
-+	mpp4 &= ~AU1_GPIO_SEL;
- 
- 	if (config & BIT(0))
- 		gcfg2 |= DOVE_TWSI_OPTION3_GPIO;
-@@ -277,9 +279,9 @@ static int dove_audio1_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 	if (config & BIT(2))
- 		sspc1 |= DOVE_SSP_ON_AU1;
- 	if (config & BIT(3))
--		mpp4 |= DOVE_AU1_GPIO_SEL;
-+		mpp4 |= AU1_GPIO_SEL;
- 
--	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
-+	writel(mpp4, mpp4_base + MPP_CTRL4);
- 	writel(sspc1, DOVE_SSP_CTRL_STATUS_1);
- 	writel(gmpp, DOVE_MPP_GENERAL_VIRT_BASE);
- 	writel(gcfg2, DOVE_GLOBAL_CONFIG_2);
--- 
-1.8.5.2
-
