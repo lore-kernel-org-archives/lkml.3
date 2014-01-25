@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaAYRvm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 12:51:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50435 "EHLO
+	id S1752484AbaAYRv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 12:51:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500AbaAYRvj (ORCPT
+	with ESMTP id S1752103AbaAYRvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 12:51:39 -0500
-Date: Sat, 25 Jan 2014 09:52:38 -0800
+	Sat, 25 Jan 2014 12:51:05 -0500
+Date: Sat, 25 Jan 2014 09:52:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.12.9
-Message-ID: <20140125175238.GB5336@kroah.com>
-References: <20140125175228.GA5336@kroah.com>
+Subject: Re: Linux 3.10.28
+Message-ID: <20140125175204.GB4864@kroah.com>
+References: <20140125175156.GA4864@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140125175228.GA5336@kroah.com>
+In-Reply-To: <20140125175156.GA4864@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 diff --git a/Makefile b/Makefile
-index 5d0ec13bb77d..4ee77eaa7b1f 100644
+index 09675a57059c..addf1b007fe3 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,6 +1,6 @@
  VERSION = 3
- PATCHLEVEL = 12
--SUBLEVEL = 8
-+SUBLEVEL = 9
+ PATCHLEVEL = 10
+-SUBLEVEL = 27
++SUBLEVEL = 28
  EXTRAVERSION =
- NAME = One Giant Leap for Frogkind
+ NAME = TOSSUG Baby Fish
  
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index f35906b3d8c9..41960fb0daff 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -171,7 +171,7 @@ void __init arm_dt_init_cpu_maps(void)
+diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+index 4fb074c446bf..163b160c69e9 100644
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -73,6 +73,7 @@ void machine_crash_nonpanic_core(void *unused)
+ 	crash_save_cpu(&regs, smp_processor_id());
+ 	flush_cache_all();
  
- bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
- {
--	return (phys_id & MPIDR_HWID_BITMASK) == cpu_logical_map(cpu);
-+	return phys_id == cpu_logical_map(cpu);
- }
- 
- /**
++	set_cpu_online(smp_processor_id(), false);
+ 	atomic_dec(&waiting_for_crash_ipi);
+ 	while (1)
+ 		cpu_relax();
 diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
-index 8e44973b0139..2f176a495c32 100644
+index e7df2dd43a40..5ed19e88874b 100644
 --- a/arch/arm/mach-highbank/highbank.c
 +++ b/arch/arm/mach-highbank/highbank.c
-@@ -66,6 +66,7 @@ void highbank_set_cpu_jump(int cpu, void *jump_addr)
- 
+@@ -68,6 +68,7 @@ void highbank_set_cpu_jump(int cpu, void *jump_addr)
+ #ifdef CONFIG_CACHE_L2X0
  static void highbank_l2x0_disable(void)
  {
 +	outer_flush_all();
@@ -62,10 +61,10 @@ index 8e44973b0139..2f176a495c32 100644
  	highbank_smc1(0x102, 0x0);
  }
 diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
-index 57911430324e..3f44b162fcab 100644
+index 13b27ffaf45e..ab99ab8fce8a 100644
 --- a/arch/arm/mach-omap2/omap4-common.c
 +++ b/arch/arm/mach-omap2/omap4-common.c
-@@ -163,6 +163,7 @@ void __iomem *omap4_get_l2cache_base(void)
+@@ -162,6 +162,7 @@ void __iomem *omap4_get_l2cache_base(void)
  
  static void omap4_l2x0_disable(void)
  {
@@ -74,7 +73,7 @@ index 57911430324e..3f44b162fcab 100644
  	omap_smc1(0x102, 0x0);
  }
 diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index e09f0bfb7b8f..4b8e4d3cd6ea 100644
+index 5f0581e713c2..b46601ada813 100644
 --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
 +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
 @@ -10,6 +10,7 @@
@@ -138,7 +137,7 @@ index e09f0bfb7b8f..4b8e4d3cd6ea 100644
 +
 +#endif
 +
- static int
+ static int __cpuinit
  perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
  {
 @@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
@@ -163,10 +162,10 @@ index e09f0bfb7b8f..4b8e4d3cd6ea 100644
  	ibs_caps = caps;
  	/* make ibs_caps visible to other cpus: */
 diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index f0dcb0ceb6a2..15a569a47b4d 100644
+index 8f3e2dec1df3..94e52cf064b0 100644
 --- a/arch/x86/kernel/entry_32.S
 +++ b/arch/x86/kernel/entry_32.S
-@@ -1085,7 +1085,7 @@ ENTRY(ftrace_caller)
+@@ -1075,7 +1075,7 @@ ENTRY(ftrace_caller)
  	pushl $0	/* Pass NULL as regs pointer */
  	movl 4*4(%esp), %eax
  	movl 0x4(%ebp), %edx
@@ -175,7 +174,7 @@ index f0dcb0ceb6a2..15a569a47b4d 100644
  	subl $MCOUNT_INSN_SIZE, %eax
  
  .globl ftrace_call
-@@ -1143,7 +1143,7 @@ ENTRY(ftrace_regs_caller)
+@@ -1133,7 +1133,7 @@ ENTRY(ftrace_regs_caller)
  	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
  	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
  	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
@@ -185,7 +184,7 @@ index f0dcb0ceb6a2..15a569a47b4d 100644
  
  GLOBAL(ftrace_regs_call)
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b077f4cc225a..9ce256739175 100644
+index 727208941030..7ac938a4bfab 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
 @@ -88,7 +88,7 @@ END(function_hook)
@@ -197,23 +196,11 @@ index b077f4cc225a..9ce256739175 100644
  
  	/* Load ip into the first parameter */
  	movq RIP(%rsp), %rdi
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index ab19263baf39..fb78bb9ad8f6 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -156,7 +156,6 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
- 	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
- 	{ "INT33B2", },
--	{ "INT33FC", },
- 
- 	{ }
- };
 diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-index a069b5e2a2d2..920cd19edc69 100644
+index 16e674af4d57..7ce38344e484 100644
 --- a/drivers/gpu/drm/i915/intel_ddi.c
 +++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -961,12 +961,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
+@@ -1193,12 +1193,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
  	enum pipe pipe;
  	struct intel_crtc *intel_crtc;
  
@@ -234,10 +221,10 @@ index a069b5e2a2d2..920cd19edc69 100644
  		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
  								 pipe);
 diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index aad6f7bfc589..dd2d542e4651 100644
+index 15358add4f70..54ae96f7bec6 100644
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10592,9 +10592,9 @@ void intel_modeset_gem_init(struct drm_device *dev)
+@@ -9456,9 +9456,9 @@ void intel_modeset_gem_init(struct drm_device *dev)
  
  	intel_setup_overlay(dev);
  
@@ -250,7 +237,7 @@ index aad6f7bfc589..dd2d542e4651 100644
  
  void intel_modeset_cleanup(struct drm_device *dev)
 diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 78be66176840..942509892895 100644
+index 658ce3a8717f..0cf25101b3c3 100644
 --- a/drivers/hwmon/coretemp.c
 +++ b/drivers/hwmon/coretemp.c
 @@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
@@ -263,10 +250,10 @@ index 78be66176840..942509892895 100644
  #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
  #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index ba46d9749a0b..015bc455cf1c 100644
+index 2290b95009de..a2dda416c9cb 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -1119,6 +1119,7 @@ static int super_90_validate(struct mddev *mddev, struct md_rdev *rdev)
+@@ -1118,6 +1118,7 @@ static int super_90_validate(struct mddev *mddev, struct md_rdev *rdev)
  	rdev->raid_disk = -1;
  	clear_bit(Faulty, &rdev->flags);
  	clear_bit(In_sync, &rdev->flags);
@@ -274,7 +261,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  	clear_bit(WriteMostly, &rdev->flags);
  
  	if (mddev->raid_disks == 0) {
-@@ -1197,6 +1198,8 @@ static int super_90_validate(struct mddev *mddev, struct md_rdev *rdev)
+@@ -1196,6 +1197,8 @@ static int super_90_validate(struct mddev *mddev, struct md_rdev *rdev)
  		 */
  		if (ev1 < mddev->bitmap->events_cleared)
  			return 0;
@@ -283,7 +270,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  	} else {
  		if (ev1 < mddev->events)
  			/* just a hot-add of a new device, leave raid_disk at -1 */
-@@ -1605,6 +1608,7 @@ static int super_1_validate(struct mddev *mddev, struct md_rdev *rdev)
+@@ -1604,6 +1607,7 @@ static int super_1_validate(struct mddev *mddev, struct md_rdev *rdev)
  	rdev->raid_disk = -1;
  	clear_bit(Faulty, &rdev->flags);
  	clear_bit(In_sync, &rdev->flags);
@@ -291,7 +278,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  	clear_bit(WriteMostly, &rdev->flags);
  
  	if (mddev->raid_disks == 0) {
-@@ -1687,6 +1691,8 @@ static int super_1_validate(struct mddev *mddev, struct md_rdev *rdev)
+@@ -1686,6 +1690,8 @@ static int super_1_validate(struct mddev *mddev, struct md_rdev *rdev)
  		 */
  		if (ev1 < mddev->bitmap->events_cleared)
  			return 0;
@@ -300,7 +287,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  	} else {
  		if (ev1 < mddev->events)
  			/* just a hot-add of a new device, leave raid_disk at -1 */
-@@ -2830,6 +2836,7 @@ slot_store(struct md_rdev *rdev, const char *buf, size_t len)
+@@ -2829,6 +2835,7 @@ slot_store(struct md_rdev *rdev, const char *buf, size_t len)
  		else
  			rdev->saved_raid_disk = -1;
  		clear_bit(In_sync, &rdev->flags);
@@ -308,7 +295,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  		err = rdev->mddev->pers->
  			hot_add_disk(rdev->mddev, rdev);
  		if (err) {
-@@ -5773,6 +5780,7 @@ static int add_new_disk(struct mddev * mddev, mdu_disk_info_t *info)
+@@ -5761,6 +5768,7 @@ static int add_new_disk(struct mddev * mddev, mdu_disk_info_t *info)
  			    info->raid_disk < mddev->raid_disks) {
  				rdev->raid_disk = info->raid_disk;
  				set_bit(In_sync, &rdev->flags);
@@ -316,7 +303,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  			} else
  				rdev->raid_disk = -1;
  		} else
-@@ -7731,7 +7739,8 @@ static int remove_and_add_spares(struct mddev *mddev,
+@@ -7694,7 +7702,8 @@ static int remove_and_add_spares(struct mddev *mddev,
  		if (test_bit(Faulty, &rdev->flags))
  			continue;
  		if (mddev->ro &&
@@ -326,7 +313,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  			continue;
  
  		rdev->recovery_offset = 0;
-@@ -7812,9 +7821,12 @@ void md_check_recovery(struct mddev *mddev)
+@@ -7775,9 +7784,12 @@ void md_check_recovery(struct mddev *mddev)
  			 * As we only add devices that are already in-sync,
  			 * we can activate the spares immediately.
  			 */
@@ -342,7 +329,7 @@ index ba46d9749a0b..015bc455cf1c 100644
  		}
  
 diff --git a/drivers/md/md.h b/drivers/md/md.h
-index 608050c43f17..636756450a19 100644
+index 653f992b687a..ebe748e57416 100644
 --- a/drivers/md/md.h
 +++ b/drivers/md/md.h
 @@ -129,6 +129,9 @@ struct md_rdev {
@@ -356,10 +343,10 @@ index 608050c43f17..636756450a19 100644
  				 * be considerred for bvec_merge_fn but not
  				 * yet for actual IO
 diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 73dc8a377522..308575d23550 100644
+index 0add86821755..d2f8cd332b4a 100644
 --- a/drivers/md/raid10.c
 +++ b/drivers/md/raid10.c
-@@ -1319,7 +1319,7 @@ read_again:
+@@ -1321,7 +1321,7 @@ read_again:
  			/* Could not read all from this device, so we will
  			 * need another r10_bio.
  			 */
@@ -368,7 +355,7 @@ index 73dc8a377522..308575d23550 100644
  					   - bio->bi_sector);
  			r10_bio->sectors = max_sectors;
  			spin_lock_irq(&conf->device_lock);
-@@ -1327,7 +1327,7 @@ read_again:
+@@ -1329,7 +1329,7 @@ read_again:
  				bio->bi_phys_segments = 2;
  			else
  				bio->bi_phys_segments++;
@@ -377,7 +364,7 @@ index 73dc8a377522..308575d23550 100644
  			/* Cannot call generic_make_request directly
  			 * as that will be queued in __generic_make_request
  			 * and subsequent mempool_alloc might block
-@@ -3220,10 +3220,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+@@ -3198,10 +3198,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
  			if (j == conf->copies) {
  				/* Cannot recover, so abort the recovery or
  				 * record a bad block */
@@ -388,7 +375,7 @@ index 73dc8a377522..308575d23550 100644
  				if (any_working) {
  					/* problem is that there are bad blocks
  					 * on other device(s)
-@@ -3255,6 +3251,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+@@ -3233,6 +3229,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
  					mirror->recovery_disabled
  						= mddev->recovery_disabled;
  				}
@@ -400,10 +387,10 @@ index 73dc8a377522..308575d23550 100644
  			}
  		}
 diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 8a0665d04567..93174c6ab37c 100644
+index 4bed5454b8dc..51422999fd08 100644
 --- a/drivers/md/raid5.c
 +++ b/drivers/md/raid5.c
-@@ -3502,7 +3502,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+@@ -3391,7 +3391,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
  			 */
  			set_bit(R5_Insync, &dev->flags);
  
@@ -412,7 +399,7 @@ index 8a0665d04567..93174c6ab37c 100644
  			/* This flag does not apply to '.replacement'
  			 * only to .rdev, so make sure to check that*/
  			struct md_rdev *rdev2 = rcu_dereference(
-@@ -3515,7 +3515,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+@@ -3404,7 +3404,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
  			} else
  				clear_bit(R5_WriteError, &dev->flags);
  		}
@@ -421,23 +408,11 @@ index 8a0665d04567..93174c6ab37c 100644
  			/* This flag does not apply to '.replacement'
  			 * only to .rdev, so make sure to check that*/
  			struct md_rdev *rdev2 = rcu_dereference(
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 114f5ef4b73a..2832576d8b12 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -512,7 +512,6 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
- 
- static const struct acpi_device_id byt_gpio_acpi_match[] = {
- 	{ "INT33B2", 0 },
--	{ "INT33FC", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
 diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
-index 34ab0679e992..b95a8b3395ae 100644
+index 3d4878facc26..d919a9863e01 100644
 --- a/drivers/staging/comedi/drivers/addi_apci_1032.c
 +++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
-@@ -325,8 +325,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
+@@ -332,8 +332,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
  	s = &dev->subdevices[1];
  	if (dev->irq) {
  		dev->read_subdev = s;
@@ -449,10 +424,10 @@ index 34ab0679e992..b95a8b3395ae 100644
  		s->maxdata	= 1;
  		s->range_table	= &range_digital;
 diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
-index 78cea193504f..c9702bfa88be 100644
+index 6247fdcedcbf..71043a1c8500 100644
 --- a/drivers/staging/comedi/drivers/adl_pci9111.c
 +++ b/drivers/staging/comedi/drivers/adl_pci9111.c
-@@ -869,7 +869,7 @@ static int pci9111_auto_attach(struct comedi_device *dev,
+@@ -873,7 +873,7 @@ static int pci9111_auto_attach(struct comedi_device *dev,
  	pci9111_reset(dev);
  
  	if (pcidev->irq > 0) {
@@ -462,10 +437,10 @@ index 78cea193504f..c9702bfa88be 100644
  		if (ret)
  			return ret;
 diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index aaa22867e656..1440d0b4a7bc 100644
+index e2774f9ecd59..7a55fe70434a 100644
 --- a/drivers/tty/serial/amba-pl011.c
 +++ b/drivers/tty/serial/amba-pl011.c
-@@ -1537,6 +1537,8 @@ static int pl011_startup(struct uart_port *port)
+@@ -1543,6 +1543,8 @@ static int pl011_startup(struct uart_port *port)
  	/*
  	 * Provoke TX FIFO interrupt into asserting.
  	 */
@@ -474,7 +449,7 @@ index aaa22867e656..1440d0b4a7bc 100644
  	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
  	writew(cr, uap->port.membase + UART011_CR);
  	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1561,6 +1563,8 @@ static int pl011_startup(struct uart_port *port)
+@@ -1567,6 +1569,8 @@ static int pl011_startup(struct uart_port *port)
  	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
  	writew(cr, uap->port.membase + UART011_CR);
  
@@ -483,7 +458,7 @@ index aaa22867e656..1440d0b4a7bc 100644
  	/*
  	 * initialise the old status of the modem signals
  	 */
-@@ -1629,11 +1633,13 @@ static void pl011_shutdown(struct uart_port *port)
+@@ -1636,11 +1640,13 @@ static void pl011_shutdown(struct uart_port *port)
  	 * it during startup().
  	 */
  	uap->autorts = false;
@@ -498,10 +473,10 @@ index aaa22867e656..1440d0b4a7bc 100644
  	/*
  	 * disable break condition and fifos
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 89f96719a29b..f27c1d12a1fa 100644
+index da89cdfb21ab..9a59653d3449 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
-@@ -3064,8 +3064,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
+@@ -2686,8 +2686,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
  	 * thus don't need to be hashed.  They also don't need a name until a
  	 * user wants to identify the object in /proc/pid/fd/.  The little hack
  	 * below allows us to generate a name for these objects on demand:
@@ -515,12 +490,12 @@ index 89f96719a29b..f27c1d12a1fa 100644
 +	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))
  		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
  
- 	rcu_read_lock();
+ 	get_fs_root(current->fs, &root);
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 9f4935b8f208..3595180b62ac 100644
+index 3be57189efd5..e3ab1e4dc442 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -510,13 +510,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+@@ -505,13 +505,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
  	}
  	WARN_ON(inode->i_state & I_SYNC);
  	/*
@@ -544,10 +519,10 @@ index 9f4935b8f208..3595180b62ac 100644
  	inode->i_state |= I_SYNC;
  	spin_unlock(&inode->i_lock);
 diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index 12987666e5f0..630db362a2d1 100644
+index 62b484e4a9e4..bc5dac400125 100644
 --- a/fs/gfs2/inode.c
 +++ b/fs/gfs2/inode.c
-@@ -1610,10 +1610,22 @@ static int setattr_chown(struct inode *inode, struct iattr *attr)
+@@ -1536,10 +1536,22 @@ static int setattr_chown(struct inode *inode, struct iattr *attr)
  	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
  		ogid = ngid = NO_GID_QUOTA_CHANGE;
  
@@ -571,7 +546,7 @@ index 12987666e5f0..630db362a2d1 100644
  	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
  	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
  		error = gfs2_quota_check(ip, nuid, ngid);
-@@ -1640,6 +1652,8 @@ out_end_trans:
+@@ -1566,6 +1578,8 @@ out_end_trans:
  	gfs2_trans_end(sdp);
  out_gunlock_q:
  	gfs2_quota_unlock(ip);
@@ -580,21 +555,8 @@ index 12987666e5f0..630db362a2d1 100644
  	return error;
  }
  
-diff --git a/fs/namespace.c b/fs/namespace.c
-index da5c49483430..84447dbcb650 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2888,7 +2888,7 @@ bool fs_fully_visible(struct file_system_type *type)
- 			struct inode *inode = child->mnt_mountpoint->d_inode;
- 			if (!S_ISDIR(inode->i_mode))
- 				goto next;
--			if (inode->i_nlink != 2)
-+			if (inode->i_nlink > 2)
- 				goto next;
- 		}
- 		visible = true;
 diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 9f6b486b6c01..a1a191634abc 100644
+index cbd66188a28b..958a5b57ed4a 100644
 --- a/fs/nilfs2/segment.c
 +++ b/fs/nilfs2/segment.c
 @@ -1440,17 +1440,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
@@ -621,37 +583,11 @@ index 9f6b486b6c01..a1a191634abc 100644
  		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
  		sci->sc_stage = prev_stage;
  	}
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index fe68a5a98583..7032518f8542 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -6,6 +6,8 @@
- #include <linux/proc_fs.h>
- #include <linux/elf.h>
- 
-+#include <asm/pgtable.h> /* for pgprot_t */
-+
- #define ELFCORE_ADDR_MAX	(-1ULL)
- #define ELFCORE_ADDR_ERR	(-2ULL)
- 
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 2ab11dc38077..5677fb58e688 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -447,7 +447,7 @@ static inline void i2c_set_adapdata(struct i2c_adapter *dev, void *data)
- static inline struct i2c_adapter *
- i2c_parent_is_i2c_adapter(const struct i2c_adapter *adapter)
- {
--#if IS_ENABLED(I2C_MUX)
-+#if IS_ENABLED(CONFIG_I2C_MUX)
- 	struct device *parent = adapter->dev.parent;
- 
- 	if (parent != NULL && parent->type == &i2c_adapter_type)
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8b6e55ee8855..fed08c0c543b 100644
+index e0c8528a41a4..3bf21c3502d0 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -762,11 +762,14 @@ static __always_inline void *lowmem_page_address(const struct page *page)
+@@ -766,11 +766,14 @@ static __always_inline void *lowmem_page_address(const struct page *page)
  #endif
  
  #if defined(WANT_PAGE_VIRTUAL)
@@ -671,42 +607,29 @@ index 8b6e55ee8855..fed08c0c543b 100644
  #define page_address_init()  do { } while(0)
  #endif
  
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 690cfacaed71..458953ca4d50 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1175,7 +1175,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	 * do not allow it to share a thread group or signal handlers or
- 	 * parent with the forking task.
- 	 */
--	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
-+	if (clone_flags & CLONE_SIGHAND) {
- 		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
- 		    (task_active_pid_ns(current) !=
- 				current->nsproxy->pid_ns_for_children))
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 47962456ed87..292a266e0d42 100644
+index 6bd22902d289..eb00e81601a5 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1154,7 +1154,7 @@ alloc:
- 		new_page = NULL;
+@@ -1166,7 +1166,7 @@ alloc:
  
  	if (unlikely(!new_page)) {
+ 		count_vm_event(THP_FAULT_FALLBACK);
 -		if (is_huge_zero_pmd(orig_pmd)) {
 +		if (!page) {
  			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
  					address, pmd, orig_pmd, haddr);
  		} else {
-@@ -1181,7 +1181,7 @@ alloc:
- 
- 	count_vm_event(THP_FAULT_ALLOC);
+@@ -1190,7 +1190,7 @@ alloc:
+ 		goto out;
+ 	}
  
 -	if (is_huge_zero_pmd(orig_pmd))
 +	if (!page)
  		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
  	else
  		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
-@@ -1207,7 +1207,7 @@ alloc:
+@@ -1215,7 +1215,7 @@ alloc:
  		page_add_new_anon_rmap(new_page, vma, haddr);
  		set_pmd_at(mm, haddr, pmd, entry);
  		update_mmu_cache_pmd(vma, address, pmd);
@@ -715,27 +638,36 @@ index 47962456ed87..292a266e0d42 100644
  			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
  			put_huge_zero_page();
  		} else {
-diff --git a/mm/util.c b/mm/util.c
-index eaf63fc2c92f..96da2d7c076c 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -387,7 +387,10 @@ struct address_space *page_mapping(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 
--	VM_BUG_ON(PageSlab(page));
-+	/* This happens if someone calls flush_dcache_page on slab page */
-+	if (unlikely(PageSlab(page)))
-+		return NULL;
-+
- 	if (unlikely(PageSwapCache(page))) {
- 		swp_entry_t entry;
- 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 6a7f9cab4ddb..7e3601ce51c6 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1499,10 +1499,16 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+ 	} else {
+-		set_page_hwpoison_huge_page(hpage);
+-		dequeue_hwpoisoned_huge_page(hpage);
+-		atomic_long_add(1 << compound_trans_order(hpage),
+-				&num_poisoned_pages);
++		/* overcommit hugetlb page will be freed to buddy */
++		if (PageHuge(page)) {
++			set_page_hwpoison_huge_page(hpage);
++			dequeue_hwpoisoned_huge_page(hpage);
++			atomic_long_add(1 << compound_order(hpage),
++					&num_poisoned_pages);
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
++		}
+ 	}
+ 	/* keep elevated page count for bad page */
+ 	return ret;
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 392a0445265c..25d5ebaf25f9 100644
+index 57f14185cf18..a7096e130c04 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -220,6 +220,14 @@ static int inode_alloc_security(struct inode *inode)
+@@ -219,6 +219,14 @@ static int inode_alloc_security(struct inode *inode)
  	return 0;
  }
  
@@ -750,7 +682,7 @@ index 392a0445265c..25d5ebaf25f9 100644
  static void inode_free_security(struct inode *inode)
  {
  	struct inode_security_struct *isec = inode->i_security;
-@@ -230,8 +238,16 @@ static void inode_free_security(struct inode *inode)
+@@ -229,8 +237,16 @@ static void inode_free_security(struct inode *inode)
  		list_del_init(&isec->list);
  	spin_unlock(&sbsec->isec_lock);
  
@@ -785,3 +717,16 @@ index aa47bcabb5f6..6fd9dd256a62 100644
  	u32 task_sid;		/* SID of creating task */
  	u32 sid;		/* SID of this object */
  	u16 sclass;		/* security class of this object */
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index eacec859f299..b4741b027a8f 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -282,7 +282,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+ 
+ 	event = find_cache_event(evsel);
+ 	if (!event)
+-		die("ug! no event found for type %" PRIu64, evsel->attr.config);
++		die("ug! no event found for type %" PRIu64, (u64)evsel->attr.config);
+ 
+ 	pid = raw_field_value(event, "common_pid", data);
+ 
