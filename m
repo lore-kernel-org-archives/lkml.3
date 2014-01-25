@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaAYOZA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 09:25:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52492 "EHLO
+	id S1752745AbaAYOZm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 09:25:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52540 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaAYOY4 (ORCPT
+	with ESMTP id S1752275AbaAYOZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 09:24:56 -0500
-Date: Sat, 25 Jan 2014 06:24:39 -0800
-From: tip-bot for Aaron Tomlin <tipbot@zytor.com>
-Message-ID: <tip-2397efb1bb17595b35f31abb40d95074ebc04f1b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, atomlin@redhat.com, tglx@linutronix.de,
-        rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, atomlin@redhat.com,
-        rientjes@google.com
-In-Reply-To: <1390239253-24030-2-git-send-email-atomlin@redhat.com>
-References: <1390239253-24030-2-git-send-email-atomlin@redhat.com>
+	Sat, 25 Jan 2014 09:25:39 -0500
+Date: Sat, 25 Jan 2014 06:24:58 -0800
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-15aa368255f249df0b2af630c9487bb5471bd7da@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, hughd@google.com,
+        alex.shi@linaro.org, riel@redhat.com, akpm@linux-foundation.org,
+        mgorman@suse.de, tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, hughd@google.com,
+        alex.shi@linaro.org, riel@redhat.com, akpm@linux-foundation.org,
+        mgorman@suse.de, tglx@linutronix.de, davidlohr@hp.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] sysctl: Add neg_one as a standard constraint
-Git-Commit-ID: 2397efb1bb17595b35f31abb40d95074ebc04f1b
+Subject: [tip:x86/urgent] x86/mm:
+  Clean up inconsistencies when flushing TLB ranges
+Git-Commit-ID: 15aa368255f249df0b2af630c9487bb5471bd7da
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,41 +30,71 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:24:45 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 25 Jan 2014 06:25:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2397efb1bb17595b35f31abb40d95074ebc04f1b
-Gitweb:     http://git.kernel.org/tip/2397efb1bb17595b35f31abb40d95074ebc04f1b
-Author:     Aaron Tomlin <atomlin@redhat.com>
-AuthorDate: Mon, 20 Jan 2014 17:34:12 +0000
+Commit-ID:  15aa368255f249df0b2af630c9487bb5471bd7da
+Gitweb:     http://git.kernel.org/tip/15aa368255f249df0b2af630c9487bb5471bd7da
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Tue, 21 Jan 2014 14:33:18 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 25 Jan 2014 08:59:53 +0100
+CommitDate: Sat, 25 Jan 2014 09:10:42 +0100
 
-sysctl: Add neg_one as a standard constraint
+x86/mm: Clean up inconsistencies when flushing TLB ranges
 
-Add neg_one to the list of standard constraints - will be used by the next patch.
+NR_TLB_LOCAL_FLUSH_ALL is not always accounted for correctly and
+the comparison with total_vm is done before taking
+tlb_flushall_shift into account.  Clean it up.
 
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: oleg@redhat.com
-Link: http://lkml.kernel.org/r/1390239253-24030-2-git-send-email-atomlin@redhat.com
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
+Reviewed-by: Alex Shi <alex.shi@linaro.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Hugh Dickins <hughd@google.com>
+Link: http://lkml.kernel.org/n/tip-Iz5gcahrgskIldvukulzi0hh@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sysctl.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/mm/tlb.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c8da99f..c398a58 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -122,6 +122,7 @@ extern int blk_iopoll_enabled;
- static int sixty = 60;
- #endif
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 05446c1..5176526 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -189,6 +189,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ {
+ 	unsigned long addr;
+ 	unsigned act_entries, tlb_entries = 0;
++	unsigned long nr_base_pages;
  
-+static int neg_one = -1;
- static int zero;
- static int __maybe_unused one = 1;
- static int __maybe_unused two = 2;
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -210,18 +211,17 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 		tlb_entries = tlb_lli_4k[ENTRIES];
+ 	else
+ 		tlb_entries = tlb_lld_4k[ENTRIES];
++
+ 	/* Assume all of TLB entries was occupied by this task */
+-	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
++	act_entries = tlb_entries >> tlb_flushall_shift;
++	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
++	nr_base_pages = (end - start) >> PAGE_SHIFT;
+ 
+ 	/* tlb_flushall_shift is on balance point, details in commit log */
+-	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
++	if (nr_base_pages > act_entries || has_large_page(mm, start, end)) {
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+-		if (has_large_page(mm, start, end)) {
+-			local_flush_tlb();
+-			goto flush_all;
+-		}
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
