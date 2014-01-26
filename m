@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaAZDEg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:04:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52686 "EHLO
+	id S1753159AbaAZDG3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:06:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52717 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbaAZDE2 (ORCPT
+	with ESMTP id S1752628AbaAZDEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:04:28 -0500
+	Sat, 25 Jan 2014 22:04:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 01/12] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
-Date: Sat, 25 Jan 2014 19:05:04 -0800
-Message-Id: <20140126030452.049229265@linuxfoundation.org>
+        Damian Nowak <spam@nowaker.net>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.4 08/12] md/raid10: fix bug when raid10 recovery fails to recover a block.
+Date: Sat, 25 Jan 2014 19:05:11 -0800
+Message-Id: <20140126030452.561407193@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.rc0.19.gb594c97
 In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
 References: <20140126030451.934281002@linuxfoundation.org>
@@ -27,178 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: NeilBrown <neilb@suse.de>
 
-commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
+commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
 
-In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
-potential to corrupt kernel memory if userspace provides an address that
-is at the end of a page.  This patches concerts those functions to use
-kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
-vapic_address specified by userspace during ioctl processing and returns
-an error to userspace if the address is not a valid GPA.
+commit e875ecea266a543e643b19e44cf472f1412708f9
+    md/raid10 record bad blocks as needed during recovery.
 
-This is generally not guest triggerable, because the required write is
-done by firmware that runs before the guest.  Also, it only affects AMD
-processors and oldish Intel that do not have the FlexPriority feature
-(unless you disable FlexPriority, of course; then newer processors are
-also affected).
+added code to the "cannot recover this block" path to record a bad
+block rather than fail the whole recovery.
+Unfortunately this new case was placed *after* r10bio was freed rather
+than *before*, yet it still uses r10bio.
+This is will crash with a null dereference.
 
-Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
+So move the freeing of r10bio down where it is safe.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ lizf: backported to 3.4: based on Paolo's backport hints for <3.10 ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Fixes: e875ecea266a543e643b19e44cf472f1412708f9
+Reported-by: Damian Nowak <spam@nowaker.net>
+URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |   24 ++++++++++++++----------
- arch/x86/kvm/lapic.h |    4 ++--
- arch/x86/kvm/x86.c   |   33 +--------------------------------
- 3 files changed, 17 insertions(+), 44 deletions(-)
+ drivers/md/raid10.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1278,14 +1278,12 @@ void __kvm_migrate_apic_timer(struct kvm
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- {
- 	u32 data;
--	void *vapic;
- 
- 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
- 		return;
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
--	kunmap_atomic(vapic);
-+	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+			      sizeof(u32));
- 
- 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
- }
-@@ -1295,7 +1293,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_
- 	u32 data, tpr;
- 	int max_irr, max_isr;
- 	struct kvm_lapic *apic;
--	void *vapic;
- 
- 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
- 		return;
-@@ -1310,17 +1307,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_
- 		max_isr = 0;
- 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
--	kunmap_atomic(vapic);
-+	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+			       sizeof(u32));
- }
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
- {
- 	if (!irqchip_in_kernel(vcpu->kvm))
--		return;
-+		return -EINVAL;
-+
-+	if (vapic_addr) {
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
-+					&vcpu->arch.apic->vapic_cache,
-+					vapic_addr, sizeof(u32)))
-+			return -EINVAL;
-+       }
- 
- 	vcpu->arch.apic->vapic_addr = vapic_addr;
-+	return 0;
- }
- 
- int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -15,7 +15,7 @@ struct kvm_lapic {
- 	bool irr_pending;
- 	void *regs;
- 	gpa_t vapic_addr;
--	struct page *vapic_page;
-+	struct gfn_to_hva_cache vapic_cache;
- };
- int kvm_create_lapic(struct kvm_vcpu *vcpu);
- void kvm_free_lapic(struct kvm_vcpu *vcpu);
-@@ -46,7 +46,7 @@ int kvm_lapic_find_highest_irr(struct kv
- u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
- void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
- void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
- 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2728,8 +2728,7 @@ long kvm_arch_vcpu_ioctl(struct file *fi
- 		r = -EFAULT;
- 		if (copy_from_user(&va, argp, sizeof va))
- 			goto out;
--		r = 0;
--		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
-+		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
- 		break;
- 	}
- 	case KVM_X86_SETUP_MCE: {
-@@ -5075,33 +5074,6 @@ static void post_kvm_run_save(struct kvm
- 			!kvm_event_needs_reinjection(vcpu);
- }
- 
--static void vapic_enter(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	struct page *page;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--
--	vcpu->arch.apic->vapic_page = page;
--}
--
--static void vapic_exit(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	int idx;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	idx = srcu_read_lock(&vcpu->kvm->srcu);
--	kvm_release_page_dirty(apic->vapic_page);
--	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	srcu_read_unlock(&vcpu->kvm->srcu, idx);
--}
--
- static void update_cr8_intercept(struct kvm_vcpu *vcpu)
- {
- 	int max_irr, tpr;
-@@ -5385,7 +5357,6 @@ static int __vcpu_run(struct kvm_vcpu *v
- 	}
- 
- 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
--	vapic_enter(vcpu);
- 
- 	r = 1;
- 	while (r > 0) {
-@@ -5442,8 +5413,6 @@ static int __vcpu_run(struct kvm_vcpu *v
- 
- 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
- 
--	vapic_exit(vcpu);
--
- 	return r;
- }
- 
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2943,10 +2943,6 @@ static sector_t sync_request(struct mdde
+ 			if (j == conf->copies) {
+ 				/* Cannot recover, so abort the recovery or
+ 				 * record a bad block */
+-				put_buf(r10_bio);
+-				if (rb2)
+-					atomic_dec(&rb2->remaining);
+-				r10_bio = rb2;
+ 				if (any_working) {
+ 					/* problem is that there are bad blocks
+ 					 * on other device(s)
+@@ -2978,6 +2974,10 @@ static sector_t sync_request(struct mdde
+ 					mirror->recovery_disabled
+ 						= mddev->recovery_disabled;
+ 				}
++				put_buf(r10_bio);
++				if (rb2)
++					atomic_dec(&rb2->remaining);
++				r10_bio = rb2;
+ 				break;
+ 			}
+ 		}
 
 
