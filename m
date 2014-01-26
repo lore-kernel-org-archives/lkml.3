@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaAZRlh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 12:41:37 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43131 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaAZRlg (ORCPT
+	id S1753252AbaAZRlt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 12:41:49 -0500
+Received: from smtp-out-105.synserver.de ([212.40.185.105]:1353 "EHLO
+	smtp-out-209.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752515AbaAZRlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 12:41:36 -0500
-Date: Sun, 26 Jan 2014 17:41:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: error out if the name buffer is too short
-Message-ID: <20140126174134.GZ10323@ZenIV.linux.org.uk>
-References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com>
- <20140124161922.GA14195@redhat.com>
- <20140126153737.GA8184@redhat.com>
- <20140126155141.GA12249@redhat.com>
- <20140126163536.GA21320@redhat.com>
+	Sun, 26 Jan 2014 12:41:37 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 24538
+Message-ID: <52E548CB.3060105@metafoo.de>
+Date: Sun, 26 Jan 2014 18:41:31 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140126163536.GA21320@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Srikanth Thokala <sthokal@xilinx.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com> <1390409565-4200-2-git-send-email-sthokal@xilinx.com> <52E0FC22.8060903@metafoo.de> <1390484317.7619.81.camel@smile> <52E11E39.6090901@metafoo.de> <1390485637.7619.88.camel@smile> <52E12224.9060506@metafoo.de> <20140126140318.GE10628@intel.com>
+In-Reply-To: <20140126140318.GE10628@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 05:35:36PM +0100, Oleg Nesterov wrote:
-> On 01/26, Oleg Nesterov wrote:
-> >
-> > Al, Denys, unless I am totally confused the "restart" logic is very broken.
-> > We can't simply restart because the main loop changes dentry?
-> 
-> Plus prepend_name() can't actually return -ENAMETOOLONG,
-> "int error" inside the loop is wrong.
+On 01/26/2014 03:03 PM, Vinod Koul wrote:
+> On Thu, Jan 23, 2014 at 03:07:32PM +0100, Lars-Peter Clausen wrote:
+>> On 01/23/2014 03:00 PM, Andy Shevchenko wrote:
+>>> On Thu, 2014-01-23 at 14:50 +0100, Lars-Peter Clausen wrote:
+>>>> On 01/23/2014 02:38 PM, Shevchenko, Andriy wrote:
+>>>>> On Thu, 2014-01-23 at 12:25 +0100, Lars-Peter Clausen wrote:
+>>>>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+>>>>>
+>>>>> [...]
+>>>>>
+>>>>>>> +	/* Request the interrupt */
+>>>>>>> +	chan->irq = irq_of_parse_and_map(node, 0);
+>>>>>>> +	err = devm_request_irq(xdev->dev, chan->irq, xilinx_vdma_irq_handler,
+>>>>>>> +			       IRQF_SHARED, "xilinx-vdma-controller", chan);
+>>>>>>
+>>>>>> This is a clasic example of where to not use devm_request_irq. 'chan' is
+>>>>>> accessed in the interrupt handler, but if you use devm_request_irq 'chan'
+>>>>>> will be freed before the interrupt handler has been released, which means
+>>>>>> there is now a race condition where the interrupt handler can access already
+>>>>>> freed memory.ta
+>>>>>
+>>>>> Could you elaborate this case? As far as I understood managed resources
+>>>>> are a kind of stack pile. In this case you have no such condition. Where
+>>>>> am I wrong?
+>>>>
+>>>> The stacked stuff is only ran after the remove() function. Which means that
+>>>> you call dma_async_device_unregister() before the interrupt handler is
+>>>> freed. Another issue with the interrupt handler is a bit hidden. The driver
+>>>> does not call tasklet_kill in the remove function. Which it should though to
+>>>> make sure that the tasklet does not race against the freeing of the memory.
+>>>> And in order to make sure that the tasklet is not rescheduled you need to
+>>>> free the irq before killing the tasklet, since the interrupt handler
+>>>> schedules the tasklet.
+>>>
+>>> So, you mean devm_request_irq() will race in any DMA driver?
+>>
+>> Most likely yes. devm_request_irq() is race condition prone for the majority
+>> of device driver. You have to be really careful if you want to use it.
+>>
+>>>
+>>> I think the proper solution is to disable all device work in
+>>> the .remove() and devm will care about resources.
+>>
+>> As long as the interrupt handler is registered it can be called, the only
+>> proper solution is to make sure that the order in which resources are torn
+>> down is correct.
+> Wouldn't it work if we register the irq last in the probe. That wil ensure on
+> success the channel is always valid.
 
-... and already fixed.  Said that, the point about restarts is definitely
-true.  See vfs.git#for-linus - it should propagate in a few
+Yes, but only if the irq is not device managed. All device managed resources
+will be freed after the remove function has been called. Which is to late in
+our case since we make sure that the tasklet is not running in the remove
+function.
+
+- Lars
+
