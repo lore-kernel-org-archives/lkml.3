@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaAZLy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 06:54:27 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49174 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752461AbaAZLyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 06:54:25 -0500
-Date: Sun, 26 Jan 2014 11:54:02 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alan Cox <alan@etchedpixels.co.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mark Brown <broonie@kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
-	device probe
-Message-ID: <20140126115402.GA25689@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com> <20140120214305.54f65ffa@www.etchedpixels.co.uk> <20140120231457.GZ17314@sirena.org.uk> <20140120234734.11b78578@www.etchedpixels.co.uk> <20140121001657.GO15937@n2100.arm.linux.org.uk> <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com>
+	id S1752972AbaAZMWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 07:22:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461AbaAZMWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 07:22:44 -0500
+Message-ID: <52E4FE02.2020004@redhat.com>
+Date: Sun, 26 Jan 2014 07:22:26 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2] x86: allocate cpumask during check irq vectors
+References: <1390611565-18709-1-git-send-email-yinghai@kernel.org> <20140125080232.GA20935@gmail.com>
+In-Reply-To: <20140125080232.GA20935@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 12:45:05AM +0000, Alan Cox wrote:
-> Peter handed it on. Try using git log on Documentation/devices.txt. It
-> still gets updates.
+
+
+On 01/25/2014 03:02 AM, Ingo Molnar wrote:
 > 
-> Perhaps you'd care to stick to reality and fix the tree instead of trying
-> to excuse the mess ?
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+> 
+>> Fix warning:
+>> arch/x86/kernel/irq.c: In function check_irq_vectors_for_cpu_disable:
+>> arch/x86/kernel/irq.c:337:1: warning: the frame size of 2052 bytes is larger than 2048 bytes
+>>
+>> when NR_CPUS=8192
+>>
+>> We should use zalloc_cpumask_var() instead.
+>>
+>> -v2: update to GFP_ATOMIC instead and free the allocated cpumask at last.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Prarit Bhargava <prarit@redhat.com>
+>>
+>> ---
+>>  arch/x86/kernel/irq.c |   24 +++++++++++++++++-------
+>>  1 file changed, 17 insertions(+), 7 deletions(-)
+>>
+>> Index: linux-2.6/arch/x86/kernel/irq.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/irq.c
+>> +++ linux-2.6/arch/x86/kernel/irq.c
+>> @@ -277,11 +277,18 @@ int check_irq_vectors_for_cpu_disable(vo
+>>  	unsigned int this_cpu, vector, this_count, count;
+>>  	struct irq_desc *desc;
+>>  	struct irq_data *data;
+>> -	struct cpumask affinity_new, online_new;
+>> +	cpumask_var_t affinity_new, online_new;
+>> +
+>> +	if (!alloc_cpumask_var(&affinity_new, GFP_ATOMIC))
+>> +		return -ENOMEM;
+>> +	if (!alloc_cpumask_var(&online_new, GFP_ATOMIC)) {
+>> +		free_cpumask_var(affinity_new);
+>> +		return -ENOMEM;
+>> +	}
+> 
+> Atomic allocations can fail easily if the system is under duress.
 
-Perhaps returning to reality might be advantageous rather than trying
-to repeat statements which can't have any bearing on this - especially
-as the git history which you're referring to only goes back to 2.6.12-rc2,
-and this predates 2.6.12-rc2 by a long shot.
+Then the hotplug attempt will fail which IMO is okay.  With GFP_KERNEL we might
+hang the system.
 
-> More importantly certain folks need to stop abusing static numbers
-> allocated properly. Repeating it having made a total hash of it before
-> is dismal.
+Ingo -- the original submit (and a Reviewed-by: Cheng Gong) is here,
 
-And if you continue these stupid accusations which have no basis at all,
-we're going to get into a real big argument, because you are soo _wrong_
-on that point.  I was always the one arguing /against/ the re-use of
-existing major/minor numbers.  I was the one arguing /against/ Nicolas'
-patches to make every serial port appear in the 4,64 ttyS namespace.
+http://marc.info/?l=linux-kernel&m=139035727501266&w=2
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Thanks,
+
+P.
+
+> 
+> Thanks,
+> 
+> 	Ingo
