@@ -1,289 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaAZVTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:19:40 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:55784 "EHLO smtp3-g21.free.fr"
+	id S1753273AbaAZVUv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:20:51 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:59408 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461AbaAZVTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:19:38 -0500
+	id S1753060AbaAZVUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 16:20:50 -0500
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCHv3] driver core/platform: don't leak memory allocated for dma_mask
-Date: Sun, 26 Jan 2014 22:18:54 +0100
-Message-Id: <1390771138-28348-1-git-send-email-ydroneaud@opteya.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCHv3] perf tools: enable close-on-exec flag on perf file descriptor
+Date: Sun, 26 Jan 2014 22:20:03 +0100
+Message-Id: <1390771203-28415-1-git-send-email-ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <20140114180204.GD27791@kroah.com>
-References: <1386886207-2735-1-git-send-email-ydroneaud@opteya.com> <1389649085-7365-1-git-send-email-ydroneaud@opteya.com> <20140113225606.GA4132@kroah.com> <1389683909-17495-1-git-send-email-ydroneaud@opteya.com> <20140114081944.GO29475@pengutronix.de> <1389693453.1585.26.camel@localhost.localdomain> <20140114103648.GT29475@pengutronix.de> <20140114180204.GD27791@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140115185026.GA14248@ghostprotocols.net>
+References: <cover.1388952061.git.ydroneaud@opteya.com> <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com> <20140106092929.GA31570@twins.programming.kicks-ass.net> <1389005485-12778-1-git-send-email-ydroneaud@opteya.com> <20140106112436.GF31570@twins.programming.kicks-ass.net> <20140106144347.GA13500@ghostprotocols.net> <20140106142220.GB1183@krava.brq.redhat.com> <1389463628-24869-1-git-send-email-ydroneaud@opteya.com> <1389607770-4485-1-git-send-email-ydroneaud@opteya.com> <20140115185026.GA14248@ghostprotocols.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 01dcc60a7cb8, platform_device_register_full() is
-available to allocate and register a platform device.
+In commit a21b0b354d4a, flag PERF_FLAG_FD_CLOEXEC was
+added to perf_event_open(2) syscall to allows userspace
+to atomically enable close-on-exec behavor when creating
+the file descriptor.
 
-If a dma_mask is provided as part of platform_device_info,
-platform_device_register_full() allocate memory for a u64 using
-kmalloc().
-
-A comment in the code state that "[t]his memory isn't freed when the
-device is put".
-
-It's never a good thing to leak memory, but there's only very few
-users of platform_device_info's dma_mask, and those are mostly
-"static" devices that are not going to be plugged/unplugged often.
-
-So memory leak is not really an issue, but allocating 8 bytes through
-kmalloc() seems overkill.
-
-And it's a pity to have to allocate 8 bytes for the dma_mask while up
-to 7 bytes are wasted at the end of struct platform_object in the form
-of padding after name field: unfortunately this padding is not used
-when allocating the memory to hold the name.
-
-To address theses issues, this patch adds dma_mask to platform_object
-struct so that it is always allocated for all struct platform_device
-allocated through platform_device_alloc() or platform_device_register_full().
-And since it's within struct platform_object, dma_mask won't be leaked
-anymore when struct platform_device got released. Storage for dma_mask
-is added almost for free by removing the padding at the end of struct
-platform_object.
-
-Padding at the end of the structure is removed by making name a C99
-flexible array member (eg. a zero sized array). To handle this change,
-memory allocation is updated to take care of allocating an additional
-byte for the NUL terminating character.
-
-No more memory leak, no small allocation, no byte wasted and
-a slight reduction in code size.
-
-Built on Fedora 20, using GCC 4.8, for ARM, i386, x86_64 and PPC64
-architectures, the size of the object file and the data structure layout
-are updated as follow, produced with commands:
-
-  size drivers/base/platform.o
-  pahole drivers/base/platform.o --recursive \
-                                 --class_name device,pdev_archdata,platform_device,platform_object
-
---- size+pahole.next-20140124
-+++ size+pahole.next-20140124+
-@@ -1,5 +1,5 @@
-    text    data     bss     dec     hex filename
--   5616     472      32    6120    17e8 obj-arm/drivers/base/platform.o
-+   5572     472      32    6076    17bc obj-arm/drivers/base/platform.o
- struct device {
-         struct device *            parent;               /*     0     4 */
-         struct device_private *    p;                    /*     4     4 */
-@@ -77,15 +77,15 @@ struct platform_object {
-         /* XXX last struct has 4 bytes of padding */
-
-         /* --- cacheline 6 boundary (384 bytes) --- */
--        char                       name[1];              /*   384     1 */
-+        u64                        dma_mask;             /*   384     8 */
-+        char                       name[0];              /*   392     0 */
-
--        /* size: 392, cachelines: 7, members: 2 */
--        /* padding: 7 */
-+        /* size: 392, cachelines: 7, members: 3 */
-         /* paddings: 1, sum paddings: 4 */
-         /* last cacheline: 8 bytes */
- };
-
-    text    data     bss     dec     hex filename
--   6007     532      32    6571    19ab obj-i386/drivers/base/platform.o
-+   5943     532      32    6507    196b obj-i386/drivers/base/platform.o
- struct device {
-         struct device *            parent;               /*     0     4 */
-         struct device_private *    p;                    /*     4     4 */
-@@ -161,14 +161,14 @@ struct platform_device {
- struct platform_object {
-         struct platform_device     pdev;                 /*     0   392 */
-         /* --- cacheline 6 boundary (384 bytes) was 8 bytes ago --- */
--        char                       name[1];              /*   392     1 */
-+        u64                        dma_mask;             /*   392     8 */
-+        char                       name[0];              /*   400     0 */
-
--        /* size: 396, cachelines: 7, members: 2 */
--        /* padding: 3 */
--        /* last cacheline: 12 bytes */
-+        /* size: 400, cachelines: 7, members: 3 */
-+        /* last cacheline: 16 bytes */
- };
-
-    text    data     bss     dec     hex filename
--   8851    2112      48   11011    2b03 obj-ppc64/drivers/base/platform.o
-+   8787    2104      48   10939    2abb obj-ppc64/drivers/base/platform.o
- struct device {
-         struct device *            parent;               /*     0     8 */
-         struct device_private *    p;                    /*     8     8 */
-@@ -256,14 +256,14 @@ struct platform_device {
- struct platform_object {
-         struct platform_device     pdev;                 /*     0   728 */
-         /* --- cacheline 11 boundary (704 bytes) was 24 bytes ago --- */
--        char                       name[1];              /*   728     1 */
-+        u64                        dma_mask;             /*   728     8 */
-+        char                       name[0];              /*   736     0 */
-
--        /* size: 736, cachelines: 12, members: 2 */
--        /* padding: 7 */
-+        /* size: 736, cachelines: 12, members: 3 */
-         /* last cacheline: 32 bytes */
- };
-
-    text    data     bss     dec     hex filename
--   7100     960      48    8108    1fac obj-x86_64/drivers/base/platform.o
-+   7020     960      48    8028    1f5c obj-x86_64/drivers/base/platform.o
- struct device {
-         struct device *            parent;               /*     0     8 */
-         struct device_private *    p;                    /*     8     8 */
-@@ -350,9 +350,9 @@ struct platform_device {
- struct platform_object {
-         struct platform_device     pdev;                 /*     0   712 */
-         /* --- cacheline 11 boundary (704 bytes) was 8 bytes ago --- */
--        char                       name[1];              /*   712     1 */
-+        u64                        dma_mask;             /*   712     8 */
-+        char                       name[0];              /*   720     0 */
-
--        /* size: 720, cachelines: 12, members: 2 */
--        /* padding: 7 */
-+        /* size: 720, cachelines: 12, members: 3 */
-         /* last cacheline: 16 bytes */
- };
+This patch makes perf tools use the new flag if supported
+by the kernel, so that the event file descriptors got
+automatically closed if perf tool exec a sub-command.
 
 Changes from v2 [1]:
-- move 'dma_mask' to platform_object so that it's always
-  allocated and won't leak on release; remove all previously
-  added support functions.
-- use C99 flexible array member for 'name' to remove padding
-  at the end of platform_object.
+- use safest perf attr configuration in probe function,
+  as used in perf_evsel__fallback().
 
 Changes from v1 [2]:
-- remove unneeded kfree() from error path
-- add reference to author/commit adding allocation of dmamask
+- don't probe PERF_FLAG_FD_CLOEXEC for each call to
+  perf_event_open_cloexec_flag(): don't forget to set
+  'probed' variable once flag was probed.
+- call perf_event_open_cloexec_flag() only once in
+  util/record.c:perf_do_probe_api().
+- fixed minor coding style issue (unneeded braces)
+  in util/cloexec.c
 
 Changes from v0 [3]:
-- small rewrite to squeeze the patch to a bare minimal
+- add probing for PERF_FLAG_FD_CLOEXEC flag allowing
+  perf to run on older kernel:
+  * use "missing feature" pattern in evsel to disable
+    PERF_FLAG_FD_CLOEXEC in perf_evsel__open() if not
+    supported by kernel;
+  * add a dedicated function to probe for
+    PERF_FLAG_FD_CLOEXEC support in the current kernel.
+    This function is to be used by other functions
+    calling sys_perf_event_open() directly.
+- remove PERF_FLAG_FD_CLOEXEC from PowerPC selftest
+  as it's not related to perf tool: it should be part
+  of a separate patch.
 
-[1] http://lkml.kernel.org/r/1389683909-17495-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3484411/
+[1] http://lkml.kernel.org/r/1389607770-4485-1-git-send-email-ydroneaud@opteya.com
+    https://patchwork.kernel.org/patch/3474141/
 
-[2] http://lkml.kernel.org/r/1389649085-7365-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3480961/
+[2] http://lkml.kernel.org/r/1389463628-24869-1-git-send-email-ydroneaud@opteya.com
+    https://patchwork.kernel.org/patch/3469571/
 
-[3] http://lkml.kernel.org/r/1386886207-2735-1-git-send-email-ydroneaud@opteya.com
+[3] http://lkml.kernel.org/r/1389005485-12778-1-git-send-email-ydroneaud@opteya.com
+    https://patchwork.kernel.org/patch/3437111/
 
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
-Hi Greg and Uwe,
+ tools/perf/Makefile.perf              |  1 +
+ tools/perf/bench/mem-memcpy.c         |  4 ++-
+ tools/perf/bench/mem-memset.c         |  4 ++-
+ tools/perf/builtin-sched.c            |  4 ++-
+ tools/perf/tests/bp_signal.c          |  4 ++-
+ tools/perf/tests/bp_signal_overflow.c |  4 ++-
+ tools/perf/tests/rdpmc.c              |  4 ++-
+ tools/perf/util/cloexec.c             | 56 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/cloexec.h             |  6 ++++
+ tools/perf/util/evsel.c               | 12 ++++++--
+ tools/perf/util/record.c              |  9 ++++--
+ 11 files changed, 96 insertions(+), 12 deletions(-)
+ create mode 100644 tools/perf/util/cloexec.c
+ create mode 100644 tools/perf/util/cloexec.h
 
-I've tried to add dma_mask to platform_object,
-and found it was good. Here's the patch.
-
-Then I tried to "fix" existing drivers to remove
-the no more needed allocation for dma_mask. I've used
-a spatch/coccinelle semantic patch such as:
-
-  @catchall1@
-  identifier func;
-  struct platform_device * pdev;
-  expression E;
-  @@
-    func(...) {
-  <...
-       pdev = platform_device_alloc(...);
-  ...
-      /*
-        TODO: use dma_mask allocated by platform_device_alloc()
-      pdev->dev.dma_mask = E;
-       */
-  ...>
-  }
-
-I've found that some drivers use a pointer to the inner
-dev.coherent_mask.
-
-Is this could be another option to not have to allocate
-a placeholder for the dma_mask ?
-
-Regards.
-
--- 
-Yann Droneaud
-OPTEYA
-
- drivers/base/platform.c | 17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index bc78848dd59a..1f6d1e832e03 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -157,7 +157,8 @@ EXPORT_SYMBOL_GPL(platform_add_devices);
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 7257e7e9e38a..6aeefd97c9db 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -373,6 +373,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+ LIB_OBJS += $(OUTPUT)util/record.o
+ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
++LIB_OBJS += $(OUTPUT)util/cloexec.o
  
- struct platform_object {
- 	struct platform_device pdev;
--	char name[1];
-+	u64 dma_mask;
-+	char name[];
- };
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 5ce71d3b72cf..bf5a21b848a9 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -10,6 +10,7 @@
+ #include "../util/util.h"
+ #include "../util/parse-options.h"
+ #include "../util/header.h"
++#include "../util/cloexec.h"
+ #include "bench.h"
+ #include "mem-memcpy-arch.h"
  
- /**
-@@ -193,16 +194,20 @@ static void platform_device_release(struct device *dev)
-  *
-  * Create a platform device object which can have other objects attached
-  * to it, and which will have attached objects freed when it is released.
-+ *
-+ * The associated struct device will be set up so that its dma_mask field
-+ * is a valid pointer to an u64. This pointer must not be free'd manually.
-  */
- struct platform_device *platform_device_alloc(const char *name, int id)
+@@ -83,7 +84,8 @@ static struct perf_event_attr cycle_attr = {
+ 
+ static void init_cycle(void)
  {
- 	struct platform_object *pa;
+-	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
++	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1,
++				       perf_event_open_cloexec_flag());
  
--	pa = kzalloc(sizeof(struct platform_object) + strlen(name), GFP_KERNEL);
-+	pa = kzalloc(sizeof(*pa) + strlen(name) + 1, GFP_KERNEL);
- 	if (pa) {
- 		strcpy(pa->name, name);
- 		pa->pdev.name = pa->name;
- 		pa->pdev.id = id;
-+		pa->pdev.dev.dma_mask = &pa->dma_mask;
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
- 		arch_setup_pdev_archdata(&pa->pdev);
-@@ -436,16 +441,9 @@ struct platform_device *platform_device_register_full(
+ 	if (cycle_fd < 0 && errno == ENOSYS)
+ 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index 9af79d2b18e5..260747ea1e0e 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -10,6 +10,7 @@
+ #include "../util/util.h"
+ #include "../util/parse-options.h"
+ #include "../util/header.h"
++#include "../util/cloexec.h"
+ #include "bench.h"
+ #include "mem-memset-arch.h"
  
- 	if (pdevinfo->dma_mask) {
- 		/*
--		 * This memory isn't freed when the device is put,
--		 * I don't have a nice idea for that though.  Conceptually
- 		 * dma_mask in struct device should not be a pointer.
- 		 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
- 		 */
--		pdev->dev.dma_mask =
--			kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
--		if (!pdev->dev.dma_mask)
--			goto err;
--
- 		*pdev->dev.dma_mask = pdevinfo->dma_mask;
- 		pdev->dev.coherent_dma_mask = pdevinfo->dma_mask;
+@@ -83,7 +84,8 @@ static struct perf_event_attr cycle_attr = {
+ 
+ static void init_cycle(void)
+ {
+-	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
++	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1,
++				       perf_event_open_cloexec_flag());
+ 
+ 	if (cycle_fd < 0 && errno == ENOSYS)
+ 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 6a76a07b6789..54017bdec88c 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -10,6 +10,7 @@
+ #include "util/header.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "util/cloexec.h"
+ 
+ #include "util/parse-options.h"
+ #include "util/trace-event.h"
+@@ -435,7 +436,8 @@ static int self_open_counters(void)
+ 	attr.type = PERF_TYPE_SOFTWARE;
+ 	attr.config = PERF_COUNT_SW_TASK_CLOCK;
+ 
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&attr, 0, -1, -1,
++				 perf_event_open_cloexec_flag());
+ 
+ 	if (fd < 0)
+ 		pr_err("Error: sys_perf_event_open() syscall returned "
+diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
+index aba095489193..fdc0d3e185f9 100644
+--- a/tools/perf/tests/bp_signal.c
++++ b/tools/perf/tests/bp_signal.c
+@@ -25,6 +25,7 @@
+ #include "tests.h"
+ #include "debug.h"
+ #include "perf.h"
++#include "../util/cloexec.h"
+ 
+ static int fd1;
+ static int fd2;
+@@ -78,7 +79,8 @@ static int bp_event(void *fn, int setup_signal)
+ 	pe.exclude_kernel = 1;
+ 	pe.exclude_hv = 1;
+ 
+-	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&pe, 0, -1, -1,
++				 perf_event_open_cloexec_flag());
+ 	if (fd < 0) {
+ 		pr_debug("failed opening event %llx\n", pe.config);
+ 		return TEST_FAIL;
+diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+index 44ac82179708..b0b17415f18c 100644
+--- a/tools/perf/tests/bp_signal_overflow.c
++++ b/tools/perf/tests/bp_signal_overflow.c
+@@ -24,6 +24,7 @@
+ #include "tests.h"
+ #include "debug.h"
+ #include "perf.h"
++#include "../util/cloexec.h"
+ 
+ static int overflows;
+ 
+@@ -91,7 +92,8 @@ int test__bp_signal_overflow(void)
+ 	pe.exclude_kernel = 1;
+ 	pe.exclude_hv = 1;
+ 
+-	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&pe, 0, -1, -1,
++				 perf_event_open_cloexec_flag());
+ 	if (fd < 0) {
+ 		pr_debug("failed opening event %llx\n", pe.config);
+ 		return TEST_FAIL;
+diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
+index 46649c25fa5e..c1e55ff18774 100644
+--- a/tools/perf/tests/rdpmc.c
++++ b/tools/perf/tests/rdpmc.c
+@@ -6,6 +6,7 @@
+ #include "perf.h"
+ #include "debug.h"
+ #include "tests.h"
++#include "../util/cloexec.h"
+ 
+ #if defined(__x86_64__) || defined(__i386__)
+ 
+@@ -104,7 +105,8 @@ static int __test__rdpmc(void)
+ 	sa.sa_sigaction = segfault_handler;
+ 	sigaction(SIGSEGV, &sa, NULL);
+ 
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&attr, 0, -1, -1,
++				 perf_event_open_cloexec_flag());
+ 	if (fd < 0) {
+ 		pr_err("Error: sys_perf_event_open() syscall returned "
+ 		       "with %d (%s)\n", fd, strerror(errno));
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+new file mode 100644
+index 000000000000..771ed36fcc61
+--- /dev/null
++++ b/tools/perf/util/cloexec.c
+@@ -0,0 +1,56 @@
++#include "util.h"
++#include "../perf.h"
++#include "cloexec.h"
++
++static unsigned long flag = PERF_FLAG_FD_CLOEXEC;
++
++static int perf_flag_probe(void)
++{
++	/* use 'safest' configuration as used in perf_evsel__fallback() */
++	struct perf_event_attr attr = {
++		.type = PERF_COUNT_SW_CPU_CLOCK,
++		.config = PERF_COUNT_SW_CPU_CLOCK,
++	};
++	int fd;
++	int err;
++
++	/* check cloexec flag */
++	fd = sys_perf_event_open(&attr, 0, -1, -1,
++				 PERF_FLAG_FD_CLOEXEC);
++	if (fd >= 0) {
++		close(fd);
++		return 1;
++	}
++
++	if (errno != EINVAL) {
++		err = errno;
++		pr_warning("sys_perf_event_open() syscall returned "
++			   "%d (%d: %s)\n", fd, err, strerror(err));
++	}
++
++	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
++	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	if (fd >= 0) {
++		close(fd);
++		return 0;
++	}
++
++	err = errno;
++	die("sys_perf_event_open() syscall returned "
++	    "%d (%d: %s)\n", fd, err, strerror(err));
++
++	return -1;
++}
++
++unsigned long perf_event_open_cloexec_flag(void)
++{
++	static bool probed;
++
++	if (!probed) {
++		if (perf_flag_probe() <= 0)
++			flag = 0;
++		probed = true;
++	}
++
++	return flag;
++}
+diff --git a/tools/perf/util/cloexec.h b/tools/perf/util/cloexec.h
+new file mode 100644
+index 000000000000..94a5a7d829d5
+--- /dev/null
++++ b/tools/perf/util/cloexec.h
+@@ -0,0 +1,6 @@
++#ifndef __PERF_CLOEXEC_H
++#define __PERF_CLOEXEC_H
++
++unsigned long perf_event_open_cloexec_flag(void);
++
++#endif /* __PERF_CLOEXEC_H */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 22e18a26b7e6..0a44fba07b29 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -29,6 +29,7 @@ static struct {
+ 	bool sample_id_all;
+ 	bool exclude_guest;
+ 	bool mmap2;
++	bool cloexec;
+ } perf_missing_features;
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+@@ -969,7 +970,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+ 	int cpu, thread;
+-	unsigned long flags = 0;
++	unsigned long flags = PERF_FLAG_FD_CLOEXEC;
+ 	int pid = -1, err;
+ 	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+ 
+@@ -978,11 +979,13 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		return -ENOMEM;
+ 
+ 	if (evsel->cgrp) {
+-		flags = PERF_FLAG_PID_CGROUP;
++		flags |= PERF_FLAG_PID_CGROUP;
+ 		pid = evsel->cgrp->fd;
  	}
-@@ -464,7 +462,6 @@ struct platform_device *platform_device_register_full(
- 	if (ret) {
- err:
- 		ACPI_COMPANION_SET(&pdev->dev, NULL);
--		kfree(pdev->dev.dma_mask);
  
- err_alloc:
- 		platform_device_put(pdev);
+ fallback_missing_features:
++	if (perf_missing_features.cloexec)
++		flags &= ~(unsigned long)PERF_FLAG_FD_CLOEXEC;
+ 	if (perf_missing_features.mmap2)
+ 		evsel->attr.mmap2 = 0;
+ 	if (perf_missing_features.exclude_guest)
+@@ -1051,7 +1054,10 @@ try_fallback:
+ 	if (err != -EINVAL || cpu > 0 || thread > 0)
+ 		goto out_close;
+ 
+-	if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
++	if (!perf_missing_features.cloexec && (flags & PERF_FLAG_FD_CLOEXEC)) {
++		perf_missing_features.cloexec = true;
++		goto fallback_missing_features;
++	} else if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
+ 		perf_missing_features.mmap2 = true;
+ 		goto fallback_missing_features;
+ 	} else if (!perf_missing_features.exclude_guest &&
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index 373762501dad..fa543aab6963 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -4,6 +4,7 @@
+ #include "parse-events.h"
+ #include "fs.h"
+ #include "util.h"
++#include "cloexec.h"
+ 
+ typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
+ 
+@@ -11,6 +12,7 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
+ {
+ 	struct perf_evlist *evlist;
+ 	struct perf_evsel *evsel;
++	unsigned long flags = perf_event_open_cloexec_flag();
+ 	int err = -EAGAIN, fd;
+ 
+ 	evlist = perf_evlist__new();
+@@ -22,14 +24,14 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
+ 
+ 	evsel = perf_evlist__first(evlist);
+ 
+-	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
+ 	if (fd < 0)
+ 		goto out_delete;
+ 	close(fd);
+ 
+ 	fn(evsel);
+ 
+-	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
+ 	if (fd < 0) {
+ 		if (errno == EINVAL)
+ 			err = -EINVAL;
+@@ -203,7 +205,8 @@ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
+ 		cpu = evlist->cpus->map[0];
+ 	}
+ 
+-	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1,
++				 perf_event_open_cloexec_flag());
+ 	if (fd >= 0) {
+ 		close(fd);
+ 		ret = true;
 -- 
 1.8.5.3
 
