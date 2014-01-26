@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaAZNls (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 08:41:48 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:43647 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaAZNlr (ORCPT
+	id S1752325AbaAZNyw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 08:54:52 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:55082 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaAZNyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 08:41:47 -0500
-Message-ID: <52E51099.2070808@gmail.com>
-Date: Sun, 26 Jan 2014 14:41:45 +0100
-From: Harald Arnesen <skogtun.linux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 26 Jan 2014 08:54:51 -0500
+Date: Sun, 26 Jan 2014 14:54:44 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [Intel-gfx] [PATCH] lib: Export interval_tree
+Message-ID: <20140126135444.GR9772@phenom.ffwll.local>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Rik van Riel <riel@redhat.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Michel Lespinasse <walken@google.com>
+References: <1390316872-15887-1-git-send-email-chris@chris-wilson.co.uk>
+ <1390739073-4519-1-git-send-email-chris@chris-wilson.co.uk>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Panic with latest git kernel
-References: <52E50496.3040303@gmail.com> <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com> <52E50ED7.9070808@gmail.com> <52E50F72.9060300@nod.at>
-In-Reply-To: <52E50F72.9060300@nod.at>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390739073-4519-1-git-send-email-chris@chris-wilson.co.uk>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger [2014-01-26 14:36]:
+On Sun, Jan 26, 2014 at 12:24:33PM +0000, Chris Wilson wrote:
+> lib/interval_tree.c provides a simple interface for an interval-tree
+> (an augmented red-black tree) but is only built when testing the generic
+> macros for building interval-trees. For drivers with modest needs,
+> export the simple interval-tree library as is.
+> 
+> v2: Lots of help from Michel Lespinasse to only compile the code
+>     as required:
+>     - make INTERVAL_TREE a config option
+>     - make INTERVAL_TREE_TEST select the library functions
+>       and sanitize the filenames & Makefile
+>     - prepare interval_tree for being built as a module if required
+> 
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
 
->> $ cpio --list </boot/initrd.img-3.13.0-03477-gdf32e43
->> > kernel
->> > kernel/x86
->> > kernel/x86/microcode
->> > kernel/x86/microcode/GenuineIntel.bin
->> > 50 blocks
->> > $
-> Looks very strange.
+[snip]
 
-The same with the Debian-provided kernel/initrd 3.12-1-amd64
+> diff --git a/lib/interval_tree.c b/lib/interval_tree.c
+> index e6eb406f2d65..e4109f624e51 100644
+> --- a/lib/interval_tree.c
+> +++ b/lib/interval_tree.c
+> @@ -1,6 +1,7 @@
+>  #include <linux/init.h>
+>  #include <linux/interval_tree.h>
+>  #include <linux/interval_tree_generic.h>
+> +#include <linux/module.h>
+>  
+>  #define START(node) ((node)->start)
+>  #define LAST(node)  ((node)->last)
+> @@ -8,3 +9,8 @@
+>  INTERVAL_TREE_DEFINE(struct interval_tree_node, rb,
+>  		     unsigned long, __subtree_last,
+>  		     START, LAST,, interval_tree)
+> +
+> +EXPORT_SYMBOL(interval_tree_insert);
+> +EXPORT_SYMBOL(interval_tree_remove);
+> +EXPORT_SYMBOL(interval_tree_iter_first);
+> +EXPORT_SYMBOL(interval_tree_iter_next);
 
-> Add rdinit=/bin/sh to your commandline such that you get a shell within
-> the initrd...
-
-Will do.
+Hm, I've thought kernel coding style nowadays is to put the EXPORT_SYMBOL
+right below the definition of the function?
+-Daniel
 -- 
-Hilsen Harald
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
