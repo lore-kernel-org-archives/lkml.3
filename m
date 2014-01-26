@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaAZQHj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 11:07:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55802 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaAZQHh (ORCPT
+	id S1752852AbaAZQWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 11:22:30 -0500
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:42821
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751561AbaAZQW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 11:07:37 -0500
-Date: Sun, 26 Jan 2014 08:08:39 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/12] 3.4.78-stable review
-Message-ID: <20140126160839.GA4655@kroah.com>
-References: <20140126030451.934281002@linuxfoundation.org>
- <52E49A71.4020303@roeck-us.net>
+	Sun, 26 Jan 2014 11:22:29 -0500
+Date: Sun, 26 Jan 2014 17:22:28 +0100
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Aaron Jones <aaronmdjones@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: File capabilities are not 'working' and I have no idea why
+Message-ID: <20140126162228.GA6946@mail.hallyn.com>
+References: <52DE7557.3000500@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E49A71.4020303@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52DE7557.3000500@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 09:17:37PM -0800, Guenter Roeck wrote:
-> On 01/25/2014 07:05 PM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.4.78 release.
-> > There are 12 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Tue Jan 28 03:04:41 UTC 2014.
-> > Anything received after that time might be too late.
-> >
+Quoting Aaron Jones (aaronmdjones@gmail.com):
 > 
-> Build results are as expected, with the usual failures:
-> 	total: 119 pass: 97 skipped: 18 fail: 4
+> Hello.
 > 
-> qemu tests all passed.
+> I recently upgraded from 3.10.7 on a long-running box to 3.12.8 on a
+> new box. I have been using file capabilities for a long time, so that
+> processes do not need to start as root and drop unnecessary privileges
+> later.
 > 
-> Details are available at http://server.roeck-us.net:8010/builders.
+> For example, there is no reason for my bind9 nameservers to start as
+> root, except to bind() port 53 and 953. What I did in this case was to
+> chown it to root:named and chmod it to 0750 and assign
+> CAP_NET_BIND_SERVICE to it, it then starts as named and works fine.
+> 
+> I haven't had any issues with this for easily a year, until now. No
+> matter what I do on this new machine, I cannot get file capabilities
+> to 'work'. They are set fine, they are read back fine, but they don't
+> do anything. I have attached my kernel boot log, its configuration and
+> a test program (build with -std=c99 -lcap-ng).
+> 
+> My problem follows:
+> 
+> # strace -f setcap cap_net_bind_service+eip /usr/local/bin/caps 2>&1 \
+>   | grep xattr
+>  setxattr("/usr/local/bin/caps", "security.capability", \
+>   "\x01\x00\x00\x02\x00\x04\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00 \
+>    \x00\x00\x00\x00", 20, 0) = 0
+> 
+> # getcap /usr/local/bin/caps
+> /usr/local/bin/caps = cap_net_bind_service+eip
+> 
+> $ /usr/local/bin/caps
+> Effective capabilities: (none)
+> Permitted capabilities: (none)
 
-Great, thanks for testing and letting me know.
+Hm, I'm running Ubuntu 3.13.0-5-generic and I do get
 
-greg k-h
+serge@tp:~/test$ ./caps
+Effective capabilities:
+net_bind_service
+
+Permitted capabilities:
+net_bind_service
+
+Any chance (grasping for straws here) that the hardening patches are
+interfering?  Can you try hand-building an upstream kernel to test
+with?
+
+-serge
