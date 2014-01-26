@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaAZB4u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 20:56:50 -0500
+	id S1752638AbaAZB4r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 20:56:47 -0500
 Received: from mga11.intel.com ([192.55.52.93]:41673 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaAZB4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 20:56:08 -0500
+	id S1752457AbaAZB4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 20:56:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,721,1384329600"; 
-   d="scan'208";a="470834182"
+   d="scan'208";a="470834205"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v3 1/4] x86, mpx: add documentation on Intel MPX
-Date: Sun, 26 Jan 2014 17:08:55 +0800
-Message-Id: <1390727338-20487-2-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v3 4/4] x86, mpx: extend siginfo structure to include bound violation information
+Date: Sun, 26 Jan 2014 17:08:58 +0800
+Message-Id: <1390727338-20487-5-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
 References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
@@ -24,247 +24,442 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/x86/intel_mpx.txt file with some
-information about Intel MPX.
+This patch adds new fields about bound violation into siginfo
+structure. si_lower and si_upper are respectively lower bound
+and upper bound when bound violation is caused.
+
+These fields will be set in #BR exception handler by decoding
+the user instruction and constructing the faulting pointer.
+A userspace application can get violation address, lower bound
+and upper bound for bound violation from this new siginfo structure.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- Documentation/x86/intel_mpx.txt |  226 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 226 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
+ arch/x86/include/asm/mpx.h         |   19 +++
+ arch/x86/kernel/mpx.c              |  287 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c            |    6 +
+ include/uapi/asm-generic/siginfo.h |    9 +-
+ kernel/signal.c                    |    4 +
+ 5 files changed, 324 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
-new file mode 100644
-index 0000000..052001c
---- /dev/null
-+++ b/Documentation/x86/intel_mpx.txt
-@@ -0,0 +1,226 @@
-+1. Intel(R) MPX Overview
-+========================
+diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+index 9652e9e..e099573 100644
+--- a/arch/x86/include/asm/mpx.h
++++ b/arch/x86/include/asm/mpx.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/types.h>
+ #include <asm/ptrace.h>
++#include <asm/insn.h>
+ 
+ #ifdef CONFIG_X86_64
+ 
+@@ -30,6 +31,22 @@
+ 
+ #endif
+ 
++struct mpx_insn {
++	struct insn_field rex_prefix;	/* REX prefix */
++	struct insn_field modrm;
++	struct insn_field sib;
++	struct insn_field displacement;
 +
++	unsigned char addr_bytes;	/* effective address size */
++	unsigned char limit;
++	unsigned char x86_64;
 +
-+Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
-+capability introduced into Intel Architecture. Intel MPX provides
-+hardware features that can be used in conjunction with compiler
-+changes to check memory references, for those references whose
-+compile-time normal intentions are usurped at runtime due to
-+buffer overflow or underflow.
++	const unsigned char *kaddr;	/* kernel address of insn to analyze */
++	const unsigned char *next_byte;
++};
 +
-+Two of the most important goals of Intel MPX are to provide
-+this capability at very low performance overhead for newly
-+compiled code, and to provide compatibility mechanisms with
-+legacy software components. MPX architecture is designed
-+allow a machine (i.e., the processor(s) and the OS software)
-+to run both MPX enabled software and legacy software that
-+is MPX unaware. In such a case, the legacy software does not
-+benefit from MPX, but it also does not experience any change
-+in functionality or reduction in performance.
++#define MAX_MPX_INSN_SIZE	15
 +
-+Intel(R) MPX Programming Model
-+------------------------------
+ typedef union {
+ 	struct {
+ 		unsigned long ignored:MPX_IGN_BITS;
+@@ -40,5 +57,7 @@ typedef union {
+ } mpx_addr;
+ 
+ void do_mpx_bt_fault(struct xsave_struct *xsave_buf);
++void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
++		struct xsave_struct *xsave_buf);
+ 
+ #endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+index 9e91178..983abf7 100644
+--- a/arch/x86/kernel/mpx.c
++++ b/arch/x86/kernel/mpx.c
+@@ -91,6 +91,269 @@ int mpx_release(struct task_struct *tsk)
+ 	return 0;
+ }
+ 
++typedef enum {REG_TYPE_RM, REG_TYPE_INDEX, REG_TYPE_BASE} reg_type_t;
++static unsigned long get_reg(struct mpx_insn *insn, struct pt_regs *regs,
++			     reg_type_t type)
++{
++	int regno = 0;
++	unsigned char modrm = (unsigned char)insn->modrm.value;
++	unsigned char sib = (unsigned char)insn->sib.value;
 +
-+Intel MPX introduces new registers and new instructions that
-+operate on these registers. Some of the registers added are
-+bounds registers which store a pointer's lower bound and upper
-+bound limits. Whenever the pointer is used, the requested
-+reference is checked against the pointer's associated bounds,
-+thereby preventing out-of-bound memory access (such as buffer
-+overflows and overruns). Out-of-bounds memory references
-+initiate a #BR exception which can then be handled in an
-+appropriate manner.
++	static const int regoff[] = {
++		offsetof(struct pt_regs, ax),
++		offsetof(struct pt_regs, cx),
++		offsetof(struct pt_regs, dx),
++		offsetof(struct pt_regs, bx),
++		offsetof(struct pt_regs, sp),
++		offsetof(struct pt_regs, bp),
++		offsetof(struct pt_regs, si),
++		offsetof(struct pt_regs, di),
++#ifdef CONFIG_X86_64
++		offsetof(struct pt_regs, r8),
++		offsetof(struct pt_regs, r9),
++		offsetof(struct pt_regs, r10),
++		offsetof(struct pt_regs, r11),
++		offsetof(struct pt_regs, r12),
++		offsetof(struct pt_regs, r13),
++		offsetof(struct pt_regs, r14),
++		offsetof(struct pt_regs, r15),
++#endif
++	};
 +
-+Loading and Storing Bounds using Translation
-+--------------------------------------------
++	switch (type) {
++	case REG_TYPE_RM:
++		regno = X86_MODRM_RM(modrm);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
 +
-+Intel MPX defines two instructions for load/store of the linear
-+address of a pointer to a buffer, along with the bounds of the
-+buffer into a paging structure of extended bounds. Specifically
-+when storing extended bounds, the processor will perform address
-+translation of the address where the pointer is stored to an
-+address in the Bound Table (BT) to determine the store location
-+of extended bounds. Loading of an extended bounds performs the
-+reverse sequence.
++	case REG_TYPE_INDEX:
++		regno = X86_SIB_INDEX(sib);
++		if (X86_REX_X(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
 +
-+The structure in memory to load/store an extended bound is a
-+4-tuple consisting of lower bound, upper bound, pointer value
-+and a reserved field. Bound loads and stores access 32-bit or
-+64-bit operand size according to the operation mode. Thus,
-+a bound table entry is 4*32 bits in 32-bit mode and 4*64 bits
-+in 64-bit mode.
++	case REG_TYPE_BASE:
++		regno = X86_SIB_BASE(sib);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
 +
-+The linear address of a bound table is stored in a Bound
-+Directory (BD) entry. And the linear address of the bound
-+directory is derived from either BNDCFGU or BNDCFGS registers.
-+Bounds in memory are stored in Bound Tables (BT) as an extended
-+bound, which are accessed via Bound Directory (BD) and address
-+translation performed by BNDLDX/BNDSTX instructions.
-+
-+Bounds Directory (BD) and Bounds Tables (BT) are stored in
-+application memory and are allocated by the application (in case
-+of kernel use, the structures will be in kernel memory). The
-+bound directory and each instance of bound table are in contiguous
-+linear memory.
-+
-+XSAVE/XRESTOR Support of Intel MPX State
-+----------------------------------------
-+
-+Enabling Intel MPX requires an OS to manage two bits in XCR0:
-+  - BNDREGS for saving and restoring registers BND0-BND3,
-+  - BNDCSR for saving and restoring the user-mode configuration
-+(BNDCFGU) and the status register (BNDSTATUS).
-+
-+The reason for having two separate bits is that BND0-BND3 is
-+likely to be volatile state, while BNDCFGU and BNDSTATUS are not.
-+Therefore, an OS has flexibility in handling these two states
-+differently in saving or restoring them.
-+
-+For details about the Intel MPX instructions, see "Intel(R)
-+Architecture Instruction Set Extensions Programming Reference".
-+
-+
-+2. How to get the advantage of MPX 
-+==================================
-+
-+
-+To get the advantage of MPX, changes are required in
-+the OS kernel, binutils, compiler, system libraries support.
-+
-+MPX support in the GNU toolchain
-+--------------------------------
-+
-+This section describes changes in GNU Binutils, GCC and Glibc
-+to support MPX.
-+
-+The first step of MPX support is to implement support for new
-+hardware features in binutils and the GCC.
-+
-+The second step is implementation of MPX instrumentation pass
-+in the GCC compiler which is responsible for instrumenting all
-+memory accesses with pointer checks. Compiler changes for runtime
-+bound checks include:
-+
-+  * Bounds creation for statically allocated objects, objects
-+    allocated on the stack and statically initialized pointers.
-+
-+  * MPX support in ABI: ABI extension allows passing bounds for
-+    the pointers passed as function arguments and provide returned
-+    bounds with the pointers.
-+
-+  * Bounds table content management: each pointer is stored into
-+    the memory should have its bounds stored in the corresponding
-+    row of the bounds table; compiler generates appropriate code
-+    to have the bounds table in the consistent state.
-+
-+  * Memory accesses instrumentation: compiler analyzes data flow
-+    to compute bounds corresponding to each memory access and
-+    inserts code to check used address against computed bounds.
-+
-+Dynamically created objects in heap using memory allocators need
-+to set bounds for objects (buffers) at allocation time. So the
-+next step is to add MPX support into standard memory allocators
-+in Glibc.
-+
-+To have the full protection, an application has to use libraries
-+compiled with MPX instrumentation. It means we had to compile
-+Glibc with the MPX enabled GCC compiler because it is used in
-+most applications. Also we had to add MPX instrumentation to all
-+the necessary Glibc routines (e.g. memcpy) written on assembler.
-+
-+New GCC option -fmpx is introduced to utilize MPX instructions.
-+Also binutils with MPX enabled should be used to get binaries
-+with memory protection.
-+
-+Consider following simple test for MPX compiled program:
-+
-+	int main(int argc, char* argv)
-+	{
-+		int buf[100];
-+		return buf[argc];
++	default:
++		break;
 +	}
 +
-+Snippet of the original assembler output (compiled with -O2):
++	return regs_get_register(regs, regoff[regno]);
++}
 +
-+	movslq  %edi, %rdi
-+	movl    -120(%rsp,%rdi,4), %eax  // memory access buf[argc]
++/*
++ * return the address being referenced be instruction
++ * for rm=3 returning the content of the rm reg
++ * for rm!=3 calculates the address using SIB and Disp
++ */
++static unsigned long get_addr_ref(struct mpx_insn *insn, struct pt_regs *regs)
++{
++	unsigned long addr;
++	unsigned long base;
++	unsigned long indx;
++	unsigned char modrm = (unsigned char)insn->modrm.value;
++	unsigned char sib = (unsigned char)insn->sib.value;
 +
-+Compile test as follows: mpx-gcc/gcc test.c -fmpx -O2.
++	if (X86_MODRM_MOD(modrm) == 3) {
++		addr = get_reg(insn, regs, REG_TYPE_RM);
++	} else {
++		if (insn->sib.nbytes) {
++			base = get_reg(insn, regs, REG_TYPE_BASE);
++			indx = get_reg(insn, regs, REG_TYPE_INDEX);
++			addr = base + indx * (1 << X86_SIB_SCALE(sib));
++		} else {
++			addr = get_reg(insn, regs, REG_TYPE_RM);
++		}
++		addr += insn->displacement.value;
++	}
 +
-+Resulted assembler snippet:
++	return addr;
++}
 +
-+        movl    $399, %edx	// load array length to edx
-+        movslq  %edi, %rdi	// rdi contains value of argc 
-+        leaq    -104(%rsp), %rax	// load start address of buf to rax
-+        bndmk   (%rax,%rdx), %bnd0	//  create bounds for buf
-+        bndcl   (%rax,%rdi,4), %bnd0	// check that memory access doesn't
-+					// violate buf's low bound
-+        bndcu   3(%rax,%rdi,4), %bnd0	// check that memory access doesn't
-+					// violate buf's upper bound
-+        movl    -104(%rsp,%rdi,4), %eax	// original memory access
++/* Verify next sizeof(t) bytes can be on the same instruction */
++#define validate_next(t, insn, n)	\
++	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= (insn)->limit)
 +
-+Code looks pretty clear. Note only that we added displacement 3 for
-+upper bound checking since we have 4 byte (integer) access here.
++#define __get_next(t, insn)		\
++({					\
++	t r = *(t *)insn->next_byte;	\
++	insn->next_byte += sizeof(t);	\
++	r;				\
++})
 +
-+Several MPX specific compiler options besides -fmpx were introduced
-+in the compiler. Most of them, like -fmpx-check-read and
-+-fmpx-check-write, control number of inserted runtime bound checks.
-+Also developers always can use intrinsics to insert MPX instructions
-+manually.
++#define __peek_next(t, insn)		\
++({					\
++	t r = *(t *)insn->next_byte;	\
++	r;				\
++})
 +
-+Currently GCC compiler sources with MPX support is available in a
-+separate branch in common GCC SVN repository. See GCC SVN page
-+(http://gcc.gnu.org/svn.html) for details.
++#define get_next(t, insn)		\
++({					\
++	if (unlikely(!validate_next(t, insn, 0)))	\
++		goto err_out;		\
++	__get_next(t, insn);		\
++})
 +
-+Currently no hardware with MPX ISA is available but it is always
-+possible to use SDE (Intel(R) software Development Emulator) instead,
-+which can be downloaded from
-+http://software.intel.com/en-us/articles/intel-software-development-emulator
++#define peek_next(t, insn)		\
++({					\
++	if (unlikely(!validate_next(t, insn, 0)))	\
++		goto err_out;		\
++	__peek_next(t, insn);		\
++})
 +
-+MPX runtime support
-+-------------------
++static void mpx_insn_get_prefixes(struct mpx_insn *insn)
++{
++	unsigned char b;
 +
-+Enabling an application to use MPX will generally not require source
-+code updates but there is some runtime code needed in order to make
-+use of MPX. For most applications this runtime support will be available
-+by linking to a library supplied by the compiler or possibly it will
-+come directly from the OS once OS versions that support MPX are available.
++	/* Decode legacy prefix and REX prefix */
++	b = peek_next(unsigned char, insn);
++	while (b != 0x0f) {
++		/*
++		 * look for a rex prefix
++		 * a REX prefix cannot be followed by a legacy prefix.
++		 */
++		if (insn->x86_64 && ((b&0xf0)==0x40)) {
++			insn->rex_prefix.value = b;
++			insn->rex_prefix.nbytes = 1;
++			insn->next_byte++;
++			break;
++		}
 +
-+The runtime is responsible for configuring and enabling MPX. The
-+configuration and enabling of MPX consists of the runtime writing
-+the base address of the Bound Directory(BD) to the BNDCFGU register
-+and setting the enable bit.
++		/* check the other legacy prefixes */
++		switch (b) {
++		case 0xf2:
++		case 0xf3:
++		case 0xf0:
++		case 0x64:
++		case 0x65:
++		case 0x2e:
++		case 0x3e:
++		case 0x26:
++		case 0x36:
++		case 0x66:
++		case 0x67:
++			insn->next_byte++;
++			break;
++		default: /* everything else is garbage */
++			goto err_out;
++		}
++		b = peek_next(unsigned char, insn);
++	}
 +
-+MPX kernel support
-+------------------
++err_out:
++	return;
++}
 +
-+MPX kernel code has mainly the following responsibilities.
++static void mpx_insn_get_modrm(struct mpx_insn *insn)
++{
++	insn->modrm.value = get_next(unsigned char, insn);
++	insn->modrm.nbytes = 1;
 +
-+1) Providing handlers for bounds faults (#BR).
++err_out:
++	return;
++}
 +
-+When MPX is enabled, there are 2 new situations that can generate
-+#BR faults. If a bounds overflow occurs then a #BR is generated.
-+The fault handler will decode MPX instructions to get violation
-+address and set this address into extended struct siginfo.
++static void mpx_insn_get_sib(struct mpx_insn *insn)
++{
++	unsigned char modrm = (unsigned char)insn->modrm.value;
 +
-+The other case that generates a #BR is when a BNDSTX instruction
-+attempts to save bounds to a BD entry marked as invalid. This is
-+an indication that no BT exists for this entry. In this case the
-+fault handler will allocate a new BT.
++	if (X86_MODRM_MOD(modrm) != 3 && X86_MODRM_RM(modrm) == 4) {
++		insn->sib.value = get_next(unsigned char, insn);
++		insn->sib.nbytes = 1;
++	}
 +
-+2) Managing bounds memory.
++err_out:
++	return;
++}
 +
-+MPX defines 4 sets of bound registers. When an application needs
-+more than 4 sets of bounds it uses the BNDSTX instruction to save
-+the additional bounds out to memory. The kernel dynamically allocates
-+the memory used to store these bounds. The bounds memory is organized
-+into a 2 level structure consisting of a BD which contains pointers
-+to a set of Bound Tables (BT) which contain the actual bound information
-+In order to minimize the Intel MPX memory usage the BTs are allocated
-+on demand by the Intel MPX runtime.
++static void mpx_insn_get_displacement(struct mpx_insn *insn)
++{
++	unsigned char mod, rm, base;
 +
-+Also the PR_MPX_INIT and PR_MPX_RELEASE prctl() commands are added
-+to init and release MPX related resource. A MMU notifier will be
-+registered during PR_MPX_INIT command execution. So the bound tables
-+can be automatically deallocated when one memory area is unmapped.
++	/*
++	 * Interpreting the modrm byte:
++	 * mod = 00 - no displacement fields (exceptions below)
++	 * mod = 01 - 1-byte displacement field
++	 * mod = 10 - displacement field is 4 bytes
++	 * mod = 11 - no memory operand
++	 *
++	 * mod != 11, r/m = 100 - SIB byte exists
++	 * mod = 00, SIB base = 101 - displacement field is 4 bytes
++	 * mod = 00, r/m = 101 - rip-relative addressing, displacement
++	 *	field is 4 bytes
++	 */
++	mod = X86_MODRM_MOD(insn->modrm.value);
++	rm = X86_MODRM_RM(insn->modrm.value);
++	base = X86_SIB_BASE(insn->sib.value);
++	if (mod == 3)
++		return;
++	if (mod == 1) {
++		insn->displacement.value = get_next(unsigned char, insn);
++		insn->displacement.nbytes = 1;
++	} else if ((mod == 0 && rm == 5) || mod == 2 ||
++			(mod == 0 && base == 5)) {
++		insn->displacement.value = get_next(int, insn);
++		insn->displacement.nbytes = 4;
++	}
++
++err_out:
++	return;
++}
++
++static void mpx_insn_init(struct mpx_insn *insn, struct pt_regs *regs)
++{
++	unsigned char buf[MAX_MPX_INSN_SIZE];
++	int bytes;
++
++	memset(insn, 0, sizeof(*insn));
++
++	bytes = copy_from_user(buf, (void __user *)regs->ip, MAX_MPX_INSN_SIZE);
++	insn->limit = MAX_MPX_INSN_SIZE - bytes;
++	insn->kaddr = buf;
++	insn->next_byte = buf;
++
++	/*
++	 * In 64-bit Mode, all Intel MPX instructions use 64-bit
++	 * operands for bounds and 64 bit addressing, i.e. REX.W &
++	 * 67H have no effect on data or address size.
++	 *
++	 * In compatibility and legacy modes (including 16-bit code
++	 * segments, real and virtual 8086 modes) all Intel MPX
++	 * instructions use 32-bit operands for bounds and 32 bit
++	 * addressing.
++	 */
++#ifdef CONFIG_X86_64
++	insn->x86_64 = 1;
++	insn->addr_bytes = 8;
++#else
++	insn->x86_64 = 0;
++	insn->addr_bytes = 4;
++#endif
++}
++
++static unsigned long mpx_insn_decode(struct mpx_insn *insn, struct pt_regs *regs)
++{
++	mpx_insn_init(insn, regs);
++
++	/*
++	 * In this case, we only need decode bndcl/bndcn/bndcu,
++	 * so we can use private diassembly interfaces to get
++	 * prefixes, modrm, sib, displacement, etc..
++	 */
++	mpx_insn_get_prefixes(insn);
++	insn->next_byte += 2; /* ignore opcode */
++	mpx_insn_get_modrm(insn);
++	mpx_insn_get_sib(insn);
++	mpx_insn_get_displacement(insn);
++
++	return get_addr_ref(insn, regs);
++}
++
+ static bool allocate_bt(unsigned long bd_entry)
+ {
+ 	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
+@@ -126,3 +389,27 @@ void do_mpx_bt_fault(struct xsave_struct *xsave_buf)
+ 	if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
+ 		allocate_bt(bd_entry);
+ }
++
++void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
++		struct xsave_struct *xsave_buf)
++{
++	struct mpx_insn insn;
++	uint8_t bndregno;
++	unsigned long addr_vio;
++
++	addr_vio = mpx_insn_decode(&insn, regs);
++
++	bndregno = X86_MODRM_REG(insn.modrm.value);
++	if (bndregno > 3)
++		return;
++
++	info->si_lower =
++		(void __user *)(xsave_buf->bndregs.bndregs[2*bndregno]);
++	info->si_upper =
++		(void __user *)(~xsave_buf->bndregs.bndregs[2*bndregno+1]);
++	info->si_addr_lsb = 0;
++	info->si_signo = SIGSEGV;
++	info->si_errno = 0;
++	info->si_code = SEGV_BNDERR;
++	info->si_addr = (void __user *)addr_vio;
++}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 6b284a4..4fda5c6 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -269,6 +269,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+ 	unsigned long status;
+ 	struct xsave_struct *xsave_buf;
+ 	struct task_struct *tsk = current;
++	siginfo_t info;
+ 
+ 	prev_state = exception_enter();
+ 	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
+@@ -304,6 +305,11 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+ 		break;
+ 
+ 	case 1: /* Bound violation. */
++		do_mpx_bounds(regs, &info, xsave_buf);
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs,
++				error_code, &info);
++		break;
++
+ 	case 0: /* No MPX exception. */
+ 		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
+ 		break;
+diff --git a/include/uapi/asm-generic/siginfo.h b/include/uapi/asm-generic/siginfo.h
+index ba5be7f..1e35520 100644
+--- a/include/uapi/asm-generic/siginfo.h
++++ b/include/uapi/asm-generic/siginfo.h
+@@ -91,6 +91,10 @@ typedef struct siginfo {
+ 			int _trapno;	/* TRAP # which caused the signal */
+ #endif
+ 			short _addr_lsb; /* LSB of the reported address */
++			struct {
++				void __user *_lower;
++				void __user *_upper;
++			} _addr_bnd;
+ 		} _sigfault;
+ 
+ 		/* SIGPOLL */
+@@ -131,6 +135,8 @@ typedef struct siginfo {
+ #define si_trapno	_sifields._sigfault._trapno
+ #endif
+ #define si_addr_lsb	_sifields._sigfault._addr_lsb
++#define si_lower	_sifields._sigfault._addr_bnd._lower
++#define si_upper	_sifields._sigfault._addr_bnd._upper
+ #define si_band		_sifields._sigpoll._band
+ #define si_fd		_sifields._sigpoll._fd
+ #ifdef __ARCH_SIGSYS
+@@ -199,7 +205,8 @@ typedef struct siginfo {
+  */
+ #define SEGV_MAPERR	(__SI_FAULT|1)	/* address not mapped to object */
+ #define SEGV_ACCERR	(__SI_FAULT|2)	/* invalid permissions for mapped object */
+-#define NSIGSEGV	2
++#define SEGV_BNDERR	(__SI_FAULT|3)  /* failed address bound checks */
++#define NSIGSEGV	3
+ 
+ /*
+  * SIGBUS si_codes
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 940b30e..7b774d9 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2771,6 +2771,10 @@ int copy_siginfo_to_user(siginfo_t __user *to, const siginfo_t *from)
+ 		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+ 			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+ #endif
++#ifdef SEGV_BNDERR
++		err |= __put_user(from->si_lower, &to->si_lower);
++		err |= __put_user(from->si_upper, &to->si_upper);
++#endif
+ 		break;
+ 	case __SI_CHLD:
+ 		err |= __put_user(from->si_pid, &to->si_pid);
 -- 
 1.7.1
 
