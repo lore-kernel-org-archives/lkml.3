@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaAZP7u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 10:59:50 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59235 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaAZP7t (ORCPT
+	id S1753183AbaAZQAo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 11:00:44 -0500
+Received: from mail-gg0-f172.google.com ([209.85.161.172]:39300 "EHLO
+	mail-gg0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaAZQAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 10:59:49 -0500
-MIME-Version: 1.0
-Date: Sun, 26 Jan 2014 10:59:48 -0500
-X-Google-Sender-Auth: KSF8CP1FzDoLNIRYzbOjMa92GIA
-Message-ID: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
-Subject: ath9k ARM build error with v3.13-8330-g4ba9920
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: ath9k-devel@venema.h4ckr.net, netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 26 Jan 2014 11:00:43 -0500
+From: Gary Servin <garyservin@gmail.com>
+To: jfrederich@gmail.com, dsd@laptop.org, jon.nettleton@gmail.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Gary Servin <garyservin@gmail.com>
+Subject: [PATCH] staging: olpc_dcon: Trivial: Remove space before indentation.
+Date: Sun, 26 Jan 2014 13:00:18 -0300
+Message-Id: <1390752018-26243-1-git-send-email-garyservin@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+This coding style error was detected using the checkpatch.pl script
 
-This commit:
+Signed-off-by: Gary Servin <garyservin@gmail.com>
+---
+ drivers/staging/olpc_dcon/olpc_dcon.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-commit 4dc78c437a0a2ac152a2b2c5e91a814a6ef3599e
-Author: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Date:   Wed Dec 18 09:53:26 2013 +0530
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.h b/drivers/staging/olpc_dcon/olpc_dcon.h
+index e2663b1..aec9895 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.h
++++ b/drivers/staging/olpc_dcon/olpc_dcon.h
+@@ -37,7 +37,7 @@
+ /* Load Delay Locked Loop (DLL) settings for clock delay */
+ #define MEM_DLL_CLOCK_DELAY	(1<<0)
+ /* Memory controller power down function */
+-#define MEM_POWER_DOWN  	(1<<8)
++#define MEM_POWER_DOWN		(1<<8)
+ /* Memory controller software reset */
+ #define MEM_SOFT_RESET		(1<<0)
+ 
+-- 
+1.8.5.3
 
-    ath9k: Fix RTC reset delay
-
-    The delay that is required after issuing a RTC reset
-    varies for each chip. Handle this properly.
-
-    Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-adds a udelay(10000) call to the ath9k driver.  This will cause a
-build error on various ARM configs because the value passed to udelay
-is too large:
-
-ERROR: "__bad_udelay" [drivers/net/wireless/ath/ath9k/ath9k_hw.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-
-Is the 10000 microsecond udelay really required?  I believe the limit
-on ARM is 2000.  Perhaps something else could be done in this case?
-
-josh
