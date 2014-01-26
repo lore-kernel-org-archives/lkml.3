@@ -1,78 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaAZV0J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:26:09 -0500
-Received: from imp01.mtu.ru ([62.5.255.10]:40803 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892AbaAZV0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:26:07 -0500
-X-Spam-Flag: NO
-Message-ID: <52E57D42.60206@pavlinux.ru>
-Date: Mon, 27 Jan 2014 01:25:22 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753220AbaAZVb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:31:59 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.102]:21029
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752397AbaAZVb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 16:31:57 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.8-rt11
-References: <20140125134519.GA9845@linutronix.de>
-In-Reply-To: <20140125134519.GA9845@linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="jfKKxsauufOwfRcLkA7E0QNtlnat6EhHh"
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: FINANCE 
+To: Recipients <cc12@finance444.onmicrosoft.com>
+From: FINANCE <cc12@finance444.onmicrosoft.com>
+Date: Mon, 27 Jan 2014 03:01:39 +0530
+Reply-To: <adibfinancei@manager.in.th>
+Message-ID: <ab120924-1af0-43c0-a355-a82dd44f8a20@HKXPR06MB312.apcprd06.prod.outlook.com>
+X-Originating-IP: [115.241.123.74]
+X-ClientProxiedBy: SIXPR02CA024.apcprd02.prod.outlook.com (10.141.119.19) To
+ HKXPR06MB312.apcprd06.prod.outlook.com (10.141.135.155)
+X-Forefront-PRVS: 01039C93E4
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6049001)(6009001)(6039001)(189002)(199002)(74662001)(47446002)(74502001)(218053001)(43066001)(76576001)(76176001)(93516002)(86362001)(69226001)(86372001)(63696002)(47776003)(83322001)(19580405001)(19580395003)(81342001)(87976001)(76796001)(76786001)(74366001)(87266001)(81816001)(74876001)(74706001)(50466002)(81686001)(49866001)(47736001)(80022001)(65816001)(50986001)(47976001)(66066001)(85306002)(86442001)(4396001)(59766001)(77982001)(83072002)(85852003)(42186004)(54356001)(64872005)(74316001)(51856001)(46102001)(76482001)(23756003)(90146001)(56816005)(77096001)(89136003)(80976001)(81542001)(94316002)(79102001)(558084003)(93136001)(53256004)(92726001)(56776001)(54316002)(33646001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR06MB312;H:[115.241.123.74];CLIP:115.241.123.74;FPR:;InfoNoRecordsMX:1;A:0;LANG:en;
+X-OriginatorOrg: finance444.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---jfKKxsauufOwfRcLkA7E0QNtlnat6EhHh
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-25.01.2014 17:45, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
-:
-> Dear RT folks!
-
-
-Gentlemen, let's have a month of stress testing!
-Divide tasks testing subsystem: USB, NET, MM, ACPI, AUDIO, VIDEO
-By CPUs: ARM/PPC/X86/X86_64...
-
-Purely on observations noted that in September 2013, the quality and stab=
-ility
-of the code has deteriorated dramatically.
-
---=20
-
-                                                         Pavel.
-
-
---jfKKxsauufOwfRcLkA7E0QNtlnat6EhHh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCgAGBQJS5X1DAAoJEPtok08Dny2hsjIP/2DqresRa9Ymrn1CisClRotJ
-1mUeRnaSmX0jV0M+qvGze3XJWpmEZBqnvcH2YsVRCVtjdn3Al8qkXpukWqepA5+R
-YjW7jX0SG6nXrEnEqRSLOtZTr+d8+U4YJ7jCWvx9609ItOwriGVXsI4xEzTAYoxa
-R581LYYJMj1CnTl06hsGPSn9etDfrQxHwrjpQkYssq9vZQIp6qdrklCQ8uqIReYp
-7nFnLR5kK3JSxiWglH3ZixV71+UsaYM1kFyOKGh50Bv/HOEYV7mrtaXDRN3trIwO
-adVoFKTh95DpxJru9tDyvOv/2opPnwlPBrsQEWKDDEqG/NpfgTLjmx91UKOmkLgk
-QDUGryUQlie8EzcasL23jjnJq7qD8wySOQfAZ9hF9zwv74+RpFfIEaElQGPOtTbx
-1JJco0fPoVJWRpRFKYkA98xcCNMQayJ70HrFWeenMYSaB9ucnHlic4Kn5GyGdWBH
-rUEdS1Pq1fD46FFOeDAAvEXOFh/Br0yRrIpLkJrqICjTGfA24YlCGKsIU9/84nfG
-zHRuYmUGFtUrJOmLNqAi0y+UOJT0OJKBE9tcKSsAVJMrj7qkfxeRdnMnpkfl3zq1
-+MEFLMuEVdAW31xheXa0UkX+okQXPsvQohMgnd1EIEUGNS1I+aSmiyy6NLPUQwMI
-mCdGX6F8+rOZ/lpQEsZX
-=WOMI
------END PGP SIGNATURE-----
-
---jfKKxsauufOwfRcLkA7E0QNtlnat6EhHh--
+Are you in any financial difficulty? or you want to start a new Business , Company , etc apply for Loan at 3% , EMAIL; adibfinancei@manager.in.th
