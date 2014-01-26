@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaAZSdo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 13:33:44 -0500
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:34902 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaAZSdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 13:33:43 -0500
-Message-ID: <52E554EC.3090900@ladisch.de>
-Date: Sun, 26 Jan 2014 19:33:16 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1752990AbaAZSnb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 13:43:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461AbaAZSna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 13:43:30 -0500
+Date: Sun, 26 Jan 2014 19:43:10 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/8] perf tools: kaslr fixes
+Message-ID: <20140126184310.GB1126@krava.brq.redhat.com>
+References: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-To: Network Nut <sillystack@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: WaitForMultipleObjects/etc. In Kernel
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com>
-In-Reply-To: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Network Nut wrote:
-> I think that the facility by which a thread can block while waiting for any
-> of several synchronization primitives (*mutex*, *semaphore*, *event*, *waitable
-> timer*)...is not only "nice to have", but fundamental to complex (clean)
-> multi-threaded programming.
+On Fri, Jan 24, 2014 at 05:10:10PM +0200, Adrian Hunter wrote:
+> Hi
+> 
+> Here are some patches that improve perf tools
+> handling of relocation.
+> 
+> This has become an issue as mentioned in this
+> thread:
+> 
+> 	http://marc.info/?l=linux-kernel&m=139030004314756
+> 
+> 
+> It looks like the changes I made to vmlinux and
+> module mapping to allow object code to be read
+> broke the symbol annotation for relocated kernels.
+> The first patch fixes that.
+> 
+> There were some other issues though:
+> 	- ref_reloc_sym was not always set up
+> 	- mustn't use kcore if the kernel has moved
+> 	- kallsyms is not unique for a given
+> 	buildid
+> 
+> These things need more testing but I thought it was
+> worth getting comments now.
+> 
+> 
+> Adrian Hunter (8):
+>       perf tools: Fix symbol annotation for relocated kernel
+>       perf tools: Add kallsyms__get_function_start()
+>       perf tools: Add machine__get_kallsyms_filename()
+>       perf tools: Set up ref_reloc_sym in machine__create_kernel_maps()
+>       perf report: Get ref_reloc_sym from kernel map
+>       perf tools: Prevent the use of kcore if the kernel has moved
+>       perf tools: test does not need to set up ref_reloc_sym
+>       perf tools: Adjust kallsyms for relocated kernel
 
-You mean a facility like (e)poll, which can wait for things like timerfd,
-signalfd, or eventfd?
+cannot say much for the code changes (look ok ;-) ), but
+it fixed the issue for me
 
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 
-Regards,
-Clemens
+jirka
