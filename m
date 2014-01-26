@@ -1,156 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaAZW2S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 17:28:18 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:47613 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaAZW2Q (ORCPT
+	id S1753303AbaAZWcC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 17:32:02 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:55582 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054AbaAZWcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 17:28:16 -0500
+	Sun, 26 Jan 2014 17:32:00 -0500
 MIME-Version: 1.0
-Date: Sun, 26 Jan 2014 14:28:15 -0800
-X-Google-Sender-Auth: Ktsr1xZrBlXu4j68sjgGFScmTjE
-Message-ID: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
-Subject: [RFC] de-asmify the x86-64 system call slowpath
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11339e2e7bcbb404f0e71bb7
+In-Reply-To: <52E582D0.9070501@gmail.com>
+References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
+	<52E50C24.8030305@gmail.com>
+	<CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
+	<20140126214542.GC18840@core.coreip.homeip.net>
+	<52E582D0.9070501@gmail.com>
+Date: Mon, 27 Jan 2014 02:31:59 +0400
+Message-ID: <CALT56yPJjLZ_UHgH1koKPbTLBR=5QzSFMMXfqYxspw30_fpKNQ@mail.gmail.com>
+Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Manish Badarkhe <badarkhe.manish@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11339e2e7bcbb404f0e71bb7
-Content-Type: text/plain; charset=UTF-8
+On Mon, Jan 27, 2014 at 1:49 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On 26.01.2014 22:45, Dmitry Torokhov wrote:
+>>
+>> On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
+>>>
+>>> Hi Tomasz,
+>>>
+>>> Thank you for your review comments.
+>>>
+>>> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com>
+>>> wrote:
+>>>>
+>>>>
+>>>> Hi Manish,
+>>>>
+>>>>
+>>>> On 26.01.2014 08:15, Manish Badarkhe wrote:
+>>>>>
+>>>>>
+>>>>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+>>>>> option for DT code to avoid if-deffery in code.
+>>>>>
+>>>>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>>>>> ---
+>>>>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
+>>>>>    drivers/power/max8925_power.c |   14 +++++---------
+>>>>>    1 file changed, 5 insertions(+), 9 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/power/max8925_power.c
+>>>>> b/drivers/power/max8925_power.c
+>>>>> index b4513f2..d353fbc 100644
+>>>>> --- a/drivers/power/max8925_power.c
+>>>>> +++ b/drivers/power/max8925_power.c
+>>>>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct
+>>>>> max8925_power_info *info)
+>>>>>          return 0;
+>>>>>    }
+>>>>>
+>>>>> -#ifdef CONFIG_OF
+>>>>>    static struct max8925_power_pdata *
+>>>>>    max8925_power_dt_init(struct platform_device *pdev)
+>>>>>    {
+>>>>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device
+>>>>> *pdev)
+>>>>>
+>>>>>          return pdata;
+>>>>>    }
+>>>>> -#else
+>>>>> -static struct max8925_power_pdata *
+>>>>> -max8925_power_dt_init(struct platform_device *pdev)
+>>>>> -{
+>>>>> -       return pdev->dev.platform_data;
+>>>>> -}
+>>>>> -#endif
+>>>>>
+>>>>>    static int max8925_power_probe(struct platform_device *pdev)
+>>>>>    {
+>>>>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct
+>>>>> platform_device *pdev)
+>>>>>          struct max8925_power_info *info;
+>>>>>          int ret;
+>>>>>
+>>>>> -       pdata = max8925_power_dt_init(pdev);
+>>>>> +       if (IS_ENABLED(CONFIG_OF))
+>>>>> +               pdata = max8925_power_dt_init(pdev);
+>>>>> +       else
+>>>>> +               pdata = pdev->dev.platform_data;
+>>>>> +
+>>>>
+>>>>
+>>>>
+>>>> This does not look much better than before this patch. Instead of
+>>>> "if-deffery" outside function bodies you are adding "iffery" (if there is
+>>>> such a word) inside a function.
+>>>> What about adding
+>>>>
+>>>>          if (!IS_ENABLED(CONFIG_OF))
+>>>>                  return pdev->dev.platform_data;
+>>>>
+>>>> on top of max8925_power_dt_init() instead or maybe also renaming this
+>>>> function to max8925_get_pdata()?
+>>>
+>>>
+>>> Okay, I will rename function "max8925_power_dt_init()" to
+>>> "max8925_get_pdata()".
+>>> As you suggested, in the body of this function  will add a logic to
+>>> retrieve  data in case
+>>> of DT and non-DT platforms.
+>>
+>>
+>> Should we not always favor platform-supplied data regardless of
+>> CONFIG_OF state and fall back to DT (firmware) supplied data if platform
+>> data is absent? This way one can tweak kernel behavior without needing
+>> to change firmware.
+>
+>
+> I guess we should, but apparently this was not the original behavior before
+> this patch, so I'm not sure if we should be squashing such semantic change
+> with this simple refactor.
 
-The x86-64 (and 32-bit, for that matter) system call slowpaths are all
-in C, but the *selection* of which slow-path to take is a mixture of
-complicated assembler ("sysret_check -> sysret_careful ->
-sysret_signal ->sysret_audit -> int_check_syscall_exit_work" etc), and
-oddly named and placed C code ("schedule_user" vs
-"__audit_syscall_exit" vs "do_notify_resume").
+Hmm. Judging from the code, max8925_power_dt_init() function follows exactly
+opposite strategy - it uses platform_data if of_node is not populated/available.
+So (if dt_init will compile with CONFIG_OF disabled) one can always
+use _dt_init()
+function to retrieve pdata.
 
-This attached patch tries to take the "do_notify_resume()" approach,
-and renaming it to something sane ("syscall_exit_slowpath") and call
-out to *all* the different slow cases from that one place, instead of
-having some cases hardcoded in asm, and some in C. And instead of
-hardcoding which cases result in a "iretq" and which cases result in a
-faster sysret case, it's now simply a return value from that
-syscall_exit_slowpath() function, so it's very natural and easy to say
-"taking a signal will force us to do the slow iretq case, but we can
-do the task exit work and still do the sysret".
-
-I've marked this as an RFC, because I didn't bother trying to clean up
-the 32-bit code similarly (no test-cases, and trust me, if you get
-this wrong, it will fail spectacularly but in very subtle and
-hard-to-debug ways), and I also didn't bother with the slow cases in
-the "iretq" path, so that path still has the odd asm cases and calls
-the old (now legacy) do_notify_resume() path.
-
-But this is actually tested, and seems to work (including limited
-testing with strace, gdb etc), and while it adds a few more lines than
-it removes, the removed lines are mostly asm, and added lines are C
-(and part of them are the temporary still-extant do_notify_resume()
-wrapper). In particular, it should be fairly straightforward to take
-this as a starting point, removing the extant
-do_notify_resume/schedule/etc cases one by one, and get rid of more
-asm code and finally the wrapper.
-
-Comments? This was obviously brought on by my frustration with the
-currently nasty do_notify_resume() always returning to iret for the
-task_work case, and PeterZ's patch that fixed that, but made the asm
-mess even *worse*.
-
-                        Linus
-
---001a11339e2e7bcbb404f0e71bb7
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqwvowsp0
-
-IGFyY2gveDg2L2tlcm5lbC9lbnRyeV82NC5TIHwgNTEgKysrKysrKysrKysrKystLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogYXJjaC94ODYva2VybmVsL3NpZ25hbC5jICAgfCAzNyAr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0KIDIgZmlsZXMgY2hhbmdlZCwgNDcgaW5z
-ZXJ0aW9ucygrKSwgNDEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYva2VybmVs
-L2VudHJ5XzY0LlMgYi9hcmNoL3g4Ni9rZXJuZWwvZW50cnlfNjQuUwppbmRleCAxZTk2YzM2Mjhi
-ZjIuLjE1YjU5NTNkYTk1OCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL2VudHJ5XzY0LlMK
-KysrIGIvYXJjaC94ODYva2VybmVsL2VudHJ5XzY0LlMKQEAgLTY1OCwzMCArNjU4LDI0IEBAIHN5
-c3JldF9jaGVjazoKIAkvKiBIYW5kbGUgcmVzY2hlZHVsZXMgKi8KIAkvKiBlZHg6CXdvcmssIGVk
-aTogd29ya21hc2sgKi8KIHN5c3JldF9jYXJlZnVsOgotCWJ0ICRUSUZfTkVFRF9SRVNDSEVELCVl
-ZHgKLQlqbmMgc3lzcmV0X3NpZ25hbAogCVRSQUNFX0lSUVNfT04KIAlFTkFCTEVfSU5URVJSVVBU
-UyhDTEJSX05PTkUpCi0JcHVzaHFfY2ZpICVyZGkKLQlTQ0hFRFVMRV9VU0VSCi0JcG9wcV9jZmkg
-JXJkaQotCWptcCBzeXNyZXRfY2hlY2sKKwlTQVZFX1JFU1QKKwlGSVhVUF9UT1BfT0ZfU1RBQ0sg
-JXIxMQorCW1vdnEgJXJzcCwlcmRpCisJbW92bCAlZWR4LCVlc2kKKwljYWxsIHN5c2NhbGxfZXhp
-dF9zbG93cGF0aAorCW1vdmwgJF9USUZfQUxMV09SS19NQVNLICYgfl9USUZfU1lTQ0FMTF9BVURJ
-VCwlZWRpCisJdGVzdGwgJWVheCwlZWF4CisJam5lIHN5c3JldF91c2luZ19pcmV0CisJYWRkcSAk
-UkVTVF9TS0lQLCVyc3AKKwlqbXAgc3lzcmV0X2NoZWNrOwogCi0JLyogSGFuZGxlIGEgc2lnbmFs
-ICovCi1zeXNyZXRfc2lnbmFsOgotCVRSQUNFX0lSUVNfT04KLQlFTkFCTEVfSU5URVJSVVBUUyhD
-TEJSX05PTkUpCi0jaWZkZWYgQ09ORklHX0FVRElUU1lTQ0FMTAotCWJ0ICRUSUZfU1lTQ0FMTF9B
-VURJVCwlZWR4Ci0JamMgc3lzcmV0X2F1ZGl0Ci0jZW5kaWYKLQkvKgotCSAqIFdlIGhhdmUgYSBz
-aWduYWwsIG9yIGV4aXQgdHJhY2luZyBvciBzaW5nbGUtc3RlcC4KLQkgKiBUaGVzZSBhbGwgd2lu
-ZCB1cCB3aXRoIHRoZSBpcmV0IHJldHVybiBwYXRoIGFueXdheSwKLQkgKiBzbyBqdXN0IGpvaW4g
-dGhhdCBwYXRoIHJpZ2h0IG5vdy4KLQkgKi8KLQlGSVhVUF9UT1BfT0ZfU1RBQ0sgJXIxMSwgLUFS
-R09GRlNFVAotCWptcCBpbnRfY2hlY2tfc3lzY2FsbF9leGl0X3dvcmsKK3N5c3JldF91c2luZ19p
-cmV0OgorCVJFU1RPUkVfUkVTVAorCURJU0FCTEVfSU5URVJSVVBUUyhDTEJSX05PTkUpCisJVFJB
-Q0VfSVJRU19PRkYKKwlqbXAgaW50X3dpdGhfY2hlY2sKIAogYmFkc3lzOgogCW1vdnEgJC1FTk9T
-WVMsUkFYLUFSR09GRlNFVCglcnNwKQpAQCAtNzAzLDIwICs2OTcsNiBAQCBhdWRpdHN5czoKIAlj
-YWxsIF9fYXVkaXRfc3lzY2FsbF9lbnRyeQogCUxPQURfQVJHUyAwCQkvKiByZWxvYWQgY2FsbC1j
-bG9iYmVyZWQgcmVnaXN0ZXJzICovCiAJam1wIHN5c3RlbV9jYWxsX2Zhc3RwYXRoCi0KLQkvKgot
-CSAqIFJldHVybiBmYXN0IHBhdGggZm9yIHN5c2NhbGwgYXVkaXQuICBDYWxsIF9fYXVkaXRfc3lz
-Y2FsbF9leGl0KCkKLQkgKiBkaXJlY3RseSBhbmQgdGhlbiBqdW1wIGJhY2sgdG8gdGhlIGZhc3Qg
-cGF0aCB3aXRoIFRJRl9TWVNDQUxMX0FVRElUCi0JICogbWFza2VkIG9mZi4KLQkgKi8KLXN5c3Jl
-dF9hdWRpdDoKLQltb3ZxIFJBWC1BUkdPRkZTRVQoJXJzcCksJXJzaQkvKiBzZWNvbmQgYXJnLCBz
-eXNjYWxsIHJldHVybiB2YWx1ZSAqLwotCWNtcHEgJC1NQVhfRVJSTk8sJXJzaQkvKiBpcyBpdCA8
-IC1NQVhfRVJSTk8/ICovCi0Jc2V0YmUgJWFsCQkvKiAxIGlmIHNvLCAwIGlmIG5vdCAqLwotCW1v
-dnpibCAlYWwsJWVkaQkJLyogemVyby1leHRlbmQgdGhhdCBpbnRvICVlZGkgKi8KLQljYWxsIF9f
-YXVkaXRfc3lzY2FsbF9leGl0Ci0JbW92bCAkKF9USUZfQUxMV09SS19NQVNLICYgfl9USUZfU1lT
-Q0FMTF9BVURJVCksJWVkaQotCWptcCBzeXNyZXRfY2hlY2sKICNlbmRpZgkvKiBDT05GSUdfQVVE
-SVRTWVNDQUxMICovCiAKIAkvKiBEbyBzeXNjYWxsIHRyYWNpbmcgKi8KQEAgLTc4Niw3ICs3NjYs
-NiBAQCBpbnRfY2FyZWZ1bDoKIGludF92ZXJ5X2NhcmVmdWw6CiAJVFJBQ0VfSVJRU19PTgogCUVO
-QUJMRV9JTlRFUlJVUFRTKENMQlJfTk9ORSkKLWludF9jaGVja19zeXNjYWxsX2V4aXRfd29yazoK
-IAlTQVZFX1JFU1QKIAkvKiBDaGVjayBmb3Igc3lzY2FsbCBleGl0IHRyYWNlICovCiAJdGVzdGwg
-JF9USUZfV09SS19TWVNDQUxMX0VYSVQsJWVkeApkaWZmIC0tZ2l0IGEvYXJjaC94ODYva2VybmVs
-L3NpZ25hbC5jIGIvYXJjaC94ODYva2VybmVsL3NpZ25hbC5jCmluZGV4IDllNWRlNjgxM2UxZi4u
-MjVkMDJmNmE2NWYxIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvc2lnbmFsLmMKKysrIGIv
-YXJjaC94ODYva2VybmVsL3NpZ25hbC5jCkBAIC03MjUsMTMgKzcyNSwzMCBAQCBzdGF0aWMgdm9p
-ZCBkb19zaWduYWwoc3RydWN0IHB0X3JlZ3MgKnJlZ3MpCiB9CiAKIC8qCi0gKiBub3RpZmljYXRp
-b24gb2YgdXNlcnNwYWNlIGV4ZWN1dGlvbiByZXN1bXB0aW9uCi0gKiAtIHRyaWdnZXJlZCBieSB0
-aGUgVElGX1dPUktfTUFTSyBmbGFncworICogVGhpcyBpcyB0aGUgc3lzdGVtIGNhbGwgZXhpdCBz
-bG93cGF0aCwgY2FsbGVkIGlmIGFueSBvZgorICogdGhlIHRocmVhZCBpbmZvIGZsYWdzIGFyZSBz
-ZXQgdGhhdCBjYXVzZSB1cyB0byBub3QganVzdAorICogcmV0dXJuIHVzaW5nIGEgJ3N5c3JldCcg
-aW5zdHJ1Y3Rpb24uCisgKgorICogUmV0dXJuIHplcm8gaWYgdGhlIHVzZXIgcmVnaXN0ZXIgc3Rh
-dGUgaGFzbid0IGNoYW5nZWQsCisgKiBhbmQgYSAnc3lzcmV0JyBpcyBzdGlsbCBvay4gUmV0dXJu
-IG5vbnplcm8gaWYgd2UgbmVlZAorICogdG8gZ28gdG8gdGhlIHNsb3cgJ2lyZXQnIHBhdGggZHVl
-IHRvIHBvc3NpYmxlIHJlZ2lzdGVyCisgKiBjaGFuZ2VzIChzaWduYWxzLCBwdHJhY2UsIHdoYXRl
-dmVyKS4KICAqLwotX192aXNpYmxlIHZvaWQKLWRvX25vdGlmeV9yZXN1bWUoc3RydWN0IHB0X3Jl
-Z3MgKnJlZ3MsIHZvaWQgKnVudXNlZCwgX191MzIgdGhyZWFkX2luZm9fZmxhZ3MpCitfX3Zpc2li
-bGUgaW50IHN5c2NhbGxfZXhpdF9zbG93cGF0aChzdHJ1Y3QgcHRfcmVncyAqcmVncywgdTMyIHRo
-cmVhZF9pbmZvX2ZsYWdzKQogeworCWludCByZXR2YWwgPSAwOworCiAJdXNlcl9leGl0KCk7CisJ
-aWYgKHRocmVhZF9pbmZvX2ZsYWdzICYgX1RJRl9ORUVEX1JFU0NIRUQpCisJCXNjaGVkdWxlKCk7
-CisKKwlpZiAodGhyZWFkX2luZm9fZmxhZ3MgJiBfVElGX1dPUktfU1lTQ0FMTF9FWElUKQorCQlz
-eXNjYWxsX3RyYWNlX2xlYXZlKHJlZ3MpOworCisjaWZkZWYgQ09ORklHX0FVRElUU1lTQ0FMTAor
-CWlmICh0aHJlYWRfaW5mb19mbGFncyAmIF9USUZfU1lTQ0FMTF9BVURJVCkKKwkJX19hdWRpdF9z
-eXNjYWxsX2V4aXQocmVncy0+YXgsIHJlZ3MtPmF4IDwgLU1BWF9FUlJOTyk7CisjZW5kaWYKIAog
-I2lmZGVmIENPTkZJR19YODZfTUNFCiAJLyogbm90aWZ5IHVzZXJzcGFjZSBvZiBwZW5kaW5nIE1D
-RXMgKi8KQEAgLTc0Myw4ICs3NjAsMTAgQEAgZG9fbm90aWZ5X3Jlc3VtZShzdHJ1Y3QgcHRfcmVn
-cyAqcmVncywgdm9pZCAqdW51c2VkLCBfX3UzMiB0aHJlYWRfaW5mb19mbGFncykKIAkJdXByb2Jl
-X25vdGlmeV9yZXN1bWUocmVncyk7CiAKIAkvKiBkZWFsIHdpdGggcGVuZGluZyBzaWduYWwgZGVs
-aXZlcnkgKi8KLQlpZiAodGhyZWFkX2luZm9fZmxhZ3MgJiBfVElGX1NJR1BFTkRJTkcpCisJaWYg
-KHRocmVhZF9pbmZvX2ZsYWdzICYgX1RJRl9TSUdQRU5ESU5HKSB7CiAJCWRvX3NpZ25hbChyZWdz
-KTsKKwkJcmV0dmFsID0gMTsKKwl9CiAKIAlpZiAodGhyZWFkX2luZm9fZmxhZ3MgJiBfVElGX05P
-VElGWV9SRVNVTUUpIHsKIAkJY2xlYXJfdGhyZWFkX2ZsYWcoVElGX05PVElGWV9SRVNVTUUpOwpA
-QCAtNzU0LDggKzc3MywxNiBAQCBkb19ub3RpZnlfcmVzdW1lKHN0cnVjdCBwdF9yZWdzICpyZWdz
-LCB2b2lkICp1bnVzZWQsIF9fdTMyIHRocmVhZF9pbmZvX2ZsYWdzKQogCQlmaXJlX3VzZXJfcmV0
-dXJuX25vdGlmaWVycygpOwogCiAJdXNlcl9lbnRlcigpOworCXJldHVybiByZXR2YWw7CiB9CiAK
-Ky8qIEdldCByaWQgb2YgdGhpcyBvbGQgaW50ZXJmYWNlIHNvbWUgZGF5Li4gKi8KK19fdmlzaWJs
-ZSB2b2lkIGRvX25vdGlmeV9yZXN1bWUoc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHZvaWQgKnVudXNl
-ZCwgdTMyIHRocmVhZF9pbmZvX2ZsYWdzKQoreworCXN5c2NhbGxfZXhpdF9zbG93cGF0aChyZWdz
-LCB0aHJlYWRfaW5mb19mbGFncyAmIH4oX1RJRl9ORUVEX1JFU0NIRUR8X1RJRl9TWVNDQUxMX0FV
-RElUKSk7Cit9CisKKwogdm9pZCBzaWduYWxfZmF1bHQoc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHZv
-aWQgX191c2VyICpmcmFtZSwgY2hhciAqd2hlcmUpCiB7CiAJc3RydWN0IHRhc2tfc3RydWN0ICpt
-ZSA9IGN1cnJlbnQ7Cg==
---001a11339e2e7bcbb404f0e71bb7--
+-- 
+With best wishes
+Dmitry
