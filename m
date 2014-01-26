@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaAZDEi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:04:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52689 "EHLO
+	id S1752647AbaAZDEg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:04:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaAZDE3 (ORCPT
+	with ESMTP id S1752475AbaAZDE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:04:29 -0500
+	Sat, 25 Jan 2014 22:04:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [PATCH 3.4 02/12] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-Date: Sat, 25 Jan 2014 19:05:05 -0800
-Message-Id: <20140126030452.133855859@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 01/12] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
+Date: Sat, 25 Jan 2014 19:05:04 -0800
+Message-Id: <20140126030452.049229265@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.rc0.19.gb594c97
 In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
 References: <20140126030451.934281002@linuxfoundation.org>
@@ -27,88 +27,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Andy Honig <ahonig@google.com>
 
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-Since  the PCI subvendor and subdevice IDs were both zero on the old
-design, but are the same as the vendor and device on the new design, we
-can tell the old design and new design apart easily enough.  Split the
-existing entry for the PCI-DIO48H in `pci_8255_boards[]` into two new
-entries, referenced by different entries in the PCI device ID table
-`pci_8255_pci_table[]`.  Use the same board name for both entries.
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
+
+Reported-by: Andrew Honig <ahonig@google.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ lizf: backported to 3.4: based on Paolo's backport hints for <3.10 ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/cb_pcidio.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ arch/x86/kvm/lapic.c |   24 ++++++++++++++----------
+ arch/x86/kvm/lapic.h |    4 ++--
+ arch/x86/kvm/x86.c   |   33 +--------------------------------
+ 3 files changed, 17 insertions(+), 44 deletions(-)
 
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -56,10 +56,6 @@ struct pcidio_board {
- 	const char *name;	/*  name of the board */
- 	int dev_id;
- 	int n_8255;		/*  number of 8255 chips on board */
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1278,14 +1278,12 @@ void __kvm_migrate_apic_timer(struct kvm
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ {
+ 	u32 data;
+-	void *vapic;
+ 
+ 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++			      sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1295,7 +1293,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic;
+-	void *vapic;
+ 
+ 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
+ 		return;
+@@ -1310,17 +1307,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++			       sizeof(u32));
+ }
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
+ {
+ 	if (!irqchip_in_kernel(vcpu->kvm))
+-		return;
++		return -EINVAL;
++
++	if (vapic_addr) {
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					&vcpu->arch.apic->vapic_cache,
++					vapic_addr, sizeof(u32)))
++			return -EINVAL;
++       }
+ 
+ 	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
+ }
+ 
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -15,7 +15,7 @@ struct kvm_lapic {
+ 	bool irr_pending;
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ };
+ int kvm_create_lapic(struct kvm_vcpu *vcpu);
+ void kvm_free_lapic(struct kvm_vcpu *vcpu);
+@@ -46,7 +46,7 @@ int kvm_lapic_find_highest_irr(struct kv
+ u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
+ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
+ 
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2728,8 +2728,7 @@ long kvm_arch_vcpu_ioctl(struct file *fi
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
+ 	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5075,33 +5074,6 @@ static void post_kvm_run_save(struct kvm
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static void vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
 -
--	/*  indices of base address regions */
--	int pcicontroler_badrindex;
--	int dioregs_badrindex;
- };
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-
+-	vcpu->arch.apic->vapic_page = page;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -5385,7 +5357,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 	}
  
- static const struct pcidio_board pcidio_boards[] = {
-@@ -67,22 +63,16 @@ static const struct pcidio_board pcidio_
- 	 .name = "pci-dio24",
- 	 .dev_id = 0x0028,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio24h",
- 	 .dev_id = 0x0014,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio48h",
- 	 .dev_id = 0x000b,
- 	 .n_8255 = 2,
--	 .pcicontroler_badrindex = 0,
--	 .dioregs_badrindex = 1,
- 	 },
- };
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	vapic_enter(vcpu);
  
-@@ -239,10 +229,15 @@ found:
- 	if (comedi_pci_enable(pcidev, thisboard->name))
- 		return -EIO;
+ 	r = 1;
+ 	while (r > 0) {
+@@ -5442,8 +5413,6 @@ static int __vcpu_run(struct kvm_vcpu *v
  
--	devpriv->dio_reg_base
--	    =
-+	/*
-+	 * Use PCI BAR 2 region if non-zero length, else use PCI BAR 1 region.
-+	 * PCI BAR 1 is only used for older PCI-DIO48H boards.  At some point
-+	 * the PCI-DIO48H was redesigned to use the same PCI interface chip
-+	 * (and same PCI BAR region) as the other boards.
-+	 */
-+	devpriv->dio_reg_base =
- 	    pci_resource_start(devpriv->pci_dev,
--			       pcidio_boards[index].dioregs_badrindex);
-+			       (pci_resource_len(pcidev, 2) ? 2 : 1));
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
  
- /*
-  * Allocate the subdevice structures.  alloc_subdevice() is a
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
 
 
