@@ -1,36 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbaAZVuK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:50:10 -0500
-Received: from plane.gmane.org ([80.91.229.3]:44034 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248AbaAZVuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:50:08 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Sebastian Steinhuber <sebastian.steinhuber@googlemail.com>
-Subject: Re: Panic with latest git kernel
-Date: Sun, 26 Jan 2014 21:42:27 +0100
-Message-ID: <lc3rv7$nkf$1@ger.gmane.org>
-References: <52E50496.3040303@gmail.com> <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com> <52E50ED7.9070808@gmail.com> <52E50F72.9060300@nod.at> <52E51FEE.4020403@gmail.com> <52E52300.7020008@nod.at> <52E568C2.5050001@gmail.com>
-Mime-Version: 1.0
+	id S1753468AbaAZVul (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:50:41 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:54267 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaAZVuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 16:50:39 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52E58330.90602@roeck-us.net>
+Date: Sun, 26 Jan 2014 13:50:40 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jean Delvare <khali@linux-fr.org>
+CC: LM Sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Wei Ni <wni@nvidia.com>
+Subject: Re: lm90 driver no longer working on PCs in 3.13
+References: <52E561D0.4040308@roeck-us.net>	<20140126211357.6fa68909@endymion.delvare>	<52E573B6.9040903@roeck-us.net> <20140126214936.7736f530@endymion.delvare>
+In-Reply-To: <20140126214936.7736f530@endymion.delvare>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5491c699.dip0.t-ipconnect.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
-In-Reply-To: <52E568C2.5050001@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.01.2014 20:57, schrieb Harald Arnesen:
-> Seems you are right. I just tried to compile a 3.13.0 kernel again
-> (which I did when i was released, and it worked then), and I got the
-> same panic.
+On 01/26/2014 12:49 PM, Jean Delvare wrote:
+> On Sun, 26 Jan 2014 12:44:38 -0800, Guenter Roeck wrote:
+>> On 01/26/2014 12:13 PM, Jean Delvare wrote:
+>> The regulator code changed with 3.13; the dummy regulator no longer exists,
+>> and the functionality it provided is supposed to be handled automatically.
+>> But that only really works on devicetree based systems and otherwise returns
+>> -EPROBE_DEFER as mentioned above.
+>>
+>> Maybe there is some configuration option, or maybe something needs to be
+>> configured from user space. I found neither.
 >
-> Must be a Debian bug. I will pester them instead.
+> Neither would be acceptable to my eyes anyway. Things worked out of the
+> box before, they should keep working out of the box.
+>
+>> In the first case, we should create
+>> a dependency for the LM90 driver; in the latter case, we would have to make sure
+>> that it is well documented (I'd grumble on that, though - it would result in
+>> never ending trouble for us, having to repeatedly explain how this is now
+>> supposed to work).
+>>
+>> Another possible fix would be to have the regulator core return -ENODEV
+>> instead of -EPROBE_DEFER on non-dt systems. No idea if this would be acceptable
+>> or even feasible.
+>
+> Well, either the regulator subsystem gets fixed (or provides a suitable
+> API for drivers like lm90 and we update the lm90 driver to use it), or
+> I'll just revert the problematic commit for now. This is a severe
+> regression, we just can't leave things that way.
+>
 
-I had to downgrade busybox-static to 1.21.0-1 (testing)
+Maybe your configuration has CONFIG_REGULATORS disabled. Ubuntu has it enabled.
+I don't know about others.
 
+I agree, we may have to revert the patch. I don't think the regulator API works well
+enough in non-dt systems to be able to use it in such systems. Mark's expectation
+that regulator support must be disabled if regulators are not fully declared in non-dt
+systems doesn't seem very useful nor really feasible.
+
+Guenter
 
