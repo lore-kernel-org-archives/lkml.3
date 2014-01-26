@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaAZOjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 09:39:36 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59638 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaAZOjf (ORCPT
+	id S1752480AbaAZOrO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 09:47:14 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:42567 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaAZOrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 09:39:35 -0500
-Date: Sun, 26 Jan 2014 14:39:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140126143921.GG11727@sirena.org.uk>
-References: <1390742939-10695-1-git-send-email-ben.dooks@codethink.co.uk>
+	Sun, 26 Jan 2014 09:47:13 -0500
+Message-ID: <52E51FEE.4020403@gmail.com>
+Date: Sun, 26 Jan 2014 15:47:10 +0100
+From: Harald Arnesen <skogtun.linux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nE/5a/j5SCML90Nq"
-Content-Disposition: inline
-In-Reply-To: <1390742939-10695-1-git-send-email-ben.dooks@codethink.co.uk>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: gpio-regulator: warn if unknown regulator type
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Panic with latest git kernel
+References: <52E50496.3040303@gmail.com> <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com> <52E50ED7.9070808@gmail.com> <52E50F72.9060300@nod.at>
+In-Reply-To: <52E50F72.9060300@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Richard Weinberger [2014-01-26 14:36]:
 
---nE/5a/j5SCML90Nq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> $ cpio --list </boot/initrd.img-3.13.0-03477-gdf32e43
+>> kernel
+>> kernel/x86
+>> kernel/x86/microcode
+>> kernel/x86/microcode/GenuineIntel.bin
+>> 50 blocks
+>> $
 
-On Sun, Jan 26, 2014 at 01:28:59PM +0000, Ben Dooks wrote:
-> The of_get_gpio_regulator_config() will error out if there is no
-> "regulator_type" field in the fdt node hoewver it makes no attempt
-> at warning if the contents of said node is not known.
+> Looks very strange.
+> Add rdinit=/bin/sh to your commandline such that you get a shell within
+> the initrd...
 
-Please sumbit patches against current code, this won't apply since this
-code has been restructured since the version you're working with and now
-has an improved version of this warning.
+Okay, I did. On the non-working kernel/initrd, the working ditto, and
+the Debian-provided files. And ls shows contents that seem sane.
 
---nE/5a/j5SCML90Nq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS5R4WAAoJELSic+t+oim98nUQAJtWDQ+Aq95nDvzr44fwtD64
-ILag0V66xZ7oG0Grek09pbSPMjxAn2WTokeCIKMfCQpr6wwl6vgUrpuvnrl0XefL
-m2+4bqQQWYH6ka4P7k9gejCMAzVtv1PtJFOzjeOQC11vostE1UnfnyB3NxtPedbz
-i+PTUIgBwQxFikovbyTjyVNnUuyOn5fIUIXOhIPHpEb90KEeJ1fWDEC811Kxhlq5
-vUo6gU14xu5lWCWuJXBPzwgOaF1mYeRr3PC4dRY31vVpTuBoPgL9BUDmIPuBZTKe
-hIHWtID70/mCmKTPAIa36qwZQy4OyPhSFtrxxasBpZYolw14p9N10C36fILvdmS/
-zM2d7bgsfMXo3zUkzXmnXW1acECYU1amJp+zStTVLvZT0fPzqkv0F3r8hRLZ1Act
-n6cIlRH2630X/DSjFEmLVv2w/6xjY4e/k7dktmDC+xFSC6OzpWRgRJYt8qlChFVL
-Sp4o7DcBFI56PgK/WyTM8t8/LkWpmA5tvh5+KygDfy56s2Elv//FCNs/iDPNLNg7
-e758mm8i9qm3IdKEop0wSbEmElZK2WheYFSFbkjlf56HSMtiSsEvmKakvMBq3Kvz
-VhwjK0h/BWVEFPR7vGRHNz7Hf25o4neaYMDJRfRsSOy+sYdbTTp59Bsx+UG9/gri
-HDhsi/QfxdzzCj2XwziD
-=+3iy
------END PGP SIGNATURE-----
-
---nE/5a/j5SCML90Nq--
+None of the initrds have a switch_root in them, neither in /sbin or
+anywhere else. They all have a /bin/pivot_root, which may be the same?
+-- 
+Hilsen Harald
