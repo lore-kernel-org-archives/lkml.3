@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaAZWCt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 17:02:49 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:62818 "EHLO
+	id S1753385AbaAZWEI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 17:04:08 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:65206 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaAZWCP (ORCPT
+	with ESMTP id S1753076AbaAZWEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 17:02:15 -0500
+	Sun, 26 Jan 2014 17:04:06 -0500
 X-Originating-IP: 108.223.40.66
-Message-ID: <52E585E8.4000100@roeck-us.net>
-Date: Sun, 26 Jan 2014 14:02:16 -0800
+Message-ID: <52E58656.7000903@roeck-us.net>
+Date: Sun, 26 Jan 2014 14:04:06 -0800
 From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jean Delvare <khali@linux-fr.org>, LM Sensors <lm-sensors@lm-sensors.org>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Wei Ni <wni@nvidia.com>
-Subject: Re: lm90 driver no longer working on PCs in 3.13
-References: <52E561D0.4040308@roeck-us.net> <20140126211357.6fa68909@endymion.delvare> <52E573B6.9040903@roeck-us.net> <20140126214936.7736f530@endymion.delvare> <20140126212256.GK11727@sirena.org.uk> <52E580CE.8080100@roeck-us.net> <20140126215354.GL11727@sirena.org.uk>
-In-Reply-To: <20140126215354.GL11727@sirena.org.uk>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
+References: <52E561D0.4040308@roeck-us.net>	<20140126211357.6fa68909@endymion.delvare>	<52E573B6.9040903@roeck-us.net>	<20140126214936.7736f530@endymion.delvare> <52E58330.90602@roeck-us.net>
+In-Reply-To: <52E58330.90602@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 01:53 PM, Mark Brown wrote:
-> On Sun, Jan 26, 2014 at 01:40:30PM -0800, Guenter Roeck wrote:
->> On 01/26/2014 01:22 PM, Mark Brown wrote:
+On 01/26/2014 01:50 PM, Guenter Roeck wrote:
+> On 01/26/2014 12:49 PM, Jean Delvare wrote:
+>> On Sun, 26 Jan 2014 12:44:38 -0800, Guenter Roeck wrote:
+>>> On 01/26/2014 12:13 PM, Jean Delvare wrote:
+>>> The regulator code changed with 3.13; the dummy regulator no longer exists,
+>>> and the functionality it provided is supposed to be handled automatically.
+>>> But that only really works on devicetree based systems and otherwise returns
+>>> -EPROBE_DEFER as mentioned above.
+>>>
+>>> Maybe there is some configuration option, or maybe something needs to be
+>>> configured from user space. I found neither.
+>>
+>> Neither would be acceptable to my eyes anyway. Things worked out of the
+>> box before, they should keep working out of the box.
+>>
+>>> In the first case, we should create
+>>> a dependency for the LM90 driver; in the latter case, we would have to make sure
+>>> that it is well documented (I'd grumble on that, though - it would result in
+>>> never ending trouble for us, having to repeatedly explain how this is now
+>>> supposed to work).
+>>>
+>>> Another possible fix would be to have the regulator core return -ENODEV
+>>> instead of -EPROBE_DEFER on non-dt systems. No idea if this would be acceptable
+>>> or even feasible.
+>>
+>> Well, either the regulator subsystem gets fixed (or provides a suitable
+>> API for drivers like lm90 and we update the lm90 driver to use it), or
+>> I'll just revert the problematic commit for now. This is a severe
+>> regression, we just can't leave things that way.
+>>
 >
->>> What is this platform and why does it have the regulator API enabled in
->>> the first place?
+> Maybe your configuration has CONFIG_REGULATORS disabled. Ubuntu has it enabled.
+> I don't know about others.
 >
->> It is a PC running Ubuntu. you'd have to ask the distro maintainers why they
->> turn on regulators.
->
->> config-3.8.0-26-generic:CONFIG_REGULATOR=y
->> config-3.8.0-35-generic:CONFIG_REGULATOR=y
->> config-3.11.0-13-generic:CONFIG_REGULATOR=y
->
-> Oh, magic.  Can you please file a bug with or otherwise talk to them
-> asking them to turn that off (or contribute code to make it work)?  Feel
-> free to add me as a CC when you do so.
+> I agree, we may have to revert the patch. I don't think the regulator API works well
+> enough in non-dt systems to be able to use it in such systems. Mark's expectation
+> that regulator support must be disabled if regulators are not fully declared in non-dt
+> systems doesn't seem very useful nor really feasible.
 >
 
-That means they would have to stop supporting anything that _does_ need regulators,
-which doesn't make much sense to me.
+I think I have a better idea: Surround the regulator code, or at least its error handling,
+in the lm90 driver with
+	if (IS_ENABLED(CONFIG_OF)) {
+	}
 
-I think the bug is on your side, not theirs.
+Would that be ok ? If yes I'll submit a patch. I'll do the same in another driver
+I am working on.
 
 Guenter
 
