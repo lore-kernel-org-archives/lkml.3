@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaAZJ3i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 04:29:38 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:59274 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaAZJ3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 04:29:16 -0500
-Date: Sun, 26 Jan 2014 10:29:12 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, x86@kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: disabled APICs being counted as processors ?
-Message-ID: <20140126092912.GA31643@gmail.com>
-References: <20140123221316.GA23367@redhat.com>
- <20140125074107.GA10565@gmail.com>
- <20140125153048.GA8536@redhat.com>
- <alpine.DEB.2.02.1401252223460.1723@chino.kir.corp.google.com>
- <20140126083631.GA29339@gmail.com>
- <alpine.DEB.2.02.1401260038510.15844@chino.kir.corp.google.com>
+	id S1752961AbaAZJ3g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 04:29:36 -0500
+Received: from imp02.mtu.ru ([62.5.255.19]:46369 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795AbaAZJ3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 04:29:06 -0500
+X-Spam-Flag: NO
+Message-ID: <52E4D53C.3070802@pavlinux.ru>
+Date: Sun, 26 Jan 2014 13:28:28 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401260038510.15844@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.8-rt11
+References: <20140125134519.GA9845@linutronix.de>
+In-Reply-To: <20140125134519.GA9845@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP"
+X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10001; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-* David Rientjes <rientjes@google.com> wrote:
+25.01.2014 17:45, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
+:
 
-> On Sun, 26 Jan 2014, Ingo Molnar wrote:
-> 
-> > > I don't think the "ACPI: LAPIC (... disabled)" lines are problematic, they 
-> > > are simply reporting the acpi processor id and apic id for processors that 
-> > > do not have their enabled flag set.  The acpi spec allows for these to 
-> > > exist without the enabled flag set when the processor isn't present at all 
-> > > because the kernel will make no attempt to use it.
-> > > 
-> > > That said, I think the "smpboot: 8 Processors exceeds NR_CPUS limit 
-> > > of 4" line is unnecessary since, as you said, these processors don't 
-> > > physically exist.  I betcha that's because you have 
-> > > CONFIG_HOTPLUG_CPU enabled and it's counting the disabled cpus that 
-> > > were found when acpi_register_lapic() was done.  The warning is only 
-> > > really meaningful for cpus in cpu_possible_map, which aren't set for 
-> > > your disabled four, in the hotplug case where NR_CPUS is too small.
-> > 
-> > No, this message is printed in prefill_possible_map() which 
-> > _generates_ cpu_possible_map, so '8' is the number of bits in 
-> > cpu_possible_map.
-> > 
-> 
-> Yeah, because I bet Dave has CONFIG_HOTPLUG_CPU enabled and it's adding 
-> this to the number of possible cpus when in reality, per the spec, these 
-> cpus aren't possible at all because their enable bit isn't set in their 
-> lapic flags.
+> I'm pleased to announce the v3.12.8-rt11 patch set.
 
-Yeah, I suspect Dave has a distro-ish .config on his desktop, and 
-distros generally enable all things hot-plug.
+Nothing has changed, it does not boot from September, and will not boot.
+3.2-54-rt77 - works perfectly. Same hardware, same config.
 
-> > So the problem is that the counting of disabled but hotpluggable 
-> > CPUs is over-eager.
-> 
-> In the kernel, yeah, and we don't distinguish between physically 
-> absent processors that have lapic entries and physically present but 
-> disabled processors.
+--=20
 
-Correct. Is there a robust distinction possible between the two?
+                                                         Pavel.
 
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -1223,10 +1223,7 @@ __init void prefill_possible_map(void)
-> >  	i = setup_max_cpus ?: 1;
-> >  	if (setup_possible_cpus == -1) {
-> >  		possible = num_processors;
-> > -#ifdef CONFIG_HOTPLUG_CPU
-> > -		if (setup_max_cpus)
-> > -			possible += disabled_cpus;
-> > -#else
-> > +#ifndef CONFIG_HOTPLUG_CPU
-> >  		if (possible > i)
-> >  			possible = i;
-> >  #endif
-> 
-> Yeah, this should suppress the warning for Dave.  This way, the only way 
-> the log reports the number of "hotplug CPUs" is because we used 
-> possible_cpus.
 
-Not just that, it also reduces the number of possible CPUs, which 
-should reduce percpu memory allocation overhead, amongst other things, 
-right?
+--IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> I think you should also just do "total_cpus = possible" though and 
-> forget about disabled_cpus or /sys/devices/system/cpu/offline is 
-> still going to show him 4-7.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Agreed.
+iQIcBAEBCgAGBQJS5NU9AAoJEPtok08Dny2hlL4QALwRDT7/k7TRO2/hm7trv8cC
+fbCDcR1cDHGxX2cEcAqFXnUeioAeuKn8baCvqhedWx9AMXv3ekIWp/jPQtxl+BGr
+SNbeR6BjGLog4bBhnw+8GHER6khxGj2Lj/rdby5Oud72e9asTnhy6ryagC68UCnH
+ooRCy872QkqwcPgALXpq3FW7DnCP64DPLyqBHRJktpwqAfuwkKzVj0hvkFkmzpMk
+KNoO0hU+OU0rnOORk9KiZ0i/leRsUZhg2P39vHUAkWPHadKO3PUSGiG1eC+tAPnW
+GKP1WV7n8zKAlFPxJSufakESyyUVzQRNd1tESa8wGifXTfT5HDAYQYq5GnKQdDlx
+jblApc0yuurO8j5FwVq9JZavAtT+Ct6YBpCs9xls4ANrjAlAXxhnt02/FLgxnVUo
+tdOuooFuhP+hjtI0qraxmNxLucnUh7Uf09ldmZim/8kgKv3gMiXn1qLGRsLjYg6X
+YuThnCAgF3Zj0Fe6K2AxsmJDaYrnouZKwMqOOe3qBrwo3RTevrF0vzZsbWmAEAR6
+lNPW8SHjmzM+HnVGpL0l/LEHeuUDAYVTOfvyoL7RGoxgMR1ERndK+b5VfbMk/NVo
+00p078E8nv8iXO62yzL689JIfbKsnr+3Z3YmPd3FvJ5sVsQ+PvDzbDwOjCm9sGoX
+bLPGLpCPEzA838yIWCUZ
+=yiTx
+-----END PGP SIGNATURE-----
 
-> This function could benefit from a cleanup at the same time, it's 
-> not looking good:
-> 
->  - "i" is a horribly named variable that stores the value so at least
->    one cpu is possible when "nosmp" is used,
-> 
->  - what's with the
-> 
->    #ifdef CONFIG_HOTPLUG_CPU
-> 	if (!setup_max_cpus)
->    #endif ?
-> 
->    if I do "maxcpus=4 nr_cpus=6 possible_cpus=8" what's the expected
->    behavior?  We're not only testing for "nosmp" use here, "possible"
->    should still be 4, and
-> 
->  - the warning references "max_cpus" but the kernel command line option
->    is "maxcpus"
-
-Ack.
-
-I wouldn't object to someone sending a changelogged, tested patch that 
-does all that. Maybe two patches: first the cleanups, then the CPU 
-count trimming. Just in case it regresses ...
-
-Thanks,
-
-	Ingo
+--IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP--
