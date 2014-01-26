@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaAZTUn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 14:20:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397AbaAZTUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 14:20:41 -0500
-Message-ID: <52E55FB1.4060404@redhat.com>
-Date: Sun, 26 Jan 2014 14:19:13 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753159AbaAZTXc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 14:23:32 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:58013 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaAZTXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 14:23:31 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v2] x86: allocate cpumask during check irq vectors
-References: <1390611565-18709-1-git-send-email-yinghai@kernel.org> <20140125080232.GA20935@gmail.com> <52E4FE02.2020004@redhat.com> <20140126133203.GA1370@gmail.com>
-In-Reply-To: <20140126133203.GA1370@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+Date: Sun, 26 Jan 2014 11:23:30 -0800
+X-Google-Sender-Auth: lpOv9Hymlgq4PcOqA0s_1RTJGNI
+Message-ID: <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 26, 2014 at 4:27 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+> +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+> -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+> +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
 
+So the S_IFREG isn't necessary.
 
-On 01/26/2014 08:32 AM, Ingo Molnar wrote:
-> 
-> * Prarit Bhargava <prarit@redhat.com> wrote:
-> 
->> On 01/25/2014 03:02 AM, Ingo Molnar wrote:
->>>
->>> * Yinghai Lu <yinghai@kernel.org> wrote:
->>>
->>>> Fix warning:
->>>> arch/x86/kernel/irq.c: In function check_irq_vectors_for_cpu_disable:
->>>> arch/x86/kernel/irq.c:337:1: warning: the frame size of 2052 bytes is larger than 2048 bytes
->>>>
->>>> when NR_CPUS=8192
->>>>
->>>> We should use zalloc_cpumask_var() instead.
->>>>
->>>> -v2: update to GFP_ATOMIC instead and free the allocated cpumask at last.
->>>>
->>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>> Cc: Prarit Bhargava <prarit@redhat.com>
->>>>
->>>> ---
->>>>  arch/x86/kernel/irq.c |   24 +++++++++++++++++-------
->>>>  1 file changed, 17 insertions(+), 7 deletions(-)
->>>>
->>>> Index: linux-2.6/arch/x86/kernel/irq.c
->>>> ===================================================================
->>>> --- linux-2.6.orig/arch/x86/kernel/irq.c
->>>> +++ linux-2.6/arch/x86/kernel/irq.c
->>>> @@ -277,11 +277,18 @@ int check_irq_vectors_for_cpu_disable(vo
->>>>  	unsigned int this_cpu, vector, this_count, count;
->>>>  	struct irq_desc *desc;
->>>>  	struct irq_data *data;
->>>> -	struct cpumask affinity_new, online_new;
->>>> +	cpumask_var_t affinity_new, online_new;
->>>> +
->>>> +	if (!alloc_cpumask_var(&affinity_new, GFP_ATOMIC))
->>>> +		return -ENOMEM;
->>>> +	if (!alloc_cpumask_var(&online_new, GFP_ATOMIC)) {
->>>> +		free_cpumask_var(affinity_new);
->>>> +		return -ENOMEM;
->>>> +	}
->>>
->>> Atomic allocations can fail easily if the system is under duress.
->>
->> Then the hotplug attempt will fail which IMO is okay. [...]
-> 
-> Which is not OK at all for reliable operation, if the system has 
-> otherwise gobs of RAM, which just don't happen to be atomic 
-> allocatable!
+And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_
+readable than 0644. It's damn hard to parse those random letter
+combinations, and at least I have to really think about it, in a way
+that the octal representation does *not* make me go "I have to think
+about that".
 
-Ingo, I'm really not sure what other option there is here.  Care to suggest one?
+So my personal preference would be to just see that simple 0644 in
+proc_create. Hmm?
 
-P.
+                Linus
