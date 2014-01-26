@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaAZVI7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:08:59 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35821 "EHLO
+	id S1753344AbaAZVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:09:16 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35863 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaAZVI6 (ORCPT
+	with ESMTP id S1752397AbaAZVJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:08:58 -0500
-Date: Sun, 26 Jan 2014 22:08:50 +0100
+	Sun, 26 Jan 2014 16:09:12 -0500
+Date: Sun, 26 Jan 2014 22:09:07 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Len Brown <lenb@kernel.org>
-Cc: rjw@sisk.pl, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 1/1] suspend: make sync() on suspend-to-RAM optional
-Message-ID: <20140126210850.GA7246@Nokia-N900>
-References: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+Message-ID: <20140126210907.GB7246@Nokia-N900>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+ <1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+ <20140120100530.GY15937@n2100.arm.linux.org.uk>
+ <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+ <20140123180423.1a62611a@www.etchedpixels.co.uk>
+ <20140123184022.GC11727@sirena.org.uk>
+ <52E163DC.1090002@samsung.com>
+ <20140123193633.GG11727@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
+In-Reply-To: <20140123193633.GG11727@sirena.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> From: Len Brown <len.brown@intel.com>
+On Thu 2014-01-23 19:36:33, Mark Brown wrote:
+> On Thu, Jan 23, 2014 at 07:47:56PM +0100, Tomasz Figa wrote:
+> > On 23.01.2014 19:40, Mark Brown wrote:
 > 
-> Linux suspend-to-RAM was unreliable when first developed,
-> and so sys_sync() was invoked inside the kernel at the
-> start of every suspend flow.
+> > >We'd need to leave it user selectable rather than enabling it for ARM,
+> > >the whole reason this got noticed is that people are trying to build
+> > >kernels that support a wider range of devices for ARM.
 > 
-> Today, many devices are invoking suspend with
-> high reliability and high frequency, and they don't
-> want to be forced to pay for sync on every suspend.
+> > What about making it depend on !MULTIPLATFORM and enabled by default?
 > 
-> So here we make it optional.
-> De-select CONFIG_PM_SLEEP_SYNC to delete the call entirely.
-> or keep CONFIG_PM_SLEEP and you can now clear the
-> sys/power/sleep_sync attribte to disable the sync
-> from user-space.
+> That'd work, but if we're doing that then substituting in the dynamic
+> assignment only when we hit a collision seems smoother and more general.
 
-Dunno. Config option plus sysfs attribute is overdoing it a bit.
-Maybe we could do
+That seems like a mess. I had enough fun debugging "WTF is
+going on with my serials" as is...
 
-echo memfast > state
+Plus... collision can happen at runtime when you insert
+BT CF card... at that point it is too late to reassign.
 
-to enter suspend without sync? Patch should be simpler that way,
-and we won't have to keep the state...
+							Pavel
 
-						Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
