@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaAZQfT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 11:35:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167AbaAZQfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 11:35:18 -0500
-Date: Sun, 26 Jan 2014 17:35:36 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: error out if the name buffer is too short
-Message-ID: <20140126163536.GA21320@redhat.com>
-References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com> <20140124161922.GA14195@redhat.com> <20140126153737.GA8184@redhat.com> <20140126155141.GA12249@redhat.com>
+	id S1753040AbaAZRjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 12:39:36 -0500
+Received: from smtp-out-105.synserver.de ([212.40.185.105]:1084 "EHLO
+	smtp-out-209.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752397AbaAZRje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 12:39:34 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 24627
+Message-ID: <52E54849.2000208@metafoo.de>
+Date: Sun, 26 Jan 2014 18:39:21 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140126155141.GA12249@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com> <1390409565-4200-2-git-send-email-sthokal@xilinx.com> <52E0FC22.8060903@metafoo.de> <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com> <52E2698B.6070001@metafoo.de> <20140126135933.GD10628@intel.com>
+In-Reply-To: <20140126135933.GD10628@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26, Oleg Nesterov wrote:
->
-> Al, Denys, unless I am totally confused the "restart" logic is very broken.
-> We can't simply restart because the main loop changes dentry?
+On 01/26/2014 02:59 PM, Vinod Koul wrote:
+> On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
+>> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
+>>> Hi Lars,
+>>>
+>>> On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+>>>> [...]
+>>>>> +/**
+>>>>> + * xilinx_vdma_device_control - Configure DMA channel of the device
+>>>>> + * @dchan: DMA Channel pointer
+>>>>> + * @cmd: DMA control command
+>>>>> + * @arg: Channel configuration
+>>>>> + *
+>>>>> + * Return: '0' on success and failure value on error
+>>>>> + */
+>>>>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
+>>>>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
+>>>>> +{
+>>>>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+>>>>> +
+>>>>> +     switch (cmd) {
+>>>>> +     case DMA_TERMINATE_ALL:
+>>>>> +             xilinx_vdma_terminate_all(chan);
+>>>>> +             return 0;
+>>>>> +     case DMA_SLAVE_CONFIG:
+>>>>> +             return xilinx_vdma_slave_config(chan,
+>>>>> +                                     (struct xilinx_vdma_config *)arg);
+>>>>
+>>>> You really shouldn't be overloading the generic API with your own semantics.
+>>>> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
+>>>
+>>> Ok.  The driver needs few additional configuration from the slave
+>>> device like Vertical
+>>> Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
+>>> suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
+>>> defined for Freescale drivers?
+>>
+>> In my opinion it is not a good idea to have driver implement a generic API,
+>> but at the same time let the driver have custom semantics for those API
+>> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
+>> values passed to gpio_set_value instead of 0 and 1. It completely defeats
+>> the purpose of a generic API, namely that you are able to write generic code
+>> that makes use of the API without having to know about which implementation
+>> API it is talking to. The dmaengine framework provides the
+>> dmaengine_prep_interleaved_dma() function to setup two dimensional
+>> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
+> 
+> The question here i think would be waht this device supports? Is the hardware
+> capable of doing interleaved transfers, then would make sense.
 
-Plus prepend_name() can't actually return -ENAMETOOLONG,
-"int error" inside the loop is wrong.
+The hardware does 2D transfers. The parameters for a transfer are height,
+width and stride. That's only a subset of what interleaved transfers can be
+(xt->num_frames must be one for 2d transfers). But if I remember correctly
+there has been some discussion on this in the past and the result of that
+discussion was that using interleaved transfers for 2D transfers is
+preferred over adding a custom API for 2D transfers.
 
-I believe the minimal fix is something like below. I'll try to test
-this change (currently I can't) later and resend. And I still think
-it can be cleanuped a bit, but this is minor.
-
-Oleg.
-
-
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -3103,7 +3103,7 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
- 	/* these dentries are never renamed, so d_lock is not needed */
- 	if (prepend(&end, &buflen, " (deleted)", 11) ||
- 	    prepend(&end, &buflen, dentry->d_name.name, dentry->d_name.len) ||
--	    prepend(&end, &buflen, "/", 1))  
-+	    prepend(&end, &buflen, "/", 1))
- 		end = ERR_PTR(-ENAMETOOLONG);
- 	return end;
- }
-@@ -3113,32 +3113,34 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
-  */
- static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
- {
-+	struct dentry *de;
- 	char *end, *retval;
- 	int len, seq = 0;
- 	int error = 0;
- 
-+	if (buflen < 2)
-+		goto Elong;
-+
- 	rcu_read_lock();
- restart:
- 	end = buf + buflen;
- 	len = buflen;
- 	prepend(&end, &len, "\0", 1);
--	if (buflen < 1)
--		goto Elong;
- 	/* Get '/' right */
- 	retval = end-1;
- 	*retval = '/';
-+	de = dentry;
- 	read_seqbegin_or_lock(&rename_lock, &seq);
--	while (!IS_ROOT(dentry)) {
--		struct dentry *parent = dentry->d_parent;
--		int error;
-+	while (!IS_ROOT(de)) {
-+		struct dentry *parent = de->d_parent;
- 
- 		prefetch(parent);
--		error = prepend_name(&end, &len, &dentry->d_name);
-+		error = prepend_name(&end, &len, &de->d_name);
- 		if (error)
- 			break;
- 
- 		retval = end;
--		dentry = parent;
-+		de = parent;
- 	}
- 	if (!(seq & 1))
- 		rcu_read_unlock();
+- Lars
 
