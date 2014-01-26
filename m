@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaAZKiw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 05:38:52 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:43909 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaAZKiu (ORCPT
+	id S1752961AbaAZKi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 05:38:57 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:54954 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaAZKix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 05:38:50 -0500
+	Sun, 26 Jan 2014 05:38:53 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Sangbeom Kim <sbkim73@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 1/2] mfd: max14577: max14577_{suspend,resume}() should depend on CONFIG_PM_SLEEP
-Date: Sun, 26 Jan 2014 11:38:42 +0100
-Message-Id: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 2/2] mfd: sec-core: sec_pmic_{suspend,resume}() should depend on CONFIG_PM_SLEEP
+Date: Sun, 26 Jan 2014 11:38:43 +0100
+Message-Id: <1390732723-7129-2-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
+References: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,34 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 If CONFIG_PM_SLEEP=n:
 
-drivers/mfd/max14577.c:177: warning: ‘max14577_suspend’ defined but not used
-drivers/mfd/max14577.c:200: warning: ‘max14577_resume’ defined but not used
+drivers/mfd/sec-core.c:349: warning: ‘sec_pmic_suspend’ defined but not used
+drivers/mfd/sec-core.c:371: warning: ‘sec_pmic_resume’ defined but not used
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/mfd/max14577.c |    2 ++
+ drivers/mfd/sec-core.c |    2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index ac514fb2b877..71aa14a6bfbb 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index e4671088f075..dbc39e676cbd 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -345,6 +345,7 @@ static int sec_pmic_remove(struct i2c_client *i2c)
+ 	return 0;
+ }
  
 +#ifdef CONFIG_PM_SLEEP
- static int max14577_suspend(struct device *dev)
+ static int sec_pmic_suspend(struct device *dev)
  {
  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-@@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
+@@ -379,6 +380,7 @@ static int sec_pmic_resume(struct device *dev)
  
  	return 0;
  }
 +#endif /* CONFIG_PM_SLEEP */
  
- static struct of_device_id max14577_dt_match[] = {
- 	{ .compatible = "maxim,max14577", },
+ static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
+ 
 -- 
 1.7.9.5
 
