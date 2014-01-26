@@ -1,170 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaAZLBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 06:01:09 -0500
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:63659 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaAZLBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 06:01:07 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jan 2014 06:01:07 EST
-Message-ID: <1390733658.3059.10.camel@laptop>
-Subject: [PATCH] for_each macros correctness
-From: Jose Alonso <joalonsof@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 26 Jan 2014 08:54:18 -0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	id S1752984AbaAZLBt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 06:01:49 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752396AbaAZLBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 06:01:48 -0500
+Message-ID: <52E4EB19.7000502@nod.at>
+Date: Sun, 26 Jan 2014 12:01:45 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] UML changes for 3.14-rc1
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I observed that there are for_each macros that do an extra memory access
-beyond the defined area.
-Normally this does not cause problems.
-But, this can cause exceptions. For example: if the area is allocated at
-the end of a page and the next page is not accessible.
+Linus,
 
-For correctness, I suggest changing the arguments of the 'for loop' like
-others 'for_each' do in the kernel.
+The following changes since commit d8ec26d7f8287f5788a494f56e8814210f0e64be:
 
-files involved:
-   drivers/s390/cio/qdio.h
-   drivers/scsi/isci/host.h
-   drivers/sh/clk/core.c
-   include/linux/blk-mq.h
-   include/linux/shdma-base.h
-   sound/soc/sh/rcar/adg.c
+  Linux 3.13 (2014-01-19 18:40:07 -0800)
 
+are available in the git repository at:
 
-Signed-off-by: Jose Alonso <joalonsof@gmail.com>
----
-diff --git a/drivers/s390/cio/qdio.h b/drivers/s390/cio/qdio.h
-index 8acaae1..a563e4c 100644
---- a/drivers/s390/cio/qdio.h
-+++ b/drivers/s390/cio/qdio.h
-@@ -359,14 +359,12 @@ static inline int multicast_outbound(struct qdio_q *q)
- #define need_siga_sync_out_after_pci(q)	\
- 	(unlikely(q->irq_ptr->siga_flag.sync_out_after_pci))
- 
--#define for_each_input_queue(irq_ptr, q, i)	\
--	for (i = 0, q = irq_ptr->input_qs[0];	\
--		i < irq_ptr->nr_input_qs;	\
--		q = irq_ptr->input_qs[++i])
--#define for_each_output_queue(irq_ptr, q, i)	\
--	for (i = 0, q = irq_ptr->output_qs[0];	\
--		i < irq_ptr->nr_output_qs;	\
--		q = irq_ptr->output_qs[++i])
-+#define for_each_input_queue(irq_ptr, q, i)		\
-+	for (i = 0; i < irq_ptr->nr_input_qs &&		\
-+		({ q = irq_ptr->input_qs[i]; 1; }); i++)
-+#define for_each_output_queue(irq_ptr, q, i)		\
-+	for (i = 0; i < irq_ptr->nr_output_qs &&	\
-+		({ q = irq_ptr->output_qs[i]; 1; }); i++)
- 
- #define prev_buf(bufnr)	\
- 	((bufnr + QDIO_MAX_BUFFERS_MASK) & QDIO_MAX_BUFFERS_MASK)
-diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
-index 4911310..99c5a69 100644
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
- }
- 
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
- 
- static inline void wait_for_start(struct isci_host *ihost)
- {
-diff --git a/drivers/sh/clk/core.c b/drivers/sh/clk/core.c
-index 7472785..6dd3cbb 100644
---- a/drivers/sh/clk/core.c
-+++ b/drivers/sh/clk/core.c
-@@ -82,8 +82,8 @@ struct clk_rate_round_data {
- };
- 
- #define for_each_frequency(pos, r, freq)			\
--	for (pos = r->min, freq = r->func(pos, r);		\
--	     pos <= r->max; pos++, freq = r->func(pos, r))	\
-+	for (pos = r->min; pos <= r->max &&			\
-+	     ({ freq = r->func(pos, r); 1; }); pos++)		\
- 		if (unlikely(freq == 0))			\
- 			;					\
- 		else
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index ab0e9b2..a4b40cf 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -159,16 +159,16 @@ static inline struct request *blk_mq_tag_to_rq(struct blk_mq_hw_ctx *hctx,
- }
- 
- #define queue_for_each_hw_ctx(q, hctx, i)				\
--	for ((i) = 0, hctx = (q)->queue_hw_ctx[0];			\
--	     (i) < (q)->nr_hw_queues; (i)++, hctx = (q)->queue_hw_ctx[i])
-+	for ((i) = 0; (i) < (q)->nr_hw_queues &&			\
-+	     ({ hctx = (q)->queue_hw_ctx[i]; 1; }); (i)++)
- 
- #define queue_for_each_ctx(q, ctx, i)					\
--	for ((i) = 0, ctx = per_cpu_ptr((q)->queue_ctx, 0);		\
--	     (i) < (q)->nr_queues; (i)++, ctx = per_cpu_ptr(q->queue_ctx, (i)))
-+	for ((i) = 0; (i) < (q)->nr_queues &&				\
-+	     ({ ctx = per_cpu_ptr((q)->queue_ctx, (i)); 1; }); (i)++)
- 
- #define hctx_for_each_ctx(hctx, ctx, i)					\
--	for ((i) = 0, ctx = (hctx)->ctxs[0];				\
--	     (i) < (hctx)->nr_ctx; (i)++, ctx = (hctx)->ctxs[(i)])
-+	for ((i) = 0; (i) < (hctx)->nr_ctx &&				\
-+	     ({ ctx = (hctx)->ctxs[(i)]; 1; }); (i)++)
- 
- #define blk_ctx_sum(q, sum)						\
- ({									\
-diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
-index f92c0a4..35285f7 100644
---- a/include/linux/shdma-base.h
-+++ b/include/linux/shdma-base.h
-@@ -111,8 +111,8 @@ struct shdma_dev {
- 	size_t desc_size;
- };
- 
--#define shdma_for_each_chan(c, d, i) for (i = 0, c = (d)->schan[0]; \
--				i < (d)->dma_dev.chancnt; c = (d)->schan[++i])
-+#define shdma_for_each_chan(c, d, i) for (i = 0; i < (d)->dma_dev.chancnt && \
-+				({ c = (d)->schan[i]; 1; }); i++)
- 
- int shdma_request_irq(struct shdma_chan *, int,
- 			   unsigned long, const char *);
-diff --git a/sound/soc/sh/rcar/adg.c b/sound/soc/sh/rcar/adg.c
-index a53235c..ef19c15 100644
---- a/sound/soc/sh/rcar/adg.c
-+++ b/sound/soc/sh/rcar/adg.c
-@@ -25,9 +25,8 @@ struct rsnd_adg {
- };
- 
- #define for_each_rsnd_clk(pos, adg, i)		\
--	for (i = 0, (pos) = adg->clk[i];	\
--	     i < CLKMAX;			\
--	     i++, (pos) = adg->clk[i])
-+	for (i = 0; i < CLKMAX &&		\
-+	     ({ (pos) = adg->clk[i]; 1; }); i++)
- #define rsnd_priv_to_adg(priv) ((struct rsnd_adg *)(priv)->adg)
- 
- static int rsnd_adg_set_convert_clk_gen1(struct rsnd_priv *priv,
+  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus
 
+for you to fetch changes up to 9e443bc369e04b8db3266d7253ce7c1eee2ec979:
 
+  um: hostfs: make functions static (2014-01-26 11:51:09 +0100)
+
+- ----------------------------------------------------------------
+This time only various cleanups and housekeeping patches.
+
+- ----------------------------------------------------------------
+James Hogan (1):
+      um: hostfs: make functions static
+
+Richard Weinberger (2):
+      um: Removed unused attributes from thread_struct
+      um: Include generic barrier.h
+
+ arch/um/include/asm/Kbuild              |  1 +
+ arch/um/include/asm/processor-generic.h |  3 --
+ fs/hostfs/hostfs_kern.c                 | 53 +++++++++++++++++----------------
+ 3 files changed, 29 insertions(+), 28 deletions(-)
+
+Thanks,
+//richard
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS5OsZAAoJEPmeIjfg4UaaOn0QAKl+fV9JoqGeR0pijA6N5HVX
+lHSGDT5hW24VA3SnnE4QYEvRi6s6k8v3UPYeCQ7tfP3F/qQRXcOgvNl18BNN7kGy
+Ta5OfiE0UTDAwJOv1pm8Trje8rm3+Ta+wR3JUHe6yHNOxUjU61rkmNpghvKJa+Ml
+Q/ETNys+LLTaVK4ptyzjnYvYOw3H0Db1nKEIOAFO+e3zJj48OdkLBaH7wov9jG8f
+lQbUTdQcOwH8XFiiRqTzavj4yjG3ckY0WlcUqL2uXmO8GF+d4+COneEVvJRh3aUt
+lEbEokBeuwpB4Tl6dcnOYz2QPto1OSJqkfL3T5cRr6SumRARE8lBDEEK8fB3YqJ3
+o/h3gIusS/v27I2Pc+DZ+e9T0akoToITHrK3yhCyiR6DgtgkTreu+PKMw72uEwLO
+oAhklcIAD9Pg+u2TfnBPpoQUONhP/OjTvA+ZCWlHWe7Dgb9yuOX8rf2Fi7L0FngE
+eJpM1Hts9VApIoFzs4dih+HGLylGCUZzk5aDI6EckfspW4OhvlAEeuvUe5rqHzUH
+iTEzU9i62O36EGB+cYpW3A869t2O/hkVbUKnuXmNBj1PecITnIcwtyyi7EVzJUVt
+CJcDlPpLG1SlJUiOR/TeLElAU71nIYL/Q149hYZ3TLa5koXGmY01kxFxCGnc4L1V
+QClTbuQx5/bmtqknhAgw
+=DJ98
+-----END PGP SIGNATURE-----
