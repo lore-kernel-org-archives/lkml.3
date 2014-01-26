@@ -1,94 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaAZKzY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 05:55:24 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:40188 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596AbaAZKzX (ORCPT
+	id S1752830AbaAZLBJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 06:01:09 -0500
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:63659 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaAZLBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 05:55:23 -0500
-Date: Sun, 26 Jan 2014 11:55:21 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1859471893.20140126115521@eikelenboom.it>
-To: =?utf-8?Q?fran=C3=A7ois_romieu?= <romieu@fr.zoreil.com>
-CC: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 3.14-mw regression:  rtl8169 WARNING: DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 26 Jan 2014 06:01:07 -0500
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jan 2014 06:01:07 EST
+Message-ID: <1390733658.3059.10.camel@laptop>
+Subject: [PATCH] for_each macros correctness
+From: Jose Alonso <joalonsof@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 26 Jan 2014 08:54:18 -0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I have got a regression with a 3.14-mw kernel (last commit is 4ba9920e5e9c0e16b5ed24292d45322907bb9035):
-It looks like it's related to the rtl8169 ...
+I observed that there are for_each macros that do an extra memory access
+beyond the defined area.
+Normally this does not cause problems.
+But, this can cause exceptions. For example: if the area is allocated at
+the end of a page and the next page is not accessible.
 
---
-Sander
+For correctness, I suggest changing the arguments of the 'for loop' like
+others 'for_each' do in the kernel.
 
-Jan 26 11:36:26 serveerstertje kernel: [   89.105537] ------------[ cut here ]------------
-Jan 26 11:36:26 serveerstertje kernel: [   89.116779] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x103/0x130()
-Jan 26 11:36:26 serveerstertje kernel: [   89.128148] DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
-Jan 26 11:36:26 serveerstertje kernel: [   89.139397] Modules linked in:
-Jan 26 11:36:26 serveerstertje kernel: [   89.150535] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-20140125-mw-pcireset+ #1
-Jan 26 11:36:26 serveerstertje kernel: [   89.161784] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
-Jan 26 11:36:26 serveerstertje kernel: [   89.172965]  0000000000000009 ffff88005f603838 ffffffff81acbcfa ffffffff822134e0
-Jan 26 11:36:26 serveerstertje kernel: [   89.184156]  ffff88005f603888 ffff88005f603878 ffffffff810bdf62 ffff880000000000
-Jan 26 11:36:26 serveerstertje kernel: [   89.195186]  0000000000055ebe 00000000ffffffef 0000000000000200 ffff8800592ea098
-Jan 26 11:36:26 serveerstertje kernel: [   89.206227] Call Trace:
-Jan 26 11:36:26 serveerstertje kernel: [   89.217027]  <IRQ>  [<ffffffff81acbcfa>] dump_stack+0x46/0x58
-Jan 26 11:36:26 serveerstertje kernel: [   89.227907]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
-Jan 26 11:36:26 serveerstertje kernel: [   89.238678]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
-Jan 26 11:36:26 serveerstertje kernel: [   89.249336]  [<ffffffff81471c5a>] ? active_pfn_read_overlap+0x3a/0x70
-Jan 26 11:36:26 serveerstertje kernel: [   89.259904]  [<ffffffff814729e3>] add_dma_entry+0x103/0x130
-Jan 26 11:36:26 serveerstertje kernel: [   89.270416]  [<ffffffff81472de6>] debug_dma_map_page+0x126/0x150
-Jan 26 11:36:26 serveerstertje kernel: [   89.280840]  [<ffffffff81714686>] rtl8169_start_xmit+0x216/0xa20
-Jan 26 11:36:26 serveerstertje kernel: [   89.291073]  [<ffffffff8194aaaa>] ? __kfree_skb+0x3a/0xb0
-Jan 26 11:36:26 serveerstertje kernel: [   89.301252]  [<ffffffff81955a3f>] ? dev_queue_xmit_nit+0x1ef/0x260
-Jan 26 11:36:26 serveerstertje kernel: [   89.311392]  [<ffffffff81955850>] ? dev_loopback_xmit+0x1e0/0x1e0
-Jan 26 11:36:26 serveerstertje kernel: [   89.321418]  [<ffffffff81959b96>] dev_hard_start_xmit+0x2e6/0x4a0
-Jan 26 11:36:26 serveerstertje kernel: [   89.331236]  [<ffffffff819778fe>] sch_direct_xmit+0xfe/0x280
-Jan 26 11:36:26 serveerstertje kernel: [   89.341013]  [<ffffffff81959f8c>] __dev_queue_xmit+0x23c/0x630
-Jan 26 11:36:26 serveerstertje kernel: [   89.350668]  [<ffffffff81959d50>] ? dev_hard_start_xmit+0x4a0/0x4a0
-Jan 26 11:36:26 serveerstertje kernel: [   89.360264]  [<ffffffff81a00ce4>] ? ip_output+0x54/0xf0
-Jan 26 11:36:26 serveerstertje kernel: [   89.369698]  [<ffffffff8195a39b>] dev_queue_xmit+0xb/0x10
-Jan 26 11:36:26 serveerstertje kernel: [   89.379034]  [<ffffffff819ff2bb>] ip_finish_output+0x2cb/0x670
-Jan 26 11:36:26 serveerstertje kernel: [   89.388373]  [<ffffffff81a00ce4>] ? ip_output+0x54/0xf0
-Jan 26 11:36:26 serveerstertje kernel: [   89.397498]  [<ffffffff81a00ce4>] ip_output+0x54/0xf0
-Jan 26 11:36:26 serveerstertje kernel: [   89.406584]  [<ffffffff819fc141>] ip_forward_finish+0x71/0x1a0
-Jan 26 11:36:26 serveerstertje kernel: [   89.415534]  [<ffffffff819fc413>] ip_forward+0x1a3/0x440
-Jan 26 11:36:26 serveerstertje kernel: [   89.424400]  [<ffffffff819f9f80>] ip_rcv_finish+0x150/0x650
-Jan 26 11:36:26 serveerstertje kernel: [   89.433108]  [<ffffffff819faa1b>] ip_rcv+0x22b/0x370
-Jan 26 11:36:26 serveerstertje kernel: [   89.441737]  [<ffffffff81a57322>] ? packet_rcv_spkt+0x42/0x190
-Jan 26 11:36:26 serveerstertje kernel: [   89.450226]  [<ffffffff81957382>] __netif_receive_skb_core+0x6d2/0x8a0
-Jan 26 11:36:26 serveerstertje kernel: [   89.458687]  [<ffffffff81956dc4>] ? __netif_receive_skb_core+0x114/0x8a0
-Jan 26 11:36:26 serveerstertje kernel: [   89.467109]  [<ffffffff81008f50>] ? xen_clocksource_read+0x20/0x30
-Jan 26 11:36:26 serveerstertje kernel: [   89.475362]  [<ffffffff81116e09>] ? getnstimeofday+0x9/0x30
-Jan 26 11:36:26 serveerstertje kernel: [   89.483548]  [<ffffffff8195756c>] __netif_receive_skb+0x1c/0x70
-Jan 26 11:36:26 serveerstertje kernel: [   89.491608]  [<ffffffff819575de>] netif_receive_skb_internal+0x1e/0xf0
-Jan 26 11:36:26 serveerstertje kernel: [   89.499596]  [<ffffffff81958ac0>] napi_gro_receive+0x70/0xa0
-Jan 26 11:36:26 serveerstertje kernel: [   89.507486]  [<ffffffff81711673>] rtl8169_poll+0x2d3/0x680
-Jan 26 11:36:26 serveerstertje kernel: [   89.515222]  [<ffffffff81957a81>] net_rx_action+0x161/0x260
-Jan 26 11:36:26 serveerstertje kernel: [   89.523097]  [<ffffffff810c28dd>] __do_softirq+0x11d/0x250
-Jan 26 11:36:26 serveerstertje kernel: [   89.530973]  [<ffffffff810c2d72>] irq_exit+0xa2/0xd0
-Jan 26 11:36:26 serveerstertje kernel: [   89.538915]  [<ffffffff814f94bf>] xen_evtchn_do_upcall+0x2f/0x40
-Jan 26 11:36:26 serveerstertje kernel: [   89.546876]  [<ffffffff81ad83de>] xen_do_hypervisor_callback+0x1e/0x30
-Jan 26 11:36:26 serveerstertje kernel: [   89.554591]  <EOI>  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
-Jan 26 11:36:26 serveerstertje kernel: [   89.562139]  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
-Jan 26 11:36:26 serveerstertje kernel: [   89.569503]  [<ffffffff81008c70>] ? xen_safe_halt+0x10/0x20
-Jan 26 11:36:26 serveerstertje kernel: [   89.576788]  [<ffffffff81018748>] ? default_idle+0x18/0x20
-Jan 26 11:36:26 serveerstertje kernel: [   89.583863]  [<ffffffff81018f5e>] ? arch_cpu_idle+0x2e/0x40
-Jan 26 11:36:26 serveerstertje kernel: [   89.590627]  [<ffffffff8110b511>] ? cpu_startup_entry+0x91/0x1e0
-Jan 26 11:36:26 serveerstertje kernel: [   89.597184]  [<ffffffff81ac0497>] ? rest_init+0xb7/0xc0
-Jan 26 11:36:26 serveerstertje kernel: [   89.603507]  [<ffffffff81ac03e0>] ? csum_partial_copy_generic+0x170/0x170
-Jan 26 11:36:26 serveerstertje kernel: [   89.609631]  [<ffffffff8230ef1c>] ? start_kernel+0x409/0x416
-Jan 26 11:36:26 serveerstertje kernel: [   89.615490]  [<ffffffff8230e912>] ? repair_env_string+0x5e/0x5e
-Jan 26 11:36:26 serveerstertje kernel: [   89.621197]  [<ffffffff8230e5f8>] ? x86_64_start_reservations+0x2a/0x2c
-Jan 26 11:36:26 serveerstertje kernel: [   89.626592]  [<ffffffff82311e26>] ? xen_start_kernel+0x584/0x586
-Jan 26 11:36:26 serveerstertje kernel: [   89.631933] ---[ end trace 206b59d1fe29b5a7 ]---
+files involved:
+   drivers/s390/cio/qdio.h
+   drivers/scsi/isci/host.h
+   drivers/sh/clk/core.c
+   include/linux/blk-mq.h
+   include/linux/shdma-base.h
+   sound/soc/sh/rcar/adg.c
+
+
+Signed-off-by: Jose Alonso <joalonsof@gmail.com>
+---
+diff --git a/drivers/s390/cio/qdio.h b/drivers/s390/cio/qdio.h
+index 8acaae1..a563e4c 100644
+--- a/drivers/s390/cio/qdio.h
++++ b/drivers/s390/cio/qdio.h
+@@ -359,14 +359,12 @@ static inline int multicast_outbound(struct qdio_q *q)
+ #define need_siga_sync_out_after_pci(q)	\
+ 	(unlikely(q->irq_ptr->siga_flag.sync_out_after_pci))
+ 
+-#define for_each_input_queue(irq_ptr, q, i)	\
+-	for (i = 0, q = irq_ptr->input_qs[0];	\
+-		i < irq_ptr->nr_input_qs;	\
+-		q = irq_ptr->input_qs[++i])
+-#define for_each_output_queue(irq_ptr, q, i)	\
+-	for (i = 0, q = irq_ptr->output_qs[0];	\
+-		i < irq_ptr->nr_output_qs;	\
+-		q = irq_ptr->output_qs[++i])
++#define for_each_input_queue(irq_ptr, q, i)		\
++	for (i = 0; i < irq_ptr->nr_input_qs &&		\
++		({ q = irq_ptr->input_qs[i]; 1; }); i++)
++#define for_each_output_queue(irq_ptr, q, i)		\
++	for (i = 0; i < irq_ptr->nr_output_qs &&	\
++		({ q = irq_ptr->output_qs[i]; 1; }); i++)
+ 
+ #define prev_buf(bufnr)	\
+ 	((bufnr + QDIO_MAX_BUFFERS_MASK) & QDIO_MAX_BUFFERS_MASK)
+diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
+index 4911310..99c5a69 100644
+--- a/drivers/scsi/isci/host.h
++++ b/drivers/scsi/isci/host.h
+@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
+ }
+ 
+ #define for_each_isci_host(id, ihost, pdev) \
+-	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+-	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+-	     ihost = to_pci_info(pdev)->hosts[++id])
++	for (id = 0; id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && \
++	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
+ 
+ static inline void wait_for_start(struct isci_host *ihost)
+ {
+diff --git a/drivers/sh/clk/core.c b/drivers/sh/clk/core.c
+index 7472785..6dd3cbb 100644
+--- a/drivers/sh/clk/core.c
++++ b/drivers/sh/clk/core.c
+@@ -82,8 +82,8 @@ struct clk_rate_round_data {
+ };
+ 
+ #define for_each_frequency(pos, r, freq)			\
+-	for (pos = r->min, freq = r->func(pos, r);		\
+-	     pos <= r->max; pos++, freq = r->func(pos, r))	\
++	for (pos = r->min; pos <= r->max &&			\
++	     ({ freq = r->func(pos, r); 1; }); pos++)		\
+ 		if (unlikely(freq == 0))			\
+ 			;					\
+ 		else
+diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+index ab0e9b2..a4b40cf 100644
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -159,16 +159,16 @@ static inline struct request *blk_mq_tag_to_rq(struct blk_mq_hw_ctx *hctx,
+ }
+ 
+ #define queue_for_each_hw_ctx(q, hctx, i)				\
+-	for ((i) = 0, hctx = (q)->queue_hw_ctx[0];			\
+-	     (i) < (q)->nr_hw_queues; (i)++, hctx = (q)->queue_hw_ctx[i])
++	for ((i) = 0; (i) < (q)->nr_hw_queues &&			\
++	     ({ hctx = (q)->queue_hw_ctx[i]; 1; }); (i)++)
+ 
+ #define queue_for_each_ctx(q, ctx, i)					\
+-	for ((i) = 0, ctx = per_cpu_ptr((q)->queue_ctx, 0);		\
+-	     (i) < (q)->nr_queues; (i)++, ctx = per_cpu_ptr(q->queue_ctx, (i)))
++	for ((i) = 0; (i) < (q)->nr_queues &&				\
++	     ({ ctx = per_cpu_ptr((q)->queue_ctx, (i)); 1; }); (i)++)
+ 
+ #define hctx_for_each_ctx(hctx, ctx, i)					\
+-	for ((i) = 0, ctx = (hctx)->ctxs[0];				\
+-	     (i) < (hctx)->nr_ctx; (i)++, ctx = (hctx)->ctxs[(i)])
++	for ((i) = 0; (i) < (hctx)->nr_ctx &&				\
++	     ({ ctx = (hctx)->ctxs[(i)]; 1; }); (i)++)
+ 
+ #define blk_ctx_sum(q, sum)						\
+ ({									\
+diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
+index f92c0a4..35285f7 100644
+--- a/include/linux/shdma-base.h
++++ b/include/linux/shdma-base.h
+@@ -111,8 +111,8 @@ struct shdma_dev {
+ 	size_t desc_size;
+ };
+ 
+-#define shdma_for_each_chan(c, d, i) for (i = 0, c = (d)->schan[0]; \
+-				i < (d)->dma_dev.chancnt; c = (d)->schan[++i])
++#define shdma_for_each_chan(c, d, i) for (i = 0; i < (d)->dma_dev.chancnt && \
++				({ c = (d)->schan[i]; 1; }); i++)
+ 
+ int shdma_request_irq(struct shdma_chan *, int,
+ 			   unsigned long, const char *);
+diff --git a/sound/soc/sh/rcar/adg.c b/sound/soc/sh/rcar/adg.c
+index a53235c..ef19c15 100644
+--- a/sound/soc/sh/rcar/adg.c
++++ b/sound/soc/sh/rcar/adg.c
+@@ -25,9 +25,8 @@ struct rsnd_adg {
+ };
+ 
+ #define for_each_rsnd_clk(pos, adg, i)		\
+-	for (i = 0, (pos) = adg->clk[i];	\
+-	     i < CLKMAX;			\
+-	     i++, (pos) = adg->clk[i])
++	for (i = 0; i < CLKMAX &&		\
++	     ({ (pos) = adg->clk[i]; 1; }); i++)
+ #define rsnd_priv_to_adg(priv) ((struct rsnd_adg *)(priv)->adg)
+ 
+ static int rsnd_adg_set_convert_clk_gen1(struct rsnd_priv *priv,
+
 
