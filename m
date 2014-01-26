@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaAZVyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:54:07 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59763 "EHLO
+	id S1753267AbaAZWCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 17:02:16 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59770 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaAZVyG (ORCPT
+	with ESMTP id S1752937AbaAZWCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:54:06 -0500
-Date: Sun, 26 Jan 2014 21:53:54 +0000
+	Sun, 26 Jan 2014 17:02:15 -0500
+Date: Sun, 26 Jan 2014 22:01:26 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Jean Delvare <khali@linux-fr.org>, LM Sensors <lm-sensors@lm-sensors.org>,
         linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
         Wei Ni <wni@nvidia.com>
-Message-ID: <20140126215354.GL11727@sirena.org.uk>
+Message-ID: <20140126220126.GM11727@sirena.org.uk>
 References: <52E561D0.4040308@roeck-us.net>
  <20140126211357.6fa68909@endymion.delvare>
  <52E573B6.9040903@roeck-us.net>
- <20140126214936.7736f530@endymion.delvare>
- <20140126212256.GK11727@sirena.org.uk>
- <52E580CE.8080100@roeck-us.net>
+ <20140126205216.GJ11727@sirena.org.uk>
+ <52E5825D.9090104@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dDdTYOCAbkFo0FQC"
+	protocol="application/pgp-signature"; boundary="eUGqGfkt69yEwRle"
 Content-Disposition: inline
-In-Reply-To: <52E580CE.8080100@roeck-us.net>
+In-Reply-To: <52E5825D.9090104@roeck-us.net>
 X-Cookie: Please ignore previous fortune.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
@@ -37,47 +36,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---dDdTYOCAbkFo0FQC
+--eUGqGfkt69yEwRle
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Sun, Jan 26, 2014 at 01:40:30PM -0800, Guenter Roeck wrote:
-> On 01/26/2014 01:22 PM, Mark Brown wrote:
+On Sun, Jan 26, 2014 at 01:47:09PM -0800, Guenter Roeck wrote:
 
-> >What is this platform and why does it have the regulator API enabled in
-> >the first place?
+Please fix your mailer to word wrap within 80 columns, I've reflowed for
+legibility.
 
-> It is a PC running Ubuntu. you'd have to ask the distro maintainers why they
-> turn on regulators.
+> You have a solution for that in dt configurations. I don't think you
+> have one for non-dt systems - you simply assume that all regulators
+> are there. For dt, you even have a constraint to tell the kernel if
+> regulator configurations are fully specified, and you automatically
+> return success if not and if a regulator does not exist.  So you know
+> that there is a problem. For non-DT configurations you simply assume
+> and expect that regulators are all declared. I don't think that is a
+> feasible approach for non-DT systems.
 
-> config-3.8.0-26-generic:CONFIG_REGULATOR=y
-> config-3.8.0-35-generic:CONFIG_REGULATOR=y
-> config-3.11.0-13-generic:CONFIG_REGULATOR=y
+To repeat the mechanism that's there for other platforms is to either
+flag that they've provided full constraints or provide the supply
+mappings.  This has always been the case, there's nothing new here - the
+only change there's been in this is that in v3.13 we refactored how
+systems using DT flag that they have full constraints.
 
-Oh, magic.  Can you please file a bug with or otherwise talk to them
-asking them to turn that off (or contribute code to make it work)?  Feel
-free to add me as a CC when you do so.
+I agree that it's not going to work terribly well if neither of these
+things has been done, it never has done and that's why the API has stubs
+when it's disabled - they allow us to avoid a hard dependency on it in
+drivers so people only need to turn it on if they're actually using it.
+I'm very surprised to see anyone doing that to be honest, if you're not
+using it it's just going to waste cycles and RAM.
 
---dDdTYOCAbkFo0FQC
+--eUGqGfkt69yEwRle
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS5YPuAAoJELSic+t+oim9zb4P/1RGyuj1q68vuy/V5Gi5mpVI
-laPfmtnEgieJg6xbCK5Qksep9fh/kBhYjIh34eHnQJC2epxHIL8NRf8q1VV0jmPU
-pH4f33QJ2YsN7ohhLr9EVoBmrlml1Kl2Av8cbGks6P+Niun/0J4PqET5zxibJ11v
-kkHVPDdvm3guR0A8xaHFPUIihycKXsTbhY+rAdBtw+pp85nrpqJ+EafiG7ECimMk
-yIFxilH4/pAam1UBDtJmMn1JdU3I2FwAKIf6zvMJGVGXUu2rTL/4moJFO31WGg+r
-yhwzfmpWohqNv4f8Xvu3Zjc8SX9rHBF6BhFyER8/c9TKVTX4RDlyVvqdl0JWRwmd
-FloYyC3B3TQvnZL7+H1muuK/QkQt1SFCu9GDf/CMkYd/Mt0JiSISU0hwAA+dsxw5
-ZRyKmWuymWrLO8IBPyyRtamzD1pKetPAZ9HQU4uf92KZMKQJ91f+1XN46qy7aZS9
-zytsucMN+G+fPZUnmAmbl5lMCOhhcAIxmuYpWOqJ5c3g+5JnpfmFj5nvT4K0kTFz
-7zt1IVfYfCP/UomHIhk0qOG7l7aja7Z4vZ7pUAlRSnlQKNNyUrWqDyEVRgG7tBBl
-uC1wQV7u8744SfRk4+cl6fmPS2vVSxF4yPWlnqYoFCWgY7SpJ9vWVklI/q33wyh6
-0E1p/CD82UZhKvumUcfK
-=votX
+iQIcBAEBAgAGBQJS5YWzAAoJELSic+t+oim9OCEP/jvQujHqAnGkwS1uUkl8qMzN
+WMvnr8xicGWxEb6IN6SrfdgROA9xg3J/X1zQ4YBOwt1JnG8cj4CJnvXPwZkAk/T5
+5/e3b2cJQ/HqM6CO54wgYilw2xB1Oai0LusMkN0nkkpLG6JiYuqF6y6CqZMjIBxC
+A8gvQGHh2/agMf4UXKBgZRbryD6S7NMGoyHxzIGaW4SJJqHBRrH6LYl+FnHkN11+
+nQMqPD2ORSLKtls4XgKTGlFmcGeOJCNRIY50nqZgA8deHKCnlCQG/kpGxIFF8ehz
+yhrYXCksJPulm+B0zqHWS5K+SrdVfSRU8Z3tQaMDM2YGjLbEBNXBTxAGn0kWo6e4
+y1HvTdaPQmGAbGGVQ6P2BGdoo1SECEYGxp8x/x9Vfp6iPPZs5wgGbKV50mAHnwTy
+SVCP96UzX1AOMp1eT2JrvZ5SG0ynNFX7bZjYuOAI52RjyBlTQ3kKGGR0cYJQfDms
+7f5wOHp+gftN4ALzDRUhqRd9JNC3Dk8uF58kHeofq9RSpiL6gN9JgRCABEhS2F7B
+UFQy2h0NJ+hFtw6IdtDmoYOTEl4efqwO/wpj2eMeMdHZwY/LSOv3ZSj4XjowChoU
+p8F/ImYtUecP44pBYi8cO3+6WNxsBO3GLnTULftC+paTWo1Cqnuj9fqKX4ieG+z3
+bTb4Nq73DsKiDHhgn1iF
+=9khg
 -----END PGP SIGNATURE-----
 
---dDdTYOCAbkFo0FQC--
+--eUGqGfkt69yEwRle--
