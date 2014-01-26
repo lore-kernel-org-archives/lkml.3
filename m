@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaAZLhT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 06:37:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61680 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396AbaAZLhR convert rfc822-to-8bit (ORCPT
+	id S1752885AbaAZLy1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 06:54:27 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49174 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752461AbaAZLyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 06:37:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,723,1384329600"; 
-   d="scan'208";a="472602230"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: RE: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
- PR_MPX_RELEASE
-Thread-Topic: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
- PR_MPX_RELEASE
-Thread-Index: AQHPGjnO5MG2nTCtrEa+syIX3GXcKpqWJM+AgACGcwD//35+AIAAtKEA
-Date: Sun, 26 Jan 2014 11:37:12 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014F225B@SHSMSX102.ccr.corp.intel.com>
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
- <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
- <20140126082201.GB28831@gmail.com> <52E4C5F2.8070707@intel.com>
- <20140126083942.GB29339@gmail.com>
-In-Reply-To: <20140126083942.GB29339@gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 26 Jan 2014 06:54:25 -0500
+Date: Sun, 26 Jan 2014 11:54:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Cox <alan@etchedpixels.co.uk>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mark Brown <broonie@kernel.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+	device probe
+Message-ID: <20140126115402.GA25689@n2100.arm.linux.org.uk>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com> <20140120214305.54f65ffa@www.etchedpixels.co.uk> <20140120231457.GZ17314@sirena.org.uk> <20140120234734.11b78578@www.etchedpixels.co.uk> <20140121001657.GO15937@n2100.arm.linux.org.uk> <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 21, 2014 at 12:45:05AM +0000, Alan Cox wrote:
+> Peter handed it on. Try using git log on Documentation/devices.txt. It
+> still gets updates.
+> 
+> Perhaps you'd care to stick to reality and fix the tree instead of trying
+> to excuse the mess ?
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Ingo Molnar
-> Sent: Sunday, January 26, 2014 4:40 PM
-> To: Ren, Qiaowei
-> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
-> linux-kernel@vger.kernel.org; Peter Zijlstra
-> Subject: Re: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
-> PR_MPX_RELEASE
-> 
-> 
-> * Ren Qiaowei <qiaowei.ren@intel.com> wrote:
-> 
-> > On 01/26/2014 04:22 PM, Ingo Molnar wrote:
-> > >
-> > >* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
-> > >
-> > >>This patch adds the PR_MPX_INIT and PR_MPX_RELEASE prctl() commands
-> > >>on the x86 platform. These commands can be used to init and release
-> > >>MPX related resource.
-> > >>
-> > >>A MMU notifier will be registered during PR_MPX_INIT command
-> > >>execution. So the bound tables can be automatically deallocated when
-> > >>one memory area is unmapped.
-> > >>
-> > >>Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> > >>---
-> > >>  arch/x86/Kconfig                 |    4 ++
-> > >>  arch/x86/include/asm/mpx.h       |    9 ++++
-> > >>  arch/x86/include/asm/processor.h |   16 +++++++
-> > >>  arch/x86/kernel/mpx.c            |   84
-> ++++++++++++++++++++++++++++++++++++++
-> > >>  include/uapi/linux/prctl.h       |    6 +++
-> > >>  kernel/sys.c                     |   12 +++++
-> > >>  6 files changed, 131 insertions(+), 0 deletions(-)
-> > >
-> > > Hm. What is the expected typical frequency of these syscalls for a
-> > > larger application like a web browser? Only once per startup
-> > > typically, or will they be called more frequently?
-> >
-> > It will be only once per startup.
-> 
-> In that case it would be more efficient to make this part of the binary execution
-> environment so that exec() sets it up automatically, not a separate prctl()
-> syscall.
-> 
-Sorry, I guess what I said is not accurate. Normally it will be only once per startup. But user application maybe only partly want to use MPX, e.g. only one thread of process. For those cases, user application need to enable MPX for specific part of the code. So it is not enough to set it up automatically.
+Perhaps returning to reality might be advantageous rather than trying
+to repeat statements which can't have any bearing on this - especially
+as the git history which you're referring to only goes back to 2.6.12-rc2,
+and this predates 2.6.12-rc2 by a long shot.
 
-Thanks,
-Qiaowei
+> More importantly certain folks need to stop abusing static numbers
+> allocated properly. Repeating it having made a total hash of it before
+> is dismal.
+
+And if you continue these stupid accusations which have no basis at all,
+we're going to get into a real big argument, because you are soo _wrong_
+on that point.  I was always the one arguing /against/ the re-use of
+existing major/minor numbers.  I was the one arguing /against/ Nicolas'
+patches to make every serial port appear in the 4,64 ttyS namespace.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
