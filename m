@@ -1,141 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaAZWcC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 17:32:02 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:55582 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaAZWcA (ORCPT
+	id S1753203AbaAZXEW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 18:04:22 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:48576 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040AbaAZXEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 17:32:00 -0500
+	Sun, 26 Jan 2014 18:04:21 -0500
+Date: Sun, 26 Jan 2014 15:04:15 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [RFC] wait*() induced tasklist_lock starvation
+Message-ID: <alpine.DEB.2.02.1401261500250.5335@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <52E582D0.9070501@gmail.com>
-References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
-	<52E50C24.8030305@gmail.com>
-	<CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
-	<20140126214542.GC18840@core.coreip.homeip.net>
-	<52E582D0.9070501@gmail.com>
-Date: Mon, 27 Jan 2014 02:31:59 +0400
-Message-ID: <CALT56yPJjLZ_UHgH1koKPbTLBR=5QzSFMMXfqYxspw30_fpKNQ@mail.gmail.com>
-Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Manish Badarkhe <badarkhe.manish@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 1:49 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On 26.01.2014 22:45, Dmitry Torokhov wrote:
->>
->> On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
->>>
->>> Hi Tomasz,
->>>
->>> Thank you for your review comments.
->>>
->>> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com>
->>> wrote:
->>>>
->>>>
->>>> Hi Manish,
->>>>
->>>>
->>>> On 26.01.2014 08:15, Manish Badarkhe wrote:
->>>>>
->>>>>
->>>>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
->>>>> option for DT code to avoid if-deffery in code.
->>>>>
->>>>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
->>>>> ---
->>>>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
->>>>>    drivers/power/max8925_power.c |   14 +++++---------
->>>>>    1 file changed, 5 insertions(+), 9 deletions(-)
->>>>>
->>>>> diff --git a/drivers/power/max8925_power.c
->>>>> b/drivers/power/max8925_power.c
->>>>> index b4513f2..d353fbc 100644
->>>>> --- a/drivers/power/max8925_power.c
->>>>> +++ b/drivers/power/max8925_power.c
->>>>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct
->>>>> max8925_power_info *info)
->>>>>          return 0;
->>>>>    }
->>>>>
->>>>> -#ifdef CONFIG_OF
->>>>>    static struct max8925_power_pdata *
->>>>>    max8925_power_dt_init(struct platform_device *pdev)
->>>>>    {
->>>>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device
->>>>> *pdev)
->>>>>
->>>>>          return pdata;
->>>>>    }
->>>>> -#else
->>>>> -static struct max8925_power_pdata *
->>>>> -max8925_power_dt_init(struct platform_device *pdev)
->>>>> -{
->>>>> -       return pdev->dev.platform_data;
->>>>> -}
->>>>> -#endif
->>>>>
->>>>>    static int max8925_power_probe(struct platform_device *pdev)
->>>>>    {
->>>>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct
->>>>> platform_device *pdev)
->>>>>          struct max8925_power_info *info;
->>>>>          int ret;
->>>>>
->>>>> -       pdata = max8925_power_dt_init(pdev);
->>>>> +       if (IS_ENABLED(CONFIG_OF))
->>>>> +               pdata = max8925_power_dt_init(pdev);
->>>>> +       else
->>>>> +               pdata = pdev->dev.platform_data;
->>>>> +
->>>>
->>>>
->>>>
->>>> This does not look much better than before this patch. Instead of
->>>> "if-deffery" outside function bodies you are adding "iffery" (if there is
->>>> such a word) inside a function.
->>>> What about adding
->>>>
->>>>          if (!IS_ENABLED(CONFIG_OF))
->>>>                  return pdev->dev.platform_data;
->>>>
->>>> on top of max8925_power_dt_init() instead or maybe also renaming this
->>>> function to max8925_get_pdata()?
->>>
->>>
->>> Okay, I will rename function "max8925_power_dt_init()" to
->>> "max8925_get_pdata()".
->>> As you suggested, in the body of this function  will add a logic to
->>> retrieve  data in case
->>> of DT and non-DT platforms.
->>
->>
->> Should we not always favor platform-supplied data regardless of
->> CONFIG_OF state and fall back to DT (firmware) supplied data if platform
->> data is absent? This way one can tweak kernel behavior without needing
->> to change firmware.
->
->
-> I guess we should, but apparently this was not the original behavior before
-> this patch, so I'm not sure if we should be squashing such semantic change
-> with this simple refactor.
+Hi Oleg,
 
-Hmm. Judging from the code, max8925_power_dt_init() function follows exactly
-opposite strategy - it uses platform_data if of_node is not populated/available.
-So (if dt_init will compile with CONFIG_OF disabled) one can always
-use _dt_init()
-function to retrieve pdata.
+We've found that it's pretty easy to cause NMI watchdog timeouts due to 
+tasklist_lock starvation by using repeated wait4(), waitid(), or waitpid() 
+since it takes the readside of the lock and cascading calls to the 
+syscalls from multiple processes will starve anything in the fork() or 
+exit() path that is waiting on the writeside with irqs disabled.
 
--- 
-With best wishes
-Dmitry
+The only way I've been able to remedy this problem is by serializing the 
+taking of the readside of this lock with a spinlock specifically for these 
+syscalls, otherwise my testcase will panic any machine if we panic on 
+these NMI watchdog timeouts, which we do.
+
+Is there any way we can do this in a less expensive way?  Or is it just 
+another case of tasklist_lock problems that needs a major overhaul?
+---
+ kernel/exit.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -59,6 +59,14 @@
+ #include <asm/pgtable.h>
+ #include <asm/mmu_context.h>
+ 
++/*
++ * Ensures the wait family of syscalls -- wait4(), waitid(), and waitpid() --
++ * don't cascade taking readside of tasklist_lock which will starve processes
++ * doing fork() or exit() and cause NMI watchdog timeouts with interrupts
++ * disabled.
++ */
++static DEFINE_SPINLOCK(wait_lock);
++
+ static void exit_mm(struct task_struct * tsk);
+ 
+ static void __unhash_process(struct task_struct *p, bool group_dead)
+@@ -1028,6 +1036,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 
+ 		get_task_struct(p);
+ 		read_unlock(&tasklist_lock);
++		spin_unlock(&wait_lock);
+ 		if ((exit_code & 0x7f) == 0) {
+ 			why = CLD_EXITED;
+ 			status = exit_code >> 8;
+@@ -1112,6 +1121,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	 * thread can reap it because we set its state to EXIT_DEAD.
+ 	 */
+ 	read_unlock(&tasklist_lock);
++	spin_unlock(&wait_lock);
+ 
+ 	retval = wo->wo_rusage
+ 		? getrusage(p, RUSAGE_BOTH, wo->wo_rusage) : 0;
+@@ -1246,6 +1256,7 @@ unlock_sig:
+ 	pid = task_pid_vnr(p);
+ 	why = ptrace ? CLD_TRAPPED : CLD_STOPPED;
+ 	read_unlock(&tasklist_lock);
++	spin_unlock(&wait_lock);
+ 
+ 	if (unlikely(wo->wo_flags & WNOWAIT))
+ 		return wait_noreap_copyout(wo, p, pid, uid, why, exit_code);
+@@ -1308,6 +1319,7 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+ 	pid = task_pid_vnr(p);
+ 	get_task_struct(p);
+ 	read_unlock(&tasklist_lock);
++	spin_unlock(&wait_lock);
+ 
+ 	if (!wo->wo_info) {
+ 		retval = wo->wo_rusage
+@@ -1523,6 +1535,7 @@ repeat:
+ 		goto notask;
+ 
+ 	set_current_state(TASK_INTERRUPTIBLE);
++	spin_lock(&wait_lock);
+ 	read_lock(&tasklist_lock);
+ 	tsk = current;
+ 	do {
+@@ -1538,6 +1551,7 @@ repeat:
+ 			break;
+ 	} while_each_thread(current, tsk);
+ 	read_unlock(&tasklist_lock);
++	spin_unlock(&wait_lock);
+ 
+ notask:
+ 	retval = wo->notask_error;
