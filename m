@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaAZUON (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 15:14:13 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:40856 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaAZUOM (ORCPT
+	id S1753217AbaAZUTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 15:19:34 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:34731 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaAZUTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 15:14:12 -0500
-Date: Sun, 26 Jan 2014 21:13:57 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LM Sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Wei Ni <wni@nvidia.com>
-Subject: Re: lm90 driver no longer working on PCs in 3.13
-Message-ID: <20140126211357.6fa68909@endymion.delvare>
-In-Reply-To: <52E561D0.4040308@roeck-us.net>
-References: <52E561D0.4040308@roeck-us.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Sun, 26 Jan 2014 15:19:32 -0500
+Date: Sun, 26 Jan 2014 21:19:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+Message-ID: <20140126201928.GA8224@gmail.com>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+ <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
 
-Adding Wei Ni to Cc, as he provided the commit which causes problem.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Sun, 26 Jan 2014 11:28:16 -0800, Guenter Roeck wrote:
-> Hi,
+> On Sun, Jan 26, 2014 at 4:27 AM, David Howells <dhowells@redhat.com> wrote:
+> >
+> > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+> > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+> > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+> > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
 > 
-> the lm90 driver is no longer working on PCs with the 3.13 kernel ... or at least not without
-> special configuration.
+> So the S_IFREG isn't necessary.
 > 
-> This is what I get if I try to instantiate a device on it (max6695):
+> And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_ 
+> readable than 0644. It's damn hard to parse those random letter 
+> combinations, and at least I have to really think about it, in a way 
+> that the octal representation does *not* make me go "I have to think 
+> about that".
 > 
-> i2c 1-0018: Driver lm90 requests probe deferral
-> i2c i2c-1: new_device: Instantiated device max6695 at 0x18
-> 
-> The regulator core always returns -EPROBE_DEFER if the platform does not support devicetree
-> and if the regulator it is looking for does not exist. Since the driver now requires a mandatory
-> regulator (commit 3e0f964f2ad - hwmon: (lm90) Add power control), and the regulator it requests
-> does not exist on a PC, the result is not really surprising. I thought the regulator core would
-> realize that it has to return a dummy regulator, but apparently that is not the case, or I don't
-> know how to configure it.
-> 
-> Any idea what I might need to do to get it working ?
+> So my personal preference would be to just see that simple 0644 in 
+> proc_create. Hmm?
 
-Me, I really don't know. I seem to remember I tested Wei's patch set on
-an emulated ADM1032 chip and it was working fine. So maybe it depends
-on the kernel configuration, or something changed on the regulator side
-meanwhile.
+Perhaps we could also generate the most common variants as:
 
--- 
-Jean Delvare
+ #define PERM__rw_r__r__		0644
+ #define PERM__r________		0400
+ #define PERM__r__r__r__		0444
+ #define PERM__r_xr_xr_x		0555
+
+etc.
+
+or something similar, more or less matching the output of 'ls -l'?
+
+That would also make security bugs in this area apparent at first 
+sight. The number of people who can recognize during review that 
+PERM_rw__w__w is probably unwise is probably two orders of magnitude 
+than those who can interpret octal 0622 at a glance.
+
+Thanks,
+
+	Ingo
