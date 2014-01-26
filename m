@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaAZVop (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:44:45 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4282 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaAZVoo (ORCPT
+	id S1753372AbaAZVpr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:45:47 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34462 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130AbaAZVpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:44:44 -0500
-Date: Sun, 26 Jan 2014 22:44:25 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, LM Sensors <lm-sensors@lm-sensors.org>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Wei Ni <wni@nvidia.com>
-Subject: Re: lm90 driver no longer working on PCs in 3.13
-Message-ID: <20140126224425.724698cd@endymion.delvare>
-In-Reply-To: <20140126212256.GK11727@sirena.org.uk>
-References: <52E561D0.4040308@roeck-us.net>
-	<20140126211357.6fa68909@endymion.delvare>
-	<52E573B6.9040903@roeck-us.net>
-	<20140126214936.7736f530@endymion.delvare>
-	<20140126212256.GK11727@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Sun, 26 Jan 2014 16:45:45 -0500
+Date: Sun, 26 Jan 2014 13:45:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+Message-ID: <20140126214542.GC18840@core.coreip.homeip.net>
+References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
+ <52E50C24.8030305@gmail.com>
+ <CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Sun, 26 Jan 2014 21:22:56 +0000, Mark Brown wrote:
-> On Sun, Jan 26, 2014 at 09:49:36PM +0100, Jean Delvare wrote:
-> > On Sun, 26 Jan 2014 12:44:38 -0800, Guenter Roeck wrote:
+On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
+> Hi Tomasz,
 > 
-> > > Maybe there is some configuration option, or maybe something needs to be
-> > > configured from user space. I found neither.
+> Thank you for your review comments.
 > 
-> > Neither would be acceptable to my eyes anyway. Things worked out of the
-> > box before, they should keep working out of the box.
+> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> >
+> > Hi Manish,
+> >
+> >
+> > On 26.01.2014 08:15, Manish Badarkhe wrote:
+> >>
+> >> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+> >> option for DT code to avoid if-deffery in code.
+> >>
+> >> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+> >> ---
+> >> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
+> >>   drivers/power/max8925_power.c |   14 +++++---------
+> >>   1 file changed, 5 insertions(+), 9 deletions(-)
+> >>
+> >> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> >> index b4513f2..d353fbc 100644
+> >> --- a/drivers/power/max8925_power.c
+> >> +++ b/drivers/power/max8925_power.c
+> >> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
+> >>         return 0;
+> >>   }
+> >>
+> >> -#ifdef CONFIG_OF
+> >>   static struct max8925_power_pdata *
+> >>   max8925_power_dt_init(struct platform_device *pdev)
+> >>   {
+> >> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device *pdev)
+> >>
+> >>         return pdata;
+> >>   }
+> >> -#else
+> >> -static struct max8925_power_pdata *
+> >> -max8925_power_dt_init(struct platform_device *pdev)
+> >> -{
+> >> -       return pdev->dev.platform_data;
+> >> -}
+> >> -#endif
+> >>
+> >>   static int max8925_power_probe(struct platform_device *pdev)
+> >>   {
+> >> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct platform_device *pdev)
+> >>         struct max8925_power_info *info;
+> >>         int ret;
+> >>
+> >> -       pdata = max8925_power_dt_init(pdev);
+> >> +       if (IS_ENABLED(CONFIG_OF))
+> >> +               pdata = max8925_power_dt_init(pdev);
+> >> +       else
+> >> +               pdata = pdev->dev.platform_data;
+> >> +
+> >
+> >
+> > This does not look much better than before this patch. Instead of "if-deffery" outside function bodies you are adding "iffery" (if there is such a word) inside a function.
+> > What about adding
+> >
+> >         if (!IS_ENABLED(CONFIG_OF))
+> >                 return pdev->dev.platform_data;
+> >
+> > on top of max8925_power_dt_init() instead or maybe also renaming this function to max8925_get_pdata()?
 > 
-> They only worked with a debug option turned on and generated warnings
-> every time they were used...  that kernel config would've been actively
-> broken for devices that wanted to do anything at all interesting with
-> the regulators and would've been prone to issues with init ordering and
-> races in any cases where there are actually regulators.
+> Okay, I will rename function "max8925_power_dt_init()" to "max8925_get_pdata()".
+> As you suggested, in the body of this function  will add a logic to
+> retrieve  data in case
+> of DT and non-DT platforms.
 
-No, you don't get what I'm saying. For PC users, the lm90 did not
-request a regulator and things worked because the kernel isn't supposed
-to take care about things like that on PC machines. Now that the lm90
-driver does request a regulator, it fails on PC machines because no
-regulator is declared.
+Should we not always favor platform-supplied data regardless of
+CONFIG_OF state and fall back to DT (firmware) supplied data if platform
+data is absent? This way one can tweak kernel behavior without needing
+to change firmware.
 
-PC users never had to do anything fancy to get the lm90 driver to work.
-Just enabling the driver and loading it, did the trick. And that's
-exactly how things must be. Hence my claim.
-
-To be clear: my "before" is not referring to "before the dummy
-regulator was dropped". It is referring to "before commit 3e0f964f2ad -
-hwmon: (lm90) Add power control". I don't know a thing about all this
-regulator stuff.
-
-> > (...)
-> > Well, either the regulator subsystem gets fixed (or provides a suitable
-> > API for drivers like lm90 and we update the lm90 driver to use it), or
-> > I'll just revert the problematic commit for now. This is a severe
-> > regression, we just can't leave things that way.
-> 
-> It's not an issue in the driver, it's an issue in the combination of the
-> platform and the kernel config.  If the regulator API is going to be
-> turned on for the platform then either the platform needs to configure
-> the supplies or it needs to tell the regulator core that it's safe to
-> start using dummy regulators.
-> 
-> What is this platform and why does it have the regulator API enabled in
-> the first place?
-
-Regular PC. It has regulator API enabled, because it is possible to
-enable it, I suppose, and developers try to test various combinations
-of kernel config options. Guenter can tell more, I do not have it
-enabled (which is why it did not fail for me, BTW.)
-
-Don't tell me that it is expected that things will fail if
-CONFIG_REGULATOR is enabled on a system which doesn't need it. It
-doesn't make any sense. If kernels would fail as soon as any enabled
-option wasn't actually needed, no system would boot out there.
-
-If regulator is enabled but not needed, that's something the regulator
-subsystem should figure out at run-time so that it can stub everything
-out and things keep working.
+Thanks.
 
 -- 
-Jean Delvare
+Dmitry
