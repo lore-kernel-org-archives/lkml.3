@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaA3MEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:04:23 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:50953 "EHLO smtp1-g21.free.fr"
+	id S1753181AbaA3MEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:04:35 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:52054 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753068AbaA3MEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:04:20 -0500
-X-Mailbox-Line: From dfb18101882112430f5ff0341cbbf65993b88830 Mon Sep 17 00:00:00 2001
-Message-Id: <dfb18101882112430f5ff0341cbbf65993b88830.1391081934.git.moinejf@free.fr>
+	id S1753139AbaA3MEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 07:04:33 -0500
+X-Mailbox-Line: From c638b6622f4e059987f075091716a2305217ee49 Mon Sep 17 00:00:00 2001
+Message-Id: <c638b6622f4e059987f075091716a2305217ee49.1391081934.git.moinejf@free.fr>
 In-Reply-To: <cover.1391081933.git.moinejf@free.fr>
 References: <cover.1391081933.git.moinejf@free.fr>
 From: Jean-Francois Moine <moinejf@free.fr>
-Date: Sun, 26 Jan 2014 19:02:37 +0100
-Subject: [PATCH v2 1/5] drm/i2c: tda998x: add a function for dynamic audio
- input switch
+Date: Sun, 26 Jan 2014 19:45:36 +0100
+Subject: [PATCH v2 2/5] ASoC: tda998x: add a codec driver for TDA998x
 To: alsa-devel@alsa-project.org
 Cc: broonie@kernel.org, Dave Airlie <airlied@gmail.com>,
         dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
@@ -23,171 +22,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When both I2S and S/PDIF are wired from the audio device to the
-TDA998x, the user or some internal mechanism may choose to do audio
-streaming via either inputs.
+This patch adds a CODEC driver for the NXP TDA998x HDMI transmitter.
 
-This patch adds an exported function in the TDA998x driver which
-initializes the audio input parameters according to the audio
-subsystem.
-
-The audio format values in the encoder configuration interface  are
-changed to non null values so that the value 0 is used in the audio
-function to indicate that audio streaming is stopped.
-
-As the audio clock depends on the input type, it is set so.
-Then, the configuration value audio_clk_cfg is now ignored.
+The CODEC handles both I2S and S/PDIF input and does dynamic input
+switch in the TDA998x I2C driver on audio streaming start/stop.
 
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c | 48 ++++++++++++++++++++++++++++++++++++---
- include/drm/i2c/tda998x.h         |  7 ++++--
- 2 files changed, 50 insertions(+), 5 deletions(-)
+ sound/soc/codecs/Kconfig   |   6 ++
+ sound/soc/codecs/Makefile  |   2 +
+ sound/soc/codecs/tda998x.c | 237 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 245 insertions(+)
+ create mode 100644 sound/soc/codecs/tda998x.c
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 2f97290..2643be4 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -35,6 +35,7 @@ struct tda998x_priv {
- 	struct i2c_client *hdmi;
- 	uint16_t rev;
- 	uint8_t current_page;
-+	u8 audio_active;
- 	int dpms;
- 	bool is_hdmi_sink;
- 	u8 vip_cntrl_0;
-@@ -640,12 +641,11 @@ static void
- tda998x_configure_audio(struct tda998x_priv *priv,
- 		struct drm_display_mode *mode, struct tda998x_encoder_params *p)
- {
--	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv;
-+	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv, aclk;
- 	uint32_t n;
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index b33b45d..747e387 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -352,6 +352,12 @@ config SND_SOC_STAC9766
+ config SND_SOC_TAS5086
+ 	tristate
  
- 	/* Enable audio ports */
- 	reg_write(priv, REG_ENA_AP, p->audio_cfg);
--	reg_write(priv, REG_ENA_ACLK, p->audio_clk_cfg);
++config SND_SOC_TDA998X
++	tristate
++	depends on OF
++	default y if DRM_I2C_NXP_TDA998X=y
++	default m if DRM_I2C_NXP_TDA998X=m
++
+ config SND_SOC_TLV320AIC23
+ 	tristate
  
- 	/* Set audio input source */
- 	switch (p->audio_format) {
-@@ -654,6 +654,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		clksel_aip = AIP_CLKSEL_AIP_SPDIF;
- 		clksel_fs = AIP_CLKSEL_FS_FS64SPDIF;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
-+		aclk = 0;				/* no clock */
- 		break;
- 
- 	case AFMT_I2S:
-@@ -661,6 +662,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		clksel_aip = AIP_CLKSEL_AIP_I2S;
- 		clksel_fs = AIP_CLKSEL_FS_ACLK;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
-+		aclk = 1;				/* clock enable */
- 		break;
- 
- 	default:
-@@ -672,6 +674,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
- 					AIP_CNTRL_0_ACR_MAN);	/* auto CTS */
- 	reg_write(priv, REG_CTS_N, cts_n);
-+	reg_write(priv, REG_ENA_ACLK, aclk);
- 
- 	/*
- 	 * Audio input somehow depends on HDMI line rate which is
-@@ -728,6 +731,37 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	tda998x_write_aif(priv, p);
- }
- 
-+/* tda998x codec interface */
-+void tda998x_audio_update(struct i2c_client *client,
-+			int format,
-+			int port)
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index bc12676..a53d09e 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -62,6 +62,7 @@ snd-soc-sta32x-objs := sta32x.o
+ snd-soc-sta529-objs := sta529.o
+ snd-soc-stac9766-objs := stac9766.o
+ snd-soc-tas5086-objs := tas5086.o
++snd-soc-tda998x-objs := tda998x.o
+ snd-soc-tlv320aic23-objs := tlv320aic23.o
+ snd-soc-tlv320aic26-objs := tlv320aic26.o
+ snd-soc-tlv320aic3x-objs := tlv320aic3x.o
+@@ -192,6 +193,7 @@ obj-$(CONFIG_SND_SOC_STA32X)   += snd-soc-sta32x.o
+ obj-$(CONFIG_SND_SOC_STA529)   += snd-soc-sta529.o
+ obj-$(CONFIG_SND_SOC_STAC9766)	+= snd-soc-stac9766.o
+ obj-$(CONFIG_SND_SOC_TAS5086)	+= snd-soc-tas5086.o
++obj-$(CONFIG_SND_SOC_TDA998X)	+= snd-soc-tda998x.o
+ obj-$(CONFIG_SND_SOC_TLV320AIC23)	+= snd-soc-tlv320aic23.o
+ obj-$(CONFIG_SND_SOC_TLV320AIC26)	+= snd-soc-tlv320aic26.o
+ obj-$(CONFIG_SND_SOC_TLV320AIC3X)	+= snd-soc-tlv320aic3x.o
+diff --git a/sound/soc/codecs/tda998x.c b/sound/soc/codecs/tda998x.c
+new file mode 100644
+index 0000000..585cdb6
+--- /dev/null
++++ b/sound/soc/codecs/tda998x.c
+@@ -0,0 +1,237 @@
++/*
++ * ALSA SoC TDA998X driver
++ *
++ * This driver is used by the NXP TDA998x HDMI transmitter.
++ *
++ * Copyright (C) 2014 Jean-Francois Moine
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <sound/soc.h>
++#include <sound/pcm.h>
++#include <linux/of.h>
++#include <linux/i2c.h>
++#include <drm/drm_encoder_slave.h>
++#include <drm/i2c/tda998x.h>
++
++#define TDA998X_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | \
++			SNDRV_PCM_FMTBIT_S20_3LE | \
++			SNDRV_PCM_FMTBIT_S24_LE | \
++			SNDRV_PCM_FMTBIT_S32_LE)
++
++struct tda_priv {
++	struct i2c_client *i2c_client;
++	struct snd_soc_codec *codec;
++	u8 ports[2];
++	int dai_id;
++	u8 *eld;
++};
++
++static void tda_get_encoder(struct tda_priv *priv)
 +{
-+	struct tda998x_priv *priv = i2c_get_clientdata(client);
-+	struct tda998x_encoder_params *p = &priv->params;
++	struct snd_soc_codec *codec = priv->codec;
++	struct device_node *np;
++	struct i2c_client *i2c_client;
++	static const struct of_device_id tda_dt[] = {
++		{ .compatible = "nxp,tda998x" },
++		{ },
++	};
 +
-+	/* if the audio output is active, it may be a second start or a stop */
-+	if (format == 0 || priv->audio_active) {
-+		if (format == 0) {
-+			priv->audio_active = 0;
-+			reg_write(priv, REG_ENA_AP, 0);
-+		}
++	/* search the tda998x device */
++	np = of_find_matching_node_and_match(NULL, tda_dt, NULL);
++	if (!np || !of_device_is_available(np)) {
++		dev_err(codec->dev, "No tda998x in DT\n");
 +		return;
 +	}
-+	priv->audio_active = 1;
-+
-+	p->audio_cfg = port;
-+
-+	/* don't restart audio if same input format */
-+	if (format == p->audio_format) {
-+		reg_write(priv, REG_ENA_AP, p->audio_cfg);
++	i2c_client = of_find_i2c_device_by_node(np);
++	of_node_put(np);
++	if (!i2c_client) {
++		dev_err(codec->dev, "no tda998x i2c client\n");
 +		return;
 +	}
-+	p->audio_format = format;
++	if (!i2c_get_clientdata(i2c_client)) {
++		dev_err(codec->dev, "tda998x not initialized\n");
++		return;
++	}
 +
-+	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
++	priv->i2c_client = i2c_client;
 +}
-+EXPORT_SYMBOL_GPL(tda998x_audio_update);
 +
- /* DRM encoder functions */
- 
- static void
-@@ -750,6 +784,9 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
- 			    (p->mirr_f ? VIP_CNTRL_2_MIRR_F : 0);
- 
- 	priv->params = *p;
++static int tda_start_stop(struct tda_priv *priv)
++{
++	int port;
 +
-+	if (p->audio_cfg)
-+		priv->audio_active = 1;
- }
- 
- static void
-@@ -999,7 +1036,7 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 
- 		tda998x_write_avi(priv, adjusted_mode);
- 
--		if (priv->params.audio_cfg)
-+		if (priv->audio_active)
- 			tda998x_configure_audio(priv, adjusted_mode,
- 						&priv->params);
- 	}
-@@ -1239,10 +1276,15 @@ tda998x_encoder_init(struct i2c_client *client,
- 	if (!priv)
- 		return -ENOMEM;
- 
-+	i2c_set_clientdata(client, priv);
++	if (!priv->i2c_client) {
++		tda_get_encoder(priv);
++		if (!priv->i2c_client)
++			return -EINVAL;
++	}
 +
- 	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
- 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
- 	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
- 
-+	priv->params.audio_frame[1] = 1;		/* channels - 1 */
-+	priv->params.audio_sample_rate = 48000;		/* 48kHz */
++	/* give the audio parameters to the HDMI encoder */
++	if (priv->dai_id == AFMT_I2S)
++		port = priv->ports[0];
++	else
++		port = priv->ports[1];
++	tda998x_audio_update(priv->i2c_client, priv->dai_id, port);
++	return 0;
++}
 +
- 	priv->current_page = 0xff;
- 	priv->hdmi = client;
- 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
-diff --git a/include/drm/i2c/tda998x.h b/include/drm/i2c/tda998x.h
-index 3e419d9..7e4806d 100644
---- a/include/drm/i2c/tda998x.h
-+++ b/include/drm/i2c/tda998x.h
-@@ -20,11 +20,14 @@ struct tda998x_encoder_params {
- 	u8 audio_frame[6];
- 
- 	enum {
--		AFMT_SPDIF,
--		AFMT_I2S
-+		AFMT_I2S = 1,
-+		AFMT_SPDIF
- 	} audio_format;
- 
- 	unsigned audio_sample_rate;
- };
- 
-+void tda998x_audio_update(struct i2c_client *client,
-+			int format,
-+			int port);
- #endif
++static int tda_startup(struct snd_pcm_substream *substream,
++			struct snd_soc_dai *dai)
++{
++	struct tda_priv *priv = snd_soc_codec_get_drvdata(dai->codec);
++
++	/* memorize the used DAI */
++	priv->dai_id = dai->id;
++
++	/* start the TDA998x audio */
++	return tda_start_stop(priv);
++}
++
++static void tda_shutdown(struct snd_pcm_substream *substream,
++			struct snd_soc_dai *dai)
++{
++	struct tda_priv *priv = snd_soc_codec_get_drvdata(dai->codec);
++
++	priv->dai_id = 0;		/* streaming stop */
++	tda_start_stop(priv);
++}
++
++static const struct snd_soc_dai_ops tda_ops = {
++	.startup = tda_startup,
++	.shutdown = tda_shutdown,
++};
++
++static const struct snd_soc_dai_driver tda998x_dai[] = {
++    {
++	.name = "i2s-hifi",
++	.id = AFMT_I2S,
++	.playback = {
++		.stream_name	= "HDMI I2S Playback",
++		.channels_min	= 1,
++		.channels_max	= 8,
++		.rates		= SNDRV_PCM_RATE_CONTINUOUS,
++		.rate_min	= 5512,
++		.rate_max	= 192000,
++		.formats	= TDA998X_FORMATS,
++
++	},
++	.ops = &tda_ops,
++    },
++    {
++	.name = "spdif-hifi",
++	.id = AFMT_SPDIF,
++	.playback = {
++		.stream_name	= "HDMI SPDIF Playback",
++		.channels_min	= 1,
++		.channels_max	= 2,
++		.rates		= SNDRV_PCM_RATE_CONTINUOUS,
++		.rate_min	= 22050,
++		.rate_max	= 192000,
++		.formats	= TDA998X_FORMATS,
++	},
++	.ops = &tda_ops,
++    },
++};
++
++static const struct snd_soc_dapm_widget tda_widgets[] = {
++	SND_SOC_DAPM_OUTPUT("hdmi-out"),
++};
++static const struct snd_soc_dapm_route tda_routes[] = {
++	{ "hdmi-out", NULL, "HDMI I2S Playback" },
++	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
++};
++
++static int tda_probe(struct snd_soc_codec *codec)
++{
++	struct tda_priv *priv;
++	struct device_node *np;
++	int i, j, ret;
++	const char *p;
++
++	priv = devm_kzalloc(codec->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++	snd_soc_codec_set_drvdata(codec, priv);
++	priv->codec = codec;
++
++	/* get the audio input ports (I2s and S/PDIF) */
++	np = codec->dev->of_node;
++	for (i = 0; i < 2; i++) {
++		u32 port;
++
++		ret = of_property_read_u32_index(np, "audio-ports", i, &port);
++		if (ret) {
++			if (i == 0)
++				dev_err(codec->dev,
++					"bad or missing audio-ports\n");
++			break;
++		}
++		ret = of_property_read_string_index(np, "audio-port-names",
++						i, &p);
++		if (ret) {
++			dev_err(codec->dev,
++				"missing audio-port-names[%d]\n", i);
++			break;
++		}
++		if (strcmp(p, "i2s") == 0) {
++			j = 0;
++		} else if (strcmp(p, "spdif") == 0) {
++			j = 1;
++		} else {
++			dev_err(codec->dev,
++				"bad audio-port-names '%s'\n", p);
++			break;
++		}
++		priv->ports[j] = port;
++	}
++
++	return 0;
++}
++
++static const struct snd_soc_codec_driver soc_codec_tda998x = {
++	.probe = tda_probe,
++	.dapm_widgets = tda_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(tda_widgets),
++	.dapm_routes = tda_routes,
++	.num_dapm_routes = ARRAY_SIZE(tda_routes),
++};
++
++static int tda998x_dev_probe(struct platform_device *pdev)
++{
++	return snd_soc_register_codec(&pdev->dev,
++				&soc_codec_tda998x,
++				tda998x_dai, ARRAY_SIZE(tda998x_dai));
++}
++
++static int tda998x_dev_remove(struct platform_device *pdev)
++{
++	snd_soc_unregister_codec(&pdev->dev);
++	return 0;
++}
++
++static const struct of_device_id tda998x_codec_ids[] = {
++	{ .compatible = "nxp,tda998x-codec", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, tda998x_codec_ids);
++
++static struct platform_driver tda998x_driver = {
++	.probe		= tda998x_dev_probe,
++	.remove		= tda998x_dev_remove,
++	.driver		= {
++		.name	= "tda998x-codec",
++		.owner	= THIS_MODULE,
++		.of_match_table = tda998x_codec_ids,
++	},
++};
++
++module_platform_driver(tda998x_driver);
++
++MODULE_AUTHOR("Jean-Francois Moine");
++MODULE_DESCRIPTION("TDA998x codec driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.rc1
 
