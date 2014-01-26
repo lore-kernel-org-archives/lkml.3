@@ -1,92 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaAZN7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 08:59:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:2939 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaAZN7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 08:59:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,724,1384329600"; 
-   d="scan'208";a="470987228"
-Date: Sun, 26 Jan 2014 19:29:33 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
-        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
-        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-Message-ID: <20140126135933.GD10628@intel.com>
-References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
- <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
- <52E0FC22.8060903@metafoo.de>
- <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
- <52E2698B.6070001@metafoo.de>
+	id S1752830AbaAZOBy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 09:01:54 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41787 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaAZOBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 09:01:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E2698B.6070001@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52E50C24.8030305@gmail.com>
+References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
+	<52E50C24.8030305@gmail.com>
+Date: Sun, 26 Jan 2014 19:31:50 +0530
+Message-ID: <CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
+Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
-> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
-> > Hi Lars,
-> > 
-> > On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> >> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
-> >> [...]
-> >>> +/**
-> >>> + * xilinx_vdma_device_control - Configure DMA channel of the device
-> >>> + * @dchan: DMA Channel pointer
-> >>> + * @cmd: DMA control command
-> >>> + * @arg: Channel configuration
-> >>> + *
-> >>> + * Return: '0' on success and failure value on error
-> >>> + */
-> >>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
-> >>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
-> >>> +{
-> >>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-> >>> +
-> >>> +     switch (cmd) {
-> >>> +     case DMA_TERMINATE_ALL:
-> >>> +             xilinx_vdma_terminate_all(chan);
-> >>> +             return 0;
-> >>> +     case DMA_SLAVE_CONFIG:
-> >>> +             return xilinx_vdma_slave_config(chan,
-> >>> +                                     (struct xilinx_vdma_config *)arg);
-> >>
-> >> You really shouldn't be overloading the generic API with your own semantics.
-> >> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
-> > 
-> > Ok.  The driver needs few additional configuration from the slave
-> > device like Vertical
-> > Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
-> > suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
-> > defined for Freescale drivers?
-> 
-> In my opinion it is not a good idea to have driver implement a generic API,
-> but at the same time let the driver have custom semantics for those API
-> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
-> values passed to gpio_set_value instead of 0 and 1. It completely defeats
-> the purpose of a generic API, namely that you are able to write generic code
-> that makes use of the API without having to know about which implementation
-> API it is talking to. The dmaengine framework provides the
-> dmaengine_prep_interleaved_dma() function to setup two dimensional
-> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
+Hi Tomasz,
 
-The question here i think would be waht this device supports? Is the hardware
-capable of doing interleaved transfers, then would make sense.
+Thank you for your review comments.
 
-While we do try to get users use dma_slave_config, but there will always be
-someone who have specfic params. If we can generalize then we might want to add
-to the dma_slave_config as well
+On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>
+> Hi Manish,
+>
+>
+> On 26.01.2014 08:15, Manish Badarkhe wrote:
+>>
+>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+>> option for DT code to avoid if-deffery in code.
+>>
+>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>> ---
+>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
+>>   drivers/power/max8925_power.c |   14 +++++---------
+>>   1 file changed, 5 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+>> index b4513f2..d353fbc 100644
+>> --- a/drivers/power/max8925_power.c
+>> +++ b/drivers/power/max8925_power.c
+>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
+>>         return 0;
+>>   }
+>>
+>> -#ifdef CONFIG_OF
+>>   static struct max8925_power_pdata *
+>>   max8925_power_dt_init(struct platform_device *pdev)
+>>   {
+>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device *pdev)
+>>
+>>         return pdata;
+>>   }
+>> -#else
+>> -static struct max8925_power_pdata *
+>> -max8925_power_dt_init(struct platform_device *pdev)
+>> -{
+>> -       return pdev->dev.platform_data;
+>> -}
+>> -#endif
+>>
+>>   static int max8925_power_probe(struct platform_device *pdev)
+>>   {
+>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct platform_device *pdev)
+>>         struct max8925_power_info *info;
+>>         int ret;
+>>
+>> -       pdata = max8925_power_dt_init(pdev);
+>> +       if (IS_ENABLED(CONFIG_OF))
+>> +               pdata = max8925_power_dt_init(pdev);
+>> +       else
+>> +               pdata = pdev->dev.platform_data;
+>> +
+>
+>
+> This does not look much better than before this patch. Instead of "if-deffery" outside function bodies you are adding "iffery" (if there is such a word) inside a function.
+> What about adding
+>
+>         if (!IS_ENABLED(CONFIG_OF))
+>                 return pdev->dev.platform_data;
+>
+> on top of max8925_power_dt_init() instead or maybe also renaming this function to max8925_get_pdata()?
 
---
-~Vinod
+Okay, I will rename function "max8925_power_dt_init()" to "max8925_get_pdata()".
+As you suggested, in the body of this function  will add a logic to
+retrieve  data in case
+of DT and non-DT platforms.
+
+
+Regards
+Manish Badarkhe
