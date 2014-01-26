@@ -1,192 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaAZSCi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 13:02:38 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:43845 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037AbaAZSCg (ORCPT
+	id S1753228AbaAZSFO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 13:05:14 -0500
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:57827 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173AbaAZSFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 13:02:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140124133830.GU4963@suse.de>
-References: <20140121232708.GA29787@amazon.com>
-	<20140122014908.GG18164@kroah.com>
-	<CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
-	<20140122032045.GA22182@falcon.amazon.com>
-	<20140122050215.GC9931@konrad-lan.dumpdata.com>
-	<20140122072914.GA9283@orcus.uplinklabs.net>
-	<52DFD5DB.6060603@iogearbox.net>
-	<CAEr7rXhJf1tf2KUErsGgUyYNUpVwLYD=fKUf8aPm0Dcg21MuNQ@mail.gmail.com>
-	<20140122203337.GA31908@orcus.uplinklabs.net>
-	<CAEr7rXjge6rKzxbwy+0A6-5YhVZL9WGmaLrDYbE8H5hrtwq_4A@mail.gmail.com>
-	<20140124133830.GU4963@suse.de>
-Date: Sun, 26 Jan 2014 13:02:35 -0500
-Message-ID: <CAEr7rXjmVp-F88zQnc4a2tSzBAJFshzR0FPkOBdo1jbQLOv+2A@mail.gmail.com>
-Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Steven Noonan <steven@uplinklabs.net>,
-        Daniel Borkmann <borkmann@iogearbox.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        George Dunlap <george.dunlap@eu.citrix.com>,
-        Dario Faggioli <dario.faggioli@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 26 Jan 2014 13:05:13 -0500
+Message-ID: <1390759506.6778.1.camel@laptop>
+Subject: Re: [PATCH] for_each macros correctness
+From: Jose Alonso <joalonsof@gmail.com>
+To: Fubo Chen <fubo.chen@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 26 Jan 2014 16:05:06 -0200
+In-Reply-To: <CAJAFBLBONBLnMnC3Dq8fad4vAUPJPOjp6+5TEzdUAC=Dq6x7pQ@mail.gmail.com>
+References: <1390733658.3059.10.camel@laptop>
+	 <CAJAFBLBONBLnMnC3Dq8fad4vAUPJPOjp6+5TEzdUAC=Dq6x7pQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 8:38 AM, Mel Gorman <mgorman@suse.de> wrote:
-> On Thu, Jan 23, 2014 at 11:23:37AM -0500, Elena Ufimtseva wrote:
->> >> >> <SNIP>
->> >> >>
->> >> >> This dump doesn't look dramatically different, either.
->> >> >>
->> >> >>>
->> >> >>> The other question is - how is AutoNUMA running when it is not enabled?
->> >> >>> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
->> >> >>> turned on?
->> >> >>
->> >> >>
->> >> >> Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
->> >> >> mean not enabled at runtime?
->> >> >>
->> >> >> [1]
->> >> >> http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
->> >>
->> >>
->> >>
->> >> --
->> >> Elena
->>
->> I was able to reproduce this consistently, also with the latest mm
->> patches from yesterday.
->> Can you please try this:
->>
->
-> Thanks Elena,
->
->> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->> index ce563be..76dcf96 100644
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct
->> *mm, unsigned long addr,
->>  /* Assume pteval_t is equivalent to all the other *val_t types. */
->>  static pteval_t pte_mfn_to_pfn(pteval_t val)
->>  {
->> -       if (val & _PAGE_PRESENT) {
->> +       if ((val & _PAGE_PRESENT) || ((val &
->> (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
->>                 unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>                 unsigned long pfn = mfn_to_pfn(mfn);
->>
->> @@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
->>
->>  static pteval_t pte_pfn_to_mfn(pteval_t val)
->>  {
->> -       if (val & _PAGE_PRESENT) {
->> +       if ((val & _PAGE_PRESENT) || ((val &
->> (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
->>                 unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>                 pteval_t flags = val & PTE_FLAGS_MASK;
->>                 unsigned long mfn;
->
-> Would reusing pte_present be an option? Ordinarily I expect that
-> PAGE_NUMA/PAGE_PROTNONE is only set if PAGE_PRESENT is not set and pte_present
-> is defined as
->
-> static inline int pte_present(pte_t a)
-> {
->         return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
->                                _PAGE_NUMA);
-> }
->
-> So it looks like it work work. Of course it would need to be split to
-> reuse it within xen if pte_present was split to have a pteval_present
-> helper like so
->
-> static inline int pteval_present(pteval_t val)
-> {
->         /*
->          * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
->          * way clearly states that the intent is that a protnone and numa
->          * hinting ptes are considered present for the purposes of
->          * pagetable operations like zapping, protection changes, gup etc.
->          */
->         return val & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
-> }
->
-> static inline int pte_present(pte_t pte)
-> {
->         return pteval_present(pte_flags(pte))
-> }
->
-> If Xen is doing some other tricks with _PAGE_PRESENT then it might be
-> ruled out as an option. If so, then maybe it could still be made a
-> little clearer for future reference?
+On Sun, 2014-01-26 at 14:39 +0100, Fubo Chen wrote:
+> On Sun, Jan 26, 2014 at 11:54 AM, Jose Alonso <joalonsof@gmail.com> wrote:
+> > I observed that there are for_each macros that do an extra memory access
+> > beyond the defined area.
+> > Normally this does not cause problems.
+> > But, this can cause exceptions. For example: if the area is allocated at
+> > the end of a page and the next page is not accessible.
+> >
+> > For correctness, I suggest changing the arguments of the 'for loop' like
+> > others 'for_each' do in the kernel.
+> 
+> Does this patch fix a kernel crash when using gcc 4.8 like the patch
+> in http://lkml.org/lkml/2014/1/21/146 ?
 
-Yes, sure, it should work, I tried it.
-Thank you Mel.
+The patch for 'for_each_isci_host' is equivalent.
 
->
->
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index c1d406f..ff621de 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
->  /* Assume pteval_t is equivalent to all the other *val_t types. */
->  static pteval_t pte_mfn_to_pfn(pteval_t val)
->  {
-> -       if (val & _PAGE_PRESENT) {
-> +       if ((val & _PAGE_PRESENT) || pteval_numa(val)) {
->                 unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->                 unsigned long pfn = mfn_to_pfn(mfn);
->
-> @@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
->
->  static pteval_t pte_pfn_to_mfn(pteval_t val)
->  {
-> -       if (val & _PAGE_PRESENT) {
-> +       if ((val & _PAGE_PRESENT) || pteval_numa(val)) {
->                 unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->                 pteval_t flags = val & PTE_FLAGS_MASK;
->                 unsigned long mfn;
-> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-> index 8e4f41d..693fe00 100644
-> --- a/include/asm-generic/pgtable.h
-> +++ b/include/asm-generic/pgtable.h
-> @@ -654,10 +654,14 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
->   * (because _PAGE_PRESENT is not set).
->   */
->  #ifndef pte_numa
-> +static inline int pteval_numa(pteval_t pteval)
-> +{
-> +       return (pteval & (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-> +}
-> +
->  static inline int pte_numa(pte_t pte)
->  {
-> -       return (pte_flags(pte) &
-> -               (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-> +       return pteval_numa(pte_flags(pte));
->  }
->  #endif
->
+I followed the link above, and as I understand: The access to 
+to_pci_info(pdev)->hosts[2] do not caused exception, but
+the fact of hosts[2] is "logically accessed" "confused" the
+gcc 4.8 compiler. (The gcc compiler do very aggressive loop
+optimization and can eliminate loops executing each pass
+linearly).
 
 
-
--- 
-Elena
