@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355AbaAZVim (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:38:42 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:48554 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaAZVik (ORCPT
+	id S1753360AbaAZVkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:40:35 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:49762 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaAZVke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:38:40 -0500
-Date: Sun, 26 Jan 2014 13:38:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ren Qiaowei <qiaowei.ren@intel.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] x86, mpx: extend siginfo structure to include
- bound violation information
-In-Reply-To: <52E4919B.8050408@intel.com>
-Message-ID: <alpine.DEB.2.02.1401261335400.26515@chino.kir.corp.google.com>
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-5-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.02.1401252010400.10325@chino.kir.corp.google.com> <52E4919B.8050408@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 26 Jan 2014 16:40:34 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52E580CE.8080100@roeck-us.net>
+Date: Sun, 26 Jan 2014 13:40:30 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-2146613219-1390772190=:26515"
-Content-ID: <alpine.DEB.2.02.1401261336480.26515@chino.kir.corp.google.com>
+To: Mark Brown <broonie@kernel.org>, Jean Delvare <khali@linux-fr.org>
+CC: LM Sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>
+Subject: Re: lm90 driver no longer working on PCs in 3.13
+References: <52E561D0.4040308@roeck-us.net> <20140126211357.6fa68909@endymion.delvare> <52E573B6.9040903@roeck-us.net> <20140126214936.7736f530@endymion.delvare> <20140126212256.GK11727@sirena.org.uk>
+In-Reply-To: <20140126212256.GK11727@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 01/26/2014 01:22 PM, Mark Brown wrote:
+> On Sun, Jan 26, 2014 at 09:49:36PM +0100, Jean Delvare wrote:
+>> On Sun, 26 Jan 2014 12:44:38 -0800, Guenter Roeck wrote:
+>
+>>> Maybe there is some configuration option, or maybe something needs to be
+>>> configured from user space. I found neither.
+>
+>> Neither would be acceptable to my eyes anyway. Things worked out of the
+>> box before, they should keep working out of the box.
+>
+> They only worked with a debug option turned on and generated warnings
+> every time they were used...  that kernel config would've been actively
+> broken for devices that wanted to do anything at all interesting with
+> the regulators and would've been prone to issues with init ordering and
+> races in any cases where there are actually regulators.
+>
+>>> Another possible fix would be to have the regulator core return -ENODEV
+>>> instead of -EPROBE_DEFER on non-dt systems. No idea if this would be acceptable
+>>> or even feasible.
+>
+>> Well, either the regulator subsystem gets fixed (or provides a suitable
+>> API for drivers like lm90 and we update the lm90 driver to use it), or
+>> I'll just revert the problematic commit for now. This is a severe
+>> regression, we just can't leave things that way.
+>
+> It's not an issue in the driver, it's an issue in the combination of the
+> platform and the kernel config.  If the regulator API is going to be
+> turned on for the platform then either the platform needs to configure
+> the supplies or it needs to tell the regulator core that it's safe to
+> start using dummy regulators.
+>
+> What is this platform and why does it have the regulator API enabled in
+> the first place?
+>
 
---531381512-2146613219-1390772190=:26515
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.02.1401261336481.26515@chino.kir.corp.google.com>
+It is a PC running Ubuntu. you'd have to ask the distro maintainers why they
+turn on regulators.
 
-On Sun, 26 Jan 2014, Ren Qiaowei wrote:
+config-3.8.0-26-generic:CONFIG_REGULATOR=y
+config-3.8.0-35-generic:CONFIG_REGULATOR=y
+config-3.11.0-13-generic:CONFIG_REGULATOR=y
 
-> > arch/x86/kernel/mpx.c: In function ‘do_mpx_bounds’:
-> > arch/x86/kernel/mpx.c:407:3: warning: cast to pointer from integer of
-> > different size [-Wint-to-pointer-cast]
-> > arch/x86/kernel/mpx.c:409:3: warning: cast to pointer from integer of
-> > different size [-Wint-to-pointer-cast]
-> > 
-> > and the documentation says you explicitly want to support this config.
-> > 
-> > These types of warnings are usually indicative of real problems when
-> > you're storing upper and lower bits in 32-bit fields after casting them
-> > from 64-bit values.
-> > 
-> > I'm also not sure if the added fields to the generic struct siginfo can be
-> > justified for this.
-> > 
-> According to MPX spec, for 32-bit case, the upper 32-bits of 64-bits bound
-> register are ignored, and so casting to pointer from 64-bit values should be
-> not produce any problems.
-> 
+Guenter
 
-Ok, so this is intended per the spec which nobody reading the code is 
-going to know and people who report the compile warnings are going to 
-continue to question it.
-
-How are you planning on suppressing the warnings?  It will probably 
-require either
-
- - separate 64-bit and 32-bit helper functions to do_mpx_bounds() to 
-   do appropriate casts before casting to a pointer, or
-
- - a macro defined as a no-op for 64-bit and as a cast to 32-bit value
-   for 32-bit configs that will be used in do_mpx_bounds() and casted
-   to the pointer.
---531381512-2146613219-1390772190=:26515--
