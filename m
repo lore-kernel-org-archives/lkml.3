@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaAZPvY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 10:51:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225AbaAZPvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 10:51:23 -0500
-Date: Sun, 26 Jan 2014 16:51:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: error out if the name buffer is too short
-Message-ID: <20140126155141.GA12249@redhat.com>
-References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com> <20140124161922.GA14195@redhat.com> <20140126153737.GA8184@redhat.com>
+	id S1753076AbaAZP7u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 10:59:50 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59235 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198AbaAZP7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 10:59:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140126153737.GA8184@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sun, 26 Jan 2014 10:59:48 -0500
+X-Google-Sender-Auth: KSF8CP1FzDoLNIRYzbOjMa92GIA
+Message-ID: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
+Subject: ath9k ARM build error with v3.13-8330-g4ba9920
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: ath9k-devel@venema.h4ckr.net, netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26, Oleg Nesterov wrote:
->
-> Heh. Not sure what I was thinking about, but this looks obviously wrong
-> when I re-read my email. This will add the extra "/" at the end, unless
-> IS_ROOT().
+Hi All,
 
-And this motivated me to try to actually read __dentry_path().
+This commit:
 
-Al, Denys, unless I am totally confused the "restart" logic is very broken.
-We can't simply restart because the main loop changes dentry?
+commit 4dc78c437a0a2ac152a2b2c5e91a814a6ef3599e
+Author: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Date:   Wed Dec 18 09:53:26 2013 +0530
 
-Oleg.
+    ath9k: Fix RTC reset delay
 
+    The delay that is required after issuing a RTC reset
+    varies for each chip. Handle this properly.
+
+    Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
+
+adds a udelay(10000) call to the ath9k driver.  This will cause a
+build error on various ARM configs because the value passed to udelay
+is too large:
+
+ERROR: "__bad_udelay" [drivers/net/wireless/ath/ath9k/ath9k_hw.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
+
+Is the 10000 microsecond udelay really required?  I believe the limit
+on ARM is 2000.  Perhaps something else could be done in this case?
+
+josh
