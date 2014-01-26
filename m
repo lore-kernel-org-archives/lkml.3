@@ -1,96 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaAZDDx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:03:53 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:32835 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaAZDDv (ORCPT
+	id S1752785AbaAZDEj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:04:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52694 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaAZDEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:03:51 -0500
-Message-ID: <52E47B51.3030308@gmail.com>
-Date: Sat, 25 Jan 2014 19:04:49 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: rob.herring@calxeda.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] of: make of_get_phy_mode parse 'phy-connection-type'
-References: <20131114074711.9A8C5C402E1@trevor.secretlab.ca> < 1384496612-28392-1-git-send-email-f.fainelli@gmail.com> <20131116122451.3F0B9C4038F@trevor.secretlab.ca>
-In-Reply-To: <20131116122451.3F0B9C4038F@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 25 Jan 2014 22:04:30 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 03/12] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
+Date: Sat, 25 Jan 2014 19:05:06 -0800
+Message-Id: <20140126030452.198121114@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.rc0.19.gb594c97
+In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
+References: <20140126030451.934281002@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 16/11/2013 04:24, Grant Likely a écrit :
-> On Fri, 15 Nov 2013 06:23:32 +0000, Florian Fainelli <f.fainelli@gmail.com> wrote:
->> Per the ePAPR v1.1 specification, 'phy-connection-type' is the canonical
->> property name for describing an Ethernet to PHY connection type. Make
->> sure that of_get_phy_mode() also attempts to parse that property and
->> update the comments mentioning 'phy-mode' to also include
->> 'phy-connection-type'.
->>
->> Acked-by: Grant Likely <grant.likely@linaro.org>
->> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
->
-> Applied, thanks
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Grant, where is that patch, and will it be part of a pull request to 3.14?
+------------------
 
-Thanks!
+From: Robert Richter <rric@kernel.org>
 
->
-> g.
->
->> ---
->> Changes since v2:
->> - reworked the error condition to look nicer per Grant's suggestion
->> - added Grant's Acked-by tag
->> - fixed a typo in the commit message on "mentioning"
->>
->>   drivers/of/of_net.c | 11 +++++++----
->>   1 file changed, 7 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
->> index 8f9be2e..651e249 100644
->> --- a/drivers/of/of_net.c
->> +++ b/drivers/of/of_net.c
->> @@ -13,8 +13,8 @@
->>
->>   /**
->>    * It maps 'enum phy_interface_t' found in include/linux/phy.h
->> - * into the device tree binding of 'phy-mode', so that Ethernet
->> - * device driver can get phy interface from device tree.
->> + * into the device tree binding of 'phy-mode' or 'phy-connection-type',
->> + * so that Ethernet device driver can get phy interface from device tree.
->>    */
->>   static const char *phy_modes[] = {
->>   	[PHY_INTERFACE_MODE_NA]		= "",
->> @@ -36,8 +36,9 @@ static const char *phy_modes[] = {
->>    * of_get_phy_mode - Get phy mode for given device_node
->>    * @np:	Pointer to the given device_node
->>    *
->> - * The function gets phy interface string from property 'phy-mode',
->> - * and return its index in phy_modes table, or errno in error case.
->> + * The function gets phy interface string from property 'phy-mode' or
->> + * 'phy-connection-type', and return its index in phy_modes table, or errno in
->> + * error case.
->>    */
->>   int of_get_phy_mode(struct device_node *np)
->>   {
->> @@ -46,6 +47,8 @@ int of_get_phy_mode(struct device_node *np)
->>
->>   	err = of_property_read_string(np, "phy-mode", &pm);
->>   	if (err < 0)
->> +		err = of_property_read_string(np, "phy-connection-type", &pm);
->> +	if (err < 0)
->>   		return err;
->>
->>   	for (i = 0; i < ARRAY_SIZE(phy_modes); i++)
->> --
->> 1.8.3.2
->>
->
+commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
+
+On AMD family 10h we see following error messages while waking up from
+S3 for all non-boot CPUs leading to a failed IBS initialization:
+
+ Enabling non-boot CPUs ...
+ smpboot: Booting Node 0 Processor 1 APIC 0x1
+ [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
+ perf: IBS APIC setup failed on cpu #1
+ process: Switch to broadcast mode on CPU1
+ CPU1 is up
+ ...
+ ACPI: Waking up from system sleep state S3
+
+Reason for this is that during suspend the LVT offset for the IBS
+vector gets lost and needs to be reinialized while resuming.
+
+The offset is read from the IBSCTL msr. On family 10h the offset needs
+to be 1 as offset 0 is used for the MCE threshold interrupt, but
+firmware assings it for IBS to 0 too. The kernel needs to reprogram
+the vector. The msr is a readonly node msr, but a new value can be
+written via pci config space access. The reinitialization is
+implemented for family 10h in setup_ibs_ctl() which is forced during
+IBS setup.
+
+This patch fixes IBS setup after waking up from S3 by adding
+resume/supend hooks for the boot cpu which does the offset
+reinitialization.
+
+Marking it as stable to let distros pick up this fix.
+
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   53 ++++++++++++++++++++++++++-----
+ 1 file changed, 45 insertions(+), 8 deletions(-)
+
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -9,6 +9,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <asm/apic.h>
+ 
+@@ -209,6 +210,18 @@ out:
+ 	return ret;
+ }
+ 
++static void ibs_eilvt_setup(void)
++{
++	/*
++	 * Force LVT offset assignment for family 10h: The offsets are
++	 * not assigned by the BIOS for this family, so the OS is
++	 * responsible for doing it. If the OS assignment fails, fall
++	 * back to BIOS settings and try to setup this.
++	 */
++	if (boot_cpu_data.x86 == 0x10)
++		force_ibs_eilvt_setup();
++}
++
+ static inline int get_ibs_lvt_offset(void)
+ {
+ 	u64 val;
+@@ -244,6 +257,36 @@ static void clear_APIC_ibs(void *dummy)
+ 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
+ }
+ 
++#ifdef CONFIG_PM
++
++static int perf_ibs_suspend(void)
++{
++	clear_APIC_ibs(NULL);
++	return 0;
++}
++
++static void perf_ibs_resume(void)
++{
++	ibs_eilvt_setup();
++	setup_APIC_ibs(NULL);
++}
++
++static struct syscore_ops perf_ibs_syscore_ops = {
++	.resume		= perf_ibs_resume,
++	.suspend	= perf_ibs_suspend,
++};
++
++static void perf_ibs_pm_init(void)
++{
++	register_syscore_ops(&perf_ibs_syscore_ops);
++}
++
++#else
++
++static inline void perf_ibs_pm_init(void) { }
++
++#endif
++
+ static int __cpuinit
+ perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -270,18 +313,12 @@ static __init int amd_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	/*
+-	 * Force LVT offset assignment for family 10h: The offsets are
+-	 * not assigned by the BIOS for this family, so the OS is
+-	 * responsible for doing it. If the OS assignment fails, fall
+-	 * back to BIOS settings and try to setup this.
+-	 */
+-	if (boot_cpu_data.x86 == 0x10)
+-		force_ibs_eilvt_setup();
++	ibs_eilvt_setup();
+ 
+ 	if (!ibs_eilvt_valid())
+ 		goto out;
+ 
++	perf_ibs_pm_init();
+ 	get_online_cpus();
+ 	ibs_caps = caps;
+ 	/* make ibs_caps visible to other cpus: */
+
 
