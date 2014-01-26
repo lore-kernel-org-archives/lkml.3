@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaAZIvZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 03:51:25 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:35765 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaAZIvY (ORCPT
+	id S1752818AbaAZJIU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 04:08:20 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:58075 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaAZJIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 03:51:24 -0500
+	Sun, 26 Jan 2014 04:08:12 -0500
+Date: Sun, 26 Jan 2014 10:08:08 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
+ PR_MPX_RELEASE
+Message-ID: <20140126090808.GA30987@gmail.com>
+References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
+ <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140126083631.GA29339@gmail.com>
-References: <20140123221316.GA23367@redhat.com>
-	<20140125074107.GA10565@gmail.com>
-	<20140125153048.GA8536@redhat.com>
-	<alpine.DEB.2.02.1401252223460.1723@chino.kir.corp.google.com>
-	<20140126083631.GA29339@gmail.com>
-Date: Sun, 26 Jan 2014 00:51:23 -0800
-X-Google-Sender-Auth: pTx2mA9aOqox_GCtVZGWoxYGsiY
-Message-ID: <CAE9FiQVUKZ2RsQ_BkePfmpXq+Ty3kj+k7h675fHy8Zm1Za=1Zw@mail.gmail.com>
-Subject: Re: disabled APICs being counted as processors ?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 12:36 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> No, this message is printed in prefill_possible_map() which
-> _generates_ cpu_possible_map, so '8' is the number of bits in
-> cpu_possible_map.
->
-> So the problem is that the counting of disabled but hotpluggable CPUs
-> is over-eager. Since I haven't actually seen _true_ hotplug CPU
-> hardware yet, I'd argue we do the change below - allocating space for
-> never-present CPUs is stupid. If there's true hot-plug CPUs around
-> that could come online after we've booted, then we want to know about
-> them explicitly.
->
->
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a32da80..75a351a 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1223,10 +1223,7 @@ __init void prefill_possible_map(void)
->         i = setup_max_cpus ?: 1;
->         if (setup_possible_cpus == -1) {
->                 possible = num_processors;
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -               if (setup_max_cpus)
-> -                       possible += disabled_cpus;
-> -#else
-> +#ifndef CONFIG_HOTPLUG_CPU
->                 if (possible > i)
->                         possible = i;
->  #endif
 
-Agreed.
+* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 
-Most happens when one BIOS support different configuration.
+> @@ -7,6 +9,88 @@
+>  #include <asm/fpu-internal.h>
+>  #include <asm/alternative.h>
+>  
+> +static struct mmu_notifier mpx_mn;
 
-Like system support 10 cores cpu and 15 cores cpus or system could be
-configured with 4 sockets or 8 sockets
+> +static struct mmu_notifier_ops mpx_mmuops = {
+> +	.invalidate_range_end = mpx_invl_range_end,
+> +};
+> +
+> +int mpx_init(struct task_struct *tsk)
+> +{
+> +	if (!boot_cpu_has(X86_FEATURE_MPX))
+> +		return -EINVAL;
+> +
+> +	/* register mmu_notifier to delallocate the bound tables */
+> +	mpx_mn.ops = &mpx_mmuops;
+> +	mmu_notifier_register(&mpx_mn, current->mm);
 
-Thanks
+0)
 
-Yinghai
+I do think MPX should be supported by Linux, but this is the best 
+thing I can say about the code at the moment:
+
+1)
+
+The above MMU notifier bit is absolutely disgusting: it adds an 
+O(nr_mpx_tasks) overhead to every MMU operation!
+
+MPX needs to be called from architecture methods. (And the MMU 
+notifier should probably be removed, it literally invites such abuse.)
+
+2)
+
+The whole MPX_INIT() macro wrappery is ugly beyond relief.
+
+3)
+
+The kernel/sys.c bits are x86-only, it probably won't even build on 
+other architectures.
+
+4)
+
+I also argue that MPX setup should be automatic through the ELF 
+loader:
+
+ - MPX setup could also be initiated through the ELF notes section or
+   so - similar to the executable bit stack attribute in ELF binaries. 
+   (See PT_GNU_STACK handling in fs/binfmt_elf.c.)
+
+ - What is the typical life time of the bounds table? Does user-space
+   get access to it? I don't see where it's discoverable to
+   user-space. (for example for debuggers)
+
+5)
+
+Teardown can be done through regular munmap() if the notifier is 
+eliminated, so that step falls away as well.
+
+6)
+
+How many entries are in the bounds table? Because mpx_invl_range_end() 
+looks utterly unscalable if it has any size beyond 1-2 entries.
+
+Thanks,
+
+	Ingo
