@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaAZNCA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 08:02:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130AbaAZNB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 08:01:59 -0500
+	id S1752771AbaAZNDu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 08:03:50 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:44477 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156AbaAZNDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 08:03:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E50496.3040303@gmail.com>
 References: <52E50496.3040303@gmail.com>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
+Date: Sun, 26 Jan 2014 14:03:48 +0100
+Message-ID: <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com>
+Subject: Re: Panic with latest git kernel
+From: Richard Weinberger <richard.weinberger@gmail.com>
 To: Harald Arnesen <skogtun.linux@gmail.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Panic with latest git kernel
-In-reply-to: <52E50496.3040303@gmail.com>
-Date: Sun, 26 Jan 2014 21:01:51 +0800
-Message-ID: <87ppnedhhc.fsf@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Harald,
-  It seems you have no "switch_root" commend which always included in
-  util-linux. Could you please make sure that you have it?
-```
-yaourt -Qo `which switch_root`
-/usr/bin/switch_root is owned by util-linux 2.24.1-1
-```
-
-Thanks,
-Madper
-
-skogtun.linux@gmail.com writes:
-
+On Sun, Jan 26, 2014 at 1:50 PM, Harald Arnesen <skogtun.linux@gmail.com> wrote:
 > Today I compiled the latest kernel (3.13.0-08526-gb2e448e), and got the
 > panic you can see in the attached picture.
->
+
+Are you sure that you initrd is sane?
+Your /init terminates because the script was unable to find switch_root.
+
 > My previous kernel was 3.13.0-03477-gdf32e43 from 22. january, which
 > works as expected.
 >
@@ -3972,6 +3963,8 @@ skogtun.linux@gmail.com writes:
 >
 > -- Hilsen Harald
 
--- 
-Sent with my mu4e
 
+
+-- 
+Thanks,
+//richard
