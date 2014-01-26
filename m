@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaAZKVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 05:21:16 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:34884 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaAZKVP (ORCPT
+	id S1752602AbaAZK2j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 05:28:39 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35289 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaAZK2h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 05:21:15 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] of: Fix uninitialized child warning in for_each_child_of_node() if !OF
-Date: Sun, 26 Jan 2014 11:21:08 +0100
-Message-Id: <1390731668-904-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 26 Jan 2014 05:28:37 -0500
 MIME-Version: 1.0
+Date: Sun, 26 Jan 2014 11:28:36 +0100
+X-Google-Sender-Auth: vEOIjm1jeOrjPPm2L-oyTsZT_tc
+Message-ID: <CAMuHMdVh7HMHCH1ZCABck97GVux0ca09rX=7rqTwPdDzN6uv0w@mail.gmail.com>
+Subject: =?UTF-8?Q?Staging=3A_dgrp=3A_warning=3A_=E2=80=98buf=E2=80=99_is_used_uninitiali?=
+	=?UTF-8?Q?zed_=28Was=3A_Re=3A_Staging=3A_dgrp=3A_Refactor_the_function_dgrp=5Frece?=
+	=?UTF-8?Q?ive=28=29_in_drrp=5Fnet=5Fops=2Ec=29?=
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_OF=n:
+On Tue, Jan 21, 2014 at 1:21 AM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+>     Staging: dgrp: Refactor the function dgrp_receive() in drrp_net_ops.c
+>
+>     The function dgrp_receive() in dgrp_net_ops.c is too long and can be
+>     refactored. It uses various switch statements and goto labels. I have
+>     removed a label called data and tried to extract a new function out of
+>     it called as handle_data_in_packet().
+>
+>     This helps to make the code more modularize and simple to read and
+>     understand.
+>
+>     Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/staging/dgrp/dgrp_net_ops.c |  330 ++++++++++++++++++----------------
+>  1 files changed, 175 insertions(+), 155 deletions(-)
+>
+> diff --git a/drivers/staging/dgrp/dgrp_net_ops.c b/drivers/staging/dgrp/dgrp_net_ops.c
+> index 33ac7fb..1f61b89 100644
+> --- a/drivers/staging/dgrp/dgrp_net_ops.c
+> +++ b/drivers/staging/dgrp/dgrp_net_ops.c
+> @@ -2232,6 +2232,177 @@ done:
+>         return rtn;
+>  }
+>
+> +/*
+> + * Common Packet Handling code
+> + */
+> +
+> +static void handle_data_in_packet(struct nd_struct *nd, struct ch_struct *ch,
+> +                                 long dlen, long plen, int n1, u8 *dbuf)
+> +{
+> +       char *error;
+> +       long n;
+> +       long remain;
+> +       u8 *buf;
 
-drivers/i2c/i2c-mux.c: In function ‘i2c_add_mux_adapter’:
-drivers/i2c/i2c-mux.c:158: warning: ‘child’ is used uninitialized in this function
-drivers/leds/leds-lp55xx-common.c: In function ‘lp55xx_of_populate_pdata’:
-drivers/leds/leds-lp55xx-common.c:560: warning: ‘child’ is used uninitialized in this function
-drivers/leds/leds-pwm.c: In function ‘led_pwm_probe’:
-drivers/leds/leds-pwm.c:89: warning: ‘child’ is used uninitialized in this function
-drivers/mfd/stmpe.c: In function ‘stmpe_of_probe’:
-drivers/mfd/stmpe.c:1112: warning: ‘child’ is used uninitialized in this function
-drivers/mfd/tc3589x.c: In function ‘tc3589x_probe’:
-drivers/mfd/tc3589x.c:324: warning: ‘child’ is used uninitialized in this function
-drivers/power/charger-manager.c: In function ‘of_cm_parse_desc’:
-drivers/power/charger-manager.c:1606: warning: ‘child’ is used uninitialized in this function
+> +       if (remain < plen) {
+> +               dlen = plen - remain;
+> +               b = buf;
 
-Introduced by commit 00b2c76a6abbe082bb5afb89ee49ec325e9cd4d2
-("include/linux/of.h: make for_each_child_of_node() reference its args when
-CONFIG_OF=n").
+drivers/staging/dgrp/dgrp_net_ops.c: In function ‘handle_data_in_packet’:
+drivers/staging/dgrp/dgrp_net_ops.c:2392: warning: ‘buf’ is used
+uninitialized in this function
 
-Instead of dropping the "__of_use_dn(child)" again, explicitly set child
-to NULL, to protect against code using child after the loop (child == NULL
-is the loop termination condition if CONFIG_OF=y).
+buf is never set in this function.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- include/linux/of.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It is set to nd->nd_iobuf in dgrp_receive(), but this is never passed to
+handle_data_in_packet().
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 70c64ba17fa5..0bf44f2fe092 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -383,7 +383,7 @@ static inline void __of_use_dn(const struct device_node *np)
- }
- 
- #define for_each_child_of_node(parent, child) \
--	while (__of_use_dn(parent), __of_use_dn(child), 0)
-+	while (__of_use_dn(parent), child = NULL, 0)
- 
- #define for_each_available_child_of_node(parent, child) \
- 	while (0)
--- 
-1.7.9.5
+> +
+> +               b[0] = 0x90 + n1;
+> +               put_unaligned_be16(dlen, b + 1);
+> +
+> +               remain = 3;
+> +               if (remain > 0 && b != buf)
+> +                       memcpy(buf, b, remain);
+> +
+> +               nd->nd_remain = remain;
+> +               return;
+> +       }
+> +}
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
