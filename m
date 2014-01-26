@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaAZVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:49:58 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40713 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370AbaAZVt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:49:56 -0500
-Date: Sun, 26 Jan 2014 13:49:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Raghu Gandham <raghu.gandham@imgtec.com>
-Cc: aaro.koskinen@iki.fi, linux-input@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: i8042-io - Exclude mips platforms when
- allocating/deallocating IO regions.
-Message-ID: <20140126214952.GD18840@core.coreip.homeip.net>
-References: <1390676514-30880-1-git-send-email-raghu.gandham@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390676514-30880-1-git-send-email-raghu.gandham@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753451AbaAZVuK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:50:10 -0500
+Received: from plane.gmane.org ([80.91.229.3]:44034 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248AbaAZVuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 16:50:08 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Sebastian Steinhuber <sebastian.steinhuber@googlemail.com>
+Subject: Re: Panic with latest git kernel
+Date: Sun, 26 Jan 2014 21:42:27 +0100
+Message-ID: <lc3rv7$nkf$1@ger.gmane.org>
+References: <52E50496.3040303@gmail.com> <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com> <52E50ED7.9070808@gmail.com> <52E50F72.9060300@nod.at> <52E51FEE.4020403@gmail.com> <52E52300.7020008@nod.at> <52E568C2.5050001@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p5491c699.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+In-Reply-To: <52E568C2.5050001@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Raghu,
+Am 26.01.2014 20:57, schrieb Harald Arnesen:
+> Seems you are right. I just tried to compile a 3.13.0 kernel again
+> (which I did when i was released, and it worked then), and I got the
+> same panic.
+>
+> Must be a Debian bug. I will pester them instead.
 
-On Sat, Jan 25, 2014 at 11:01:54AM -0800, Raghu Gandham wrote:
-> The standard IO regions are already reserved by the platform code on most MIPS
-> devices(malta, cobalt, sni). The Commit 197a1e96c8be5b6005145af3a4c0e45e2d651444
-> ("Input: i8042-io - fix up region handling on MIPS") introduced a bug on these
-> MIPS platforms causing i8042 driver to fail when trying to reserve IO ports.
-> Prior to the above mentioned commit request_region is skipped on MIPS but
-> release_region is called.
-> 
-> This patch reverts commit 197a1e96c8be5b6005145af3a4c0e45e2d651444 and also
-> avoids calling release_region for MIPS.
+I had to downgrade busybox-static to 1.21.0-1 (testing)
 
-The problem is that IO regions are reserved on _most_, but not _all_
-devices. MIPS should figure out what they want to do with i8042
-registers and be consistent on all devices.
 
-I do not want to apply this patch because it will be breaking devices
-using the other configuration.
-
-Thanks.
-
--- 
-Dmitry
