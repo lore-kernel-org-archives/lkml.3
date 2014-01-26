@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaAZJcA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 04:32:00 -0500
-Received: from mga11.intel.com ([192.55.52.93]:34450 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425AbaAZJby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 04:31:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,723,1384329600"; 
-   d="scan'208";a="470928816"
-Message-ID: <52E4D607.6090509@linux.intel.com>
-Date: Sun, 26 Jan 2014 17:31:51 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752842AbaAZJoa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 04:44:30 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:39213 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaAZJo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 04:44:27 -0500
+Date: Sun, 26 Jan 2014 01:44:20 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: Dave Jones <davej@redhat.com>, x86@kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: disabled APICs being counted as processors ?
+In-Reply-To: <20140126092912.GA31643@gmail.com>
+Message-ID: <alpine.DEB.2.02.1401260131160.15844@chino.kir.corp.google.com>
+References: <20140123221316.GA23367@redhat.com> <20140125074107.GA10565@gmail.com> <20140125153048.GA8536@redhat.com> <alpine.DEB.2.02.1401252223460.1723@chino.kir.corp.google.com> <20140126083631.GA29339@gmail.com> <alpine.DEB.2.02.1401260038510.15844@chino.kir.corp.google.com>
+ <20140126092912.GA31643@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, jrg.otte@gmail.com
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
-References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <4387759.ffnsEjDaad@vostro.rjw.lan> <20140125161817.GB25531@khazad-dum.debian.net> <2010872.ETICEKhYmO@vostro.rjw.lan>
-In-Reply-To: <2010872.ETICEKhYmO@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-	I will take care of this issue and send out a patch soon.
-Thanks!
-Gerry
+On Sun, 26 Jan 2014, Ingo Molnar wrote:
 
-On 2014/1/26 6:31, Rafael J. Wysocki wrote:
-> On Saturday, January 25, 2014 02:18:17 PM Henrique de Moraes Holschuh wrote:
->> On Sat, 25 Jan 2014, Rafael J. Wysocki wrote:
->>> On Saturday, January 25, 2014 02:53:24 PM Rafael J. Wysocki wrote:
->>>> On Saturday, January 25, 2014 11:03:09 AM Jörg Otte wrote:
->>>>> Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
->>>>>
->>>>> ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
->>>>> ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
->>>>> ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
->>>>> ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
->>>>>
->>>>> I don't have CPUs 4..7! Error messages regarding not existing
->>>>> CPUs should not be displayed.
->>>>> kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
->>>>>
->>>>> This is a regression. I never saw this messages before.
->>>>
->>>> Does your system show any other suspicious symptoms or are you worried about
->>>> those messages only?
->>>
->>> Gerry, this is your commit b981513f806d (ACPI / scan: bail out early if failed
->>> to parse APIC ID for CPU).  Apparently, the BIOS has room for 4 CPUs more than
->>> there actually are in the system.  Maybe we can reduce the log level of those
->>> messages to avoid ringing bells unnecessarily?
->>
->> It is standard practice (at least in SuperMicro boxes, but I've also seen it
->> elsewhere) for the BIOS to have ACPI tables mentioning all cores supported
->> by the biggest core-count CPU topology possible by the motherboard.  The
->> cores you don't have are reported as if they were hotpluggable but absent,
->> even if they will *never* show up at runtime.  Meh.
->>
->> So yes, such warnings will get annoying *very* quickly.
+> > > So the problem is that the counting of disabled but hotpluggable 
+> > > CPUs is over-eager.
+> > 
+> > In the kernel, yeah, and we don't distinguish between physically 
+> > absent processors that have lapic entries and physically present but 
+> > disabled processors.
 > 
-> Well, what about using acpi_handle_debug() in there, then?
+> Correct. Is there a robust distinction possible between the two?
 > 
+
+Not with acpi, I'm afraid, which allows for both possibilities to either 
+have no lapic entry or have ACPI_MADT_ENABLED clear.
+
+> > > --- a/arch/x86/kernel/smpboot.c
+> > > +++ b/arch/x86/kernel/smpboot.c
+> > > @@ -1223,10 +1223,7 @@ __init void prefill_possible_map(void)
+> > >  	i = setup_max_cpus ?: 1;
+> > >  	if (setup_possible_cpus == -1) {
+> > >  		possible = num_processors;
+> > > -#ifdef CONFIG_HOTPLUG_CPU
+> > > -		if (setup_max_cpus)
+> > > -			possible += disabled_cpus;
+> > > -#else
+> > > +#ifndef CONFIG_HOTPLUG_CPU
+> > >  		if (possible > i)
+> > >  			possible = i;
+> > >  #endif
+> > 
+> > Yeah, this should suppress the warning for Dave.  This way, the only way 
+> > the log reports the number of "hotplug CPUs" is because we used 
+> > possible_cpus.
+> 
+> Not just that, it also reduces the number of possible CPUs, which 
+> should reduce percpu memory allocation overhead, amongst other things, 
+> right?
+> 
+
+Indeed, it gives people a good motivation for clearing out those 
+unnecessary lapic entries :)
+
+> I wouldn't object to someone sending a changelogged, tested patch that 
+> does all that. Maybe two patches: first the cleanups, then the CPU 
+> count trimming. Just in case it regresses ...
+> 
+
+Sounds good.  I need to look into your point about kexec as far as the 
+possible count trimming first for the second patch.
