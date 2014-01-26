@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaAZDov (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:44:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22593 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaAZDou convert rfc822-to-8bit (ORCPT
+	id S1752652AbaAZDsj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:48:39 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:37492 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaAZDsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:44:50 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0A9C6EC5@SHSMSX104.ccr.corp.intel.com>
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-5-git-send-email-konrad.wilk@oracle.com> <A9667DDFB95DB7438FA9D7D576C3D87E0A9C6EC5@SHSMSX104.ccr.corp.intel.com>
+	Sat, 25 Jan 2014 22:48:38 -0500
+Date: Sat, 25 Jan 2014 19:48:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm, oom: base root bonus on current usage
+In-Reply-To: <20140124040531.GF4407@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1401251942510.3140@chino.kir.corp.google.com>
+References: <20140115234308.GB4407@cmpxchg.org> <alpine.DEB.2.02.1401151614480.15665@chino.kir.corp.google.com> <20140116070709.GM6963@cmpxchg.org> <alpine.DEB.2.02.1401212050340.8512@chino.kir.corp.google.com> <20140124040531.GF4407@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [Xen-devel] [PATCH 4/4] xen/xenbus: Avoid synchronous wait on	XenBus stalling shutdown/restart.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 25 Jan 2014 22:44:21 -0500
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>
-Message-ID: <c9180994-668d-4be2-a67f-12ceeb5e4cf5@email.android.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Zhang, Yang Z" <yang.z.zhang@intel.com> wrote:
->Konrad Rzeszutek Wilk wrote on 2013-11-09:
->> The 'read_reply' works with 'process_msg' to read of a reply in
->XenBus.
->> 'process_msg' is running from within the 'xenbus' thread. Whenever a
->> message shows up in XenBus it is put on a xs_state.reply_list list
->and
->> 'read_reply' picks it up.
->> 
->> The problem is if the backend domain or the xenstored process is
->killed.
->> In which case 'xenbus' is still awaiting - and 'read_reply' if called
->> - stuck forever waiting for the reply_list to have some contents.
->> 
->> This is normally not a problem - as the backend domain can come back
->> or the xenstored process can be restarted. However if the domain is
->in
->> process of being powered off/restarted/halted - there is no point of
->> waiting on it coming back - as we are effectively being terminated
->and
->> should not impede the progress.
->> 
->
->Hi, Konrad,
->
->Is this patch applied in Linux upstream tree? I didn't find it with
->latest Linux upstream source.
->
+A 3% of system memory bonus is sometimes too excessive in comparison to 
+other processes and can yield poor results when all processes on the 
+system are root and none of them use over 3% of memory.
 
-No. It needs rework.
->> This patch solves this problem by checking the 'system_state' value
->to
->> see if we are in heading towards death. We also make the wait
->> mechanism a bit more asynchronous.
->> 
->> Fixes-Bug: http://bugs.xenproject.org/xen/bug/8
->> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> ---
->>  drivers/xen/xenbus/xenbus_xs.c | 24 +++++++++++++++++++++---
->>  1 file changed, 21 insertions(+), 3 deletions(-)
->> diff --git a/drivers/xen/xenbus/xenbus_xs.c
->> b/drivers/xen/xenbus/xenbus_xs.c index b6d5fff..4f22706 100644
->> --- a/drivers/xen/xenbus/xenbus_xs.c
->> +++ b/drivers/xen/xenbus/xenbus_xs.c
->> @@ -148,9 +148,24 @@ static void *read_reply(enum xsd_sockmsg_type
->> *type, unsigned int *len)
->> 
->>  	while (list_empty(&xs_state.reply_list)) {
->>  		spin_unlock(&xs_state.reply_lock);
->> -		/* XXX FIXME: Avoid synchronous wait for response here. */
->> -		wait_event(xs_state.reply_waitq, -			  
->> !list_empty(&xs_state.reply_list));
->> +		wait_event_timeout(xs_state.reply_waitq, +				  
->> !list_empty(&xs_state.reply_list), +				   msecs_to_jiffies(500)); +
->> +		/* +		 * If we are in the process of being shut-down there is +		
->*
->> no point of trying to contact XenBus - it is either +		 * killed
->> (xenstored application) or the other domain +		 * has been killed or
->is
->> unreachable. +		 */ +		switch (system_state) { +		case
->SYSTEM_POWER_OFF:
->> +		case SYSTEM_RESTART: +		case SYSTEM_HALT: +			return
->ERR_PTR(-EIO);
->> +		default: +			break; +		}
->>  		spin_lock(&xs_state.reply_lock);
->>  	}
->> @@ -215,6 +230,9 @@ void *xenbus_dev_request_and_reply(struct
->> xsd_sockmsg *msg)
->> 
->>  	mutex_unlock(&xs_state.request_mutex);
->> +	if (IS_ERR(ret))
->> +		return ret;
->> +
->>  	if ((msg->type == XS_TRANSACTION_END) ||
->>  	    ((req_msg.type == XS_TRANSACTION_START) &&
->>  	     (msg->type == XS_ERROR)))
->
->
->Best regards,
->Yang
+Replace the 3% of system memory bonus with a 3% of current memory usage 
+bonus.
 
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/filesystems/proc.txt | 4 ++--
+ mm/oom_kill.c                      | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1386,8 +1386,8 @@ may allocate from based on an estimation of its current memory and swap use.
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
+ 
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
+ 
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -178,7 +178,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
