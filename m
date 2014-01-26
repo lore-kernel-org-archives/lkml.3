@@ -1,149 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248AbaAZXO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 18:14:57 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:59932 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaAZXOz (ORCPT
+	id S1753279AbaAZXQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 18:16:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59796 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaAZXQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 18:14:55 -0500
-Date: Sun, 26 Jan 2014 15:14:52 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Manish Badarkhe <badarkhe.manish@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
-Message-ID: <20140126231452.GE18840@core.coreip.homeip.net>
-References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
- <52E50C24.8030305@gmail.com>
- <CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
- <20140126214542.GC18840@core.coreip.homeip.net>
- <52E582D0.9070501@gmail.com>
- <CALT56yPJjLZ_UHgH1koKPbTLBR=5QzSFMMXfqYxspw30_fpKNQ@mail.gmail.com>
+	Sun, 26 Jan 2014 18:16:36 -0500
+Date: Sun, 26 Jan 2014 23:15:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, LM Sensors <lm-sensors@lm-sensors.org>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Wei Ni <wni@nvidia.com>
+Message-ID: <20140126231543.GN11727@sirena.org.uk>
+References: <52E561D0.4040308@roeck-us.net>
+ <20140126211357.6fa68909@endymion.delvare>
+ <52E573B6.9040903@roeck-us.net>
+ <20140126214936.7736f530@endymion.delvare>
+ <20140126212256.GK11727@sirena.org.uk>
+ <20140126224425.724698cd@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xrUWgNVErK0vNKPg"
 Content-Disposition: inline
-In-Reply-To: <CALT56yPJjLZ_UHgH1koKPbTLBR=5QzSFMMXfqYxspw30_fpKNQ@mail.gmail.com>
+In-Reply-To: <20140126224425.724698cd@endymion.delvare>
+X-Cookie: Please ignore previous fortune.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: lm90 driver no longer working on PCs in 3.13
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 02:31:59AM +0400, Dmitry Eremin-Solenikov wrote:
-> On Mon, Jan 27, 2014 at 1:49 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> > On 26.01.2014 22:45, Dmitry Torokhov wrote:
-> >>
-> >> On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
-> >>>
-> >>> Hi Tomasz,
-> >>>
-> >>> Thank you for your review comments.
-> >>>
-> >>> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com>
-> >>> wrote:
-> >>>>
-> >>>>
-> >>>> Hi Manish,
-> >>>>
-> >>>>
-> >>>> On 26.01.2014 08:15, Manish Badarkhe wrote:
-> >>>>>
-> >>>>>
-> >>>>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
-> >>>>> option for DT code to avoid if-deffery in code.
-> >>>>>
-> >>>>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
-> >>>>> ---
-> >>>>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
-> >>>>>    drivers/power/max8925_power.c |   14 +++++---------
-> >>>>>    1 file changed, 5 insertions(+), 9 deletions(-)
-> >>>>>
-> >>>>> diff --git a/drivers/power/max8925_power.c
-> >>>>> b/drivers/power/max8925_power.c
-> >>>>> index b4513f2..d353fbc 100644
-> >>>>> --- a/drivers/power/max8925_power.c
-> >>>>> +++ b/drivers/power/max8925_power.c
-> >>>>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct
-> >>>>> max8925_power_info *info)
-> >>>>>          return 0;
-> >>>>>    }
-> >>>>>
-> >>>>> -#ifdef CONFIG_OF
-> >>>>>    static struct max8925_power_pdata *
-> >>>>>    max8925_power_dt_init(struct platform_device *pdev)
-> >>>>>    {
-> >>>>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device
-> >>>>> *pdev)
-> >>>>>
-> >>>>>          return pdata;
-> >>>>>    }
-> >>>>> -#else
-> >>>>> -static struct max8925_power_pdata *
-> >>>>> -max8925_power_dt_init(struct platform_device *pdev)
-> >>>>> -{
-> >>>>> -       return pdev->dev.platform_data;
-> >>>>> -}
-> >>>>> -#endif
-> >>>>>
-> >>>>>    static int max8925_power_probe(struct platform_device *pdev)
-> >>>>>    {
-> >>>>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct
-> >>>>> platform_device *pdev)
-> >>>>>          struct max8925_power_info *info;
-> >>>>>          int ret;
-> >>>>>
-> >>>>> -       pdata = max8925_power_dt_init(pdev);
-> >>>>> +       if (IS_ENABLED(CONFIG_OF))
-> >>>>> +               pdata = max8925_power_dt_init(pdev);
-> >>>>> +       else
-> >>>>> +               pdata = pdev->dev.platform_data;
-> >>>>> +
-> >>>>
-> >>>>
-> >>>>
-> >>>> This does not look much better than before this patch. Instead of
-> >>>> "if-deffery" outside function bodies you are adding "iffery" (if there is
-> >>>> such a word) inside a function.
-> >>>> What about adding
-> >>>>
-> >>>>          if (!IS_ENABLED(CONFIG_OF))
-> >>>>                  return pdev->dev.platform_data;
-> >>>>
-> >>>> on top of max8925_power_dt_init() instead or maybe also renaming this
-> >>>> function to max8925_get_pdata()?
-> >>>
-> >>>
-> >>> Okay, I will rename function "max8925_power_dt_init()" to
-> >>> "max8925_get_pdata()".
-> >>> As you suggested, in the body of this function  will add a logic to
-> >>> retrieve  data in case
-> >>> of DT and non-DT platforms.
-> >>
-> >>
-> >> Should we not always favor platform-supplied data regardless of
-> >> CONFIG_OF state and fall back to DT (firmware) supplied data if platform
-> >> data is absent? This way one can tweak kernel behavior without needing
-> >> to change firmware.
-> >
-> >
-> > I guess we should, but apparently this was not the original behavior before
-> > this patch, so I'm not sure if we should be squashing such semantic change
-> > with this simple refactor.
-> 
-> Hmm. Judging from the code, max8925_power_dt_init() function follows exactly
-> opposite strategy - it uses platform_data if of_node is not populated/available.
-> So (if dt_init will compile with CONFIG_OF disabled) one can always
-> use _dt_init()
-> function to retrieve pdata.
 
-Right, and I question whether this is good behavior or if it should be
-corrected.
+--xrUWgNVErK0vNKPg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks.
+On Sun, Jan 26, 2014 at 10:44:25PM +0100, Jean Delvare wrote:
+> On Sun, 26 Jan 2014 21:22:56 +0000, Mark Brown wrote:
 
--- 
-Dmitry
+> > They only worked with a debug option turned on and generated warnings
+> > every time they were used...  that kernel config would've been actively
+> > broken for devices that wanted to do anything at all interesting with
+> > the regulators and would've been prone to issues with init ordering and
+> > races in any cases where there are actually regulators.
+
+> No, you don't get what I'm saying. For PC users, the lm90 did not
+
+I understand perfectly well thank you very much.
+
+> request a regulator and things worked because the kernel isn't supposed
+> to take care about things like that on PC machines. Now that the lm90
+> driver does request a regulator, it fails on PC machines because no
+> regulator is declared.
+
+If and only if the user has enabled the regulator API on a platform that
+hasn't fully configured it; if the user has not enabled the regulator
+API it'll stub itself out and they'll never see it.
+
+> Don't tell me that it is expected that things will fail if
+> CONFIG_REGULATOR is enabled on a system which doesn't need it. It
+> doesn't make any sense. If kernels would fail as soon as any enabled
+> option wasn't actually needed, no system would boot out there.
+
+It's very easy to generate unbootable kernels by changing the kernel
+config, I'd not immediately expect a randomly generated config to do
+anything useful and things like FW_LOADER_USER_HELPER can be rather
+miserable if you turn them on (that one produces enormous delays during
+init which look awfully like hangs when you're watching your board
+boot).
+
+> If regulator is enabled but not needed, that's something the regulator
+> subsystem should figure out at run-time so that it can stub everything
+> out and things keep working.
+
+To repeat this is something the platform needs to tell the API; the only
+safe thing that API is able to do by itself is hope that something is
+going to turn up later on and supply some data.  Supplying stubs and
+then trying to substitute the real thing in later isn't going to be
+terribly clever, worst case we end up in the situation where a driver
+talks to a device that has no power or partial power because we've hit
+an init ordering race.  Requiring platforms to flag in code when they
+use regulators isn't something that seems like it's going to be deployed
+smoothly and quickly, I'd be concerned that'd cause as much trouble as
+it avoids - up until now the kernel config has been sufficient.
+
+I think the 90% fix here (aside from Ubuntu disabling regulators in the
+kernel config which would be sane too) is that ACPI based systems ought
+to be flagging that they have full constraints as soon as they boot and
+decide they have ACPI in the same way that DT ones do, we can be pretty
+confident that a system using ACPI will have all supplies taken care of
+transparently by the platform.  This would deal with the PC situation at
+any rate which is probably most of the users who care and aren't already
+using DT.
+
+The regulator API is in general conservative about what it does since
+incorrect operation of regulators can cause lasting physical damage to
+the system, in general doing nothing and generating errors will be
+safer and we'd much rather deal with people running into that than with
+damaged boards.  The general approach is that it only does operations it
+was specifically told by some outside source were OK.  What it's doing
+here is essentially saying that it doesn't know what's going on so it's
+punting and hoping something tells it later on.
+
+--xrUWgNVErK0vNKPg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5ZccAAoJELSic+t+oim9vzkP/i/Gn/u1w4qXPPZqSxMvy/bp
+V9au3NLG+ovSzsuF8FuA8mYE3ZYqVlJzPuTmCRPh7UwfLWeflSldo+gYwg6bcGUc
+YZQoUn+j0OEStmhq/WTZNt06NES/ZOUiohmmf1qkbnAgHGQBt5io8kELW+PeYpIe
+Gg3271oPZiJWF13VpnYujfzs6uxY8s8De8HXlF3MJHFDguq1qirFRv5UJYryBUv3
+L5kOBIqmwVfuhBa99Bt2sBMvKtOLEwUzC/Eljc45B2fqyw7etAbRkX3V8Yqs38Jd
+uvkIQt40GsPQovdHnpEH3hrmWC6q+MUTFdbozH3F3WjjUx4++bxCyaDkuh2i+C6p
+lcWokOfjhs8sv23zJKM/WNXz0WrPEsLTPbSEC4s17dw+PUqc8uRsR7hpZDWM2EFs
+CN5az4cTmPybp2zlugIiShElkzwIN4GFIahzGOE/CRbr5r3qQc5lttRSUiNphK46
+VT7D3xpz5wLclMVt8C66ssCETAstHwbWR+XklRba8VyaTSb6vtI/B+hzTt+TL82s
+6xFo+oySju877LQog2lwFRiS4PNLwN43O2rCHDg6J+/yB804km123cfCQlOKjhtx
+1jP0PTq+xk7f+f24tkBlr63AjjrxKWnXXUAFiywL0FCt/qN47/hXTKsciPDNXWAD
+L4Tx705ntkgzieYQAu3n
+=Ar8/
+-----END PGP SIGNATURE-----
+
+--xrUWgNVErK0vNKPg--
