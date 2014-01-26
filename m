@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaAZQWa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 11:22:30 -0500
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:42821
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751561AbaAZQW3 (ORCPT
+	id S1752990AbaAZQ3E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 11:29:04 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:37401 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaAZQ3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 11:22:29 -0500
-Date: Sun, 26 Jan 2014 17:22:28 +0100
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aaron Jones <aaronmdjones@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: File capabilities are not 'working' and I have no idea why
-Message-ID: <20140126162228.GA6946@mail.hallyn.com>
-References: <52DE7557.3000500@gmail.com>
+	Sun, 26 Jan 2014 11:29:03 -0500
+Message-ID: <52E537CB.40607@gmail.com>
+Date: Sun, 26 Jan 2014 16:28:59 +0000
+From: Aaron Jones <aaronmdjones@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52DE7557.3000500@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: File capabilities are not 'working' and I have no idea why
+References: <52DE7557.3000500@gmail.com> <20140126162228.GA6946@mail.hallyn.com>
+In-Reply-To: <20140126162228.GA6946@mail.hallyn.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aaron Jones (aaronmdjones@gmail.com):
-> 
-> Hello.
-> 
-> I recently upgraded from 3.10.7 on a long-running box to 3.12.8 on a
-> new box. I have been using file capabilities for a long time, so that
-> processes do not need to start as root and drop unnecessary privileges
-> later.
-> 
-> For example, there is no reason for my bind9 nameservers to start as
-> root, except to bind() port 53 and 953. What I did in this case was to
-> chown it to root:named and chmod it to 0750 and assign
-> CAP_NET_BIND_SERVICE to it, it then starts as named and works fine.
-> 
-> I haven't had any issues with this for easily a year, until now. No
-> matter what I do on this new machine, I cannot get file capabilities
-> to 'work'. They are set fine, they are read back fine, but they don't
-> do anything. I have attached my kernel boot log, its configuration and
-> a test program (build with -std=c99 -lcap-ng).
-> 
-> My problem follows:
-> 
-> # strace -f setcap cap_net_bind_service+eip /usr/local/bin/caps 2>&1 \
->   | grep xattr
->  setxattr("/usr/local/bin/caps", "security.capability", \
->   "\x01\x00\x00\x02\x00\x04\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00 \
->    \x00\x00\x00\x00", 20, 0) = 0
-> 
-> # getcap /usr/local/bin/caps
-> /usr/local/bin/caps = cap_net_bind_service+eip
-> 
-> $ /usr/local/bin/caps
-> Effective capabilities: (none)
-> Permitted capabilities: (none)
+On 26/01/14 16:22, Serge E. Hallyn wrote:
+> Hm, I'm running Ubuntu 3.13.0-5-generic and I do get
+>
+> serge@tp:~/test$ ./caps
+> Effective capabilities:
+> net_bind_service
+> Permitted capabilities:
+> net_bind_service
+>
+> Any chance (grasping for straws here) that the hardening patches
+> are interfering?  Can you try hand-building an upstream kernel to
+> test with?
 
-Hm, I'm running Ubuntu 3.13.0-5-generic and I do get
+I downloaded a vanilla 3.12.8 tree directly from kernel.org
+for the purposes of my previous post. I was running that kernel
+then... I also have the same problem with the hardened kernel now.
 
-serge@tp:~/test$ ./caps
-Effective capabilities:
-net_bind_service
+I'm at a loss as to why it doesn't work on 3.12.8, but it does on
+3.10.7, hardening patches or not.
 
-Permitted capabilities:
-net_bind_service
 
-Any chance (grasping for straws here) that the hardening patches are
-interfering?  Can you try hand-building an upstream kernel to test
-with?
-
--serge
