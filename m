@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaAZElt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 23:41:49 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:63549 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaAZEls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 23:41:48 -0500
-Date: Sat, 25 Jan 2014 20:41:41 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@sr71.net>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        penberg@kernel.org, linux@arm.linux.org.uk
-Subject: Re: [linux-next][PATCH] mm: slub: work around unneeded lockdep
- warning
-In-Reply-To: <20140124152023.A450E599@viggo.jf.intel.com>
-Message-ID: <alpine.DEB.2.02.1401252041120.10325@chino.kir.corp.google.com>
-References: <20140124152023.A450E599@viggo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752724AbaAZEnL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 23:43:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425AbaAZEnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 23:43:08 -0500
+Message-ID: <52E49236.6080805@redhat.com>
+Date: Sun, 26 Jan 2014 12:42:30 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>, kys@microsoft.com,
+        haiyangz@microsoft.com, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+CC: "stable@vger.kernel.org >> Stable" <stable@vger.kernel.org>
+Subject: Re: [PATCH] x86, hyperv: bypass the timer_irq_works() check
+References: <1390543371-10748-1-git-send-email-jasowang@redhat.com> <52E2D904.6020608@zytor.com>
+In-Reply-To: <52E2D904.6020608@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jan 2014, Dave Hansen wrote:
+On 01/25/2014 05:20 AM, H. Peter Anvin wrote:
+> On 01/23/2014 10:02 PM, Jason Wang wrote:
+>> This patch bypass the timer_irq_works() check for hyperv guest since:
+>>
+>> - It was guaranteed to work.
+>> - timer_irq_works() may fail sometime due to the lpj calibration were inaccurate
+>>   in a hyperv guest or a buggy host.
+>>
+>> In the future, we should get the tsc frequency from hypervisor and use preset
+>> lpj instead.
+>>
+>> Cc: K. Y. Srinivasan <kys@microsoft.com>
+>> Cc: Haiyang Zhang <haiyangz@microsoft.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> This should be in -stable, right?
+>
+> 	-hpa
+>
+>
 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> The slub code does some setup during early boot in
-> early_kmem_cache_node_alloc() with some local data.  There is no
-> possible way that another CPU can see this data, so the slub code
-> doesn't unnecessarily lock it.  However, some new lockdep asserts
-> check to make sure that add_partial() _always_ has the list_lock
-> held.
-> 
-> Just add the locking, even though it is technically unnecessary.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
+Oh, right.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Cc: <stable@vger.kernel.org>
