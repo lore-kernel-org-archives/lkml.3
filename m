@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaAZK2j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 05:28:39 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:35289 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaAZK2h convert rfc822-to-8bit (ORCPT
+	id S1752657AbaAZKeu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 05:34:50 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56553 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaAZKes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 05:28:37 -0500
+	Sun, 26 Jan 2014 05:34:48 -0500
+Message-ID: <52E4E4C3.3000302@suse.cz>
+Date: Sun, 26 Jan 2014 11:34:43 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Sun, 26 Jan 2014 11:28:36 +0100
-X-Google-Sender-Auth: vEOIjm1jeOrjPPm2L-oyTsZT_tc
-Message-ID: <CAMuHMdVh7HMHCH1ZCABck97GVux0ca09rX=7rqTwPdDzN6uv0w@mail.gmail.com>
-Subject: =?UTF-8?Q?Staging=3A_dgrp=3A_warning=3A_=E2=80=98buf=E2=80=99_is_used_uninitiali?=
-	=?UTF-8?Q?zed_=28Was=3A_Re=3A_Staging=3A_dgrp=3A_Refactor_the_function_dgrp=5Frece?=
-	=?UTF-8?Q?ive=28=29_in_drrp=5Fnet=5Fops=2Ec=29?=
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        jesse.brandeburg@intel.com, Bruce Allan <bruce.w.allan@intel.com>,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        john.ronciak@intel.com, mitch.a.williams@intel.com,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: ML netdev <netdev@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: 3.13: e1000e triggers BUG in IRQ handling
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 1:21 AM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
->     Staging: dgrp: Refactor the function dgrp_receive() in drrp_net_ops.c
->
->     The function dgrp_receive() in dgrp_net_ops.c is too long and can be
->     refactored. It uses various switch statements and goto labels. I have
->     removed a label called data and tried to extract a new function out of
->     it called as handle_data_in_packet().
->
->     This helps to make the code more modularize and simple to read and
->     understand.
->
->     Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/staging/dgrp/dgrp_net_ops.c |  330 ++++++++++++++++++----------------
->  1 files changed, 175 insertions(+), 155 deletions(-)
->
-> diff --git a/drivers/staging/dgrp/dgrp_net_ops.c b/drivers/staging/dgrp/dgrp_net_ops.c
-> index 33ac7fb..1f61b89 100644
-> --- a/drivers/staging/dgrp/dgrp_net_ops.c
-> +++ b/drivers/staging/dgrp/dgrp_net_ops.c
-> @@ -2232,6 +2232,177 @@ done:
->         return rtn;
->  }
->
-> +/*
-> + * Common Packet Handling code
-> + */
-> +
-> +static void handle_data_in_packet(struct nd_struct *nd, struct ch_struct *ch,
-> +                                 long dlen, long plen, int n1, u8 *dbuf)
-> +{
-> +       char *error;
-> +       long n;
-> +       long remain;
-> +       u8 *buf;
+Hi,
 
-> +       if (remain < plen) {
-> +               dlen = plen - remain;
-> +               b = buf;
+after some combination of the following:
+  ip link set up dev eth0
+  ip link set down dev eth0
+  ip link set addr ... dev eth0
+  rmmod e1000e
+  modprobe e1000e
+I got the BUG below. It looks like some path forgot to free_irq and the
+next attempt to request_irq (genirq error) or to reset_irq (the BUG) failed.
 
-drivers/staging/dgrp/dgrp_net_ops.c: In function ‘handle_data_in_packet’:
-drivers/staging/dgrp/dgrp_net_ops.c:2392: warning: ‘buf’ is used
-uninitialized in this function
+I don't know whether this is new in 3.13. It happened for me the first
+time while trying to convince NetworkManager to set device address as
+demanded.
 
-buf is never set in this function.
+genirq: Flags mismatch irq 46. 00000000 (eth0) vs. 00000000 (eth0)
+------------[ cut here ]------------
+kernel BUG at /drivers/pci/msi.c:376!
+invalid opcode: 0000 [#1] PREEMPT SMP
+Modules linked in: e1000e ... [last unloaded: e1000e]
+CPU: 2 PID: 27424 Comm: NetworkManager Not tainted 3.13.0-1-desktop #1
+Hardware name: LENOVO 23252SG/23252SG, BIOS G2ET33WW (1.13 ) 07/24/2012
+task: ffff8801004a2110 ti: ffff8800422a0000 task.ti: ffff8800422a0000
+RIP: 0010:[<ffffffff8135328a>] [<ffffffff8135328a>]
+free_msi_irqs+0x13a/0x140
+RSP: 0018:ffff8800422a1708  EFLAGS: 00010286
+RAX: ffff880059dc3200 RBX: 0000000000000000 RCX: 00000000fffffffa
+RDX: 0000000000000000 RSI: 000000000000002e RDI: 0000000000000000
+RBP: ffff880117780c00 R08: ffff880059dc3200 R09: ffff880119800020
+R10: 00000000000000c8 R11: 0000000000000001 R12: 0000000000000001
+R13: ffff880117c28870 R14: 0000000000000001 R15: ffff880117c28000
+FS:  00007ff57f08b840(0000) GS:ffff88011e280000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000003878818 CR3: 00000000cb4b7000 CR4: 00000000001407e0
+Stack:
+ ffff880117c28000 ffff880117c28000 ffff8800d55a4000 ffff880117c28098
+ ffff8800d55a4d78 0000000000000001 ffff8800d55a4000 ffffffff81353d2d
+ ffff8800d55a4880 ffffffffa04482ad ffff8800d55a4880 ffffffffa044858f
+Call Trace:
+ [<ffffffff81353d2d>] pci_disable_msi+0x2d/0x50
+ [<ffffffffa04482ad>] e1000e_reset_interrupt_capability+0x4d/0x60 [e1000e]
+ [<ffffffffa044858f>] e1000_request_irq+0x1bf/0x280 [e1000e]
+ [<ffffffffa044d75f>] e1000_open+0xff/0x5c0 [e1000e]
+ [<ffffffff81517a2f>] __dev_open+0xaf/0x120
+ [<ffffffff81517d25>] __dev_change_flags+0xa5/0x190
+ [<ffffffff81517e49>] dev_change_flags+0x29/0x70
+ [<ffffffff81525dd2>] do_setlink+0x332/0x940
+ [<ffffffff81526bce>] rtnl_newlink+0x35e/0x570
+ [<ffffffff815266bf>] rtnetlink_rcv_msg+0x9f/0x250
+ [<ffffffff81541c99>] netlink_rcv_skb+0xa9/0xc0
+ [<ffffffff81522e68>] rtnetlink_rcv+0x18/0x20
+ [<ffffffff81541200>] netlink_unicast+0x100/0x180
+ [<ffffffff815415b7>] netlink_sendmsg+0x337/0x760
+ [<ffffffff814fd083>] sock_sendmsg+0x93/0xe0
+ [<ffffffff814fd849>] ___sys_sendmsg+0x3b9/0x3d0
+ [<ffffffff814fe2f4>] __sys_sendmsg+0x44/0x80
+ [<ffffffff8160e9bd>] system_call_fastpath+0x1a/0x1f
+ [<00007ff57c60107d>] 0x7ff57c60107c
+Code: 48 8b 55 18 48 8d 45 18 48 83 ea 18 49 39 c5 75 90 48 83 c4 08 5b
+5d 41 5c 41 5d 41 5e 41 5f c3 48 8b 7b 28 e8 b8 24 cf ff eb 84 <0f> 0b
+0f 1f 40 00 53 31 db f6 07 10 8b 47 08 74 1e 89 f3 f7 d3
+RIP
+ [<ffffffff8135328a>] free_msi_irqs+0x13a/0x140
+ RSP <ffff8800422a1708>
+---[ end trace 71a7e89db92577e7 ]---
 
-It is set to nd->nd_iobuf in dgrp_receive(), but this is never passed to
-handle_data_in_packet().
-
-> +
-> +               b[0] = 0x90 + n1;
-> +               put_unaligned_be16(dlen, b + 1);
-> +
-> +               remain = 3;
-> +               if (remain > 0 && b != buf)
-> +                       memcpy(buf, b, remain);
-> +
-> +               nd->nd_remain = remain;
-> +               return;
-> +       }
-> +}
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+thanks,
+-- 
+js
+suse labs
