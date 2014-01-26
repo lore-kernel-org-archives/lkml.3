@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaAZNyw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 08:54:52 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:55082 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaAZNyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 08:54:51 -0500
-Date: Sun, 26 Jan 2014 14:54:44 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [Intel-gfx] [PATCH] lib: Export interval_tree
-Message-ID: <20140126135444.GR9772@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Rik van Riel <riel@redhat.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Michel Lespinasse <walken@google.com>
-References: <1390316872-15887-1-git-send-email-chris@chris-wilson.co.uk>
- <1390739073-4519-1-git-send-email-chris@chris-wilson.co.uk>
+	id S1752675AbaAZN7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 08:59:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2939 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444AbaAZN7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 08:59:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,724,1384329600"; 
+   d="scan'208";a="470987228"
+Date: Sun, 26 Jan 2014 19:29:33 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+Message-ID: <20140126135933.GD10628@intel.com>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+ <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+ <52E0FC22.8060903@metafoo.de>
+ <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
+ <52E2698B.6070001@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390739073-4519-1-git-send-email-chris@chris-wilson.co.uk>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E2698B.6070001@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 12:24:33PM +0000, Chris Wilson wrote:
-> lib/interval_tree.c provides a simple interface for an interval-tree
-> (an augmented red-black tree) but is only built when testing the generic
-> macros for building interval-trees. For drivers with modest needs,
-> export the simple interval-tree library as is.
+On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
+> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
+> > Hi Lars,
+> > 
+> > On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> >> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+> >> [...]
+> >>> +/**
+> >>> + * xilinx_vdma_device_control - Configure DMA channel of the device
+> >>> + * @dchan: DMA Channel pointer
+> >>> + * @cmd: DMA control command
+> >>> + * @arg: Channel configuration
+> >>> + *
+> >>> + * Return: '0' on success and failure value on error
+> >>> + */
+> >>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
+> >>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
+> >>> +{
+> >>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+> >>> +
+> >>> +     switch (cmd) {
+> >>> +     case DMA_TERMINATE_ALL:
+> >>> +             xilinx_vdma_terminate_all(chan);
+> >>> +             return 0;
+> >>> +     case DMA_SLAVE_CONFIG:
+> >>> +             return xilinx_vdma_slave_config(chan,
+> >>> +                                     (struct xilinx_vdma_config *)arg);
+> >>
+> >> You really shouldn't be overloading the generic API with your own semantics.
+> >> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
+> > 
+> > Ok.  The driver needs few additional configuration from the slave
+> > device like Vertical
+> > Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
+> > suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
+> > defined for Freescale drivers?
 > 
-> v2: Lots of help from Michel Lespinasse to only compile the code
->     as required:
->     - make INTERVAL_TREE a config option
->     - make INTERVAL_TREE_TEST select the library functions
->       and sanitize the filenames & Makefile
->     - prepare interval_tree for being built as a module if required
-> 
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
+> In my opinion it is not a good idea to have driver implement a generic API,
+> but at the same time let the driver have custom semantics for those API
+> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
+> values passed to gpio_set_value instead of 0 and 1. It completely defeats
+> the purpose of a generic API, namely that you are able to write generic code
+> that makes use of the API without having to know about which implementation
+> API it is talking to. The dmaengine framework provides the
+> dmaengine_prep_interleaved_dma() function to setup two dimensional
+> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
 
-[snip]
+The question here i think would be waht this device supports? Is the hardware
+capable of doing interleaved transfers, then would make sense.
 
-> diff --git a/lib/interval_tree.c b/lib/interval_tree.c
-> index e6eb406f2d65..e4109f624e51 100644
-> --- a/lib/interval_tree.c
-> +++ b/lib/interval_tree.c
-> @@ -1,6 +1,7 @@
->  #include <linux/init.h>
->  #include <linux/interval_tree.h>
->  #include <linux/interval_tree_generic.h>
-> +#include <linux/module.h>
->  
->  #define START(node) ((node)->start)
->  #define LAST(node)  ((node)->last)
-> @@ -8,3 +9,8 @@
->  INTERVAL_TREE_DEFINE(struct interval_tree_node, rb,
->  		     unsigned long, __subtree_last,
->  		     START, LAST,, interval_tree)
-> +
-> +EXPORT_SYMBOL(interval_tree_insert);
-> +EXPORT_SYMBOL(interval_tree_remove);
-> +EXPORT_SYMBOL(interval_tree_iter_first);
-> +EXPORT_SYMBOL(interval_tree_iter_next);
+While we do try to get users use dma_slave_config, but there will always be
+someone who have specfic params. If we can generalize then we might want to add
+to the dma_slave_config as well
 
-Hm, I've thought kernel coding style nowadays is to put the EXPORT_SYMBOL
-right below the definition of the function?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--
+~Vinod
