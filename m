@@ -1,31 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaAZRte (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 12:49:34 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.98]:56079
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752534AbaAZRtb convert rfc822-to-8bit (ORCPT
+	id S1752937AbaAZSBi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 13:01:38 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20715 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaAZSBh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 12:49:31 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 26 Jan 2014 13:01:37 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140125210659.GA15756@u109add4315675089e695.ant.amazon.com>
+References: <1390505326-9368-1-git-send-email-msw@linux.com> <1390555293.2124.6.camel@kazak.uk.xensource.com> <1390577782.13513.8.camel@kazak.uk.xensource.com> <20140125210659.GA15756@u109add4315675089e695.ant.amazon.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Good News
-To: Recipients <angela1@angela723.onmicrosoft.com>
-From: Dave and Angela <angela1@angela723.onmicrosoft.com>
-Date: Sun, 26 Jan 2014 23:15:40 -0800
-Reply-To: <daveangela_dewas@hotmail.com>
-Message-ID: <643efeb6-8188-4a01-98b4-52db4ace12a6@AMSPR05MB019.eurprd05.prod.outlook.com>
-X-Originating-IP: [116.202.4.168]
-X-ClientProxiedBy: DM2PR08CA003.namprd08.prod.outlook.com (10.141.52.161) To
- AMSPR05MB019.eurprd05.prod.outlook.com (10.242.80.149)
-X-Forefront-PRVS: 01039C93E4
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10019001)(6049001)(6009001)(6039001)(199002)(189002)(47446002)(74502001)(74662001)(76576001)(69226001)(86372001)(221733001)(43066001)(76176001)(93516002)(86362001)(81342001)(19580405001)(19580395003)(83322001)(558084003)(79102001)(47776003)(63696002)(87976001)(76796001)(76786001)(74366001)(87266001)(81686001)(50466002)(50986001)(47976001)(74706001)(66066001)(81816001)(74876001)(49866001)(47736001)(80022001)(65816001)(77982001)(4396001)(59766001)(85306002)(86442001)(83072002)(85852003)(42186004)(54356001)(64872005)(74316001)(76482001)(51856001)(17643785005)(46102001)(90146001)(23756003)(89136003)(56816005)(77096001)(80976001)(56776001)(53256004)(94316002)(81542001)(93136001)(54316002)(92726001)(33646001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:AMSPR05MB019;H:[116.202.4.168];CLIP:116.202.4.168;FPR:;InfoNoRecordsA:0;MX:1;LANG:en;
-X-OriginatorOrg: angela723.onmicrosoft.com
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [Xen-devel] [PATCH] xen-blkback: fix memory leak when persistent grants are used
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Sun, 26 Jan 2014 13:01:14 -0500
+To: Matt Wilson <msw@linux.com>, Ian Campbell <Ian.Campbell@citrix.com>
+CC: Matt Wilson <msw@amazon.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, Matt Rushton <mrushton@amazon.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+Message-ID: <ecc2d6a2-e9c9-43a0-afe5-abca9ea47b07@email.android.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My wife and I have a draft here for you. Please contact us for this God's giving opportunity: dave_angela@zbavitu.net
+Matt Wilson <msw@linux.com> wrote:
+>On Fri, Jan 24, 2014 at 03:36:22PM +0000, Ian Campbell wrote:
+>> On Fri, 2014-01-24 at 09:21 +0000, Ian Campbell wrote:
+>> > On Thu, 2014-01-23 at 11:28 -0800, Matt Wilson wrote:
+>> > > From: Matt Rushton <mrushton@amazon.com>
+>> > > 
+>> > > Currently shrink_free_pagepool() is called before the pages used
+>for
+>> > > persistent grants are released via free_persistent_gnts(). This
+>> > > results in a memory leak when a VBD that uses persistent grants
+>is
+>> > > torn down.
+>> > 
+>> > This may well be the explanation for the memory leak I was
+>observing on
+>> > ARM last night. I'll give it a go and let you know.
+>> 
+>> Results are a bit inconclusive unfortunately, it seems like I am
+>seeing
+>> some other leak too (or instead).
+>> 
+>> Totally unscientifically it does seem to be leaking more slowly than
+>> before, so perhaps this patch has helped, but nothing conclusive I'm
+>> afraid.
+>
+>Testing here looks good. I don't know if perhaps something else is
+>going on with ARM...
+>
+>> I don't think that quite qualifies for a Tested-by though, sorry.
+>
+>How about an Acked-by? ;-)
+>
+>--msw
+
+
+How big and often does this leak occur - that this patch fixes?
+
+I think there is one comment from Roger that needs to be addressed? Maybe I missed the resolution?
+
+Thanks!
