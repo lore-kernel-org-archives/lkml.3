@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaAZDH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:07:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52704 "EHLO
+	id S1752518AbaAZDIY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:08:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52701 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518AbaAZDEd (ORCPT
+	with ESMTP id S1752492AbaAZDEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:04:33 -0500
+	Sat, 25 Jan 2014 22:04:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hollmann <hollmann@in.tum.de>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.4 05/12] hwmon: (coretemp) Fix truncated name of alarm attributes
-Date: Sat, 25 Jan 2014 19:05:08 -0800
-Message-Id: <20140126030452.347123628@linuxfoundation.org>
+        Jianguo Wu <wujianguo@huawei.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 04/12] mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
+Date: Sat, 25 Jan 2014 19:05:07 -0800
+Message-Id: <20140126030452.263912330@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.rc0.19.gb594c97
 In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
 References: <20140126030451.934281002@linuxfoundation.org>
@@ -27,34 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit 3f9aec7610b39521c7c69d754de7265f6994c194 upstream.
+commit a49ecbcd7b0d5a1cda7d60e03df402dd0ef76ac8 upstream.
 
-When the core number exceeds 9, the size of the buffer storing the
-alarm attribute name is insufficient and the attribute name is
-truncated. This causes libsensors to skip these attributes as the
-truncated name is not recognized.
+After a successful hugetlb page migration by soft offline, the source
+page will either be freed into hugepage_freelists or buddy(over-commit
+page).  If page is in buddy, page_hstate(page) will be NULL.  It will
+hit a NULL pointer dereference in dequeue_hwpoisoned_huge_page().
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+  IP: [<ffffffff81163761>] dequeue_hwpoisoned_huge_page+0x131/0x1d0
+  PGD c23762067 PUD c24be2067 PMD 0
+  Oops: 0000 [#1] SMP
+
+So check PageHuge(page) after call migrate_pages() successfully.
+
+[wujg: backport to 3.4:
+ - adjust context
+ - s/num_poisoned_pages/mce_bad_pages/]
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/hwmon/coretemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -53,7 +53,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in
- 
- #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
- #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
--#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
-+#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
- #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+---
+ mm/memory-failure.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1447,10 +1447,18 @@ static int soft_offline_huge_page(struct
+ 		return ret;
+ 	}
+ done:
+-	if (!PageHWPoison(hpage))
+-		atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+-	set_page_hwpoison_huge_page(hpage);
+-	dequeue_hwpoisoned_huge_page(hpage);
++	/* overcommit hugetlb page will be freed to buddy */
++	if (PageHuge(hpage)) {
++		if (!PageHWPoison(hpage))
++			atomic_long_add(1 << compound_trans_order(hpage),
++					&mce_bad_pages);
++		set_page_hwpoison_huge_page(hpage);
++		dequeue_hwpoisoned_huge_page(hpage);
++	} else {
++		SetPageHWPoison(page);
++		atomic_long_inc(&mce_bad_pages);
++	}
++
+ 	/* keep elevated page count for bad page */
+ 	return ret;
+ }
 
 
