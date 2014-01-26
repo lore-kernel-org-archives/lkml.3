@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaAZUmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 15:42:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59731 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892AbaAZUmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 15:42:20 -0500
-Date: Sun, 26 Jan 2014 20:42:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, LM Sensors <lm-sensors@lm-sensors.org>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Wei Ni <wni@nvidia.com>
-Message-ID: <20140126204204.GI11727@sirena.org.uk>
-References: <52E561D0.4040308@roeck-us.net>
- <20140126211357.6fa68909@endymion.delvare>
+	id S1753284AbaAZUoK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 15:44:10 -0500
+Received: from kate1.hostnet.nl ([91.184.19.53]:43199 "EHLO kate1.hostnet.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125AbaAZUoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 15:44:08 -0500
+Date: 26 Jan 2014 21:44:03 +0100
+Message-ID: <20140126204403.28143.qmail@91-184-0-75.shared.hostnet.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Inquiry
+From: Konrad Lukman <mc_phill66@yahoo.com>
+Reply-To: konrad_lukman66@yahoo.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mlxBsilMljZ1v4XL"
-Content-Disposition: inline
-In-Reply-To: <20140126211357.6fa68909@endymion.delvare>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: lm90 driver no longer working on PCs in 3.13
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Filter-ID: XtLePq6GTMn8G68F0EmQvVoHNCbnFslilRrCLSfuCtUeFQsfDHVykhjQC1nI07bdLnGG4M9RRaGg
+ Fo18PIcwvjZQ6OtBjX2dhf8r1xeX6dHlYZes8MN2SFYshVNO/RXUAMT91KCE8sP3K0KP140gt8Bf
+ LiHYhY49+75i3mchxXJxXEtrdE1pzx2gJjSbvlVFB3EHdPMPb9XoSle6fw8z8+fKnZiAC40lO12l
+ ro6PYsEA+le4i6SoXgGeZKwjhkcE5YE5enyccp7RH4WQio3uGZFrbbnuKptDfVSh62DoYi8BRRma
+ 14Joc9Vd5ufFE7M6B/YreDVk8xmHFdRoTDjz4h7J8D2DxtdNUpwp/enImqvrvLSzulXw74QY8Qra
+ wb2TYTrpTUi0hWyLRhnlW1EJ8GDh9MNBUg4wFkwo2NemQcTi6nHW52hMy+Es1iOtIQrtZs8X5Cws
+ E1qwm/XCTzC2uEeRKKhIvNzGd305p+3bQp0Pr1qk/nauXEyzadaHRAi85S+D3ECk3vFucJwlfCAw
+ iEejtmf6nBrzg+RVeMtDD2r74O4hBSz/kkmPgL+fgIgujNjFIFmWhabCXBL9PwbqVKDAlAO3B20O
+ NyA4xj0no1s32cWG3oduD328gCBoJADmJ98sXTribk0cj2/0veorWA==
+X-Originating-IP: 91.184.0.75
+X-SpamExperts-Domain: out.mailfilter.hostnet.nl
+X-SpamExperts-Username: 91.184.0.75
+Authentication-Results: hostnet.nl; auth=pass smtp.auth=91.184.0.75
+X-SpamExperts-Outgoing-Class: unsure
+X-SpamExperts-Outgoing-Evidence: Combined (0.68)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mlxBsilMljZ1v4XL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Sun, Jan 26, 2014 at 09:13:57PM +0100, Jean Delvare wrote:
+Dear sir/Madam
 
-> Me, I really don't know. I seem to remember I tested Wei's patch set on
-> an emulated ADM1032 chip and it was working fine. So maybe it depends
-> on the kernel configuration, or something changed on the regulator side
-> meanwhile.
 
-The regulator API hasn't changed here, probably the regulator API was
-enabled when previously it was disabled.  If the platform doesn't have
-regulator support either natively or via use of a firmware interface
-like OF then enabling it is going to cause problems since no supplies
-will be mapped in.
 
---mlxBsilMljZ1v4XL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+            Compliment of the new year .Sir we like like to establish a
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+serious business relationship with you , we are Suppliers we will like to inquire if you have some product available for the months of Febuary,please kindly get back to me if you have it available and let me know your payment terms and time of delivery. I look forward to hear from you soon thanks and have a great day.
 
-iQIcBAEBAgAGBQJS5XMZAAoJELSic+t+oim9Zf8P/0LV4QrIbu0RRIpoiYiAMHNt
-dsmEsvMo+zuwpjTJlgaNFyo7ZWz4DZNcWR8azCBJEj1RNItZcTsDUnaQgJuGWbf9
-3+wDMaZzEzB9lBQ0tKLu7uciVw6RFfdTS0FYs0mMbOTatmd0QMgKNWHu+Vguu56G
-6cuyIqwUDIaG5C7YwxZTihP9wM06Nvtz1MRASkxLls3Ae5/QOaV1tpJD+jtLdcE4
-Kix62qOTEY/1q8tFPk0iSL7wLXUDVXWoMZcZQLe27OxXPd19nwgCk87laK55cvQQ
-8pNZCJObsJr/l+QOSO1+d1exVlib2YleI7jHE0G++osXQpiOy/wbpIPkFI1hmSyA
-ZE/CLKEkCj+6BpXUKHPBnj64t5AQGNG6sPuGJLSY0Ol51l05yjyaX8NTuR8VxyV/
-tACbE75Bfww/bB1BGD0YqCPWE0EYWLcC82cPhNynt/NEELopQIASJ1XSLSjZN7wV
-lbucAedErHhcZA2ANwYdu+22Y7lhMexT6fvNopWaxRwaYQ86xAGJ4kM/7d3facDY
-k5eTwq/VXOdmdTjl3iKfXFPQgXJetSVxtGJ/I5h9/0lx1o429yQu7Fspypp1CbA3
-d6d1jYEVxntF4ERQ/qhQXntvjNugwRboUptS/lPQC8qgSK/WdJ+bChjcAA2XuWwI
-bVVjqUdiyVf1Uix3IKVi
-=9/Ae
------END PGP SIGNATURE-----
 
---mlxBsilMljZ1v4XL--
+
+Regards.
+
+Konrad Lukman
+
+Sale manager.
+
+Comiol Enterprises
+
+Address--904 54TH ST
+
+City--BROOKLYN
+
+Zip--11219-4020
+
+State--NY
+
++1345675464
+
+Country--UNITED STATES
+
+
+
+
