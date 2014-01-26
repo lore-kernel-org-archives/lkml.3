@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaAZOiW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 09:38:22 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46662 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaAZOiU (ORCPT
+	id S1752972AbaAZOjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 09:39:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59638 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167AbaAZOjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 09:38:20 -0500
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, badarkhe.manish@gmail.com
-Subject: [PATCH V2] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
-Date: Sun, 26 Jan 2014 20:08:07 +0530
-Message-Id: <1390747087-5394-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 26 Jan 2014 09:39:35 -0500
+Date: Sun, 26 Jan 2014 14:39:21 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140126143921.GG11727@sirena.org.uk>
+References: <1390742939-10695-1-git-send-email-ben.dooks@codethink.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nE/5a/j5SCML90Nq"
+Content-Disposition: inline
+In-Reply-To: <1390742939-10695-1-git-send-email-ben.dooks@codethink.co.uk>
+X-Cookie: Please ignore previous fortune.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio-regulator: warn if unknown regulator type
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of "#ifdef CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
-option for DT code to avoid if-deffery in code.
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-Changes since V1:
-1. update code to retrieve platform/dt data in same function
+--nE/5a/j5SCML90Nq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-:100644 100644 b4513f2... 20a7100... M	drivers/power/max8925_power.c
- drivers/power/max8925_power.c |   15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+On Sun, Jan 26, 2014 at 01:28:59PM +0000, Ben Dooks wrote:
+> The of_get_gpio_regulator_config() will error out if there is no
+> "regulator_type" field in the fdt node hoewver it makes no attempt
+> at warning if the contents of said node is not known.
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index b4513f2..20a7100 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -427,9 +427,8 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
- 	return 0;
- }
- 
--#ifdef CONFIG_OF
- static struct max8925_power_pdata *
--max8925_power_dt_init(struct platform_device *pdev)
-+max8925_get_data(struct platform_device *pdev)
- {
- 	struct device_node *nproot = pdev->dev.parent->of_node;
- 	struct device_node *np;
-@@ -440,7 +439,7 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	int no_insert_detect;
- 	struct max8925_power_pdata *pdata;
- 
--	if (!nproot)
-+	if (!IS_ENABLED(CONFIG_OF) || !nproot)
- 		return pdev->dev.platform_data;
- 
- 	np = of_find_node_by_name(nproot, "charger");
-@@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device *pdev)
- 
- 	return pdata;
- }
--#else
--static struct max8925_power_pdata *
--max8925_power_dt_init(struct platform_device *pdev)
--{
--	return pdev->dev.platform_data;
--}
--#endif
- 
- static int max8925_power_probe(struct platform_device *pdev)
- {
-@@ -483,7 +475,8 @@ static int max8925_power_probe(struct platform_device *pdev)
- 	struct max8925_power_info *info;
- 	int ret;
- 
--	pdata = max8925_power_dt_init(pdev);
-+	pdata = max8925_get_data(pdev);
-+
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "platform data isn't assigned to "
- 			"power supply\n");
--- 
-1.7.10.4
+Please sumbit patches against current code, this won't apply since this
+code has been restructured since the version you're working with and now
+has an improved version of this warning.
 
+--nE/5a/j5SCML90Nq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5R4WAAoJELSic+t+oim98nUQAJtWDQ+Aq95nDvzr44fwtD64
+ILag0V66xZ7oG0Grek09pbSPMjxAn2WTokeCIKMfCQpr6wwl6vgUrpuvnrl0XefL
+m2+4bqQQWYH6ka4P7k9gejCMAzVtv1PtJFOzjeOQC11vostE1UnfnyB3NxtPedbz
+i+PTUIgBwQxFikovbyTjyVNnUuyOn5fIUIXOhIPHpEb90KEeJ1fWDEC811Kxhlq5
+vUo6gU14xu5lWCWuJXBPzwgOaF1mYeRr3PC4dRY31vVpTuBoPgL9BUDmIPuBZTKe
+hIHWtID70/mCmKTPAIa36qwZQy4OyPhSFtrxxasBpZYolw14p9N10C36fILvdmS/
+zM2d7bgsfMXo3zUkzXmnXW1acECYU1amJp+zStTVLvZT0fPzqkv0F3r8hRLZ1Act
+n6cIlRH2630X/DSjFEmLVv2w/6xjY4e/k7dktmDC+xFSC6OzpWRgRJYt8qlChFVL
+Sp4o7DcBFI56PgK/WyTM8t8/LkWpmA5tvh5+KygDfy56s2Elv//FCNs/iDPNLNg7
+e758mm8i9qm3IdKEop0wSbEmElZK2WheYFSFbkjlf56HSMtiSsEvmKakvMBq3Kvz
+VhwjK0h/BWVEFPR7vGRHNz7Hf25o4neaYMDJRfRsSOy+sYdbTTp59Bsx+UG9/gri
+HDhsi/QfxdzzCj2XwziD
+=+3iy
+-----END PGP SIGNATURE-----
+
+--nE/5a/j5SCML90Nq--
