@@ -1,93 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaAZRjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 12:39:36 -0500
-Received: from smtp-out-105.synserver.de ([212.40.185.105]:1084 "EHLO
-	smtp-out-209.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752397AbaAZRje (ORCPT
+	id S1753221AbaAZRlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 12:41:37 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43131 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaAZRlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 12:39:34 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 24627
-Message-ID: <52E54849.2000208@metafoo.de>
-Date: Sun, 26 Jan 2014 18:39:21 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Sun, 26 Jan 2014 12:41:36 -0500
+Date: Sun, 26 Jan 2014 17:41:34 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dcache: error out if the name buffer is too short
+Message-ID: <20140126174134.GZ10323@ZenIV.linux.org.uk>
+References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com>
+ <20140124161922.GA14195@redhat.com>
+ <20140126153737.GA8184@redhat.com>
+ <20140126155141.GA12249@redhat.com>
+ <20140126163536.GA21320@redhat.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
-        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
-        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
- driver support
-References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com> <1390409565-4200-2-git-send-email-sthokal@xilinx.com> <52E0FC22.8060903@metafoo.de> <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com> <52E2698B.6070001@metafoo.de> <20140126135933.GD10628@intel.com>
-In-Reply-To: <20140126135933.GD10628@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140126163536.GA21320@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 02:59 PM, Vinod Koul wrote:
-> On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
->> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
->>> Hi Lars,
->>>
->>> On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
->>>> [...]
->>>>> +/**
->>>>> + * xilinx_vdma_device_control - Configure DMA channel of the device
->>>>> + * @dchan: DMA Channel pointer
->>>>> + * @cmd: DMA control command
->>>>> + * @arg: Channel configuration
->>>>> + *
->>>>> + * Return: '0' on success and failure value on error
->>>>> + */
->>>>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
->>>>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
->>>>> +{
->>>>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>>>> +
->>>>> +     switch (cmd) {
->>>>> +     case DMA_TERMINATE_ALL:
->>>>> +             xilinx_vdma_terminate_all(chan);
->>>>> +             return 0;
->>>>> +     case DMA_SLAVE_CONFIG:
->>>>> +             return xilinx_vdma_slave_config(chan,
->>>>> +                                     (struct xilinx_vdma_config *)arg);
->>>>
->>>> You really shouldn't be overloading the generic API with your own semantics.
->>>> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
->>>
->>> Ok.  The driver needs few additional configuration from the slave
->>> device like Vertical
->>> Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
->>> suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
->>> defined for Freescale drivers?
->>
->> In my opinion it is not a good idea to have driver implement a generic API,
->> but at the same time let the driver have custom semantics for those API
->> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
->> values passed to gpio_set_value instead of 0 and 1. It completely defeats
->> the purpose of a generic API, namely that you are able to write generic code
->> that makes use of the API without having to know about which implementation
->> API it is talking to. The dmaengine framework provides the
->> dmaengine_prep_interleaved_dma() function to setup two dimensional
->> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
+On Sun, Jan 26, 2014 at 05:35:36PM +0100, Oleg Nesterov wrote:
+> On 01/26, Oleg Nesterov wrote:
+> >
+> > Al, Denys, unless I am totally confused the "restart" logic is very broken.
+> > We can't simply restart because the main loop changes dentry?
 > 
-> The question here i think would be waht this device supports? Is the hardware
-> capable of doing interleaved transfers, then would make sense.
+> Plus prepend_name() can't actually return -ENAMETOOLONG,
+> "int error" inside the loop is wrong.
 
-The hardware does 2D transfers. The parameters for a transfer are height,
-width and stride. That's only a subset of what interleaved transfers can be
-(xt->num_frames must be one for 2d transfers). But if I remember correctly
-there has been some discussion on this in the past and the result of that
-discussion was that using interleaved transfers for 2D transfers is
-preferred over adding a custom API for 2D transfers.
-
-- Lars
-
+... and already fixed.  Said that, the point about restarts is definitely
+true.  See vfs.git#for-linus - it should propagate in a few
