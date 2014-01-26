@@ -1,137 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaAZMqA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 07:46:00 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:38825 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245AbaAZMp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 07:45:58 -0500
-Message-ID: <52E50371.2080104@compulab.co.il>
-Date: Sun, 26 Jan 2014 14:45:37 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752657AbaAZMtv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 07:49:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28937 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348AbaAZMtt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 07:49:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,724,1384329600"; 
+   d="scan'208";a="472617788"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
+ PR_MPX_RELEASE
+Thread-Topic: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
+ PR_MPX_RELEASE
+Thread-Index: AQHPGjnO5MG2nTCtrEa+syIX3GXcKpqWMbIAgACyQeA=
+Date: Sun, 26 Jan 2014 12:49:24 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014F22A8@SHSMSX102.ccr.corp.intel.com>
+References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
+ <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
+ <20140126090808.GA30987@gmail.com>
+In-Reply-To: <20140126090808.GA30987@gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Curt Brune <curt@cumulusnetworks.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Laszlo Papp <lpapp@kde.org>
-CC: Thomas De Schampheleire <patrickdepinguin@gmail.com>,
-        gregkh@linuxfoundation.org,
-        Shrijeet Mukherjee <shm@cumulusnetworks.com>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] Add at24 based EEPROMs to the eeprom_dev hardware
- class
-References: <1390504562-20333-2-git-send-email-curt@cumulusnetworks.com>
-In-Reply-To: <1390504562-20333-2-git-send-email-curt@cumulusnetworks.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Curt,
 
-On 01/23/14 21:16, Curt Brune wrote:
-> During device instantiation have the at24 driver add the new device to
-> the eeprom_dev hardware class.  The functionality is enabled by
-> CONFIG_EEPROM_CLASS.
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo.kernel.org@gmail.com] On Behalf Of Ingo
+> Molnar
+> Sent: Sunday, January 26, 2014 5:08 PM
+> To: Ren, Qiaowei
+> Cc: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; x86@kernel.org;
+> linux-kernel@vger.kernel.org; Peter Zijlstra; Linus Torvalds; Andrew Morton
+> Subject: Re: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT,
+> PR_MPX_RELEASE
 > 
-> Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-> ---
->  drivers/misc/eeprom/at24.c |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
 > 
-> diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
-> index d87f77f..07782ea 100644
-> --- a/drivers/misc/eeprom/at24.c
-> +++ b/drivers/misc/eeprom/at24.c
-> @@ -22,10 +22,14 @@
->  #include <linux/jiffies.h>
->  #include <linux/of.h>
->  #include <linux/i2c.h>
->  #include <linux/platform_data/at24.h>
->  
-> +#ifdef CONFIG_EEPROM_CLASS
-> +#include <linux/eeprom_class.h>
-> +#endif
-
-I would recommend moving the "ifdeffery" into the eeprom_class.h
-and leave the users (in this case the at24.c) clean.
-
-> +
->  /*
->   * I2C EEPROMs from most vendors are inexpensive and mostly interchangeable.
->   * Differences between different vendor product lines (like Atmel AT24C or
->   * MicroChip 24LC, etc) won't much matter for typical read/write access.
->   * There are also I2C RAM chips, likewise interchangeable. One example
-> @@ -66,10 +70,13 @@ struct at24_data {
->  
->  	u8 *writebuf;
->  	unsigned write_max;
->  	unsigned num_addresses;
->  
-> +#ifdef CONFIG_EEPROM_CLASS
-> +	struct device *eeprom_dev;
-> +#endif
-
-Same here, this is just a pointer, so I don't think anyone has
-a problem having it even if eeprom class is not selected.
-
->  	/*
->  	 * Some chips tie up multiple I2C addresses; dummy devices reserve
->  	 * them for us, and we'll use them with SMBus calls.
->  	 */
->  	struct i2c_client *client[];
-> @@ -619,10 +626,19 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  
->  	err = sysfs_create_bin_file(&client->dev.kobj, &at24->bin);
->  	if (err)
->  		goto err_clients;
->  
-> +#ifdef CONFIG_EEPROM_CLASS
-> +	at24->eeprom_dev = eeprom_device_register(&client->dev);
-> +	if (IS_ERR(at24->eeprom_dev)) {
-> +		dev_err(&client->dev, "error registering eeprom device.\n");
-> +		err = PTR_ERR(at24->eeprom_dev);
-> +		goto err_clients;
-> +	}
-> +#endif
-
-stub the eeprom_device_register() out in eeprom_class.h
-for !CONFIG_EEPROM_CLASS case
-
-> +
->  	i2c_set_clientdata(client, at24);
->  
->  	dev_info(&client->dev, "%zu byte %s EEPROM, %s, %u bytes/write\n",
->  		at24->bin.size, client->name,
->  		writable ? "writable" : "read-only", at24->write_max);
-> @@ -656,10 +672,14 @@ static int at24_remove(struct i2c_client *client)
->  	sysfs_remove_bin_file(&client->dev.kobj, &at24->bin);
->  
->  	for (i = 1; i < at24->num_addresses; i++)
->  		i2c_unregister_device(at24->client[i]);
->  
-> +#ifdef CONFIG_EEPROM_CLASS
-> +	eeprom_device_unregister(at24->eeprom_dev);
-> +#endif
-
-same here.
-
-> +
->  	return 0;
->  }
->  
->  /*-------------------------------------------------------------------------*/
->  
+> * Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 > 
+> > @@ -7,6 +9,88 @@
+> >  #include <asm/fpu-internal.h>
+> >  #include <asm/alternative.h>
+> >
+> > +static struct mmu_notifier mpx_mn;
+> 
+> > +static struct mmu_notifier_ops mpx_mmuops = {
+> > +	.invalidate_range_end = mpx_invl_range_end, };
+> > +
+> > +int mpx_init(struct task_struct *tsk) {
+> > +	if (!boot_cpu_has(X86_FEATURE_MPX))
+> > +		return -EINVAL;
+> > +
+> > +	/* register mmu_notifier to delallocate the bound tables */
+> > +	mpx_mn.ops = &mpx_mmuops;
+> > +	mmu_notifier_register(&mpx_mn, current->mm);
+> 
+> 0)
+> 
+> I do think MPX should be supported by Linux, but this is the best thing I can say
+> about the code at the moment:
+> 
+> 1)
+> 
+> The above MMU notifier bit is absolutely disgusting: it adds an
+> O(nr_mpx_tasks) overhead to every MMU operation!
+> 
+> MPX needs to be called from architecture methods. (And the MMU notifier
+> should probably be removed, it literally invites such abuse.)
+> 
+> 2)
+> 
+> The whole MPX_INIT() macro wrappery is ugly beyond relief.
+> 
+> 3)
+> 
+> The kernel/sys.c bits are x86-only, it probably won't even build on other
+> architectures.
+> 
+> 4)
+> 
+> I also argue that MPX setup should be automatic through the ELF
+> loader:
+> 
+>  - MPX setup could also be initiated through the ELF notes section or
+>    so - similar to the executable bit stack attribute in ELF binaries.
+>    (See PT_GNU_STACK handling in fs/binfmt_elf.c.)
+> 
+>  - What is the typical life time of the bounds table? Does user-space
+>    get access to it? I don't see where it's discoverable to
+>    user-space. (for example for debuggers)
+> 
+> 5)
+> 
+> Teardown can be done through regular munmap() if the notifier is eliminated,
+> so that step falls away as well.
+> 
+> 6)
+> 
+> How many entries are in the bounds table? Because mpx_invl_range_end()
+> looks utterly unscalable if it has any size beyond 1-2 entries.
+> 
+The size of one bound table is 4M bytes for 64bit, and 16K bytes for 32bit. It can not be accessed by user-space, and it will be accessed automatically by hardware.
 
--- 
-Regards,
-Igor.
+When #BR faults come, and the entry of the bound directory is invalid, one bound table have to be allocated to save value of the bounds. It is what the second patch does. As for the lifetime of the bound tables, we can see the following case:
+  User application use malloc or mmap to dynamically allocate memory. when address in the memory region is first accessed, related entry in the bound directory will be checked and it should be invalid. Then one new bound table will be allocated.
+  After a time, this memory area is released, and so the bound tables related with this memory area become meaningless and may be released. If we don't release these unnecessary bound tables, it will save the workload of allocation of new bound tables when the memory area related with the entry of the bound directory is allocated and accessed again. But in this way the loss of virtual space will have to be worried.
+
+Anyway, what this patch does is only that when a piece of address space is unmapped, we destroy/unmap the bounds tables that correspond to that same address space. MMU notifier will add some overhead for those tasks which use MPX. But I have no better way to know when one address space is unmapped, and then destroy the related bounds tables. Do you have any suggestion?
+
+Thanks,
+Qiaowei
