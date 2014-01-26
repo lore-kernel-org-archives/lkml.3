@@ -1,110 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaAZBOL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 20:14:11 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51998 "EHLO mga01.intel.com"
+	id S1752413AbaAZB4J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 20:56:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41673 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaAZBOJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 20:14:09 -0500
+	id S1750840AbaAZB4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jan 2014 20:56:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,721,1384329600"; 
-   d="scan'208";a="470826735"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>
-Subject: RE: [Xen-devel] [PATCH 4/4] xen/xenbus: Avoid synchronous wait on
-	XenBus stalling shutdown/restart.
-Thread-Topic: [Xen-devel] [PATCH 4/4] xen/xenbus: Avoid synchronous wait on
-	XenBus stalling shutdown/restart.
-Thread-Index: AQHO3KmE8nzOae4vI0ON33E2bX7xXpqWrgxw
-Date: Sun, 26 Jan 2014 01:13:51 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0A9C6EC5@SHSMSX104.ccr.corp.intel.com>
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
- <1383932286-25080-5-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-5-git-send-email-konrad.wilk@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="470834173"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v3 0/4] Intel MPX support
+Date: Sun, 26 Jan 2014 17:08:54 +0800
+Message-Id: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote on 2013-11-09:
-> The 'read_reply' works with 'process_msg' to read of a reply in XenBus.
-> 'process_msg' is running from within the 'xenbus' thread. Whenever a
-> message shows up in XenBus it is put on a xs_state.reply_list list and
-> 'read_reply' picks it up.
-> 
-> The problem is if the backend domain or the xenstored process is killed.
-> In which case 'xenbus' is still awaiting - and 'read_reply' if called
-> - stuck forever waiting for the reply_list to have some contents.
-> 
-> This is normally not a problem - as the backend domain can come back
-> or the xenstored process can be restarted. However if the domain is in
-> process of being powered off/restarted/halted - there is no point of
-> waiting on it coming back - as we are effectively being terminated and
-> should not impede the progress.
-> 
+This patchset adds support for the Memory Protection Extensions
+(MPX) feature found in future Intel processors.
 
-Hi, Konrad,
+MPX can be used in conjunction with compiler changes to check memory
+references, for those references whose compile-time normal intentions
+are usurped at runtime due to buffer overflow or underflow.
 
-Is this patch applied in Linux upstream tree? I didn't find it with latest Linux upstream source.
+MPX provides this capability at very low performance overhead for
+newly compiled code, and provides compatibility mechanisms with legacy
+software components. MPX architecture is designed allow a machine to
+run both MPX enabled software and legacy software that is MPX unaware.
+In such a case, the legacy software does not benefit from MPX, but it
+also does not experience any change in functionality or reduction in
+performance.
 
-> This patch solves this problem by checking the 'system_state' value to
-> see if we are in heading towards death. We also make the wait
-> mechanism a bit more asynchronous.
-> 
-> Fixes-Bug: http://bugs.xenproject.org/xen/bug/8
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/xenbus/xenbus_xs.c | 24 +++++++++++++++++++++---
->  1 file changed, 21 insertions(+), 3 deletions(-)
-> diff --git a/drivers/xen/xenbus/xenbus_xs.c
-> b/drivers/xen/xenbus/xenbus_xs.c index b6d5fff..4f22706 100644
-> --- a/drivers/xen/xenbus/xenbus_xs.c
-> +++ b/drivers/xen/xenbus/xenbus_xs.c
-> @@ -148,9 +148,24 @@ static void *read_reply(enum xsd_sockmsg_type
-> *type, unsigned int *len)
-> 
->  	while (list_empty(&xs_state.reply_list)) {
->  		spin_unlock(&xs_state.reply_lock);
-> -		/* XXX FIXME: Avoid synchronous wait for response here. */
-> -		wait_event(xs_state.reply_waitq, -			  
-> !list_empty(&xs_state.reply_list));
-> +		wait_event_timeout(xs_state.reply_waitq, +				  
-> !list_empty(&xs_state.reply_list), +				   msecs_to_jiffies(500)); +
-> +		/* +		 * If we are in the process of being shut-down there is +		 *
-> no point of trying to contact XenBus - it is either +		 * killed
-> (xenstored application) or the other domain +		 * has been killed or is
-> unreachable. +		 */ +		switch (system_state) { +		case SYSTEM_POWER_OFF:
-> +		case SYSTEM_RESTART: +		case SYSTEM_HALT: +			return ERR_PTR(-EIO);
-> +		default: +			break; +		}
->  		spin_lock(&xs_state.reply_lock);
->  	}
-> @@ -215,6 +230,9 @@ void *xenbus_dev_request_and_reply(struct
-> xsd_sockmsg *msg)
-> 
->  	mutex_unlock(&xs_state.request_mutex);
-> +	if (IS_ERR(ret))
-> +		return ret;
-> +
->  	if ((msg->type == XS_TRANSACTION_END) ||
->  	    ((req_msg.type == XS_TRANSACTION_START) &&
->  	     (msg->type == XS_ERROR)))
+More information about Intel MPX can be found in "Intel(R) Architecture
+Instruction Set Extensions Programming Reference".
+
+To get the advantage of MPX, changes are required in the OS kernel,
+binutils, compiler, system libraries support.
+
+New GCC option -fmpx is introduced to utilize MPX instructions.
+Currently GCC compiler sources with MPX support is available in a
+separate branch in common GCC SVN repository. See GCC SVN page
+(http://gcc.gnu.org/svn.html) for details.
+
+To have the full protection, we had to add MPX instrumentation to all
+the necessary Glibc routines (e.g. memcpy) written on assembler, and
+compile Glibc with the MPX enabled GCC compiler. Currently MPX enabled
+Glibc source can be found in Glibc git repository.
+
+Enabling an application to use MPX will generally not require source
+code updates but there is some runtime code, which is responsible for
+configuring and enabling MPX, needed in order to make use of MPX.
+For most applications this runtime support will be available by linking
+to a library supplied by the compiler or possibly it will come directly
+from the OS once OS versions that support MPX are available.
+
+MPX kernel code, namely this patchset, has mainly the 2 responsibilities:
+provide handlers for bounds faults (#BR), and manage bounds memory.
+
+Currently no hardware with MPX ISA is available but it is always
+possible to use SDE (Intel(R) software Development Emulator) instead,
+which can be downloaded from
+http://software.intel.com/en-us/articles/intel-software-development-emulator
 
 
-Best regards,
-Yang
+Changes since v1:
+  * check to see if #BR occurred in userspace or kernel space.
+  * use generic structure and macro as much as possible when
+    decode mpx instructions.
 
+Changes since v2:
+  * fix some compile warnings.
+  * update documentation.
+
+Qiaowei Ren (4):
+  x86, mpx: add documentation on Intel MPX
+  x86, mpx: hook #BR exception handler to allocate bound tables
+  x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
+  x86, mpx: extend siginfo structure to include bound violation
+    information
+
+ Documentation/x86/intel_mpx.txt    |  226 ++++++++++++++++++++
+ arch/x86/Kconfig                   |    4 +
+ arch/x86/include/asm/mpx.h         |   63 ++++++
+ arch/x86/include/asm/processor.h   |   16 ++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/mpx.c              |  415 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c            |   61 +++++-
+ include/uapi/asm-generic/siginfo.h |    9 +-
+ include/uapi/linux/prctl.h         |    6 +
+ kernel/signal.c                    |    4 +
+ kernel/sys.c                       |   12 +
+ 11 files changed, 815 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/x86/intel_mpx.txt
+ create mode 100644 arch/x86/include/asm/mpx.h
+ create mode 100644 arch/x86/kernel/mpx.c
 
