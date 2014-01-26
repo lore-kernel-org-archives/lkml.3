@@ -1,31 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaAZVsZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:48:25 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:7144
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752461AbaAZVsY convert rfc822-to-8bit (ORCPT
+	id S1753403AbaAZVtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:49:12 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:51160 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaAZVtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:48:24 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 26 Jan 2014 16:49:11 -0500
+Message-ID: <52E582D0.9070501@gmail.com>
+Date: Sun, 26 Jan 2014 22:49:04 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: FINANCE 
-To: Recipients <cc16@finance444.onmicrosoft.com>
-From: FINANCE <cc16@finance444.onmicrosoft.com>
-Date: Mon, 27 Jan 2014 03:18:12 +0530
-Reply-To: <adibfinancei@manager.in.th>
-Message-ID: <b1ed9f16-b27f-456c-871b-befb4e7ccbd1@SINPR06MB364.apcprd06.prod.outlook.com>
-X-Originating-IP: [115.241.123.74]
-X-ClientProxiedBy: SINPR03CA007.apcprd03.prod.outlook.com (10.242.48.27) To
- SINPR06MB364.apcprd06.prod.outlook.com (10.141.110.154)
-X-Forefront-PRVS: 01039C93E4
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6049001)(6009001)(6039001)(189002)(199002)(76576001)(74502001)(74662001)(47446002)(69226001)(86372001)(43066001)(218053001)(76176001)(93516002)(86362001)(83322001)(19580395003)(19580405001)(47776003)(63696002)(79102001)(558084003)(81342001)(87976001)(76796001)(76786001)(74366001)(87266001)(50466002)(81686001)(81816001)(66066001)(47976001)(50986001)(74706001)(74876001)(49866001)(47736001)(80022001)(65816001)(77982001)(4396001)(85306002)(59766001)(86442001)(83072002)(85852003)(42186004)(54356001)(64872005)(74316001)(76482001)(46102001)(51856001)(23756003)(90146001)(89136003)(77096001)(56816005)(80976001)(54316002)(81542001)(93136001)(56776001)(94316002)(53256004)(92726001)(33646001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:SINPR06MB364;H:[115.241.123.74];CLIP:115.241.123.74;FPR:;InfoNoRecordsMX:1;A:0;LANG:en;
-X-OriginatorOrg: finance444.onmicrosoft.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Manish Badarkhe <badarkhe.manish@gmail.com>
+CC: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com> <52E50C24.8030305@gmail.com> <CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com> <20140126214542.GC18840@core.coreip.homeip.net>
+In-Reply-To: <20140126214542.GC18840@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are you in any financial difficulty? or you want to start a new Business , Company , etc apply for Loan at 3% , EMAIL; adibfinancei@manager.in.th
+On 26.01.2014 22:45, Dmitry Torokhov wrote:
+> On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
+>> Hi Tomasz,
+>>
+>> Thank you for your review comments.
+>>
+>> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>>
+>>> Hi Manish,
+>>>
+>>>
+>>> On 26.01.2014 08:15, Manish Badarkhe wrote:
+>>>>
+>>>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+>>>> option for DT code to avoid if-deffery in code.
+>>>>
+>>>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>>>> ---
+>>>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
+>>>>    drivers/power/max8925_power.c |   14 +++++---------
+>>>>    1 file changed, 5 insertions(+), 9 deletions(-)
+>>>>
+>>>> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+>>>> index b4513f2..d353fbc 100644
+>>>> --- a/drivers/power/max8925_power.c
+>>>> +++ b/drivers/power/max8925_power.c
+>>>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
+>>>>          return 0;
+>>>>    }
+>>>>
+>>>> -#ifdef CONFIG_OF
+>>>>    static struct max8925_power_pdata *
+>>>>    max8925_power_dt_init(struct platform_device *pdev)
+>>>>    {
+>>>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device *pdev)
+>>>>
+>>>>          return pdata;
+>>>>    }
+>>>> -#else
+>>>> -static struct max8925_power_pdata *
+>>>> -max8925_power_dt_init(struct platform_device *pdev)
+>>>> -{
+>>>> -       return pdev->dev.platform_data;
+>>>> -}
+>>>> -#endif
+>>>>
+>>>>    static int max8925_power_probe(struct platform_device *pdev)
+>>>>    {
+>>>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct platform_device *pdev)
+>>>>          struct max8925_power_info *info;
+>>>>          int ret;
+>>>>
+>>>> -       pdata = max8925_power_dt_init(pdev);
+>>>> +       if (IS_ENABLED(CONFIG_OF))
+>>>> +               pdata = max8925_power_dt_init(pdev);
+>>>> +       else
+>>>> +               pdata = pdev->dev.platform_data;
+>>>> +
+>>>
+>>>
+>>> This does not look much better than before this patch. Instead of "if-deffery" outside function bodies you are adding "iffery" (if there is such a word) inside a function.
+>>> What about adding
+>>>
+>>>          if (!IS_ENABLED(CONFIG_OF))
+>>>                  return pdev->dev.platform_data;
+>>>
+>>> on top of max8925_power_dt_init() instead or maybe also renaming this function to max8925_get_pdata()?
+>>
+>> Okay, I will rename function "max8925_power_dt_init()" to "max8925_get_pdata()".
+>> As you suggested, in the body of this function  will add a logic to
+>> retrieve  data in case
+>> of DT and non-DT platforms.
+>
+> Should we not always favor platform-supplied data regardless of
+> CONFIG_OF state and fall back to DT (firmware) supplied data if platform
+> data is absent? This way one can tweak kernel behavior without needing
+> to change firmware.
+
+I guess we should, but apparently this was not the original behavior 
+before this patch, so I'm not sure if we should be squashing such 
+semantic change with this simple refactor.
+
+Best regards,
+Tomasz
