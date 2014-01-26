@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaAZVIp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 16:08:45 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:42088 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaAZVIn (ORCPT
+	id S1753310AbaAZVI7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 16:08:59 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35821 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257AbaAZVI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 16:08:43 -0500
-Date: Sun, 26 Jan 2014 13:08:37 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86, mm: Avoid duplicated pxm_to_node() calling.
-In-Reply-To: <1390770102-4007-1-git-send-email-yinghai@kernel.org>
-Message-ID: <alpine.DEB.2.02.1401261308070.26515@chino.kir.corp.google.com>
-References: <1390770102-4007-1-git-send-email-yinghai@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 26 Jan 2014 16:08:58 -0500
+Date: Sun, 26 Jan 2014 22:08:50 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Len Brown <lenb@kernel.org>
+Cc: rjw@sisk.pl, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 1/1] suspend: make sync() on suspend-to-RAM optional
+Message-ID: <20140126210850.GA7246@Nokia-N900>
+References: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ce1b9fc9cdcfd1fe8f9f3b8570421271dc15ae75.1390460951.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Jan 2014, Yinghai Lu wrote:
+Hi!
 
-> In slit init code, more pxm_to_node() calling are added.
+> From: Len Brown <len.brown@intel.com>
 > 
-> We can store from_node/to_node instead of keep calling pxm_to_node().
+> Linux suspend-to-RAM was unreliable when first developed,
+> and so sys_sync() was invoked inside the kernel at the
+> start of every suspend flow.
 > 
-> After this patch: pxm_to_node() is called n*(1+n)
-> Before this patch: pxm_to_node() is called n*(1+n*3)
+> Today, many devices are invoking suspend with
+> high reliability and high frequency, and they don't
+> want to be forced to pay for sync on every suspend.
 > 
-> for 8 socket, it will be 72 instead of 200.
-> for 32 socket, it will be 1056 instead of 3104.
-> 
-> -v2: update title and change log according to Ingo.
->      move from_node/to_node in loop and change to const according to
-> 	David Rientjes.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> So here we make it optional.
+> De-select CONFIG_PM_SLEEP_SYNC to delete the call entirely.
+> or keep CONFIG_PM_SLEEP and you can now clear the
+> sys/power/sleep_sync attribte to disable the sync
+> from user-space.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Dunno. Config option plus sysfs attribute is overdoing it a bit.
+Maybe we could do
+
+echo memfast > state
+
+to enter suspend without sync? Patch should be simpler that way,
+and we won't have to keep the state...
+
+						Pavel
