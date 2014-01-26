@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaAZJ3g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 04:29:36 -0500
-Received: from imp02.mtu.ru ([62.5.255.19]:46369 "EHLO imp02.mtu.ru"
+	id S1753088AbaAZJcA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 04:32:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34450 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795AbaAZJ3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 04:29:06 -0500
-X-Spam-Flag: NO
-Message-ID: <52E4D53C.3070802@pavlinux.ru>
-Date: Sun, 26 Jan 2014 13:28:28 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752425AbaAZJby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 04:31:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,723,1384329600"; 
+   d="scan'208";a="470928816"
+Message-ID: <52E4D607.6090509@linux.intel.com>
+Date: Sun, 26 Jan 2014 17:31:51 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.8-rt11
-References: <20140125134519.GA9845@linutronix.de>
-In-Reply-To: <20140125134519.GA9845@linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP"
-X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10001; Body=6 Fuz1=6 Fuz2=6
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, jrg.otte@gmail.com
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [kernel 3.13.0-06058-g2d08cd0] Strange ACPI error messages
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <4387759.ffnsEjDaad@vostro.rjw.lan> <20140125161817.GB25531@khazad-dum.debian.net> <2010872.ETICEKhYmO@vostro.rjw.lan>
+In-Reply-To: <2010872.ETICEKhYmO@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi all,
+	I will take care of this issue and send out a patch soon.
+Thanks!
+Gerry
 
-25.01.2014 17:45, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
-:
-
-> I'm pleased to announce the v3.12.8-rt11 patch set.
-
-Nothing has changed, it does not boot from September, and will not boot.
-3.2-54-rt77 - works perfectly. Same hardware, same config.
-
---=20
-
-                                                         Pavel.
-
-
---IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCgAGBQJS5NU9AAoJEPtok08Dny2hlL4QALwRDT7/k7TRO2/hm7trv8cC
-fbCDcR1cDHGxX2cEcAqFXnUeioAeuKn8baCvqhedWx9AMXv3ekIWp/jPQtxl+BGr
-SNbeR6BjGLog4bBhnw+8GHER6khxGj2Lj/rdby5Oud72e9asTnhy6ryagC68UCnH
-ooRCy872QkqwcPgALXpq3FW7DnCP64DPLyqBHRJktpwqAfuwkKzVj0hvkFkmzpMk
-KNoO0hU+OU0rnOORk9KiZ0i/leRsUZhg2P39vHUAkWPHadKO3PUSGiG1eC+tAPnW
-GKP1WV7n8zKAlFPxJSufakESyyUVzQRNd1tESa8wGifXTfT5HDAYQYq5GnKQdDlx
-jblApc0yuurO8j5FwVq9JZavAtT+Ct6YBpCs9xls4ANrjAlAXxhnt02/FLgxnVUo
-tdOuooFuhP+hjtI0qraxmNxLucnUh7Uf09ldmZim/8kgKv3gMiXn1qLGRsLjYg6X
-YuThnCAgF3Zj0Fe6K2AxsmJDaYrnouZKwMqOOe3qBrwo3RTevrF0vzZsbWmAEAR6
-lNPW8SHjmzM+HnVGpL0l/LEHeuUDAYVTOfvyoL7RGoxgMR1ERndK+b5VfbMk/NVo
-00p078E8nv8iXO62yzL689JIfbKsnr+3Z3YmPd3FvJ5sVsQ+PvDzbDwOjCm9sGoX
-bLPGLpCPEzA838yIWCUZ
-=yiTx
------END PGP SIGNATURE-----
-
---IIDolJwgIjhdQX1XQXiRWrcBFo7JfIDpP--
+On 2014/1/26 6:31, Rafael J. Wysocki wrote:
+> On Saturday, January 25, 2014 02:18:17 PM Henrique de Moraes Holschuh wrote:
+>> On Sat, 25 Jan 2014, Rafael J. Wysocki wrote:
+>>> On Saturday, January 25, 2014 02:53:24 PM Rafael J. Wysocki wrote:
+>>>> On Saturday, January 25, 2014 11:03:09 AM Jörg Otte wrote:
+>>>>> Kernel 3.13.0-06058-g2d08cd0 displays following errors on the console:
+>>>>>
+>>>>> ACPI: \_PR_.CPU4: failed to get CPU APIC ID.
+>>>>> ACPI: \_PR_.CPU5: failed to get CPU APIC ID.
+>>>>> ACPI: \_PR_.CPU6: failed to get CPU APIC ID.
+>>>>> ACPI: \_PR_.CPU7: failed to get CPU APIC ID.
+>>>>>
+>>>>> I don't have CPUs 4..7! Error messages regarding not existing
+>>>>> CPUs should not be displayed.
+>>>>> kernel 3.13.0-05617-g3aacd62 and before did'nt show this messages.
+>>>>>
+>>>>> This is a regression. I never saw this messages before.
+>>>>
+>>>> Does your system show any other suspicious symptoms or are you worried about
+>>>> those messages only?
+>>>
+>>> Gerry, this is your commit b981513f806d (ACPI / scan: bail out early if failed
+>>> to parse APIC ID for CPU).  Apparently, the BIOS has room for 4 CPUs more than
+>>> there actually are in the system.  Maybe we can reduce the log level of those
+>>> messages to avoid ringing bells unnecessarily?
+>>
+>> It is standard practice (at least in SuperMicro boxes, but I've also seen it
+>> elsewhere) for the BIOS to have ACPI tables mentioning all cores supported
+>> by the biggest core-count CPU topology possible by the motherboard.  The
+>> cores you don't have are reported as if they were hotpluggable but absent,
+>> even if they will *never* show up at runtime.  Meh.
+>>
+>> So yes, such warnings will get annoying *very* quickly.
+> 
+> Well, what about using acpi_handle_debug() in there, then?
+> 
