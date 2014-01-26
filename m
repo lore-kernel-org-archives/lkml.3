@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaAZWEI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 17:04:08 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:65206 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaAZWEG (ORCPT
+	id S1753387AbaAZWFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 17:05:51 -0500
+Received: from summer2.hostnet.nl ([91.184.19.58]:39282 "EHLO
+	summer2.hostnet.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaAZWFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 17:04:06 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52E58656.7000903@roeck-us.net>
-Date: Sun, 26 Jan 2014 14:04:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 26 Jan 2014 17:05:50 -0500
+Date: 26 Jan 2014 20:37:22 +0100
+Message-ID: <20140126193722.11331.qmail@91-184-0-75.shared.hostnet.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Inquiry
+From: Konrad Lukman <mc_phill66@yahoo.com>
+Reply-To: konrad_lukman66@yahoo.com
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-References: <52E561D0.4040308@roeck-us.net>	<20140126211357.6fa68909@endymion.delvare>	<52E573B6.9040903@roeck-us.net>	<20140126214936.7736f530@endymion.delvare> <52E58330.90602@roeck-us.net>
-In-Reply-To: <52E58330.90602@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Filter-ID: XtLePq6GTMn8G68F0EmQvVoHNCbnFslilRrCLSfuCtUeFQsfDHVykhjQC1nI07bdLnGG4M9RRaGg
+ Fo18PIcwvjZQ6OtBjX2dhf8r1xeX6dHlYZes8MN2SFYshVNO/RXUAMT91KCE8sP3K0KP140gt8Bf
+ LiHYhY49+75i3mchxXLtLNI0apdai45LCeV4epO508/c7KiKULORPEC5K6atT+fKnZiAC40lO12l
+ ro6PYsEA+le4i6SoXgGeZKwjhkcE5YE5enyccp7RH4WQio3uGZFrbbnuKptDfVSh62DoYi8BRRma
+ 14Joc9Vd5ufFE7M6B/YreDVk8xmHFdRoTDjz4h7J8D2DxtdNUpwp/enImqvrvLSzulXw74QY8Qra
+ wb2TYTrpTUi0hWyLRhnlW1EJ8GDh9MNBUg4wFkwo2NemQcTi6nHW52hMy+Es1iOtIQrtZs8X5Cws
+ E1qwm/XCTzC2uEeRKKhIvNzGd305p+3bQp0Pr1qk/nauXEyzadaHRAi8KwXaXOzfjDlOFsYp2NrK
+ kKFpMwr/stu2x9jsrfzbYdezGW66LdzpdmNQ3XQgZ8hYal99E2KdH+qebzmMmZoRFPtfSzR/hyr4
+ EmEeVkyd4jjpSTAZ0akeWI+fF9QBTLJmEq4qmt1v7i6Zh4rcq0OYtw==
+X-Originating-IP: 91.184.0.75
+X-SpamExperts-Domain: out.mailfilter.hostnet.nl
+X-SpamExperts-Username: 91.184.0.75
+Authentication-Results: hostnet.nl; auth=pass smtp.auth=91.184.0.75
+X-SpamExperts-Outgoing-Class: unsure
+X-SpamExperts-Outgoing-Evidence: Combined (0.68)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 01:50 PM, Guenter Roeck wrote:
-> On 01/26/2014 12:49 PM, Jean Delvare wrote:
->> On Sun, 26 Jan 2014 12:44:38 -0800, Guenter Roeck wrote:
->>> On 01/26/2014 12:13 PM, Jean Delvare wrote:
->>> The regulator code changed with 3.13; the dummy regulator no longer exists,
->>> and the functionality it provided is supposed to be handled automatically.
->>> But that only really works on devicetree based systems and otherwise returns
->>> -EPROBE_DEFER as mentioned above.
->>>
->>> Maybe there is some configuration option, or maybe something needs to be
->>> configured from user space. I found neither.
->>
->> Neither would be acceptable to my eyes anyway. Things worked out of the
->> box before, they should keep working out of the box.
->>
->>> In the first case, we should create
->>> a dependency for the LM90 driver; in the latter case, we would have to make sure
->>> that it is well documented (I'd grumble on that, though - it would result in
->>> never ending trouble for us, having to repeatedly explain how this is now
->>> supposed to work).
->>>
->>> Another possible fix would be to have the regulator core return -ENODEV
->>> instead of -EPROBE_DEFER on non-dt systems. No idea if this would be acceptable
->>> or even feasible.
->>
->> Well, either the regulator subsystem gets fixed (or provides a suitable
->> API for drivers like lm90 and we update the lm90 driver to use it), or
->> I'll just revert the problematic commit for now. This is a severe
->> regression, we just can't leave things that way.
->>
->
-> Maybe your configuration has CONFIG_REGULATORS disabled. Ubuntu has it enabled.
-> I don't know about others.
->
-> I agree, we may have to revert the patch. I don't think the regulator API works well
-> enough in non-dt systems to be able to use it in such systems. Mark's expectation
-> that regulator support must be disabled if regulators are not fully declared in non-dt
-> systems doesn't seem very useful nor really feasible.
->
 
-I think I have a better idea: Surround the regulator code, or at least its error handling,
-in the lm90 driver with
-	if (IS_ENABLED(CONFIG_OF)) {
-	}
 
-Would that be ok ? If yes I'll submit a patch. I'll do the same in another driver
-I am working on.
+Dear sir/Madam
 
-Guenter
+
+
+            Compliment of the new year .Sir we like like to establish a
+
+serious business relationship with you , we are Suppliers we will like to inquire if you have some product available for the months of Febuary,please kindly get back to me if you have it available and let me know your payment terms and time of delivery. I look forward to hear from you soon thanks and have a great day.
+
+
+
+Regards.
+
+Konrad Lukman
+
+Sale manager.
+
+Comiol Enterprises
+
+Address--904 54TH ST
+
+City--BROOKLYN
+
+Zip--11219-4020
+
+State--NY
+
++1345675464
+
+Country--UNITED STATES
+
+
+
 
