@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaAZDEj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:04:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52694 "EHLO
+	id S1752901AbaAZDEn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:04:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaAZDEa (ORCPT
+	with ESMTP id S1752794AbaAZDEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:04:30 -0500
+	Sat, 25 Jan 2014 22:04:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.4 03/12] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-Date: Sat, 25 Jan 2014 19:05:06 -0800
-Message-Id: <20140126030452.198121114@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.4 10/12] md/raid5: Fix possible confusion when multiple write errors occur.
+Date: Sat, 25 Jan 2014 19:05:13 -0800
+Message-Id: <20140126030452.735480357@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.rc0.19.gb594c97
 In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
 References: <20140126030451.934281002@linuxfoundation.org>
@@ -29,136 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <rric@kernel.org>
+From: NeilBrown <neilb@suse.de>
 
-commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
+commit 1cc03eb93245e63b0b7a7832165efdc52e25b4e6 upstream.
 
-On AMD family 10h we see following error messages while waking up from
-S3 for all non-boot CPUs leading to a failed IBS initialization:
+commit 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+    md: raid5 crash during degradation
 
- Enabling non-boot CPUs ...
- smpboot: Booting Node 0 Processor 1 APIC 0x1
- [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
- perf: IBS APIC setup failed on cpu #1
- process: Switch to broadcast mode on CPU1
- CPU1 is up
- ...
- ACPI: Waking up from system sleep state S3
+Fixed a crash in an overly simplistic way which could leave
+R5_WriteError or R5_MadeGood set in the stripe cache for devices
+for which it is no longer relevant.
+When those devices are removed and spares added the flags are still
+set and can cause incorrect behaviour.
 
-Reason for this is that during suspend the LVT offset for the IBS
-vector gets lost and needs to be reinialized while resuming.
+commit 14a75d3e07c784c004b4b44b34af996b8e4ac453
+    md/raid5: preferentially read from replacement device if possible.
 
-The offset is read from the IBSCTL msr. On family 10h the offset needs
-to be 1 as offset 0 is used for the MCE threshold interrupt, but
-firmware assings it for IBS to 0 too. The kernel needs to reprogram
-the vector. The msr is a readonly node msr, but a new value can be
-written via pci config space access. The reinitialization is
-implemented for family 10h in setup_ibs_ctl() which is forced during
-IBS setup.
+Fixed the same bug if a more effective way, so we can now revert
+the original commit.
 
-This patch fixes IBS setup after waking up from S3 by adding
-resume/supend hooks for the boot cpu which does the offset
-reinitialization.
-
-Marking it as stable to let distros pick up this fix.
-
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-and-tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Fixes: 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   53 ++++++++++++++++++++++++++-----
- 1 file changed, 45 insertions(+), 8 deletions(-)
+ drivers/md/raid5.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -9,6 +9,7 @@
- #include <linux/perf_event.h>
- #include <linux/module.h>
- #include <linux/pci.h>
-+#include <linux/syscore_ops.h>
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3238,7 +3238,7 @@ static void analyse_stripe(struct stripe
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
  
- #include <asm/apic.h>
- 
-@@ -209,6 +210,18 @@ out:
- 	return ret;
- }
- 
-+static void ibs_eilvt_setup(void)
-+{
-+	/*
-+	 * Force LVT offset assignment for family 10h: The offsets are
-+	 * not assigned by the BIOS for this family, so the OS is
-+	 * responsible for doing it. If the OS assignment fails, fall
-+	 * back to BIOS settings and try to setup this.
-+	 */
-+	if (boot_cpu_data.x86 == 0x10)
-+		force_ibs_eilvt_setup();
-+}
-+
- static inline int get_ibs_lvt_offset(void)
- {
- 	u64 val;
-@@ -244,6 +257,36 @@ static void clear_APIC_ibs(void *dummy)
- 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
- }
- 
-+#ifdef CONFIG_PM
-+
-+static int perf_ibs_suspend(void)
-+{
-+	clear_APIC_ibs(NULL);
-+	return 0;
-+}
-+
-+static void perf_ibs_resume(void)
-+{
-+	ibs_eilvt_setup();
-+	setup_APIC_ibs(NULL);
-+}
-+
-+static struct syscore_ops perf_ibs_syscore_ops = {
-+	.resume		= perf_ibs_resume,
-+	.suspend	= perf_ibs_suspend,
-+};
-+
-+static void perf_ibs_pm_init(void)
-+{
-+	register_syscore_ops(&perf_ibs_syscore_ops);
-+}
-+
-+#else
-+
-+static inline void perf_ibs_pm_init(void) { }
-+
-+#endif
-+
- static int __cpuinit
- perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- {
-@@ -270,18 +313,12 @@ static __init int amd_ibs_init(void)
- 	if (!caps)
- 		return -ENODEV;	/* ibs not supported by the cpu */
- 
--	/*
--	 * Force LVT offset assignment for family 10h: The offsets are
--	 * not assigned by the BIOS for this family, so the OS is
--	 * responsible for doing it. If the OS assignment fails, fall
--	 * back to BIOS settings and try to setup this.
--	 */
--	if (boot_cpu_data.x86 == 0x10)
--		force_ibs_eilvt_setup();
-+	ibs_eilvt_setup();
- 
- 	if (!ibs_eilvt_valid())
- 		goto out;
- 
-+	perf_ibs_pm_init();
- 	get_online_cpus();
- 	ibs_caps = caps;
- 	/* make ibs_caps visible to other cpus: */
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3251,7 +3251,7 @@ static void analyse_stripe(struct stripe
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
 
 
