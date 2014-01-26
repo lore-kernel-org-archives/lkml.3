@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaAZDFV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:05:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52725 "EHLO
+	id S1753085AbaAZDFw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:05:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754AbaAZDEj (ORCPT
+	with ESMTP id S1752707AbaAZDEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:04:39 -0500
+	Sat, 25 Jan 2014 22:04:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Medhurst <tixy@linaro.org>
-Subject: [PATCH 3.4 11/12] serial: amba-pl011: use port lock to guard control register access
-Date: Sat, 25 Jan 2014 19:05:14 -0800
-Message-Id: <20140126030452.801731346@linuxfoundation.org>
+        Damian Nowak <spam@nowaker.net>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.4 09/12] md/raid10: fix two bugs in handling of known-bad-blocks.
+Date: Sat, 25 Jan 2014 19:05:12 -0800
+Message-Id: <20140126030452.668477722@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.rc0.19.gb594c97
 In-Reply-To: <20140126030451.934281002@linuxfoundation.org>
 References: <20140126030451.934281002@linuxfoundation.org>
@@ -26,71 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: NeilBrown <neilb@suse.de>
 
-commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
+commit b50c259e25d9260b9108dc0c2964c26e5ecbe1c1 upstream.
 
-When the pl011 is being used for a console, pl011_console_write forces
-the control register (CR) to enable the UART for transmission and then
-restores this to the original value afterwards. It does this while
-holding the port lock.
+If we discover a bad block when reading we split the request and
+potentially read some of it from a different device.
 
-Unfortunately, when the uart is started or shutdown - say in response to
-userland using the serial device for a terminal - then this updates the
-control register without any locking.
+The code path of this has two bugs in RAID10.
+1/ we get a spin_lock with _irq, but unlock without _irq!!
+2/ The calculation of 'sectors_handled' is wrong, as can be clearly
+   seen by comparison with raid1.c
 
-This means we can have
+This leads to at least 2 warnings and a probable crash is a RAID10
+ever had known bad blocks.
 
-  pl011_console_write   Save CR
-  pl011_startup         Initialise CR, e.g. enable receive
-  pl011_console_write   Restore old CR with receive not enabled
-
-this result is a serial port which doesn't respond to any input.
-
-A similar race in reverse could happen when the device is shutdown.
-
-We can fix these problems by taking the port lock when updating CR.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Fixes: 856e08e23762dfb92ffc68fd0a8d228f9e152160
+Reported-by: Damian Nowak <spam@nowaker.net>
+URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/md/raid10.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1413,6 +1413,8 @@ static int pl011_startup(struct uart_por
- 	/*
- 	 * Provoke TX FIFO interrupt into asserting.
- 	 */
-+	spin_lock_irq(&uap->port.lock);
-+
- 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1437,6 +1439,8 @@ static int pl011_startup(struct uart_por
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
-+	spin_unlock_irq(&uap->port.lock);
-+
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1516,11 +1520,13 @@ static void pl011_shutdown(struct uart_p
- 	 * it during startup().
- 	 */
- 	uap->autorts = false;
-+	spin_lock_irq(&uap->port.lock);
- 	cr = readw(uap->port.membase + UART011_CR);
- 	uap->old_cr = cr;
- 	cr &= UART011_CR_RTS | UART011_CR_DTR;
- 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-+	spin_unlock_irq(&uap->port.lock);
- 
- 	/*
- 	 * disable break condition and fifos
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1117,7 +1117,7 @@ read_again:
+ 			/* Could not read all from this device, so we will
+ 			 * need another r10_bio.
+ 			 */
+-			sectors_handled = (r10_bio->sectors + max_sectors
++			sectors_handled = (r10_bio->sector + max_sectors
+ 					   - bio->bi_sector);
+ 			r10_bio->sectors = max_sectors;
+ 			spin_lock_irq(&conf->device_lock);
+@@ -1125,7 +1125,7 @@ read_again:
+ 				bio->bi_phys_segments = 2;
+ 			else
+ 				bio->bi_phys_segments++;
+-			spin_unlock(&conf->device_lock);
++			spin_unlock_irq(&conf->device_lock);
+ 			/* Cannot call generic_make_request directly
+ 			 * as that will be queued in __generic_make_request
+ 			 * and subsequent mempool_alloc might block
 
 
