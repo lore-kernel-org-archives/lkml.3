@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990AbaAZSnb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 13:43:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32908 "EHLO mx1.redhat.com"
+	id S1752937AbaAZTUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 14:20:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461AbaAZSna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 13:43:30 -0500
-Date: Sun, 26 Jan 2014 19:43:10 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/8] perf tools: kaslr fixes
-Message-ID: <20140126184310.GB1126@krava.brq.redhat.com>
-References: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
+	id S1752397AbaAZTUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 14:20:41 -0500
+Message-ID: <52E55FB1.4060404@redhat.com>
+Date: Sun, 26 Jan 2014 14:19:13 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390576218-1463-1-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2] x86: allocate cpumask during check irq vectors
+References: <1390611565-18709-1-git-send-email-yinghai@kernel.org> <20140125080232.GA20935@gmail.com> <52E4FE02.2020004@redhat.com> <20140126133203.GA1370@gmail.com>
+In-Reply-To: <20140126133203.GA1370@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 05:10:10PM +0200, Adrian Hunter wrote:
-> Hi
-> 
-> Here are some patches that improve perf tools
-> handling of relocation.
-> 
-> This has become an issue as mentioned in this
-> thread:
-> 
-> 	http://marc.info/?l=linux-kernel&m=139030004314756
-> 
-> 
-> It looks like the changes I made to vmlinux and
-> module mapping to allow object code to be read
-> broke the symbol annotation for relocated kernels.
-> The first patch fixes that.
-> 
-> There were some other issues though:
-> 	- ref_reloc_sym was not always set up
-> 	- mustn't use kcore if the kernel has moved
-> 	- kallsyms is not unique for a given
-> 	buildid
-> 
-> These things need more testing but I thought it was
-> worth getting comments now.
-> 
-> 
-> Adrian Hunter (8):
->       perf tools: Fix symbol annotation for relocated kernel
->       perf tools: Add kallsyms__get_function_start()
->       perf tools: Add machine__get_kallsyms_filename()
->       perf tools: Set up ref_reloc_sym in machine__create_kernel_maps()
->       perf report: Get ref_reloc_sym from kernel map
->       perf tools: Prevent the use of kcore if the kernel has moved
->       perf tools: test does not need to set up ref_reloc_sym
->       perf tools: Adjust kallsyms for relocated kernel
 
-cannot say much for the code changes (look ok ;-) ), but
-it fixed the issue for me
 
-Tested-by: Jiri Olsa <jolsa@redhat.com>
+On 01/26/2014 08:32 AM, Ingo Molnar wrote:
+> 
+> * Prarit Bhargava <prarit@redhat.com> wrote:
+> 
+>> On 01/25/2014 03:02 AM, Ingo Molnar wrote:
+>>>
+>>> * Yinghai Lu <yinghai@kernel.org> wrote:
+>>>
+>>>> Fix warning:
+>>>> arch/x86/kernel/irq.c: In function check_irq_vectors_for_cpu_disable:
+>>>> arch/x86/kernel/irq.c:337:1: warning: the frame size of 2052 bytes is larger than 2048 bytes
+>>>>
+>>>> when NR_CPUS=8192
+>>>>
+>>>> We should use zalloc_cpumask_var() instead.
+>>>>
+>>>> -v2: update to GFP_ATOMIC instead and free the allocated cpumask at last.
+>>>>
+>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>>> Cc: Prarit Bhargava <prarit@redhat.com>
+>>>>
+>>>> ---
+>>>>  arch/x86/kernel/irq.c |   24 +++++++++++++++++-------
+>>>>  1 file changed, 17 insertions(+), 7 deletions(-)
+>>>>
+>>>> Index: linux-2.6/arch/x86/kernel/irq.c
+>>>> ===================================================================
+>>>> --- linux-2.6.orig/arch/x86/kernel/irq.c
+>>>> +++ linux-2.6/arch/x86/kernel/irq.c
+>>>> @@ -277,11 +277,18 @@ int check_irq_vectors_for_cpu_disable(vo
+>>>>  	unsigned int this_cpu, vector, this_count, count;
+>>>>  	struct irq_desc *desc;
+>>>>  	struct irq_data *data;
+>>>> -	struct cpumask affinity_new, online_new;
+>>>> +	cpumask_var_t affinity_new, online_new;
+>>>> +
+>>>> +	if (!alloc_cpumask_var(&affinity_new, GFP_ATOMIC))
+>>>> +		return -ENOMEM;
+>>>> +	if (!alloc_cpumask_var(&online_new, GFP_ATOMIC)) {
+>>>> +		free_cpumask_var(affinity_new);
+>>>> +		return -ENOMEM;
+>>>> +	}
+>>>
+>>> Atomic allocations can fail easily if the system is under duress.
+>>
+>> Then the hotplug attempt will fail which IMO is okay. [...]
+> 
+> Which is not OK at all for reliable operation, if the system has 
+> otherwise gobs of RAM, which just don't happen to be atomic 
+> allocatable!
 
-jirka
+Ingo, I'm really not sure what other option there is here.  Care to suggest one?
+
+P.
