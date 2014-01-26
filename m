@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaAZUNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 15:13:24 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:54331 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaAZUNX (ORCPT
+	id S1753220AbaAZUON (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 15:14:13 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:40856 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaAZUOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 15:13:23 -0500
-From: Zhihui Zhang <zzhsuny@gmail.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Use LOAD_PHYSICAL_ADDR in vmlinux.lds.S
-Date: Sun, 26 Jan 2014 15:13:14 -0500
-Message-Id: <1390767194-28654-1-git-send-email-zzhsuny@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 26 Jan 2014 15:14:12 -0500
+Date: Sun, 26 Jan 2014 21:13:57 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LM Sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Wei Ni <wni@nvidia.com>
+Subject: Re: lm90 driver no longer working on PCs in 3.13
+Message-ID: <20140126211357.6fa68909@endymion.delvare>
+In-Reply-To: <52E561D0.4040308@roeck-us.net>
+References: <52E561D0.4040308@roeck-us.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This unifies the way to specify start VMA on both 32 and 64-bit platforms.
-I would like to remove __PHYSICAL_START as well, but that appears to be harder.
+Hi Guenter,
 
-Signed-off-by: Zhihui Zhang <zzhsuny@gmail.com>
----
- arch/x86/kernel/vmlinux.lds.S | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Adding Wei Ni to Cc, as he provided the commit which causes problem.
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index da6b35a..e81bf49 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -81,11 +81,10 @@ PHDRS {
- 
- SECTIONS
- {
--#ifdef CONFIG_X86_32
-         . = LOAD_OFFSET + LOAD_PHYSICAL_ADDR;
-+#ifdef CONFIG_X86_32
-         phys_startup_32 = startup_32 - LOAD_OFFSET;
- #else
--        . = __START_KERNEL;
-         phys_startup_64 = startup_64 - LOAD_OFFSET;
- #endif
- 
+On Sun, 26 Jan 2014 11:28:16 -0800, Guenter Roeck wrote:
+> Hi,
+> 
+> the lm90 driver is no longer working on PCs with the 3.13 kernel ... or at least not without
+> special configuration.
+> 
+> This is what I get if I try to instantiate a device on it (max6695):
+> 
+> i2c 1-0018: Driver lm90 requests probe deferral
+> i2c i2c-1: new_device: Instantiated device max6695 at 0x18
+> 
+> The regulator core always returns -EPROBE_DEFER if the platform does not support devicetree
+> and if the regulator it is looking for does not exist. Since the driver now requires a mandatory
+> regulator (commit 3e0f964f2ad - hwmon: (lm90) Add power control), and the regulator it requests
+> does not exist on a PC, the result is not really surprising. I thought the regulator core would
+> realize that it has to return a dummy regulator, but apparently that is not the case, or I don't
+> know how to configure it.
+> 
+> Any idea what I might need to do to get it working ?
+
+Me, I really don't know. I seem to remember I tested Wei's patch set on
+an emulated ADM1032 chip and it was working fine. So maybe it depends
+on the kernel configuration, or something changed on the regulator side
+meanwhile.
+
 -- 
-1.8.1.2
-
+Jean Delvare
