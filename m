@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaAZJ41 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 04:56:27 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43033 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaAZJ4Z (ORCPT
+	id S1752506AbaAZKJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 05:09:57 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4555 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaAZKJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 04:56:25 -0500
+	Sun, 26 Jan 2014 05:09:56 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Wang Nan <wangnan0@huawei.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Geng Hui <hui.geng@huawei.com>
+Subject: [PATCH] Use realpath for srctree and objtree
+Date: Sun, 26 Jan 2014 18:06:18 +0800
+Message-ID: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Date: Sun, 26 Jan 2014 10:56:24 +0100
-X-Google-Sender-Auth: 3HrYwx_qb5QRWvscFCOBUhtSOSM
-Message-ID: <CAMuHMdWFDhTXaTTgBHg1hVduBKU2+Liz9j+ZHd=kBFh3hhTGhg@mail.gmail.com>
-Subject: WARNING: at net/ipv4/devinet.c:1599
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On m68k/ARAnyM:
+When BUILD_SRC contains a tailing '/', the file name used in compiling command
+will contain '//', and it then goes to .o's debuginfo, confuses debugedit:
 
-WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
-Modules linked in:
-CPU: 0 PID: 407 Comm: ifconfig Not tainted
-3.13.0-atari-09263-g0c71d68014d1 #1378
-Stack from 10c4fdf0:
-        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
-        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
-        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
-        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
-        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
-        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
-Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
- [<00024416>] warn_slowpath_null+0x14/0x1a
- [<002501b4>] rtmsg_ifa+0xdc/0xf0
- [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
- [<0024f9b4>] inet_abc_len+0x0/0x42
- [<00250b52>] inet_insert_ifa+0xc/0x12
- [<00252390>] devinet_ioctl+0x2ae/0x5d6
- [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
- [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
- [<002530ec>] inet_ioctl+0x120/0x14e
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<001f7666>] sock_ioctl+0x56/0x256
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00095434>] vfs_ioctl+0x1c/0x30
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<0009559c>] do_vfs_ioctl+0x7a/0x3b8
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00002884>] buserr+0x20/0x28
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00095910>] SyS_ioctl+0x36/0x5a
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<00002980>] syscall+0x8/0xc
- [<00008916>] atari_scc_console_write+0x42/0x5c
- [<0010c00b>] mext_leaf_block+0x443/0x81e
+https://bugzilla.redhat.com/show_bug.cgi?id=304121
 
----[ end trace 44b14c97c2210758 ]---
+This patch uses realpath to makesure srctree and objtree don't have tailing '/'.
 
-Adding some debugging code reveals that net_fill_ifaddr() fails in
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Geng Hui <hui.geng@huawei.com>
 
-    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
-                              preferred, valid))
+---
+ tools/lib/lockdep/Makefile    | 4 ++--
+ tools/lib/traceevent/Makefile | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-nla_put complains:
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index da8b7aa..e638dd5 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -87,8 +87,8 @@ endif # BUILD_SRC
+ # We process the rest of the Makefile if this is the final invocation of make
+ ifeq ($(skip-makefile),)
+ 
+-srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
+-objtree		:= $(CURDIR)
++srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
++objtree		:= $(realpath $(CURDIR))
+ src		:= $(srctree)
+ obj		:= $(objtree)
+ 
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 56d52a3..dd23171 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -107,8 +107,8 @@ endif # BUILD_SRC
+ # We process the rest of the Makefile if this is the final invocation of make
+ ifeq ($(skip-makefile),)
+ 
+-srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
+-objtree		:= $(CURDIR)
++srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
++objtree		:= $(realpath $(CURDIR))
+ src		:= $(srctree)
+ obj		:= $(objtree)
+ 
+-- 
+1.8.4
 
-lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
