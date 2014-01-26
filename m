@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaAYWaR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 17:30:17 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38084 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaAYWaP (ORCPT
+	id S1752167AbaAZAYx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 19:24:53 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46426 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750870AbaAZAYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 17:30:15 -0500
-Date: Sat, 25 Jan 2014 23:30:17 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jenny TC <jenny.tc@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Rupesh Kumar <rupesh.kumar@stericsson.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali Roh?r <pali.rohar@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
-        freemangordon@abv.bg, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
-Message-ID: <20140125223017.GB30083@Nokia-N900>
-References: <1390411194-21410-1-git-send-email-jenny.tc@intel.com>
- <1390411194-21410-5-git-send-email-jenny.tc@intel.com>
+	Sat, 25 Jan 2014 19:24:52 -0500
+Date: Sat, 25 Jan 2014 21:25:01 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Emilio =?utf-8?B?TMOzcGV6?= <emilio@elopez.com.ar>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140126002500.GA13741@localhost>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <52E42D6A.5050508@elopez.com.ar>
+ <52E43046.1030105@gmail.com>
+ <52E4367B.3090608@elopez.com.ar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1390411194-21410-5-git-send-email-jenny.tc@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52E4367B.3090608@elopez.com.ar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Emilio,
 
-> +++ b/drivers/power/Makefile
-> @@ -59,4 +59,5 @@ obj-$(CONFIG_CHARGER_BQ24735)	+= bq24735-charger.o
->  obj-$(CONFIG_POWER_AVS)		+= avs/
->  obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
->  obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
-> +obj-$(CONFIG_BQ24261_CHARGER)	+= bq24261_charger.o
->  obj-$(CONFIG_POWER_RESET)	+= reset/
+Thanks for your help with this.
 
-Spot two inconsistencies.
+On Sat, Jan 25, 2014 at 07:11:07PM -0300, Emilio López wrote:
+[..]
+> >
+> > Ok, I'll look if using of_clk_get_parent_name will help here. But again,
+> > I can see that clk-gating driver gets registered before core-clk driver.
+> > There may be no code to give you the parent name at that time.
+> 
+> After looking at some of the armada*.dtsi, I see you don't list the 
+> clock names on the coreclk node, so of_clk_get_parent_name may not be of 
+> much value after all.
+> 
 
-> +			if (ret < 0)
-> +				dev_err(&chip->client->dev,
-> +				"Error (%d) in reading status register(0x00)\n",
-> +				ret);
+IIRC, we faced a similar issue with the Core Divider clock and solved it by
+specifying the clock names in the DT.
 
-If you have code indented 10 levels like this, you are
-doing something wrong.
+I meant to complete the core and gating clocks in a similar way
+(providing names on the DT), but apparently (as discussed with Gregory Clement)
+Mike Turquette and others are planning to remove the clock names from
+the DT entirely.
 
-Check codingstyle.
+Can you guys explain about this plan a bit further? Or do you think we
+should specify the names on the DT for all the clocks instead?
 
-Maybe Rafael should be cced on the series?
-						Pavel
+Notice that the latter would remove lots of strings from the kernel
+itself (right?)
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
