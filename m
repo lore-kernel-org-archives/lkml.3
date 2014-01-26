@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaAZT2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 14:28:17 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:51704 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaAZT2Q (ORCPT
+	id S1753076AbaAZT56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 14:57:58 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:64480 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534AbaAZT55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 14:28:16 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52E561D0.4040308@roeck-us.net>
-Date: Sun, 26 Jan 2014 11:28:16 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Sun, 26 Jan 2014 14:57:57 -0500
+Message-ID: <52E568C2.5050001@gmail.com>
+Date: Sun, 26 Jan 2014 20:57:54 +0100
+From: Harald Arnesen <skogtun.linux@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: LM Sensors <lm-sensors@lm-sensors.org>, Jean Delvare <khali@linux-fr.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: lm90 driver no longer working on PCs in 3.13
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Panic with latest git kernel
+References: <52E50496.3040303@gmail.com> <CAFLxGvx8OQzSzoikh9DT3VF=cdBw4=sU_ZM=BTs=M4Ts84eGgA@mail.gmail.com> <52E50ED7.9070808@gmail.com> <52E50F72.9060300@nod.at> <52E51FEE.4020403@gmail.com> <52E52300.7020008@nod.at>
+In-Reply-To: <52E52300.7020008@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Richard Weinberger [2014-01-26 16:00]:
 
-the lm90 driver is no longer working on PCs with the 3.13 kernel ... or at least not without
-special configuration.
+> Your image shows that the kernel looses the init process because /init seems
+> to be unable to exec switch_root.
+> Find out what is going on in your initrd.
+> 
+> So far it has zero to do with the kernel itself.
 
-This is what I get if I try to instantiate a device on it (max6695):
+Seems you are right. I just tried to compile a 3.13.0 kernel again
+(which I did when i was released, and it worked then), and I got the
+same panic.
 
-i2c 1-0018: Driver lm90 requests probe deferral
-i2c i2c-1: new_device: Instantiated device max6695 at 0x18
-
-The regulator core always returns -EPROBE_DEFER if the platform does not support devicetree
-and if the regulator it is looking for does not exist. Since the driver now requires a mandatory
-regulator (commit 3e0f964f2ad - hwmon: (lm90) Add power control), and the regulator it requests
-does not exist on a PC, the result is not really surprising. I thought the regulator core would
-realize that it has to return a dummy regulator, but apparently that is not the case, or I don't
-know how to configure it.
-
-Any idea what I might need to do to get it working ?
-
-Thanks,
-Guenter
+Must be a Debian bug. I will pester them instead.
+-- 
+Hilsen Harald
