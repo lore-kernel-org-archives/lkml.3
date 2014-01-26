@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaAZQbD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 11:31:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9389 "EHLO mx1.redhat.com"
+	id S1753130AbaAZQfT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 11:35:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602AbaAZQbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 11:31:01 -0500
-Date: Sun, 26 Jan 2014 17:30:45 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Geng Hui <hui.geng@huawei.com>
-Subject: Re: [PATCH] Use realpath for srctree and objtree
-Message-ID: <20140126163045.GA1126@krava.brq.redhat.com>
-References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+	id S1752167AbaAZQfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 11:35:18 -0500
+Date: Sun, 26 Jan 2014 17:35:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dcache: error out if the name buffer is too short
+Message-ID: <20140126163536.GA21320@redhat.com>
+References: <1390572299-3074-1-git-send-email-dvlasenk@redhat.com> <20140124161922.GA14195@redhat.com> <20140126153737.GA8184@redhat.com> <20140126155141.GA12249@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140126155141.GA12249@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 06:06:18PM +0800, Wang Nan wrote:
-> When BUILD_SRC contains a tailing '/', the file name used in compiling command
-> will contain '//', and it then goes to .o's debuginfo, confuses debugedit:
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=304121
-> 
-> This patch uses realpath to makesure srctree and objtree don't have tailing '/'.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Geng Hui <hui.geng@huawei.com>
-> 
-> ---
->  tools/lib/lockdep/Makefile    | 4 ++--
->  tools/lib/traceevent/Makefile | 4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-> index da8b7aa..e638dd5 100644
-> --- a/tools/lib/lockdep/Makefile
-> +++ b/tools/lib/lockdep/Makefile
-> @@ -87,8 +87,8 @@ endif # BUILD_SRC
->  # We process the rest of the Makefile if this is the final invocation of make
->  ifeq ($(skip-makefile),)
->  
-> -srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
-> -objtree		:= $(CURDIR)
-> +srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
-> +objtree		:= $(realpath $(CURDIR))
->  src		:= $(srctree)
->  obj		:= $(objtree)
->  
-> diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-> index 56d52a3..dd23171 100644
-> --- a/tools/lib/traceevent/Makefile
-> +++ b/tools/lib/traceevent/Makefile
-> @@ -107,8 +107,8 @@ endif # BUILD_SRC
->  # We process the rest of the Makefile if this is the final invocation of make
->  ifeq ($(skip-makefile),)
->  
-> -srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
-> -objtree		:= $(CURDIR)
-> +srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
-> +objtree		:= $(realpath $(CURDIR))
->  src		:= $(srctree)
->  obj		:= $(objtree)
+On 01/26, Oleg Nesterov wrote:
+>
+> Al, Denys, unless I am totally confused the "restart" logic is very broken.
+> We can't simply restart because the main loop changes dentry?
 
-ack for the traceevent change
+Plus prepend_name() can't actually return -ENAMETOOLONG,
+"int error" inside the loop is wrong.
 
-thanks,
-jirka
+I believe the minimal fix is something like below. I'll try to test
+this change (currently I can't) later and resend. And I still think
+it can be cleanuped a bit, but this is minor.
+
+Oleg.
+
+
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3103,7 +3103,7 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+ 	/* these dentries are never renamed, so d_lock is not needed */
+ 	if (prepend(&end, &buflen, " (deleted)", 11) ||
+ 	    prepend(&end, &buflen, dentry->d_name.name, dentry->d_name.len) ||
+-	    prepend(&end, &buflen, "/", 1))  
++	    prepend(&end, &buflen, "/", 1))
+ 		end = ERR_PTR(-ENAMETOOLONG);
+ 	return end;
+ }
+@@ -3113,32 +3113,34 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+  */
+ static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
+ {
++	struct dentry *de;
+ 	char *end, *retval;
+ 	int len, seq = 0;
+ 	int error = 0;
+ 
++	if (buflen < 2)
++		goto Elong;
++
+ 	rcu_read_lock();
+ restart:
+ 	end = buf + buflen;
+ 	len = buflen;
+ 	prepend(&end, &len, "\0", 1);
+-	if (buflen < 1)
+-		goto Elong;
+ 	/* Get '/' right */
+ 	retval = end-1;
+ 	*retval = '/';
++	de = dentry;
+ 	read_seqbegin_or_lock(&rename_lock, &seq);
+-	while (!IS_ROOT(dentry)) {
+-		struct dentry *parent = dentry->d_parent;
+-		int error;
++	while (!IS_ROOT(de)) {
++		struct dentry *parent = de->d_parent;
+ 
+ 		prefetch(parent);
+-		error = prepend_name(&end, &len, &dentry->d_name);
++		error = prepend_name(&end, &len, &de->d_name);
+ 		if (error)
+ 			break;
+ 
+ 		retval = end;
+-		dentry = parent;
++		de = parent;
+ 	}
+ 	if (!(seq & 1))
+ 		rcu_read_unlock();
+
