@@ -1,336 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaAZDHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jan 2014 22:07:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35992 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaAZDHR (ORCPT
+	id S1750840AbaAZDEd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jan 2014 22:04:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52683 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaAZDEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jan 2014 22:07:17 -0500
-Message-ID: <52E47BD1.4050105@infradead.org>
-Date: Sat, 25 Jan 2014 19:06:57 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] x86, mpx: add documentation on Intel MPX
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-2-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1390727338-20487-2-git-send-email-qiaowei.ren@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 25 Jan 2014 22:04:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [PATCH 3.4 00/12] 3.4.78-stable review
+Date: Sat, 25 Jan 2014 19:05:03 -0800
+Message-Id: <20140126030451.934281002@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.rc0.19.gb594c97
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 01:08 AM, Qiaowei Ren wrote:
-> This patch adds the Documentation/x86/intel_mpx.txt file with some
-> information about Intel MPX.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  Documentation/x86/intel_mpx.txt |  226 +++++++++++++++++++++++++++++++++++++++
->  1 files changed, 226 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/x86/intel_mpx.txt
-> 
-> diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
-> new file mode 100644
-> index 0000000..052001c
-> --- /dev/null
-> +++ b/Documentation/x86/intel_mpx.txt
-> @@ -0,0 +1,226 @@
-> +1. Intel(R) MPX Overview
-> +========================
-> +
-> +
-> +Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
-> +capability introduced into Intel Architecture. Intel MPX provides
-> +hardware features that can be used in conjunction with compiler
-> +changes to check memory references, for those references whose
-> +compile-time normal intentions are usurped at runtime due to
-> +buffer overflow or underflow.
-> +
-> +Two of the most important goals of Intel MPX are to provide
-> +this capability at very low performance overhead for newly
-> +compiled code, and to provide compatibility mechanisms with
-> +legacy software components. MPX architecture is designed
+This is the start of the stable review cycle for the 3.4.78 release.
+There are 12 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-                                                   designed to
+Responses should be made by Tue Jan 28 03:04:41 UTC 2014.
+Anything received after that time might be too late.
 
-> +allow a machine (i.e., the processor(s) and the OS software)
-> +to run both MPX enabled software and legacy software that
-> +is MPX unaware. In such a case, the legacy software does not
-> +benefit from MPX, but it also does not experience any change
-> +in functionality or reduction in performance.
-> +
-> +Intel(R) MPX Programming Model
-> +------------------------------
-> +
-> +Intel MPX introduces new registers and new instructions that
-> +operate on these registers. Some of the registers added are
-> +bounds registers which store a pointer's lower bound and upper
-> +bound limits. Whenever the pointer is used, the requested
-> +reference is checked against the pointer's associated bounds,
-> +thereby preventing out-of-bound memory access (such as buffer
-> +overflows and overruns). Out-of-bounds memory references
-> +initiate a #BR exception which can then be handled in an
-> +appropriate manner.
-> +
-> +Loading and Storing Bounds using Translation
-> +--------------------------------------------
-> +
-> +Intel MPX defines two instructions for load/store of the linear
-> +address of a pointer to a buffer, along with the bounds of the
-> +buffer into a paging structure of extended bounds. Specifically
-> +when storing extended bounds, the processor will perform address
-> +translation of the address where the pointer is stored to an
-> +address in the Bound Table (BT) to determine the store location
-> +of extended bounds. Loading of an extended bounds performs the
-> +reverse sequence.
-> +
-> +The structure in memory to load/store an extended bound is a
-> +4-tuple consisting of lower bound, upper bound, pointer value
-> +and a reserved field. Bound loads and stores access 32-bit or
-> +64-bit operand size according to the operation mode. Thus,
-> +a bound table entry is 4*32 bits in 32-bit mode and 4*64 bits
-> +in 64-bit mode.
-> +
-> +The linear address of a bound table is stored in a Bound
-> +Directory (BD) entry. And the linear address of the bound
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.78-rc1.gz
+and the diffstat can be found below.
 
-                         The linear address
+thanks,
 
-> +directory is derived from either BNDCFGU or BNDCFGS registers.
-> +Bounds in memory are stored in Bound Tables (BT) as an extended
-> +bound, which are accessed via Bound Directory (BD) and address
-> +translation performed by BNDLDX/BNDSTX instructions.
-> +
-> +Bounds Directory (BD) and Bounds Tables (BT) are stored in
-> +application memory and are allocated by the application (in case
-> +of kernel use, the structures will be in kernel memory). The
-> +bound directory and each instance of bound table are in contiguous
-> +linear memory.
-> +
-> +XSAVE/XRESTOR Support of Intel MPX State
-> +----------------------------------------
-> +
-> +Enabling Intel MPX requires an OS to manage two bits in XCR0:
-> +  - BNDREGS for saving and restoring registers BND0-BND3,
-> +  - BNDCSR for saving and restoring the user-mode configuration
-> +(BNDCFGU) and the status register (BNDSTATUS).
-> +
-> +The reason for having two separate bits is that BND0-BND3 is
+greg k-h
 
-                                                             are
+-------------
+Pseudo-Shortlog of commits:
 
-> +likely to be volatile state, while BNDCFGU and BNDSTATUS are not.
-> +Therefore, an OS has flexibility in handling these two states
-> +differently in saving or restoring them.
-> +
-> +For details about the Intel MPX instructions, see "Intel(R)
-> +Architecture Instruction Set Extensions Programming Reference".
-> +
-> +
-> +2. How to get the advantage of MPX 
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.78-rc1
 
-drop trailing space above.
+Dan Carpenter <dan.carpenter@oracle.com>
+    staging: wlags49_h2: buffer overflow setting station name
 
-> +==================================
-> +
-> +
-> +To get the advantage of MPX, changes are required in
-> +the OS kernel, binutils, compiler, system libraries support.
+Jon Medhurst <tixy@linaro.org>
+    serial: amba-pl011: use port lock to guard control register access
 
-                                      and system libraries support.
+NeilBrown <neilb@suse.de>
+    md/raid5: Fix possible confusion when multiple write errors occur.
 
-> +
-> +MPX support in the GNU toolchain
-> +--------------------------------
-> +
-> +This section describes changes in GNU Binutils, GCC and Glibc
-> +to support MPX.
-> +
-> +The first step of MPX support is to implement support for new
-> +hardware features in binutils and the GCC.
-> +
-> +The second step is implementation of MPX instrumentation pass
-> +in the GCC compiler which is responsible for instrumenting all
-> +memory accesses with pointer checks. Compiler changes for runtime
-> +bound checks include:
-> +
-> +  * Bounds creation for statically allocated objects, objects
-> +    allocated on the stack and statically initialized pointers.
-> +
-> +  * MPX support in ABI: ABI extension allows passing bounds for
-> +    the pointers passed as function arguments and provide returned
+NeilBrown <neilb@suse.de>
+    md/raid10: fix two bugs in handling of known-bad-blocks.
 
-                                                     provides
+NeilBrown <neilb@suse.de>
+    md/raid10: fix bug when raid10 recovery fails to recover a block.
 
-> +    bounds with the pointers.
-> +
-> +  * Bounds table content management: each pointer is stored into
+Andreas Rohner <andreas.rohner@gmx.net>
+    nilfs2: fix segctor bug that causes file system corruption
 
-                                                     that is stored into
+Steven Rostedt <rostedt@goodmis.org>
+    SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
 
-> +    the memory should have its bounds stored in the corresponding
+Jean Delvare <khali@linux-fr.org>
+    hwmon: (coretemp) Fix truncated name of alarm attributes
 
-drop "the":
-       memory should
+Jianguo Wu <wujianguo@huawei.com>
+    mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
 
-> +    row of the bounds table; compiler generates appropriate code
-> +    to have the bounds table in the consistent state.
-> +
-> +  * Memory accesses instrumentation: compiler analyzes data flow
-> +    to compute bounds corresponding to each memory access and
-> +    inserts code to check used address against computed bounds.
-> +
-> +Dynamically created objects in heap using memory allocators need
-> +to set bounds for objects (buffers) at allocation time. So the
-> +next step is to add MPX support into standard memory allocators
-> +in Glibc.
-> +
-> +To have the full protection, an application has to use libraries
+Robert Richter <rric@kernel.org>
+    perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
 
-drop "the" ^^^
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: 8255_pci: fix for newer PCI-DIO48H
 
-> +compiled with MPX instrumentation. It means we had to compile
-> +Glibc with the MPX enabled GCC compiler because it is used in
-
-                  MPX-enabled
-
-> +most applications. Also we had to add MPX instrumentation to all
-> +the necessary Glibc routines (e.g. memcpy) written on assembler.
-
-                                                      in
-
-> +
-> +New GCC option -fmpx is introduced to utilize MPX instructions.
-
-   A new GCC option
-
-> +Also binutils with MPX enabled should be used to get binaries
-> +with memory protection.
-> +
-> +Consider following simple test for MPX compiled program:
-
-   Consider the following
-
-> +
-> +	int main(int argc, char* argv)
-> +	{
-> +		int buf[100];
-> +		return buf[argc];
-> +	}
-> +
-> +Snippet of the original assembler output (compiled with -O2):
-> +
-> +	movslq  %edi, %rdi
-> +	movl    -120(%rsp,%rdi,4), %eax  // memory access buf[argc]
-> +
-> +Compile test as follows: mpx-gcc/gcc test.c -fmpx -O2.
-
-drop ending "."
-
-> +
-> +Resulted assembler snippet:
-> +
-> +        movl    $399, %edx	// load array length to edx
-
-Array length (in bytes) is 400, not 399, so this is more like
-the upper bound of the buffer (array).
-
-> +        movslq  %edi, %rdi	// rdi contains value of argc 
-> +        leaq    -104(%rsp), %rax	// load start address of buf to rax
-> +        bndmk   (%rax,%rdx), %bnd0	//  create bounds for buf
-> +        bndcl   (%rax,%rdi,4), %bnd0	// check that memory access doesn't
-> +					// violate buf's low bound
-> +        bndcu   3(%rax,%rdi,4), %bnd0	// check that memory access doesn't
-> +					// violate buf's upper bound
-> +        movl    -104(%rsp,%rdi,4), %eax	// original memory access
-> +
-> +Code looks pretty clear. Note only that we added displacement 3 for
-> +upper bound checking since we have 4 byte (integer) access here.
-> +
-> +Several MPX specific compiler options besides -fmpx were introduced
-
-           MPX-specific
-
-> +in the compiler. Most of them, like -fmpx-check-read and
-> +-fmpx-check-write, control number of inserted runtime bound checks.
-> +Also developers always can use intrinsics to insert MPX instructions
-> +manually.
-> +
-> +Currently GCC compiler sources with MPX support is available in a
-> +separate branch in common GCC SVN repository. See GCC SVN page
-> +(http://gcc.gnu.org/svn.html) for details.
-> +
-> +Currently no hardware with MPX ISA is available but it is always
-> +possible to use SDE (Intel(R) software Development Emulator) instead,
-
-                                 Software (?)
-
-> +which can be downloaded from
-> +http://software.intel.com/en-us/articles/intel-software-development-emulator
-> +
-> +MPX runtime support
-> +-------------------
-> +
-> +Enabling an application to use MPX will generally not require source
-> +code updates but there is some runtime code needed in order to make
-> +use of MPX. For most applications this runtime support will be available
-> +by linking to a library supplied by the compiler or possibly it will
-> +come directly from the OS once OS versions that support MPX are available.
-> +
-> +The runtime is responsible for configuring and enabling MPX. The
-> +configuration and enabling of MPX consists of the runtime writing
-> +the base address of the Bound Directory(BD) to the BNDCFGU register
-> +and setting the enable bit.
-> +
-> +MPX kernel support
-> +------------------
-> +
-> +MPX kernel code has mainly the following responsibilities.
-> +
-> +1) Providing handlers for bounds faults (#BR).
-> +
-> +When MPX is enabled, there are 2 new situations that can generate
-> +#BR faults. If a bounds overflow occurs then a #BR is generated.
-> +The fault handler will decode MPX instructions to get violation
-> +address and set this address into extended struct siginfo.
-> +
-> +The other case that generates a #BR is when a BNDSTX instruction
-> +attempts to save bounds to a BD entry marked as invalid. This is
-> +an indication that no BT exists for this entry. In this case the
-> +fault handler will allocate a new BT.
-> +
-> +2) Managing bounds memory.
-> +
-> +MPX defines 4 sets of bound registers. When an application needs
-> +more than 4 sets of bounds it uses the BNDSTX instruction to save
-> +the additional bounds out to memory. The kernel dynamically allocates
-> +the memory used to store these bounds. The bounds memory is organized
-> +into a 2 level structure consisting of a BD which contains pointers
-
-          2-level
-
-> +to a set of Bound Tables (BT) which contain the actual bound information
-
-                                                                information.
-
-> +In order to minimize the Intel MPX memory usage the BTs are allocated
-> +on demand by the Intel MPX runtime.
-> +
-> +Also the PR_MPX_INIT and PR_MPX_RELEASE prctl() commands are added
-> +to init and release MPX related resource. A MMU notifier will be
-
-      initialize                   resources. An MMU
+Andy Honig <ahonig@google.com>
+    KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
 
 
-> +registered during PR_MPX_INIT command execution. So the bound tables
-> +can be automatically deallocated when one memory area is unmapped.
-> 
+-------------
+
+Diffstat:
+
+ Makefile                                   |  4 +--
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c   | 53 +++++++++++++++++++++++++-----
+ arch/x86/kvm/lapic.c                       | 24 ++++++++------
+ arch/x86/kvm/lapic.h                       |  4 +--
+ arch/x86/kvm/x86.c                         | 33 +------------------
+ drivers/hwmon/coretemp.c                   |  2 +-
+ drivers/md/raid10.c                        | 12 +++----
+ drivers/md/raid5.c                         |  4 +--
+ drivers/staging/comedi/drivers/cb_pcidio.c | 21 +++++-------
+ drivers/staging/wlags49_h2/wl_priv.c       |  8 +++--
+ drivers/tty/serial/amba-pl011.c            |  6 ++++
+ fs/nilfs2/segment.c                        | 10 +++---
+ mm/memory-failure.c                        | 16 ++++++---
+ security/selinux/hooks.c                   | 20 +++++++++--
+ security/selinux/include/objsec.h          |  5 ++-
+ 15 files changed, 133 insertions(+), 89 deletions(-)
 
 
--- 
-~Randy
