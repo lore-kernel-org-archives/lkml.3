@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaA0ROT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:14:19 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:49696 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753483AbaA0ROS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:14:18 -0500
-Date: Mon, 27 Jan 2014 12:14:17 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Daniel Vetter <daniel@ffwll.ch>
-cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Excessive WARN()s in Intel 915 driver
-In-Reply-To: <20140127163643.GF9772@phenom.ffwll.local>
-Message-ID: <Pine.LNX.4.44L0.1401271212120.1207-100000@iolanthe.rowland.org>
+	id S1754003AbaA0RRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:17:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47363 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753477AbaA0RRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 12:17:05 -0500
+Message-ID: <52E69464.4010705@zytor.com>
+Date: Mon, 27 Jan 2014 09:16:20 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>
+CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Michael Matz <matz@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] x86: Disable traditional FPU instructions too
+References: <20140127163758.GC6839@pd.tnic> <52E68C25.1070804@zytor.com>	<alpine.LNX.2.00.1401271742300.14101@pobox.suse.cz> <87ha8pqryl.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87ha8pqryl.fsf@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014, Daniel Vetter wrote:
-
-> On Mon, Jan 27, 2014 at 11:05:47AM -0500, Alan Stern wrote:
-> > On Mon, 27 Jan 2014, Daniel Vetter wrote:
-> > 
-> > > > By the way, I tried getting an up-to-date version of your 
-> > > > drm-intel-nightly branch, and ended up with the following:
-> > > > 
-> > > > $ git clone --depth 1 -b drm-intel-nightly http://cgit.freedesktop.org/~danvet/drm-intel/
-> > > > Cloning into 'drm-intel'...
-> > > > fatal: dumb http transport does not support --depth
-> > > > 
-> > > > (I can't remember what happened the first time I tried to clone your 
-> > > > repository).  So I will try running with this patch on top of 3.13.
-> > > 
-> > > Well, use the git:// link with --depth ...
-> > 
-> > $ git clone --depth 1 -b drm-intel-nightly git://cgit.freedesktop.org/~danvet/drm-intel/
-> > Cloning into 'drm-intel'...
-> > fatal: remote error: access denied or repository not exported: ~danvet/drm-intel/
+On 01/27/2014 09:01 AM, Andi Kleen wrote:
+> Jiri Kosina <jkosina@suse.cz> writes:
 > 
-> Erhm, http://cgit.freedesktop.org/~danvet/drm-intel/ is the cgit web view,
-> the actual git repo is at http://cgit.freedesktop.org/~danvet/drm-intel/
-> ...
+>> On Mon, 27 Jan 2014, H. Peter Anvin wrote:
+>>
+>>> I don't think it'd hurt... although I think the above pretty much
+>>> requires that the code contain actual floating-point types to ever be
+>>> generated.  
+>>
+>> Unfortunately using float-typed constants (such as 1EexpL) are enough for 
+>> this to happen.
+> 
+> checkpatch would seem to be the right place to check for this?
+> 
 
-I used git://freedesktop.org/~danvet/drm-intel/ and that worked.  I'll 
-post the results when I get a chance to try the patch.
+Ideally gcc should have a -no-float option...
 
-Alan Stern
+	-hpa
+
 
