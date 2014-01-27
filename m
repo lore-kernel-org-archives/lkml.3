@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaA0WyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:54:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:47008 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827AbaA0WyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:54:22 -0500
-Date: Tue, 28 Jan 2014 09:54:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Gustavo Padovan <gustavo@padovan.org>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Subject: Re: linux-next: manual merge of the bluetooth tree with the
- net/net-next trees
-Message-Id: <20140128095415.8382335c33545ad14d4be067@canb.auug.org.au>
-In-Reply-To: <20140107125418.986ae20298ddc55e5e657447@canb.auug.org.au>
-References: <20140107125418.986ae20298ddc55e5e657447@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__28_Jan_2014_09_54_15_+1100_9.C+37tbD.O6vAfb"
+	id S1754567AbaA0Wyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:54:32 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:33026 "HELO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754545AbaA0Wy1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 17:54:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <5086198.ZOWZ5xuyna@wuerfel>
+References: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
+	<CACoXjc=ZT9fEm_KdY4WFSoS8n5FmO+hn9LjsR4m8YZG2iBbt5A@mail.gmail.com>
+	<CACoXjc=-JtpiM3m4DSA_DeOxYr3sihGGf4FSaJ2yC08rpm6ANQ@mail.gmail.com>
+	<5086198.ZOWZ5xuyna@wuerfel>
+Date: Mon, 27 Jan 2014 14:54:25 -0800
+Message-ID: <CACoXjcnTnhWS-5yOgiHA5yVaBjdH1DVzmSsknEBJLB+CFR0EyA@mail.gmail.com>
+Subject: Re: [RFC PATCH V2 1/4] pci: APM X-Gene PCIe controller driver
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, Jon Masters <jcm@redhat.com>,
+        linux-doc@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        patches <patches@apm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Jan_2014_09_54_15_+1100_9.C+37tbD.O6vAfb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Tue, 7 Jan 2014 12:54:18 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On Sat, Jan 25, 2014 at 12:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 24 January 2014 13:28:22 Tanmay Inamdar wrote:
+>> On Thu, Jan 16, 2014 at 5:10 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>> > On Wed, Jan 15, 2014 at 4:39 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> On Wednesday 15 January 2014, Tanmay Inamdar wrote:
 >
-> Today's linux-next merge of the bluetooth tree got a conflict in
-> net/ieee802154/6lowpan.c between commit 965801e1eb62 ("net: 6lowpan: fix
-> lowpan_header_create non-compression memcpy call") from the  tree and
-> commit 8df8c56a5abc ("6lowpan: Moving generic compression code into
-> 6lowpan_iphc.c") from the bluetooth tree.
->=20
-> I fixed it up (I applied the following patch to move the fix into
-> 6lowpan_iphc.c) and can carry the fix as necessary (no action is
-> required).
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 7 Jan 2014 12:52:43 +1100
-> Subject: [PATCH] net: 6lowpan: fixup for code movement
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  net/ieee802154/6lowpan_iphc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/net/ieee802154/6lowpan_iphc.c b/net/ieee802154/6lowpan_iphc.c
-> index 11840f9e46da..e14fe8b2c054 100644
-> --- a/net/ieee802154/6lowpan_iphc.c
-> +++ b/net/ieee802154/6lowpan_iphc.c
-> @@ -677,7 +677,7 @@ int lowpan_header_compress(struct sk_buff *skb, struc=
-t net_device *dev,
->  			hc06_ptr +=3D 3;
->  		} else {
->  			/* compress nothing */
-> -			memcpy(hc06_ptr, &hdr, 4);
-> +			memcpy(hc06_ptr, hdr, 4);
->  			/* replace the top byte with new ECN | DSCP format */
->  			*hc06_ptr =3D tmp;
->  			hc06_ptr +=3D 4;
-> --=20
-> 1.8.5.2
+>> >>
+>> >>> +static void xgene_pcie_poll_linkup(struct xgene_pcie_port *port, u32 *lanes)
+>> >>> +{
+>> >>> +     void *csr_base = port->csr_base;
+>> >>> +     u32 val32;
+>> >>> +     u64 start_time, time;
+>> >>> +
+>> >>> +     /*
+>> >>> +      * A component enters the LTSSM Detect state within
+>> >>> +      * 20ms of the end of fundamental core reset.
+>> >>> +      */
+>> >>> +     msleep(XGENE_LTSSM_DETECT_WAIT);
+>> >>> +     port->link_up = 0;
+>> >>> +     start_time = jiffies;
+>> >>> +     do {
+>> >>> +             val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
+>> >>> +             if (val32 & LINK_UP_MASK) {
+>> >>> +                     port->link_up = 1;
+>> >>> +                     port->link_speed = PIPE_PHY_RATE_RD(val32);
+>> >>> +                     val32 = readl(csr_base + BRIDGE_STATUS_0);
+>> >>> +                     *lanes = val32 >> 26;
+>> >>> +             }
+>> >>> +             time = jiffies_to_msecs(jiffies - start_time);
+>> >>> +     } while ((!port->link_up) || (time <= XGENE_LTSSM_L0_WAIT));
+>> >>> +}
+>> >>
+>> >> Maybe another msleep() in the loop? It seems weird to first do an
+>> >> unconditional sleep but then busy-wait for the result.
+>> >
+>> > ok.
+>>
+>> This loop can execute for maximum 4 msec. So putting msleep(1) won't
+>> get us much.
+>
+> 4 msec is still quite a long time for a busy loop that can be spent doing
+> useful work in another thread.
+>
 
-I think this fix patch got missed when bluetooth was merged ... so it
-should probably go into the net tree.
+Right. If 'msleep(1)' is used, then 'checkpatch' throws a warning
+saying that it can actually sleep for 20ms in some cases. I will check
+if 'usleep_range' is useful here.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> >>
+>> >> Another general note: Your "compatible" strings are rather unspecific.
+>> >> Do you have a version number for this IP block? I suppose that it's related
+>> >> to one that has been used in other chips before, or will be used in future
+>> >> chips, if it's not actually licensed from some other company.
+>> >
+>> > I will have to check this.
+>> >
+>>
+>> We have decided to stick with current compatible string for now.
+>
+> Can you elaborate on your reasoning? Does this mean X-Gene is a one-off
+> product and you won't be doing any new chips based on the same hardware
+> components?
 
---Signature=_Tue__28_Jan_2014_09_54_15_+1100_9.C+37tbD.O6vAfb
-Content-Type: application/pgp-signature
+The current convention is to key upon the family name - X-Gene. Future
+chips will also be a part of X-Gene family. Right now it is unclear if
+there are any obvious feature additions to be done in Linux PCIe
+driver. Until then same driver is expected to work as is in future
+chips.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS5uObAAoJEMDTa8Ir7ZwVSkoP/RfvqDurol0Qhki0tzIlWWUy
-sMgkoah19nmjzew2hPLLmaI0cBv3yrwUPWIjbI6GMRsOGOivykMaj69ER7DNqnhO
-fg79SsahBBihw50kja9mx/KWBcQt6vxXZZMVd1a+UWOwSKnsf5I2gaIJMsvhIfCB
-CsIas+O0WZ385pAyjqK/uvRNM4lX3mIXuRInybGqYXlLY8NgMMAyU3bvuqLtt6Jm
-DNL45fjGxMRsuaGGTgVfw4k3W4eILS4NvSzsz/MDesaJbEQ2g7OkmpbIPY494OhL
-MQs5tqe6tvst1aVpd+ouYCCAWrkktcMq118iUwoNfBuNrEtqmw9thWFFRry1T2AQ
-Imw7g8lxnqB8RKTsljAo9+r+chpMEuX4EsT9WPmQO2xYG4d4uDNB3GpPIvIjoZWe
-S7Ryy8DNocLbKQbvq0ko9VRleCbfBgVwKsLVr94wrsGrLrnU6D4TOCZJA1MzPLh8
-53LvIGEADbinHWBwYpuZ4NCWdMzjk99fs/0Gi31TqF7kPvSdUeMUablPvycHd/Gq
-t8vZeY4Rzp35IUlc8upqU+DQiAp2OLzfnj9uWcBSTX1T+47RAGLV2+zAzlKhEA81
-7n01JWCSBm5ID5o1tOWcrK5NAmVI4jwd5N4u6iFbGllDbsHbr9TvSiMRSLzQhoNj
-Djmzf+ThlWD1iEAKVwaZ
-=qH/o
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Jan_2014_09_54_15_+1100_9.C+37tbD.O6vAfb--
+>
+>         Arnd
