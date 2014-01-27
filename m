@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaA0GYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 01:24:21 -0500
+	id S1753518AbaA0GYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 01:24:20 -0500
 Received: from relais.videotron.ca ([24.201.245.36]:51663 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470AbaA0GYR (ORCPT
+	with ESMTP id S1753451AbaA0GYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 01:24:17 -0500
+	Mon, 27 Jan 2014 01:24:16 -0500
 X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jan 2014 01:24:12 EST
 Content-transfer-encoding: 7BIT
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
@@ -20,9 +20,9 @@ To: Russell King <linux@arm.linux.org.uk>,
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
         linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH 9/9] cpu/idle.c: move to sched/idle.c
-Date: Mon, 27 Jan 2014 01:08:24 -0500
-Message-id: <1390802904-28399-10-git-send-email-nicolas.pitre@linaro.org>
+Subject: [PATCH 6/9] PPC: remove redundant cpuidle_idle_call()
+Date: Mon, 27 Jan 2014 01:08:21 -0500
+Message-id: <1390802904-28399-7-git-send-email-nicolas.pitre@linaro.org>
 X-Mailer: git-send-email 1.8.4.108.g55ea5f6
 In-reply-to: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
 References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
@@ -30,57 +30,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Integration of cpuidle with the scheduler requires that the idle loop be
-closely integrated with the scheduler proper. Moving cpu/idle.c into the
-sched directory will allow for a smoother integration, and eliminate a
-subdirectory which contained only one source file.
+The core idle loop now takes care of it.  However a few things need
+checking:
+
+- Invocation of cpuidle_idle_call() in pseries_lpar_idle() happened
+  through arch_cpu_idle() and was therefore always preceded by a call
+  to ppc64_runlatch_off().  To preserve this property now that
+  cpuidle_idle_call() is invoked directly from core code, a call to
+  ppc64_runlatch_off() has been added to idle_loop_prolog() in
+  platforms/pseries/processor_idle.c.
+
+- Similarly, cpuidle_idle_call() was followed by ppc64_runlatch_off()
+  so a call to the later has been added to idle_loop_epilog().
+
+- And since arch_cpu_idle() always made sure to re-enable IRQs if they
+  were not enabled, this is now
+  done in idle_loop_epilog() as well.
+
+The above was made in order to keep the execution flow close to the
+original.  I don't know if that was strictly necessary. Someone well
+aquainted with the platform details might find some room for possible
+optimizations.
 
 Signed-off-by: Nicolas Pitre <nico@linaro.org>
 ---
- kernel/Makefile              | 1 -
- kernel/cpu/Makefile          | 1 -
- kernel/sched/Makefile        | 2 +-
- kernel/{cpu => sched}/idle.c | 0
- 4 files changed, 1 insertion(+), 3 deletions(-)
- delete mode 100644 kernel/cpu/Makefile
- rename kernel/{cpu => sched}/idle.c (100%)
+ arch/powerpc/platforms/pseries/processor_idle.c |  5 ++++
+ arch/powerpc/platforms/pseries/setup.c          | 34 ++++++++++---------------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index bc010ee272..6f1c7e5cfc 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -22,7 +22,6 @@ obj-y += sched/
- obj-y += locking/
- obj-y += power/
- obj-y += printk/
--obj-y += cpu/
- obj-y += irq/
- obj-y += rcu/
+diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
+index a166e38bd6..72ddfe3d2f 100644
+--- a/arch/powerpc/platforms/pseries/processor_idle.c
++++ b/arch/powerpc/platforms/pseries/processor_idle.c
+@@ -33,6 +33,7 @@ static struct cpuidle_state *cpuidle_state_table;
  
-diff --git a/kernel/cpu/Makefile b/kernel/cpu/Makefile
-deleted file mode 100644
-index 59ab052ef7..0000000000
---- a/kernel/cpu/Makefile
-+++ /dev/null
-@@ -1 +0,0 @@
--obj-y	= idle.o
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index 7b621409cf..ac3e0ea68f 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -11,7 +11,7 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
- CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
- endif
+ static inline void idle_loop_prolog(unsigned long *in_purr)
+ {
++	ppc64_runlatch_off();
+ 	*in_purr = mfspr(SPRN_PURR);
+ 	/*
+ 	 * Indicate to the HV that we are idle. Now would be
+@@ -49,6 +50,10 @@ static inline void idle_loop_epilog(unsigned long in_purr)
+ 	wait_cycles += mfspr(SPRN_PURR) - in_purr;
+ 	get_lppaca()->wait_state_cycles = cpu_to_be64(wait_cycles);
+ 	get_lppaca()->idle = 0;
++
++	if (irqs_disabled())
++		local_irq_enable();
++	ppc64_runlatch_on();
+ }
  
--obj-y += core.o proc.o clock.o cputime.o idle_task.o fair.o rt.o stop_task.o
-+obj-y += core.o proc.o clock.o cputime.o idle_task.o idle.o fair.o rt.o stop_task.o
- obj-y += wait.o completion.o
- obj-$(CONFIG_SMP) += cpupri.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
-diff --git a/kernel/cpu/idle.c b/kernel/sched/idle.c
-similarity index 100%
-rename from kernel/cpu/idle.c
-rename to kernel/sched/idle.c
+ static int snooze_loop(struct cpuidle_device *dev,
+diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+index c1f1908587..7604c19d54 100644
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -39,7 +39,6 @@
+ #include <linux/irq.h>
+ #include <linux/seq_file.h>
+ #include <linux/root_dev.h>
+-#include <linux/cpuidle.h>
+ #include <linux/of.h>
+ #include <linux/kexec.h>
+ 
+@@ -356,29 +355,24 @@ early_initcall(alloc_dispatch_log_kmem_cache);
+ 
+ static void pseries_lpar_idle(void)
+ {
+-	/* This would call on the cpuidle framework, and the back-end pseries
+-	 * driver to  go to idle states
++	/*
++	 * Default handler to go into low thread priority and possibly
++	 * low power mode by cedeing processor to hypervisor
+ 	 */
+-	if (cpuidle_idle_call()) {
+-		/* On error, execute default handler
+-		 * to go into low thread priority and possibly
+-		 * low power mode by cedeing processor to hypervisor
+-		 */
+ 
+-		/* Indicate to hypervisor that we are idle. */
+-		get_lppaca()->idle = 1;
++	/* Indicate to hypervisor that we are idle. */
++	get_lppaca()->idle = 1;
+ 
+-		/*
+-		 * Yield the processor to the hypervisor.  We return if
+-		 * an external interrupt occurs (which are driven prior
+-		 * to returning here) or if a prod occurs from another
+-		 * processor. When returning here, external interrupts
+-		 * are enabled.
+-		 */
+-		cede_processor();
++	/*
++	 * Yield the processor to the hypervisor.  We return if
++	 * an external interrupt occurs (which are driven prior
++	 * to returning here) or if a prod occurs from another
++	 * processor. When returning here, external interrupts
++	 * are enabled.
++	 */
++	cede_processor();
+ 
+-		get_lppaca()->idle = 0;
+-	}
++	get_lppaca()->idle = 0;
+ }
+ 
+ /*
 -- 
 1.8.4.108.g55ea5f6
 
