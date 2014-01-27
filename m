@@ -1,114 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaA0Xbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:31:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40709 "EHLO mga01.intel.com"
+	id S1754362AbaA0XkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:40:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48902 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683AbaA0Xbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:31:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
-   d="scan'208";a="465634057"
-Date: Mon, 27 Jan 2014 16:32:07 -0700 (MST)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Matthew Wilcox <willy@linux.intel.com>
-cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v5 22/22] XIP: Add support for unwritten extents
-In-Reply-To: <CF0C370C.235F1%willy@linux.intel.com>
-Message-ID: <alpine.OSX.2.00.1401271617570.9254@scrumpy>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CEFD7DAD.22F65%matthew.r.wilcox@intel.com> <alpine.OSX.2.00.1401221546240.70541@scrumpy> <CF0C370C.235F1%willy@linux.intel.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1753491AbaA0XkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 18:40:19 -0500
+Date: Tue, 28 Jan 2014 00:40:17 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: fanotify use after free.
+Message-ID: <20140127234017.GA7868@quack.suse.cz>
+References: <20140122062730.GA25601@redhat.com>
+ <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com>
+ <20140122233622.GB27916@quack.suse.cz>
+ <CA+55aFwzb7rJate=r0Sgi_N7FStNtJS_PvfgPSGaczPPgeUZvg@mail.gmail.com>
+ <alpine.LNX.2.00.1401231120360.581@pobox.suse.cz>
+ <20140123150540.GD28796@quack.suse.cz>
+ <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz>
+ <20140123235549.GA7363@quack.suse.cz>
+ <alpine.LNX.2.00.1401240825470.581@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/mixed; boundary="5mCyUwZo2JvN/JJP"
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1401240825470.581@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014, Matthew Wilcox wrote:
-> On Wed, Jan 22, 2014 at 03:51:56PM -0700, Ross Zwisler wrote:
-> > > +			if (hole) {
-> > >  				addr = NULL;
-> > > -				hole = true;
-> > >  				size = bh->b_size;
-> > > +			} else {
-> > > +				unsigned first;
-> > > +				retval = xip_get_addr(inode, bh, &addr);
-> > > +				if (retval < 0)
-> > > +					break;
-> > > +				size = retval;
-> > > +				first = offset - (block << inode->i_blkbits);
-> > > +				if (buffer_unwritten(bh))
-> > > +					memset(addr, 0, first);
-> > > +				addr += first;
-> > 
-> > +                               size -= first;
-> > 
-> > This is needed so that we don't overrun the XIP buffer we are given in the
-> > event that our user buffer >= our XIP buffer and the start of our I/O isn't
-> > block aligned.
+
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri 24-01-14 08:26:45, Jiri Kosina wrote:
+> On Fri, 24 Jan 2014, Jan Kara wrote:
 > 
-> You're right!  Thank you!  However, we also need it for the hole ==
-> true case, don't we?  So maybe something like this, incrementally on top of
-> patch 22/22:
+> >   Strange. I've installed systemd system (openSUSE 13.1) and it boots 
+> > with the latest Linus' kernel just fine (and I have at least FANOTIFY 
+> > and SLAB debugging set the same way as you). But it was only a KVM 
+> > guest. I'll try tomorrow with a physical machine I guess.
 > 
-> P.S. Can someone come up with a better name for this variable than 'first'?
-> I'd usually use 'offset', but that's already taken.  'annoying_bit' seems a
-> bit judgemental.  'misaligned', maybe?  'skip' or 'seek' like dd uses?
+> FWIW the system I am reliably able to reproduce this on is opensuse 12.3 
+> with this systemd version: 
 > 
-> diff --git a/fs/xip.c b/fs/xip.c
-> index 92157ff..1ae00db 100644
-> --- a/fs/xip.c
-> +++ b/fs/xip.c
-> @@ -103,6 +103,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const
-> struct iovec *iov,
->  
->  		if (max == offset) {
->  			sector_t block = offset >> inode->i_blkbits;
-> +			unsigned first = offset - (block << inode->i_blkbits);
->  			long size;
->  			memset(bh, 0, sizeof(*bh));
->  			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
-> @@ -121,14 +122,12 @@ static ssize_t xip_io(int rw, struct inode *inode,
-> const struct iovec *iov,
->  
->  			if (hole) {
->  				addr = NULL;
-> -				size = bh->b_size;
-> +				size = bh->b_size - first;
+> Version     : 195
+> Release     : 13.18.1
+  Hum, still no luck with reproduction (either on physical machine or with
+KVM). Anyway, I've looked at the code again and the previous patch had a
+stupid bug (passing different pointer to fsnotify_destroy_event() than we
+should have), plus also the merging function in fanotify was too
+aggressive. Can you try the attached patch? It boots for me but that means
+nothing since I cannot reproduce the issue... Thanks!
 
-It looks like we have an additional bit of complexity with the hole case.  The
-issue is that for holes, bh->b_size is just the full size of the write as set
-earlier in the function:
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-                        bh->b_size = ALIGN(end - offset, PAGE_SIZE);
+--5mCyUwZo2JvN/JJP
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="fanotify.diff"
 
->From this code it seems like you hoped the call into get_block() would adjust
-bh->b_size to the size of the hole, allowing you to zero just the hole space
-in the user buffer.  It doesn't look like it does, though, at least for ext4.
-In looking at the direct I/O case (do_direct_IO()), they deal with holes on a
-per FS block basis, and don't ever look at bh->b_size once they've figured out
-the buffer is unmapped.
-
-The result of this is that when you get a read that starts at a hole but moves
-into real data, the read will just see a hole and return data of all zeros.
-
-To just assume the current FS block is a hole, we can do something like this:
-
-diff --git a/fs/xip.c b/fs/xip.c
-index 35e401e..e902593 100644
---- a/fs/xip.c
-+++ b/fs/xip.c
-@@ -122,7 +122,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index 58772623f02a..1b3dd9de8518 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -18,7 +18,7 @@ static bool should_merge(struct fsnotify_event *old_fsn,
  
-                        if (hole) {
-                                addr = NULL;
--                               size = bh->b_size - first;
-+                               size = (1 << inode->i_blkbits) - first;
-                        } else {
-                                retval = xip_get_addr(inode, bh, &addr);
-                                if (retval < 0)
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+ 	/* dont merge two permission events */
+-	if ((old_fsn->mask & FAN_ALL_PERM_EVENTS) &&
++	if ((old_fsn->mask & FAN_ALL_PERM_EVENTS) ||
+ 	    (new_fsn->mask & FAN_ALL_PERM_EVENTS))
+ 		return false;
+ #endif
+@@ -201,8 +201,10 @@ static int fanotify_handle_event(struct fsnotify_group *group,
+ 	}
+ 
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+-	if (fsn_event->mask & FAN_ALL_PERM_EVENTS)
++	if (fsn_event->mask & FAN_ALL_PERM_EVENTS) {
+ 		ret = fanotify_get_response_from_access(group, event);
++		fsnotify_destroy_event(group, fsn_event);
++	}
+ #endif
+ 	return ret;
+ }
+@@ -221,7 +223,8 @@ static void fanotify_free_event(struct fsnotify_event *fsn_event)
+ 	struct fanotify_event_info *event;
+ 
+ 	event = FANOTIFY_E(fsn_event);
+-	path_put(&event->path);
++	if (event->path.mnt)
++		path_put(&event->path);
+ 	put_pid(event->tgid);
+ 	kmem_cache_free(fanotify_event_cachep, event);
+ }
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 57d7c083cb4b..d493c72c71fd 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -319,7 +319,8 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+ 			if (IS_ERR(kevent))
+ 				break;
+ 			ret = copy_event_to_user(group, kevent, buf);
+-			fsnotify_destroy_event(group, kevent);
++			if (!(kevent->mask & FAN_ALL_PERM_EVENTS))
++				fsnotify_destroy_event(group, kevent);
+ 			if (ret < 0)
+ 				break;
+ 			buf += ret;
 
+--5mCyUwZo2JvN/JJP--
