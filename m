@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722AbaA0Jh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:37:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44730 "EHLO bear.ext.ti.com"
+	id S1753671AbaA0Jhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:37:41 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41529 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677AbaA0Jhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:37:42 -0500
+	id S1753642AbaA0Jhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 04:37:38 -0500
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
         <linux-kernel@vger.kernel.org>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 3/3] usb: musb: musb_cppi41: Handle ISOCH differently and not use the hrtimer.
-Date: Mon, 27 Jan 2014 15:07:26 +0530
-Message-ID: <1390815446-1236-4-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 1/3] usb: musb: musb_host: Enable ISOCH IN handling for AM335x host
+Date: Mon, 27 Jan 2014 15:07:24 +0530
+Message-ID: <1390815446-1236-2-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1390815446-1236-1-git-send-email-george.cherian@ti.com>
 References: <1390815446-1236-1-git-send-email-george.cherian@ti.com>
@@ -22,114 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of ISOCH transfers the hrtimer workaround for the hardware issue
-is not very reliable. Instead of checking musb_is_tx_fifo_empty() in hrtimer
-routine, schedule a completion work and check the same in completion work.
+Enable the isochrounous IN handling for AM335x HOST.
+Reprogram CPPI to receive consecutive ISOCH frames in the same URB.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/musb/musb_cppi41.c | 53 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ drivers/usb/musb/musb_host.c | 30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_cppi41.c b/drivers/usb/musb/musb_cppi41.c
-index 39ee516..5b0f2a5 100644
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@ -39,6 +39,7 @@ struct cppi41_dma_channel {
- 	u32 transferred;
- 	u32 packet_sz;
- 	struct list_head tx_check;
-+	struct work_struct dma_completion;
- };
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index ed45572..79b7510 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -1691,7 +1691,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 			| MUSB_RXCSR_RXPKTRDY);
+ 		musb_writew(hw_ep->regs, MUSB_RXCSR, val);
  
- #define MUSB_DMA_NUM_CHANNELS 15
-@@ -112,6 +113,18 @@ static bool musb_is_tx_fifo_empty(struct musb_hw_ep *hw_ep)
- 	return true;
- }
+-#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
++#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA) || \
++	defined(CONFIG_USB_TI_CPPI41_DMA)
+ 		if (usb_pipeisoc(pipe)) {
+ 			struct usb_iso_packet_descriptor *d;
  
-+static bool is_isoc(struct musb_hw_ep *hw_ep, bool in)
-+{
-+	if (in && hw_ep->in_qh) {
-+		if (hw_ep->in_qh->type == USB_ENDPOINT_XFER_ISOC)
-+			return true;
-+	} else if (hw_ep->out_qh) {
-+		if (hw_ep->out_qh->type == USB_ENDPOINT_XFER_ISOC)
-+			return true;
-+	}
-+	return false;
-+}
+@@ -1704,10 +1705,30 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 			if (d->status != -EILSEQ && d->status != -EOVERFLOW)
+ 				d->status = 0;
+ 
+-			if (++qh->iso_idx >= urb->number_of_packets)
++			if (++qh->iso_idx >= urb->number_of_packets) {
+ 				done = true;
+-			else
++			} else {
++#if defined(CONFIG_USB_TI_CPPI41_DMA)
++				struct dma_controller   *c;
++				dma_addr_t *buf;
++				u32 length, ret;
 +
- static void cppi41_dma_callback(void *private_data);
- 
- static void cppi41_trans_done(struct cppi41_dma_channel *cppi41_channel)
-@@ -165,6 +178,32 @@ static void cppi41_trans_done(struct cppi41_dma_channel *cppi41_channel)
- 	}
- }
- 
-+static void cppi_trans_done_work(struct work_struct *work)
-+{
-+	unsigned long flags;
-+	struct cppi41_dma_channel *cppi41_channel =
-+		container_of(work, struct cppi41_dma_channel, dma_completion);
-+	struct cppi41_dma_controller *controller = cppi41_channel->controller;
-+	struct musb *musb = controller->musb;
-+	struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
-+	bool empty;
++				c = musb->dma_controller;
++				buf = (void *)
++					urb->iso_frame_desc[qh->iso_idx].offset
++					+ (u32)urb->transfer_dma;
 +
-+	if (!cppi41_channel->is_tx && is_isoc(hw_ep, 1)) {
-+		spin_lock_irqsave(&musb->lock, flags);
-+		cppi41_trans_done(cppi41_channel);
-+		spin_unlock_irqrestore(&musb->lock, flags);
-+	} else {
-+		empty = musb_is_tx_fifo_empty(hw_ep);
-+		if (empty) {
-+			spin_lock_irqsave(&musb->lock, flags);
-+			cppi41_trans_done(cppi41_channel);
-+			spin_unlock_irqrestore(&musb->lock, flags);
-+		} else {
-+			schedule_work(&cppi41_channel->dma_completion);
-+		}
-+	}
-+}
++				length =
++					urb->iso_frame_desc[qh->iso_idx].length;
 +
- static enum hrtimer_restart cppi41_recheck_tx_req(struct hrtimer *timer)
- {
- 	struct cppi41_dma_controller *controller;
-@@ -228,6 +267,14 @@ static void cppi41_dma_callback(void *private_data)
- 			transferred < cppi41_channel->packet_sz)
- 		cppi41_channel->prog_len = 0;
++				val |= MUSB_RXCSR_DMAENAB;
++				musb_writew(hw_ep->regs, MUSB_RXCSR, val);
++
++				ret = c->channel_program(dma, qh->maxpacket,
++						0, (u32) buf, length);
++#endif
+ 				done = false;
++			}
  
-+	if (!cppi41_channel->is_tx) {
-+		if (is_isoc(hw_ep, 1))
-+			schedule_work(&cppi41_channel->dma_completion);
-+		else
-+			cppi41_trans_done(cppi41_channel);
-+		goto out;
-+	}
-+
- 	empty = musb_is_tx_fifo_empty(hw_ep);
- 	if (empty) {
- 		cppi41_trans_done(cppi41_channel);
-@@ -264,6 +311,10 @@ static void cppi41_dma_callback(void *private_data)
- 				goto out;
- 			}
+ 		} else  {
+ 		/* done if urb buffer is full or short packet is recd */
+@@ -1747,7 +1768,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
  		}
-+		if (is_isoc(hw_ep, 0)) {
-+			schedule_work(&cppi41_channel->dma_completion);
-+			goto out;
-+		}
- 		list_add_tail(&cppi41_channel->tx_check,
- 				&controller->early_tx_list);
- 		if (!hrtimer_active(&controller->early_tx)) {
-@@ -620,6 +671,8 @@ static int cppi41_dma_controller_start(struct cppi41_dma_controller *controller)
- 		cppi41_channel->port_num = port;
- 		cppi41_channel->is_tx = is_tx;
- 		INIT_LIST_HEAD(&cppi41_channel->tx_check);
-+		INIT_WORK(&cppi41_channel->dma_completion,
-+			  cppi_trans_done_work);
  
- 		musb_dma = &cppi41_channel->channel;
- 		musb_dma->private_data = cppi41_channel;
+ 		/* we are expecting IN packets */
+-#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
++#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA) || \
++	defined(CONFIG_USB_TI_CPPI41_DMA)
+ 		if (dma) {
+ 			struct dma_controller	*c;
+ 			u16			rx_count;
 -- 
 1.8.1
 
