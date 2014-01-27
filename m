@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaA0URJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:17:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36196 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaA0UQV (ORCPT
+	id S1754184AbaA0UUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:20:22 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50226 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751843AbaA0UUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.13 10/10] md/raid5: close recently introduced race in stripe_head management.
-Date: Mon, 27 Jan 2014 12:17:13 -0800
-Message-Id: <20140127201536.069050252@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
-References: <20140127201535.350372282@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 27 Jan 2014 15:20:21 -0500
+Date: Mon, 27 Jan 2014 20:20:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 15/24] drm/i2c: tda998x: use irq for connection
+	status and EDID read
+Message-ID: <20140127202012.GZ15937@n2100.arm.linux.org.uk>
+References: <cover.1390646891.git.moinejf@free.fr> <20140125181438.1353afc7@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140125181438.1353afc7@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Jan 25, 2014 at 06:14:38PM +0100, Jean-Francois Moine wrote:
+> This patch adds the optional treatment of the tda998x IRQ.
+> 
+> The interrupt function is used to know the display connection status
+> without polling and to speedup reading the EDID.
+> 
+> The IRQ number is defined in the i2c client either by platform data or
+> in the DT.
+> 
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-------------------
+I don't see where you free the interrupt in this - you used to, but it
+appears that hunk got dropped?
 
-From: NeilBrown <neilb@suse.de>
-
-commit 7da9d450ab2843bf1db378c156acc6304dbc1c2b upstream.
-
-As release_stripe and __release_stripe decrement ->count and then
-manipulate ->lru both under ->device_lock, it is important that
-get_active_stripe() increments ->count and clears ->lru also under
-->device_lock.
-
-However we currently list_del_init ->lru under the lock, but increment
-the ->count outside the lock.  This can lead to races and list
-corruption.
-
-So move the atomic_inc(&sh->count) up inside the ->device_lock
-protected region.
-
-Note that we still increment ->count without device lock in the case
-where get_free_stripe() was called, and in fact don't take
-->device_lock at all in that path.
-This is safe because if the stripe_head can be found by
-get_free_stripe, then the hash lock assures us the no-one else could
-possibly be calling release_stripe() at the same time.
-
-Fixes: 566c09c53455d7c4f1130928ef8071da1a24ea65
-Reported-and-tested-by: Ian Kumlien <ian.kumlien@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/raid5.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -675,8 +675,10 @@ get_active_stripe(struct r5conf *conf, s
- 					 || !conf->inactive_blocked),
- 					*(conf->hash_locks + hash));
- 				conf->inactive_blocked = 0;
--			} else
-+			} else {
- 				init_stripe(sh, sector, previous);
-+				atomic_inc(&sh->count);
-+			}
- 		} else {
- 			spin_lock(&conf->device_lock);
- 			if (atomic_read(&sh->count)) {
-@@ -695,13 +697,11 @@ get_active_stripe(struct r5conf *conf, s
- 					sh->group = NULL;
- 				}
- 			}
-+			atomic_inc(&sh->count);
- 			spin_unlock(&conf->device_lock);
- 		}
- 	} while (sh == NULL);
- 
--	if (sh)
--		atomic_inc(&sh->count);
--
- 	spin_unlock_irq(conf->hash_locks + hash);
- 	return sh;
- }
-
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
