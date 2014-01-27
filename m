@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaA0RDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:03:55 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56810 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaA0RDx (ORCPT
+	id S1754046AbaA0RF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:05:28 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:61784 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756AbaA0RF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:03:53 -0500
-Message-ID: <1390842228.5425.175.camel@marge.simpson.net>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-From: Mike Galbraith <bitbucket@online.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 27 Jan 2014 18:03:48 +0100
-In-Reply-To: <20140127165405.GK9012@linux.vnet.ibm.com>
-References: <1387773533.5369.16.camel@marge.simpson.net>
-	 <20131224193636.GD19211@linux.vnet.ibm.com>
-	 <1387940854.5373.8.camel@marge.simpson.net>
-	 <20131225075544.GE19211@linux.vnet.ibm.com>
-	 <1387993057.5346.17.camel@marge.simpson.net>
-	 <20140117171441.GG5785@linutronix.de>
-	 <1390015514.5444.46.camel@marge.simpson.net>
-	 <20140124195014.GB29981@linutronix.de>
-	 <1390626760.3625.17.camel@marge.simpson.net>
-	 <1390799444.5425.61.camel@marge.simpson.net>
-	 <20140127165405.GK9012@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:/UjA0uP+IYUrIJytPO5h2/R7wPg/ipeInfz147VxXW7
- eOwVycqjXK9hCsPuILosI6WiNeJZrsHEqNpXGHWSCpPnqXvxFk
- LyHpgn5gAj5gN6GzIkLWGsZ3wMZIb8UBjMHol3EV2RRGfgxsnH
- /N602EICMpEOkgn1Bd1EsjbF3HNjWy3rTO/Pby3Bu+IbmlGdMx
- jfbnZU+lSUs+rF7F2Ep/QV4xcMXbKCKwFAnYlpKbHKLDTYzNni
- p/Maswygy6GRV74y7NUZbUHmSJX3a0rLCeG8MpaHHa3I1N9TKC
- eIZBuzDTK5d2U7RkSilTEu35dWOUyemAFPVjW7LGgH9eOMIbA6
- KDQRwQ1bRGSxFxbv+XQwMEXiH92zIjP/kW+Ml0aOHd3PAtymTK
- DZZKimNjE1BNw==
+	Mon, 27 Jan 2014 12:05:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+	<52E5EFAF.3060609@linux.intel.com>
+	<CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+Date: Mon, 27 Jan 2014 09:05:25 -0800
+X-Google-Sender-Auth: 3RCo1B-xZzeFBouDxh5PjDP1F-E
+Message-ID: <CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Kees Cook <keescook@chromium.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-27 at 08:54 -0800, Paul E. McKenney wrote: 
-> On Mon, Jan 27, 2014 at 06:10:44AM +0100, Mike Galbraith wrote:
-> > On Sat, 2014-01-25 at 06:12 +0100, Mike Galbraith wrote: 
-> > > On Fri, 2014-01-24 at 20:50 +0100, Sebastian Andrzej Siewior wrote: 
-> > > > * Mike Galbraith | 2014-01-18 04:25:14 [+0100]:
-> > > > 
-> > > > >> ># timers-do-not-raise-softirq-unconditionally.patch
-> > > > >> ># rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
-> > > > >> >
-> > > > >> >..those two out does seem to have stabilized the thing.
-> > > > >> 
-> > > > >> timers-do-not-raise-softirq-unconditionally.patch is on its way out.
-> > > > >> 
-> > > > >> rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch confues me.
-> > > > >> Didn't you report once that your box deadlocks without this patch? Now
-> > > > >> your 64way box on the other hand does not work with it?
-> > > > >
-> > > > >If 'do not raise' is applied, 'use a trylock' won't save you.  If 'do
-> > > > is this just an observation or you do know why it won't save me?
-> > > 
-> > > It's an observation from beyond the grave from the 64 core box that it
-> > > repeatedly did NOT save :)  Autopsy photos below.
-> > > 
-> > > I've built 3.12.8-rt9 with Stevens v2 "timer: Raise softirq if there's
-> > > irq_work" to see if it'll survive.
-> > 
-> > And it did, configured both as nohz_tick, and nohz_full_all.  The irqs
-> > are enabled warning in can_stop_full_tick() fired for nohz_full_all, but
-> > that's it.
-> > 
-> > For grins, I also applied Paul's v3 timer latency series while testing
-> > nohz_full_all config.   The box was heavily loaded the vast majority of
-> > the time, but it didn't explode or do anything obviously evil.
-> 
-> Cool!  May I add your Tested-by?
+On Sun, Jan 26, 2014 at 10:49 PM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Mon, Jan 27, 2014 at 6:33 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>> On 01/26/2014 02:16 AM, Richard Weinberger wrote:
+>>>
+>>> Currently we print the kernel offset only upon a panic() using the
+>>> panic notifier list.
+>>> This way it does not show up if the kernel hits a BUG() in process
+>>> context or something less critical.
+>>> Wouldn't make more sense to report the offset in every dump_stack() or
+>>> show_regs() call?
+>>
+>> No, because that information is available to user space unless we panic.
+>
+> Didn't you mean non-root?
+> I thought one has to set dmesg_restrict anyways if kASLR is used.
+>
+> And isn't the offset available to perf too?
+> Of course only for root, but still user space.
 
-Certainly.
+Setting dmesg_restrict is done mostly in an effort to try to lock down
+access to dmesg since it'll likely contain enough clues to help an
+attacker. System owners need to avoid dmesg getting sprayed into
+/var/log world-readable, or available via privileged debugging
+daemons, etc. Since keeping dmesg secret from non-root users is going
+to be error-prone, I had a goal of keeping the offset out of dmesg
+while the system is still running -- hence doing it only at panic
+time.
 
--Mike
+Finding the offset as the (unconfined) root user is extremely easy, so
+I personally see no reason to hide it from root (and it would be very
+irritating for things like perf, too). I view kASLR as a tool for
+statistical defense against confined processes or remote attacks.
 
+I would argue that decoding a non-panic oops on a running system is
+entirely possible as-is, since the offset can be found from
+/proc/kallsyms as root. It was the dead system that needed the offset
+exported: via text in the panic, or via an ELF note in a core.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
