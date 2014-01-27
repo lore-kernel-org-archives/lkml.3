@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaA0SLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:11:48 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:39123 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaA0SLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:11:44 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: gleb@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        mtosatti@redhat.com, stable@vger.kernel.org
-Subject: [PATCH 2/2] x86, kvm: correctly access the KVM_CPUID_FEATURES leaf at 0x40000101
-Date: Mon, 27 Jan 2014 19:11:30 +0100
-Message-Id: <1390846290-26844-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1390846290-26844-1-git-send-email-pbonzini@redhat.com>
-References: <1390846290-26844-1-git-send-email-pbonzini@redhat.com>
+	id S1754184AbaA0SMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:12:17 -0500
+Received: from mout.gmx.net ([212.227.17.21]:61795 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845AbaA0SLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 13:11:43 -0500
+From: xypron.glpk@gmx.de
+To: gxt@mprc.pku.edu.cn
+Cc: akpm@linux-foundation.org, paul.gortmaker@windriver.com, vapier@gentoo.org,
+        totglx@linutronix.de, linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] __init setup_early_printk: missing initialization
+Date: Mon, 27 Jan 2014 19:10:24 +0100
+Message-Id: <1390846224-6995-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Provags-ID: V03:K0:tXkUS6FZmbwxZMW/lw7YBpH7a/B+l0UOpHy9wgDJacncfFSDGAn
+ sS7SVcbTBUyanY5+9inrV3HK8ga3n9aTFLS6vA8fwF4MHRXgAG5gw81W2+cc7tdyPGHJkd9
+ N8bNFbv1WXr3uABohj5fBiKUQb2/GIKVCZzbsBXQmA1IoM7eCjUXip+UflLEknPw/gbFObY
+ DDRqyOQ4+vi1sfu1cbk2Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When Hyper-V hypervisor leaves are present, KVM must relocate
-its own leaves at 0x40000100, because Windows does not look for
-Hyper-V leaves at indices other than 0x40000000.  In this case,
-the KVM features are at 0x40000101, but the old code would always
-look at 0x40000001.
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
 
-Fix by using kvm_cpuid_base().  This also requires making the
-function non-inline, since kvm_cpuid_base() is static.
+If is based on uninitialized value keep_early.
+This leads to unpredictable result.
 
-Fixes: 1085ba7f552d84aa8ac0ae903fa8d0cc2ff9f79d
-Cc: stable@vger.kernel.org
-Cc: mtosatti@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
 ---
- arch/x86/include/asm/kvm_para.h | 11 ++++++-----
- arch/x86/kernel/kvm.c           |  5 +++++
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ arch/unicore32/kernel/early_printk.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 1679cc799b26..c7678e43465b 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,13 +85,9 @@ static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
- 	return ret;
- }
+diff --git a/arch/unicore32/kernel/early_printk.c b/arch/unicore32/kernel/early_printk.c
+index 9be0d5d..460a3b6 100644
+--- a/arch/unicore32/kernel/early_printk.c
++++ b/arch/unicore32/kernel/early_printk.c
+@@ -35,7 +35,7 @@ static struct console early_ocd_console = {
  
--static inline unsigned int kvm_arch_para_features(void)
--{
--	return cpuid_eax(KVM_CPUID_FEATURES);
--}
--
- #ifdef CONFIG_KVM_GUEST
- bool kvm_para_available(void);
-+unsigned int kvm_arch_para_features(void);
- void __init kvm_guest_init(void);
- void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
-@@ -116,6 +112,11 @@ static inline bool kvm_para_available(void)
- 	return 0;
- }
- 
-+static inline unsigned int kvm_arch_para_features(void)
-+{
-+	return 0;
-+}
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
+ static int __init setup_early_printk(char *buf)
  {
- 	return 0;
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 108c103b34b7..ae33e765b65b 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -527,6 +527,11 @@ bool kvm_para_available(void)
- }
- EXPORT_SYMBOL_GPL(kvm_para_available);
+-	int keep_early;
++	int keep_early = 0;
  
-+unsigned int kvm_arch_para_features(void)
-+{
-+	return cpuid_eax(kvm_cpuid_base() | KVM_CPUID_FEATURES);
-+}
-+
- static uint32_t __init kvm_detect(void)
- {
- 	return kvm_cpuid_base();
+ 	if (!buf || early_console)
+ 		return 0;
 -- 
-1.8.3.1
+1.7.10.4
 
