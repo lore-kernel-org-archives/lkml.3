@@ -1,1570 +1,1091 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbaA0S7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:59:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47422 "EHLO mx1.redhat.com"
+	id S1754313AbaA0S7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:59:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754233AbaA0S7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:59:04 -0500
+	id S1754236AbaA0S7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 13:59:05 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         jkosina@suse.cz, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 07/11] kexec: Create a relocatable object called purgatory
-Date: Mon, 27 Jan 2014 13:57:47 -0500
-Message-Id: <1390849071-21989-8-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 11/11] kexec: Support for Kexec on panic using new system call
+Date: Mon, 27 Jan 2014 13:57:51 -0500
+Message-Id: <1390849071-21989-12-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
 References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a stand alone relocatable object purgatory which runs between two
-kernels. This name, concept and some code has been taken from kexec-tools.
-Idea is that this code runs after a crash and it runs in minimal environment.
-So keep it separate from rest of the kernel and in long term we will have
-to practically do no maintenance of this code.
+This patch adds support for loading a kexec on panic (kdump) kernel usning
+new system call. Right now this primarily works with bzImage loader only.
+But changes to ELF loader should be minimal as all the core infrastrcture
+is there.
 
-This code also has the logic to do verify sha256 hashes of various
-segments which have been loaded into memory. So first we verify that
-the kernel we are jumping to is fine and has not been corrupted and
-make progress only if checsums are verified.
+Only thing preventing making ELF load in crash reseved memory is
+that kernel vmlinux is of type ET_EXEC and it expects to be loaded at
+address it has been compiled for. At that location current kernel is
+already running. One first needs to make vmlinux fully relocatable
+and export it is type ET_DYN and then modify this ELF loader to support
+images of type ET_DYN.
 
-This code also takes care of copying some memory contents to backup region.
-
-sha256 hash related code has been taken from crypto/sha256_generic.c. I
-could not call into functions exported by sha256_generic.c directly as
-we don't link against the kernel. Purgatory is a stand alone object.
-
-Also sha256_generic.c is supposed to work with higher level crypto
-abstrations and API and there was no point in importing all that in
-purgatory. So instead of doing #include on sha256_generic.c I just
-copied relevant portions of code into arch/x86/purgatory/sha256.c. Now
-we shouldn't have to touch this code at all. Do let me know if there are
-better ways to handle it.
+I am leaving it as a future TODO item.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/Kbuild                    |   1 +
- arch/x86/Kconfig                   |   1 +
- arch/x86/Makefile                  |   6 +
- arch/x86/kernel/machine_kexec_64.c |  82 +++++++
- arch/x86/purgatory/Makefile        |  35 +++
- arch/x86/purgatory/entry64.S       | 111 +++++++++
- arch/x86/purgatory/purgatory.c     | 103 ++++++++
- arch/x86/purgatory/setup-x86_32.S  |  29 +++
- arch/x86/purgatory/setup-x86_64.S  |  68 ++++++
- arch/x86/purgatory/sha256.c        | 315 ++++++++++++++++++++++++
- arch/x86/purgatory/sha256.h        |  33 +++
- arch/x86/purgatory/stack.S         |  29 +++
- include/linux/kexec.h              |  31 +++
- kernel/kexec.c                     | 481 +++++++++++++++++++++++++++++++++++++
- 14 files changed, 1325 insertions(+)
- create mode 100644 arch/x86/purgatory/Makefile
- create mode 100644 arch/x86/purgatory/entry64.S
- create mode 100644 arch/x86/purgatory/purgatory.c
- create mode 100644 arch/x86/purgatory/setup-x86_32.S
- create mode 100644 arch/x86/purgatory/setup-x86_64.S
- create mode 100644 arch/x86/purgatory/sha256.c
- create mode 100644 arch/x86/purgatory/sha256.h
- create mode 100644 arch/x86/purgatory/stack.S
+ arch/x86/include/asm/crash.h       |   9 +
+ arch/x86/include/asm/kexec.h       |  25 +-
+ arch/x86/kernel/crash.c            | 574 +++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/kexec-bzimage.c    |  27 +-
+ arch/x86/kernel/kexec-elf.c        |   4 +-
+ arch/x86/kernel/machine_kexec.c    |  21 +-
+ arch/x86/kernel/machine_kexec_64.c |  38 +++
+ kernel/kexec.c                     |  83 +++++-
+ 8 files changed, 763 insertions(+), 18 deletions(-)
+ create mode 100644 arch/x86/include/asm/crash.h
 
-diff --git a/arch/x86/Kbuild b/arch/x86/Kbuild
-index e5287d8..faaeee7 100644
---- a/arch/x86/Kbuild
-+++ b/arch/x86/Kbuild
-@@ -16,3 +16,4 @@ obj-$(CONFIG_IA32_EMULATION) += ia32/
+diff --git a/arch/x86/include/asm/crash.h b/arch/x86/include/asm/crash.h
+new file mode 100644
+index 0000000..2dd2eb8
+--- /dev/null
++++ b/arch/x86/include/asm/crash.h
+@@ -0,0 +1,9 @@
++#ifndef _ASM_X86_CRASH_H
++#define _ASM_X86_CRASH_H
++
++int load_crashdump_segments(struct kimage *image);
++int crash_copy_backup_region(struct kimage *image);
++int crash_setup_memmap_entries(struct kimage *image,
++		struct boot_params *params);
++
++#endif /* _ASM_X86_CRASH_H */
+diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+index 9bd6fec..a330d85 100644
+--- a/arch/x86/include/asm/kexec.h
++++ b/arch/x86/include/asm/kexec.h
+@@ -25,6 +25,8 @@
+ #include <asm/ptrace.h>
+ #include <asm/bootparam.h>
  
- obj-y += platform/
- obj-y += net/
-+obj-$(CONFIG_KEXEC) += purgatory/
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index aa5aeed..532cc0b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1605,6 +1605,7 @@ source kernel/Kconfig.hz
- config KEXEC
- 	bool "kexec system call"
- 	select BUILD_BIN2C
-+	select CRYPTO_SHA256
- 	---help---
- 	  kexec is a system call that implements the ability to shutdown your
- 	  current kernel, and to start another kernel.  It is like a reboot
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 13b22e0..fedcd16 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -160,6 +160,11 @@ archscripts: scripts_basic
- archheaders:
- 	$(Q)$(MAKE) $(build)=arch/x86/syscalls all
- 
-+archprepare:
-+ifeq ($(CONFIG_KEXEC),y)
-+	$(Q)$(MAKE) $(build)=arch/x86/purgatory arch/x86/purgatory/kexec-purgatory.c
-+endif
-+
- ###
- # Kernel objects
- 
-@@ -223,6 +228,7 @@ archclean:
- 	$(Q)rm -rf $(objtree)/arch/x86_64
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 	$(Q)$(MAKE) $(clean)=arch/x86/tools
-+	$(Q)$(MAKE) $(clean)=arch/x86/purgatory
- 
- PHONY += kvmconfig
- kvmconfig:
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index c91d72a..8866c5e 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -331,3 +331,85 @@ int arch_kimage_file_post_load_cleanup(struct kimage *image)
- 		return kexec_file_type[idx].cleanup(image);
- 	return 0;
- }
-+
-+/* Apply purgatory relocations */
-+int arch_kexec_apply_relocations_add(Elf64_Shdr *sechdrs,
-+				unsigned int nr_sections, unsigned int relsec)
-+{
-+	unsigned int i;
-+	Elf64_Rela *rel = (void *)sechdrs[relsec].sh_offset;
-+	Elf64_Sym *sym;
-+	void *location;
-+	Elf64_Shdr *section, *symtab;
-+	unsigned long address, sec_base, value;
-+
-+	/* Section to which relocations apply */
-+	section = &sechdrs[sechdrs[relsec].sh_info];
-+
-+	/* Associated symbol table */
-+	symtab = &sechdrs[sechdrs[relsec].sh_link];
-+
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+
-+		/*
-+		 * This is location (->sh_offset) to update. This is temporary
-+		 * buffer where section is currently loaded. This will finally
-+		 * be loaded to a different address later (pointed to
-+		 * by ->sh_addr. kexec takes care of moving it
-+		 * (kexec_load_segment()).
-+		 */
-+		location = (void *)(section->sh_offset + rel[i].r_offset);
-+
-+		/* Final address of the location */
-+		address = section->sh_addr + rel[i].r_offset;
-+
-+		sym = (Elf64_Sym *)symtab->sh_offset +
-+				ELF64_R_SYM(rel[i].r_info);
-+
-+		if (sym->st_shndx == SHN_UNDEF || sym->st_shndx == SHN_COMMON)
-+			return -ENOEXEC;
-+
-+		if (sym->st_shndx == SHN_ABS)
-+			sec_base = 0;
-+		else if (sym->st_shndx >= nr_sections)
-+			return -ENOEXEC;
-+		else
-+			sec_base = sechdrs[sym->st_shndx].sh_addr;
-+
-+		value = sym->st_value;
-+		value += sec_base;
-+		value += rel[i].r_addend;
-+
-+		switch(ELF64_R_TYPE(rel[i].r_info)) {
-+		case R_X86_64_NONE:
-+			break;
-+		case R_X86_64_64:
-+			*(u64 *)location = value;
-+			break;
-+		case R_X86_64_32:
-+			*(u32 *)location = value;
-+			if (value != *(u32 *)location)
-+				goto overflow;
-+			break;
-+		case R_X86_64_32S:
-+			*(s32 *)location = value;
-+			if ((s64)value != *(s32 *)location)
-+				goto overflow;
-+			break;
-+		case R_X86_64_PC32:
-+			value -= (u64)address;
-+			*(u32 *)location = value;
-+			break;
-+		default:
-+			pr_err("kexec: Unknown rela relocation: %llu\n",
-+					ELF64_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+	return 0;
-+
-+overflow:
-+	pr_err("kexec: overflow in relocation type %d value 0x%lx\n",
-+		(int)ELF64_R_TYPE(rel[i].r_info), value);
-+        return -ENOEXEC;
-+}
-diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
-new file mode 100644
-index 0000000..c83c557
---- /dev/null
-+++ b/arch/x86/purgatory/Makefile
-@@ -0,0 +1,35 @@
-+ifeq ($(CONFIG_X86_64),y)
-+	purgatory-y := purgatory.o entry64.o stack.o setup-x86_64.o sha256.o
-+else
-+	purgatory-y := purgatory.o stack.o sha256.o setup-x86_32.o
-+endif
-+
-+targets += $(purgatory-y)
-+PURGATORY_OBJS = $(addprefix $(obj)/,$(purgatory-y))
-+
-+LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib -z nodefaultlib
-+targets += purgatory.ro
-+
-+# Default KBUILD_CFLAGS can have -pg option set when FTRACE is enabled. That
-+# in turn leaves some undefined symbols like __fentry__ in purgatory and not
-+# sure how to relocate those. Like kexec-tools, custom flags.
-+
-+ifeq ($(CONFIG_X86_64),y)
-+KBUILD_CFLAGS	:= -fno-strict-aliasing -Wall -Wstrict-prototypes -fno-zero-initialized-in-bss -mcmodel=large -Os -fno-builtin -ffreestanding -c -MD
-+else
-+KBUILD_CFLAGS	:= -fno-strict-aliasing -Wall -Wstrict-prototypes -fno-zero-initialized-in-bss -Os -fno-builtin -ffreestanding -c -MD -m32
-+endif
-+
-+$(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
-+		$(call if_changed,ld)
-+
-+targets += kexec-purgatory.c
-+
-+quiet_cmd_bin2c = BIN2C   $@
-+      cmd_bin2c = cat $(obj)/purgatory.ro | $(srctree)/scripts/basic/bin2c kexec_purgatory > $(obj)/kexec-purgatory.c
-+
-+$(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
-+	$(call if_changed,bin2c)
-+
-+
-+obj-$(CONFIG_KEXEC)	+= kexec-purgatory.o
-diff --git a/arch/x86/purgatory/entry64.S b/arch/x86/purgatory/entry64.S
-new file mode 100644
-index 0000000..e405c0f
---- /dev/null
-+++ b/arch/x86/purgatory/entry64.S
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
-+ * Copyright (C) 2014  Red Hat Inc.
-+
-+ * Author(s): Vivek Goyal <vgoyal@redhat.com>
-+ *
-+ * This code has been taken from kexec-tools.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation (version 2 of the License).
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+	.text
-+	.balign 16
-+	.code64
-+	.globl entry64, entry64_regs
-+
-+
-+entry64:
-+	/* Setup a gdt that should be preserved */
-+	lgdt gdt(%rip)
-+
-+	/* load the data segments */
-+	movl    $0x18, %eax     /* data segment */
-+	movl    %eax, %ds
-+	movl    %eax, %es
-+	movl    %eax, %ss
-+	movl    %eax, %fs
-+	movl    %eax, %gs
-+
-+	/* Setup new stack */
-+	leaq    stack_init(%rip), %rsp
-+	pushq   $0x10 /* CS */
-+	leaq    new_cs_exit(%rip), %rax
-+	pushq   %rax
-+	lretq
-+new_cs_exit:
-+
-+	/* Load the registers */
-+	movq	rax(%rip), %rax
-+	movq	rbx(%rip), %rbx
-+	movq	rcx(%rip), %rcx
-+	movq	rdx(%rip), %rdx
-+	movq	rsi(%rip), %rsi
-+	movq	rdi(%rip), %rdi
-+	movq    rsp(%rip), %rsp
-+	movq	rbp(%rip), %rbp
-+	movq	r8(%rip), %r8
-+	movq	r9(%rip), %r9
-+	movq	r10(%rip), %r10
-+	movq	r11(%rip), %r11
-+	movq	r12(%rip), %r12
-+	movq	r13(%rip), %r13
-+	movq	r14(%rip), %r14
-+	movq	r15(%rip), %r15
-+
-+	/* Jump to the new code... */
-+	jmpq	*rip(%rip)
-+
-+	.section ".rodata"
-+	.balign 4
-+entry64_regs:
-+rax:	.quad 0x00000000
-+rbx:	.quad 0x00000000
-+rcx:	.quad 0x00000000
-+rdx:	.quad 0x00000000
-+rsi:	.quad 0x00000000
-+rdi:	.quad 0x00000000
-+rsp:	.quad 0x00000000
-+rbp:	.quad 0x00000000
-+r8:	.quad 0x00000000
-+r9:	.quad 0x00000000
-+r10:	.quad 0x00000000
-+r11:	.quad 0x00000000
-+r12:	.quad 0x00000000
-+r13:	.quad 0x00000000
-+r14:	.quad 0x00000000
-+r15:	.quad 0x00000000
-+rip:	.quad 0x00000000
-+	.size entry64_regs, . - entry64_regs
-+
-+	/* GDT */
-+	.section ".rodata"
-+	.balign 16
-+gdt:
-+	/* 0x00 unusable segment
-+	 * 0x08 unused
-+	 * so use them as gdt ptr
-+	 */
-+	.word gdt_end - gdt - 1
-+	.quad gdt
-+	.word 0, 0, 0
-+
-+	/* 0x10 4GB flat code segment */
-+	.word 0xFFFF, 0x0000, 0x9A00, 0x00AF
-+
-+	/* 0x18 4GB flat data segment */
-+	.word 0xFFFF, 0x0000, 0x9200, 0x00CF
-+gdt_end:
-+stack:	.quad   0, 0
-+stack_init:
-diff --git a/arch/x86/purgatory/purgatory.c b/arch/x86/purgatory/purgatory.c
-new file mode 100644
-index 0000000..375cfb7
---- /dev/null
-+++ b/arch/x86/purgatory/purgatory.c
-@@ -0,0 +1,103 @@
-+/*
-+ * purgatory: Runs between two kernels
-+ *
-+ * Copyright (C) 2013 Red Hat Inc.
-+ *
-+ * Author:
-+ *
-+ * Vivek Goyal <vgoyal@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation (version 2 of the License).
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include "sha256.h"
-+
-+struct sha_region {
-+	unsigned long start;
-+	unsigned long len;
-+};
-+
-+unsigned long backup_dest = 0;
-+unsigned long backup_src = 0;
-+unsigned long backup_sz = 0;
-+
-+u8 sha256_digest[SHA256_DIGEST_SIZE] = { 0 };
-+
-+struct sha_region sha_regions[16] = {};
-+
-+/**
-+ * memcpy - Copy one area of memory to another
-+ * @dest: Where to copy to
-+ * @src: Where to copy from
-+ * @count: The size of the area.
-+ */
-+static void *memcpy(void *dest, const void *src, unsigned long count)
-+{
-+	char *tmp = dest;
-+	const char *s = src;
-+
-+	while (count--)
-+		*tmp++ = *s++;
-+	return dest;
-+}
-+
-+static int memcmp(const void *cs, const void *ct, size_t count)
-+{
-+	const unsigned char *su1, *su2;
-+	int res = 0;
-+
-+	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
-+		if ((res = *su1 - *su2) != 0)
-+			break;
-+	return res;
-+}
-+
-+static int copy_backup_region(void)
-+{
-+	if (backup_dest)
-+		memcpy((void *)backup_dest, (void *)backup_src, backup_sz);
-+
-+	return 0;
-+}
-+
-+int verify_sha256_digest(void)
-+{
-+	struct sha_region *ptr, *end;
-+	u8 digest[SHA256_DIGEST_SIZE];
-+	struct sha256_state sctx;
-+
-+	sha256_init(&sctx);
-+	end = &sha_regions[sizeof(sha_regions)/sizeof(sha_regions[0])];
-+	for (ptr = sha_regions; ptr < end; ptr++)
-+		sha256_update(&sctx, (uint8_t *)(ptr->start), ptr->len);
-+
-+	sha256_final(&sctx, digest);
-+
-+	if (memcmp(digest, sha256_digest, sizeof(digest)) != 0)
-+		return 1;
-+
-+        return 0;
-+}
-+
-+void purgatory(void)
-+{
-+	int ret;
-+
-+	ret = verify_sha256_digest();
-+	if (ret) {
-+		/* loop forever */
-+		for(;;);
-+	}
-+	copy_backup_region();
-+}
-diff --git a/arch/x86/purgatory/setup-x86_32.S b/arch/x86/purgatory/setup-x86_32.S
-new file mode 100644
-index 0000000..a9d5aa5
---- /dev/null
-+++ b/arch/x86/purgatory/setup-x86_32.S
-@@ -0,0 +1,29 @@
-+/*
-+ * purgatory:  setup code
-+ *
-+ * Copyright (C) 2014 Red Hat Inc.
-+ *
-+ * This code has been taken from kexec-tools.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation (version 2 of the License).
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+	.text
-+	.globl purgatory_start
-+	.balign 16
-+purgatory_start:
-+	.code32
-+
-+	/* This is just a stub. Write code when 32bit support comes along */
-+	call purgatory
-diff --git a/arch/x86/purgatory/setup-x86_64.S b/arch/x86/purgatory/setup-x86_64.S
-new file mode 100644
-index 0000000..d23bc54
---- /dev/null
-+++ b/arch/x86/purgatory/setup-x86_64.S
-@@ -0,0 +1,68 @@
-+/*
-+ * purgatory:  setup code
-+ *
-+ * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
-+ * Copyright (C) 2014 Red Hat Inc.
-+ *
-+ * This code has been taken from kexec-tools.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation (version 2 of the License).
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+	.text
-+	.globl purgatory_start
-+	.balign 16
-+purgatory_start:
-+	.code64
-+
-+	/* Load a gdt so I know what the segment registers are */
-+	lgdt	gdt(%rip)
-+
-+	/* load the data segments */
-+	movl	$0x18, %eax	/* data segment */
-+	movl	%eax, %ds
-+	movl	%eax, %es
-+	movl	%eax, %ss
-+	movl	%eax, %fs
-+	movl	%eax, %gs
-+
-+	/* Setup a stack */
-+	leaq	lstack_end(%rip), %rsp
-+
-+	/* Call the C code */
-+	call purgatory
-+	jmp	entry64
-+
-+	.section ".rodata"
-+	.balign 16
-+gdt:	/* 0x00 unusable segment
-+	 * 0x08 unused
-+	 * so use them as the gdt ptr
-+	 */
-+	.word	gdt_end - gdt - 1
-+	.quad	gdt
-+	.word	0, 0, 0
-+
-+	/* 0x10 4GB flat code segment */
-+	.word	0xFFFF, 0x0000, 0x9A00, 0x00AF
-+
-+	/* 0x18 4GB flat data segment */
-+	.word	0xFFFF, 0x0000, 0x9200, 0x00CF
-+gdt_end:
-+
-+	.bss
-+	.balign 4096
-+lstack:
-+	.skip 4096
-+lstack_end:
-diff --git a/arch/x86/purgatory/sha256.c b/arch/x86/purgatory/sha256.c
-new file mode 100644
-index 0000000..990d17f
---- /dev/null
-+++ b/arch/x86/purgatory/sha256.c
-@@ -0,0 +1,315 @@
-+/*
-+ * SHA-256, as specified in
-+ * http://csrc.nist.gov/groups/STM/cavp/documents/shs/sha256-384-512.pdf
-+ *
-+ * SHA-256 code by Jean-Luc Cooke <jlcooke@certainkey.com>.
-+ *
-+ * Copyright (c) Jean-Luc Cooke <jlcooke@certainkey.com>
-+ * Copyright (c) Andrew McDonald <andrew@mcdonald.org.uk>
-+ * Copyright (c) 2002 James Morris <jmorris@intercode.com.au>
-+ * Copyright (c) 2014 Red Hat Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <asm/byteorder.h>
-+#include "sha256.h"
-+
-+
-+/**
-+ * memset - Fill a region of memory with the given value
-+ * @s: Pointer to the start of the area.
-+ * @c: The byte to fill the area with
-+ * @count: The size of the area.
-+ */
-+static void *memset(void *s, int c, size_t count)
-+{
-+	char *xs = s;
-+
-+	while (count--)
-+		*xs++ = c;
-+	return s;
-+}
-+
-+/**
-+ * memcpy - Copy one area of memory to another
-+ * @dest: Where to copy to
-+ * @src: Where to copy from
-+ * @count: The size of the area.
-+ */
-+static void *memcpy(void *dest, const void *src, size_t count)
-+{
-+	char *tmp = dest;
-+	const char *s = src;
-+
-+	while (count--)
-+		*tmp++ = *s++;
-+	return dest;
-+}
-+
-+static inline u32 Ch(u32 x, u32 y, u32 z)
-+{
-+	return z ^ (x & (y ^ z));
-+}
-+
-+static inline u32 Maj(u32 x, u32 y, u32 z)
-+{
-+	return (x & y) | (z & (x | y));
-+}
-+
-+#define e0(x)       (ror32(x, 2) ^ ror32(x,13) ^ ror32(x,22))
-+#define e1(x)       (ror32(x, 6) ^ ror32(x,11) ^ ror32(x,25))
-+#define s0(x)       (ror32(x, 7) ^ ror32(x,18) ^ (x >> 3))
-+#define s1(x)       (ror32(x,17) ^ ror32(x,19) ^ (x >> 10))
-+
-+static inline void LOAD_OP(int I, u32 *W, const u8 *input)
-+{
-+	W[I] = __be32_to_cpu( ((__be32*)(input))[I] );
-+}
-+
-+static inline void BLEND_OP(int I, u32 *W)
-+{
-+	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
-+}
-+
-+static void sha256_transform(u32 *state, const u8 *input)
-+{
-+	u32 a, b, c, d, e, f, g, h, t1, t2;
-+	u32 W[64];
-+	int i;
-+
-+	/* load the input */
-+	for (i = 0; i < 16; i++)
-+		LOAD_OP(i, W, input);
-+
-+	/* now blend */
-+	for (i = 16; i < 64; i++)
-+		BLEND_OP(i, W);
-+
-+	/* load the state into our registers */
-+	a=state[0];  b=state[1];  c=state[2];  d=state[3];
-+	e=state[4];  f=state[5];  g=state[6];  h=state[7];
-+
-+	/* now iterate */
-+	t1 = h + e1(e) + Ch(e,f,g) + 0x428a2f98 + W[ 0];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0x71374491 + W[ 1];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0xb5c0fbcf + W[ 2];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0xe9b5dba5 + W[ 3];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x3956c25b + W[ 4];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0x59f111f1 + W[ 5];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x923f82a4 + W[ 6];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0xab1c5ed5 + W[ 7];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0xd807aa98 + W[ 8];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0x12835b01 + W[ 9];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0x243185be + W[10];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0x550c7dc3 + W[11];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x72be5d74 + W[12];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0x80deb1fe + W[13];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x9bdc06a7 + W[14];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0xc19bf174 + W[15];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0xe49b69c1 + W[16];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0xefbe4786 + W[17];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0x0fc19dc6 + W[18];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0x240ca1cc + W[19];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x2de92c6f + W[20];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0x4a7484aa + W[21];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x5cb0a9dc + W[22];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0x76f988da + W[23];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0x983e5152 + W[24];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0xa831c66d + W[25];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0xb00327c8 + W[26];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0xbf597fc7 + W[27];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0xc6e00bf3 + W[28];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0xd5a79147 + W[29];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x06ca6351 + W[30];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0x14292967 + W[31];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0x27b70a85 + W[32];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0x2e1b2138 + W[33];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0x4d2c6dfc + W[34];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0x53380d13 + W[35];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x650a7354 + W[36];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0x766a0abb + W[37];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x81c2c92e + W[38];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0x92722c85 + W[39];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0xa2bfe8a1 + W[40];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0xa81a664b + W[41];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0xc24b8b70 + W[42];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0xc76c51a3 + W[43];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0xd192e819 + W[44];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0xd6990624 + W[45];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0xf40e3585 + W[46];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0x106aa070 + W[47];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0x19a4c116 + W[48];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0x1e376c08 + W[49];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0x2748774c + W[50];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0x34b0bcb5 + W[51];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x391c0cb3 + W[52];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0x4ed8aa4a + W[53];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0x5b9cca4f + W[54];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0x682e6ff3 + W[55];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	t1 = h + e1(e) + Ch(e,f,g) + 0x748f82ee + W[56];
-+	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+	t1 = g + e1(d) + Ch(d,e,f) + 0x78a5636f + W[57];
-+	t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+	t1 = f + e1(c) + Ch(c,d,e) + 0x84c87814 + W[58];
-+	t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+	t1 = e + e1(b) + Ch(b,c,d) + 0x8cc70208 + W[59];
-+	t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+	t1 = d + e1(a) + Ch(a,b,c) + 0x90befffa + W[60];
-+	t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+	t1 = c + e1(h) + Ch(h,a,b) + 0xa4506ceb + W[61];
-+	t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+	t1 = b + e1(g) + Ch(g,h,a) + 0xbef9a3f7 + W[62];
-+	t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+	t1 = a + e1(f) + Ch(f,g,h) + 0xc67178f2 + W[63];
-+	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+
-+	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-+	state[4] += e; state[5] += f; state[6] += g; state[7] += h;
-+
-+	/* clear any sensitive info... */
-+	a = b = c = d = e = f = g = h = t1 = t2 = 0;
-+	memset(W, 0, 64 * sizeof(u32));
-+}
-+
-+int sha256_init(struct sha256_state *sctx)
-+{
-+	sctx->state[0] = SHA256_H0;
-+	sctx->state[1] = SHA256_H1;
-+	sctx->state[2] = SHA256_H2;
-+	sctx->state[3] = SHA256_H3;
-+	sctx->state[4] = SHA256_H4;
-+	sctx->state[5] = SHA256_H5;
-+	sctx->state[6] = SHA256_H6;
-+	sctx->state[7] = SHA256_H7;
-+	sctx->count = 0;
-+
-+	return 0;
-+}
-+
-+int sha256_update(struct sha256_state *sctx, const u8 *data,
-+					unsigned int len)
-+{
-+	unsigned int partial, done;
-+	const u8 *src;
-+
-+	partial = sctx->count & 0x3f;
-+	sctx->count += len;
-+	done = 0;
-+	src = data;
-+
-+	if ((partial + len) > 63) {
-+		if (partial) {
-+			done = -partial;
-+			memcpy(sctx->buf + partial, data, done + 64);
-+			src = sctx->buf;
-+		}
-+
-+		do {
-+			sha256_transform(sctx->state, src);
-+			done += 64;
-+			src = data + done;
-+		} while (done + 63 < len);
-+
-+		partial = 0;
-+	}
-+	memcpy(sctx->buf + partial, src, len - done);
-+
-+	return 0;
-+}
-+
-+int sha256_final(struct sha256_state *sctx, u8 *out)
-+{
-+	__be32 *dst = (__be32 *)out;
-+	__be64 bits;
-+	unsigned int index, pad_len;
-+	int i;
-+	static const u8 padding[64] = { 0x80, };
-+
-+	/* Save number of bits */
-+	bits = cpu_to_be64(sctx->count << 3);
-+
-+	/* Pad out to 56 mod 64. */
-+	index = sctx->count & 0x3f;
-+	pad_len = (index < 56) ? (56 - index) : ((64+56) - index);
-+	sha256_update(sctx, padding, pad_len);
-+
-+	/* Append length (before padding) */
-+	sha256_update(sctx, (const u8 *)&bits, sizeof(bits));
-+
-+	/* Store state in digest */
-+	for (i = 0; i < 8; i++)
-+		dst[i] = cpu_to_be32(sctx->state[i]);
-+
-+	/* Zeroize sensitive information. */
-+	memset(sctx, 0, sizeof(*sctx));
-+
-+	return 0;
-+}
-diff --git a/arch/x86/purgatory/sha256.h b/arch/x86/purgatory/sha256.h
-new file mode 100644
-index 0000000..74df8f4
---- /dev/null
-+++ b/arch/x86/purgatory/sha256.h
-@@ -0,0 +1,33 @@
-+/*
-+ *  Copyright (C) 2014 Red Hat Inc.
-+ *
-+ *  Author: Vivek Goyal <vgoyal@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef SHA256_H
-+#define SHA256_H
-+
-+
-+#include <linux/types.h>
-+#include <crypto/sha.h>
-+
-+extern int sha256_init(struct sha256_state *sctx);
-+extern int sha256_update(struct sha256_state *sctx, const u8 *input,
-+				unsigned int length);
-+extern int sha256_final(struct sha256_state *sctx, u8* hash);
-+
-+#endif /* SHA256_H */
-diff --git a/arch/x86/purgatory/stack.S b/arch/x86/purgatory/stack.S
-new file mode 100644
-index 0000000..aff1fa9
---- /dev/null
-+++ b/arch/x86/purgatory/stack.S
-@@ -0,0 +1,29 @@
-+/*
-+ * purgatory:  stack
-+ *
-+ * Copyright (C) 2014 Red Hat Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation (version 2 of the License).
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+	/* A stack for the loaded kernel.
-+	 * Seperate and in the data section so it can be prepopulated.
-+	 */
-+	.data
-+	.balign 4096
-+	.globl stack, stack_end
-+
-+stack:
-+	.skip 4096
-+stack_end:
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 51b56cd..d391ed7 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -10,6 +10,7 @@
- #include <linux/ioport.h>
- #include <linux/elfcore.h>
- #include <linux/elf.h>
-+#include <linux/module.h>
- #include <asm/kexec.h>
- 
- /* Verify architecture specific macros are defined */
-@@ -95,6 +96,27 @@ struct compat_kexec_segment {
- };
++struct kimage;
++
+ /*
+  * KEXEC_SOURCE_MEMORY_LIMIT maximum page get_free_page can return.
+  * I.e. Maximum page that is mapped directly into kernel memory,
+@@ -62,6 +64,10 @@
+ # define KEXEC_ARCH KEXEC_ARCH_X86_64
  #endif
  
-+struct kexec_sha_region {
-+	unsigned long start;
-+	unsigned long len;
-+};
++/* Memory to backup during crash kdump */
++#define KEXEC_BACKUP_SRC_START	(0UL)
++#define KEXEC_BACKUP_SRC_END	(655360UL)	/* 640K */
 +
-+struct purgatory_info {
-+	/* Pointer to elf header of read only purgatory */
-+	Elf_Ehdr *ehdr;
+ /*
+  * CPU does not save ss and sp on stack if execution is already
+  * running in kernel mode at the time of NMI occurrence. This code
+@@ -161,8 +167,21 @@ struct kimage_arch {
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
++	/* Details of backup region */
++	unsigned long backup_src_start;
++	unsigned long backup_src_sz;
 +
-+	/* Pointer to purgatory sechdrs which are modifiable */
-+	Elf_Shdr *sechdrs;
-+	/*
-+	 * Temporary buffer location where purgatory is loaded and relocated
-+	 * This memory can be freed post image load
-+	 */
-+	void *purgatory_buf;
++	/* Physical address of backup segment */
++	unsigned long backup_load_addr;
 +
-+	/* Address where purgatory is finally loaded and is executed from */
-+	unsigned long purgatory_load_addr;
-+};
-+
- struct kimage {
- 	kimage_entry_t head;
- 	kimage_entry_t *entry;
-@@ -143,6 +165,9 @@ struct kimage {
- 
- 	/* Image loader handling the kernel can store a pointer here */
- 	void * image_loader_data;
-+
-+	/* Information for loading purgatory */
-+	struct purgatory_info purgatory_info;
++	/* Core ELF header buffer */
++	unsigned long elf_headers;
++	unsigned long elf_headers_sz;
++	unsigned long elf_load_addr;
  };
++#endif /* CONFIG_X86_32 */
+ 
++#ifdef CONFIG_X86_64
+ struct kexec_entry64_regs {
+ 	uint64_t rax;
+ 	uint64_t rbx;
+@@ -189,11 +208,13 @@ extern crash_vmclear_fn __rcu *crash_vmclear_loaded_vmcss;
+ 
+ extern int kexec_setup_initrd(struct boot_params *boot_params,
+ 		unsigned long initrd_load_addr, unsigned long initrd_len);
+-extern int kexec_setup_cmdline(struct boot_params *boot_params,
++extern int kexec_setup_cmdline(struct kimage *image,
++		struct boot_params *boot_params,
+ 		unsigned long bootparams_load_addr,
+ 		unsigned long cmdline_offset, char *cmdline,
+ 		unsigned long cmdline_len);
+-extern int kexec_setup_boot_parameters(struct boot_params *params);
++extern int kexec_setup_boot_parameters(struct kimage *image,
++					struct boot_params *params);
+ 
+ 
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index a57902e..8eabde4 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -4,6 +4,9 @@
+  * Created by: Hariprasad Nellitheertha (hari@in.ibm.com)
+  *
+  * Copyright (C) IBM Corporation, 2004. All rights reserved.
++ * Copyright (C) Red Hat Inc., 2014. All rights reserved.
++ * Authors:
++ * 	Vivek Goyal <vgoyal@redhat.com>
+  *
+  */
+ 
+@@ -16,6 +19,7 @@
+ #include <linux/elf.h>
+ #include <linux/elfcore.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/hardirq.h>
+@@ -28,6 +32,45 @@
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
+ 
++/* Alignment required for elf header segment */
++#define ELF_CORE_HEADER_ALIGN   4096
++
++/* This primarily reprsents number of split ranges due to exclusion */
++#define CRASH_MAX_RANGES	16
++
++struct crash_mem_range {
++	unsigned long long start, end;
++};
++
++struct crash_mem {
++	unsigned int nr_ranges;
++	struct crash_mem_range ranges[CRASH_MAX_RANGES];
++};
++
++/* Misc data about ram ranges needed to prepare elf headers */
++struct crash_elf_data {
++	struct kimage *image;
++	/*
++	 * Total number of ram ranges we have after various ajustments for
++	 * GART, crash reserved region etc.
++	 */
++	unsigned int max_nr_ranges;
++	unsigned long gart_start, gart_end;
++
++	/* Pointer to elf header */
++	void *ehdr;
++	/* Pointer to next phdr */
++	void *bufp;
++	struct crash_mem mem;
++};
++
++/* Used while prepareing memory map entries for second kernel */
++struct crash_memmap_data {
++	struct boot_params *params;
++	/* Type of memory */
++	unsigned int type;
++};
++
+ int in_crash_kexec;
  
  /*
-@@ -197,6 +222,12 @@ extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
- extern struct page *kimage_alloc_control_pages(struct kimage *image,
- 						unsigned int order);
- extern void kimage_set_start_addr(struct kimage *image, unsigned long start);
-+extern int kexec_load_purgatory(struct kimage *image, unsigned long min,
-+		unsigned long max, int top_down, unsigned long *load_addr);
-+extern int kexec_purgatory_get_set_symbol(struct kimage *image,
-+		const char *name, void *buf, unsigned int size, bool get_value);
-+extern void *kexec_purgatory_get_symbol_addr(struct kimage *image,
-+					const char *name);
- 
- extern void crash_kexec(struct pt_regs *);
- int kexec_should_crash(struct task_struct *);
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index b28578a..20169a4 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -38,6 +38,9 @@
- #include <asm/io.h>
- #include <asm/sections.h>
- 
-+#include <crypto/hash.h>
-+#include <crypto/sha.h>
-+
- /* Per cpu memory for storing cpu states in case of system crash. */
- note_buf_t __percpu *crash_notes;
- 
-@@ -50,6 +53,15 @@ size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
- /* Flag to indicate we are going to kexec a new kernel */
- bool kexec_in_progress = false;
- 
-+/*
-+ * Declare these symbols weak so that if architecture provides a purgatory,
-+ * these will be overridden.
-+ */
-+char __weak kexec_purgatory[0];
-+size_t __weak kexec_purgatory_size = 0;
-+
-+static int kexec_calculate_store_digests(struct kimage *image);
-+
- /* Location of the reserved area for the crash kernel */
- struct resource crashk_res = {
- 	.name  = "Crash kernel",
-@@ -341,6 +353,15 @@ arch_kimage_file_post_load_cleanup(struct kimage *image)
- 	return;
+@@ -137,3 +180,534 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ #endif
+ 	crash_save_cpu(regs, safe_smp_processor_id());
  }
- 
-+/* Apply relocations for rela section */
-+int __attribute__ ((weak))
-+arch_kexec_apply_relocations_add(Elf_Shdr *sechdrs, unsigned int nr_sections,
-+					unsigned int relsec)
++
++#ifdef CONFIG_X86_64
++
++static int get_nr_ram_ranges_callback(unsigned long start_pfn,
++				unsigned long nr_pfn, void *arg)
 +{
-+	printk(KERN_ERR "kexec: REL relocation unsupported\n");
-+	return -ENOEXEC;
++	int *nr_ranges = arg;
++
++	(*nr_ranges)++;
++	return 0;
 +}
 +
- /*
-  * Free up tempory buffers allocated which are not needed after image has
-  * been loaded.
-@@ -360,6 +381,12 @@ static void kimage_file_post_load_cleanup(struct kimage *image)
- 	vfree(image->cmdline_buf);
- 	image->cmdline_buf = NULL;
- 
-+	vfree(image->purgatory_info.purgatory_buf);
-+	image->purgatory_info.purgatory_buf = NULL;
-+
-+	vfree(image->purgatory_info.sechdrs);
-+	image->purgatory_info.sechdrs = NULL;
-+
- 	/* See if architcture has anything to cleanup post load */
- 	arch_kimage_file_post_load_cleanup(image);
- }
-@@ -1374,6 +1401,10 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd, const char __us
- 	if (ret)
- 		goto out;
- 
-+	ret = kexec_calculate_store_digests(image);
-+	if (ret)
-+		goto out;
-+
- 	for (i = 0; i < image->nr_segments; i++) {
- 		struct kexec_segment *ksegment;
- 
-@@ -2137,6 +2168,456 @@ int kexec_add_buffer(struct kimage *image, char *buffer,
- 	return 0;
- }
- 
-+/* Calculate and store the digest of segments */
-+static int kexec_calculate_store_digests(struct kimage *image)
++static int get_gart_ranges_callback(u64 start, u64 end, void *arg)
 +{
-+	struct crypto_shash *tfm;
-+	struct shash_desc *desc;
-+	int ret = 0, i, j, zero_buf_sz = 256, sha_region_sz;
-+	size_t desc_size, nullsz;
-+	char *digest = NULL;
-+	void *zero_buf;
-+	struct kexec_sha_region *sha_regions;
++	struct crash_elf_data *ced = arg;
 +
-+	tfm = crypto_alloc_shash("sha256", 0, 0);
-+	if (IS_ERR(tfm)) {
-+		ret = PTR_ERR(tfm);
-+		goto out;
-+	}
++	ced->gart_start = start;
++	ced->gart_end = end;
 +
-+	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-+	desc = kzalloc(desc_size, GFP_KERNEL);
-+	if (!desc) {
-+		ret = -ENOMEM;
-+		goto out_free_tfm;
-+	}
++	/* Not expecting more than 1 gart aperture */
++	return 1;
++}
 +
-+	zero_buf = kzalloc(zero_buf_sz, GFP_KERNEL);
-+	if (!zero_buf) {
-+		ret = -ENOMEM;
-+		goto out_free_desc;
-+	}
 +
-+	sha_region_sz = KEXEC_SEGMENT_MAX * sizeof(struct kexec_sha_region);
-+	sha_regions = vzalloc(sha_region_sz);
-+	if (!sha_regions)
-+		goto out_free_zero_buf;
++/* Gather all the required information to prepare elf headers for ram regions */
++static int fill_up_ced(struct crash_elf_data *ced, struct kimage *image)
++{
++	unsigned int nr_ranges = 0;
 +
-+	desc->tfm   = tfm;
-+	desc->flags = 0;
++	ced->image = image;
 +
-+	ret = crypto_shash_init(desc);
-+	if (ret < 0)
-+		goto out_free_sha_regions;
++	walk_system_ram_range(0, -1, &nr_ranges,
++				get_nr_ram_ranges_callback);
 +
-+	digest = kzalloc(SHA256_DIGEST_SIZE, GFP_KERNEL);
-+	if (!digest) {
-+		ret = -ENOMEM;
-+		goto out_free_sha_regions;
-+	}
++	ced->max_nr_ranges = nr_ranges;
 +
-+	/* Traverse through all segments */
-+	for (j = i = 0; i < image->nr_segments; i++) {
-+		struct kexec_segment *ksegment;
-+		ksegment = &image->segment[i];
++	/*
++	 * We don't create ELF headers for GART aperture as an attempt
++	 * to dump this memory in second kernel leads to hang/crash.
++	 * If gart aperture is present, one needs to exclude that region
++	 * and that could lead to need of extra phdr.
++	 */
 +
-+		/*
-+		 * Skip purgatory as it will be modified once we put digest
-+		 * info in purgatory
-+		 */
-+		if (ksegment->kbuf == image->purgatory_info.purgatory_buf)
++	walk_ram_res("GART", IORESOURCE_MEM, 0, -1,
++				ced, get_gart_ranges_callback);
++
++	/*
++	 * If we have gart region, excluding that could potentially split
++	 * a memory range, resulting in extra header. Account for  that.
++	 */
++	if (ced->gart_end)
++		ced->max_nr_ranges++;
++
++	/* Exclusion of crash region could split memory ranges */
++	ced->max_nr_ranges++;
++
++	/* If crashk_low_res is there, another range split possible */
++	if (crashk_low_res.end != 0)
++		ced->max_nr_ranges++;
++
++	return 0;
++}
++
++static int exclude_mem_range(struct crash_mem *mem,
++		unsigned long long mstart, unsigned long long mend)
++{
++	int i, j;
++	unsigned long long start, end;
++	struct crash_mem_range temp_range = {0, 0};
++
++	for (i = 0; i < mem->nr_ranges; i++) {
++		start = mem->ranges[i].start;
++		end = mem->ranges[i].end;
++
++		if (mstart > end || mend < start)
 +			continue;
 +
-+		ret = crypto_shash_update(desc, ksegment->kbuf,
-+						ksegment->bufsz);
-+		if (ret)
-+			break;
++		/* Truncate any area outside of range */
++		if (mstart < start)
++			mstart = start;
++		if (mend > end)
++			mend = end;
 +
-+		nullsz = ksegment->memsz - ksegment->bufsz;
-+		while (nullsz) {
-+			unsigned long bytes = nullsz;
-+			if (bytes > zero_buf_sz)
-+				bytes = zero_buf_sz;
-+			ret = crypto_shash_update(desc, zero_buf, bytes);
-+			if (ret)
-+				break;
-+			nullsz -= bytes;
++		/* Found completely overlapping range */
++		if (mstart == start && mend == end) {
++			mem->ranges[i].start = 0;
++			mem->ranges[i].end = 0;
++			if (i < mem->nr_ranges - 1) {
++				/* Shift rest of the ranges to left */
++				for(j = i; j < mem->nr_ranges - 1; j++) {
++					mem->ranges[j].start =
++						mem->ranges[j+1].start;
++					mem->ranges[j].end =
++							mem->ranges[j+1].end;
++				}
++			}
++			mem->nr_ranges--;
++			return 0;
 +		}
 +
-+		if (ret)
-+			break;
-+
-+		sha_regions[j].start = ksegment->mem;
-+		sha_regions[j].len = ksegment->memsz;
-+		j++;
++		if (mstart > start && mend < end) {
++			/* Split original range */
++			mem->ranges[i].end = mstart - 1;
++			temp_range.start = mend + 1;
++			temp_range.end = end;
++		} else if (mstart != start)
++			mem->ranges[i].end = mstart - 1;
++		else
++			mem->ranges[i].start = mend + 1;
++		break;
 +	}
 +
-+	if (!ret) {
-+		ret = crypto_shash_final(desc, digest);
-+		if (ret)
-+			goto out_free_sha_regions;
-+		ret = kexec_purgatory_get_set_symbol(image, "sha_regions",
-+				sha_regions, sha_region_sz, 0);
-+		if (ret)
-+			goto out_free_sha_regions;
++	/* If a split happend, add the split in array */
++	if (!temp_range.end)
++		return 0;
 +
-+		ret = kexec_purgatory_get_set_symbol(image, "sha256_digest",
-+				digest, SHA256_DIGEST_SIZE, 0);
-+		if (ret)
-+			goto out_free_sha_regions;
-+	}
-+
-+out_free_sha_regions:
-+	vfree(sha_regions);
-+out_free_zero_buf:
-+	kfree(zero_buf);
-+out_free_desc:
-+	kfree(desc);
-+out_free_tfm:
-+	kfree(tfm);
-+out:
-+	kfree(digest);
-+	return ret;
-+}
-+
-+/* Actually load and relcoate purgatory. Lot of code taken from kexec-tools */
-+static int elf_rel_load_relocate(struct kimage *image, unsigned long min,
-+				unsigned long max, int top_down)
-+{
-+	struct purgatory_info *pi = &image->purgatory_info;
-+	unsigned long align, buf_align, bss_align, buf_sz, bss_sz, bss_pad;
-+	unsigned long memsz, entry, load_addr, data_addr, bss_addr, off;
-+	unsigned char *buf_addr, *src;
-+	int i, ret = 0, entry_sidx = -1;
-+	Elf_Shdr *sechdrs, *sechdrs_c;
-+
-+	/*
-+	 * sechdrs_c points to section headers in purgatory and are read
-+	 * only. No modifications allowed.
-+	 */
-+	sechdrs_c = (void *)pi->ehdr + pi->ehdr->e_shoff;
-+
-+	/*
-+	 * We can not modify sechdrs_c[] and its fields. It is read only.
-+	 * Copy it over to a local copy where one can store some temporary
-+	 * data and free it at the end. We need to modify ->sh_addr and
-+	 * ->sh_offset fields to keep track permanent and temporary locations
-+	 * of sections.
-+	 */
-+	sechdrs = vzalloc(pi->ehdr->e_shnum * sizeof(Elf_Shdr));
-+	if (!sechdrs)
++	/* Split happened */
++	if (i == CRASH_MAX_RANGES - 1) {
++		printk("Too many crash ranges after split\n");
 +		return -ENOMEM;
-+
-+	memcpy(sechdrs, sechdrs_c, pi->ehdr->e_shnum * sizeof(Elf_Shdr));
-+
-+	/*
-+	 * We seem to have multiple copies of sections. First copy is which
-+	 * is embedded in kernel in read only section. Some of these sections
-+	 * will be copied to a temporary buffer and relocated. And these
-+	 * sections will finally be copied to their final detination at
-+	 * segment load time.
-+	 *
-+	 * Use ->sh_offset to reflect section address in memory. It will
-+	 * point to original read only copy if section is not allocatable.
-+	 * Otherwise it will point to temporary copy which will be relocated.
-+	 *
-+	 * Use ->sh_addr to contain final address of the section where it
-+	 * will go during execution time.
-+	 */
-+	for (i = 0; i < pi->ehdr->e_shnum; i++) {
-+		if (sechdrs[i].sh_type == SHT_NOBITS)
-+			continue;
-+
-+		sechdrs[i].sh_offset = (unsigned long)pi->ehdr +
-+						sechdrs[i].sh_offset;
 +	}
 +
-+	entry = pi->ehdr->e_entry;
-+	for (i = 0; i < pi->ehdr->e_shnum; i++) {
-+		if (!(sechdrs[i].sh_flags & SHF_ALLOC))
-+			continue;
-+
-+		if (!(sechdrs[i].sh_flags & SHF_EXECINSTR))
-+			continue;
-+
-+		/* Make entry section relative */
-+		if (sechdrs[i].sh_addr <= pi->ehdr->e_entry &&
-+		    ((sechdrs[i].sh_addr + sechdrs[i].sh_size) >
-+		     pi->ehdr->e_entry)) {
-+			entry_sidx = i;
-+			entry -= sechdrs[i].sh_addr;
-+			break;
-+		}
++	/* Location where new range should go */
++	j = i + 1;
++	if (j < mem->nr_ranges) {
++		/* Move over all ranges one place */
++		for (i = mem->nr_ranges - 1; i >= j; i--)
++			mem->ranges[i + 1] = mem->ranges[i];
 +	}
 +
-+	/* Find the RAM size requirements of relocatable object */
-+	buf_align = 1;
-+	bss_align = 1;
-+	buf_sz = 0;
-+	bss_sz = 0;
-+
-+	for (i = 0; i < pi->ehdr->e_shnum; i++) {
-+		if (!(sechdrs[i].sh_flags & SHF_ALLOC))
-+			continue;
-+
-+		align = sechdrs[i].sh_addralign;
-+		if (sechdrs[i].sh_type != SHT_NOBITS) {
-+			if (buf_align < align)
-+				buf_align = align;
-+			buf_sz = ALIGN(buf_sz, align);
-+			buf_sz += sechdrs[i].sh_size;
-+		} else {
-+			if (bss_align < align)
-+				bss_align = align;
-+			bss_sz = ALIGN(bss_sz, align);
-+			bss_sz += sechdrs[i].sh_size;
-+		}
-+	}
-+
-+	if (buf_align < bss_align)
-+		buf_align = bss_align;
-+	bss_pad = 0;
-+	if (buf_sz & (bss_align - 1))
-+		bss_pad = bss_align - (buf_sz & (bss_align - 1));
-+
-+	memsz = buf_sz + bss_pad + bss_sz;
-+
-+	/* Allocate buffer for purgatory */
-+	pi->purgatory_buf = vzalloc(buf_sz);
-+	if (!pi->purgatory_buf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Add buffer to segment list */
-+	ret = kexec_add_buffer(image, pi->purgatory_buf, buf_sz, memsz,
-+				buf_align, min, max, top_down,
-+				&pi->purgatory_load_addr);
-+	if (ret)
-+		goto out;
-+
-+	/* Load SHF_ALLOC sections */
-+	buf_addr = pi->purgatory_buf;
-+	load_addr = pi->purgatory_load_addr;
-+	data_addr = load_addr;
-+	bss_addr = load_addr + buf_sz + bss_pad;
-+
-+	for (i = 0; i < pi->ehdr->e_shnum; i++) {
-+		if (!(sechdrs[i].sh_flags & SHF_ALLOC))
-+			continue;
-+
-+		align = sechdrs[i].sh_addralign;
-+		if (sechdrs[i].sh_type != SHT_NOBITS) {
-+			data_addr = ALIGN(data_addr, align);
-+			off = data_addr - load_addr;
-+			/* We have already modifed ->sh_offset to keep addr */
-+			src = (char *) sechdrs[i].sh_offset;
-+			memcpy(buf_addr + off, src, sechdrs[i].sh_size);
-+
-+			/* Store load address and source address of section */
-+			sechdrs[i].sh_addr = data_addr;
-+
-+			/*
-+			 * This section got copied to temporary buffer. Update
-+			 * ->sh_offset accordingly.
-+			 */
-+			sechdrs[i].sh_offset = (unsigned long)(buf_addr + off);
-+
-+			/* Advance to the next address */
-+			data_addr += sechdrs[i].sh_size;
-+		} else {
-+			bss_addr = ALIGN(bss_addr, align);
-+			sechdrs[i].sh_addr = bss_addr;
-+			bss_addr += sechdrs[i].sh_size;
-+		}
-+	}
-+
-+	/* update entry based on entry section position */
-+	if (entry_sidx >= 0)
-+		entry += sechdrs[entry_sidx].sh_addr;
-+
-+	/* Set the entry point of purgatory */
-+	kimage_set_start_addr(image, entry);
-+
-+	/* Apply relocations */
-+	for (i = 0; i < pi->ehdr->e_shnum; i++) {
-+		Elf_Shdr *section, *symtab;
-+
-+		if (sechdrs[i].sh_type != SHT_RELA &&
-+		    sechdrs[i].sh_type != SHT_REL)
-+			continue;
-+
-+		if (sechdrs[i].sh_info > pi->ehdr->e_shnum ||
-+		    sechdrs[i].sh_link > pi->ehdr->e_shnum) {
-+			ret = -ENOEXEC;
-+			goto out;
-+		}
-+
-+		section = &sechdrs[sechdrs[i].sh_info];
-+		symtab = &sechdrs[sechdrs[i].sh_link];
-+
-+		if (!(section->sh_flags & SHF_ALLOC))
-+			continue;
-+
-+		if (symtab->sh_link > pi->ehdr->e_shnum)
-+			/* Invalid section number? */
-+			continue;
-+
-+		ret = -EOPNOTSUPP;
-+		if (sechdrs[i].sh_type == SHT_RELA)
-+			ret = arch_kexec_apply_relocations_add(sechdrs, pi->ehdr->e_shnum, i);
-+		if (ret)
-+			goto out;
-+	}
-+
-+	pi->sechdrs = sechdrs;
-+	return ret;
-+out:
-+	vfree(sechdrs);
-+	vfree(pi->purgatory_buf);
-+	return ret;
++	mem->ranges[j].start = temp_range.start;
++	mem->ranges[j].end = temp_range.end;
++	mem->nr_ranges++;
++	return 0;
 +}
 +
-+/* Load relocatable purgatory object and relocate it appropriately */
-+int kexec_load_purgatory(struct kimage *image, unsigned long min,
-+		unsigned long max, int top_down, unsigned long *load_addr)
++/*
++ * Look for any unwanted ranges between mstart, mend and remove them. This
++ * might lead to split and split ranges are put in ced->mem.ranges[] array
++ */
++static int elf_header_exclude_ranges(struct crash_elf_data *ced,
++		unsigned long long mstart, unsigned long long mend)
 +{
-+	struct purgatory_info *pi = &image->purgatory_info;
-+	int ret;
++	struct crash_mem *cmem = &ced->mem;
++	int ret = 0;
 +
-+	if (kexec_purgatory_size <= 0)
-+		return -EINVAL;
++	memset(cmem->ranges, 0, sizeof(cmem->ranges));
 +
-+	if (kexec_purgatory_size < sizeof(Elf_Ehdr))
-+		return -ENOEXEC;
++	cmem->ranges[0].start = mstart;
++	cmem->ranges[0].end = mend;
++	cmem->nr_ranges = 1;
 +
-+	pi->ehdr = (Elf_Ehdr *)kexec_purgatory;
-+
-+	if (memcmp(pi->ehdr->e_ident, ELFMAG, SELFMAG) != 0
-+	    || pi->ehdr->e_type != ET_REL
-+	    || !elf_check_arch(pi->ehdr)
-+	    || pi->ehdr->e_shentsize != sizeof(Elf_Shdr))
-+		return -ENOEXEC;
-+
-+	if (pi->ehdr->e_shoff >= kexec_purgatory_size
-+	    || (pi->ehdr->e_shnum * sizeof(Elf_Shdr) >
-+	    kexec_purgatory_size - pi->ehdr->e_shoff))
-+		return -ENOEXEC;
-+
-+	ret = elf_rel_load_relocate(image, min, max, top_down);
++	/* Exclude crashkernel region */
++	ret = exclude_mem_range(cmem, crashk_res.start, crashk_res.end);
 +	if (ret)
 +		return ret;
 +
-+	*load_addr = image->purgatory_info.purgatory_load_addr;
-+	return 0;
-+}
++	ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
++	if (ret)
++		return ret;
 +
-+static Elf_Sym *kexec_purgatory_find_symbol(struct purgatory_info *pi,
-+						const char *name)
-+{
-+	Elf_Sym *syms;
-+	Elf_Shdr *sechdrs;
-+	Elf_Ehdr *ehdr;
-+	int i, k;
-+	const char *strtab;
-+
-+	if (!pi->sechdrs || !pi->ehdr)
-+		return NULL;
-+
-+	sechdrs = pi->sechdrs;
-+	ehdr = pi->ehdr;
-+
-+	for (i = 0; i < ehdr->e_shnum; i++) {
-+		if (sechdrs[i].sh_type != SHT_SYMTAB)
-+			continue;
-+
-+		if (sechdrs[i].sh_link > ehdr->e_shnum)
-+			/* Invalid stratab section number */
-+			continue;
-+		strtab = (char *)sechdrs[sechdrs[i].sh_link].sh_offset;
-+		syms = (Elf_Sym*)sechdrs[i].sh_offset;
-+
-+		/* Go through symbols for a match */
-+		for (k = 0; k < sechdrs[i].sh_size/sizeof(Elf_Sym); k++) {
-+			if (ELF_ST_BIND(syms[k].st_info) != STB_GLOBAL)
-+				continue;
-+
-+			if (strcmp(strtab + syms[k].st_name, name) != 0)
-+				continue;
-+
-+			if (syms[k].st_shndx == SHN_UNDEF ||
-+			    syms[k].st_shndx > ehdr->e_shnum) {
-+				pr_debug("Symbol: %s has bad section index %d."
-+					 "\n", name, syms[k].st_shndx);
-+				return NULL;
-+			}
-+
-+			/* Found the symbol we are looking for */
-+			return &syms[k];
-+		}
++	/* Exclude GART region */
++	if (ced->gart_end) {
++		ret = exclude_mem_range(cmem, ced->gart_start, ced->gart_end);
++		if (ret)
++			return ret;
 +	}
 +
-+	return NULL;
++	return ret;
 +}
 +
-+void *kexec_purgatory_get_symbol_addr(struct kimage *image, const char *name)
++static int prepare_elf64_ram_headers_callback(u64 start, u64 end, void *arg)
 +{
-+	struct purgatory_info *pi = &image->purgatory_info;
-+	Elf_Sym *sym;
-+	Elf_Shdr *sechdr;
++	struct crash_elf_data *ced = arg;
++	Elf64_Ehdr *ehdr;
++	Elf64_Phdr *phdr;
++	unsigned long mstart, mend;
++	struct kimage *image = ced->image;
++	struct crash_mem *cmem;
++	int ret, i;
 +
-+	sym = kexec_purgatory_find_symbol(pi, name);
-+	if (!sym)
-+		return ERR_PTR(-EINVAL);
++	ehdr = ced->ehdr;
 +
-+	sechdr = &pi->sechdrs[sym->st_shndx];
++	/* Exclude unwanted mem ranges */
++	ret = elf_header_exclude_ranges(ced, start, end);
++	if (ret)
++		return ret;
++
++	/* Go through all the ranges in ced->mem.ranges[] and prepare phdr */
++	cmem = &ced->mem;
++
++	for (i = 0; i < cmem->nr_ranges; i++) {
++		mstart = cmem->ranges[i].start;
++		mend = cmem->ranges[i].end;
++
++		phdr = ced->bufp;
++		ced->bufp += sizeof(Elf64_Phdr);
++
++		phdr->p_type = PT_LOAD;
++		phdr->p_flags = PF_R|PF_W|PF_X;
++		phdr->p_offset  = mstart;
++
++		/*
++		 * If a range matches backup region, adjust offset to backup
++		 * segment.
++		 */
++		if (mstart == image->arch.backup_src_start &&
++		    (mend - mstart + 1) == image->arch.backup_src_sz)
++			phdr->p_offset = image->arch.backup_load_addr;
++
++		phdr->p_paddr = mstart;
++		phdr->p_vaddr = (unsigned long long) __va(mstart);
++		phdr->p_filesz = phdr->p_memsz = mend - mstart + 1;
++		phdr->p_align = 0;
++		ehdr->e_phnum++;
++		pr_debug("Crash PT_LOAD elf header. phdr=%p"
++			" vaddr=0x%llx, paddr=0x%llx, sz=0x%llx e_phnum=%d"
++			" p_offset=0x%llx\n", phdr, phdr->p_vaddr,
++			phdr->p_paddr, phdr->p_filesz, ehdr->e_phnum,
++			phdr->p_offset);
++	}
++
++	return ret;
++}
++
++static int prepare_elf64_headers(struct crash_elf_data *ced,
++		unsigned long *addr, unsigned long *sz)
++{
++	Elf64_Ehdr *ehdr;
++	Elf64_Phdr *phdr;
++	unsigned long nr_cpus = NR_CPUS, nr_phdr, elf_sz;
++	unsigned char *buf, *bufp;
++	unsigned int cpu;
++	unsigned long long notes_addr;
++	int ret;
++
++	/* extra phdr for vmcoreinfo elf note */
++	nr_phdr = nr_cpus + 1;
++	nr_phdr += ced->max_nr_ranges;
 +
 +	/*
-+	 * Returns the address where symbol will finally be loaded after
-+	 * kexec_load_segment()
++	 * kexec-tools creates an extra PT_LOAD phdr for kernel text mapping
++	 * area on x86_64 (ffffffff80000000 - ffffffffa0000000).
++	 * I think this is required by tools like gdb. So same physical
++	 * memory will be mapped in two elf headers. One will contain kernel
++	 * text virtual addresses and other will have __va(physical) addresses.
 +	 */
-+	return (void *)(sechdr->sh_addr + sym->st_value);
++
++	nr_phdr++;
++	elf_sz = sizeof(Elf64_Ehdr) + nr_phdr * sizeof(Elf64_Phdr);
++	elf_sz = ALIGN(elf_sz, ELF_CORE_HEADER_ALIGN);
++
++	buf = vzalloc(elf_sz);
++	if (!buf)
++		return -ENOMEM;
++
++	bufp = buf;
++	ehdr = (Elf64_Ehdr *)bufp;
++	bufp += sizeof(Elf64_Ehdr);
++	memcpy(ehdr->e_ident, ELFMAG, SELFMAG);
++	ehdr->e_ident[EI_CLASS] = ELFCLASS64;
++	ehdr->e_ident[EI_DATA] = ELFDATA2LSB;
++	ehdr->e_ident[EI_VERSION] = EV_CURRENT;
++	ehdr->e_ident[EI_OSABI] = ELF_OSABI;
++	memset(ehdr->e_ident + EI_PAD, 0, EI_NIDENT - EI_PAD);
++	ehdr->e_type = ET_CORE;
++	ehdr->e_machine = ELF_ARCH;
++	ehdr->e_version = EV_CURRENT;
++	ehdr->e_entry = 0;
++	ehdr->e_phoff = sizeof(Elf64_Ehdr);
++	ehdr->e_shoff = 0;
++	ehdr->e_flags = 0;
++	ehdr->e_ehsize = sizeof(Elf64_Ehdr);
++	ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	ehdr->e_phnum = 0;
++	ehdr->e_shentsize = 0;
++	ehdr->e_shnum = 0;
++	ehdr->e_shstrndx = 0;
++
++	/* Prepare one phdr of type PT_NOTE for each present cpu */
++	for_each_present_cpu(cpu) {
++		phdr = (Elf64_Phdr *)bufp;
++		bufp += sizeof(Elf64_Phdr);
++		phdr->p_type = PT_NOTE;
++		phdr->p_flags = 0;
++		notes_addr = per_cpu_ptr_to_phys(per_cpu_ptr(crash_notes, cpu));
++		phdr->p_offset = phdr->p_paddr = notes_addr;
++		phdr->p_vaddr = 0;
++		phdr->p_filesz = phdr->p_memsz = sizeof(note_buf_t);
++		phdr->p_align = 0;
++		(ehdr->e_phnum)++;
++	}
++
++	/* Prepare one PT_NOTE header for vmcoreinfo */
++	phdr = (Elf64_Phdr *)bufp;
++	bufp += sizeof(Elf64_Phdr);
++	phdr->p_type = PT_NOTE;
++	phdr->p_flags = 0;
++	phdr->p_offset = phdr->p_paddr = paddr_vmcoreinfo_note();
++	phdr->p_vaddr = 0;
++	phdr->p_filesz = phdr->p_memsz = sizeof(vmcoreinfo_note);
++	phdr->p_align = 0;
++	(ehdr->e_phnum)++;
++
++#ifdef CONFIG_X86_64
++	/* Prepare PT_LOAD type program header for kernel text region */
++	phdr = (Elf64_Phdr *)bufp;
++	bufp += sizeof(Elf64_Phdr);
++	phdr->p_type = PT_LOAD;
++	phdr->p_flags = PF_R|PF_W|PF_X;
++	phdr->p_vaddr = (Elf64_Addr)_text;
++	phdr->p_filesz = phdr->p_memsz = _end - _text;
++	phdr->p_offset = phdr->p_paddr = __pa_symbol(_text);
++	phdr->p_align = 0;
++	(ehdr->e_phnum)++;
++#endif
++
++	/* Prepare PT_LOAD headers for system ram chunks. */
++	ced->ehdr = ehdr;
++	ced->bufp = bufp;
++	ret = walk_system_ram_res(0, -1, ced,
++			prepare_elf64_ram_headers_callback);
++	if (ret < 0)
++		return ret;
++
++	*addr = (unsigned long)buf;
++	*sz = elf_sz;
++	return 0;
 +}
 +
-+/*
-+ * Get or set value of a symbol. If "get_value" is true, symbol value is
-+ * returned in buf otherwise symbol value is set based on value in buf.
-+ */
-+int kexec_purgatory_get_set_symbol(struct kimage *image, const char *name,
-+				void *buf, unsigned int size, bool get_value)
++/* Prepare elf headers. Return addr and size */
++static int prepare_elf_headers(struct kimage *image, unsigned long *addr,
++					unsigned long *sz)
 +{
-+	Elf_Sym *sym;
-+	Elf_Shdr *sechdrs;
-+	struct purgatory_info *pi = &image->purgatory_info;
-+	char *sym_buf;
++	struct crash_elf_data *ced;
++	int ret;
 +
-+	sym = kexec_purgatory_find_symbol(pi, name);
-+	if (!sym)
-+		return -EINVAL;
++	ced = kzalloc(sizeof(*ced), GFP_KERNEL);
++	if (!ced)
++		return -ENOMEM;
 +
-+	if (sym->st_size != size) {
-+		pr_debug("Symbol: %s size is not right\n", name);
-+		return -EINVAL;
-+	}
++	ret = fill_up_ced(ced, image);
++	if (ret)
++		goto out;
 +
-+	sechdrs = pi->sechdrs;
++	/* By default prepare 64bit headers */
++	ret =  prepare_elf64_headers(ced, addr, sz);
++out:
++	kfree(ced);
++	return ret;
++}
 +
-+	if (sechdrs[sym->st_shndx].sh_type == SHT_NOBITS) {
-+		pr_debug("Symbol: %s is in a bss section. Cannot get/set\n",
-+					name);
-+		return -EINVAL;
-+	}
++static int add_e820_entry(struct boot_params *params, struct e820entry *entry)
++{
++	unsigned int nr_e820_entries;
 +
-+	sym_buf = (unsigned char *)sechdrs[sym->st_shndx].sh_offset +
-+					sym->st_value;
++	nr_e820_entries = params->e820_entries;
++	if (nr_e820_entries >= E820MAX)
++		return 1;
 +
-+	if (get_value)
-+		memcpy((void*)buf, sym_buf, size);
-+	else
-+		memcpy((void*)sym_buf, buf, size);
++	memcpy(&params->e820_map[nr_e820_entries], entry,
++                        sizeof(struct e820entry));
++	params->e820_entries++;
++
++	pr_debug("Add e820 entry to bootparams. addr=0x%llx size=0x%llx"
++		" type=%d\n", entry->addr, entry->size, entry->type);
++	return 0;
++}
++
++static int memmap_entry_callback(u64 start, u64 end, void *arg)
++{
++	struct crash_memmap_data *cmd = arg;
++	struct boot_params *params = cmd->params;
++	struct e820entry ei;
++
++	ei.addr = start;
++	ei.size = end - start + 1;
++	ei.type = cmd->type;
++	add_e820_entry(params, &ei);
 +
 +	return 0;
 +}
++
++static int memmap_exclude_ranges(struct kimage *image, struct crash_mem *cmem,
++		unsigned long long mstart, unsigned long long mend)
++{
++	unsigned long start, end;
++	int ret = 0;
++
++	memset(cmem->ranges, 0, sizeof(cmem->ranges));
++
++	cmem->ranges[0].start = mstart;
++	cmem->ranges[0].end = mend;
++	cmem->nr_ranges = 1;
++
++	/* Exclude Backup region */
++	start = image->arch.backup_load_addr;
++	end = start + image->arch.backup_src_sz - 1;
++	ret = exclude_mem_range(cmem, start, end);
++	if (ret)
++		return ret;
++
++	/* Exclude elf header region */
++	start = image->arch.elf_load_addr;
++	end = start + image->arch.elf_headers_sz - 1;
++	ret = exclude_mem_range(cmem, start, end);
++	return ret;
++}
++
++/* Prepare memory map for crash dump kernel */
++int crash_setup_memmap_entries(struct kimage *image, struct boot_params *params)
++{
++	int i, ret = 0;
++	unsigned long flags;
++	struct e820entry ei;
++	struct crash_memmap_data cmd;
++	struct crash_mem *cmem;
++
++	cmem = vzalloc(sizeof(struct crash_mem));
++	if (!cmem)
++		return -ENOMEM;
++
++	memset(&cmd, 0, sizeof(struct crash_memmap_data));
++	cmd.params = params;
++
++	/* Add first 640K segment */
++	ei.addr = image->arch.backup_src_start;
++	ei.size = image->arch.backup_src_sz;
++	ei.type = E820_RAM;
++	add_e820_entry(params, &ei);
++
++	/* Add ACPI tables */
++	cmd.type = E820_ACPI;
++	flags = IORESOURCE_MEM | IORESOURCE_BUSY;
++	walk_ram_res("ACPI Tables", flags, 0, -1, &cmd, memmap_entry_callback);
++
++	/* Add ACPI Non-volatile Storage */
++	cmd.type = E820_NVS;
++	walk_ram_res("ACPI Non-volatile Storage", flags, 0, -1, &cmd,
++			memmap_entry_callback);
++
++	/* Add crashk_low_res region */
++	if (crashk_low_res.end) {
++		ei.addr = crashk_low_res.start;
++		ei.size = crashk_low_res.end - crashk_low_res.start + 1;
++		ei.type = E820_RAM;
++		add_e820_entry(params, &ei);
++	}
++
++	/* Exclude some ranges from crashk_res and add rest to memmap */
++	ret = memmap_exclude_ranges(image, cmem, crashk_res.start,
++						crashk_res.end);
++	if (ret)
++		goto out;
++
++	for (i = 0; i < cmem->nr_ranges; i++) {
++		ei.addr = cmem->ranges[i].start;
++		ei.size = cmem->ranges[i].end - ei.addr + 1;
++		ei.type = E820_RAM;
++
++		/* If entry is less than a page, skip it */
++		if (ei.size < PAGE_SIZE) {
++			continue;
++		}
++		add_e820_entry(params, &ei);
++	}
++
++out:
++	vfree(cmem);
++	return ret;
++}
++
++static int determine_backup_region(u64 start, u64 end, void *arg)
++{
++	struct kimage *image = arg;
++
++	image->arch.backup_src_start = start;
++	image->arch.backup_src_sz = end - start + 1;
++
++	/* Expecting only one range for backup region */
++	return 1;
++}
++
++int load_crashdump_segments(struct kimage *image)
++{
++	unsigned long src_start, src_sz;
++	unsigned long elf_addr, elf_sz;
++	int ret;
++
++	/*
++	 * Determine and load a segment for backup area. First 640K RAM
++	 * region is backup source
++	 */
++
++	ret = walk_system_ram_res(KEXEC_BACKUP_SRC_START, KEXEC_BACKUP_SRC_END,
++				image, determine_backup_region);
++
++	/* Zero or postive return values are ok */
++	if (ret < 0)
++		return ret;
++
++	src_start = image->arch.backup_src_start;
++	src_sz = image->arch.backup_src_sz;
++
++	/* Add backup segment. */
++	if (src_sz) {
++		ret = kexec_add_buffer(image, __va(src_start), src_sz, src_sz,
++					PAGE_SIZE, 0, -1, 0,
++					&image->arch.backup_load_addr);
++		if (ret)
++			return ret;
++	}
++
++	/* Prepare elf headers and add a segment */
++	ret = prepare_elf_headers(image, &elf_addr, &elf_sz);
++	if (ret)
++		return ret;
++
++	image->arch.elf_headers = elf_addr;
++	image->arch.elf_headers_sz = elf_sz;
++
++	ret = kexec_add_buffer(image, (char *)elf_addr, elf_sz, elf_sz,
++			ELF_CORE_HEADER_ALIGN, 0, -1, 0,
++			&image->arch.elf_load_addr);
++	if (ret)
++		kfree((void *)image->arch.elf_headers);
++
++	return ret;
++}
++
++#endif /* CONFIG_X86_64 */
+diff --git a/arch/x86/kernel/kexec-bzimage.c b/arch/x86/kernel/kexec-bzimage.c
+index cbfcd00..f66188d 100644
+--- a/arch/x86/kernel/kexec-bzimage.c
++++ b/arch/x86/kernel/kexec-bzimage.c
+@@ -8,6 +8,9 @@
+ 
+ #include <asm/bootparam.h>
+ #include <asm/setup.h>
++#include <asm/crash.h>
++
++#define MAX_ELFCOREHDR_STR_LEN	30 	/* elfcorehdr=0x<64bit-value> */
+ 
+ #ifdef CONFIG_X86_64
+ 
+@@ -100,11 +103,28 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
++	/*
++	 * In case of crash dump, we will append elfcorehdr=<addr> to
++	 * command line. Make sure it does not overflow
++	 */
++	if (cmdline_len + MAX_ELFCOREHDR_STR_LEN > header->cmdline_size) {
++		ret = -EINVAL;
++		pr_debug("Kernel command line too long\n");
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	/* Allocate loader specific data */
+ 	ldata = kzalloc(sizeof(struct bzimage64_data), GFP_KERNEL);
+ 	if (!ldata)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	/* Allocate and load backup region */
++	if (image->type == KEXEC_TYPE_CRASH) {
++		ret = load_crashdump_segments(image);
++		if (ret)
++			goto out_free_loader_data;
++	}
++
+ 	/*
+ 	 * Load purgatory. For 64bit entry point, purgatory  code can be
+ 	 * anywhere.
+@@ -118,7 +138,8 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 	pr_debug("Loaded purgatory at 0x%lx\n", purgatory_load_addr);
+ 
+ 	/* Load Bootparams and cmdline */
+-	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len;
++	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len +
++				MAX_ELFCOREHDR_STR_LEN;
+ 	params = kzalloc(params_cmdline_sz, GFP_KERNEL);
+ 	if (!params) {
+ 		ret = -ENOMEM;
+@@ -167,7 +188,7 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 			goto out_free_params;
+ 	}
+ 
+-	ret = kexec_setup_cmdline(params, bootparam_load_addr,
++	ret = kexec_setup_cmdline(image, params, bootparam_load_addr,
+ 			sizeof(struct boot_params), cmdline, cmdline_len);
+ 	if (ret)
+ 		goto out_free_params;
+@@ -198,7 +219,7 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 	if (ret)
+ 		goto out_free_params;
+ 
+-	ret = kexec_setup_boot_parameters(params);
++	ret = kexec_setup_boot_parameters(image, params);
+ 	if (ret)
+ 		goto out_free_params;
+ 
+diff --git a/arch/x86/kernel/kexec-elf.c b/arch/x86/kernel/kexec-elf.c
+index ff1017c..e7ce2d0 100644
+--- a/arch/x86/kernel/kexec-elf.c
++++ b/arch/x86/kernel/kexec-elf.c
+@@ -164,7 +164,7 @@ void *elf_x86_64_load(struct kimage *image, char *kernel,
+ 			goto out_free_params;
+ 	}
+ 
+-	ret = kexec_setup_cmdline(params, bootparam_load_addr,
++	ret = kexec_setup_cmdline(image, params, bootparam_load_addr,
+ 			sizeof(struct boot_params), cmdline, cmdline_len);
+ 	if (ret)
+ 		goto out_free_params;
+@@ -195,7 +195,7 @@ void *elf_x86_64_load(struct kimage *image, char *kernel,
+ 	if (ret)
+ 		goto out_free_params;
+ 
+-	ret = kexec_setup_boot_parameters(params);
++	ret = kexec_setup_boot_parameters(image, params);
+ 	if (ret)
+ 		goto out_free_params;
+ 
+diff --git a/arch/x86/kernel/machine_kexec.c b/arch/x86/kernel/machine_kexec.c
+index ac55890..26d474b 100644
+--- a/arch/x86/kernel/machine_kexec.c
++++ b/arch/x86/kernel/machine_kexec.c
+@@ -10,9 +10,11 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/kexec.h>
+ #include <linux/string.h>
+ #include <asm/bootparam.h>
+ #include <asm/setup.h>
++#include <asm/crash.h>
  
  /*
-  * Move into place and start executing a preloaded standalone
+  * Common code for x86 and x86_64 used for kexec.
+@@ -36,18 +38,24 @@ int kexec_setup_initrd(struct boot_params *boot_params,
+ 	return 0;
+ }
+ 
+-int kexec_setup_cmdline(struct boot_params *boot_params,
++int kexec_setup_cmdline(struct kimage *image, struct boot_params *boot_params,
+ 		unsigned long bootparams_load_addr,
+ 		unsigned long cmdline_offset, char *cmdline,
+ 		unsigned long cmdline_len)
+ {
+ 	char *cmdline_ptr = ((char *)boot_params) + cmdline_offset;
+-	unsigned long cmdline_ptr_phys;
++	unsigned long cmdline_ptr_phys, len;
+ 	uint32_t cmdline_low_32, cmdline_ext_32;
+ 
+ 	memcpy(cmdline_ptr, cmdline, cmdline_len);
++	if (image->type == KEXEC_TYPE_CRASH) {
++		len = sprintf(cmdline_ptr + cmdline_len - 1,
++			" elfcorehdr=0x%lx", image->arch.elf_load_addr);
++		cmdline_len += len;
++	}
+ 	cmdline_ptr[cmdline_len - 1] = '\0';
+ 
++	pr_debug("Final command line is:%s\n", cmdline_ptr);
+ 	cmdline_ptr_phys = bootparams_load_addr + cmdline_offset;
+ 	cmdline_low_32 = cmdline_ptr_phys & 0xffffffffUL;
+ 	cmdline_ext_32 = cmdline_ptr_phys >> 32;
+@@ -75,7 +83,8 @@ static int setup_memory_map_entries(struct boot_params *params)
+ 	return 0;
+ }
+ 
+-int kexec_setup_boot_parameters(struct boot_params *params)
++int kexec_setup_boot_parameters(struct kimage *image,
++				struct boot_params *params)
+ {
+ 	unsigned int nr_e820_entries;
+ 	unsigned long long mem_k, start, end;
+@@ -102,7 +111,11 @@ int kexec_setup_boot_parameters(struct boot_params *params)
+ 	/* Default sysdesc table */
+ 	params->sys_desc_table.length = 0;
+ 
+-	setup_memory_map_entries(params);
++	if (image->type == KEXEC_TYPE_CRASH)
++		crash_setup_memmap_entries(image, params);
++	else
++		setup_memory_map_entries(params);
++
+ 	nr_e820_entries = params->e820_entries;
+ 
+ 	for(i = 0; i < nr_e820_entries; i++) {
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index e35bcaf..e852a51 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -181,6 +181,38 @@ static void load_segments(void)
+ 		);
+ }
+ 
++/* Update purgatory as needed after various image segments have been prepared */
++static int arch_update_purgatory(struct kimage *image)
++{
++	int ret = 0;
++
++	if (!image->file_mode)
++		return 0;
++
++	/* Setup copying of backup region */
++	if (image->type == KEXEC_TYPE_CRASH) {
++		ret = kexec_purgatory_get_set_symbol(image, "backup_dest",
++				&image->arch.backup_load_addr,
++				sizeof(image->arch.backup_load_addr), 0);
++		if (ret)
++			return ret;
++
++		ret = kexec_purgatory_get_set_symbol(image, "backup_src",
++				&image->arch.backup_src_start,
++				sizeof(image->arch.backup_src_start), 0);
++		if (ret)
++			return ret;
++
++		ret = kexec_purgatory_get_set_symbol(image, "backup_sz",
++				&image->arch.backup_src_sz,
++				sizeof(image->arch.backup_src_sz), 0);
++		if (ret)
++			return ret;
++	}
++
++	return ret;
++}
++
+ int machine_kexec_prepare(struct kimage *image)
+ {
+ 	unsigned long start_pgtable;
+@@ -194,6 +226,11 @@ int machine_kexec_prepare(struct kimage *image)
+ 	if (result)
+ 		return result;
+ 
++	/* update purgatory as needed */
++	result = arch_update_purgatory(image);
++	if (result)
++		return result;
++
+ 	return 0;
+ }
+ 
+@@ -330,6 +367,7 @@ int arch_kimage_file_post_load_cleanup(struct kimage *image)
+ {
+ 	int idx = image->file_handler_idx;
+ 
++	vfree((void *)image->arch.elf_headers);
+ 	if (kexec_file_type[idx].cleanup)
+ 		return kexec_file_type[idx].cleanup(image);
+ 	return 0;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 9e4718b..3ea1d41 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -548,7 +548,6 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+ 	*rimage = image;
+ 	return 0;
+ 
+-
+ out_free_control_pages:
+ 	kimage_free_page_list(&image->control_pages);
+ out_free_image:
+@@ -556,6 +555,54 @@ out_free_image:
+ 	return result;
+ }
+ 
++static int kimage_file_crash_alloc(struct kimage **rimage, int kernel_fd,
++		int initrd_fd, const char __user *cmdline_ptr,
++		unsigned long cmdline_len)
++{
++	int result;
++	struct kimage *image;
++
++	/* Allocate and initialize a controlling structure */
++	image = do_kimage_alloc_init();
++	if (!image)
++		return -ENOMEM;
++
++	image->file_mode = 1;
++	image->file_handler_idx = -1;
++
++	/* Enable the special crash kernel control page allocation policy. */
++	image->control_page = crashk_res.start;
++	image->type = KEXEC_TYPE_CRASH;
++
++	result = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
++			cmdline_ptr, cmdline_len);
++	if (result)
++		goto out_free_image;
++
++	result = sanity_check_segment_list(image);
++	if (result)
++		goto out_free_post_load_bufs;
++
++	result = -ENOMEM;
++	image->control_code_page = kimage_alloc_control_pages(image,
++					   get_order(KEXEC_CONTROL_PAGE_SIZE));
++	if (!image->control_code_page) {
++		printk(KERN_ERR "Could not allocate control_code_buffer\n");
++		goto out_free_post_load_bufs;
++	}
++
++	*rimage = image;
++	return 0;
++
++out_free_post_load_bufs:
++	kimage_file_post_load_cleanup(image);
++	kfree(image->image_loader_data);
++out_free_image:
++	kfree(image);
++	return result;
++}
++
++
+ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
+ 				unsigned long nr_segments,
+ 				struct kexec_segment __user *segments)
+@@ -1137,10 +1184,15 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 	unsigned long maddr;
+ 	size_t ubytes, mbytes;
+ 	int result;
+-	unsigned char __user *buf;
++	unsigned char __user *buf = NULL;
++	unsigned char *kbuf = NULL;
+ 
+ 	result = 0;
+-	buf = segment->buf;
++	if (image->file_mode)
++		kbuf = segment->kbuf;
++	else
++		buf = segment->buf;
++
+ 	ubytes = segment->bufsz;
+ 	mbytes = segment->memsz;
+ 	maddr = segment->mem;
+@@ -1163,7 +1215,12 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 			/* Zero the trailing part of the page */
+ 			memset(ptr + uchunk, 0, mchunk - uchunk);
+ 		}
+-		result = copy_from_user(ptr, buf, uchunk);
++
++		/* For file based kexec, source pages are in kernel memory */
++		if (image->file_mode)
++			memcpy(ptr, kbuf, uchunk);
++		else
++			result = copy_from_user(ptr, buf, uchunk);
+ 		kexec_flush_icache_page(page);
+ 		kunmap(page);
+ 		if (result) {
+@@ -1172,7 +1229,10 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 		}
+ 		ubytes -= uchunk;
+ 		maddr  += mchunk;
+-		buf    += mchunk;
++		if (image->file_mode)
++			kbuf += mchunk;
++		else
++			buf += mchunk;
+ 		mbytes -= mchunk;
+ 	}
+ out:
+@@ -1392,7 +1452,11 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd, const char __us
+ 	if (flags & KEXEC_FILE_UNLOAD)
+ 		goto exchange;
+ 
+-	ret = kimage_file_normal_alloc(&image, kernel_fd, initrd_fd,
++	if (flags & KEXEC_FILE_ON_CRASH)
++		ret = kimage_file_crash_alloc(&image, kernel_fd, initrd_fd,
++				cmdline_ptr, cmdline_len);
++	else
++		ret = kimage_file_normal_alloc(&image, kernel_fd, initrd_fd,
+ 				cmdline_ptr, cmdline_len);
+ 	if (ret)
+ 		goto out;
+@@ -2211,7 +2275,12 @@ int kexec_add_buffer(struct kimage *image, char *buffer,
+ 	kbuf->top_down = top_down;
+ 
+ 	/* Walk the RAM ranges and allocate a suitable range for the buffer */
+-	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
++	if (image->type == KEXEC_TYPE_CRASH)
++		walk_ram_res("Crash kernel", IORESOURCE_MEM | IORESOURCE_BUSY,
++				crashk_res.start, crashk_res.end, kbuf,
++				walk_ram_range_callback);
++	else
++		walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
+ 
+ 	kbuf->image = NULL;
+ 	kfree(kbuf);
 -- 
 1.8.4.2
 
