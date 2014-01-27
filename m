@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaA0IgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 03:36:03 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:56787 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753564AbaA0IgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 03:36:00 -0500
-Date: Mon, 27 Jan 2014 00:35:59 -0800 (PST)
-Message-Id: <20140127.003559.2290408024387922847.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] net: hyperv: initialize link status correctly
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1390807854-4469-1-git-send-email-jasowang@redhat.com>
-References: <1390807854-4469-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753380AbaA0IlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 03:41:10 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751069AbaA0IlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 03:41:08 -0500
+From: Richard Weinberger <richard@nod.at>
+To: rui.zhang@intel.com
+Cc: eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, horms@verge.net.au,
+        laurent.pinchart+renesas@ideasonboard.com,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH v2] thermal,rcar_thermal: Add dependency on HAS_IOMEM
+Date: Mon, 27 Jan 2014 09:40:58 +0100
+Message-Id: <1390812058-9002-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Mon, 27 Jan 2014 15:30:54 +0800
+Commit beeb5a1e (thermal: rcar-thermal: Enable driver compilation with COMPILE_TEST)
+broke build on archs wihout io memory.
 
-> Call netif_carrier_on() after register_device(). Otherwise it won't work since
-> the device was still in NETREG_UNINITIALIZED state.
-> 
-> Fixes a68f9614614749727286f675d15f1e09d13cb54a
-> (hyperv: Fix race between probe and open calls)
-> 
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Reported-by: Di Nie <dnie@redhat.com>
-> Tested-by: Di Nie <dnie@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On archs like S390 or um this driver cannot build nor work.
+Make it depend on HAS_IOMEM to bypass build failures.
 
-A device up can occur at the moment you call register_netdevice(),
-therefore that up call can see the carrier as down and fail or
-similar.  So you really cannot resolve the carrier to be on in this
-way.
+drivers/thermal/rcar_thermal.c:404: undefined reference to `devm_ioremap_resource'
+drivers/thermal/rcar_thermal.c:426: undefined reference to `devm_ioremap_resource'
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/thermal/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index 35c0664..88efa8f 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -136,6 +136,7 @@ config SPEAR_THERMAL
+ config RCAR_THERMAL
+ 	tristate "Renesas R-Car thermal driver"
+ 	depends on ARCH_SHMOBILE || COMPILE_TEST
++	depends on HAS_IOMEM
+ 	help
+ 	  Enable this to plug the R-Car thermal sensor driver into the Linux
+ 	  thermal framework.
+-- 
+1.8.1.4
+
