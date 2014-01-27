@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaA0Mav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 07:30:51 -0500
-Received: from mail1.unitn.it ([193.205.206.20]:52499 "EHLO mail1.unitn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaA0Mau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 07:30:50 -0500
-Message-ID: <52E65172.6070809@unitn.it>
-Date: Mon, 27 Jan 2014 13:30:42 +0100
-From: Luca Abeni <luca.abeni@unitn.it>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753667AbaA0MdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 07:33:11 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49686 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753480AbaA0MdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 07:33:08 -0500
+Date: Mon, 27 Jan 2014 12:32:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Alan Cox <alan@etchedpixels.co.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+	device probe
+Message-ID: <20140127123249.GJ15937@n2100.arm.linux.org.uk>
+References: <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com> <20140120214305.54f65ffa@www.etchedpixels.co.uk> <20140120231457.GZ17314@sirena.org.uk> <20140120234734.11b78578@www.etchedpixels.co.uk> <20140121001657.GO15937@n2100.arm.linux.org.uk> <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com> <20140126115402.GA25689@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1401262318350.1652@knanqh.ubzr>
 MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
-References: <1390821615-23247-1-git-send-email-juri.lelli@gmail.com> <20140127115316.GA16595@austad.us>
-In-Reply-To: <20140127115316.GA16595@austad.us>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1401262318350.1652@knanqh.ubzr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+On Sun, Jan 26, 2014 at 11:30:00PM -0500, Nicolas Pitre wrote:
+> On Sun, 26 Jan 2014, Russell King - ARM Linux wrote:
+> 
+> > On Tue, Jan 21, 2014 at 12:45:05AM +0000, Alan Cox wrote:
+> > > Peter handed it on. Try using git log on Documentation/devices.txt. It
+> > > still gets updates.
+> > > 
+> > > Perhaps you'd care to stick to reality and fix the tree instead of trying
+> > > to excuse the mess ?
+> > 
+> > Perhaps returning to reality might be advantageous rather than trying
+> > to repeat statements which can't have any bearing on this - especially
+> > as the git history which you're referring to only goes back to 2.6.12-rc2,
+> > and this predates 2.6.12-rc2 by a long shot.
+> > 
+> > > More importantly certain folks need to stop abusing static numbers
+> > > allocated properly. Repeating it having made a total hash of it before
+> > > is dismal.
+> > 
+> > And if you continue these stupid accusations which have no basis at all,
+> > we're going to get into a real big argument, because you are soo _wrong_
+> > on that point.  I was always the one arguing /against/ the re-use of
+> > existing major/minor numbers.  I was the one arguing /against/ Nicolas'
+> > patches to make every serial port appear in the 4,64 ttyS namespace.
+> 
+> If you remember correctly, that was my attempt at making serial port 
+> minor assignment to be dynamic... just like everything else is today.  
+> And it seemed to me that you thought this was a good idea.
 
-On 01/27/2014 12:53 PM, Henrik Austad wrote:
-[...]
->> + In more details, the CBS algorithm assigns scheduling deadlines to
->> + tasks in the following way:
->> +
->> +  - Each SCHED_DEADLINE task is characterised by the "runtime",
->> +    "deadline", and "period" parameters;
->> +
->> +  - The state of the task is described by a "scheduling deadline", and
->> +    a "current runtime". These two parameters are initially set to 0;
->> +
->> +  - When a SCHED_DEADLINE task wakes up (becomes ready for execution),
->> +    the scheduler checks if
->> +
->> +                    current runtime                runtime
->> +         ---------------------------------- > ----------------
->> +         scheduling deadline - current time         period
->> +
->> +    then, if the scheduling deadline is smaller than the current time, or
->> +    this condition is verified, the scheduling deadline and the
->> +    current budget are re-initialised as
->
-> Current runtime: time spent running _this_ period? or is _remaining_
-> runtime this period? I get the feeling it's the latter.
->
-> So, roughly, it is the ration
->
->        remaining_runtime / relative_time_to_deadline
->
-> which needs to be greater than the assigned CPU bandwidth, and if so, the
-> budget should be replensihed?
->
-> Shouldn't there be something about not refilling the budget before a new
-> period has started?
-Uh... Maybe the description above can be improved :)
-Do you think that using "remaining runtime" instead of "current runtime"
-would help? If yes, I'll make this change.
+I may have thought that a dynamic space for serial devices was a good
+idea, but what I was referring to above was specifically the
+implementation.
 
-Also, I see that some of your questions are answered by some items below...
-Do you think that changing the order of the items in the presentation would
-improve the readability? If you suggest a better ordering, I'll try to
-rewrite the algorithm's description according to it.
+Unfortunately, there's precious little public evidence of this as the
+patches were never posted to a public mailing list.  However, what there
+is (as part of another thread) shows that I held that view:
 
+http://archive.arm.linux.org.uk/lurker/message/20041124.164950.92dc25d7.en.html
 
-			Thanks,
-				Luca
+Plus, of course, the comments in the patch system where I picked out a
+number of further technical issues, such as changing inode->i_rdev,
+userspace locking, etc.
+
+If you want to review them, they're 1427/1 - 1434/1, 1435/2, 1436/2.
+Unfortunately the authorship of those comments was lost.
+
+Hence, my recollection is correct here.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
