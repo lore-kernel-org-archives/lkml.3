@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaA0OjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 09:39:13 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:50710 "EHLO
+	id S1753870AbaA0Oph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 09:45:37 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50738 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753577AbaA0OjM (ORCPT
+	with ESMTP id S1753822AbaA0Opf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 09:39:12 -0500
-Date: Mon, 27 Jan 2014 15:39:08 +0100
+	Mon, 27 Jan 2014 09:45:35 -0500
+Date: Mon, 27 Jan 2014 15:45:32 +0100
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
         Gregory Clement <gregory.clement@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-Message-ID: <20140127153908.4f6f46c2@skate>
-In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 05/11] pinctrl: mvebu: fix misdesigned resource
+ allocation
+Message-ID: <20140127154532.4bc3eeef@skate>
+In-Reply-To: <1390674856-4993-6-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1390674856-4993-6-git-send-email-sebastian.hesselbarth@gmail.com>
 Organization: Free Electrons
 X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -30,34 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear Sebastian Hesselbarth,
 
-On Sat, 25 Jan 2014 19:19:06 +0100, Sebastian Hesselbarth wrote:
-> This patch set fixes clk init order that went upside-down with
-> v3.14. I haven't really investigated what caused this, but I assume
-> it is related with DT node reordering by addresses.
+On Sat, 25 Jan 2014 19:34:10 +0100, Sebastian Hesselbarth wrote:
+> Allocating the pinctrl resource in common pinctrl-mvebu was a misdesign,
+> as it does not allow SoC specific parts to access the allocated resource.
+> This moves resource allocation from mvebu_pinctrl_probe to SoC specific
+> _probe functions and passes the base address to common pinctrl driver
+> instead.
 > 
-> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
-> registered before core clocks driver. Unfortunately, we cannot
-> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
-> init order for our drivers is always core clocks before clock gating,
-> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
-> init function that will register core clocks before clock gating
-> driver.
-> 
-> This patch is based on pre-v3.14-rc1 mainline and should go in as
-> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
-> I suggest Jason picks it up as a topic branch.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-I'm not sure I really like the solution you're proposing here. I'd very
-much prefer to keep one CLK_OF_DECLARE() per clock type, associated to
-one function registering only this clock type.
+I definitely agree with that: I had the same problem several months ago
+when I started doing the pinctrl driver for Orion5x, which has a
+non-linear MPP register set.
 
-Instead, shouldn't the clock framework be improved to *not* register a
-clock until its parent have been registered? If the DT you have the
-gatable clocks that depend on the core clocks, then the gatable clocks
-should not be registered if the core clocks have not yet been
-registered.
+However, I'd like this to go a little bit further if possible. See
+below.
 
-Do you think this is possible? Am I missing something here?
+
+> -	return mvebu_pinctrl_probe(pdev);
+> +	return mvebu_pinctrl_probe(pdev, base);
+
+I think there is no need to pass "base" to mvebu_pinctrl_probe(). The
+only reason we have this is because the base gets stored in the
+mvebu_pinctrl structure so that the mvebu_common_mpp_get() and
+mvebu_common_mpp_set() functions that are the default behavior
+for mvebu_pinconf_group_get() and mvebu_pinconf_group_set() work
+properly.
+
+Shouldn't we turn these functions mvebu_common_mpp_get() and
+mvebu_common_mpp_set() into helper functions, accessible from the
+per-SoC pinctrl drivers, so that they can easily implement their
+->mpp_get() and ->mpp_set() callbacks?
+
+This way, the "base" thing is completely owned by the per-SoC driver,
+which would be more logical I believe.
+
+Thanks!
 
 Thomas
 -- 
