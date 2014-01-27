@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaA0Jnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:43:40 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:55926 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431AbaA0Jnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:43:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140124082859.GJ8586@lee--X1>
-References: <1389886545-31498-1-git-send-email-srinivas.kandagatla@st.com>
-	<1389886651-31990-1-git-send-email-srinivas.kandagatla@st.com>
-	<CACRpkdaBAnpfHBqkgU2emZrYwHGh9KvDvqfnCvaWdU5jYgxStA@mail.gmail.com>
-	<20140124082859.GJ8586@lee--X1>
-Date: Mon, 27 Jan 2014 10:43:37 +0100
-Message-ID: <CACRpkdb9cM_dh7UNpErv+gKrvMW0HbE7NcZq22AiZfEjrqS1qA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] pinctrl: st: Add software edge trigger interrupt support.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753366AbaA0JwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:52:01 -0500
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58463 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751098AbaA0Jv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 04:51:59 -0500
+X-Greylist: delayed 1432 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jan 2014 04:51:59 EST
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH 1/2] x86: dumpstack, use pr_cont
+Date: Mon, 27 Jan 2014 10:28:03 +0100
+Message-Id: <1390814884-15519-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 9:28 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > +/*
->> > + * As edge triggers are not supported at hardware level, it is supported by
->> > + * software by exploiting the level trigger support in hardware.
->>
->> (...)
->>
->> All this is quite hard to understand. Maybe it's just because
->> it's hard overall. Edge triggers are not supported by hardware
->> so we use the hardware edge trigger support?
->>
->> That is a bit oxymoronic...
->
-> That's not what is says. Read it again. :)
+When dumping flags with which the kernel was built, we print them one
+by one in separate printks. Let's use pr_cont as they are
+continuation prints.
 
-Argh yeah I was wrong ... it's perfectly consistent with the
-implementation. Sorry for being such a slow brain this last
-friday.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+---
+ arch/x86/kernel/dumpstack.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index d9c12d3022a7..8bd36be26609 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -257,15 +257,15 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ 	printk(KERN_DEFAULT
+ 	       "%s: %04lx [#%d] ", str, err & 0xffff, ++die_counter);
+ #ifdef CONFIG_PREEMPT
+-	printk("PREEMPT ");
++	pr_cont("PREEMPT ");
+ #endif
+ #ifdef CONFIG_SMP
+-	printk("SMP ");
++	pr_cont("SMP ");
+ #endif
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-	printk("DEBUG_PAGEALLOC");
++	pr_cont("DEBUG_PAGEALLOC");
+ #endif
+-	printk("\n");
++	pr_cont("\n");
+ 	if (notify_die(DIE_OOPS, str, regs, err,
+ 			current->thread.trap_nr, SIGSEGV) == NOTIFY_STOP)
+ 		return 1;
+-- 
+1.8.5.2
+
