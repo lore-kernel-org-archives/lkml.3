@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaA0PFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:05:08 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:50985 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753857AbaA0PFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:05:06 -0500
-Date: Mon, 27 Jan 2014 16:02:29 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Emilio Lopez <emilio@elopez.com.ar>,
-        linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH 1/4] clk: sunxi: Add support for PLL6 on the A31
-Message-ID: <20140127150229.GM3867@lukather>
-References: <1389892285-11745-1-git-send-email-maxime.ripard@free-electrons.com>
- <1389892285-11745-2-git-send-email-maxime.ripard@free-electrons.com>
- <20140117221402.4167.78251@quantum>
+	id S1753858AbaA0PJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:09:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28527 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329AbaA0PJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 10:09:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,729,1384329600"; 
+   d="scan'208";a="473145138"
+Date: Mon, 27 Jan 2014 17:08:55 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, george.cherian@ti.com,
+        rogerq@ti.com, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
+ returns -ENODEV/-ENXIO
+Message-ID: <20140127150855.GA17928@xps8300>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
+ <1390299099-14764-1-git-send-email-kishon@ti.com>
+ <20140121144725.GF30451@saruman.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ai3I8gwHc37+ASRI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140117221402.4167.78251@quantum>
+In-Reply-To: <20140121144725.GF30451@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Felipe,
 
---ai3I8gwHc37+ASRI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 21, 2014 at 08:47:25AM -0600, Felipe Balbi wrote:
+> On Tue, Jan 21, 2014 at 03:41:38PM +0530, Kishon Vijay Abraham I wrote:
+> > Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs),
+> > do not return from probe if the USB PHY library returns -ENODEV as that
+> 
+> this isn't correct, they all have PHYs, some of them might not be
+> controllable.
+> 
+> > indicates the platform does not have PHY.
+> 
+> not really, that indicates the current platform tried to grab a PHY and
+> the PHY doesn't exist. If there's anybody with a non-controllable PHY
+> and someone gives me a really good reason for not using the generic
+> no-op PHY, then we should add a flag and we could:
+> 
+> 	if (!likely(dwc->flags & DWC3_USB2PHY_DRIVER_NOT_NEEDED))
+> 		dwc3_grab_phys(dwc);
 
-Hi Mike,
+Why would you need to know if the PHY drivers are needed or not
+explicitly in your controller driver?
 
-On Fri, Jan 17, 2014 at 02:14:02PM -0800, Mike Turquette wrote:
-> Quoting Maxime Ripard (2014-01-16 09:11:22)
-> > The A31 has a slightly different PLL6 clock. Add support for this new c=
-lock in
-> > our driver.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> This looks good to me. I guess it will be going in for 3.15 based on the
-> comments in the coverletter.
+> But I really want to see the argument against using no-op. As far as I
+> could see, everybody needs a PHY driver one way or another, some
+> platforms just haven't sent any PHY driver upstream and have their own
+> hacked up solution to avoid using the PHY layer.
 
-Yes, indeed it is 3.15 materials.
+Not true in our case. Platforms using Intel's SoCs and chip sets may
+or may not have controllable USB PHY. Quite often they don't. The
+Baytrails have usually ULPI PHY for USB2, but that does not mean they
+provide any vendor specific functions or any need for a driver in any
+case.
 
-Maxime
+Are we talking about the old USB PHY library or the new PHY framework
+with the no-op PHY driver?
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Well, in any case, I don't understand what is the purpose of the no-op
+PHY driver. What are you drying to achieve with that?
 
---ai3I8gwHc37+ASRI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJS5nUFAAoJEBx+YmzsjxAg0nwP/jV4RKa9TFCbZu6HqRbmLGrR
-j7xP7AbCvF38wJJJPUAULMy+dILWM50d+h8LHgLHC41tTWMHZnVgB50Zhg/HxnT1
-DO5LW72Y18pwteeagMlfGrlabb07XdplMiJvkK24myPfsXMj/JBq4dWbCce5p/tb
-N0so1XW6jIUPqAin0hfLyL6cVCUYK1yw6EeAALuBfQ6hyYTZnrkQna/6UBkwn/F0
-4+qkVKK6HVtq2zwmh1ygMAZiLN/a3igLjpGwWhel3wYbD7MiXEI4VnqPpK8tTwDv
-rpi2lfV7OxMdVp1neWmofFO0LDu5EdTxYZ52B6CdTSAaZcEuinD/Vx5lFKw+xoXw
-vHnyh9WZD85bCQFLrT900FfGc96k+W039pe84BBHpFg3an8fbVMJE1eVfTMxWHZ/
-IGaM9dk7AJM5mx8VpuEQ0b3eipaRl2lDqPRKtAQ3ifG3+LT3lCAQX2tI/796uooo
-8IjSlSllRIVDqTOLBaP4MRYgDqQckNs/BHWjJ6V5VBvFs0xocp5GQ8qBvXqJsKiH
-qLTJmb17xBdk0hbLojol6/HmQDqls9+h2Ccw3mM9ym7+Nshnf5pCCtOMbnn1aJDO
-3LnQctsIIVVewAUznu92GbGKK6fVu/E67ncDCRvkd164tpe5ZI6HyPYMIX5hGHGp
-x20MNoQyJGMJzbFh0MII
-=p6YM
------END PGP SIGNATURE-----
-
---ai3I8gwHc37+ASRI--
+-- 
+heikki
