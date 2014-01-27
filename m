@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591AbaA0G6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 01:58:17 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:5371 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567AbaA0G6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 01:58:15 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: broonie@kernel.org
-Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
-        linux-sound@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, Bo Shen <voice.shen@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] ASoC: atmel_wm8904: make it available to choose clock
-Date: Mon, 27 Jan 2014 14:55:25 +0800
-Message-Id: <1390805726-1841-3-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1390805726-1841-1-git-send-email-voice.shen@atmel.com>
-References: <1390805726-1841-1-git-send-email-voice.shen@atmel.com>
+	id S1753470AbaA0HBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 02:01:34 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:56309 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaA0HBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 02:01:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4zr-mcTcymK8CcUTYvzLLNDDVqM5bN5dF5vmdCmmTNx_g@mail.gmail.com>
+References: <1389777042-2363-1-git-send-email-linus.walleij@linaro.org>
+ <5EB3BFCD089AD643B9BB63439F5FD5E9012BC121C1@SHAASIEXM01.ASIA.ROOT.PRI> <CAGsJ_4zr-mcTcymK8CcUTYvzLLNDDVqM5bN5dF5vmdCmmTNx_g@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 27 Jan 2014 15:01:12 +0800
+Message-ID: <CAGsJ_4wtD0Uy=Zai7v2CjEr2Di6SM30k_Zv5rM24tbJRETgUyQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: sirf: lock IRQs when starting them
+To: Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        Binghua Duan <Binghua.Duan@csr.com>
+Cc: Rongjun Ying <rongjun.ying@csr.com>, guoying.zhang@csr.com,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it available to choose the clock from TK pin or RK pin. This
-is hardware design decided.
+2014-01-16 Barry Song <21cnbao@gmail.com>:
+>
+>> From: Linus Walleij [linus.walleij@linaro.org]
+>> Sent: Wednesday, January 15, 2014 17:10
+>> To: linux-kernel@vger.kernel.org; Barry Song
+>> Cc: linux-gpio@vger.kernel.org; Linus Walleij
+>> Subject: [PATCH] pinctrl: sirf: lock IRQs when starting them
+>>
+>> This uses the new API for tagging GPIO lines as in use by
+>> IRQs. This enforces a few semantic checks on how the underlying
+>> GPIO line is used.
+>>
+>> Also assign the gpio_chip.dev pointer to be used for error
+>> messages.
+>>
+>> Cc: Barry Song <Baohua.Song@csr.com>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
-Changes in v2: None
+Hi Linus,
+i read the patch "gpio: add API to be strict about GPIO IRQ usage"
+again, it seems by checking if (test_bit(FLAG_USED_AS_IRQ,
+&desc->flags)), we do be able to stop users setting irqline to output.
+but my concern is actually that: when users use request_irq to get the
+irq line from gpio, in that case, gpio_request() probably will not be
+called at all, who will fix the availability of this pin if it is
+muxed with other functionality except gpio?
 
- sound/soc/atmel/atmel_wm8904.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+for example, in case pin0 can be gpio0 and spi0, if we
+request_irq(gpio0) without calling gpio_request(gpio0), and the other
+people can still request the pin0 for spi0 since we didn't mark the
+pin was used by irq or gpio yet.
 
-diff --git a/sound/soc/atmel/atmel_wm8904.c b/sound/soc/atmel/atmel_wm8904.c
-index b4e3690..9346410 100644
---- a/sound/soc/atmel/atmel_wm8904.c
-+++ b/sound/soc/atmel/atmel_wm8904.c
-@@ -108,6 +108,7 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
- 	struct device_node *codec_np, *cpu_np;
- 	struct snd_soc_card *card = &atmel_asoc_wm8904_card;
- 	struct snd_soc_dai_link *dailink = &atmel_asoc_wm8904_dailink;
-+	struct atmel_ssc_info *ssc_info;
- 	int ret;
- 
- 	if (!np) {
-@@ -115,6 +116,15 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	ssc_info = devm_kzalloc(&pdev->dev, sizeof(*ssc_info), GFP_KERNEL);
-+	if (!ssc_info)
-+		return -ENOMEM;
-+
-+	ssc_info->clk_from_rk_pin =
-+		of_property_read_bool(np, "atmel,clk-from-rk-pin");
-+
-+	card->drvdata = (void *)ssc_info;
-+
- 	ret = snd_soc_of_parse_card_name(card, "atmel,model");
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to parse card name\n");
--- 
-1.8.5.2
+but if gpio_request() is called, in it, pinctrl_request_gpio() is
+called as well, which will mark the pin as not-free. so do you think
+we need to call pinctrl_request_gpio() in startup() of irqline as
+well? but this might be buggy again since people might call
+gpio_request() before calling request_irq().
 
+>
+>> ---
+>>  drivers/pinctrl/sirf/pinctrl-sirf.c | 23 +++++++++++++++++++++++
+>>  1 file changed, 23 insertions(+)
+>>
+
+-barry
