@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaA0RCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:02:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:28735 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138AbaA0RCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:02:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,730,1384329600"; 
-   d="scan'208";a="473220225"
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Michael Matz <matz@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] x86: Disable traditional FPU instructions too
-References: <20140127163758.GC6839@pd.tnic> <52E68C25.1070804@zytor.com>
-	<alpine.LNX.2.00.1401271742300.14101@pobox.suse.cz>
-Date: Mon, 27 Jan 2014 09:01:38 -0800
-In-Reply-To: <alpine.LNX.2.00.1401271742300.14101@pobox.suse.cz> (Jiri
-	Kosina's message of "Mon, 27 Jan 2014 17:43:51 +0100 (CET)")
-Message-ID: <87ha8pqryl.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754013AbaA0RCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:02:41 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50044 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753970AbaA0RCj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 12:02:39 -0500
+Date: Mon, 27 Jan 2014 17:02:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Q] block / zynq: DMA bouncing
+Message-ID: <20140127170230.GQ15937@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.64.1401271549280.23931@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1401271549280.23931@axis700.grange>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Kosina <jkosina@suse.cz> writes:
+On Mon, Jan 27, 2014 at 04:13:56PM +0100, Guennadi Liakhovetski wrote:
+> I'm working on an MMC driver with a DMA capability. All has been working 
+> well, until at some point I've got a bus error, when the mmc driver had 
+> been handed in a buffer at 0x3000 physical RAM address. The reason is, 
+> that on Zynq arch bus masters cannot access RAM below 0x80000. Therefore 
+> my question: how shall I configure this in software?
 
-> On Mon, 27 Jan 2014, H. Peter Anvin wrote:
->
->> I don't think it'd hurt... although I think the above pretty much
->> requires that the code contain actual floating-point types to ever be
->> generated.  
->
-> Unfortunately using float-typed constants (such as 1EexpL) are enough for 
-> this to happen.
+You're going to run into all sorts of problems here.  Normally, the
+DMA-able memory is limited to the first N bytes of memory, not "you must
+avoid the first N bytes of memory".
 
-checkpatch would seem to be the right place to check for this?
+Linux has it hard-coded into the memory subsystems that the DMA zone
+is from the start of memory to N, the normal zone is from N to H, and
+high memory is from H upwards - and allocations for high can fall back
+to normal, which can fall back to DMA but not the other way around.
 
--Andi
+Short of permanently reserving the first 0x80000 bytes of memory, I'm
+not sure that there's much which can be done.  You may wish to talk to
+the MM gurus to see whether there's a modern alternative.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
