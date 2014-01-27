@@ -1,80 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaA0C4b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 21:56:31 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44487 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaA0C43 (ORCPT
+	id S1753440AbaA0Dw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 22:52:56 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:27181 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418AbaA0Dwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 21:56:29 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52E5CA8D.7000602@jp.fujitsu.com>
-Date: Mon, 27 Jan 2014 11:55:09 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] x86, apic: clean up handling of boot_cpu_physical_apicid
- in boot process
-References: <52D7A8F0.70807@jp.fujitsu.com> <alpine.DEB.2.02.1401252000050.10325@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401252000050.10325@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Sun, 26 Jan 2014 22:52:54 -0500
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com
+Cc: riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hughd@google.com, david@gibson.dropbear.id.au, js1304@gmail.com,
+        liwanp@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com, dhillf@gmail.com,
+        rientjes@google.com, davidlohr@hp.com, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8] mm, hugetlb: region manipulation functions take resv_map rather list_head
+Date: Sun, 26 Jan 2014 19:52:20 -0800
+Message-Id: <1390794746-16755-3-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
+References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/01/26 13:02), David Rientjes wrote:
-> On Thu, 16 Jan 2014, HATAYAMA Daisuke wrote:
-> 
->> Hello,
->>
->> This patch deals with the issue of handling boot_cpu_physical_apicid
->> in boot process I avoided in disable_cpu_apicid patch because I
->> cannot guess how long it needs to take for the review of this fix.
->>
->> This patch is made on top of today's x86/apic branch of tip tree.
->> Its commit hash is 5b4d1dbc24bb6fd7179ada0f47be34e27e64decb
->>
-> 
-> This breaks with SGI 320/540:
-> 
-> arch/x86/platform/visws/visws_quirks.c: In function ‘MP_processor_info’:
-> arch/x86/platform/visws/visws_quirks.c:169:3: error: ‘bios_cpu_physical_apicid’ undeclared (first use in this function)
-> arch/x86/platform/visws/visws_quirks.c:169:3: note: each undeclared identifier is reported only once for each function it appears in
-> 
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Thanks. I'll retry with CONFIG_X86_VISWS...
+To change a protection method for region tracking to find grained one,
+we pass the resv_map, instead of list_head, to region manipulation
+functions. This doesn't introduce any functional change, and it is just
+for preparing a next step.
 
-obj-$(CONFIG_X86_VISWS) += visws_quirks.o
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ mm/hugetlb.c | 30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
-> It makes it pretty apparent that you want a different name for the new
-> variable, bios_bsp_physical_apicid is just too close to
-> boot_cpu_physical_apicid that even the author of the patch missed a
-> conversion.
-> 
-
-``bsp'' and ``boot cpu'' are different, but certainly they are close
-for most of people who don't need to focus the difference.
-
-One idea is not to add bios_bsp_physical_apicid, just removing
-assignment to boot_cpu_physical_apicid from MP_processor_info().
-I guess currently no one uses apicid provided by MP table
-since boot_cpu_physical_apicid is finally initialized in
-init_apic_mappings().
-
-> (It's also really sad that we can't make it __initdata since it's only
-> valid at boot because of the hotplug stuff.)
-> 
-
-
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index fbed1b7..572866d 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -151,8 +151,9 @@ struct file_region {
+ 	long to;
+ };
+ 
+-static long region_add(struct list_head *head, long f, long t)
++static long region_add(struct resv_map *resv, long f, long t)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *nrg, *trg;
+ 
+ 	/* Locate the region we are either in or before. */
+@@ -187,8 +188,9 @@ static long region_add(struct list_head *head, long f, long t)
+ 	return 0;
+ }
+ 
+-static long region_chg(struct list_head *head, long f, long t)
++static long region_chg(struct resv_map *resv, long f, long t)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *nrg;
+ 	long chg = 0;
+ 
+@@ -236,8 +238,9 @@ static long region_chg(struct list_head *head, long f, long t)
+ 	return chg;
+ }
+ 
+-static long region_truncate(struct list_head *head, long end)
++static long region_truncate(struct resv_map *resv, long end)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *trg;
+ 	long chg = 0;
+ 
+@@ -266,8 +269,9 @@ static long region_truncate(struct list_head *head, long end)
+ 	return chg;
+ }
+ 
+-static long region_count(struct list_head *head, long f, long t)
++static long region_count(struct resv_map *resv, long f, long t)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg;
+ 	long chg = 0;
+ 
+@@ -393,7 +397,7 @@ void resv_map_release(struct kref *ref)
+ 	struct resv_map *resv_map = container_of(ref, struct resv_map, refs);
+ 
+ 	/* Clear out any active regions before we release the map. */
+-	region_truncate(&resv_map->regions, 0);
++	region_truncate(resv_map, 0);
+ 	kfree(resv_map);
+ }
+ 
+@@ -1152,7 +1156,7 @@ static long vma_needs_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = inode->i_mapping->private_data;
+ 
+-		return region_chg(&resv->regions, idx, idx + 1);
++		return region_chg(resv, idx, idx + 1);
+ 
+ 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		return 1;
+@@ -1162,7 +1166,7 @@ static long vma_needs_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = vma_resv_map(vma);
+ 
+-		err = region_chg(&resv->regions, idx, idx + 1);
++		err = region_chg(resv, idx, idx + 1);
+ 		if (err < 0)
+ 			return err;
+ 		return 0;
+@@ -1178,14 +1182,14 @@ static void vma_commit_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = inode->i_mapping->private_data;
+ 
+-		region_add(&resv->regions, idx, idx + 1);
++		region_add(resv, idx, idx + 1);
+ 
+ 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = vma_resv_map(vma);
+ 
+ 		/* Mark this page used in the map. */
+-		region_add(&resv->regions, idx, idx + 1);
++		region_add(resv, idx, idx + 1);
+ 	}
+ }
+ 
+@@ -2276,7 +2280,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ 		end = vma_hugecache_offset(h, vma, vma->vm_end);
+ 
+ 		reserve = (end - start) -
+-			region_count(&resv->regions, start, end);
++			region_count(resv, start, end);
+ 
+ 		resv_map_put(vma);
+ 
+@@ -3178,7 +3182,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE) {
+ 		resv_map = inode->i_mapping->private_data;
+ 
+-		chg = region_chg(&resv_map->regions, from, to);
++		chg = region_chg(resv_map, from, to);
+ 
+ 	} else {
+ 		resv_map = resv_map_alloc();
+@@ -3224,7 +3228,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	 * else has to be done for private mappings here
+ 	 */
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+-		region_add(&resv_map->regions, from, to);
++		region_add(resv_map, from, to);
+ 	return 0;
+ out_err:
+ 	if (vma)
+@@ -3240,7 +3244,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+ 	struct hugepage_subpool *spool = subpool_inode(inode);
+ 
+ 	if (resv_map)
+-		chg = region_truncate(&resv_map->regions, offset);
++		chg = region_truncate(resv_map, offset);
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
+ 	spin_unlock(&inode->i_lock);
 -- 
-Thanks.
-HATAYAMA, Daisuke
+1.8.1.4
 
