@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbaA0Uyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:54:55 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60388 "EHLO
+	id S1754372AbaA0U4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:56:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60396 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657AbaA0Uyx (ORCPT
+	with ESMTP id S1753657AbaA0U4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:54:53 -0500
-Date: Mon, 27 Jan 2014 20:54:37 +0000
+	Mon, 27 Jan 2014 15:56:36 -0500
+Date: Mon, 27 Jan 2014 20:56:27 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Message-ID: <20140127205437.GC11841@sirena.org.uk>
+        devicetree@vger.kernel.org, Dave Airlie <airlied@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>
+Message-ID: <20140127205627.GD11841@sirena.org.uk>
 References: <cover.1390813480.git.moinejf@free.fr>
- <d99e90932aad1a644fa32ff22fd2cb56b830341b.1390813481.git.moinejf@free.fr>
- <20140127204441.GZ11841@sirena.org.uk>
- <20140127204915.GC15937@n2100.arm.linux.org.uk>
+ <22fafd7e11771ffc25c84ff609d18039f07b7295.1390813481.git.moinejf@free.fr>
+ <20140127204302.GY11841@sirena.org.uk>
+ <20140127204534.GB15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R4k76f8oNWH5pGim"
+	protocol="application/pgp-signature"; boundary="9KMRXrBaLD3S8C0H"
 Content-Disposition: inline
-In-Reply-To: <20140127204915.GC15937@n2100.arm.linux.org.uk>
+In-Reply-To: <20140127204534.GB15937@n2100.arm.linux.org.uk>
 X-Cookie: O.K., fine.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] ASoC: tda998x: adjust the audio hw parameters from
- EDID
+Subject: Re: [PATCH 3/4] ASoC: tda998x: add DT documentation
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,43 +36,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---R4k76f8oNWH5pGim
+--9KMRXrBaLD3S8C0H
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Jan 27, 2014 at 08:49:15PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Jan 27, 2014 at 08:44:41PM +0000, Mark Brown wrote:
+On Mon, Jan 27, 2014 at 08:45:34PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 27, 2014 at 08:43:02PM +0000, Mark Brown wrote:
+> > On Mon, Jan 27, 2014 at 09:34:49AM +0100, Jean-Francois Moine wrote:
 
-> > Can this parsing code be factored out - it (or large parts of it) should
-> > be usable by other HDMI devices shouldn't it?
+> > > +	- audio-ports: one or two values.
+> > > +		The first value defines the I2S input port.
+> > > +		The second one, if present, defines the S/PDIF input port.
 
-> Yes, preferably as a generic ALSA helper rather than an ASoC helper -
-> I don't see any need for this to be ASoC specific (I have a pure ALSA
-> driver which has very similar code in it.)
+> > I take it these are port numbers on the device and it's not possible to
+> > do something like having multiple I2S ports?
 
-Indeed, definitely ALSA generic - ideally we could factor a lot of the
-integration with the video side out.
+> You can feed it with multiple synchronised I2S streams for the additional
+> channels.
 
---R4k76f8oNWH5pGim
+Ah, I feared as much.  The bindings ought to take account of that
+posibility even if the code can't use additional ports yet.  Perhaps
+separate properties for I2S and S/PDIF?
+
+--9KMRXrBaLD3S8C0H
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS5seKAAoJELSic+t+oim9C8IP/04prbC9qucCblOEYW5TSoX1
-q+pRcO0hrA7XLuD3VoJH1XGnIGUC41G/ApPtYjIg6nfzOjQV6g3eetMHiaU7YpX3
-fiTYTFxz0aOeDO+xOy56YqgXcKX1JduEd0eX/p8BJPkASIcb/Mr9WSK2zUKFLpXD
-O5FgHKN+HNaTR9s61j42DhT4qntWotJVjq3hso59Mm3ykMA50M2eVO58zmc4nsse
-MwlTCdW0Vu1SiXU7VU0OapStZ0AWgggWPDPECfpwJZfLU4uLtPaUWAK/3CNmbVOF
-m/0PeH2SZnHbooHUM4whSKJhTo4es9PpIbwUbrYLGqp8aM5eE2DNB2bWQ0qCayCI
-CVrhWtre6Abr+yye9i+EAxDlVybJus3IohRtLA0kfivgNkPD4bbj9+yRdCehcbVF
-EYX60ViW/O+9FOK/GFvA7FnoYBGHJUdlttEHPXNQYQfyTy/TPv1LF/x3ZlREi7Wc
-LYQmLj43RRozr4H5VpDTbogylgDZE09tt42o94U787F+pGdCqxam4JO7ZRibIO+i
-R5b8WDcp2TQWvNXqrv977/Imk7kM1myKco677oi4PJFRlWpHQ74ggm3E4AwTIaqh
-27S/oWhlD+wYwkVZDhp0dOpeks3B9xIAT4x3XittHmvHOxDMKPXRDSrdZWa0iszE
-uHyqm/ojCOc/nRzf/v4+
-=JGqi
+iQIcBAEBAgAGBQJS5sf4AAoJELSic+t+oim9l+AQAJwZVDa/OoV3JumAi8CZgoT0
+rULrwoP9ZkIrI/IdV+YcygDtzE998ulCownvZTSSD1kYPrEafgWKQtPlZzffTX+t
+rcINMh0c5J2QTouy7dkCrRsDYJ9YQhiReWuE6PS8fy6GMo4EjI1yTiFydfZ3HLKo
+heLHLXzm9+J07dsqqAxe3IlRsgDCUvEewgbwz9M0rUCPH3ENPQw8VjXYSWAdPmpO
+8Zqq05YInnd5DSLWPd9mxTjF8QW0Nf+cA4PAVS9wvr7B4grSvT8w55g4LzQIUapo
+nkAa4KqT1wHz+ojKcKGH+nujb2TSkZmcsPnzVjAG469kPnDwUrs40x0LvpcteKg2
+cesfi98228Bay33jM5f/xcAD4jT7/LUSq7s4uRKVZS+PLA83ysoQ348sci9TxbaA
+3oTo74DvZMuDyEfKBAWk5WyfCicRmAst7b+GjfdKXxst9u0YoKagEVDyI85Pf1bn
+0/dJIJL+/+XcE3Ghq2JlK2pNBObi/4BBMO/HeV0CVzAA+TzZES8jsGMcex0LW3Lm
+JVZDTWB5O72cZtF72cEsrip78VrShXJB/mBRqEzl7iPOeiwwjS9WR8Bb9KL3M/vW
+wk23+0+3hsFb1S3k9wZuXhnC/kVYSRYM0TkW54dgd7kT4P6jfQDmRHcNHAZQBSNh
+bnAqTJQLt8+VNUkc8JSY
+=niaY
 -----END PGP SIGNATURE-----
 
---R4k76f8oNWH5pGim--
+--9KMRXrBaLD3S8C0H--
