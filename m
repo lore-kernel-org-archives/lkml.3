@@ -1,175 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbaA0Qth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:49:37 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:35160 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaA0Qtf (ORCPT
+	id S1753806AbaA0QyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:54:12 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34541 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbaA0QyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:49:35 -0500
-Message-ID: <1390841372.4631.3.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client changes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Torvalds Linus <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Jan 2014 11:49:32 -0500
-Organization: Primary Data
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-/698AripKlEcq/WOQQVF"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Mon, 27 Jan 2014 11:54:10 -0500
+Date: Mon, 27 Jan 2014 08:54:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
+Message-ID: <20140127165405.GK9012@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1387773533.5369.16.camel@marge.simpson.net>
+ <20131224193636.GD19211@linux.vnet.ibm.com>
+ <1387940854.5373.8.camel@marge.simpson.net>
+ <20131225075544.GE19211@linux.vnet.ibm.com>
+ <1387993057.5346.17.camel@marge.simpson.net>
+ <20140117171441.GG5785@linutronix.de>
+ <1390015514.5444.46.camel@marge.simpson.net>
+ <20140124195014.GB29981@linutronix.de>
+ <1390626760.3625.17.camel@marge.simpson.net>
+ <1390799444.5425.61.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390799444.5425.61.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012716-8236-0000-0000-000006726EA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 27, 2014 at 06:10:44AM +0100, Mike Galbraith wrote:
+> On Sat, 2014-01-25 at 06:12 +0100, Mike Galbraith wrote: 
+> > On Fri, 2014-01-24 at 20:50 +0100, Sebastian Andrzej Siewior wrote: 
+> > > * Mike Galbraith | 2014-01-18 04:25:14 [+0100]:
+> > > 
+> > > >> ># timers-do-not-raise-softirq-unconditionally.patch
+> > > >> ># rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
+> > > >> >
+> > > >> >..those two out does seem to have stabilized the thing.
+> > > >> 
+> > > >> timers-do-not-raise-softirq-unconditionally.patch is on its way out.
+> > > >> 
+> > > >> rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch confues me.
+> > > >> Didn't you report once that your box deadlocks without this patch? Now
+> > > >> your 64way box on the other hand does not work with it?
+> > > >
+> > > >If 'do not raise' is applied, 'use a trylock' won't save you.  If 'do
+> > > is this just an observation or you do know why it won't save me?
+> > 
+> > It's an observation from beyond the grave from the 64 core box that it
+> > repeatedly did NOT save :)  Autopsy photos below.
+> > 
+> > I've built 3.12.8-rt9 with Stevens v2 "timer: Raise softirq if there's
+> > irq_work" to see if it'll survive.
+> 
+> And it did, configured both as nohz_tick, and nohz_full_all.  The irqs
+> are enabled warning in can_stop_full_tick() fired for nohz_full_all, but
+> that's it.
+> 
+> For grins, I also applied Paul's v3 timer latency series while testing
+> nohz_full_all config.   The box was heavily loaded the vast majority of
+> the time, but it didn't explode or do anything obviously evil.
 
---=-/698AripKlEcq/WOQQVF
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Cool!  May I add your Tested-by?
 
-Hi Linus,
-
-The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e=
-:
-
-  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.14-=
-1
-
-for you to fetch changes up to ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2:
-
-  pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done (2014-01=
--22 18:10:49 -0700)
-
-----------------------------------------------------------------
-NFS client updates for Linux 3.14
-
-Highlights include:
-
-- Stable fix for an infinite loop in RPC state machine
-- Stable fix for a use after free situation in the NFSv4 trunking discovery
-- Stable fix for error handling in the NFSv4 trunking discovery
-- Stable fix for the page write update code
-- Stable fix for the NFSv4.1 mount time security negotiation
-- Stable fix for the NFSv4 open code.
-- O_DIRECT locking fixes
-- fix an Oops in the pnfs file commit code
-- RPC layer needs finer grained handling of connection errors
-- More RPC GSS upcall fixes
-
-----------------------------------------------------------------
-Alexander Aring (1):
-      nfs: fix dead code of ipv6_addr_scope
-
-Boaz Harrosh (1):
-      pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
-
-Christoph Hellwig (7):
-      nfs: fix size updates for aio writes
-      nfs: defer inode_dio_done call until size update is done
-      nfs: increment i_dio_count for reads, too
-      nfs: merge nfs_direct_read into nfs_file_direct_read
-      nfs: merge nfs_direct_write into nfs_file_direct_write
-      nfs: take i_mutex during direct I/O reads
-      nfs: page cache invalidation for dio
-
-Jeff Layton (6):
-      sunrpc: create a new dummy pipe for gssd to hold open
-      sunrpc: replace sunrpc_net->gssd_running flag with a more reliable ch=
-eck
-      nfs: check if gssd is running before attempting to use krb5i auth in =
-SETCLIENTID call
-      rpc_pipe: remove the clntXX dir if creating the pipe fails
-      sunrpc: add an "info" file for the dummy gssd pipe
-      rpc_pipe: fix cleanup of dummy gssd directory when notification fails
-
-Niels de Vos (1):
-      NFS: dprintk() should not print negative fileids and inode numbers
-
-Scott Mayhew (1):
-      nfs: always make sure page is up-to-date before extending a write to =
-cover the entire page
-
-Toralf F=C3=B6rster (1):
-      point to the right include file in a comment (left over from a9004abc=
-3)
-
-Trond Myklebust (8):
-      NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
-      SUNRPC: Ensure xprt_connect_status handles all potential connection e=
-rrors
-      SUNRPC: Handle connect errors ECONNABORTED and EHOSTUNREACH
-      SUNRPC: Report connection error values to rpc_tasks on the pending qu=
-eue
-      SUNRPC: Add tracepoint for socket errors
-      NFSv4.1: Don't trust attributes if a pNFS LAYOUTCOMMIT is outstanding
-      NFSv4.1: Fix a race in nfs4_write_inode
-      NFSv4.1: Handle errors correctly in nfs41_walk_client_list
-
-Weston Andros Adamson (4):
-      sunrpc: Fix infinite loop in RPC state machine
-      nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
-      nfs4: fix discover_server_trunking use after free
-      pnfs: fix BUG in filelayout_recover_commit_reqs
-
- fs/nfs/dir.c                       |  18 +--
- fs/nfs/direct.c                    | 279 ++++++++++++++++++++-------------=
-----
- fs/nfs/file.c                      |   6 +-
- fs/nfs/inode.c                     |  48 ++++---
- fs/nfs/nfs3acl.c                   |   4 +-
- fs/nfs/nfs4client.c                |  25 ++--
- fs/nfs/nfs4filelayout.c            |  16 +--
- fs/nfs/nfs4filelayoutdev.c         |   2 +-
- fs/nfs/nfs4proc.c                  |  43 ++++--
- fs/nfs/nfs4state.c                 |   4 +-
- fs/nfs/nfs4super.c                 |  14 +-
- fs/nfs/nfs4xdr.c                   |  47 ++++---
- fs/nfs/pnfs.c                      |  67 ++++-----
- fs/nfs/pnfs.h                      |  16 +++
- fs/nfs/read.c                      |  12 +-
- fs/nfs/write.c                     |  19 +--
- include/linux/sunrpc/rpc_pipe_fs.h |   5 +-
- include/trace/events/sunrpc.h      |   1 +
- net/sunrpc/auth_gss/auth_gss.c     |  17 +--
- net/sunrpc/clnt.c                  |  15 +-
- net/sunrpc/netns.h                 |   3 +-
- net/sunrpc/rpc_pipe.c              | 169 +++++++++++++++++++++-
- net/sunrpc/sunrpc_syms.c           |   8 +-
- net/sunrpc/xprt.c                  |   5 +
- net/sunrpc/xprtsock.c              |  42 +++++-
- 25 files changed, 597 insertions(+), 288 deletions(-)
-
---=20
-Trond Myklebust
-Linux NFS client maintainer
-
---=-/698AripKlEcq/WOQQVF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABAgAGBQJS5o4cAAoJEGcL54qWCgDyZUkQAIPAuzsNPFr5hGa0kGPDroPg
-LFs7+Tkpvjs9mYju+vywtbL1bSOtSAYFyZSFEiq1UBzGc5NtBeS+eqF8sjn2XG0y
-jx3gkPAhkfU9ld4q0nDuLfLYi2bl/I3b08yBdamnlV3ni5f7xUjVdJtViBNLu11u
-x8MfaItUi/KZ9NIC6JGANcLsiDlCn9U/mLE4zsjNP9cNhc20tWsnW767+kjVbtOA
-lYc4vdk4m5+zaQhIfBDur0SNPZz6A6f9fIPMMWq3lk114pX+S1JGxGWQ+qown5f9
-snOFrXak9lL02Q5Zb9eFCebZcTCc8qpps7mhthJi9nPnmU38ELAH1zH5YWvbXShm
-808ipyP9YGIsa/3N6m+zNw2azVHamXSc+4D74pNNylCVmW7cNau6U2E/Cl5/YXM0
-CGvN7eWN9/rbYpKVlR7K+7OSMXd5o2ZY1cf9i2fg2a/Dp+i15lr64bmQ3ff2QfLt
-CE9a/Rp3fcuq9DR1rOiWkfxn0jyPj+3RmPStb26sC7TblG8sGYilJlbAIl2kJLXi
-1HlJdWoudFpwgbFs1KbdpGT3lfTp0maVQ3wQmXRWsiMHNPEysIkosk+SgKPUKZgh
-carSzT3Gfob2JzHYOsb+MjBRknauyYtoYT2yT0+JhTFwsz1t4PZr+gwH8zCzeUSb
-ptN3tC/+xKRuDnzNrdT2
-=soFt
------END PGP SIGNATURE-----
-
---=-/698AripKlEcq/WOQQVF--
+							Thanx, Paul
 
