@@ -1,284 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaA0KHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:07:01 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:47249 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaA0KG7 (ORCPT
+	id S1753775AbaA0KIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:08:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:59873 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036AbaA0KIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:06:59 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-d9-52e62fc2e8ae
+	Mon, 27 Jan 2014 05:08:01 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-a1-52e62ffe8538
 From: Weijie Yang <weijie.yang@samsung.com>
-To: hughd@google.com, "'Seth Jennings'" <sjennings@variantweb.net>
+To: hughd@google.com
 Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'Minchan Kim'" <minchan@kernel.org>, shli@kernel.org,
         "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'Seth Jennings'" <sjennings@variantweb.net>,
         "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
         "'Linux-MM'" <linux-mm@kvack.org>,
         "'linux-kernel'" <linux-kernel@vger.kernel.org>,
         stable@vger.kernel.org
-Subject: [PATCH 5/8] mm/swap: drop useless and bug frontswap_shrink codes
+Subject: [PATCH 4/8] mm/swap: fix race among frontswap_register_ops,
+ swapoff and swapon
 Date: Mon, 27 Jan 2014 18:03:04 +0800
-Message-id: <000a01cf1b47$838a7170$8a9f5450$%yang@samsung.com>
+Message-id: <000b01cf1b47$a7d31410$f7793c30$%yang@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8bRutY4Blsk+kFTh2+gWyMLL9wIA==
+Thread-index: Ac8bRuoj3nj0pSPMSpm+DuPNK+S4kA==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd1D+s+CDL6v5bWYs34Nm0XXqaks
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jAd3/+s+CDHY9ZrGYs34Nm0XXqaks
 	FgdnL2GyePqpj8Xi8q45bBb31vxntVj29T27xZSHkxgtLhy6z2Tx6egjNosFGx8xWjw58Z/F
 	gcdj56y77B4LNpV6bFrVyeax6dMkdo8TM36zeHx8eovF4/2+q2wefVtWMXpc/1bk8XmTXABX
-	FJdNSmpOZllqkb5dAlfGhY/eBQ9sKr49XMjUwNhq2MXIySEhYCLx7uJSRghbTOLCvfVsXYxc
-	HEICixglNj58BeX8YZRYcWIXC0gVm4C2xN3+jawgtoiAg8S3e/+YQIqYBc4wSVzY1c4GkhAW
-	8JRY9GQzM4jNIqAqcfTQdPYuRg4OXgE7if5NOiBhXgFBiR+T77GAhJkF1CWmTMkFCTMLyEts
-	XvOWGSQsARR+9FcXYpOexP45v5ghSsQlNh65xTKBUWAWkkGzEAbNQjJoFpKOBYwsqxhFUwuS
-	C4qT0nMN9YoTc4tL89L1kvNzNzGC4+qZ1A7GlQ0WhxgFOBiVeHgzrj8NEmJNLCuuzD3EKMHB
-	rCTCW6HzLEiINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD
-	486NdxtUZrw6UGi4u7Vf/+HBkCsJXVc3sx3Ic+s5fK9untHpBXuPJL3Y5Hiu+93kbLFHnaZf
-	V6c+KNojUamrnHYxiLlax0Mn8qq36N8eGY/tO/TOrX7J1Wfn/2vC4o2PM6K1Qj5pR5VVNvZv
-	Xv6vbkFKS+XFhYaxGT9O1L3vmBm0wmNVtqPMYiWW4oxEQy3mouJEAFSkxACnAgAA
+	FJdNSmpOZllqkb5dAlfGzoPH2As61SpmL9nB2MDYLt/FyMkhIWAi0byhhRHCFpO4cG89Wxcj
+	F4eQwCJGicev+1ggnD+MEste/GQHqWIT0Ja427+RFcQWERCRWHNnISNIEbPALyaJ/v4DLCAJ
+	YYFIia0zjjGD2CwCqhJHD00Ha+YVsJPYuvUAE4QtKPFj8j2geg6gZnWJKVNyQcLMAvISm9e8
+	ZQYJSwCFH/3VhVilJzG5+SwLRIm4xMYjt1gmMArMQjJoFsKgWUgGzULSsYCRZRWjaGpBckFx
+	UnqukV5xYm5xaV66XnJ+7iZGcGw9k97BuKrB4hCjAAejEg9vxvWnQUKsiWXFlbmHGCU4mJVE
+	eCt0ngUJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYNQr
+	XtTwInZ+W44p88KaJbf1L7KV/14WfaUy73iNZ4r4uuogbrsZfNeyuVc4qm++d51VOUrr5L3b
+	272+ndz1am9zUXud6P7zN/I3+3ozOPM8Oj09tWfhejWLBCNO41UbrIv1WWcrVJne8/Z7+dA4
+	da+t8aziwCXHGtZJ/pXYlph7KNzs16x3d5RYijMSDbWYi4oTAWDZPaSpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The frontswap_shrink works as a "partial swapoff" by using try_to_unuse(),
-but is has race condition with swapoff.
+A potential asynchronous frontswap_register_ops could happen while swapoff
+or swapon is happening, there is a need to protect init frontswap type and
+prevent NULL point reference to si->frontswap_map.
 
-Of course we can fix this race issue, however, as this code is not used by
-anyone and not efficient, I decide drop this code.
+This patch utilize swapon_mutex to prevent this scenario, see comments of
+frontswap_register_ops for detail.
 
-As to shrinker, a frontswap backend should implement its own shrinker if
-there is a real-world need.
+This patch is just for a rare scenario, aim to correct of code.
 
 Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- include/linux/frontswap.h |    2 -
- include/linux/swapfile.h  |    3 --
- mm/frontswap.c            |  116 ---------------------------------------------
- mm/swapfile.c             |   19 ++------
- 4 files changed, 4 insertions(+), 136 deletions(-)
+ include/linux/swapfile.h |    1 +
+ mm/frontswap.c           |    7 ++++---
+ mm/swapfile.c            |   20 +++++++++++++++-----
+ 3 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-index 8293262..c00b429 100644
---- a/include/linux/frontswap.h
-+++ b/include/linux/frontswap.h
-@@ -16,8 +16,6 @@ struct frontswap_ops {
- extern bool frontswap_enabled;
- extern struct frontswap_ops *
- 	frontswap_register_ops(struct frontswap_ops *ops);
--extern void frontswap_shrink(unsigned long);
--extern unsigned long frontswap_curr_pages(void);
- extern void frontswap_writethrough(bool);
- #define FRONTSWAP_HAS_EXCLUSIVE_GETS
- extern void frontswap_tmem_exclusive_gets(bool);
 diff --git a/include/linux/swapfile.h b/include/linux/swapfile.h
-index 1fd5494..5dc7c81 100644
+index e282624..1fd5494 100644
 --- a/include/linux/swapfile.h
 +++ b/include/linux/swapfile.h
-@@ -5,10 +5,7 @@
-  * these were static in swapfile.c but frontswap.c needs them and we don't
+@@ -6,6 +6,7 @@
   * want to expose them to the dozens of source files that include swap.h
   */
--extern spinlock_t swap_lock;
- extern struct mutex swapon_mutex;
--extern struct swap_list_t swap_list;
+ extern spinlock_t swap_lock;
++extern struct mutex swapon_mutex;
+ extern struct swap_list_t swap_list;
  extern struct swap_info_struct *swap_info[];
--extern int try_to_unuse(unsigned int, bool, unsigned long);
- 
- #endif /* _LINUX_SWAPFILE_H */
+ extern int try_to_unuse(unsigned int, bool, unsigned long);
 diff --git a/mm/frontswap.c b/mm/frontswap.c
-index a0c68db..df067f1 100644
+index 1b24bdc..a0c68db 100644
 --- a/mm/frontswap.c
 +++ b/mm/frontswap.c
-@@ -326,122 +326,6 @@ void __frontswap_invalidate_area(unsigned type)
- }
- EXPORT_SYMBOL(__frontswap_invalidate_area);
+@@ -88,10 +88,9 @@ static inline void inc_frontswap_invalidates(void) { }
+  * bitmap) to create tmem_pools and set the respective poolids. All of that is
+  * guarded by us using atomic bit operations on the 'need_init' bitmap.
+  *
+- * This would not guards us against the user deciding to call swapoff right as
++ * swapon_mutex guards us against the user deciding to call swapoff right as
+  * we are calling the backend to initialize (so swapon is in action).
+- * Fortunatly for us, the swapon_mutex has been taked by the callee so we are
+- * OK. The other scenario where calls to frontswap_store (called via
++ * The other scenario where calls to frontswap_store (called via
+  * swap_writepage) is racing with frontswap_invalidate_area (called via
+  * swapoff) is again guarded by the swap subsystem.
+  *
+@@ -120,6 +119,7 @@ struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ 	struct frontswap_ops *old = frontswap_ops;
+ 	int i;
  
--static unsigned long __frontswap_curr_pages(void)
--{
--	int type;
--	unsigned long totalpages = 0;
--	struct swap_info_struct *si = NULL;
--
--	assert_spin_locked(&swap_lock);
--	for (type = swap_list.head; type >= 0; type = si->next) {
--		si = swap_info[type];
--		totalpages += atomic_read(&si->frontswap_pages);
--	}
--	return totalpages;
--}
--
--static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
--					int *swapid)
--{
--	int ret = -EINVAL;
--	struct swap_info_struct *si = NULL;
--	int si_frontswap_pages;
--	unsigned long total_pages_to_unuse = total;
--	unsigned long pages = 0, pages_to_unuse = 0;
--	int type;
--
--	assert_spin_locked(&swap_lock);
--	for (type = swap_list.head; type >= 0; type = si->next) {
--		si = swap_info[type];
--		si_frontswap_pages = atomic_read(&si->frontswap_pages);
--		if (total_pages_to_unuse < si_frontswap_pages) {
--			pages = pages_to_unuse = total_pages_to_unuse;
--		} else {
--			pages = si_frontswap_pages;
--			pages_to_unuse = 0; /* unuse all */
--		}
--		/* ensure there is enough RAM to fetch pages from frontswap */
--		if (security_vm_enough_memory_mm(current->mm, pages)) {
--			ret = -ENOMEM;
--			continue;
--		}
--		vm_unacct_memory(pages);
--		*unused = pages_to_unuse;
--		*swapid = type;
--		ret = 0;
--		break;
--	}
--
--	return ret;
--}
--
--/*
-- * Used to check if it's necessory and feasible to unuse pages.
-- * Return 1 when nothing to do, 0 when need to shink pages,
-- * error code when there is an error.
-- */
--static int __frontswap_shrink(unsigned long target_pages,
--				unsigned long *pages_to_unuse,
--				int *type)
--{
--	unsigned long total_pages = 0, total_pages_to_unuse;
--
--	assert_spin_locked(&swap_lock);
--
--	total_pages = __frontswap_curr_pages();
--	if (total_pages <= target_pages) {
--		/* Nothing to do */
--		*pages_to_unuse = 0;
--		return 1;
--	}
--	total_pages_to_unuse = total_pages - target_pages;
--	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
--}
--
--/*
-- * Frontswap, like a true swap device, may unnecessarily retain pages
-- * under certain circumstances; "shrink" frontswap is essentially a
-- * "partial swapoff" and works by calling try_to_unuse to attempt to
-- * unuse enough frontswap pages to attempt to -- subject to memory
-- * constraints -- reduce the number of pages in frontswap to the
-- * number given in the parameter target_pages.
-- */
--void frontswap_shrink(unsigned long target_pages)
--{
--	unsigned long pages_to_unuse = 0;
--	int uninitialized_var(type), ret;
--
--	/*
--	 * we don't want to hold swap_lock while doing a very
--	 * lengthy try_to_unuse, but swap_list may change
--	 * so restart scan from swap_list.head each time
--	 */
--	spin_lock(&swap_lock);
--	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
--	spin_unlock(&swap_lock);
--	if (ret == 0)
--		try_to_unuse(type, true, pages_to_unuse);
--	return;
--}
--EXPORT_SYMBOL(frontswap_shrink);
--
--/*
-- * Count and return the number of frontswap pages across all
-- * swap devices.  This is exported so that backend drivers can
-- * determine current usage without reading debugfs.
-- */
--unsigned long frontswap_curr_pages(void)
--{
--	unsigned long totalpages = 0;
--
--	spin_lock(&swap_lock);
--	totalpages = __frontswap_curr_pages();
--	spin_unlock(&swap_lock);
--
--	return totalpages;
--}
--EXPORT_SYMBOL(frontswap_curr_pages);
--
- static int __init init_frontswap(void)
- {
- #ifdef CONFIG_DEBUG_FS
++	mutex_lock(&swapon_mutex);
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
+ 		if (test_and_clear_bit(i, need_init)) {
+ 			struct swap_info_struct *sis = swap_info[i];
+@@ -129,6 +129,7 @@ struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ 			ops->init(i);
+ 		}
+ 	}
++	mutex_unlock(&swapon_mutex);
+ 	/*
+ 	 * We MUST have frontswap_ops set _after_ the frontswap_init's
+ 	 * have been called. Otherwise __frontswap_store might fail. Hence
 diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 5c8a086..3023172 100644
+index 413c213..5c8a086 100644
 --- a/mm/swapfile.c
 +++ b/mm/swapfile.c
-@@ -1353,7 +1353,7 @@ static int unuse_mm(struct mm_struct *mm,
-  * Recycle to start on reaching the end, returning 0 when empty.
-  */
- static unsigned int find_next_to_unuse(struct swap_info_struct *si,
--					unsigned int prev, bool frontswap)
-+					unsigned int prev)
- {
- 	unsigned int max = si->max;
- 	unsigned int i = prev;
-@@ -1379,12 +1379,6 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
- 			prev = 0;
- 			i = 1;
+@@ -112,7 +112,7 @@ struct swap_list_t swap_list = {-1, -1};
+ 
+ struct swap_info_struct *swap_info[MAX_SWAPFILES];
+ 
+-static DEFINE_MUTEX(swapon_mutex);
++DEFINE_MUTEX(swapon_mutex);
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
+ /* Activity counter to indicate that a swapon or swapoff has occurred */
+@@ -1954,11 +1954,9 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	if (p->flags & SWP_CONTINUED)
+ 		free_swap_count_continuations(p);
+ 
+-	mutex_lock(&swapon_mutex);
+ 	spin_lock(&swap_lock);
+ 	spin_lock(&p->lock);
+ 	drain_mmlist();
+-
+ 	/* wait for anyone still in scan_swap_map */
+ 	p->highest_bit = 0;		/* cuts scans short */
+ 	while (p->flags >= SWP_SCANNING) {
+@@ -1968,7 +1966,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 		spin_lock(&swap_lock);
+ 		spin_lock(&p->lock);
+ 	}
++	spin_unlock(&p->lock);
++	spin_unlock(&swap_lock);
+ 
++	/*
++	 * Now nobody use or allocate swap_entry from this swapfile,
++	 * there is no need to hold swap_lock or p->lock.
++	 * Use swapon_mutex to mutex against swap_start() and a potential
++	 * asynchronous frontswap_register_ops, which will init this swap type
++	 */
++	mutex_lock(&swapon_mutex);
+ 	swap_file = p->swap_file;
+ 	old_block_size = p->old_block_size;
+ 	p->swap_file = NULL;
+@@ -1978,11 +1985,10 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	cluster_info = p->cluster_info;
+ 	p->cluster_info = NULL;
+ 	frontswap_map = frontswap_map_get(p);
+-	spin_unlock(&p->lock);
+-	spin_unlock(&swap_lock);
+ 	frontswap_invalidate_area(type);
+ 	frontswap_map_set(p, NULL);
+ 	mutex_unlock(&swapon_mutex);
++
+ 	free_percpu(p->percpu_cluster);
+ 	p->percpu_cluster = NULL;
+ 	vfree(swap_map);
+@@ -2577,6 +2583,10 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
  		}
--		if (frontswap) {
--			if (frontswap_test(si, i))
--				break;
--			else
--				continue;
--		}
- 		count = ACCESS_ONCE(si->swap_map[i]);
- 		if (count && swap_count(count) != SWAP_MAP_BAD)
- 			break;
-@@ -1400,8 +1394,7 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
-  * if the boolean frontswap is true, only unuse pages_to_unuse pages;
-  * pages_to_unuse==0 means all pages; ignored if frontswap is false
-  */
--int try_to_unuse(unsigned int type, bool frontswap,
--		 unsigned long pages_to_unuse)
-+int try_to_unuse(unsigned int type)
- {
- 	struct swap_info_struct *si = swap_info[type];
- 	struct mm_struct *start_mm;
-@@ -1438,7 +1431,7 @@ int try_to_unuse(unsigned int type, bool frontswap,
- 	 * one pass through swap_map is enough, but not necessarily:
- 	 * there are races when an instance of an entry might be missed.
- 	 */
--	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
-+	while ((i = find_next_to_unuse(si, i)) != 0) {
- 		if (signal_pending(current)) {
- 			retval = -EINTR;
- 			break;
-@@ -1613,10 +1606,6 @@ int try_to_unuse(unsigned int type, bool frontswap,
- 		 * interactive performance.
- 		 */
- 		cond_resched();
--		if (frontswap && pages_to_unuse > 0) {
--			if (!--pages_to_unuse)
--				break;
--		}
  	}
  
- 	mmput(start_mm);
-@@ -1939,7 +1928,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	spin_unlock(&swap_lock);
- 
- 	set_current_oom_origin();
--	err = try_to_unuse(type, false, 0); /* force all pages to be unused */
-+	err = try_to_unuse(type); /* force all pages to be unused */
- 	clear_current_oom_origin();
- 
- 	if (err) {
++	/*
++	 * Use swapon_mutex to mutex against swap_start() and a potential
++	 * asynchronous frontswap_register_ops, which will init this swap type
++	 */
+ 	mutex_lock(&swapon_mutex);
+ 	prio = -1;
+ 	if (swap_flags & SWAP_FLAG_PREFER)
 -- 
 1.7.10.4
 
