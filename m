@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaA0LD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 06:03:27 -0500
-Received: from ra.se.axis.com ([195.60.68.10]:34109 "EHLO ra.se.axis.com"
+	id S1753597AbaA0LEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 06:04:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34559 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaA0LD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 06:03:26 -0500
-Date: Mon, 27 Jan 2014 12:03:23 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel@axis.com
-Subject: [GIT PULL] CRIS updates for 3.14
-Message-ID: <20140127110322.GR17210@axis.com>
+	id S1751098AbaA0LDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 06:03:35 -0500
+Date: Mon, 27 Jan 2014 11:03:30 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.14] mm, mempolicy: fix mempolicy printing in
+ numa_maps
+Message-ID: <20140127110330.GH4963@suse.de>
+References: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus!
+On Sat, Jan 25, 2014 at 07:12:35PM -0800, David Rientjes wrote:
+> As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference 
+> policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as 
+> "prefer:N" for the local node, N, of the process reading the file.
+> 
+> This should only be printed when the mempolicy of <pid> is MPOL_PREFERRED 
+> for node N.
+> 
+> If the process is actually only using the default mempolicy for local node 
+> allocation, make sure "default" is printed as expected.
+> 
+> Reported-by: Robert Lippert <rlippert@google.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Please pull for CRIS Linux 3.14 updates.
-Mostly removal of deprecated or old code, but also
-a long promised update of the CRIS syscalls.
+Hmm, it is using a preferred policy but I see your point as expectations
+of an application parsing numa_maps have been broken.  The patch makes
+non-obvious assumptions about how and when MPOL_F_MORON gets set which
+could change in the future and be missed. Use this instead? It might need
+to be changed again if there is a need to control whether automatic numa
+balancing can be enabled or disabled on a per-process basis.
 
-Thanks!
-
-The following changes since commit ceb3b0212dfc843a6abe8a6f3b4e28c1f2059e64:
-
-  Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/nouveau/linux-2.6 into drm-fixes (2014-01-08 17:57:45 +1000)
-
-are available in the git repository at:
-
-
-  git://jni.nu/cris tags/cris-for-3.14
-
-for you to fetch changes up to e269a869417cd4053b37da1b19186902d3cbf63b:
-
-  Drop code for CRISv10 CPU simulator (2014-01-15 14:44:02 +0100)
-
-----------------------------------------------------------------
-CRIS changes for 3.14
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      cris: sync_serial: remove interruptible_sleep_on
-
-Jesper Nilsson (3):
-      CRIS: Add missing syscalls
-      Cleanup whitespace, remove old author tag
-      Drop code for CRISv10 CPU simulator
-
-Michael Opdenacker (1):
-      cris: remove deprecated IRQF_DISABLED
-
- arch/cris/Kconfig                         |   6 -
- arch/cris/arch-v10/drivers/gpio.c         |   4 +-
- arch/cris/arch-v10/drivers/sync_serial.c  |   8 +-
- arch/cris/arch-v10/kernel/Makefile        |   1 -
- arch/cris/arch-v10/kernel/debugport.c     |   7 --
- arch/cris/arch-v10/kernel/entry.S         | 184 ++++++++++++++++--------------
- arch/cris/arch-v10/kernel/head.S          | 127 ++++++++++-----------
- arch/cris/arch-v10/kernel/irq.c           |  18 +--
- arch/cris/arch-v10/kernel/process.c       |   5 +-
- arch/cris/arch-v10/kernel/time.c          |  98 +++++++---------
- arch/cris/arch-v10/lib/dram_init.S        |  40 +++----
- arch/cris/arch-v32/drivers/mach-a3/gpio.c |   2 +-
- arch/cris/arch-v32/drivers/mach-fs/gpio.c |   4 +-
- arch/cris/arch-v32/drivers/sync_serial.c  |   4 +-
- arch/cris/arch-v32/kernel/entry.S         |  34 ++++--
- arch/cris/arch-v32/kernel/fasttimer.c     |   2 +-
- arch/cris/arch-v32/kernel/irq.c           |  10 +-
- arch/cris/arch-v32/kernel/smp.c           |   2 +-
- arch/cris/arch-v32/kernel/time.c          |   6 +-
- arch/cris/arch-v32/mach-a3/arbiter.c      |   4 +-
- arch/cris/arch-v32/mach-fs/arbiter.c      |   2 +-
- arch/cris/boot/rescue/kimagerescue.S      |   2 -
- arch/cris/include/arch-v10/arch/io.h      |  29 +----
- arch/cris/include/arch-v10/arch/irq.h     |   6 +-
- arch/cris/include/arch-v32/arch/irq.h     |   6 +-
- arch/cris/include/asm/unistd.h            |   2 +-
- arch/cris/include/uapi/asm/unistd.h       |  16 +++
- arch/cris/kernel/irq.c                    |   3 -
- 28 files changed, 299 insertions(+), 333 deletions(-)
-
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index c2ccec0..c1a2573 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -120,6 +120,14 @@ static struct mempolicy default_policy = {
+ 
+ static struct mempolicy preferred_node_policy[MAX_NUMNODES];
+ 
++/* Returns true if the policy is the default policy */
++static bool mpol_is_default(struct mempolicy *pol)
++{
++	return !pol ||
++		pol == &default_policy ||
++		pol == &preferred_node_policy[numa_node_id()];
++}
++
+ static struct mempolicy *get_task_policy(struct task_struct *p)
+ {
+ 	struct mempolicy *pol = p->mempolicy;
+@@ -2856,7 +2864,7 @@ void mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
+ 	unsigned short mode = MPOL_DEFAULT;
+ 	unsigned short flags = 0;
+ 
+-	if (pol && pol != &default_policy) {
++	if (!mpol_is_default(pol)) {
+ 		mode = pol->mode;
+ 		flags = pol->flags;
+ 	}
