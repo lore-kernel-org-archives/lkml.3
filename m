@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaA0RHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:07:12 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:55661 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473AbaA0RHK (ORCPT
+	id S1754065AbaA0RJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:09:40 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33137 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbaA0RJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:07:10 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, <linux-parisc@vger.kernel.org>
-Subject: [PATCH] parisc64: don't use module_init for non-modular core perf code
-Date: Mon, 27 Jan 2014 12:06:57 -0500
-Message-ID: <1390842417-23443-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Mon, 27 Jan 2014 12:09:37 -0500
+Date: Mon, 27 Jan 2014 09:09:31 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v9 3/5] qrwlock, x86 - Treat all data type not bigger
+ than long as atomic in x86
+Message-ID: <20140127170931.GQ9012@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1389761047-47566-4-git-send-email-Waiman.Long@hp.com>
+ <20140120150316.GG30183@twins.programming.kicks-ass.net>
+ <52DE9410.6090500@hp.com>
+ <20140121153958.GA31570@twins.programming.kicks-ass.net>
+ <52DE9BB0.5070909@hp.com>
+ <CA+55aFzyww_kwU36jYk=LUtxzPUU76xgnQEOUTqGMFNe80sOZA@mail.gmail.com>
+ <20140122080155.GE31570@twins.programming.kicks-ass.net>
+ <20140122120917.GA8894@gmail.com>
+ <20140122121339.GM31570@twins.programming.kicks-ass.net>
+ <20140122130933.GB9429@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122130933.GB9429@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012717-0928-0000-0000-000005C0EE8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf.c code depends on CONFIG_64BIT, so it is either built-in
-or absent.  It will never be modular, so using module_init as an
-alias for __initcall is rather misleading.
+On Wed, Jan 22, 2014 at 02:09:33PM +0100, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Wed, Jan 22, 2014 at 01:09:17PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Tue, Jan 21, 2014 at 04:31:56PM -0800, Linus Torvalds wrote:
+> > > > > And if somebody tries to do a "smp_store_release()" on a random
+> > > > > structure or union, do we care? We're not some nanny state that wants
+> > > > > to give nice warnings for insane code.
+> > > > 
+> > > > Hurm, and here I thought warning on insane code was a good idea :/
+> > > 
+> > > There's a level of insanity that is best cured through Darwin Awards?
+> > 
+> > Yeah, but who will clean up after them? :-)
+> 
+> Birds, insects, bacteria?
 
-Fix this up now, so that we can relocate module_init from
-init.h into module.h in the future.  If we don't do this, we'd
-have to add module.h to obviously non-modular code, and that
-would be a worse thing.  Aside from it not making sense, it also
-causes a ~10% increase in CPP overhead due to module.h having a
-large list of headers itself -- for example compare line counts:
+In the Linux kernel, it will probably be us cleaning up after them.  ;-)
 
- device_initcall() and <linux/init.h>
-	20238 arch/parisc/kernel/perf.i
-
- module_init() and <linux/module.h>
-	22194 arch/parisc/kernel/perf.i
-
-Direct use of __initcall is discouraged, vs prioritized ones.
-Use of device_initcall is consistent with what __initcall
-maps onto, and hence does not change the init order, making the
-impact of this change zero.   Should someone with real hardware
-for boot testing want to change it later to arch_initcall or
-something different, they can do that at a later date.
-
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: linux-parisc@vger.kernel.org
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-
-[patch will be added to init cleanup series:
-   http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git/  ]
-
- arch/parisc/kernel/perf.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/parisc/kernel/perf.c b/arch/parisc/kernel/perf.c
-index ba0c053e25ae..518f4f5f1f43 100644
---- a/arch/parisc/kernel/perf.c
-+++ b/arch/parisc/kernel/perf.c
-@@ -543,6 +543,7 @@ static int __init perf_init(void)
- 
- 	return 0;
- }
-+device_initcall(perf_init);
- 
- /*
-  * perf_start_counters(void)
-@@ -847,5 +848,3 @@ printk("perf_rdr_write\n");
- 	}
- printk("perf_rdr_write done\n");
- }
--
--module_init(perf_init);
--- 
-1.8.5.2
+								Thanx, Paul
 
