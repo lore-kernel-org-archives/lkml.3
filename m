@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaA0SlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:41:16 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48898 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628AbaA0SlP (ORCPT
+	id S1754179AbaA0Slv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:41:51 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:41511 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067AbaA0Slu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:41:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140127162226.GA3229@twins.programming.kicks-ass.net>
-References: <20140123173120.GA25474@www.outflux.net>
-	<20140125074738.GB10565@gmail.com>
-	<52E669F1.9080603@intel.com>
-	<20140127152557.GA27792@gmail.com>
-	<52E681B6.7020501@intel.com>
-	<20140127161959.GD4941@twins.programming.kicks-ass.net>
-	<20140127162226.GA3229@twins.programming.kicks-ass.net>
-Date: Mon, 27 Jan 2014 10:41:14 -0800
-Message-ID: <CAKB9nXucRwn78+pw1oRQ_jP_kQJuOaUzPyiH0JE5Sv9utkK1ww@mail.gmail.com>
-Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
-From: Andrew Honig <ahonig@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Dave Anderson <anderson@redhat.com>,
-        Eugene Surovegin <surovegin@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 27 Jan 2014 13:41:50 -0500
+Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: tomi.valkeinen@ti.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, pali.rohar@gmail.com, pavel@ucw.cz,
+        Tero Kristo <t-kristo@ti.com>, Nishanth Menon <nm@ti.com>
+In-Reply-To: <52E697C0.6000202@gmail.com>
+References: <52E697C0.6000202@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Jan 2014 19:41:44 +0100
+Message-ID: <1390848104.4936.62.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of this patch to make it easier for processing offline
-kdump files for crash analysis.  For context on the see this thread
-for a patch in progress
-(http://www.mail-archive.com/crash-utility@redhat.com/msg04640.html)
+On Mon, 2014-01-27 at 19:30 +0200, Ivaylo Dimitrov wrote:
+> linux-next-20140124 DSS is broken on N900  - display stays black (there 
+> is some noise though). I booted the kernel with qemu and it gives the 
+> following warning:
+> 
+> [    0.623779] DSS: set fck to 172800000
+> [    0.624237] ------------[ cut here ]------------
+> [    0.624298] WARNING: CPU: 0 PID: 1 at 
+> drivers/video/omap2/dss/dss.c:497 dss_set_fck_rate+0x68/0x8c()
+> [    0.624359] clk rate mismatch: 288000000 != 172800000
 
-_stext doesn't quite work for this purpose because in my testing it
-doesn't exactly match the kaslr offset, for some reason _stext is a
-few hundred bytes after the kaslr offset.  The number doesn't appear
-consistent and I would prefer not to take a dependency on that.
+Here are also clock regressions since next-20140122 regarding
+dss_set_fck_rate() and sys_clkout2 occuring in my current patchset for a
+dm37xx100 board. Please see here:
 
-On Mon, Jan 27, 2014 at 8:22 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
->
-> Do _NOT_ cross post to moderated lists!!
+ [PATCH v3 0/4] ARM: add omap3 INCOstartec board support
+ http://thread.gmane.org/gmane.linux.ports.arm.omap/110095
+
+
+ Thanks
+  -- chf
+
