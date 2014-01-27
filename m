@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaA0WGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:06:02 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:58580 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229AbaA0WEK (ORCPT
+	id S1754591AbaA0WGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:06:35 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:33903 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072AbaA0WGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:04:10 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: [PATCH 4/9] numa,sched: build per numa_group active node mask from numa_faults_cpu statistics
-Date: Mon, 27 Jan 2014 17:03:43 -0500
-Message-Id: <1390860228-21539-5-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1390860228-21539-1-git-send-email-riel@redhat.com>
-References: <1390860228-21539-1-git-send-email-riel@redhat.com>
+	Mon, 27 Jan 2014 17:06:34 -0500
+Message-ID: <52E6D866.604@amacapital.net>
+Date: Mon, 27 Jan 2014 14:06:30 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com> <20140127002255.GA10323@ZenIV.linux.org.uk> <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com> <20140127074208.GB10323@ZenIV.linux.org.uk>
+In-Reply-To: <20140127074208.GB10323@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On 01/26/2014 11:42 PM, Al Viro wrote:
+> On Sun, Jan 26, 2014 at 08:32:09PM -0800, Linus Torvalds wrote:
+>> On Sun, Jan 26, 2014 at 4:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>>
+>>> Umm...  Can't uprobe_notify_resume() modify regs as well?
+>>
+>> Probably.
+>>
+>> .. and on the other hand, we should actually be able to use 'sysret'
+>> for signal handling on x86-64, because while sysret destroys %rcx and
+>> doesn't allow for returning to odd modes, for calling a signal handler
+>> I don't think we really care..
+> 
+> I'm afraid we might:
+> 
+>  * When user can change the frames always force IRET. That is because
+>  * it deals with uncanonical addresses better. SYSRET has trouble
+>  * with them due to bugs in both AMD and Intel CPUs.
+> 
+> IIRC, that was about SYSRET with something unpleasant left in RCX, which
+> comes from regs->ip, which is set to sa_handler by __setup_rt_frame().
+> And we do not normalize or validate that - not in __setup_rt_frame() and
+> not at sigaction(2) time.  Something about GPF triggered and buggering
+> attacker-chosen memory area?  I don't remember details, but IIRC the
+> conclusion had been "just don't go there"...
+> 
+> Note that we can manipulate regs->ip and regs->sp, regardless of validation
+> at sigaction(2) or __setup_rt_frame() - just have the sucker ptraced, send
+> it a signal and it'll stop on delivery.  Then tracer can use ptrace to modify
+> registers and issue PTRACE_CONT with zero signal.  Voila - regs->[is]p
+> set to arbitrary values, no signal handlers triggered...
+> 
 
-The numa_faults_cpu statistics are used to maintain an active_nodes nodemask
-per numa_group. This allows us to be smarter about when to do numa migrations.
+It's not just ip and sp -- cs matters here, too, I think.
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
----
- kernel/sched/fair.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+(I may be the only one to have ever tried it, but it's possible to
+far-call from 64-bit to 32-bit cs, and it works.  I've never tried
+switching cs using ptrace, but someone may want that to work. too.)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4841aaf..1ee921f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -885,6 +885,7 @@ struct numa_group {
- 	struct list_head task_list;
- 
- 	struct rcu_head rcu;
-+	nodemask_t active_nodes;
- 	unsigned long total_faults;
- 	unsigned long *faults_cpu;
- 	unsigned long faults[0];
-@@ -918,6 +919,12 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 		p->numa_group->faults[task_faults_idx(nid, 1)];
- }
- 
-+static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
-+{
-+	return group->faults_cpu[task_faults_idx(nid, 0)] +
-+		group->faults_cpu[task_faults_idx(nid, 1)];
-+}
-+
- /*
-  * These return the fraction of accesses done by a particular task, or
-  * task group, on a particular numa node.  The group weight is given a
-@@ -1271,6 +1278,38 @@ static void numa_migrate_preferred(struct task_struct *p)
- }
- 
- /*
-+ * Find the nodes on which the workload is actively running. We do this by
-+ * tracking the nodes from which NUMA hinting faults are triggered. This can
-+ * be different from the set of nodes where the workload's memory is currently
-+ * located.
-+ *
-+ * The bitmask is used to make smarter decisions on when to do NUMA page
-+ * migrations, To prevent flip-flopping, and excessive page migrations, nodes
-+ * are added when they cause over 6/16 of the maximum number of faults, but
-+ * only removed when they drop below 3/16.
-+ */
-+static void update_numa_active_node_mask(struct numa_group *numa_group)
-+{
-+	unsigned long faults, max_faults = 0;
-+	int nid;
-+
-+	for_each_online_node(nid) {
-+		faults = group_faults_cpu(numa_group, nid);
-+		if (faults > max_faults)
-+			max_faults = faults;
-+	}
-+
-+	for_each_online_node(nid) {
-+		faults = group_faults_cpu(numa_group, nid);
-+		if (!node_isset(nid, numa_group->active_nodes)) {
-+			if (faults > max_faults * 6 / 16)
-+				node_set(nid, numa_group->active_nodes);
-+		} else if (faults < max_faults * 3 / 16)
-+			node_clear(nid, numa_group->active_nodes);
-+	}
-+}
-+
-+/*
-  * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
-  * increments. The more local the fault statistics are, the higher the scan
-  * period will be for the next scan window. If local/remote ratio is below
-@@ -1412,6 +1451,7 @@ static void task_numa_placement(struct task_struct *p)
- 	update_task_scan_period(p, fault_types[0], fault_types[1]);
- 
- 	if (p->numa_group) {
-+		update_numa_active_node_mask(p->numa_group);
- 		/*
- 		 * If the preferred task and group nids are different,
- 		 * iterate over the nodes again to find the best place.
-@@ -1474,6 +1514,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		/* Second half of the array tracks nids where faults happen */
- 		grp->faults_cpu = grp->faults + 2 * nr_node_ids;
- 
-+		node_set(task_node(current), grp->active_nodes);
-+
- 		for (i = 0; i < 4*nr_node_ids; i++)
- 			grp->faults[i] = p->numa_faults_memory[i];
- 
--- 
-1.8.4.2
+That being said, the last time I benchmarked it, sysret was *way* faster
+than iret.  So maybe the thing to do is to validate the registers on the
+way out and, if they're appropriate for sysret, do the sysret.
 
+I'm not quite sure how to express "I don't care about rcx" in pt_regs.
+Maybe use the actual value that the CPU will stick in there (assuming
+that anyone knows that this is).
+
+--Andy
