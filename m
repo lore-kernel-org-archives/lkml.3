@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660AbaA0KEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:04:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:16481 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaA0KEH (ORCPT
+	id S1753687AbaA0KFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:05:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:57682 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaA0KFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:04:07 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-45-52e62f107c18
+	Mon, 27 Jan 2014 05:05:05 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-12-52e62f500992
 From: Weijie Yang <weijie.yang@samsung.com>
 To: hughd@google.com
 Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
@@ -16,60 +16,55 @@ Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
         "'Linux-MM'" <linux-mm@kvack.org>,
         "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, xfishcoder@gmail.com
-Subject: [PATCH 8/8] mm/frontswap: add missing handle on a dup-store failure
+        stable@vger.kernel.org
+Subject: [PATCH 7/8] mm/swap: check swapfile blocksize greater than PAGE_SIZE
 Date: Mon, 27 Jan 2014 18:03:04 +0800
-Message-id: <000701cf1b47$19c56ab0$4d504010$%yang@samsung.com>
+Message-id: <000801cf1b47$3fcab170$bf601450$%yang@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8bRu73wB4O86FSTSadXcJOsuxN9A==
+Thread-index: Ac8bRu3aHC4G58qRQ9meKjqMWLoq9Q==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jAV0B/WdBBlt26VjMWb+GzaLr1FQW
-	i4OzlzBZPP3Ux2JxedccNot7a/6zWiz7+p7dYsrDSYwWFw7dZ7JYsPERo8WTE/9ZLGa8OMDs
-	wOOxc9Zddo8Fm0o9Nq3qZPPY9GkSu8eJGb9ZPD4+vcXi8X7fVTaPvi2rGD0+b5IL4IzisklJ
-	zcksSy3St0vgypg66TtzwVT2iu+TprM3MD5i7WLk5JAQMJF4cOA/M4QtJnHh3nq2LkYuDiGB
-	RYwSa6ffYoJw/jBKLPj2BqyKTUBb4m7/RrBuEQERiTV3FjKC2MwCT5gk9p6v7GLk4BAW8JF4
-	8DgIJMwioCpx9NB0dhCbV8BOYvbbDcwQtqDEj8n3WEDKmQXUJaZMyYWYIi+xec1bZpCwBFD4
-	0V9diEV6EtcufWWFKBGX2HjkFssERoFZSAbNQhg0C8mgWUg6FjCyrGIUTS1ILihOSs811CtO
-	zC0uzUvXS87P3cQIjqdnUjsYVzZYHGIU4GBU4uHNuP40SIg1say4MvcQowQHs5IIb4XOsyAh
-	3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjId2d7w25ZRY
-	Ym56YYo5772YLM2Kpzvef+91+lLNc2rC51LD+hN6FpKTVx64YVP942zfx9XfGmPXvu/r9XvX
-	w3nogrVB94Obbhr7VL8s7dJgbREWntvx2TsrQuF8jtvVe3tE4nc+s1+w1IZ1luuhfJPNc3Z3
-	tgZfKFzJ9KMl+kjxupuz9fbMnafEUpyRaKjFXFScCADJz2EHowIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgG6A/rMgg803NSzmrF/DZtF1aiqL
+	xcHZS5gsnn7qY7G4vGsOm8W9Nf9ZLZZ9fc9uMeXhJEaLC4fuM1ks2PiI0eLJif8sDtweO2fd
+	ZfdYsKnUY9OqTjaPTZ8msXucmPGbxePj01ssHu/3XWXz6NuyitHj8ya5AM4oLpuU1JzMstQi
+	fbsErozFa1+xFyxmrXhx7yNTA+Nsli5GTg4JAROJb32LmSFsMYkL99azdTFycQgJLGKUeHH5
+	F5Tzh1Fi4ZR3YB1sAtoSd/s3soLYIgIiEmvuLGQEKWIWOMMkcWFXOxtIQljAV2LXi1tgDSwC
+	qhJHD01nB7F5BewkOn8/YIawBSV+TL4HVMMB1KwuMWVKLkiYWUBeYvOat8wgYQmg8KO/uhCr
+	9CTeXF/HCFEiLrHxyC2WCYwCs5AMmoUwaBaSQbOQdCxgZFnFKJpakFxQnJSea6hXnJhbXJqX
+	rpecn7uJERxJz6R2MK5ssDjEKMDBqMTDm3H9aZAQa2JZcWXuIUYJDmYlEd4KnWdBQrwpiZVV
+	qUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqemFqQWwWSZODilGhh3n/589Io7J9fkbm/L
+	58zeMks+XDOcPiltu4nKzoPK90J42WTZZYoqll3bY3A0iOGU+UHdUw8FFxX0cM33ip3+3WOm
+	/onJF6/9WOJyZa+plEl/5llmx73uQZ//JO/duWclT75l1Izr/f+i3y8sW+fI3bv4Z4nb2fQb
+	Qtar4h+EzYzfsHQvw+PlSizFGYmGWsxFxYkAGlXKHaACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a frontswap dup-store failed, it should invalidate the old page in
-backend and return failure.
+If S_ISREG swapfile's blocksize > PAGE_SIZE, it is not suitable to be
+a swapfile, because swap slot is fixed to PAGE_SIZE.
 
-This patch add this missing handle. According to the comments of
-__frontswap_store(), it should have been there.
+This patch check this situation and return -EINVAL if it happens.
 
-Reported-by: changkun.li <xfishcoder@gmail.com>
 Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- mm/frontswap.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/page_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index df067f1..171c6c0 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -245,8 +245,10 @@ int __frontswap_store(struct page *page)
- 		  the (older) page from frontswap
- 		 */
- 		inc_frontswap_failed_stores();
--		if (dup)
-+		if (dup) {
- 			__frontswap_clear(sis, offset);
-+			frontswap_ops->invalidate_page(type, offset);
-+		}
- 	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 7247be6..3d9bd12 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -150,6 +150,8 @@ int generic_swapfile_activate(struct swap_info_struct *sis,
+ 	int ret;
+ 
+ 	blkbits = inode->i_blkbits;
++	if(blkbits > PAGE_SHIFT)
++		return -EINVAL;
+ 	blocks_per_page = PAGE_SIZE >> blkbits;
+ 
+ 	/*
 -- 
 1.7.10.4
 
