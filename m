@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaA0WFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:05:12 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44856 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaA0WFI (ORCPT
+	id S1754577AbaA0WGC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:06:02 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:58580 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229AbaA0WEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:05:08 -0500
-Date: Mon, 27 Jan 2014 23:04:47 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
-        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-Message-ID: <20140127230447.7e8be3a4@endymion.delvare>
-In-Reply-To: <20140127185031.GA28910@roeck-us.net>
-References: <52E561D0.4040308@roeck-us.net>
-	<20140126211357.6fa68909@endymion.delvare>
-	<52E573B6.9040903@roeck-us.net>
-	<20140126214936.7736f530@endymion.delvare>
-	<52E58330.90602@roeck-us.net>
-	<52E58656.7000903@roeck-us.net>
-	<20140126235103.GP11727@sirena.org.uk>
-	<52E6951C.60609@wwwdotorg.org>
-	<20140127185031.GA28910@roeck-us.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Jan 2014 17:04:10 -0500
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: [PATCH 4/9] numa,sched: build per numa_group active node mask from numa_faults_cpu statistics
+Date: Mon, 27 Jan 2014 17:03:43 -0500
+Message-Id: <1390860228-21539-5-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1390860228-21539-1-git-send-email-riel@redhat.com>
+References: <1390860228-21539-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014 10:50:31 -0800, Guenter Roeck wrote:
-> On Mon, Jan 27, 2014 at 10:19:24AM -0700, Stephen Warren wrote:
-> > On 01/26/2014 04:51 PM, Mark Brown wrote:
-> > > On Sun, Jan 26, 2014 at 02:04:06PM -0800, Guenter Roeck wrote:
-> > > 
-> > >> I think I have a better idea: Surround the regulator code, or at least
-> > >> its error handling, in the lm90 driver with
-> > > 
-> > >> 	if (IS_ENABLED(CONFIG_OF)) {
-> > >> 	}
-> > > 
-> > >> Would that be ok ? If yes I'll submit a patch. I'll do the same in
-> > >> another driver I am working on.
-> > > 
-> > > That's not going to have the desired effect in cases where DT is built
-> > > into the kernel but not in use on the current system (which is a
-> > > configuration that gets used) ...
-> > 
-> > The solution to that particular aspect of the problem is the following:
-> > 
-> > if (of_have_populated_dt()) {
-> > 	...
-> > 
-> 
-> Turns out that won't help either after Mark's patches to ACPI and
-> to the regulator core are applied. Right now I don't have a solution
-> that would work for all systems.
-> 
-> I'll leave it up to Jean to decide how to proceed.
+From: Rik van Riel <riel@redhat.com>
 
-I have no idea, really. I have seen multiple patches flying around,
-each seems to have its own merits, but I simply don't know which is
-going in the direction. I don't know a thing about regulators, OF, DT
-etc. so I am really not the right person to make a decision about this.
+The numa_faults_cpu statistics are used to maintain an active_nodes nodemask
+per numa_group. This allows us to be smarter about when to do numa migrations.
 
-All I can say is: either someone comes up with a patch set which
-properly fixes the regression for all lm90 drivers users, or I will have
-to revert commit 3e0f964f.
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Chegu Vinod <chegu_vinod@hp.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/sched/fair.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 4841aaf..1ee921f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -885,6 +885,7 @@ struct numa_group {
+ 	struct list_head task_list;
+ 
+ 	struct rcu_head rcu;
++	nodemask_t active_nodes;
+ 	unsigned long total_faults;
+ 	unsigned long *faults_cpu;
+ 	unsigned long faults[0];
+@@ -918,6 +919,12 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
+ 		p->numa_group->faults[task_faults_idx(nid, 1)];
+ }
+ 
++static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
++{
++	return group->faults_cpu[task_faults_idx(nid, 0)] +
++		group->faults_cpu[task_faults_idx(nid, 1)];
++}
++
+ /*
+  * These return the fraction of accesses done by a particular task, or
+  * task group, on a particular numa node.  The group weight is given a
+@@ -1271,6 +1278,38 @@ static void numa_migrate_preferred(struct task_struct *p)
+ }
+ 
+ /*
++ * Find the nodes on which the workload is actively running. We do this by
++ * tracking the nodes from which NUMA hinting faults are triggered. This can
++ * be different from the set of nodes where the workload's memory is currently
++ * located.
++ *
++ * The bitmask is used to make smarter decisions on when to do NUMA page
++ * migrations, To prevent flip-flopping, and excessive page migrations, nodes
++ * are added when they cause over 6/16 of the maximum number of faults, but
++ * only removed when they drop below 3/16.
++ */
++static void update_numa_active_node_mask(struct numa_group *numa_group)
++{
++	unsigned long faults, max_faults = 0;
++	int nid;
++
++	for_each_online_node(nid) {
++		faults = group_faults_cpu(numa_group, nid);
++		if (faults > max_faults)
++			max_faults = faults;
++	}
++
++	for_each_online_node(nid) {
++		faults = group_faults_cpu(numa_group, nid);
++		if (!node_isset(nid, numa_group->active_nodes)) {
++			if (faults > max_faults * 6 / 16)
++				node_set(nid, numa_group->active_nodes);
++		} else if (faults < max_faults * 3 / 16)
++			node_clear(nid, numa_group->active_nodes);
++	}
++}
++
++/*
+  * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
+  * increments. The more local the fault statistics are, the higher the scan
+  * period will be for the next scan window. If local/remote ratio is below
+@@ -1412,6 +1451,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	update_task_scan_period(p, fault_types[0], fault_types[1]);
+ 
+ 	if (p->numa_group) {
++		update_numa_active_node_mask(p->numa_group);
+ 		/*
+ 		 * If the preferred task and group nids are different,
+ 		 * iterate over the nodes again to find the best place.
+@@ -1474,6 +1514,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 		/* Second half of the array tracks nids where faults happen */
+ 		grp->faults_cpu = grp->faults + 2 * nr_node_ids;
+ 
++		node_set(task_node(current), grp->active_nodes);
++
+ 		for (i = 0; i < 4*nr_node_ids; i++)
+ 			grp->faults[i] = p->numa_faults_memory[i];
+ 
 -- 
-Jean Delvare
+1.8.4.2
+
