@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590AbaA0XnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:43:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57090 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754205AbaA0XnK (ORCPT
+	id S1754089AbaA0XrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:47:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37210 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679AbaA0XrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:43:10 -0500
-Message-ID: <1390866011.4405.2.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: netdev@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>,
-        devicetree@vger.kernel.org, Roger Luethi <rl@hellgate.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Jan 2014 23:40:11 +0000
-In-Reply-To: <CABjd4Yz2Kfed_qBfSAEXoAcVxfsmhTBA-83YJ9_iSwPZ+r1qYQ@mail.gmail.com>
-References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
-	 <1390823503-24087-1-git-send-email-alchark@gmail.com>
-	 <1390823503-24087-4-git-send-email-alchark@gmail.com>
-	 <1390834654.2735.148.camel@deadeye.wl.decadent.org.uk>
-	 <CABjd4Yz2Kfed_qBfSAEXoAcVxfsmhTBA-83YJ9_iSwPZ+r1qYQ@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-lqUvMEKlP/A+W9wDQi+i"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 82.132.219.176
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 27 Jan 2014 18:47:23 -0500
+Date: Mon, 27 Jan 2014 15:48:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PULL] Serial fixes for 3.14-rc1
+Message-ID: <20140127234828.GA15394@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 8bc661bfc0c2d221e209f4205bdaaf574d50100c:
 
---=-lqUvMEKlP/A+W9wDQi+i
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+  tty/serial: at91: disable uart timer at start of shutdown (2014-01-13 15:55:59 -0800)
 
-On Mon, 2014-01-27 at 19:34 +0400, Alexey Charkov wrote:
-> 2014/1/27 Ben Hutchings <ben@decadent.org.uk>:
-> > On Mon, 2014-01-27 at 15:51 +0400, Alexey Charkov wrote:
-> >> This should make the driver usable with VIA/WonderMedia ARM-based
-> >> Systems-on-Chip integrated Rhine III adapters. Note that these
-> >> are always in MMIO mode, and don't have any known EEPROM.
-> > [...]
-> >> --- a/drivers/net/ethernet/via/Kconfig
-> >> +++ b/drivers/net/ethernet/via/Kconfig
-> >> @@ -19,7 +19,7 @@ if NET_VENDOR_VIA
-> >>
-> >>  config VIA_RHINE
-> >>         tristate "VIA Rhine support"
-> >> -       depends on PCI
-> >> +       depends on (PCI || USE_OF)
-> >>         select CRC32
-> >>         select MII
-> >>         ---help---
-> >
-> > This seems like the right thing to do, but it means you need to add
-> > #ifdef CONFIG_PCI and #ifdef CONFIG_USE_OF around the driver structures
-> > and related functions.
->=20
-> Frankly, I would like to avoid that if possible (as pointed out in the
-> cover email), as I believe we would get a cleaner driver without
-> #ifdef. This is also the way it was done in via-velocity, and it works
-> just fine.
+are available in the git repository at:
 
-OK, I'm surprised that all the PCI functions have dummy definitions.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.14-rc1
 
-> > You should compile-test in configurations that have just one of those
-> > dependencies enabled.
->=20
-> This has been compile-tested and runtime-tested in OF-only
-> configuration on WM8950, and Roger also tested it in PCI-only
-> configuration, so it seems to work fine.
-[...]
+for you to fetch changes up to 4fbd269f1f9f8020dd9474b60e55c4f34d267b08:
 
-Good, then I have no objection.
+  Merge branch 'fixes' into tty-next (2014-01-22 13:42:19 -0800)
 
-Ben.
+----------------------------------------------------------------
 
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
+Serial fixes for 3.14-rc1
 
---=-lqUvMEKlP/A+W9wDQi+i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Here are tiny and assorted serial driver fixes that have been in a
+branch in my tree for a while and somehow did not get properly merged
+into my big TTY / Serial pull request for 3.14-rc1.  Sorry about that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+All have been in linux-next for a while with no issues.
 
-iQIVAwUAUubuW+e/yOyVhhEJAQpVGQ//d1srlooIRbGRoSGeEH7zZbpAMv6grkeS
-ABdZhue0hVQRq/dIIDmzwfkPHMYykjJPM7YTVY6tT2QJ+UCvgNBFCeG8kXBRTUMQ
-Ybz02Od5YbqqY0IXPFFj3jrVixAk+Nwx6+DVwjP84+odUmg8UTn1V9IviXSk3Jfg
-9qV9ut07SffsWYyDqHsf4zUmFPYIWXE8CCsXN3YMWCcKFkdhwVI7fbMQEazRLEHZ
-QseVmmHGIoBS9KBfGc+aIHzME9wFIIAFbFouFlXY39+i70Wdkyf+GidS/TjP5nSF
-0kumtirxSopbowlWsJSC2+Cd0vYz4P6tQQk/8t+9qR5VkgmNmSceyQtEZGfhvPx9
-VMf7NhSJ1P8ASnoGiheEFgEgCLfBoNKnXmPtRVkhesZhp1iWUv7W6HOD/ot/gH2R
-TKeBzsDA0WMXmkNntumStolS418lkF4IQz7EX4EXiLafxlJdnnNcZ/BYVYRd5na3
-9X55qslsbrEaRt+3ZjJWmu3gp1N0Kmh3fVzlFsfiSQHJiso89OEer7LnpB/hcQBg
-v6VQrIGaTG03pN2Bb9vQjW99v4IcKLD3pibCecSmOW9nPXiKTXPI+8KBSqoBDUly
-RZ6ND+6xrX880gMNKOnyTfNwUJW6/0tCFtaRj05KEILmsPDcjuWADaBqiMy4rFEi
-tn97EGF+hBg=
-=3EKG
------END PGP SIGNATURE-----
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---=-lqUvMEKlP/A+W9wDQi+i--
+----------------------------------------------------------------
+Dan Carpenter (1):
+      serial: icom: dereference after free in load_code()
+
+Greg Kroah-Hartman (1):
+      Merge branch 'fixes' into tty-next
+
+Heiko Stübner (1):
+      serial: samsung: move clock deactivation below uart registration
+
+Jonathan Woithe (1):
+      serial: 8250: Fix initialisation of Quatech cards with the AMCC PCI chip
+
+Mika Westerberg (1):
+      serial: 8250_dw: add new ACPI IDs
+
+Sebastian Andrzej Siewior (1):
+      tty: serial: pch: don't crash if DMA enabled but not loaded
+
+Soren Brinkmann (1):
+      tty: xuartps: Properly guard sysrq specific code
+
+ drivers/tty/serial/icom.c     |  4 ++--
+ drivers/tty/serial/pch_uart.c | 10 +++++++---
+ drivers/tty/serial/samsung.c  |  8 +++++++-
+ 3 files changed, 16 insertions(+), 6 deletions(-)
