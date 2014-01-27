@@ -1,178 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaA0AT5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 19:19:57 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:54032 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190AbaA0AT4 (ORCPT
+	id S1753360AbaA0AYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 19:24:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43321 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaA0AYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 19:19:56 -0500
+	Sun, 26 Jan 2014 19:24:18 -0500
+Date: Mon, 27 Jan 2014 00:22:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+Message-ID: <20140127002255.GA10323@ZenIV.linux.org.uk>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <f4597c60b5a04e8e8baa225a279abd0d@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <20140117203126.11429.25235.stgit@gimli.home>
-	<4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
-	<1390234886.8705.142.camel@bling.home>
-	<f4597c60b5a04e8e8baa225a279abd0d@BL2PR03MB468.namprd03.prod.outlook.com>
-Date: Mon, 27 Jan 2014 08:19:55 +0800
-Message-ID: <CAOtp4Kp0-yZBd_P82CV8-VKPmsTByP8pn_C2T9ctbP3oOke3LA@mail.gmail.com>
-Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
-From: Kai Huang <dev.kai.huang@gmail.com>
-To: Varun Sethi <Varun.Sethi@freescale.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 2:30 AM, Varun Sethi <Varun.Sethi@freescale.com> wrote:
->
->
->> -----Original Message-----
->> From: Alex Williamson [mailto:alex.williamson@redhat.com]
->> Sent: Monday, January 20, 2014 9:51 PM
->> To: Sethi Varun-B16395
->> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
->> Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
->>
->> On Mon, 2014-01-20 at 14:45 +0000, Varun Sethi wrote:
->> >
->> > > -----Original Message-----
->> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
->> > > Sent: Saturday, January 18, 2014 2:06 AM
->> > > To: Sethi Varun-B16395
->> > > Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
->> > > Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
->> > >
->> > > RFC: This is not complete but I want to share with Varun the
->> > > dirrection I'm thinking about.  In particular, I'm really not sure
->> > > if we want to introduce a "v2" interface version with slightly
->> > > different unmap semantics.  QEMU doesn't care about the difference,
->> > > but other users might.  Be warned, I'm not even sure if this code
->> works at the moment.
->> > > Thanks,
->> > >
->> > > Alex
->> > >
->> > >
->> > > We currently have a problem that we cannot support advanced features
->> > > of an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee
->> > > that those features will be supported by all of the hardware units
->> > > involved with the domain over its lifetime.  For instance, the Intel
->> > > VT-d architecture does not require that all DRHDs support snoop
->> > > control.  If we create a domain based on a device behind a DRHD that
->> > > does support snoop control and enable SNP support via the
->> > > IOMMU_CACHE mapping option, we cannot then add a device behind a
->> > > DRHD which does not support snoop control or we'll get reserved bit
->> > > faults from the SNP bit in the pagetables.  To add to the
->> > > complexity, we can't know the properties of a domain until a device
->> is attached.
->> > [Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops
->> > are common across all bus types. The hardware feature differences are
->> > abstracted by the driver.
->>
->> That's a simplifying assumption that is not made anywhere else in the
->> code.  The IOMMU API allows entirely independent IOMMU drivers to
->> register per bus_type.  There is no guarantee that all devices are backed
->> by the same IOMMU hardware unit or make use of the same iommu_ops.
->>
-> [Sethi Varun-B16395] ok
->
->> > > We could pass this problem off to userspace and require that a
->> > > separate vfio container be used, but we don't know how to handle
->> > > page accounting in that case.  How do we know that a page pinned in
->> > > one container is the same page as a different container and avoid
->> > > double billing the user for the page.
->> > >
->> > > The solution is therefore to support multiple IOMMU domains per
->> > > container.  In the majority of cases, only one domain will be
->> > > required since hardware is typically consistent within a system.
->> > > However, this provides us the ability to validate compatibility of
->> > > domains and support mixed environments where page table flags can be
->> > > different between domains.
->> > >
->> > > To do this, our DMA tracking needs to change.  We currently try to
->> > > coalesce user mappings into as few tracking entries as possible.
->> > > The problem then becomes that we lose granularity of user mappings.
->> > > We've never guaranteed that a user is able to unmap at a finer
->> > > granularity than the original mapping, but we must honor the
->> > > granularity of the original mapping.  This coalescing code is
->> > > therefore removed, allowing only unmaps covering complete maps.  The
->> > > change in accounting is fairly small here, a typical QEMU VM will
->> > > start out with roughly a dozen entries, so it's arguable if this
->> coalescing was ever needed.
->> > >
->> > > We also move IOMMU domain creation to the point where a group is
->> > > attached to the container.  An interesting side-effect of this is
->> > > that we now have access to the device at the time of domain creation
->> > > and can probe the devices within the group to determine the bus_type.
->> > > This finally makes vfio_iommu_type1 completely device/bus agnostic.
->> > > In fact, each IOMMU domain can host devices on different buses
->> > > managed by different physical IOMMUs, and present a single DMA
->> > > mapping interface to the user.  When a new domain is created,
->> > > mappings are replayed to bring the IOMMU pagetables up to the state
->> > > of the current container.  And of course, DMA mapping and unmapping
->> > > automatically traverse all of the configured IOMMU domains.
->> > >
->> > [Sethi Varun-B16395] This code still checks to see that devices being
->> > attached to the domain are connected to the same bus type. If we
->> > intend to merge devices from different bus types but attached to
->> > compatible domains in to a single domain, why can't we avoid the bus
->> > check? Why can't we remove the bus dependency from domain allocation?
->>
->> So if I were to test iommu_ops instead of bus_type (ie. assume that if a
->> if an IOMMU driver manages iommu_ops across bus_types that it can accept
->> the devices), would that satisfy your concern?
-> [Sethi Varun-B16395] I think so. Checking for iommu_ops should allow iommu groups from different bus_types, to share a domain.
->
->>
->> It may be possible to remove the bus_type dependency from domain
->> allocation, but the IOMMU API currently makes the assumption that there's
->> one IOMMU driver per bus_type.
-> [Sethi Varun-B16395] Is that a valid assumption?
->
->> Your fix to remove the bus_type
->> dependency from iommu_domain_alloc() adds an assumption that there is
->> only one IOMMU driver for all bus_types.  That may work on your platform,
->> but I don't think it's a valid assumption in the general case.
-> [Sethi Varun-B16395] ok
->
->> If you'd like to propose alternative ways to remove the bus_type
->> dependency, please do.  Thanks,
->>
-> [Sethi Varun-B16395] My main concern, was to allow devices from different bus types, to share the iommu domain. I am fine if this can be handled from within vfio.
->
-> -Varun
->
-What's the reason that we need to share one domain cross multiple bus
-type (and are we talking the iommu_domain structure in iommu
-framework, right)? I am not familiar with the background info, and new
-to vfio, but from hardware point of view, I don't think it's good idea
-to share one domain cross bus types. Although IOMMUs all basically
-provide DMA remapping, interrupt remapping, etc, but it's possible
-that some hardware capability differences can't be commonly
-abstracted. For example, some old IOMMU just implements very simple
-functionality, it even can't support per-BDF DMA remapping, which
-means it just can't provide multiple domains. And also, I think
-sharing domain cross bus types should just implies that the domain can
-only support the *common* functionality of IOMMUs on bus types that
-are shared.
+On Sun, Jan 26, 2014 at 02:28:15PM -0800, Linus Torvalds wrote:
+> The x86-64 (and 32-bit, for that matter) system call slowpaths are all
+> in C, but the *selection* of which slow-path to take is a mixture of
+> complicated assembler ("sysret_check -> sysret_careful ->
+> sysret_signal ->sysret_audit -> int_check_syscall_exit_work" etc), and
+> oddly named and placed C code ("schedule_user" vs
+> "__audit_syscall_exit" vs "do_notify_resume").
+> 
+> This attached patch tries to take the "do_notify_resume()" approach,
+> and renaming it to something sane ("syscall_exit_slowpath") and call
+> out to *all* the different slow cases from that one place, instead of
+> having some cases hardcoded in asm, and some in C. And instead of
+> hardcoding which cases result in a "iretq" and which cases result in a
+> faster sysret case, it's now simply a return value from that
+> syscall_exit_slowpath() function, so it's very natural and easy to say
+> "taking a signal will force us to do the slow iretq case, but we can
+> do the task exit work and still do the sysret".
+> 
+> I've marked this as an RFC, because I didn't bother trying to clean up
+> the 32-bit code similarly (no test-cases, and trust me, if you get
+> this wrong, it will fail spectacularly but in very subtle and
+> hard-to-debug ways), and I also didn't bother with the slow cases in
+> the "iretq" path, so that path still has the odd asm cases and calls
+> the old (now legacy) do_notify_resume() path.
 
-Another point is, the IOMMUs on different types may on a hierarchical
-relationship, but not at the same level, in which case the IOMMUs also
-work hierarchically. Take DMA remapping as example, if PCIE bus is not
-the root bus but under some higher level system bus (which also
-implements DMA remapping), the DMA address will be first translated by
-PCIE IOMMU and then IOMMU on that higher level system bus. I am not
-sure in such case, if sharing domain cross bus types works or not, but
-looks it's not a good idea.
-
-Thanks,
--Kai
->
->
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+Umm...  Can't uprobe_notify_resume() modify regs as well?  While we
+are at it, when we start using the same thing on 32bit kernels, we'll
+need to watch out for execve() - the reason why start_thread() sets
+TIF_NOTIFY_RESUME is to force us away from sysexit path.  IIRC, vm86
+is another thing to watch out for (same reasons).
