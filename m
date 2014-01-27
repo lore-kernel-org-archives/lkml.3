@@ -1,90 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaA0H0k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 02:26:40 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61855 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895AbaA0H0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 02:26:39 -0500
-X-IronPort-AV: E=Sophos;i="4.95,727,1384272000"; 
-   d="scan'208";a="9457404"
-Message-ID: <52E60ABF.9020400@cn.fujitsu.com>
-Date: Mon, 27 Jan 2014 15:29:03 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753399AbaA0H1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 02:27:41 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:63431 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaA0H1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 02:27:39 -0500
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
- kernel nodes to unhotpluggable.
-References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <20140123061343.GB15206@redhat.com> <alpine.DEB.2.02.1401222214290.8088@chino.kir.corp.google.com> <20140123065824.GA17684@redhat.com> <20140123223136.GA18468@redhat.com>
-In-Reply-To: <20140123223136.GA18468@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/27 15:24:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/27 15:25:00,
-	Serialize complete at 2014/01/27 15:25:00
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <CALT56yODeNZLH5bDHN2N0awFA0EyPH77wDyAv+4Qkgr6mu_u0Q@mail.gmail.com>
+References: <1390720540-13350-1-git-send-email-badarkhe.manish@gmail.com>
+	<52E50C24.8030305@gmail.com>
+	<CAKDJKT5TvkgUN2Ee-2NignzxY1F54SHEiNL2i6c+hMjnLHOg5g@mail.gmail.com>
+	<20140126214542.GC18840@core.coreip.homeip.net>
+	<52E582D0.9070501@gmail.com>
+	<CALT56yPJjLZ_UHgH1koKPbTLBR=5QzSFMMXfqYxspw30_fpKNQ@mail.gmail.com>
+	<20140126231452.GE18840@core.coreip.homeip.net>
+	<CALT56yODeNZLH5bDHN2N0awFA0EyPH77wDyAv+4Qkgr6mu_u0Q@mail.gmail.com>
+Date: Mon, 27 Jan 2014 12:57:38 +0530
+Message-ID: <CAKDJKT7=4+N7G2TQJKj9xm4Ftn53jqThHoUUOyVr+hZv3Us1kg@mail.gmail.com>
+Subject: Re: [PATCH] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
+Thank you for review.
 
+On Mon, Jan 27, 2014 at 5:16 AM, Dmitry Eremin-Solenikov
+<dbaryshkov@gmail.com> wrote:
+> On Mon, Jan 27, 2014 at 3:14 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> On Mon, Jan 27, 2014 at 02:31:59AM +0400, Dmitry Eremin-Solenikov wrote:
+>>> On Mon, Jan 27, 2014 at 1:49 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>> > On 26.01.2014 22:45, Dmitry Torokhov wrote:
+>>> >>
+>>> >> On Sun, Jan 26, 2014 at 07:31:50PM +0530, Manish Badarkhe wrote:
+>>> >>>
+>>> >>> Hi Tomasz,
+>>> >>>
+>>> >>> Thank you for your review comments.
+>>> >>>
+>>> >>> On Sun, Jan 26, 2014 at 6:52 PM, Tomasz Figa <tomasz.figa@gmail.com>
+>>> >>> wrote:
+>>> >>>>
+>>> >>>>
+>>> >>>> Hi Manish,
+>>> >>>>
+>>> >>>>
+>>> >>>> On 26.01.2014 08:15, Manish Badarkhe wrote:
+>>> >>>>>
+>>> >>>>>
+>>> >>>>> Instead of "#if define CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+>>> >>>>> option for DT code to avoid if-deffery in code.
+>>> >>>>>
+>>> >>>>> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>>> >>>>> ---
+>>> >>>>> :100644 100644 b4513f2... d353fbc... M  drivers/power/max8925_power.c
+>>> >>>>>    drivers/power/max8925_power.c |   14 +++++---------
+>>> >>>>>    1 file changed, 5 insertions(+), 9 deletions(-)
+>>> >>>>>
+>>> >>>>> diff --git a/drivers/power/max8925_power.c
+>>> >>>>> b/drivers/power/max8925_power.c
+>>> >>>>> index b4513f2..d353fbc 100644
+>>> >>>>> --- a/drivers/power/max8925_power.c
+>>> >>>>> +++ b/drivers/power/max8925_power.c
+>>> >>>>> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct
+>>> >>>>> max8925_power_info *info)
+>>> >>>>>          return 0;
+>>> >>>>>    }
+>>> >>>>>
+>>> >>>>> -#ifdef CONFIG_OF
+>>> >>>>>    static struct max8925_power_pdata *
+>>> >>>>>    max8925_power_dt_init(struct platform_device *pdev)
+>>> >>>>>    {
+>>> >>>>> @@ -468,13 +467,6 @@ max8925_power_dt_init(struct platform_device
+>>> >>>>> *pdev)
+>>> >>>>>
+>>> >>>>>          return pdata;
+>>> >>>>>    }
+>>> >>>>> -#else
+>>> >>>>> -static struct max8925_power_pdata *
+>>> >>>>> -max8925_power_dt_init(struct platform_device *pdev)
+>>> >>>>> -{
+>>> >>>>> -       return pdev->dev.platform_data;
+>>> >>>>> -}
+>>> >>>>> -#endif
+>>> >>>>>
+>>> >>>>>    static int max8925_power_probe(struct platform_device *pdev)
+>>> >>>>>    {
+>>> >>>>> @@ -483,7 +475,11 @@ static int max8925_power_probe(struct
+>>> >>>>> platform_device *pdev)
+>>> >>>>>          struct max8925_power_info *info;
+>>> >>>>>          int ret;
+>>> >>>>>
+>>> >>>>> -       pdata = max8925_power_dt_init(pdev);
+>>> >>>>> +       if (IS_ENABLED(CONFIG_OF))
+>>> >>>>> +               pdata = max8925_power_dt_init(pdev);
+>>> >>>>> +       else
+>>> >>>>> +               pdata = pdev->dev.platform_data;
+>>> >>>>> +
+>>> >>>>
+>>> >>>>
+>>> >>>>
+>>> >>>> This does not look much better than before this patch. Instead of
+>>> >>>> "if-deffery" outside function bodies you are adding "iffery" (if there is
+>>> >>>> such a word) inside a function.
+>>> >>>> What about adding
+>>> >>>>
+>>> >>>>          if (!IS_ENABLED(CONFIG_OF))
+>>> >>>>                  return pdev->dev.platform_data;
+>>> >>>>
+>>> >>>> on top of max8925_power_dt_init() instead or maybe also renaming this
+>>> >>>> function to max8925_get_pdata()?
+>>> >>>
+>>> >>>
+>>> >>> Okay, I will rename function "max8925_power_dt_init()" to
+>>> >>> "max8925_get_pdata()".
+>>> >>> As you suggested, in the body of this function  will add a logic to
+>>> >>> retrieve  data in case
+>>> >>> of DT and non-DT platforms.
+>>> >>
+>>> >>
+>>> >> Should we not always favor platform-supplied data regardless of
+>>> >> CONFIG_OF state and fall back to DT (firmware) supplied data if platform
+>>> >> data is absent? This way one can tweak kernel behavior without needing
+>>> >> to change firmware.
+>>> >
+>>> >
+>>> > I guess we should, but apparently this was not the original behavior before
+>>> > this patch, so I'm not sure if we should be squashing such semantic change
+>>> > with this simple refactor.
+>>>
+>>> Hmm. Judging from the code, max8925_power_dt_init() function follows exactly
+>>> opposite strategy - it uses platform_data if of_node is not populated/available.
+>>> So (if dt_init will compile with CONFIG_OF disabled) one can always
+>>> use _dt_init()
+>>> function to retrieve pdata.
+>>
+>> Right, and I question whether this is good behavior or if it should be
+>> corrected.
+>
+> I'd say, correct it.
 
-On 01/24/2014 06:31 AM, Dave Jones wrote:
-> On Thu, Jan 23, 2014 at 01:58:24AM -0500, Dave Jones wrote:
->
->   >  128 bytes is a pretty small amount of stack though, so I'm just as confused
->   >  as to what the actual bug here is.
->   >
->   >  After trying the proposed fix, I got another oops in the early init code..
->   >
->   >  <trace>
->   >  nr_free_zone_pages
->   >  nr_free_pagecache_pages
->   >  build_all_zonelists
->   >  start_kernel
->   >  <rip>  ffffffffbc164b1e next_zones_zonelist
->   >  <rsp>  ffffffffbcc01f00
->
-> Ok, this is crashing here in next_zones_zonelist...
->
->                  while (zonelist_zone_idx(z)>  highest_zoneidx)
->    de:   3b 77 08                cmp    0x8(%rdi),%esi
->
->
-> I stuck this at the top of the function..
->
-> printk(KERN_ERR "z:%p nodes:%p highest:%d\n", z, nodes, highest_zoneidx);
->
-> and got
->
-> z: 1d08   nodes: (null)  highest:3
->
->
-> Some build tests show..
->
-> MAXSMP ( NODESHIFT=10 ) : Bug
-> NRCPUS=4&  NODESHIFT=10 : Bug
-> NRCPUS=4&  NODESHIFT=1 : no bug
->
->
-> The middle config test was accidental, I hadn't realised disabling MAXSMP
-> wouldn't reset NODESHIFT to something sane.
->
-> I'll start bisecting, as MAXSMP worked fine until a few days ago.
+Okay, I will update code as per Dmitry's feedback.
 
-Hi Dave,
-
-I didn't reproduce this bug. Would you please share the bisect result ?
-
-Thanks.
-
->
-> 	Dave
->
->
+Regards
+Manish Badarkhe
