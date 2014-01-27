@@ -1,82 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaA0WSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:18:54 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:62322 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757AbaA0WSw (ORCPT
+	id S1754035AbaA0WXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:23:40 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:33416 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484AbaA0WXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:18:52 -0500
+	Mon, 27 Jan 2014 17:23:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-Date: Mon, 27 Jan 2014 23:18:51 +0100
-Message-ID: <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
-Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
+In-Reply-To: <1388646744-15608-1-git-send-email-minchan@kernel.org>
+References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Mon, 27 Jan 2014 17:23:17 -0500
+Message-ID: <CAHGf_=qiQtG_7W=SfKfGHgV6p6aT3==Wnj65UAegejeoS6fLBA@mail.gmail.com>
+Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
+To: Minchan Kim <minchan@kernel.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, Rob Clark <robdclark@gmail.com>,
+        Jason Evans <je@fb.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Minchan,
 
-On Thu, Jan 23, 2014 at 3:14 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
+
+On Thu, Jan 2, 2014 at 2:12 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Hey all,
 >
-> Another round of SimpleDRM patches. I somehow lost track of the last ones and as
-> this is a major rewrite, I'll just start at v1 again.
+> Happy New Year!
 >
-> Some comments up-front:
+> I know it's bad timing to send this unfamiliar large patchset for
+> review but hope there are some guys with freshed-brain in new year
+> all over the world. :)
+> And most important thing is that before I dive into lots of testing,
+> I'd like to make an agreement on design issues and others
 >
->  - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussions. I
->    included them in this series as the other patches depend on them. Could you
->    pick them up for the x86 tree? The other 9 patches won't make it in 3.14 so
->    no reason to put them through the DRM tree.
->    All mentioned issues should be addressed. If there's still sth missing,
->    please let me know.
+> o Syscall interface
+> o Not bind with vma split/merge logic to prevent mmap_sem cost and
+> o Not bind with vma split/merge logic to avoid vm_area_struct memory
+>   footprint.
+> o Purging logic - when we trigger purging volatile pages to prevent
+>   working set and stop to prevent too excessive purging of volatile
+>   pages
+> o How to test
+>   Currently, we have a patched jemalloc allocator by Jason's help
+>   although it's not perfect and more rooms to be enhanced but IMO,
+>   it's enough to prove vrange-anonymous. The problem is that
+>   lack of benchmark for testing vrange-file side. I hope that
+>   Mozilla folks can help.
 >
->  - The DRM patches depend on my "DRM Anonymous Inode" patches. But it should be
->    trivial to apply them on drm-next (I think only one line needs to be changed:
->    i_mapping => dev_mapping).
+> So its been a while since the last release of the volatile ranges
+> patches, again. I and John have been busy with other things.
+> Still, we have been slowly chipping away at issues and differences
+> trying to get a patchset that we both agree on.
 >
->  - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it works
->    fine. The DRM backend is only tested with some DRM tests I have locally. I
->    have no idea how to make Xorg pick up a specific /dev/dri/card0 card. It
->    always tells me "no screens found" (as the underlying device is not marked as
->    boot_vga..). If someone knows how to tell Xorg to use card0, I'd gladly test
->    this. But I'm no longer used to writing xorg.confs..
+> There's still a few issues, but we figured any further polishing of
+> the patch series in private would be unproductive and it would be much
+> better to send the patches out for review and comment and get some wider
+> opinions.
+>
+> You could get full patchset by git
+>
+> git clone -b vrange-v10-rc5 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/minchan/linux.git
 
-For completeness, I tested this with Xorg+xf86-video-modesetting and
-it works just fine. The xorg.conf I used can be found below. If this
-driver gets upstreamed, I will try to make the X11 auto-loader detect
-it just like any other platform-device.
+Brief comments.
 
-Thanks
-David
+- You should provide jemalloc patch too. Otherwise we cannot
+understand what the your mesurement mean.
+- Your number only claimed the effectiveness anon vrange, but not file vrange.
+- Still, Nobody likes file vrange. At least nobody said explicitly on
+the list. I don't ack file vrange part until
+  I fully convinced Pros/Cons. You need to persuade other MM guys if
+you really think anon vrange is not
+  sufficient. (Maybe LSF is the best place)
+- I wrote you need to put a mesurement current implementation vs
+VMA-based implementation at several
+  previous iteration. Because You claimed fast, but no number and you
+haven't yet. I guess the reason is
+  you don't have any access to large machine. If so, I'll offer it.
+Plz collaborate with us.
+
+Unfortunately, I'm very busy and I didn't have a chance to review your
+latest patch yet. But I'll finish it until
+mm summit. And, I'll show you guys how much this patch improve glibc malloc too.
+
+I and glibc folks agreed we push vrange into glibc malloc.
+
+https://sourceware.org/ml/libc-alpha/2013-12/msg00343.html
+
+Even though, I still dislike some aspect of this patch. I'd like to
+discuss and make better design decision
+with you.
+
+Thanks.
 
 
-Section "ServerLayout"
-    Identifier     "MyLayout"
-    Screen         0 "MyScreen" 0 0
-EndSection
-
-Section "Device"
-    Identifier     "MyDevice"
-    Driver         "modesetting"
-    BusID          "platform:/sys/devices/platform/simple-framebuffer.0"
-    Screen         0
-EndSection
-
-Section "Screen"
-    Identifier     "MyScreen"
-    Device         "MyDevice"
-EndSection
+>
+> In v10, there are some notable changes following as
+>
+> Whats new in v10:
+> * Fix several bugs and build break
+> * Add shmem_purge_page to correct purging shmem/tmpfs
+> * Replace slab shrinker with direct hooked reclaim path
+> * Optimize pte scanning by caching previous place
+> * Reorder patch and tidy up Cc-list
+> * Rebased on v3.12
+> * Add vrange-anon test with jemalloc in Dhaval's test suite
+>   - https://github.com/volatile-ranges-test/vranges-test
+>   so, you could test any application with vrange-patched jemalloc by
+>   LD_PRELOAD but please keep in mind that it's just a prototype to
+>   prove vrange syscall concept so it has more rooms to optimize.
+>   So, please do not compare it with another allocator.
+>
+> Whats new in v9:
+> * Updated to v3.11
+> * Added vrange purging logic to purge anonymous pages on
+>   swapless systems
+> * Added logic to allocate the vroot structure dynamically
+>   to avoid added overhead to mm and address_space structures
+> * Lots of minor tweaks, changes and cleanups
+>
+> Still TODO:
+> * Sort out better solution for clearing volatility on new mmaps
+>         - Minchan has a different approach here
+> * Agreement of systemcall interface
+> * Better discarding trigger policy to prevent working set evction
+> * Review, Review, Review.. Comment.
+> * A ton of test
+>
+> Feedback or thoughts here would be particularly helpful!
+>
+> Also, thanks to Dhaval for his maintaining and vastly improving
+> the volatile ranges test suite, which can be found here:
+> [1]     https://github.com/volatile-ranges-test/vranges-test
+>
+> These patches can also be pulled from git here:
+>     git://git.linaro.org/people/jstultz/android-dev.git dev/vrange-v9
+>
+> We'd really welcome any feedback and comments on the patch series.
