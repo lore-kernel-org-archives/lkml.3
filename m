@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaA0XrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:47:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679AbaA0XrX (ORCPT
+	id S1753875AbaA0X4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:56:53 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:34176 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaA0X4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:47:23 -0500
-Date: Mon, 27 Jan 2014 15:48:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PULL] Serial fixes for 3.14-rc1
-Message-ID: <20140127234828.GA15394@kroah.com>
+	Mon, 27 Jan 2014 18:56:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52E6E786.80301@gmail.com>
+References: <20140127230326.GA877@www.outflux.net>
+	<52E6E786.80301@gmail.com>
+Date: Mon, 27 Jan 2014 15:56:51 -0800
+X-Google-Sender-Auth: nNHrQVo4thuU-kseGLFWDZ9Ves4
+Message-ID: <CAGXu5j+nyRM+4JbPwtnWpdO9mKTL15FTn0c0+8xK-kr0hJpgag@mail.gmail.com>
+Subject: Re: [PATCH] vsprintf: BUG on %n
+From: Kees Cook <keescook@chromium.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8bc661bfc0c2d221e209f4205bdaaf574d50100c:
+On Mon, Jan 27, 2014 at 3:11 PM, Ryan Mallon <rmallon@gmail.com> wrote:
+> On 28/01/14 10:03, Kees Cook wrote:
+>> Now that there has been a full release of the kernel, and all users
+>> of %n have been dropped, switch to %n use triggering a BUG. Ignoring
+>> arguments could be used to assist in information leaks if an arbitrary
+>> format string was under the control of an attacker.
+>
+> Not sure I follow the reasoning. %n no longer does anything in the
+> kernel, so there is no risk if it does manage to find its way into a
+> printed string. BUG() is for unrecoverable errors, which this clearly isn't.
+>
+> Information leaks via injectable strings are still possible if an
+> attacker can insert %x, %d, etc. %n is more problematic since it allows
+> for code injection, which is why it got removed. %n is not however,
+> required to get an infoleak via a format string, so I think the summary
+> is also a bit misleading.
 
-  tty/serial: at91: disable uart timer at start of shutdown (2014-01-13 15:55:59 -0800)
+Yeah, I'm a bit uncomfortable with the BUG() too. The issue with %n is
+that it would produce no output at all to skip arguments. With other
+things, you have to take up output space, which may be limited. How
+about just not skipping the argument? Leave the warn_on, etc?
 
-are available in the git repository at:
+-Kees
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.14-rc1
-
-for you to fetch changes up to 4fbd269f1f9f8020dd9474b60e55c4f34d267b08:
-
-  Merge branch 'fixes' into tty-next (2014-01-22 13:42:19 -0800)
-
-----------------------------------------------------------------
-
-Serial fixes for 3.14-rc1
-
-Here are tiny and assorted serial driver fixes that have been in a
-branch in my tree for a while and somehow did not get properly merged
-into my big TTY / Serial pull request for 3.14-rc1.  Sorry about that.
-
-All have been in linux-next for a while with no issues.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      serial: icom: dereference after free in load_code()
-
-Greg Kroah-Hartman (1):
-      Merge branch 'fixes' into tty-next
-
-Heiko Stübner (1):
-      serial: samsung: move clock deactivation below uart registration
-
-Jonathan Woithe (1):
-      serial: 8250: Fix initialisation of Quatech cards with the AMCC PCI chip
-
-Mika Westerberg (1):
-      serial: 8250_dw: add new ACPI IDs
-
-Sebastian Andrzej Siewior (1):
-      tty: serial: pch: don't crash if DMA enabled but not loaded
-
-Soren Brinkmann (1):
-      tty: xuartps: Properly guard sysrq specific code
-
- drivers/tty/serial/icom.c     |  4 ++--
- drivers/tty/serial/pch_uart.c | 10 +++++++---
- drivers/tty/serial/samsung.c  |  8 +++++++-
- 3 files changed, 16 insertions(+), 6 deletions(-)
+-- 
+Kees Cook
+Chrome OS Security
