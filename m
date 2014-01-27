@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaA0FMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 00:12:44 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:60740 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbaA0FMm (ORCPT
+	id S1753315AbaA0FO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 00:14:59 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52536 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaA0FO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 00:12:42 -0500
-Message-ID: <52E5EAC1.2070306@linaro.org>
-Date: Mon, 27 Jan 2014 14:12:33 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 27 Jan 2014 00:14:58 -0500
+X-AuditID: 9c930197-b7b7cae000000e34-fb-52e5eb4f6ceb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: Weird plugin paths in perf and perf.so binaries with 3.14 merge window
+References: <CA+5PVA7LcDe5Y2RePTFbLdSHd85WhHcHHnFw2mBycfFRJ2m-FQ@mail.gmail.com>
+	<20140122113630.GA1132@krava.brq.redhat.com>
+Date: Mon, 27 Jan 2014 14:14:55 +0900
+In-Reply-To: <20140122113630.GA1132@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Wed, 22 Jan 2014 12:36:30 +0100")
+Message-ID: <87bnyy6m5s.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org> <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org> <20140123141808.GD27520@arm.com>
-In-Reply-To: <20140123141808.GD27520@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[To audit maintainers]
+Hi Jiri and Josh,
 
-On 01/23/2014 11:18 PM, Catalin Marinas wrote:
-> On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
->> --- a/include/uapi/linux/audit.h
->> +++ b/include/uapi/linux/audit.h
->> @@ -327,6 +327,8 @@ enum {
->>   /* distinguish syscall tables */
->>   #define __AUDIT_ARCH_64BIT 0x80000000
->>   #define __AUDIT_ARCH_LE	   0x40000000
->> +#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
->> +#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
->>   #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
->>   #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
->>   #define AUDIT_ARCH_ARMEB	(EM_ARM)
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 79383d3..3aae602 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -284,7 +284,7 @@ config AUDIT
->>
->>   config AUDITSYSCALL
->>   	bool "Enable system-call auditing support"
->> -	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
->> +	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
->
-> The usual comment for such changes: could you please clean this up and
-> just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
+On Wed, 22 Jan 2014 12:36:30 +0100, Jiri Olsa wrote:
+> On Tue, Jan 21, 2014 at 03:02:43PM -0500, Josh Boyer wrote:
+>> Hi All,
+>> 
+>> I went to build Linux v3.13-737-g7fe67a1 in Fedora this morning and it
+>> resulted in RPM complaining that the perf and perf.so binaries had
+>> strings in them that matched the RPM_BUILD_ROOT string.  That fails
+>> the RPM build.
+>> 
+>> Looking over the logs, I see that the traceevent plugins are getting a
+>> rather weird -DPLUGIN_DIR define passed to them.  E.g.:
+>> 
+>> gcc -c -g -Wall   -I. -I
+>> /home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/../../include
+>>  '-DPLUGIN_DIR="/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64//usr//usr/lib64/traceevent/plugins"'
+>>  -D_GNU_SOURCE -std=gnu99 -fPIC
+>> /home/jwboyer/kernel/kernel-3.13.fc21/linux-3.14.0-0.rc0.git1.1.fc21.x86_64/tools/lib/traceevent/parse-filter.c
+>> -o parse-filter.o
+>> 
+>> We're building perf like so:
+>> 
+>> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+>> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+>> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+>> all
+>> 
+>> and installing it via:
+>> 
+>> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+>> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+>> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+>> install-bin
+>> 
+>> make -s -j8 -C tools/perf V=1 WERROR=0 NO_LIBUNWIND=1
+>> HAVE_CPLUS_DEMANGLE=1 NO_GTK2=1 NO_LIBNUMA=1 NO_STRLCPY=1 NO_BIONIC=1
+>> prefix=/usr DESTDIR=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.14.0-0.rc0.git1.1.fc21.x86_64
+>> install-python_ext
+>> 
+>> This has worked for all the builds up until this point.
+>> 
+>> Somehow the perf and perf.so binaries are getting the string being
+>> passed via -DPLUGIN_DIR into them, likely through the libtraceevent.a
+>> link.  I'm pretty sure that (1) the string being passed is totally
+>> broken and should be "/usr/lib64/traceevent/plugins" and (2) that I
+>> haven't come close to deciphering how to fix this.
+>> 
+>> So, could you please look this over and see where the define is
+>> getting messed up?
 
-Do you agree to this change?
+I found three things on the issue:
 
-If so, I can create a patch, but have some concerns:
-1) I can't verify it on other architectures than (arm &) arm64.
-2) Some architectures (microblaze, mips, openrisc) are not listed here, but
-    their ptrace.c have a call to audit_syscall_entry/exit().
-    (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
-So I'm afraid that the change might break someone's assumption.
+  1. perf defines plugin_dir if DESTDIR is set like below:
+
+    ifdef DESTDIR
+    plugindir=$(libdir)/traceevent/plugins
+    plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
+    endif
+
+   But this is wrong since $plugindir includes $libdir and $libdir
+   includes $prefix in it.  So there'll be two $prefix's in
+   $plugindir_SQ as you can see above (...//usr//usr/...).
+
+
+  2. And libtraceevent prepends DESTDIR to the plugindir:
+
+    ifeq ($(set_plugin_dir),1)
+    PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
+    PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
+    endif
+
+   I don't know if it's desired but as Josh reported it seems not.
+   Maybe we'd better adding just $prefix part not the $DESTDIR.
+
+
+  3. libtraceevent's default plugin_dir is set like:
+
+    ifeq ($(prefix),$(HOME))
+    override plugin_dir = $(HOME)/.traceevent/plugins
+    set_plugin_dir := 0
+    else
+    override plugin_dir = $(prefix)/lib/traceevent/plugins
+    endif
+
+   But it'd better using lib64/ instead of lib/ on 64 bit machines.  We
+   can reuse same logic (libdir) in the perf Makefile but it's not a big
+   deal as we can set it on the cmdline so I won't insist strongly. ;-)
+
 
 Thanks,
--Takahiro AKASHI
-
+Namhyung
