@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921AbaA0PK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:10:28 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:51256 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaA0PK0 (ORCPT
+	id S1753899AbaA0POB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:14:01 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:59052 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500AbaA0POA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:10:26 -0500
+	Mon, 27 Jan 2014 10:14:00 -0500
+Date: Mon, 27 Jan 2014 16:13:56 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Q] block / zynq: DMA bouncing
+Message-ID: <Pine.LNX.4.64.1401271549280.23931@axis700.grange>
 MIME-Version: 1.0
-In-Reply-To: <21221.47960.726835.615315@gargle.gargle.HOWL>
-References: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
-	<21221.47960.726835.615315@gargle.gargle.HOWL>
-Date: Mon, 27 Jan 2014 10:10:25 -0500
-X-Google-Sender-Auth: DkodJq8qIUou1OX-eFKhlFisVj4
-Message-ID: <CA+5PVA4A2YerXG0V6JWagAWBPBVbtn1X0Os0hhw9HCK5aeN2ZQ@mail.gmail.com>
-Subject: Re: ath9k ARM build error with v3.13-8330-g4ba9920
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Sujith Manoharan <sujith@msujith.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>, ath9k-devel@venema.h4ckr.net,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:TbOll0+Ny/dWdtcUMXF43KrCYblXuM7Tplb2rYcQ+UC
+ GEOYm/mvqDwqoe6xVd5alGeHi0eB7/f4wKTMQ+qzVpB+XKPX41
+ Z7M8Tbs/OkqMdpmXf5TMByJ2LElSUqk3hBdndZkmRU2N0Ka9JT
+ 9nrAuyBXZ0PTIAqkIORWb9mD8VSBJTPQlCF1ajPXbeCiQlj6FS
+ suHU1BHq8KGmeRAfK0L7QJwX8JDLy4ivrDPsLxDnL4cIc5LY5p
+ QNU7AOYtnSmQ1faHnT3FjNQ6y8NLaCc3zboHdyai0fLsDLwOWJ
+ heIqK7tH8PpzOUaC3ARFYS0Pfq5+nv96/SgJBt33rjNeonqzoJ
+ i2rfYjrQn8h/AKEDSTJMxZt2BH+fHIevBR+Mq+19W6b8CXphnH
+ p5hbldOOdsfaw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 8:50 PM, Sujith Manoharan <sujith@msujith.org> wrote:
-> Josh Boyer wrote:
->> adds a udelay(10000) call to the ath9k driver.  This will cause a
->> build error on various ARM configs because the value passed to udelay
->> is too large:
->>
->> ERROR: "__bad_udelay" [drivers/net/wireless/ath/ath9k/ath9k_hw.ko] undefined!
->> make[1]: *** [__modpost] Error 1
->> make: *** [modules] Error 2
->>
->> Is the 10000 microsecond udelay really required?  I believe the limit
->> on ARM is 2000.  Perhaps something else could be done in this case?
->
-> The delay is a workaround for a HW issue. Does this patch fix the problem ?
+Hi all,
 
-It fixes the build error, yes.  I don't have actual HW to test, but
-the driver compiles on ARM now with the same config as before.
-Thanks!
+I'm working on an MMC driver with a DMA capability. All has been working 
+well, until at some point I've got a bus error, when the mmc driver had 
+been handed in a buffer at 0x3000 physical RAM address. The reason is, 
+that on Zynq arch bus masters cannot access RAM below 0x80000. Therefore 
+my question: how shall I configure this in software?
 
-josh
+The way I found was to use ARM-specific struct dmabounce_device_info and 
+implement its .needs_bounce() method to return true for those addresses. 
+Is this the right way or is there a better / more straight-forward one?
 
->
-> diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
-> index fbf43c0..11eab9f 100644
-> --- a/drivers/net/wireless/ath/ath9k/hw.c
-> +++ b/drivers/net/wireless/ath/ath9k/hw.c
-> @@ -1316,7 +1316,7 @@ static bool ath9k_hw_set_reset(struct ath_hw *ah, int type)
->         if (AR_SREV_9300_20_OR_LATER(ah))
->                 udelay(50);
->         else if (AR_SREV_9100(ah))
-> -               udelay(10000);
-> +               mdelay(10);
->         else
->                 udelay(100);
->
-> @@ -2051,9 +2051,8 @@ static bool ath9k_hw_set_power_awake(struct ath_hw *ah)
->
->         REG_SET_BIT(ah, AR_RTC_FORCE_WAKE,
->                     AR_RTC_FORCE_WAKE_EN);
-> -
->         if (AR_SREV_9100(ah))
-> -               udelay(10000);
-> +               mdelay(10);
->         else
->                 udelay(50);
->
->
-> Sujith
+To do the above I have to enable CONFIG_DMABOUNCE, which then selects 
+CONFIG_ZONE_DMA. Having done just that I suddenly discover, that 0x3000 
+buffers aren't used any more, so, I cannot actually verify my 
+implementation :) Looking at ZONE_DMA it looks like it is still covering 
+the whole RAM range (/proc/zoneinfo shows start_pfn=0 in zone DMA), so, I 
+don't see why 0x3000 should be excluded now.
+
+So, is using the .needs_bounce() method the correct way to support DMA on 
+this arch or is there a better one?
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
