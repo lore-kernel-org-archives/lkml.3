@@ -1,176 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaA0KNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:13:46 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:47066 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478AbaA0KNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:13:44 -0500
-X-IronPort-AV: E=Sophos;i="4.95,728,1384300800"; 
-   d="scan'208";a="94730872"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH] xen-blkback: fix memory leaks
-Date: Mon, 27 Jan 2014 11:13:41 +0100
-Message-ID: <1390817621-12031-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-MIME-Version: 1.0
+	id S1753500AbaA0KRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:17:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29804 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098AbaA0KRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 05:17:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,728,1384329600"; 
+   d="scan'208";a="445115964"
+Message-ID: <1390817840.7619.102.camel@smile>
+Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
+ DW_DMAC.
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Jan 2014 12:17:20 +0200
+In-Reply-To: <20140126111734.GA10628@intel.com>
+References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
+	 <20131210101025.GF29580@intel.com> <1386676582.1871.137.camel@smile>
+	 <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
+	 <20131218154955.GF16227@intel.com> <1387450289.1871.240.camel@smile>
+	 <20140120092501.GS26823@intel.com> <1390222075.7619.29.camel@smile>
+	 <20140120120714.GF26823@intel.com> <1390226911.7619.41.camel@smile>
+	 <20140126111734.GA10628@intel.com>
+Organization: Intel Finland Oy
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've at least identified two possible memory leaks in blkback, both
-related to the shutdown path of a VBD:
+On Sun, 2014-01-26 at 16:47 +0530, Vinod Koul wrote:
 
-- We don't wait for any pending purge work to finish before cleaning
-  the list of free_pages. The purge work will call put_free_pages and
-  thus we might end up with pages being added to the free_pages list
-  after we have emptied it.
-- We don't wait for pending requests to end before cleaning persistent
-  grants and the list of free_pages. Again this can add pages to the
-  free_pages lists or persistent grants to the persistent_gnts
-  red-black tree.
+> > > > > For these cases, I have been using suspend_late. Since the dmaengine driver is
+> > > > > providing service to other clients (SPI), it needs to esnure that it suspends
+> > > > > after SPI using suspend_late and resume using resume_early. That way dma is
+> > > > > availble whenever the client is active
+> > > > 
+> > > > suspend_late is working in context that interrupt handler may be
+> > > > invoked. Thus, to have DMA driver be properly shut down we have to
+> > > > wait / terminate possible ongoing transfer.
+> > > Well client is already suspended via .suspend. So where is the transaction :)
+> > 
+> > ...as I already wrote before we have no parent-child relationship
+> > between DMA and, for example, SPI. That means we may possible have the
+> > case when SPI's .suspend() will be called later than DMA's one.
+> > 
+> > > > It seems for me all DMA drivers that are using
+> > > > system .suspend()/.resume() are potentially buggy.
+> > > Yup!
+> > 
+> > So, we have to decide what to do with them. .suspend_late() still seems
+> > for me not the best approach. *Or* we have to check for ongoing
+> > transaction and do something with it. *Or* just shut down the device and
+> > rely on DMA transaction initiator that it handles the terminated
+> > transaction properly.
+> 
+> As you clearly said, we dont have a parent-child relatation though we have big
+> dependency. I think this is true for DMA clients, i ran into similar situation
+> with i2c few days back!
+> 
+> So only think which can give us a good system behaviour would be clients getting
+> suspended first and then then service providing subsystems.
 
-Also, add some checks in xen_blkif_free to make sure we are cleaning
-everything.
+Agree.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Matt Rushton <mrushton@amazon.com>
-Cc: Matt Wilson <msw@amazon.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
----
-This should be applied after the patch:
+>  (same reason why we
+> do dma driver loading and init much before others drivers)
 
-xen-blkback: fix memory leak when persistent grants are used
+Yes, it would be done via deferred probe.
 
->From Matt Rushton & Matt Wilson and backported to stable.
+> So yes in the .suspend callback of the client, it needs to
+> 1) abort any transactions it has
+> 2) make the client quiscent
+> 
+> then the .late_suspend kicks in and suspend the core drivers like dma.
+> 
+> This is how it has worked reliably for me in production systems. I am all ears
+> if we have a better and cleaner apprach to this problem :)
 
-I've been able to create and destroy ~4000 guests while doing heavy IO
-operations with this patch on a 512M Dom0 without problems.
----
- drivers/block/xen-blkback/blkback.c |   29 +++++++++++++++++++----------
- drivers/block/xen-blkback/xenbus.c  |    9 +++++++++
- 2 files changed, 28 insertions(+), 10 deletions(-)
+Yes, summarize everything we discussed we have to:
+ - provide suspend_late, resume_early callbacks in the DMA driver
+instead of *_noirq versions
+ - ensure that all clients on our platforms follow the described
+scenario
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 30ef7b3..19925b7 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -169,6 +169,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 				struct pending_req *pending_req);
- static void make_response(struct xen_blkif *blkif, u64 id,
- 			  unsigned short op, int st);
-+static void xen_blk_drain_io(struct xen_blkif *blkif, bool force);
- 
- #define foreach_grant_safe(pos, n, rbtree, node) \
- 	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node), \
-@@ -625,6 +626,12 @@ purge_gnt_list:
- 			print_stats(blkif);
- 	}
- 
-+	/* Drain pending IO */
-+	xen_blk_drain_io(blkif, true);
-+
-+	/* Drain pending purge work */
-+	flush_work(&blkif->persistent_purge_work);
-+
- 	/* Free all persistent grant pages */
- 	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
- 		free_persistent_gnts(blkif, &blkif->persistent_gnts,
-@@ -930,7 +937,7 @@ static int dispatch_other_io(struct xen_blkif *blkif,
- 	return -EIO;
- }
- 
--static void xen_blk_drain_io(struct xen_blkif *blkif)
-+static void xen_blk_drain_io(struct xen_blkif *blkif, bool force)
- {
- 	atomic_set(&blkif->drain, 1);
- 	do {
-@@ -943,7 +950,7 @@ static void xen_blk_drain_io(struct xen_blkif *blkif)
- 
- 		if (!atomic_read(&blkif->drain))
- 			break;
--	} while (!kthread_should_stop());
-+	} while (!kthread_should_stop() || force);
- 	atomic_set(&blkif->drain, 0);
- }
- 
-@@ -976,17 +983,19 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
- 	 * the proper response on the ring.
- 	 */
- 	if (atomic_dec_and_test(&pending_req->pendcnt)) {
--		xen_blkbk_unmap(pending_req->blkif,
-+		struct xen_blkif *blkif = pending_req->blkif;
-+
-+		xen_blkbk_unmap(blkif,
- 		                pending_req->segments,
- 		                pending_req->nr_pages);
--		make_response(pending_req->blkif, pending_req->id,
-+		make_response(blkif, pending_req->id,
- 			      pending_req->operation, pending_req->status);
--		xen_blkif_put(pending_req->blkif);
--		if (atomic_read(&pending_req->blkif->refcnt) <= 2) {
--			if (atomic_read(&pending_req->blkif->drain))
--				complete(&pending_req->blkif->drain_complete);
-+		free_req(blkif, pending_req);
-+		xen_blkif_put(blkif);
-+		if (atomic_read(&blkif->refcnt) <= 2) {
-+			if (atomic_read(&blkif->drain))
-+				complete(&blkif->drain_complete);
- 		}
--		free_req(pending_req->blkif, pending_req);
- 	}
- }
- 
-@@ -1224,7 +1233,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 	 * issue the WRITE_FLUSH.
- 	 */
- 	if (drain)
--		xen_blk_drain_io(pending_req->blkif);
-+		xen_blk_drain_io(pending_req->blkif, false);
- 
- 	/*
- 	 * If we have failed at this point, we need to undo the M2P override,
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index c2014a0..3c10281 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -125,6 +125,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
- 	blkif->persistent_gnts.rb_node = NULL;
- 	spin_lock_init(&blkif->free_pages_lock);
- 	INIT_LIST_HEAD(&blkif->free_pages);
-+	INIT_LIST_HEAD(&blkif->persistent_purge_list);
- 	blkif->free_pages_num = 0;
- 	atomic_set(&blkif->persistent_gnt_in_use, 0);
- 
-@@ -259,6 +260,14 @@ static void xen_blkif_free(struct xen_blkif *blkif)
- 	if (!atomic_dec_and_test(&blkif->refcnt))
- 		BUG();
- 
-+	/* Make sure everything is drained before shutting down */
-+	BUG_ON(blkif->persistent_gnt_c != 0);
-+	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
-+	BUG_ON(blkif->free_pages_num != 0);
-+	BUG_ON(!list_empty(&blkif->persistent_purge_list));
-+	BUG_ON(!list_empty(&blkif->free_pages));
-+	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
-+
- 	/* Check that there is no request in use */
- 	list_for_each_entry_safe(req, n, &blkif->pending_free, free_list) {
- 		list_del(&req->free_list);
+Chiau Ee, I think you may to change your patch accordingly.
+
+
 -- 
-1.7.7.5 (Apple Git-26)
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
