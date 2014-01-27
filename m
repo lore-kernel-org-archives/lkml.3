@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaA0CxN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 21:53:13 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49218 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaA0CxM (ORCPT
+	id S1753402AbaA0C4b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 21:56:31 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44487 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbaA0C43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 21:53:12 -0500
-Date: Sun, 26 Jan 2014 18:52:33 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: bring back /sys/kernel/mm
-Message-ID: <alpine.LSU.2.11.1401261849120.1259@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sun, 26 Jan 2014 21:56:29 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52E5CA8D.7000602@jp.fujitsu.com>
+Date: Mon, 27 Jan 2014 11:55:09 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Rientjes <rientjes@google.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] x86, apic: clean up handling of boot_cpu_physical_apicid
+ in boot process
+References: <52D7A8F0.70807@jp.fujitsu.com> <alpine.DEB.2.02.1401252000050.10325@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401252000050.10325@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit da29bd36224b ("mm/mm_init.c: make creation of the mm_kobj happen
-earlier than device_initcall") changed to pure_initcall(mm_sysfs_init).
+(2014/01/26 13:02), David Rientjes wrote:
+> On Thu, 16 Jan 2014, HATAYAMA Daisuke wrote:
+> 
+>> Hello,
+>>
+>> This patch deals with the issue of handling boot_cpu_physical_apicid
+>> in boot process I avoided in disable_cpu_apicid patch because I
+>> cannot guess how long it needs to take for the review of this fix.
+>>
+>> This patch is made on top of today's x86/apic branch of tip tree.
+>> Its commit hash is 5b4d1dbc24bb6fd7179ada0f47be34e27e64decb
+>>
+> 
+> This breaks with SGI 320/540:
+> 
+> arch/x86/platform/visws/visws_quirks.c: In function ‘MP_processor_info’:
+> arch/x86/platform/visws/visws_quirks.c:169:3: error: ‘bios_cpu_physical_apicid’ undeclared (first use in this function)
+> arch/x86/platform/visws/visws_quirks.c:169:3: note: each undeclared identifier is reported only once for each function it appears in
+> 
 
-That's too early: mm_sysfs_init() depends on core_initcall(ksysfs_init)
-to have made the kernel_kobj directory "kernel" in which to create "mm".
+Thanks. I'll retry with CONFIG_X86_VISWS...
 
-Make it postcore_initcall(mm_sysfs_init).  We could use core_initcall(),
-and depend upon Makefile link order kernel/ mm/ fs/ ipc/ security/ ...
-as core_initcall(debugfs_init) and core_initcall(securityfs_init) do;
-but better not.
+obj-$(CONFIG_X86_VISWS) += visws_quirks.o
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+> It makes it pretty apparent that you want a different name for the new
+> variable, bios_bsp_physical_apicid is just too close to
+> boot_cpu_physical_apicid that even the author of the patch missed a
+> conversion.
+> 
 
- mm/mm_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+``bsp'' and ``boot cpu'' are different, but certainly they are close
+for most of people who don't need to focus the difference.
 
---- 3.13.0+/mm/mm_init.c	2014-01-23 21:51:26.004001378 -0800
-+++ linux/mm/mm_init.c	2014-01-26 18:06:40.488488209 -0800
-@@ -202,4 +202,4 @@ static int __init mm_sysfs_init(void)
- 
- 	return 0;
- }
--pure_initcall(mm_sysfs_init);
-+postcore_initcall(mm_sysfs_init);
+One idea is not to add bios_bsp_physical_apicid, just removing
+assignment to boot_cpu_physical_apicid from MP_processor_info().
+I guess currently no one uses apicid provided by MP table
+since boot_cpu_physical_apicid is finally initialized in
+init_apic_mappings().
+
+> (It's also really sad that we can't make it __initdata since it's only
+> valid at boot because of the hotplug stuff.)
+> 
+
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
