@@ -1,266 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaA0KGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:06:21 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:45924 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579AbaA0KGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:06:18 -0500
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCHv4] driver core/platform: don't leak memory allocated for dma_mask
-Date: Mon, 27 Jan 2014 11:05:52 +0100
-Message-Id: <1390817152-30898-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390771138-28348-1-git-send-email-ydroneaud@opteya.com>
-References: <1386886207-2735-1-git-send-email-ydroneaud@opteya.com> <1389649085-7365-1-git-send-email-ydroneaud@opteya.com> <20140113225606.GA4132@kroah.com> <1389683909-17495-1-git-send-email-ydroneaud@opteya.com> <20140114081944.GO29475@pengutronix.de> <1389693453.1585.26.camel@localhost.localdomain> <20140114103648.GT29475@pengutronix.de> <20140114180204.GD27791@kroah.com> <1390771138-28348-1-git-send-email-ydroneaud@opteya.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753772AbaA0KHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:07:01 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:47249 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446AbaA0KG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 05:06:59 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-d9-52e62fc2e8ae
+From: Weijie Yang <weijie.yang@samsung.com>
+To: hughd@google.com, "'Seth Jennings'" <sjennings@variantweb.net>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Minchan Kim'" <minchan@kernel.org>, shli@kernel.org,
+        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: [PATCH 5/8] mm/swap: drop useless and bug frontswap_shrink codes
+Date: Mon, 27 Jan 2014 18:03:04 +0800
+Message-id: <000a01cf1b47$838a7170$8a9f5450$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8bRutY4Blsk+kFTh2+gWyMLL9wIA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd1D+s+CDL6v5bWYs34Nm0XXqaks
+	FgdnL2GyePqpj8Xi8q45bBb31vxntVj29T27xZSHkxgtLhy6z2Tx6egjNosFGx8xWjw58Z/F
+	gcdj56y77B4LNpV6bFrVyeax6dMkdo8TM36zeHx8eovF4/2+q2wefVtWMXpc/1bk8XmTXABX
+	FJdNSmpOZllqkb5dAlfGhY/eBQ9sKr49XMjUwNhq2MXIySEhYCLx7uJSRghbTOLCvfVsXYxc
+	HEICixglNj58BeX8YZRYcWIXC0gVm4C2xN3+jawgtoiAg8S3e/+YQIqYBc4wSVzY1c4GkhAW
+	8JRY9GQzM4jNIqAqcfTQdPYuRg4OXgE7if5NOiBhXgFBiR+T77GAhJkF1CWmTMkFCTMLyEts
+	XvOWGSQsARR+9FcXYpOexP45v5ghSsQlNh65xTKBUWAWkkGzEAbNQjJoFpKOBYwsqxhFUwuS
+	C4qT0nMN9YoTc4tL89L1kvNzNzGC4+qZ1A7GlQ0WhxgFOBiVeHgzrj8NEmJNLCuuzD3EKMHB
+	rCTCW6HzLEiINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD
+	486NdxtUZrw6UGi4u7Vf/+HBkCsJXVc3sx3Ic+s5fK9untHpBXuPJL3Y5Hiu+93kbLFHnaZf
+	V6c+KNojUamrnHYxiLlax0Mn8qq36N8eGY/tO/TOrX7J1Wfn/2vC4o2PM6K1Qj5pR5VVNvZv
+	Xv6vbkFKS+XFhYaxGT9O1L3vmBm0wmNVtqPMYiWW4oxEQy3mouJEAFSkxACnAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 01dcc60a7cb8, platform_device_register_full() is
-available to allocate and register a platform device.
+The frontswap_shrink works as a "partial swapoff" by using try_to_unuse(),
+but is has race condition with swapoff.
 
-If a dma_mask is provided as part of platform_device_info,
-platform_device_register_full() allocate memory for a u64 using
-kmalloc().
+Of course we can fix this race issue, however, as this code is not used by
+anyone and not efficient, I decide drop this code.
 
-A comment in the code state that "[t]his memory isn't freed when the
-device is put".
+As to shrinker, a frontswap backend should implement its own shrinker if
+there is a real-world need.
 
-It's never a good thing to leak memory, but there's only very few
-users of platform_device_info's dma_mask, and those are mostly
-"static" devices that are not going to be plugged/unplugged often.
-
-So memory leak is not really an issue, but allocating 8 bytes through
-kmalloc() seems overkill.
-
-And it's a pity to have to allocate 8 bytes for the dma_mask while up
-to 7 bytes are wasted at the end of struct platform_object in the form
-of padding after name field: unfortunately this padding is not used
-when allocating the memory to hold the name.
-
-To address theses issues, this patch adds dma_mask to platform_object
-struct so that it is always allocated for all struct platform_device
-allocated through platform_device_alloc() or platform_device_register_full().
-And since it's within struct platform_object, dma_mask won't be leaked
-anymore when struct platform_device got released. Storage for dma_mask
-is added almost for free by removing the padding at the end of struct
-platform_object.
-
-Padding at the end of the structure is removed by making name a C99
-flexible array member (eg. a zero sized array). To handle this change,
-memory allocation is updated to take care of allocating an additional
-byte for the NUL terminating character.
-
-No more memory leak, no small allocation, no byte wasted and
-a slight reduction in code size.
-
-Built on Fedora 20, using GCC 4.8, for ARM, i386, x86_64 and PPC64
-architectures, the size of the object file and the data structure layout
-are updated as follow, produced with commands:
-
-  $ size drivers/base/platform.o
-  $ pahole drivers/base/platform.o \
-           --recursive             \
-           --class_name device,pdev_archdata,platform_device,platform_object
-
-  --- size+pahole.next-20140124
-  +++ size+pahole.next-20140124+
-  @@ -1,5 +1,5 @@
-      text    data     bss     dec     hex filename
-  -   5616     472      32    6120    17e8 obj-arm/drivers/base/platform.o
-  +   5572     472      32    6076    17bc obj-arm/drivers/base/platform.o
-   struct device {
-           struct device *            parent;               /*     0     4 */
-           struct device_private *    p;                    /*     4     4 */
-  @@ -77,15 +77,15 @@ struct platform_object {
-           /* XXX last struct has 4 bytes of padding */
-
-           /* --- cacheline 6 boundary (384 bytes) --- */
-  -        char                       name[1];              /*   384     1 */
-  +        u64                        dma_mask;             /*   384     8 */
-  +        char                       name[0];              /*   392     0 */
-
-  -        /* size: 392, cachelines: 7, members: 2 */
-  -        /* padding: 7 */
-  +        /* size: 392, cachelines: 7, members: 3 */
-           /* paddings: 1, sum paddings: 4 */
-           /* last cacheline: 8 bytes */
-   };
-
-      text    data     bss     dec     hex filename
-  -   6007     532      32    6571    19ab obj-i386/drivers/base/platform.o
-  +   5943     532      32    6507    196b obj-i386/drivers/base/platform.o
-   struct device {
-           struct device *            parent;               /*     0     4 */
-           struct device_private *    p;                    /*     4     4 */
-  @@ -161,14 +161,14 @@ struct platform_device {
-   struct platform_object {
-           struct platform_device     pdev;                 /*     0   392 */
-           /* --- cacheline 6 boundary (384 bytes) was 8 bytes ago --- */
-  -        char                       name[1];              /*   392     1 */
-  +        u64                        dma_mask;             /*   392     8 */
-  +        char                       name[0];              /*   400     0 */
-
-  -        /* size: 396, cachelines: 7, members: 2 */
-  -        /* padding: 3 */
-  -        /* last cacheline: 12 bytes */
-  +        /* size: 400, cachelines: 7, members: 3 */
-  +        /* last cacheline: 16 bytes */
-   };
-
-      text    data     bss     dec     hex filename
-  -   8851    2112      48   11011    2b03 obj-ppc64/drivers/base/platform.o
-  +   8787    2104      48   10939    2abb obj-ppc64/drivers/base/platform.o
-   struct device {
-           struct device *            parent;               /*     0     8 */
-           struct device_private *    p;                    /*     8     8 */
-  @@ -256,14 +256,14 @@ struct platform_device {
-   struct platform_object {
-           struct platform_device     pdev;                 /*     0   728 */
-           /* --- cacheline 11 boundary (704 bytes) was 24 bytes ago --- */
-  -        char                       name[1];              /*   728     1 */
-  +        u64                        dma_mask;             /*   728     8 */
-  +        char                       name[0];              /*   736     0 */
-
-  -        /* size: 736, cachelines: 12, members: 2 */
-  -        /* padding: 7 */
-  +        /* size: 736, cachelines: 12, members: 3 */
-           /* last cacheline: 32 bytes */
-   };
-
-      text    data     bss     dec     hex filename
-  -   7100     960      48    8108    1fac obj-x86_64/drivers/base/platform.o
-  +   7020     960      48    8028    1f5c obj-x86_64/drivers/base/platform.o
-   struct device {
-           struct device *            parent;               /*     0     8 */
-           struct device_private *    p;                    /*     8     8 */
-  @@ -350,9 +350,9 @@ struct platform_device {
-   struct platform_object {
-           struct platform_device     pdev;                 /*     0   712 */
-           /* --- cacheline 11 boundary (704 bytes) was 8 bytes ago --- */
-  -        char                       name[1];              /*   712     1 */
-  +        u64                        dma_mask;             /*   712     8 */
-  +        char                       name[0];              /*   720     0 */
-
-  -        /* size: 720, cachelines: 12, members: 2 */
-  -        /* padding: 7 */
-  +        /* size: 720, cachelines: 12, members: 3 */
-           /* last cacheline: 16 bytes */
-   };
-
-Changes from v3 [1]:
-- fixed commit message so that git am doesn't fail.
-
-Changes from v2 [2]:
-- move 'dma_mask' to platform_object so that it's always
-  allocated and won't leak on release; remove all previously
-  added support functions.
-- use C99 flexible array member for 'name' to remove padding
-  at the end of platform_object.
-
-Changes from v1 [3]:
-- remove unneeded kfree() from error path
-- add reference to author/commit adding allocation of dmamask
-
-Changes from v0 [4]:
-- small rewrite to squeeze the patch to a bare minimal
-
-[1] http://lkml.kernel.org/r/1390771138-28348-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3540081/
-
-[2] http://lkml.kernel.org/r/1389683909-17495-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3484411/
-
-[3] http://lkml.kernel.org/r/1389649085-7365-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3480961/
-
-[4] http://lkml.kernel.org/r/1386886207-2735-1-git-send-email-ydroneaud@opteya.com
-
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
-Hi,
+ include/linux/frontswap.h |    2 -
+ include/linux/swapfile.h  |    3 --
+ mm/frontswap.c            |  116 ---------------------------------------------
+ mm/swapfile.c             |   19 ++------
+ 4 files changed, 4 insertions(+), 136 deletions(-)
 
-I've fixed the commit message to move the diff on pahole
-outside of the scope of git am.
-
-Regards.
-
- drivers/base/platform.c | 17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index bc78848dd59a..1f6d1e832e03 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -157,7 +157,8 @@ EXPORT_SYMBOL_GPL(platform_add_devices);
- 
- struct platform_object {
- 	struct platform_device pdev;
--	char name[1];
-+	u64 dma_mask;
-+	char name[];
- };
- 
- /**
-@@ -193,16 +194,20 @@ static void platform_device_release(struct device *dev)
-  *
-  * Create a platform device object which can have other objects attached
-  * to it, and which will have attached objects freed when it is released.
-+ *
-+ * The associated struct device will be set up so that its dma_mask field
-+ * is a valid pointer to an u64. This pointer must not be free'd manually.
+diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+index 8293262..c00b429 100644
+--- a/include/linux/frontswap.h
++++ b/include/linux/frontswap.h
+@@ -16,8 +16,6 @@ struct frontswap_ops {
+ extern bool frontswap_enabled;
+ extern struct frontswap_ops *
+ 	frontswap_register_ops(struct frontswap_ops *ops);
+-extern void frontswap_shrink(unsigned long);
+-extern unsigned long frontswap_curr_pages(void);
+ extern void frontswap_writethrough(bool);
+ #define FRONTSWAP_HAS_EXCLUSIVE_GETS
+ extern void frontswap_tmem_exclusive_gets(bool);
+diff --git a/include/linux/swapfile.h b/include/linux/swapfile.h
+index 1fd5494..5dc7c81 100644
+--- a/include/linux/swapfile.h
++++ b/include/linux/swapfile.h
+@@ -5,10 +5,7 @@
+  * these were static in swapfile.c but frontswap.c needs them and we don't
+  * want to expose them to the dozens of source files that include swap.h
   */
- struct platform_device *platform_device_alloc(const char *name, int id)
- {
- 	struct platform_object *pa;
+-extern spinlock_t swap_lock;
+ extern struct mutex swapon_mutex;
+-extern struct swap_list_t swap_list;
+ extern struct swap_info_struct *swap_info[];
+-extern int try_to_unuse(unsigned int, bool, unsigned long);
  
--	pa = kzalloc(sizeof(struct platform_object) + strlen(name), GFP_KERNEL);
-+	pa = kzalloc(sizeof(*pa) + strlen(name) + 1, GFP_KERNEL);
- 	if (pa) {
- 		strcpy(pa->name, name);
- 		pa->pdev.name = pa->name;
- 		pa->pdev.id = id;
-+		pa->pdev.dev.dma_mask = &pa->dma_mask;
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
- 		arch_setup_pdev_archdata(&pa->pdev);
-@@ -436,16 +441,9 @@ struct platform_device *platform_device_register_full(
+ #endif /* _LINUX_SWAPFILE_H */
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index a0c68db..df067f1 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -326,122 +326,6 @@ void __frontswap_invalidate_area(unsigned type)
+ }
+ EXPORT_SYMBOL(__frontswap_invalidate_area);
  
- 	if (pdevinfo->dma_mask) {
- 		/*
--		 * This memory isn't freed when the device is put,
--		 * I don't have a nice idea for that though.  Conceptually
- 		 * dma_mask in struct device should not be a pointer.
- 		 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
- 		 */
--		pdev->dev.dma_mask =
--			kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
--		if (!pdev->dev.dma_mask)
--			goto err;
+-static unsigned long __frontswap_curr_pages(void)
+-{
+-	int type;
+-	unsigned long totalpages = 0;
+-	struct swap_info_struct *si = NULL;
 -
- 		*pdev->dev.dma_mask = pdevinfo->dma_mask;
- 		pdev->dev.coherent_dma_mask = pdevinfo->dma_mask;
+-	assert_spin_locked(&swap_lock);
+-	for (type = swap_list.head; type >= 0; type = si->next) {
+-		si = swap_info[type];
+-		totalpages += atomic_read(&si->frontswap_pages);
+-	}
+-	return totalpages;
+-}
+-
+-static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+-					int *swapid)
+-{
+-	int ret = -EINVAL;
+-	struct swap_info_struct *si = NULL;
+-	int si_frontswap_pages;
+-	unsigned long total_pages_to_unuse = total;
+-	unsigned long pages = 0, pages_to_unuse = 0;
+-	int type;
+-
+-	assert_spin_locked(&swap_lock);
+-	for (type = swap_list.head; type >= 0; type = si->next) {
+-		si = swap_info[type];
+-		si_frontswap_pages = atomic_read(&si->frontswap_pages);
+-		if (total_pages_to_unuse < si_frontswap_pages) {
+-			pages = pages_to_unuse = total_pages_to_unuse;
+-		} else {
+-			pages = si_frontswap_pages;
+-			pages_to_unuse = 0; /* unuse all */
+-		}
+-		/* ensure there is enough RAM to fetch pages from frontswap */
+-		if (security_vm_enough_memory_mm(current->mm, pages)) {
+-			ret = -ENOMEM;
+-			continue;
+-		}
+-		vm_unacct_memory(pages);
+-		*unused = pages_to_unuse;
+-		*swapid = type;
+-		ret = 0;
+-		break;
+-	}
+-
+-	return ret;
+-}
+-
+-/*
+- * Used to check if it's necessory and feasible to unuse pages.
+- * Return 1 when nothing to do, 0 when need to shink pages,
+- * error code when there is an error.
+- */
+-static int __frontswap_shrink(unsigned long target_pages,
+-				unsigned long *pages_to_unuse,
+-				int *type)
+-{
+-	unsigned long total_pages = 0, total_pages_to_unuse;
+-
+-	assert_spin_locked(&swap_lock);
+-
+-	total_pages = __frontswap_curr_pages();
+-	if (total_pages <= target_pages) {
+-		/* Nothing to do */
+-		*pages_to_unuse = 0;
+-		return 1;
+-	}
+-	total_pages_to_unuse = total_pages - target_pages;
+-	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
+-}
+-
+-/*
+- * Frontswap, like a true swap device, may unnecessarily retain pages
+- * under certain circumstances; "shrink" frontswap is essentially a
+- * "partial swapoff" and works by calling try_to_unuse to attempt to
+- * unuse enough frontswap pages to attempt to -- subject to memory
+- * constraints -- reduce the number of pages in frontswap to the
+- * number given in the parameter target_pages.
+- */
+-void frontswap_shrink(unsigned long target_pages)
+-{
+-	unsigned long pages_to_unuse = 0;
+-	int uninitialized_var(type), ret;
+-
+-	/*
+-	 * we don't want to hold swap_lock while doing a very
+-	 * lengthy try_to_unuse, but swap_list may change
+-	 * so restart scan from swap_list.head each time
+-	 */
+-	spin_lock(&swap_lock);
+-	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
+-	spin_unlock(&swap_lock);
+-	if (ret == 0)
+-		try_to_unuse(type, true, pages_to_unuse);
+-	return;
+-}
+-EXPORT_SYMBOL(frontswap_shrink);
+-
+-/*
+- * Count and return the number of frontswap pages across all
+- * swap devices.  This is exported so that backend drivers can
+- * determine current usage without reading debugfs.
+- */
+-unsigned long frontswap_curr_pages(void)
+-{
+-	unsigned long totalpages = 0;
+-
+-	spin_lock(&swap_lock);
+-	totalpages = __frontswap_curr_pages();
+-	spin_unlock(&swap_lock);
+-
+-	return totalpages;
+-}
+-EXPORT_SYMBOL(frontswap_curr_pages);
+-
+ static int __init init_frontswap(void)
+ {
+ #ifdef CONFIG_DEBUG_FS
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 5c8a086..3023172 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1353,7 +1353,7 @@ static int unuse_mm(struct mm_struct *mm,
+  * Recycle to start on reaching the end, returning 0 when empty.
+  */
+ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
+-					unsigned int prev, bool frontswap)
++					unsigned int prev)
+ {
+ 	unsigned int max = si->max;
+ 	unsigned int i = prev;
+@@ -1379,12 +1379,6 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
+ 			prev = 0;
+ 			i = 1;
+ 		}
+-		if (frontswap) {
+-			if (frontswap_test(si, i))
+-				break;
+-			else
+-				continue;
+-		}
+ 		count = ACCESS_ONCE(si->swap_map[i]);
+ 		if (count && swap_count(count) != SWAP_MAP_BAD)
+ 			break;
+@@ -1400,8 +1394,7 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
+  * if the boolean frontswap is true, only unuse pages_to_unuse pages;
+  * pages_to_unuse==0 means all pages; ignored if frontswap is false
+  */
+-int try_to_unuse(unsigned int type, bool frontswap,
+-		 unsigned long pages_to_unuse)
++int try_to_unuse(unsigned int type)
+ {
+ 	struct swap_info_struct *si = swap_info[type];
+ 	struct mm_struct *start_mm;
+@@ -1438,7 +1431,7 @@ int try_to_unuse(unsigned int type, bool frontswap,
+ 	 * one pass through swap_map is enough, but not necessarily:
+ 	 * there are races when an instance of an entry might be missed.
+ 	 */
+-	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
++	while ((i = find_next_to_unuse(si, i)) != 0) {
+ 		if (signal_pending(current)) {
+ 			retval = -EINTR;
+ 			break;
+@@ -1613,10 +1606,6 @@ int try_to_unuse(unsigned int type, bool frontswap,
+ 		 * interactive performance.
+ 		 */
+ 		cond_resched();
+-		if (frontswap && pages_to_unuse > 0) {
+-			if (!--pages_to_unuse)
+-				break;
+-		}
  	}
-@@ -464,7 +462,6 @@ struct platform_device *platform_device_register_full(
- 	if (ret) {
- err:
- 		ACPI_COMPANION_SET(&pdev->dev, NULL);
--		kfree(pdev->dev.dma_mask);
  
- err_alloc:
- 		platform_device_put(pdev);
+ 	mmput(start_mm);
+@@ -1939,7 +1928,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	spin_unlock(&swap_lock);
+ 
+ 	set_current_oom_origin();
+-	err = try_to_unuse(type, false, 0); /* force all pages to be unused */
++	err = try_to_unuse(type); /* force all pages to be unused */
+ 	clear_current_oom_origin();
+ 
+ 	if (err) {
 -- 
-1.8.5.3
+1.7.10.4
+
 
