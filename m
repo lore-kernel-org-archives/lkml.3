@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaA0Tty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:49:54 -0500
-Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:33832 "EHLO
-	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753781AbaA0Ttw (ORCPT
+	id S1754096AbaA0TuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:50:24 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:39979 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765AbaA0TuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:49:52 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=cNMOdCco8XaPTmmhQsELWzRKH6fpsOlg6zcfeikrIaYisfRnI4Vgb9H2yqMhdpdl;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Pavel Shilovsky'" <piastry@etersoft.ru>
-Cc: "'Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        "'linux-cifs'" <linux-cifs@vger.kernel.org>,
-        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
-        "'Linux NFS Mailing list'" <linux-nfs@vger.kernel.org>,
-        <wine-devel@winehq.org>, <nfs-ganesha-devel@lists.sourceforge.net>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>	<051001cf13b4$080833b0$18189b10$@mindspring.com> <CAKywueTOi-WPpgH7x3VK7EkGJXE8fHUqcLgSUm6o6UA+uaQtjA@mail.gmail.com>
-In-Reply-To: <CAKywueTOi-WPpgH7x3VK7EkGJXE8fHUqcLgSUm6o6UA+uaQtjA@mail.gmail.com>
-Subject: RE: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
-Date: Mon, 27 Jan 2014 11:49:49 -0800
-Message-ID: <02de01cf1b98$f115f240$d341d6c0$@mindspring.com>
+	Mon, 27 Jan 2014 14:50:22 -0500
+From: "Network Nut" <sillystack@gmail.com>
+To: "'Clemens Ladisch'" <clemens@ladisch.de>
+Cc: <linux-kernel@vger.kernel.org>
+References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de>
+In-Reply-To: <52E6219A.3020405@ladisch.de>
+Subject: RE: WaitForMultipleObjects/etc. In Kernel
+Date: Mon, 27 Jan 2014 13:50:19 -0600
+Message-ID: <00d001cf1b99$026407d0$072c1770$@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQG8fgJyQjp4G5QLxJCshrN0oG//QAK5+V1aAPtKxEWaoIm8AA==
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQNT3acP/4y+UoGLob+8VizidhBl0AFz54/xAX6FO6UBfOQBmZdr389A
 Content-Language: en-us
-X-Antivirus: avast! (VPS 140127-1, 01/27/2014), Outbound message
-X-Antivirus-Status: Clean
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4df08edabb44b6b1bac5038de0210586f9350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2014/1/17 Frank Filz <ffilzlnx@mindspring.com>:
-> > This looks wonderful and will be useful to the Ganesha user space NFS
-> > server also.
-> >
-> > I do have a couple questions.
-> >
-> > 1. How will this interact with the idea of private locks from the
-> > patch set Jeff Layton has been pushing?
-> 
-> They don't touch each other.
-> 
-> >
-> > 2. If a process opens multiple file descriptors with deny modes, will
-> > they conflict with each other (which is the behavior we will want for
-> Ganesha).
-> 
-> Yes, a deny mode is associated with file descriptor - so, it will conflict
-with any
-> other access/deny modes of file descriptors from any process.
-> 
-> >
-> > 3. Is there any functionality to upgrade or downgrade the access and
-> > deny modes (thinking in terms of NFS v4 support of OPEN upgrade and
-> > OPEN_DOWNGRADE operations).
-> 
-> The proposed patchset doesn't allow to change deny modes after an open is
-> done. But we can add a functionality to let flock syscall change deny
-modes
-> as on option.
+> Unrelated processes cannot directly open objects created by another
+> process (with the exception of sockets and pipes, which can be created in
+> the file system).  However, sharing of any file descriptor is possible by
+> sending it in a control message through a Unix domain socket.
 
-Yes, that would be good. NFS v4 allows upgrade/downgrade of acces/deny modes
-(hmm, changing access mode would be trickier, but we need to be able to
-upgrade/downgrade those as well as deny modes...). It could still be done
-with an fcntl.  I don't know if any NFS clients make use of
-upgrade/downgrade (I do know there are pynfs tests for it).
+I just spent a bit more time snooping around the Internet to see what is
+possible and what is not.
 
-Interestingly, upgrade/downgrade would be a solution to Ganesha's problems
-with POSIX locks being dumped on any file descriptor close since we could
-change the access mode as needed rather than needing to close and open the
-file.
+My gut feeling, before trying to port my application from Windows to Linux,
+was that I have been using (enjoying) synchronization primitives on Windows
+that are fundamental to generalized-synchronization. Most importantly, as I
+mentioned initially, I do not believe that I am victim of tunnel-vision,
+where my familiarity with a particular OS has biased my perception of how
+synchronization should be done. On the contrary, knowing what I know about
+synchronization now, if it were left to me to design a Generalized
+Synchronization Model for an OS kernel from scratch, without regard for
+pre-existing OS's, the model that I would devise would probably look very
+similar to what the Windows engineers  did. I feel a bit bad saying this, as
+my intent here is not to take a stab at Linux's synchronization model. It's
+to say...I feel that I am struggling to synthesize what I regard as a
+"regular model" from bits and pieces on Linux. I am convinced that, if I
+were going in the other direction, from Linux to Windows, I would not have
+any problem recreating, under Windows, whatever model I had been using under
+Linux.
 
-Frank
+That said, I really do need to have multiple threads, each within their
+respective processes, P1:T1, P2:T2, ...Pn:Tn; all blocking on what are
+effectively potentially globally-named synchronization primitives
+(semaphore, mutex event)...and...ideally...as each thread blocks against
+multiple, potentially-named primitives, there is an option for the master
+blocking function [epoll_wait, in this case], to time-out, with the
+expiration for time-out being specified as an argument to the function. And
+to make matters worse, sometimes, while blocking on {semaphore + event +
+event +....}, I need to block, simultaneously, on asynchronous I/O.
 
+So what I know so far is that, if my problem is to be solved:
+
+1. epoll/epoll_wait/etc. will definitely be part of it (Thanks!)
+2. I am OK with timerfd and eventfd (Thanks!)
+3. Other synchronization primitives will have to be accessible vial
+file-descriptor.
+4. If epoll_wait is to block on asynchronous I/O, use io_set_eventfd  to
+bind completion of asynchronous I/O to signaling of an eventfd
+5. I can simulate system-global named mutex using shared-memory for
+underlying state of mutex (POCO NamedMutex)
+6. I can get named semaphore using POSIX sem_create 
+
+It seems that the remaining problem is to get named mutex and named
+semaphore to be accessible by file-descriptor.
+
+> > BTW, the man page for epoll_wait seems to be incorrect.
+> 
+> <https://www.kernel.org/doc/man-pages/reporting_bugs.html>
+> 
+> > "The timeout argument specifies the minimum number of milliseconds
+> >        that epoll_wait() will block."
+> >
+> > I think the word "minimum" should be "maximum".
+> 
+> This sentence was copied from the poll(2) man page, where the previous
+> sentence says "poll() blocks until one of the events occurs".  So the word
+> "block" implies that no event has occured.
+
+So that means that it is a bug, right? Or?
+
+Regards,
+
+-Nut
 
