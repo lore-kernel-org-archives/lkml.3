@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaA0UMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:12:40 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50219 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753334AbaA0UMi (ORCPT
+	id S1754188AbaA0UQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:16:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36169 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981AbaA0UQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:12:38 -0500
-Date: Mon, 27 Jan 2014 20:12:31 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 24/24] drm/i2c: tda998x: adjust the audio clock
-	divider for S/PDIF
-Message-ID: <20140127201231.GY15937@n2100.arm.linux.org.uk>
-References: <cover.1390646891.git.moinejf@free.fr> <20140125181436.5c443251@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140125181436.5c443251@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 27 Jan 2014 15:16:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bernd Porr <mail@berndporr.me.uk>, Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.13 02/10] staging: comedi: fix result of memdup_user for user chanlist
+Date: Mon, 27 Jan 2014 12:17:05 -0800
+Message-Id: <20140127201535.520608166@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
+References: <20140127201535.350372282@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 06:14:36PM +0100, Jean-Francois Moine wrote:
-> According to some tests on the Cubox (Marvell Armada 510 + TDA19988),
-> the S/PDIF input asks for a greater audio clock divider.
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->  drivers/gpu/drm/i2c/tda998x_drv.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-> index b4827c0..e4dfcb4 100644
-> --- a/drivers/gpu/drm/i2c/tda998x_drv.c
-> +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-> @@ -679,10 +679,14 @@ tda998x_configure_audio(struct tda998x_priv *priv,
->  	 * There is no detailed info in the datasheet, so we just
->  	 * assume 100MHz requires larger divider.
->  	 */
-> +	adiv = AUDIO_DIV_SERCLK_8;
->  	if (mode->clock > 100000)
-> -		adiv = AUDIO_DIV_SERCLK_16;
-> -	else
-> -		adiv = AUDIO_DIV_SERCLK_8;
-> +		adiv++;			/* AUDIO_DIV_SERCLK_8 */
-> +
-> +	/* S/PDIF asks for a larger divider */
-> +	if (p->audio_format == AFMT_SPDIF)
-> +		adiv++;			/* AUDIO_DIV_SERCLK_16 or _32 */
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-I'm not sure these comments are quite right... You start off with
-adiv at AUDIO_DIV_SERCLK_8, and then you increment it, but the
-comment says it's AUDIO_DIV_SERCLK_8 ?  Shouldn't it become
-AUDIO_DIV_SERCLK_16 ?
+------------------
 
-Please review the above change yourself. :)
+From: Bernd Porr <mail@berndporr.me.uk>
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+commit e56b1401056288a725d50942ef300dcbed5e519a upstream.
+
+If the channel list is not set in userspace we get an error at
+PTR_ERR(async->cmd.chanlist). However, do_become_nonbusy(dev, s) cleans
+up this pointer which causes a kernel ooops. Setting the channel list in
+async to NULL and checking this in do_become_nonbusy prevents the oops.
+
+[Ian Abbott] Also do the same for the chanlist allocated in
+do_cmdtest_ioctl().
+
+Signed-off-by: Bernd Porr <mail@berndporr.me.uk>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/comedi/comedi_fops.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1425,6 +1425,7 @@ static int do_cmd_ioctl(struct comedi_de
+ 					  async->cmd.chanlist_len * sizeof(int));
+ 	if (IS_ERR(async->cmd.chanlist)) {
+ 		ret = PTR_ERR(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 		DPRINTK("memdup_user failed with code %d\n", ret);
+ 		goto cleanup;
+ 	}
+@@ -1547,6 +1548,7 @@ static int do_cmdtest_ioctl(struct comed
+ 				       cmd.chanlist_len * sizeof(int));
+ 		if (IS_ERR(chanlist)) {
+ 			ret = PTR_ERR(chanlist);
++			chanlist = NULL;
+ 			DPRINTK("memdup_user exited with code %d", ret);
+ 			goto cleanup;
+ 		}
+
+
