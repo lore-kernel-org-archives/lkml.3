@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaA0SIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:08:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60066 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651AbaA0SIW (ORCPT
+	id S1754077AbaA0SKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:10:33 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:43591 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753675AbaA0SKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:08:22 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Mark Brown <broonie@linaro.org>
-Date: Mon, 27 Jan 2014 18:07:55 +0000
-Message-Id: <1390846075-17415-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regulator: core: Correct default return value for full constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 27 Jan 2014 13:10:31 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] iio: max1363: Use devm_regulator_get_optional for optional regulator
+Date: Mon, 27 Jan 2014 10:10:27 -0800
+Message-Id: <1390846227-28320-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+In kernel version 3.13, devm_regulator_get() may return no error
+if a regulator is undeclared. regulator_get_voltage() will return
+-EINVAL if this happens. This causes the driver to fail loading if
+the vref regulator is not declared.
 
-Once we have full constraints then all supply mappings should be known to
-the regulator API. This means that we should treat failed lookups as fatal
-rather than deferring in the hope of further registrations but this was
-broken by commit 9b92da1f1205bd25 "regulator: core: Fix default return
-value for _get()" which was targeted at DT systems but unintentionally
-broke non-DT systems by changing the default return value.
+Since vref is optional, call devm_regulator_get_optional instead.
 
-Fix this by explicitly returning -EPROBE_DEFER from the DT lookup if we
-find a property but no corresponding regulator and by having the non-DT
-case default to -ENODEV when we have full constraints.
-
-Fixes: 9b92da1f1205bd25 "regulator: core: Fix default return value for _get()"
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/regulator/core.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+Should be a candidate for -stable (v3.12+).
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index b38a6b669e8c..16a309e5c024 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1272,6 +1272,8 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 				if (r->dev.parent &&
- 					node == r->dev.of_node)
- 					return r;
-+			*ret = -EPROBE_DEFER;
-+			return NULL;
- 		} else {
- 			/*
- 			 * If we couldn't even get the node then it's
-@@ -1312,7 +1314,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 	struct regulator_dev *rdev;
- 	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
- 	const char *devname = NULL;
--	int ret = -EPROBE_DEFER;
-+	int ret;
+ drivers/iio/adc/max1363.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/iio/adc/max1363.c b/drivers/iio/adc/max1363.c
+index e283f2f..3602592 100644
+--- a/drivers/iio/adc/max1363.c
++++ b/drivers/iio/adc/max1363.c
+@@ -1560,7 +1560,7 @@ static int max1363_probe(struct i2c_client *client,
+ 	st->client = client;
  
- 	if (id == NULL) {
- 		pr_err("get() with no identifier\n");
-@@ -1322,6 +1324,11 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 	if (dev)
- 		devname = dev_name(dev);
+ 	st->vref_uv = st->chip_info->int_vref_mv * 1000;
+-	vref = devm_regulator_get(&client->dev, "vref");
++	vref = devm_regulator_get_optional(&client->dev, "vref");
+ 	if (!IS_ERR(vref)) {
+ 		int vref_uv;
  
-+	if (have_full_constraints())
-+		ret = -ENODEV;
-+	else
-+		ret = -EPROBE_DEFER;
-+
- 	mutex_lock(&regulator_list_mutex);
- 
- 	rdev = regulator_dev_lookup(dev, id, &ret);
 -- 
-1.8.5.3
+1.7.9.7
 
