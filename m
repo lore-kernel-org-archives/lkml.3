@@ -1,93 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaA0APZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 19:15:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59838 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaA0APX (ORCPT
+	id S1753399AbaA0AT5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 19:19:57 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:54032 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaA0AT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 19:15:23 -0500
-Date: Mon, 27 Jan 2014 00:15:00 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tomasz Figa <t.figa@samsung.com>, Tushar Behera <tushar.behera@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        jslaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Message-ID: <20140127001500.GS11727@sirena.org.uk>
-References: <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
- <20140123180423.1a62611a@www.etchedpixels.co.uk>
- <20140123184022.GC11727@sirena.org.uk>
- <52E163DC.1090002@samsung.com>
- <20140123193633.GG11727@sirena.org.uk>
- <20140123195144.2d3aa44d@www.etchedpixels.co.uk>
- <20140123200509.GO11727@sirena.org.uk>
- <20140123213321.372ce82b@www.etchedpixels.co.uk>
- <20140124120309.GU11727@sirena.org.uk>
- <20140124143859.70e0e610@www.etchedpixels.co.uk>
+	Sun, 26 Jan 2014 19:19:56 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HKLejDDV6gCqJAZ/"
-Content-Disposition: inline
-In-Reply-To: <20140124143859.70e0e610@www.etchedpixels.co.uk>
-X-Cookie: Please ignore previous fortune.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
- device probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <f4597c60b5a04e8e8baa225a279abd0d@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <20140117203126.11429.25235.stgit@gimli.home>
+	<4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
+	<1390234886.8705.142.camel@bling.home>
+	<f4597c60b5a04e8e8baa225a279abd0d@BL2PR03MB468.namprd03.prod.outlook.com>
+Date: Mon, 27 Jan 2014 08:19:55 +0800
+Message-ID: <CAOtp4Kp0-yZBd_P82CV8-VKPmsTByP8pn_C2T9ctbP3oOke3LA@mail.gmail.com>
+Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+From: Kai Huang <dev.kai.huang@gmail.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 21, 2014 at 2:30 AM, Varun Sethi <Varun.Sethi@freescale.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+>> Sent: Monday, January 20, 2014 9:51 PM
+>> To: Sethi Varun-B16395
+>> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+>>
+>> On Mon, 2014-01-20 at 14:45 +0000, Varun Sethi wrote:
+>> >
+>> > > -----Original Message-----
+>> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+>> > > Sent: Saturday, January 18, 2014 2:06 AM
+>> > > To: Sethi Varun-B16395
+>> > > Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+>> > > Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+>> > >
+>> > > RFC: This is not complete but I want to share with Varun the
+>> > > dirrection I'm thinking about.  In particular, I'm really not sure
+>> > > if we want to introduce a "v2" interface version with slightly
+>> > > different unmap semantics.  QEMU doesn't care about the difference,
+>> > > but other users might.  Be warned, I'm not even sure if this code
+>> works at the moment.
+>> > > Thanks,
+>> > >
+>> > > Alex
+>> > >
+>> > >
+>> > > We currently have a problem that we cannot support advanced features
+>> > > of an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee
+>> > > that those features will be supported by all of the hardware units
+>> > > involved with the domain over its lifetime.  For instance, the Intel
+>> > > VT-d architecture does not require that all DRHDs support snoop
+>> > > control.  If we create a domain based on a device behind a DRHD that
+>> > > does support snoop control and enable SNP support via the
+>> > > IOMMU_CACHE mapping option, we cannot then add a device behind a
+>> > > DRHD which does not support snoop control or we'll get reserved bit
+>> > > faults from the SNP bit in the pagetables.  To add to the
+>> > > complexity, we can't know the properties of a domain until a device
+>> is attached.
+>> > [Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops
+>> > are common across all bus types. The hardware feature differences are
+>> > abstracted by the driver.
+>>
+>> That's a simplifying assumption that is not made anywhere else in the
+>> code.  The IOMMU API allows entirely independent IOMMU drivers to
+>> register per bus_type.  There is no guarantee that all devices are backed
+>> by the same IOMMU hardware unit or make use of the same iommu_ops.
+>>
+> [Sethi Varun-B16395] ok
+>
+>> > > We could pass this problem off to userspace and require that a
+>> > > separate vfio container be used, but we don't know how to handle
+>> > > page accounting in that case.  How do we know that a page pinned in
+>> > > one container is the same page as a different container and avoid
+>> > > double billing the user for the page.
+>> > >
+>> > > The solution is therefore to support multiple IOMMU domains per
+>> > > container.  In the majority of cases, only one domain will be
+>> > > required since hardware is typically consistent within a system.
+>> > > However, this provides us the ability to validate compatibility of
+>> > > domains and support mixed environments where page table flags can be
+>> > > different between domains.
+>> > >
+>> > > To do this, our DMA tracking needs to change.  We currently try to
+>> > > coalesce user mappings into as few tracking entries as possible.
+>> > > The problem then becomes that we lose granularity of user mappings.
+>> > > We've never guaranteed that a user is able to unmap at a finer
+>> > > granularity than the original mapping, but we must honor the
+>> > > granularity of the original mapping.  This coalescing code is
+>> > > therefore removed, allowing only unmaps covering complete maps.  The
+>> > > change in accounting is fairly small here, a typical QEMU VM will
+>> > > start out with roughly a dozen entries, so it's arguable if this
+>> coalescing was ever needed.
+>> > >
+>> > > We also move IOMMU domain creation to the point where a group is
+>> > > attached to the container.  An interesting side-effect of this is
+>> > > that we now have access to the device at the time of domain creation
+>> > > and can probe the devices within the group to determine the bus_type.
+>> > > This finally makes vfio_iommu_type1 completely device/bus agnostic.
+>> > > In fact, each IOMMU domain can host devices on different buses
+>> > > managed by different physical IOMMUs, and present a single DMA
+>> > > mapping interface to the user.  When a new domain is created,
+>> > > mappings are replayed to bring the IOMMU pagetables up to the state
+>> > > of the current container.  And of course, DMA mapping and unmapping
+>> > > automatically traverse all of the configured IOMMU domains.
+>> > >
+>> > [Sethi Varun-B16395] This code still checks to see that devices being
+>> > attached to the domain are connected to the same bus type. If we
+>> > intend to merge devices from different bus types but attached to
+>> > compatible domains in to a single domain, why can't we avoid the bus
+>> > check? Why can't we remove the bus dependency from domain allocation?
+>>
+>> So if I were to test iommu_ops instead of bus_type (ie. assume that if a
+>> if an IOMMU driver manages iommu_ops across bus_types that it can accept
+>> the devices), would that satisfy your concern?
+> [Sethi Varun-B16395] I think so. Checking for iommu_ops should allow iommu groups from different bus_types, to share a domain.
+>
+>>
+>> It may be possible to remove the bus_type dependency from domain
+>> allocation, but the IOMMU API currently makes the assumption that there's
+>> one IOMMU driver per bus_type.
+> [Sethi Varun-B16395] Is that a valid assumption?
+>
+>> Your fix to remove the bus_type
+>> dependency from iommu_domain_alloc() adds an assumption that there is
+>> only one IOMMU driver for all bus_types.  That may work on your platform,
+>> but I don't think it's a valid assumption in the general case.
+> [Sethi Varun-B16395] ok
+>
+>> If you'd like to propose alternative ways to remove the bus_type
+>> dependency, please do.  Thanks,
+>>
+> [Sethi Varun-B16395] My main concern, was to allow devices from different bus types, to share the iommu domain. I am fine if this can be handled from within vfio.
+>
+> -Varun
+>
+What's the reason that we need to share one domain cross multiple bus
+type (and are we talking the iommu_domain structure in iommu
+framework, right)? I am not familiar with the background info, and new
+to vfio, but from hardware point of view, I don't think it's good idea
+to share one domain cross bus types. Although IOMMUs all basically
+provide DMA remapping, interrupt remapping, etc, but it's possible
+that some hardware capability differences can't be commonly
+abstracted. For example, some old IOMMU just implements very simple
+functionality, it even can't support per-BDF DMA remapping, which
+means it just can't provide multiple domains. And also, I think
+sharing domain cross bus types should just implies that the domain can
+only support the *common* functionality of IOMMUs on bus types that
+are shared.
 
---HKLejDDV6gCqJAZ/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Another point is, the IOMMUs on different types may on a hierarchical
+relationship, but not at the same level, in which case the IOMMUs also
+work hierarchically. Take DMA remapping as example, if PCIE bus is not
+the root bus but under some higher level system bus (which also
+implements DMA remapping), the DMA address will be first translated by
+PCIE IOMMU and then IOMMU on that higher level system bus. I am not
+sure in such case, if sharing domain cross bus types works or not, but
+looks it's not a good idea.
 
-On Fri, Jan 24, 2014 at 02:38:59PM +0000, Alan Cox wrote:
-> Mark Brown <broonie@kernel.org> wrote:
-
-> > I don't see how that follows?  For the most part architecture
-> > maintainers aren't going to be able to say too much about which
-> > userspaces are being run on their platforms if the architecture
-> > has any kind of widespread use.
-
-> For most architectures I suspect that they do have a pretty good idea.
-> ARM is a bit different but I imagine the various platform specific
-> maintainers are the ones who have that knowledge
-
-I'm still not entirely sure how you expect people to answer this unless
-the answer is something along the lines of "all the systems are on my
-desk".  This definitely does need to be selectable, I'm just not clear
-that making it depend on the architecture is going to help.
-
---HKLejDDV6gCqJAZ/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS5aUBAAoJELSic+t+oim9LZQP/327MKh7ksk2UkW5RqKdmC0a
-5KZPf82dTjKfycVVe6Lh0xqR04zGk8RwnT/AFOpfEn2uWOm7tJmFsnrFz1qVtTb3
-VnsIP6OInA1AQlck4oDhK62Y/PPuMSF4nsvXSVOMjXoqYNgzSjDJZr/vQLiRlFHU
-1E60xKUWxDffRug24ccG5t9Tgh/E3WGKZ8kN2+aYYsrncCjKF7K6kR/6kDnSHhb6
-sskV7NCdCAZEd0ZEkYOr44sNVyKUDfPEmfdBnnGLA3z3RaYbW3dEoQ3AaCNWCJtV
-KwOGqQVXnYd412sYwTgrgzcm7f8XSOs9WcvjK1C6rCBf7JxAqu2hIjmbMmq3o8P/
-8ShFR34KGqXKze3B+dkEZPx+4awTE4Sa9MOFq2Qzyh6FsV2dUCJYLIlNenZzloG7
-YEcy27iVOumCImFF3ViI1cKuDYRnZcPFDjO7WzR9cbmyfWr6IXYUHFciVh3t++Wq
-PCNn64Soyawxt0jxsk8VISkKcbxKUkHtVrWL5Z0WbVBT45daNUan26BG3XwH+12X
-ztSeyZt+9ESb8XSBQTS+Znf2x9idnKknWPf2qHt/yIXF6TzufNJLG7xdhZqARsLA
-/58ofSJjG1leOwNMiM1QxeIkSaoOVbPTa3zrUNaNKaCmxTzADIW6pkSndKWAlLTR
-yH09AG1jrrsoGim+bQRx
-=vaNi
------END PGP SIGNATURE-----
-
---HKLejDDV6gCqJAZ/--
+Thanks,
+-Kai
+>
+>
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
