@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaA0OsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 09:48:19 -0500
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:37475 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbaA0OsS (ORCPT
+	id S1753917AbaA0OuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 09:50:00 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19699 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753712AbaA0Ot7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 09:48:18 -0500
-Date: Mon, 27 Jan 2014 11:48:12 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Avi Kivity <avi@cloudius-systems.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] perf tools: demangle kernel and kernel module symbols too
-Message-ID: <20140127144812.GB3998@ghostprotocols.net>
-References: <26f71bf5bf7ee1408e3f1a803556d5df18223ef1.1390420726.git.avi@cloudius-systems.com>
- <52E669C0.7040002@cloudius-systems.com>
+	Mon, 27 Jan 2014 09:49:59 -0500
+Date: Mon, 27 Jan 2014 14:49:23 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
+Message-ID: <20140127144923.GF32608@arm.com>
+References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
+ <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
+ <20140123141808.GD27520@arm.com>
+ <52E5EAC1.2070306@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E669C0.7040002@cloudius-systems.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E5EAC1.2070306@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 27, 2014 at 04:14:24PM +0200, Avi Kivity escreveu:
-> On 01/22/2014 09:58 PM, Avi Kivity wrote:
-> >Some kernels contain C++ code, and thus their symbols need to be demangled.
-> >This allows 'perf kvm top' to generate readable output.
+On Mon, Jan 27, 2014 at 05:12:33AM +0000, AKASHI Takahiro wrote:
+> [To audit maintainers]
 > 
-> Ping?
-
-Applied, should be on my next pull req to Ingo,
-
-- Arnaldo
- 
-> >Signed-off-by: Avi Kivity <avi@cloudius-systems.com>
-> >---
-> >  tools/perf/util/symbol-elf.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> On 01/23/2014 11:18 PM, Catalin Marinas wrote:
+> > On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
+> >> --- a/include/uapi/linux/audit.h
+> >> +++ b/include/uapi/linux/audit.h
+> >> @@ -327,6 +327,8 @@ enum {
+> >>   /* distinguish syscall tables */
+> >>   #define __AUDIT_ARCH_64BIT 0x80000000
+> >>   #define __AUDIT_ARCH_LE	   0x40000000
+> >> +#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> >> +#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
+> >>   #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> >>   #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
+> >>   #define AUDIT_ARCH_ARMEB	(EM_ARM)
+> >> diff --git a/init/Kconfig b/init/Kconfig
+> >> index 79383d3..3aae602 100644
+> >> --- a/init/Kconfig
+> >> +++ b/init/Kconfig
+> >> @@ -284,7 +284,7 @@ config AUDIT
+> >>
+> >>   config AUDITSYSCALL
+> >>   	bool "Enable system-call auditing support"
+> >> -	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
+> >> +	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
 > >
-> >diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-> >index 7594567..8f12f0f 100644
-> >--- a/tools/perf/util/symbol-elf.c
-> >+++ b/tools/perf/util/symbol-elf.c
-> >@@ -922,6 +922,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
-> >  				  (u64)shdr.sh_offset);
-> >  			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-> >  		}
-> >+new_symbol:
-> >  		/*
-> >  		 * We need to figure out if the object was created from C++ sources
-> >  		 * DWARF DW_compile_unit has this, but we don't always have access
-> >@@ -933,7 +934,6 @@ int dso__load_sym(struct dso *dso, struct map *map,
-> >  			if (demangled != NULL)
-> >  				elf_name = demangled;
-> >  		}
-> >-new_symbol:
-> >  		f = symbol__new(sym.st_value, sym.st_size,
-> >  				GELF_ST_BIND(sym.st_info), elf_name);
-> >  		free(demangled);
+> > The usual comment for such changes: could you please clean this up and
+> > just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
+> 
+> Do you agree to this change?
+> 
+> If so, I can create a patch, but have some concerns:
+> 1) I can't verify it on other architectures than (arm &) arm64.
+
+You could try to build. It's really a trivial change, could get away
+with code inspection (and some automatic building when it gets to
+linux-next).
+
+In init/Kconfig:
+
+config HAVE_ARCH_AUDITSYSCALL
+	bool
+
+and:
+
+-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
++	depends on HAVE_ARCH_AUDITSYSCALL
+
+In the corresponding arch/*/Kconfig:
+
+	select HAVE_ARCH_AUDITSYSCALL
+
+> 2) Some architectures (microblaze, mips, openrisc) are not listed here, but
+
+For those, you don't need to select HAVE_ARCH_AUDITSYSCALL.
+
+>     their ptrace.c have a call to audit_syscall_entry/exit().
+>     (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
+
+
+They are not NULL but empty inline functions, so they don't have any
+effect.
+
+> So I'm afraid that the change might break someone's assumption.
+
+I'm pretty sure it won't ;).
+
+-- 
+Catalin
