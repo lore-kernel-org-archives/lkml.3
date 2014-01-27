@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaA0VNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 16:13:16 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47095 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbaA0VNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 16:13:14 -0500
+	id S1754377AbaA0VRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 16:17:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118AbaA0VRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 16:17:32 -0500
+Message-ID: <52E6CCE7.4090708@redhat.com>
+Date: Mon, 27 Jan 2014 16:17:27 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <CAMo8BfLhFyOY1+FJ0qh8iL969totUCmHdJ0LzyqBAzwi1-Ht=A@mail.gmail.com>
-References: <1390795167-6677-1-git-send-email-jcmvbkbc@gmail.com>
- <1390795167-6677-4-git-send-email-jcmvbkbc@gmail.com> <CAL_JsqLjn4FXrNGLGHs639TEqmQKPx_kk9JbAd-hn7mexzAjNg@mail.gmail.com>
- <CAMo8BfKm_rzDDs9BpfQkaew9DP9T8y0RnjzT_1gzs9Xrbx2CLA@mail.gmail.com>
- <CAGVrzcb4Y8zu6Q24-0d-uKppGE=HrvEXPUD2-Mo8r5JC80nDSw@mail.gmail.com> <CAMo8BfLhFyOY1+FJ0qh8iL969totUCmHdJ0LzyqBAzwi1-Ht=A@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Mon, 27 Jan 2014 13:12:33 -0800
-Message-ID: <CAGVrzcb0RzOgT+bT250vFU=Bxe8_nJ56QSz9t+6yRmw+jPf-Rg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] net: ethoc: document OF bindings
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+References: <20140117203126.11429.25235.stgit@gimli.home> <4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com> <1390234886.8705.142.camel@bling.home>
+In-Reply-To: <1390234886.8705.142.camel@bling.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-27 Max Filippov <jcmvbkbc@gmail.com>:
-> On Mon, Jan 27, 2014 at 11:45 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
->> 2014-01-27 Max Filippov <jcmvbkbc@gmail.com>:
->>> On Mon, Jan 27, 2014 at 6:10 PM, Rob Herring <robherring2@gmail.com> wrote:
->>>> On Sun, Jan 26, 2014 at 9:59 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->
-> [...]
->
->>>>> --- /dev/null
->>>>> +++ b/Documentation/devicetree/bindings/net/opencores-ethoc.txt
->>>>> @@ -0,0 +1,25 @@
->>>>> +* OpenCores MAC 10/100 Mbps
->>>>> +
->>>>> +Required properties:
->>>>> +- compatible: Should be "opencores,ethoc".
->>>>
->>>> There are not different versions of IP or is the version probeable?
+On 01/20/2014 11:21 AM, Alex Williamson wrote:
+> On Mon, 2014-01-20 at 14:45 +0000, Varun Sethi wrote:
+>>
+>>> -----Original Message-----
+>>> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+>>> Sent: Saturday, January 18, 2014 2:06 AM
+>>> To: Sethi Varun-B16395
+>>> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+>>> Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
 >>>
->>> AFAIK there's single version of this 10/100 MAC.
->>> It doesn't have any identification registers.
->>
->> Since this is an IP block that people can modify due to its open
->> source nature, it would have been good to define a revision register
->> or such which would allow software to gate specific code based on that
->> revision.
+>>> RFC: This is not complete but I want to share with Varun the dirrection
+>>> I'm thinking about.  In particular, I'm really not sure if we want to
+>>> introduce a "v2" interface version with slightly different unmap
+>>> semantics.  QEMU doesn't care about the difference, but other users
+>>> might.  Be warned, I'm not even sure if this code works at the moment.
+>>> Thanks,
+>>>
+>>> Alex
+>>>
+>>>
+>>> We currently have a problem that we cannot support advanced features of
+>>> an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee that
+>>> those features will be supported by all of the hardware units involved
+>>> with the domain over its lifetime.  For instance, the Intel VT-d
+>>> architecture does not require that all DRHDs support snoop control.  If
+>>> we create a domain based on a device behind a DRHD that does support
+>>> snoop control and enable SNP support via the IOMMU_CACHE mapping option,
+>>> we cannot then add a device behind a DRHD which does not support snoop
+>>> control or we'll get reserved bit faults from the SNP bit in the
+>>> pagetables.  To add to the complexity, we can't know the properties of a
+>>> domain until a device is attached.
+>> [Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops
+>> are common across all bus types. The hardware feature differences are
+>> abstracted by the driver.
 >
-> Probably yes, though I haven't heard of any modified versions of this MAC
-> out there.
+> That's a simplifying assumption that is not made anywhere else in the
+> code.  The IOMMU API allows entirely independent IOMMU drivers to
+> register per bus_type.  There is no guarantee that all devices are
+> backed by the same IOMMU hardware unit or make use of the same
+> iommu_ops.
 >
-> [...]
+>>> We could pass this problem off to userspace and require that a separate
+>>> vfio container be used, but we don't know how to handle page accounting
+>>> in that case.  How do we know that a page pinned in one container is the
+>>> same page as a different container and avoid double billing the user for
+>>> the page.
+>>>
+>>> The solution is therefore to support multiple IOMMU domains per
+>>> container.  In the majority of cases, only one domain will be required
+>>> since hardware is typically consistent within a system.  However, this
+>>> provides us the ability to validate compatibility of domains and support
+>>> mixed environments where page table flags can be different between
+>>> domains.
+>>>
+>>> To do this, our DMA tracking needs to change.  We currently try to
+>>> coalesce user mappings into as few tracking entries as possible.  The
+>>> problem then becomes that we lose granularity of user mappings.  We've
+>>> never guaranteed that a user is able to unmap at a finer granularity than
+>>> the original mapping, but we must honor the granularity of the original
+>>> mapping.  This coalescing code is therefore removed, allowing only unmaps
+>>> covering complete maps.  The change in accounting is fairly small here, a
+>>> typical QEMU VM will start out with roughly a dozen entries, so it's
+>>> arguable if this coalescing was ever needed.
+>>>
+>>> We also move IOMMU domain creation to the point where a group is attached
+>>> to the container.  An interesting side-effect of this is that we now have
+>>> access to the device at the time of domain creation and can probe the
+>>> devices within the group to determine the bus_type.
+>>> This finally makes vfio_iommu_type1 completely device/bus agnostic.
+>>> In fact, each IOMMU domain can host devices on different buses managed by
+>>> different physical IOMMUs, and present a single DMA mapping interface to
+>>> the user.  When a new domain is created, mappings are replayed to bring
+>>> the IOMMU pagetables up to the state of the current container.  And of
+>>> course, DMA mapping and unmapping automatically traverse all of the
+>>> configured IOMMU domains.
+>>>
+>> [Sethi Varun-B16395] This code still checks to see that devices being
+>> attached to the domain are connected to the same bus type. If we
+>> intend to merge devices from different bus types but attached to
+>> compatible domains in to a single domain, why can't we avoid the bus
+>> check? Why can't we remove the bus dependency from domain allocation?
 >
->>>>> +Examples:
->>>>> +
->>>>> +       enet0: ethoc@fd030000 {
->>>>> +               compatible = "opencores,ethoc";
->>>>> +               reg = <0xfd030000 0x4000 0xfd800000 0x4000>;
->>>>> +               interrupts = <1>;
->>>>> +               local-mac-address = [00 50 c2 13 6f 00];
->>>>> +               clock-frequency = <50000000>;
->>>>> +               mii-mgmt-clock-frequency = <5000000>;
->>
->> 5Mhz management clock? Can't you make it work with the standard 2.5Mhz
->> management clock? Is not there a risk not to be able to "talk" to some
->> PHY chips out there which do not support > 2.5Mhz management clock?
+> So if I were to test iommu_ops instead of bus_type (ie. assume that if a
+> if an IOMMU driver manages iommu_ops across bus_types that it can accept
+> the devices), would that satisfy your concern?
 >
-> Yes I can, it just didn't occur to me that there is a standard 2.5MHz setting.
+> It may be possible to remove the bus_type dependency from domain
+> allocation, but the IOMMU API currently makes the assumption that
+> there's one IOMMU driver per bus_type.  Your fix to remove the bus_type
+> dependency from iommu_domain_alloc() adds an assumption that there is
+> only one IOMMU driver for all bus_types.  That may work on your
+> platform, but I don't think it's a valid assumption in the general case.
+> If you'd like to propose alternative ways to remove the bus_type
+> dependency, please do.  Thanks,
 >
->> Since this is an ethoc specific property, should it be prefixed with "ethoc,"?
+> Alex
 >
-> Is it worth keeping this parameter at all, or just always default to 2.5MHz?
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>
+Making iommu-ops per-bus, and not per-bus-type would solve the problem as well,
+as Joerg tried to do at one point.  ... would layer the proper IOMMU for a given
+device to the bus it masters. (makes more sense if thought in context of bus's &
+devices as objects, and object-oriented semantics ... a device would ask its bus
+for it's mapping services, not a 'bus-type'.
 
-Your example lists 5Mhz, so I assume this is of some use for you on
-the platform you are working with? My concern is that this might not
-be compatible with all PHY devices out there and might create hard to
-debug issues where you get some MDIO transactions to succeeds and some
-which don't.
--- 
-Florian
+-dd
+
