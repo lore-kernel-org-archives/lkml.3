@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaA0UE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:04:28 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60274 "EHLO
+	id S1754412AbaA0UFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:05:52 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60277 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312AbaA0UEZ (ORCPT
+	with ESMTP id S1753860AbaA0UFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:04:25 -0500
-Date: Mon, 27 Jan 2014 20:04:19 +0000
+	Mon, 27 Jan 2014 15:05:49 -0500
+Date: Mon, 27 Jan 2014 20:05:45 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140127200419.GI11841@sirena.org.uk>
+Message-ID: <20140127200545.GJ11841@sirena.org.uk>
 References: <1390553044-11860-1-git-send-email-geert@linux-m68k.org>
- <1390553044-11860-8-git-send-email-geert@linux-m68k.org>
+ <1390553044-11860-9-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PaC+lnGZu4KSIdY4"
+	protocol="application/pgp-signature"; boundary="A1+ljxmNgwU2bK8G"
 Content-Disposition: inline
-In-Reply-To: <1390553044-11860-8-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1390553044-11860-9-git-send-email-geert@linux-m68k.org>
 X-Cookie: O.K., fine.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 07/14] spi: rspi: Merge qspi_send_pio() and
- qspi_receive_pio()
+Subject: Re: [PATCH v3 08/14] spi: rspi: Add support for more than one
+ interrupt
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,41 +34,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PaC+lnGZu4KSIdY4
+--A1+ljxmNgwU2bK8G
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jan 24, 2014 at 09:43:57AM +0100, Geert Uytterhoeven wrote:
+On Fri, Jan 24, 2014 at 09:43:58AM +0100, Geert Uytterhoeven wrote:
 > From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 >=20
-> qspi_send_pio() and qspi_receive_pio() are very similar: they both send
-> and receive full duplex data to/from the hardware, but ignore the data
-> stream in the unused direction.
-> Merge them into qspi_transfer_out_in(), now supporting real full duplex.
+> Add support for multiple interrupts, based on the SDK reference code.
+> This is needed for RZ/A1H, which supports 3 interrupts.
 
 Applied, thanks.
 
---PaC+lnGZu4KSIdY4
+--A1+ljxmNgwU2bK8G
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS5rvAAAoJELSic+t+oim9CcgP/2K1UJKFftlQqZzH/vpKuG2T
-ucYX0CSGwoaYC1/pAm9k8tgv7liqprX1bldIlPwYwObQQBHz6bQNWmu6WV+AGK7k
-QsOMTzF2sobpI0HkRf5IG3z9pG1e85Af8eA8+AZ7N0++bjabuqItrhmyF7A7+rM5
-3ENdAPkWC3jovCrUeWvLs299o2TXjRD0VwSEjGpSIOM6Hci2o/VHU3aWh4MGVbEi
-eWBcXoWQWCwonxZ3mW6T8y/o32iyTERxGALIi3VNQfUm5ZJZT+W01htwmEOXrFcY
-6FgeyYYkmCb6IR0aerxRoiQQT0Tzp0Dc+WpXj5/JW0iqZSan9lkyWRDnxYtQA4iw
-hqReijMFYVbknm8c4BCBUEeYgiOTOeRJYjMI3U9LZNFTodMhYAwFa4LyoAO5vfQc
-/Py2vihYsHnJHrn6eqdvcNy3cj++4ptJaKRcbILf74voXn7vQIsr9WUZKKgpWKeO
-rylE5q3Z9dWOvFsRa8v+KAdg+8xbaOtkffKfcQ5JNlWeaplPVHn+zmPEvF9tjTfl
-R77pH5WLwu6VzE1DR8hfuCKZORpSB8ywn8J2jKZxjqNg0l4OwWrr++70JF9a6ZgD
-1nfG8+CN153ZxenrfBV8UjbtD5D6TkSzLyHRytP7nYa3aJrRekyaYMqSooYxtJ57
-D7AK+6i6WlKu7zPEZ9De
-=Jyg/
+iQIcBAEBAgAGBQJS5rwWAAoJELSic+t+oim9vhAP/2qSvhUVg1t3v0UxelkRzfYb
+F3uMf2ixd9suE8qA+PI1YUT92uymJwoIJkjcFuBQYZMROKkmerfNGKMfcdb8o+ju
+vjbZptnbrRnZHFNYvtDi1ktwY+heW4dPYIcvAjdu4wEDjOdYfuAujHYxOM1I9XJR
+bbsC8NAxSd2lE3sYx4bCxJOTRFCk+t7MWBOCncc9WfzIs7bJFs+jiWL9mbbaxLLV
+oofER0HV2SmAOa9pe+gFr2gQ2K90GKaKjB1LD4JbzjptU8kfhxGm2N+yDYTh+n5G
+h+FBHESR3qSTGAhoN1ie1Z2DzodOhy7Ma7EbNS9zCOLZU7gNQJCb2zDqQrmUV7op
+rNiyB89CPUssnOpNPicJqXHSMXJ6O76kHmHIKufEhGz0PoZmTRr1r0J0prP8Zay5
+ycKx7GDryQjC2/xEwouGOPJ//0Z84VUAb9pdpXIDU13Aij200XUptzIXPRH+fPib
+K/Uw7iYkoE7HkmgboKo68PcM4vQ2dWl2WMv3fPI1GDL97P5bFu0FW2wDDXTjQnpF
+3oY+JVibS4z87Ld53o5W+dM2Iq9fs1Esj4RkLkCXLcx3uCg60a/uYmGtb83XH6+G
+4ypJyDqg/IQkGwYLYmnZF5qo1TJT/slNh48D0XUHjIjympjusuOlfrJPWBDvGX/o
+W1ESbC6XRUo63v2Z57yP
+=Rx4P
 -----END PGP SIGNATURE-----
 
---PaC+lnGZu4KSIdY4--
+--A1+ljxmNgwU2bK8G--
