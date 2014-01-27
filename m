@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaA0DxI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 22:53:08 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:27229 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbaA0DxD (ORCPT
+	id S1753520AbaA0DxU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 22:53:20 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:18029 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402AbaA0DxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 22:53:03 -0500
+	Sun, 26 Jan 2014 22:53:07 -0500
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com
 Cc: riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
@@ -15,9 +15,9 @@ Cc: riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
         liwanp@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com, dhillf@gmail.com,
         rientjes@google.com, davidlohr@hp.com, aswin@hp.com,
         scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] mm, hugetlb: remove vma_has_reserves
-Date: Sun, 26 Jan 2014 19:52:24 -0800
-Message-Id: <1390794746-16755-7-git-send-email-davidlohr@hp.com>
+Subject: [PATCH 8/8] mm, hugetlb: improve page-fault scalability
+Date: Sun, 26 Jan 2014 19:52:26 -0800
+Message-Id: <1390794746-16755-9-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
 References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
@@ -25,93 +25,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+The kernel can currently only handle a single hugetlb page fault at a time.
+This is due to a single mutex that serializes the entire path. This lock
+protects from spurious OOM errors under conditions of low of low availability
+of free hugepages. This problem is specific to hugepages, because it is
+normal to want to use every single hugepage in the system - with normal pages
+we simply assume there will always be a few spare pages which can be used
+temporarily until the race is resolved.
 
-vma_has_reserves() can be substituted by using return value of
-vma_needs_reservation(). If chg returned by vma_needs_reservation()
-is 0, it means that vma has reserves. Otherwise, it means that vma don't
-have reserves and need a hugepage outside of reserve pool. This definition
-is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
+Address this problem by using a table of mutexes, allowing a better chance of
+parallelization, where each hugepage is individually serialized. The hash key
+is selected depending on the mapping type. For shared ones it consists of the
+address space and file offset being faulted; while for private ones the mm and
+virtual address are used. The size of the table is selected based on a compromise
+of collisions and memory footprint of a series of database workloads.
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Large database workloads that make heavy use of hugepages can be particularly
+exposed to this issue, causing start-up times to be painfully slow. This patch
+reduces the startup time of a 10 Gb Oracle DB (with ~5000 faults) from 37.5 secs
+to 25.7 secs. Larger workloads will naturally benefit even more.
+
+NOTE:
+The only downside to this patch, detected by Joonsoo Kim, is that a small race
+is possible in private mappings: A child process (with its own mm, after cow)
+can instantiate a page that is already being handled by the parent in a cow
+fault. When low on pages, can trigger spurious OOMs. I have not been able to
+think of a efficient way of handling this... but do we really care about such
+a tiny window? We already maintain another theoretical race with normal pages.
+If not, one possible way to is to maintain the single hash for private mappings
+-- any workloads that *really* suffer from this scaling problem should already
+use shared mappings.
+
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- mm/hugetlb.c | 46 +++++++++-------------------------------------
- 1 file changed, 9 insertions(+), 37 deletions(-)
+ mm/hugetlb.c | 86 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 73 insertions(+), 13 deletions(-)
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 541cceb..83bc161 100644
+index 5f3efa5..ec04e84 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -469,39 +469,6 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- 		vma->vm_private_data = (void *)0;
+@@ -22,6 +22,7 @@
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
+ #include <linux/page-isolation.h>
++#include <linux/jhash.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -53,6 +54,13 @@ static unsigned long __initdata default_hstate_size;
+  */
+ DEFINE_SPINLOCK(hugetlb_lock);
+ 
++/*
+++ * Serializes faults on the same logical page.  This is used to
+++ * prevent spurious OOMs when the hugepage pool is fully utilized.
+++ */
++static int __read_mostly num_fault_mutexes;
++static struct mutex *htlb_fault_mutex_table ____cacheline_aligned_in_smp;
++
+ static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
+ {
+ 	bool free = (spool->count == 0) && (spool->used_hpages == 0);
+@@ -1922,11 +1930,14 @@ static void __exit hugetlb_exit(void)
+ 	}
+ 
+ 	kobject_put(hugepages_kobj);
++	kfree(htlb_fault_mutex_table);
+ }
+ module_exit(hugetlb_exit);
+ 
+ static int __init hugetlb_init(void)
+ {
++	int i;
++
+ 	/* Some platform decide whether they support huge pages at boot
+ 	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
+ 	 * there is no such support
+@@ -1951,6 +1962,18 @@ static int __init hugetlb_init(void)
+ 	hugetlb_register_all_nodes();
+ 	hugetlb_cgroup_file_init();
+ 
++#ifdef CONFIG_SMP
++	num_fault_mutexes = roundup_pow_of_two(8 * num_possible_cpus());
++#else
++	num_fault_mutexes = 1;
++#endif
++	htlb_fault_mutex_table =
++		kmalloc(sizeof(struct mutex) * num_fault_mutexes, GFP_KERNEL);
++	if (!htlb_fault_mutex_table)
++		return -ENOMEM;
++
++	for (i = 0; i < num_fault_mutexes; i++)
++		mutex_init(&htlb_fault_mutex_table[i]);
+ 	return 0;
+ }
+ module_init(hugetlb_init);
+@@ -2733,15 +2756,14 @@ static bool hugetlbfs_pagecache_present(struct hstate *h,
  }
  
--/* Returns true if the VMA has associated reserve pages */
--static int vma_has_reserves(struct vm_area_struct *vma, long chg)
--{
--	if (vma->vm_flags & VM_NORESERVE) {
--		/*
--		 * This address is already reserved by other process(chg == 0),
--		 * so, we should decrement reserved count. Without decrementing,
--		 * reserve count remains after releasing inode, because this
--		 * allocated page will go into page cache and is regarded as
--		 * coming from reserved pool in releasing step.  Currently, we
--		 * don't have any other solution to deal with this situation
--		 * properly, so add work-around here.
--		 */
--		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
--			return 1;
--		else
--			return 0;
--	}
--
--	/* Shared mappings always use reserves */
--	if (vma->vm_flags & VM_MAYSHARE)
--		return 1;
--
--	/*
--	 * Only the process that called mmap() has reserves for
--	 * private mappings.
--	 */
--	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
--		return 1;
--
--	return 0;
--}
--
- static void enqueue_huge_page(struct hstate *h, struct page *page)
+ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+-			unsigned long address, pte_t *ptep, unsigned int flags)
++			   struct address_space *mapping, pgoff_t idx,
++			   unsigned long address, pte_t *ptep, unsigned int flags)
  {
- 	int nid = page_to_nid(page);
-@@ -555,10 +522,11 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	struct hstate *h = hstate_vma(vma);
+ 	int ret = VM_FAULT_SIGBUS;
+ 	int anon_rmap = 0;
+-	pgoff_t idx;
+ 	unsigned long size;
+ 	struct page *page;
+-	struct address_space *mapping;
+ 	pte_t new_pte;
+ 	spinlock_t *ptl;
+ 
+@@ -2756,9 +2778,6 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return ret;
+ 	}
+ 
+-	mapping = vma->vm_file->f_mapping;
+-	idx = vma_hugecache_offset(h, vma, address);
+-
  	/*
- 	 * A child process with MAP_PRIVATE mappings created by their parent
- 	 * have no page reserves. This check ensures that reservations are
--	 * not "stolen". The child may still get SIGKILLed
-+	 * not "stolen". The child may still get SIGKILLed.
-+	 * chg represents whether current user has a reserved hugepages or not,
-+	 * so that we can use it to ensure that reservations are not "stolen".
+ 	 * Use page lock to guard against racing truncation
+ 	 * before we get page_table_lock.
+@@ -2868,17 +2887,53 @@ backout_unlocked:
+ 	goto out;
+ }
+ 
++#ifdef CONFIG_SMP
++static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
++			    struct vm_area_struct *vma,
++			    struct address_space *mapping,
++			    pgoff_t idx, unsigned long address)
++{
++	unsigned long key[2];
++	u32 hash;
++
++	if (vma->vm_flags & VM_SHARED) {
++		key[0] = (unsigned long) mapping;
++		key[1] = idx;
++	} else {
++		key[0] = (unsigned long) mm;
++		key[1] = address >> huge_page_shift(h);
++	}
++
++	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
++
++	return hash & (num_fault_mutexes - 1);
++}
++#else
++/*
++ * For uniprocesor systems we always use a single mutex, so just
++ * return 0 and avoid the hashing overhead.
++ */
++static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
++			    struct vm_area_struct *vma,
++			    struct address_space *mapping,
++			    pgoff_t idx, unsigned long address)
++{
++	return 0;
++}
++#endif
++
+ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, unsigned int flags)
+ {
+-	pte_t *ptep;
+-	pte_t entry;
++	pte_t *ptep, entry;
+ 	spinlock_t *ptl;
+ 	int ret;
++	u32 hash, parent_hash;
++	pgoff_t idx;
+ 	struct page *page = NULL;
+ 	struct page *pagecache_page = NULL;
+-	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+ 	struct hstate *h = hstate_vma(vma);
++	struct address_space *mapping;
+ 
+ 	address &= huge_page_mask(h);
+ 
+@@ -2897,15 +2952,21 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (!ptep)
+ 		return VM_FAULT_OOM;
+ 
++	mapping = vma->vm_file->f_mapping;
++	idx = vma_hugecache_offset(h, vma, address);
++
+ 	/*
+ 	 * Serialize hugepage allocation and instantiation, so that we don't
+ 	 * get spurious allocation failures if two CPUs race to instantiate
+ 	 * the same page in the page cache.
  	 */
--	if (!vma_has_reserves(vma, chg) &&
--			h->free_huge_pages - h->resv_huge_pages == 0)
-+	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
- 		goto err;
+-	mutex_lock(&hugetlb_instantiation_mutex);
++	parent_hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
++	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
++	mutex_lock(&htlb_fault_mutex_table[hash]);
++
+ 	entry = huge_ptep_get(ptep);
+ 	if (huge_pte_none(entry)) {
+-		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
++		ret = hugetlb_no_page(mm, vma, mapping, idx, address, ptep, flags);
+ 		goto out_mutex;
+ 	}
  
- 	/* If reserves cannot be used, ensure enough pages are in the pool */
-@@ -577,7 +545,11 @@ retry_cpuset:
- 			if (page) {
- 				if (avoid_reserve)
- 					break;
--				if (!vma_has_reserves(vma, chg))
-+				/*
-+				 * chg means whether current user allocates
-+				 * a hugepage on the reserved pool or not
-+				 */
-+				if (chg)
- 					break;
+@@ -2974,8 +3035,7 @@ out_ptl:
+ 	put_page(page);
  
- 				SetPagePrivate(page);
+ out_mutex:
+-	mutex_unlock(&hugetlb_instantiation_mutex);
+-
++	mutex_unlock(&htlb_fault_mutex_table[hash]);
+ 	return ret;
+ }
+ 
 -- 
 1.8.1.4
 
