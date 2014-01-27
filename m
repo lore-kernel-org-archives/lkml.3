@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaA0JTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:19:44 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:34235 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaA0JTl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:19:41 -0500
+	id S1753639AbaA0JVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:21:12 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44102 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751425AbaA0JVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 04:21:09 -0500
+Message-ID: <52E62500.7090604@ti.com>
+Date: Mon, 27 Jan 2014 14:51:04 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com>
-References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com>
-	<1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com>
-Date: Mon, 27 Jan 2014 10:19:41 +0100
-Message-ID: <CADDKRnDZPpUgbRN6tJeXBAC9=M+5HN57ArL9yYA237ELkKMvCg@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: reduce log level for message "ACPI: \_PR_.CPU4:
- failed to get CPU APIC ID"
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Rafael J . Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        <linux-usb@vger.kernel.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] usb: musb: musb_host: Enable ISOCH IN handling for
+ AM335x host
+References: <1390572895-26428-1-git-send-email-george.cherian@ti.com> <1390572895-26428-2-git-send-email-george.cherian@ti.com> <52E2A643.6050209@cogentembedded.com>
+In-Reply-To: <52E2A643.6050209@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-27 Jiang Liu <jiang.liu@linux.intel.com>:
-> Commit b981513f806d (ACPI / scan: bail out early if failed to parse
-> APIC ID for CPU) emits an error message if ACPI processor driver fails
-> to query APIC ID for the CPU.
+On 1/24/2014 11:13 PM, Sergei Shtylyov wrote:
+> Hello.
 >
-> Originally it's designed to catch BIOS bugs for CPU hot-addition. But
-> it accidently reveals another type of BIOS bug that:
-> 1) BIOS implements ACPI objects for all possible instead of present
->    CPUs. (It's legal per ACPI specification.)
-> 2) BIOS doesn't implement _STA method for CPU objects. OSPM assumes
->    that all CPU objects are present and functioning and binds ACPI
->    processor driver to those CPU objects, which then triggers the error
->    message. According to ACPI spec, BIOS should implement _STA method
->    for those absent CPUs at least.
+> On 24-01-2014 18:14, George Cherian wrote:
 >
-> Though it's a BIOS bug in essential, there are some BIOSes in the fields
-> which are implmented in this way. So reduce the log level from ERR to
-> DEBUG to accommodate these existing BIOSes.
+>> Enable the isochrounous IN handling for AM335x HOST.
+>> Reprogram CPPI to receive consecutive ISOCH frames in the same URB.
 >
-> Fixes: b981513f806d (ACPI / scan: bail out early if failed to parse APIC ID for CPU)
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/acpi/acpi_processor.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>    Sigh, I knew CPPI ISO path was broken for years but didn't have 
+> time to fix it. :-(
 >
-> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-> index c9311be..c29c2c3 100644
-> --- a/drivers/acpi/acpi_processor.c
-> +++ b/drivers/acpi/acpi_processor.c
-> @@ -261,7 +261,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>> --- git rebase
+>>   drivers/usb/musb/musb_host.c | 29 ++++++++++++++++++++++++++---
+>>   1 file changed, 26 insertions(+), 3 deletions(-)
 >
->         apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
->         if (apic_id < 0) {
-> -               acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
-> +               acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
->                 return -ENODEV;
->         }
->         pr->apic_id = apic_id;
-> --
-> 1.7.10.4
+>> diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+>> index ed45572..5b6482c 100644
+>> --- a/drivers/usb/musb/musb_host.c
+>> +++ b/drivers/usb/musb/musb_host.c
+>> @@ -1689,9 +1689,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+>>               | MUSB_RXCSR_H_AUTOREQ
+>>               | MUSB_RXCSR_AUTOCLEAR
+>>               | MUSB_RXCSR_RXPKTRDY);
+>> +
+>
+>    Not needed.
+>
+>>           musb_writew(hw_ep->regs, MUSB_RXCSR, val);
+>>
+>> -#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
+>> +#if defined(CONFIG_USB_INVENTRA_DMA) || 
+>> defined(CONFIG_USB_UX500_DMA) || \
+>> +    defined(CONFIG_USB_TI_CPPI41_DMA)
+>
+>    The DaVinci CPPI 3.0 should probably also be included here...
+>
+Should'nt that be a separate patch as this one is specific to AM335X.
+>>           if (usb_pipeisoc(pipe)) {
+>>               struct usb_iso_packet_descriptor *d;
+>>
+>> @@ -1706,8 +1708,28 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+>>
+>>               if (++qh->iso_idx >= urb->number_of_packets)
+>>                   done = true;
+>> -            else
+>> +            else {
+>
+>    If you're making the *else* arm use {}, you should make all the 
+> other arms of *if* statement also have them -- see 
+> Documentation/CodingStyle.
+
+Will fix in v2!!!
+>
+> WBR, Sergei
 >
 
-Thanks, the patch works for me.
 
-Jörg
+-- 
+-George
+
