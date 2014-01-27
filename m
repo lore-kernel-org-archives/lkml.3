@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaA0Qn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:43:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43663 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810AbaA0Qnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:43:55 -0500
-Date: Mon, 27 Jan 2014 17:43:51 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Michael Matz <matz@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] x86: Disable traditional FPU instructions too
-In-Reply-To: <52E68C25.1070804@zytor.com>
-Message-ID: <alpine.LNX.2.00.1401271742300.14101@pobox.suse.cz>
-References: <20140127163758.GC6839@pd.tnic> <52E68C25.1070804@zytor.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754041AbaA0QoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:44:13 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24057 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753810AbaA0QoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 11:44:12 -0500
+Date: Mon, 27 Jan 2014 16:43:37 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jungseung Lee <js07.lee@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Q] L1_CACHE_BYTES on flush_pfn_alias function.
+Message-ID: <20140127164337.GB8358@arm.com>
+References: <00d501cf136a$24ec49c0$6ec4dd40$@samsung.com>
+ <20140124154321.GI19052@arm.com>
+ <003c01cf1a55$623979f0$26ac6dd0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <003c01cf1a55$623979f0$26ac6dd0$@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014, H. Peter Anvin wrote:
+Please do not top-post.
 
-> I don't think it'd hurt... although I think the above pretty much
-> requires that the code contain actual floating-point types to ever be
-> generated.  
+On Sun, Jan 26, 2014 at 05:13:43AM +0000, Jungseung Lee wrote:
+> Not to flush some more bytes. In the scenario, they can *omit* to flush last 32 bytes.
+> 
+> L1_CACHE_BYTES = 64 (ARM v7, CA9)
+> 
+> asm(    "mcrr   p15, 0, %1, %0, c14\n"
+>     "   mcr p15, 0, %2, c7, c10, 4"
+>         :
+>         : "r" (to), "r" (to + PAGE_SIZE - L1_CACHE_BYTES), "r" (zero)
+>         : "cc");
 
-Unfortunately using float-typed constants (such as 1EexpL) are enough for 
-this to happen.
+Ah, I got it now. I think this should be (to + PAGE_SIZE - 1). My
+reading of the ARM ARM is that the bottom bits of the address are
+ignored by mcrr.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Catalin
