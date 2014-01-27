@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaA0Pnx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:43:53 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16934 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753138AbaA0Pnv (ORCPT
+	id S1753783AbaA0Ppf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:45:35 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:21687 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753310AbaA0Ppe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:43:51 -0500
-Date: Mon, 27 Jan 2014 15:43:15 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 2/9] ARM64: get rid of arch_cpu_idle_prepare()
-Message-ID: <20140127154315.GG32608@arm.com>
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
- <1390802904-28399-3-git-send-email-nicolas.pitre@linaro.org>
+	Mon, 27 Jan 2014 10:45:34 -0500
+Date: Mon, 27 Jan 2014 10:45:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, raistlin@linux.it,
+        juri.lelli@gmail.com, clark.williams@gmail.com, mingo@redhat.com
+Subject: Re: [PATCH 0/3] sched: Collect the bits about priority into a new
+ header file, include/linux/sched/prio.h.
+Message-ID: <20140127104532.6a0926e9@gandalf.local.home>
+In-Reply-To: <cover.1390859827.git.yangds.fnst@cn.fujitsu.com>
+References: <20140123065204.4e0b6902@gandalf.local.home>
+	<cover.1390859827.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390802904-28399-3-git-send-email-nicolas.pitre@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 06:08:17AM +0000, Nicolas Pitre wrote:
-> ARM and ARM64 are the only two architectures implementing
-> arch_cpu_idle_prepare() simply to call local_fiq_enable().
-> 
-> We have secondary_start_kernel() already calling local_fiq_enable() and
-> this is done a second time in arch_cpu_idle_prepare() in that case. And
-> enabling FIQs has nothing to do with idling the CPU to start with.
-> 
-> So let's introduce init_fiq_boot_cpu() to take care of FIQs on the boot
-> CPU and remove arch_cpu_idle_prepare(). This is now done a bit earlier
-> at late_initcall time but this shouldn't make a difference in practice
-> given that FIQs are not currently used on ARM64.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+On Mon, 27 Jan 2014 17:15:36 -0500
+Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
 
-For arm64, we could simply remove any reference to FIQs. I'm not aware
-of anyone using them.
+> Date: Mon, 27 Jan 2014 17:15:36 -0500
 
--- 
-Catalin
+You need to fix your timestamps. Unless you are writing to us from the
+future.
+
+-- Steve
