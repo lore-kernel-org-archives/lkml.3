@@ -1,96 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaA0KUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:20:51 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:11145
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753735AbaA0KUq (ORCPT
+	id S1753815AbaA0KVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:21:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39396 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751571AbaA0KVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:20:46 -0500
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah21bch1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Steven Miao <realmz6@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 1/3] pinctrl: Move pint PM storage structure out of blackfin architecture.
-Date: Mon, 27 Jan 2014 18:23:54 +0800
-Message-ID: <1390818236-13531-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	Mon, 27 Jan 2014 05:21:12 -0500
+Date: Mon, 27 Jan 2014 10:20:37 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        "adam.jaremko@gmail.com" <adam.jaremko@gmail.com>,
+        "sylvester.nawrocki@gmail.com" <sylvester.nawrocki@gmail.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH v10] clk: add MOXA ART SoCs clock driver
+Message-ID: <20140127102037.GB16516@e106331-lin.cambridge.arm.com>
+References: <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
+ <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Tue, Jan 21, 2014 at 12:44:21PM +0000, Jonas Jensen wrote:
+> MOXA ART SoCs allow to determine PLL output and APB frequencies
+> by reading registers holding multiplier and divisor information.
+> 
+> Add a clock driver for this SoC.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+> 
+> Notes:
+>     Thanks for the reply Sudeep, changes are in v10.
+>     
+>     Changes since v9:
+>     
+>     1. rebase drivers/clk/Makefile to next-20140121
+>     2. remove unnecessary switch
+>     3. use a more elaborate commit message
+>     
+>     Applies to next-20140121
+> 
+>  .../bindings/clock/moxa,moxart-clock.txt           | 48 +++++++++++
+>  drivers/clk/Makefile                               |  1 +
+>  drivers/clk/clk-moxart.c                           | 99 ++++++++++++++++++++++
+>  3 files changed, 148 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+>  create mode 100644 drivers/clk/clk-moxart.c
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+> new file mode 100644
+> index 0000000..242e3fc
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+> @@ -0,0 +1,48 @@
+> +Device Tree Clock bindings for arch-moxart
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +MOXA ART SoCs allow to determine PLL output and APB frequencies
+> +by reading registers holding multiplier and divisor information.
+> +
+> +
+> +PLL:
+> +
+> +Required properties:
+> +- compatible : Must be "moxa,moxart-pll-clock"
+> +- #clock-cells : Should be 0
+> +- reg : Should contain registers location and length
+> +- clocks : Should contain phandle to parent clock
 
-It is better to keep this structure in the pinctrl-adi2 driver.
+Nit: clocks are referenced with a clock-specifier (which might be zero
+cells), not just a phandle.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- arch/blackfin/include/asm/irq.h |  9 ---------
- drivers/pinctrl/pinctrl-adi2.c  | 15 ++++++++++++++-
- 2 files changed, 14 insertions(+), 10 deletions(-)
+How about:
 
-diff --git a/arch/blackfin/include/asm/irq.h b/arch/blackfin/include/asm/irq.h
-index 2fd04f1..89de539 100644
---- a/arch/blackfin/include/asm/irq.h
-+++ b/arch/blackfin/include/asm/irq.h
-@@ -20,15 +20,6 @@
- /* SYS_IRQS and NR_IRQS are defined in <mach-bf5xx/irq.h> */
- #include <mach/irq.h>
- 
--/*
-- * pm save bfin pint registers
-- */
--struct adi_pm_pint_save {
--	u32 assign;
--	u32 edge_set;
--	u32 invert_set;
--};
--
- #if ANOMALY_05000244 && defined(CONFIG_BFIN_ICACHE)
- # define NOP_PAD_ANOMALY_05000244 "nop; nop;"
- #else
-diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
-index 7a39562..e8120fa 100644
---- a/drivers/pinctrl/pinctrl-adi2.c
-+++ b/drivers/pinctrl/pinctrl-adi2.c
-@@ -89,6 +89,19 @@ struct gpio_port_saved {
- 	u32 mux;
- };
- 
-+/*
-+ * struct gpio_pint_saved - PINT registers saved in PM operations
-+ *
-+ * @assign: ASSIGN register
-+ * @edge_set: EDGE_SET register
-+ * @invert_set: INVERT_SET register
-+ */
-+struct gpio_pint_saved {
-+	u32 assign;
-+	u32 edge_set;
-+	u32 invert_set;
-+};
-+
- /**
-  * struct gpio_pint - Pin interrupt controller device. Multiple ADI GPIO
-  * banks can be mapped into one Pin interrupt controller.
-@@ -114,7 +127,7 @@ struct gpio_pint {
- 	int irq;
- 	struct irq_domain *domain[2];
- 	struct gpio_pint_regs *regs;
--	struct adi_pm_pint_save saved_data;
-+	struct gpio_pint_saved saved_data;
- 	int map_count;
- 	spinlock_t lock;
- 
--- 
-1.8.2.3
+clocks: should contain a phandle + clock-specifier for the parent clock
 
+> +
+> +Optional properties:
+> +- clock-output-names : Should contain clock name
+> +
+> +
+> +APB:
+> +
+> +Required properties:
+> +- compatible : Must be "moxa,moxart-apb-clock"
+> +- #clock-cells : Should be 0
+> +- reg : Should contain registers location and length
+> +- clocks : Should contain phandle to parent clock
 
+Likewise.
+
+> +
+> +Optional properties:
+> +- clock-output-names : Should contain clock name
+> +
+> +
+> +For example:
+> +
+> +	clk_pll: clk_pll@98100000 {
+> +		compatible = "moxa,moxart-pll-clock";
+> +		#clock-cells = <0>;
+> +		reg = <0x98100000 0x34>;
+> +	};
+> +
+> +	clk_apb: clk_apb@98100000 {
+> +		compatible = "moxa,moxart-apb-clock";
+> +		#clock-cells = <0>;
+> +		reg = <0x98100000 0x34>;
+> +		clocks = <&clk_pll>;
+> +	};
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 58b2d72..24361bf 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+>  # SoCs specific
+>  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+>  obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
+> +obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+>  obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+>  obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+>  obj-$(CONFIG_ARCH_HI3xxx)	+= hisilicon/
+> diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+> new file mode 100644
+> index 0000000..7021748
+> --- /dev/null
+> +++ b/drivers/clk/clk-moxart.c
+> @@ -0,0 +1,99 @@
+> +/*
+> + * MOXA ART SoCs clock driver.
+> + *
+> + * Copyright (C) 2013 Jonas Jensen
+> + *
+> + * Jonas Jensen <jonas.jensen@gmail.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/of_address.h>
+> +#include <linux/clkdev.h>
+> +
+> +void __init moxart_of_pll_clk_init(struct device_node *node)
+> +{
+> +	static void __iomem *base;
+> +	struct clk *clk, *ref_clk;
+> +	unsigned long rate;
+> +	unsigned int mul;
+> +	const char *name = node->name;
+> +
+> +	of_property_read_string(node, "clock-output-names", &name);
+> +
+> +	base = of_iomap(node, 0);
+> +	if (!base) {
+> +		pr_err("%s: of_iomap failed\n", node->full_name);
+> +		return;
+> +	}
+> +
+> +	mul = readl(base + 0x30) >> 3 & 0x3f;
+> +	iounmap(base);
+> +
+> +	ref_clk = of_clk_get(node, 0);
+> +	if (IS_ERR(ref_clk)) {
+> +		pr_err("%s: of_clk_get failed\n", node->full_name);
+> +		return;
+> +	}
+> +
+> +	rate = mul * clk_get_rate(ref_clk);
+> +
+> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
+
+If this clock has a parent, Surely CLK_IS_ROOT is not appropriate by its
+definition:
+
+#define CLK_IS_ROOT             BIT(4) /* root clk, has no parent */
+
+Surely this is a fixed factor clock rather than a fixed rate clock?
+
+> +	if (IS_ERR(clk)) {
+> +		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
+> +		return;
+> +	}
+> +
+> +	clk_register_clkdev(clk, NULL, name);
+> +	of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +}
+> +CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
+> +	       moxart_of_pll_clk_init);
+> +
+> +void __init moxart_of_apb_clk_init(struct device_node *node)
+> +{
+> +	static void __iomem *base;
+> +	struct clk *clk, *pll_clk;
+> +	unsigned long rate;
+> +	unsigned int div, val;
+> +	unsigned int div_idx[] = { 2, 3, 4, 6, 8};
+> +	const char *name = node->name;
+> +
+> +	of_property_read_string(node, "clock-output-names", &name);
+> +
+> +	base = of_iomap(node, 0);
+> +	if (!base) {
+> +		pr_err("%s: of_iomap failed\n", node->full_name);
+> +		return;
+> +	}
+> +
+> +	val = readl(base + 0xc) >> 4 & 0x7;
+> +	iounmap(base);
+> +
+> +	if (val > 4)
+> +		val = 0;
+> +	div = div_idx[val];
+> +
+> +	pll_clk = of_clk_get(node, 0);
+> +	if (IS_ERR(pll_clk)) {
+> +		pr_err("%s: of_clk_get failed\n", node->full_name);
+> +		return;
+> +	}
+> +
+> +	rate = clk_get_rate(pll_clk) / (div * 2);
+> +
+> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
+
+Likewise.
+
+Thanks,
+Mark.
