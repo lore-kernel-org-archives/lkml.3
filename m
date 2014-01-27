@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330AbaA0UQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
+	id S1754299AbaA0UQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:16:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201AbaA0UQV (ORCPT
+	with ESMTP id S1753981AbaA0UQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:21 -0500
+	Mon, 27 Jan 2014 15:16:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 08/10] ALSA: hda - Explicitly keep codec powered up in hdmi_present_sense
-Date: Mon, 27 Jan 2014 12:17:11 -0800
-Message-Id: <20140127201535.937672648@linuxfoundation.org>
+        Jon Medhurst <tixy@linaro.org>
+Subject: [PATCH 3.13 06/10] serial: amba-pl011: use port lock to guard control register access
+Date: Mon, 27 Jan 2014 12:17:09 -0800
+Message-Id: <20140127201535.805714682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -27,58 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Jon Medhurst <tixy@linaro.org>
 
-commit da4a7a3926d09c13ae052ede67feb7285e01e3f5 upstream.
+commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
 
-This should help us avoid the following mutex deadlock:
+When the pl011 is being used for a console, pl011_console_write forces
+the control register (CR) to enable the UART for transmission and then
+restores this to the original value afterwards. It does this while
+holding the port lock.
 
-[] mutex_lock+0x2a/0x50
-[] hdmi_present_sense+0x53/0x3a0 [snd_hda_codec_hdmi]
-[] generic_hdmi_resume+0x5a/0x70 [snd_hda_codec_hdmi]
-[] hda_call_codec_resume+0xec/0x1d0 [snd_hda_codec]
-[] snd_hda_power_save+0x1e4/0x280 [snd_hda_codec]
-[] codec_exec_verb+0x5f/0x290 [snd_hda_codec]
-[] snd_hda_codec_read+0x5b/0x90 [snd_hda_codec]
-[] snd_hdmi_get_eld_size+0x1e/0x20 [snd_hda_codec_hdmi]
-[] snd_hdmi_get_eld+0x2c/0xd0 [snd_hda_codec_hdmi]
-[] hdmi_present_sense+0x9a/0x3a0 [snd_hda_codec_hdmi]
-[] hdmi_repoll_eld+0x34/0x50 [snd_hda_codec_hdmi]
+Unfortunately, when the uart is started or shutdown - say in response to
+userland using the serial device for a terminal - then this updates the
+control register without any locking.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Fixes: cbbaa603a03c ('ALSA: hda - Fix possible races in HDMI driver')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This means we can have
+
+  pl011_console_write   Save CR
+  pl011_startup         Initialise CR, e.g. enable receive
+  pl011_console_write   Restore old CR with receive not enabled
+
+this result is a serial port which doesn't respond to any input.
+
+A similar race in reverse could happen when the device is shutdown.
+
+We can fix these problems by taking the port lock when updating CR.
+
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/tty/serial/amba-pl011.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1496,11 +1496,14 @@ static bool hdmi_present_sense(struct hd
- 	 * specification worked this way. Hence, we just ignore the data in
- 	 * the unsolicited response to avoid custom WARs.
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1537,6 +1537,8 @@ static int pl011_startup(struct uart_por
+ 	/*
+ 	 * Provoke TX FIFO interrupt into asserting.
  	 */
--	int present = snd_hda_pin_sense(codec, pin_nid);
-+	int present;
- 	bool update_eld = false;
- 	bool eld_changed = false;
- 	bool ret;
- 
-+	snd_hda_power_up(codec);
-+	present = snd_hda_pin_sense(codec, pin_nid);
++	spin_lock_irq(&uap->port.lock);
 +
- 	mutex_lock(&per_pin->lock);
- 	pin_eld->monitor_present = !!(present & AC_PINSENSE_PRESENCE);
- 	if (pin_eld->monitor_present)
-@@ -1573,6 +1576,7 @@ static bool hdmi_present_sense(struct hd
- 		jack->block_report = !ret;
+ 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 	writew(0, uap->port.membase + UART011_FBRD);
+@@ -1561,6 +1563,8 @@ static int pl011_startup(struct uart_por
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
- 	mutex_unlock(&per_pin->lock);
-+	snd_hda_power_down(codec);
- 	return ret;
- }
++	spin_unlock_irq(&uap->port.lock);
++
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1629,11 +1633,13 @@ static void pl011_shutdown(struct uart_p
+ 	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
++	spin_lock_irq(&uap->port.lock);
+ 	cr = readw(uap->port.membase + UART011_CR);
+ 	uap->old_cr = cr;
+ 	cr &= UART011_CR_RTS | UART011_CR_DTR;
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
++	spin_unlock_irq(&uap->port.lock);
  
+ 	/*
+ 	 * disable break condition and fifos
 
 
