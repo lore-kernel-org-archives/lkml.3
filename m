@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaA0Ovi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 09:51:38 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:16488 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709AbaA0Ovg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 09:51:36 -0500
-Message-ID: <1390833923.1792.507.camel@misato.fc.hp.com>
-Subject: Re: [tip:x86/urgent] arch/x86/mm/srat: Skip NUMA_NO_NODE while
- parsing SLIT
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Date: Mon, 27 Jan 2014 07:45:23 -0700
-In-Reply-To: <CAE9FiQXSc5ynXcrwcc6K-3sM8PZ=n+ieiR4h1P-gjd4Eknmnww@mail.gmail.com>
-References: <tip-a85eba8814631d0d48361c8b9a7ee0984e80c03c@git.kernel.org>
-	 <CAE9FiQXSc5ynXcrwcc6K-3sM8PZ=n+ieiR4h1P-gjd4Eknmnww@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753964AbaA0Owi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 09:52:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19833 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753577AbaA0Owh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 09:52:37 -0500
+Date: Mon, 27 Jan 2014 09:52:09 -0500
+From: Dave Jones <davej@redhat.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when
+ seting kernel nodes to unhotpluggable.
+Message-ID: <20140127145209.GA18016@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Tang Chen <tangchen@cn.fujitsu.com>,
+	David Rientjes <rientjes@google.com>, tglx@linutronix.de,
+	mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+	zhangyanfei@cn.fujitsu.com, guz.fnst@cn.fujitsu.com, x86@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com>
+ <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
+ <20140123061343.GB15206@redhat.com>
+ <alpine.DEB.2.02.1401222214290.8088@chino.kir.corp.google.com>
+ <20140123065824.GA17684@redhat.com>
+ <20140123223136.GA18468@redhat.com>
+ <52E60ABF.9020400@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E60ABF.9020400@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-26 at 00:43 -0800, Yinghai Lu wrote:
-> On Sat, Jan 25, 2014 at 6:25 AM, tip-bot for Toshi Kani
-> <tipbot@zytor.com> wrote:
-> > Commit-ID:  a85eba8814631d0d48361c8b9a7ee0984e80c03c
-> > Gitweb:     http://git.kernel.org/tip/a85eba8814631d0d48361c8b9a7ee0984e80c03c
-> > Author:     Toshi Kani <toshi.kani@hp.com>
-> > AuthorDate: Tue, 21 Jan 2014 14:33:15 -0800
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Sat, 25 Jan 2014 09:13:35 +0100
-> >
-> > arch/x86/mm/srat: Skip NUMA_NO_NODE while parsing SLIT
-> >
-> > When ACPI SLIT table has an I/O locality (i.e. a locality
-> > unique to an I/O device), numa_set_distance() emits this warning
-> > message:
-> >
-> >  NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
-> >
-> > acpi_numa_slit_init() calls numa_set_distance() with
-> > pxm_to_node(), which assumes that all localities have been
-> > parsed with SRAT previously.  SRAT does not list I/O localities,
-> > where as SLIT lists all localities including I/Os.  Hence,
-> > pxm_to_node() returns NUMA_NO_NODE (-1) for an I/O locality.
-> >
-> > I/O localities are not supported and are ignored today, but emitting
-> > such warning message leads to unnecessary confusion.
-> >
-> > Change acpi_numa_slit_init() to avoid calling
-> > numa_set_distance() with NUMA_NO_NODE.
-> >
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Yinghai Lu <yinghai@kernel.org>
-> > Link: http://lkml.kernel.org/n/tip-dSvpjjvp8aMzs1ybkftxohlh@git.kernel.org
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> > ---
-> >  arch/x86/mm/srat.c | 16 +++++++++++++---
-> >  1 file changed, 13 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> > index 266ca91..5ecf651 100644
-> > --- a/arch/x86/mm/srat.c
-> > +++ b/arch/x86/mm/srat.c
-> > @@ -42,15 +42,25 @@ static __init inline int srat_disabled(void)
-> >         return acpi_numa < 0;
-> >  }
-> >
-> > -/* Callback for SLIT parsing */
-> > +/*
-> > + * Callback for SLIT parsing.  pxm_to_node() returns NUMA_NO_NODE for
-> > + * I/O localities since SRAT does not list them.  I/O localities are
-> > + * not supported at this point.
-> > + */
-> >  void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
-> >  {
-> >         int i, j;
-> >
-> > -       for (i = 0; i < slit->locality_count; i++)
-> > -               for (j = 0; j < slit->locality_count; j++)
-> > +       for (i = 0; i < slit->locality_count; i++) {
-> > +               if (pxm_to_node(i) == NUMA_NO_NODE)
-> > +                       continue;
-> > +               for (j = 0; j < slit->locality_count; j++) {
-> > +                       if (pxm_to_node(j) == NUMA_NO_NODE)
-> > +                               continue;
-> >                         numa_set_distance(pxm_to_node(i), pxm_to_node(j),
-> >                                 slit->entry[slit->locality_count * i + j]);
-> > +               }
-> > +       }
-> >  }
-> >
-> >  /* Callback for Proximity Domain -> x2APIC mapping */
-> 
-> wonder if the patch that i sent one year ago is better.
-> 
-> https://lkml.org/lkml/2013/1/21/559
-> 
-> as it avoid calling extra calling of pxm_to_node(i).
+On Mon, Jan 27, 2014 at 03:29:03PM +0800, Tang Chen wrote:
 
-Your version looks good to me, although I do not believe the difference
-is visible.  I will reply to your patch with one comment and ack.
+ > > Some build tests show..
+ > >
+ > > MAXSMP ( NODESHIFT=10 ) : Bug
+ > > NRCPUS=4&  NODESHIFT=10 : Bug
+ > > NRCPUS=4&  NODESHIFT=1 : no bug
+ > >
+ > >
+ > > The middle config test was accidental, I hadn't realised disabling MAXSMP
+ > > wouldn't reset NODESHIFT to something sane.
+ > >
+ > > I'll start bisecting, as MAXSMP worked fine until a few days ago.
+ > 
+ > Hi Dave,
+ > 
+ > I didn't reproduce this bug. Would you please share the bisect result ?
 
-Thanks,
--Toshi
+The bisect pointed at something completely unrelated, and then when I tried 
+again on git HEAD, I couldn't reproduce it.. 
+If I manage to get it happening again I'll look into it more, but for now
+it seems to have gone into hiding.
 
+	Dave
