@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaA0UaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:30:08 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59812 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007AbaA0UaF (ORCPT
+	id S1754345AbaA0UgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:36:19 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:60173 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062AbaA0UgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:30:05 -0500
-Date: Mon, 27 Jan 2014 12:30:01 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tom Gundersen <teg@jklm.no>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, kay@vrfy.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC][PATCH] module: allow multiple calls to
- MODULE_DEVICE_TABLE() per module
-Message-ID: <20140127203001.GA18575@core.coreip.homeip.net>
-References: <1390849795-2155-1-git-send-email-teg@jklm.no>
- <20140127195422.GB21018@kroah.com>
+	Mon, 27 Jan 2014 15:36:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140127195422.GB21018@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGVrzcZ15Ov4zFDkaX=YuK0xVa+_QVjha1TN0cnhoMHYh1Jx4Q@mail.gmail.com>
+References: <1390795167-6677-1-git-send-email-jcmvbkbc@gmail.com>
+	<1390795167-6677-2-git-send-email-jcmvbkbc@gmail.com>
+	<1390817904.2735.127.camel@deadeye.wl.decadent.org.uk>
+	<52E6868C.3070401@gmail.com>
+	<CAGVrzcZ15Ov4zFDkaX=YuK0xVa+_QVjha1TN0cnhoMHYh1Jx4Q@mail.gmail.com>
+Date: Tue, 28 Jan 2014 00:36:15 +0400
+Message-ID: <CAMo8BfLx9iVTqW9fQonF=7C=oDG1RpU5iyGUXf_wFnk7TEvShA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] net: ethoc: don't advertise gigabit speed on attached PHY
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
+        Marc Gauthier <marc@cadence.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 11:54:22AM -0800, Greg Kroah-Hartman wrote:
-> On Mon, Jan 27, 2014 at 08:09:55PM +0100, Tom Gundersen wrote:
-> > Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
-> > second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
-> > the modaliases being exposed.
-> > 
-> > This fixes the problem by including the name of the device_id table in the
-> > __mod_*_device_table alias, allowing us to export several device_id tables
-> > per module.
-> > 
-> > Suggested-by: Kay Sievers <kay@vrfy.org>
-> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > ---
-> >  include/linux/module.h   |  2 +-
-> >  scripts/mod/file2alias.c | 14 +++++++++-----
-> >  2 files changed, 10 insertions(+), 6 deletions(-)
-> 
-> Ah, very nice, I've wanted this for a while now, it would make a number
-> of different drivers much smaller and simpler to add new device ids to
-> (no multiple lists of ids, one for the module loader and one for the
-> sub-driver that is in the single file.)
-> 
-> If this doesn't break any userspace tools, I have no objection to it at
-> all:
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Mon, Jan 27, 2014 at 11:36 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-01-27 Max Filippov <jcmvbkbc@gmail.com>:
+>> On Mon, Jan 27, 2014 at 2:18 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>>> On Mon, 2014-01-27 at 07:59 +0400, Max Filippov wrote:
+>>>> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but does
+>>>> not disable advertisement when PHY supports them. This results in
+>>>> non-functioning network when the MAC is connected to a gigabit PHY connected
+>>>> to a gigabit switch.
+>>>>
+>>>> The fix is to disable gigabit speed advertisement on attached PHY
+>>>> unconditionally.
+>>>>
+>>>> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+>>>> ---
+>>>>  drivers/net/ethernet/ethoc.c | 2 ++
+>>>>  1 file changed, 2 insertions(+)
+>>>>
+>>>> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+>>>> index 4de8cfd..0aa1a05 100644
+>>>> --- a/drivers/net/ethernet/ethoc.c
+>>>> +++ b/drivers/net/ethernet/ethoc.c
+>>>> @@ -712,6 +712,8 @@ static int ethoc_open(struct net_device *dev)
+>>>>               netif_start_queue(dev);
+>>>>       }
+>>>>
+>>>> +     priv->phy->advertising &= ~(ADVERTISED_1000baseT_Full |
+>>>> +                                 ADVERTISED_1000baseT_Half);
+>>>>       phy_start(priv->phy);
+>>>>       napi_enable(&priv->napi);
+>>>>
+>>>
+>>> This is not sufficient to disable gigabit speeds; the supported mask
+>>> should also be limited.  And it should be done even before the net
+>>
+>> I tried that, but when I also limit supported mask the phy driver doesn't
+>> touch gigabit advertising register int the genphy_config_advert at all.
+>> That's probably right for ethtool interface, but ethoc doesn't support
+>> ethtool.
+>
+> This is not right for libphy either, phydev->supported must reflect
+> that you support Gigabit or not.
 
-Looks great to me as long as module tools keep working.
+I'm sorry, does that mean that I must not touch phydev->supported,
+or that I must update it too and somehow fix genphy_config_advert?
 
-Thanks.
+> Since ethoc supports libphy, there really is no reason not to
+> implement the ethtool_{get,set}_settings callbacks using
+> phy_mii_ioctl().
+
+Ok, I'll add that.
+
+>>> device is registered.
+>>>
+>>> Rather than poking into the phy_device structure directly from this
+>>> driver, I think you should add a function in phylib for this purpose.
+>
+> All drivers are currently modifying phydev->advertising and
+> phydev->supported directly, most of them do it correctly as far as I
+> checked. It does make some sense to add a helper function though.
+
+[...]
+
+>> diff --git a/include/linux/phy.h b/include/linux/phy.h
+>> index 48a4dc3..0282a8d 100644
+>> --- a/include/linux/phy.h
+>> +++ b/include/linux/phy.h
+>> @@ -559,6 +559,11 @@ static inline int phy_read_status(struct phy_device *phydev) {
+>>         return phydev->drv->read_status(phydev);
+>>  }
+>>
+>> +static inline void phy_update_adv(struct phy_device *phydev, u32 mask, u32 set)
+>> +{
+>> +       phydev->advertising = (phydev->advertising & mask) | set;
+>> +}
+>> +
+>
+> This should be a preliminary patch to this patchset, so you first
+> introduce the function, then use it in the driver, but the idea looks
+> good. There is room for updating quite some drivers out there since
+> those used to modify phydev->advertising and phydev->supported
+> directly without using an accessor.
+
+What about those that do something like this:
+
+phydev->advertising = phydev->supported;
+
+leave them as is, or provide read accessor for phydev->supported?
 
 -- 
-Dmitry
+Thanks.
+-- Max
