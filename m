@@ -1,39 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaA0WM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:12:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1464 "EHLO mx1.redhat.com"
+	id S1754246AbaA0WN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:13:57 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:55738
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876AbaA0WM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:12:58 -0500
-Message-ID: <52E6D9D8.2060205@redhat.com>
-Date: Mon, 27 Jan 2014 17:12:40 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: numa: Initialse numa balancing after jump label initialisation
-References: <20140127155127.GJ4963@suse.de>
-In-Reply-To: <20140127155127.GJ4963@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753545AbaA0WN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 17:13:56 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Add support for physically discontinuous receive buffer
+Date: Mon, 27 Jan 2014 15:03:42 -0800
+Message-Id: <1390863822-3509-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 10:51 AM, Mel Gorman wrote:
-> The command line parsing takes place before jump labels are initialised which
-> generates a warning if numa_balancing= is specified and CONFIG_JUMP_LABEL
-> is set. On older kernls before commit c4b2c0c5 (static_key: WARN on
-> usage before jump_label_init was called) the kernel would have crashed.
-> This patch enables automatic numa balancing later in the initialisation
-> process if numa_balancing= is specified.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Cc: Stable <stable@vger.kernel.org>
+This will allow us to use bigger receive buffer, and prevent allocation failure
+due to fragmented memory.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/channel.c            |   14 ++++++++------
+ drivers/net/hyperv/hyperv_net.h |    2 +-
+ drivers/net/hyperv/netvsc.c     |    7 ++-----
+ 3 files changed, 11 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index cea623c..69ea36f 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -209,7 +209,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
+ {
+ 	int i;
+ 	int pagecount;
+-	unsigned long long pfn;
+ 	struct vmbus_channel_gpadl_header *gpadl_header;
+ 	struct vmbus_channel_gpadl_body *gpadl_body;
+ 	struct vmbus_channel_msginfo *msgheader;
+@@ -219,7 +218,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
+ 	int pfnsum, pfncount, pfnleft, pfncurr, pfnsize;
+ 
+ 	pagecount = size >> PAGE_SHIFT;
+-	pfn = virt_to_phys(kbuffer) >> PAGE_SHIFT;
+ 
+ 	/* do we need a gpadl body msg */
+ 	pfnsize = MAX_SIZE_CHANNEL_MESSAGE -
+@@ -248,7 +246,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
+ 		gpadl_header->range[0].byte_offset = 0;
+ 		gpadl_header->range[0].byte_count = size;
+ 		for (i = 0; i < pfncount; i++)
+-			gpadl_header->range[0].pfn_array[i] = pfn+i;
++			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
++				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
+ 		*msginfo = msgheader;
+ 		*messagecount = 1;
+ 
+@@ -301,7 +300,9 @@ static int create_gpadl_header(void *kbuffer, u32 size,
+ 			 * so the hypervisor gurantees that this is ok.
+ 			 */
+ 			for (i = 0; i < pfncurr; i++)
+-				gpadl_body->pfn[i] = pfn + pfnsum + i;
++				gpadl_body->pfn[i] = slow_virt_to_phys(
++					kbuffer + PAGE_SIZE * (pfnsum + i)) >>
++					PAGE_SHIFT;
+ 
+ 			/* add to msg header */
+ 			list_add_tail(&msgbody->msglistentry,
+@@ -327,7 +328,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
+ 		gpadl_header->range[0].byte_offset = 0;
+ 		gpadl_header->range[0].byte_count = size;
+ 		for (i = 0; i < pagecount; i++)
+-			gpadl_header->range[0].pfn_array[i] = pfn+i;
++			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
++				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
+ 
+ 		*msginfo = msgheader;
+ 		*messagecount = 1;
+@@ -344,7 +346,7 @@ nomem:
+  * vmbus_establish_gpadl - Estabish a GPADL for the specified buffer
+  *
+  * @channel: a channel
+- * @kbuffer: from kmalloc
++ * @kbuffer: from kmalloc or vmalloc
+  * @size: page-size multiple
+  * @gpadl_handle: some funky thing
+  */
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index a26eecb..7b594ce 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -462,7 +462,7 @@ struct nvsp_message {
+ 
+ #define NETVSC_MTU 65536
+ 
+-#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*2)	/* 2MB */
++#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
+ 
+ #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+ 
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 93b485b..03a2c6e 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -136,8 +136,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
+ 
+ 	if (net_device->recv_buf) {
+ 		/* Free up the receive buffer */
+-		free_pages((unsigned long)net_device->recv_buf,
+-			get_order(net_device->recv_buf_size));
++		vfree(net_device->recv_buf);
+ 		net_device->recv_buf = NULL;
+ 	}
+ 
+@@ -163,9 +162,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
+ 		return -ENODEV;
+ 	ndev = net_device->ndev;
+ 
+-	net_device->recv_buf =
+-		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
+-				get_order(net_device->recv_buf_size));
++	net_device->recv_buf = vzalloc(net_device->recv_buf_size);
+ 	if (!net_device->recv_buf) {
+ 		netdev_err(ndev, "unable to allocate receive "
+ 			"buffer of size %d\n", net_device->recv_buf_size);
 -- 
-All rights reversed
+1.7.4.1
+
