@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaA0PJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:09:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28527 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329AbaA0PJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:09:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,729,1384329600"; 
-   d="scan'208";a="473145138"
-Date: Mon, 27 Jan 2014 17:08:55 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, george.cherian@ti.com,
-        rogerq@ti.com, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-Message-ID: <20140127150855.GA17928@xps8300>
-References: <1385373690-12170-1-git-send-email-kishon@ti.com>
- <1390299099-14764-1-git-send-email-kishon@ti.com>
- <20140121144725.GF30451@saruman.home>
+	id S1753921AbaA0PK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:10:28 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:51256 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaA0PK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 10:10:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140121144725.GF30451@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <21221.47960.726835.615315@gargle.gargle.HOWL>
+References: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
+	<21221.47960.726835.615315@gargle.gargle.HOWL>
+Date: Mon, 27 Jan 2014 10:10:25 -0500
+X-Google-Sender-Auth: DkodJq8qIUou1OX-eFKhlFisVj4
+Message-ID: <CA+5PVA4A2YerXG0V6JWagAWBPBVbtn1X0Os0hhw9HCK5aeN2ZQ@mail.gmail.com>
+Subject: Re: ath9k ARM build error with v3.13-8330-g4ba9920
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Sujith Manoharan <sujith@msujith.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>, ath9k-devel@venema.h4ckr.net,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Sun, Jan 26, 2014 at 8:50 PM, Sujith Manoharan <sujith@msujith.org> wrote:
+> Josh Boyer wrote:
+>> adds a udelay(10000) call to the ath9k driver.  This will cause a
+>> build error on various ARM configs because the value passed to udelay
+>> is too large:
+>>
+>> ERROR: "__bad_udelay" [drivers/net/wireless/ath/ath9k/ath9k_hw.ko] undefined!
+>> make[1]: *** [__modpost] Error 1
+>> make: *** [modules] Error 2
+>>
+>> Is the 10000 microsecond udelay really required?  I believe the limit
+>> on ARM is 2000.  Perhaps something else could be done in this case?
+>
+> The delay is a workaround for a HW issue. Does this patch fix the problem ?
 
-On Tue, Jan 21, 2014 at 08:47:25AM -0600, Felipe Balbi wrote:
-> On Tue, Jan 21, 2014 at 03:41:38PM +0530, Kishon Vijay Abraham I wrote:
-> > Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs),
-> > do not return from probe if the USB PHY library returns -ENODEV as that
-> 
-> this isn't correct, they all have PHYs, some of them might not be
-> controllable.
-> 
-> > indicates the platform does not have PHY.
-> 
-> not really, that indicates the current platform tried to grab a PHY and
-> the PHY doesn't exist. If there's anybody with a non-controllable PHY
-> and someone gives me a really good reason for not using the generic
-> no-op PHY, then we should add a flag and we could:
-> 
-> 	if (!likely(dwc->flags & DWC3_USB2PHY_DRIVER_NOT_NEEDED))
-> 		dwc3_grab_phys(dwc);
+It fixes the build error, yes.  I don't have actual HW to test, but
+the driver compiles on ARM now with the same config as before.
+Thanks!
 
-Why would you need to know if the PHY drivers are needed or not
-explicitly in your controller driver?
+josh
 
-> But I really want to see the argument against using no-op. As far as I
-> could see, everybody needs a PHY driver one way or another, some
-> platforms just haven't sent any PHY driver upstream and have their own
-> hacked up solution to avoid using the PHY layer.
-
-Not true in our case. Platforms using Intel's SoCs and chip sets may
-or may not have controllable USB PHY. Quite often they don't. The
-Baytrails have usually ULPI PHY for USB2, but that does not mean they
-provide any vendor specific functions or any need for a driver in any
-case.
-
-Are we talking about the old USB PHY library or the new PHY framework
-with the no-op PHY driver?
-
-Well, in any case, I don't understand what is the purpose of the no-op
-PHY driver. What are you drying to achieve with that?
-
-
-Thanks,
-
--- 
-heikki
+>
+> diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+> index fbf43c0..11eab9f 100644
+> --- a/drivers/net/wireless/ath/ath9k/hw.c
+> +++ b/drivers/net/wireless/ath/ath9k/hw.c
+> @@ -1316,7 +1316,7 @@ static bool ath9k_hw_set_reset(struct ath_hw *ah, int type)
+>         if (AR_SREV_9300_20_OR_LATER(ah))
+>                 udelay(50);
+>         else if (AR_SREV_9100(ah))
+> -               udelay(10000);
+> +               mdelay(10);
+>         else
+>                 udelay(100);
+>
+> @@ -2051,9 +2051,8 @@ static bool ath9k_hw_set_power_awake(struct ath_hw *ah)
+>
+>         REG_SET_BIT(ah, AR_RTC_FORCE_WAKE,
+>                     AR_RTC_FORCE_WAKE_EN);
+> -
+>         if (AR_SREV_9100(ah))
+> -               udelay(10000);
+> +               mdelay(10);
+>         else
+>                 udelay(50);
+>
+>
+> Sujith
