@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaA0Fp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 00:45:27 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43631 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaA0Fp0 (ORCPT
+	id S1751541AbaA0GA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 01:00:27 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49835 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaA0GAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 00:45:26 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-45-52e5f274d450
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 01/21] perf tools: Introduce struct hist_entry_iter
-References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
-	<1390436045-16830-2-git-send-email-namhyung@kernel.org>
-	<20140123145654.GE1180@krava.brq.redhat.com>
-Date: Mon, 27 Jan 2014 14:45:24 +0900
-In-Reply-To: <20140123145654.GE1180@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 23 Jan 2014 15:56:54 +0100")
-Message-ID: <87ppne566j.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 27 Jan 2014 01:00:25 -0500
+From: Barry Song <21cnbao@gmail.com>
+To: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Barry Song <Baohua.Song@csr.com>,
+        Bin Shi <Bin.Shi@csr.com>
+Subject: [PATCH] kernel/power/swap.c: print the speed of compressed image instead of uncompressed one
+Date: Mon, 27 Jan 2014 13:59:55 +0800
+Message-Id: <1390802395-2336-1-git-send-email-21cnbao@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014 15:56:54 +0100, Jiri Olsa wrote:
-> On Thu, Jan 23, 2014 at 09:13:45AM +0900, Namhyung Kim wrote:
->> There're some duplicate code when adding hist entries.  They are
->> different in that some have branch info or mem info but generally do
->> same thing.  So introduce new struct hist_entry_iter and add callbacks
->> to customize each case in general way.
->> 
->
-> SNIP
->
->>  
->> -	if (sort__mode == SORT_MODE__BRANCH) {
->> -		ret = report__add_branch_hist_entry(tool, &al, sample, evsel);
->> -		if (ret < 0)
->> -			pr_debug("problem adding lbr entry, skipping event\n");
->> -	} else if (rep->mem_mode == 1) {
->> -		ret = report__add_mem_hist_entry(tool, &al, sample, evsel, event);
->> -		if (ret < 0)
->> -			pr_debug("problem adding mem entry, skipping event\n");
->> -	} else {
->> -		if (al.map != NULL)
->> -			al.map->dso->hit = 1;
->> -
->> -		ret = report__add_hist_entry(tool, evsel, &al, sample);
->> -		if (ret < 0)
->> -			pr_debug("problem incrementing symbol period, skipping event\n");
->> -	}
->> +	if (sort__mode == SORT_MODE__BRANCH)
->> +		iter.ops = &hist_iter_branch;
->> +	else if (rep->mem_mode == 1)
->
-> nit.. mem_mode is bool
+From: Barry Song <Baohua.Song@csr.com>
 
-Ah, right!  As you can see the old code already did it. ;-p
+For users of hibernation, people care more about the size of the compressed
+image than uncompressed one. as embedded guys will try to improve the speed
+of SD, NAND and do the best to shrink memory to make the image as less as
+possible.
+so printing the speed of compressed image is more important and making more
+senses here.
 
-Thanks,
-Namhyung
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Bin Shi <Bin.Shi@csr.com>
+---
+ kernel/power/swap.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 7c33ed2..bcb5c51 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -587,6 +587,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	unsigned char *page = NULL;
+ 	struct cmp_data *data = NULL;
+ 	struct crc_data *crc = NULL;
++	unsigned int nr_cmp_written = 0;
+ 
+ 	/*
+ 	 * We'll limit the number of threads for compression to limit memory
+@@ -747,6 +748,8 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 			     off += PAGE_SIZE) {
+ 				memcpy(page, data[thr].cmp + off, PAGE_SIZE);
+ 
++				nr_cmp_written++;
++
+ 				ret = swap_write_page(handle, page, &bio);
+ 				if (ret)
+ 					goto out_finish;
+@@ -764,7 +767,11 @@ out_finish:
+ 		ret = err2;
+ 	if (!ret)
+ 		printk(KERN_INFO "PM: Image saving done.\n");
+-	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
++
++	printk(KERN_INFO "PM: Saved %lu Kbytes (uncompressed Image)\n",
++		nr_to_write * (PAGE_SIZE / 1024));
++	swsusp_show_speed(&start, &stop, nr_cmp_written, "Wrote compressed");
++
+ out_clean:
+ 	if (crc) {
+ 		if (crc->thr)
+-- 
+1.7.5.4
+
