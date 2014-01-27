@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaA0RVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:21:33 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50066 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753480AbaA0RVc (ORCPT
+	id S1753911AbaA0RYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:24:19 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:37466 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbaA0RYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:21:32 -0500
-Date: Mon, 27 Jan 2014 17:21:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/9] ARM: get rid of arch_cpu_idle_prepare()
-Message-ID: <20140127172110.GR15937@n2100.arm.linux.org.uk>
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org> <1390802904-28399-2-git-send-email-nicolas.pitre@linaro.org> <52E6175F.1050401@linaro.org> <20140127160736.GP15937@n2100.arm.linux.org.uk> <52E69395.9020004@linaro.org>
+	Mon, 27 Jan 2014 12:24:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E69395.9020004@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52E6954F.2060303@nod.at>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+	<52E5EFAF.3060609@linux.intel.com>
+	<CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+	<52E6954F.2060303@nod.at>
+Date: Mon, 27 Jan 2014 09:24:17 -0800
+X-Google-Sender-Auth: JWhhpWdGZ5p816hzhb5imYF-t-8
+Message-ID: <CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Kees Cook <keescook@chromium.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 06:12:53PM +0100, Daniel Lezcano wrote:
-> On 01/27/2014 05:07 PM, Russell King - ARM Linux wrote:
->> On Mon, Jan 27, 2014 at 09:22:55AM +0100, Daniel Lezcano wrote:
->>> On 01/27/2014 07:08 AM, Nicolas Pitre wrote:
->>>> ARM and ARM64 are the only two architectures implementing
->>>> arch_cpu_idle_prepare() simply to call local_fiq_enable().
->>>>
->>>> We have secondary_start_kernel() already calling local_fiq_enable() and
->>>> this is done a second time in arch_cpu_idle_prepare() in that case. And
->>>> enabling FIQs has nothing to do with idling the CPU to start with.
->>>>
->>>> So let's introduce init_fiq_boot_cpu() to take care of FIQs on the boot
->>>> CPU and remove arch_cpu_idle_prepare(). This is now done a bit earlier
->>>> at late_initcall time but this shouldn't make a difference in practice
->>>> i.e. when FIQs are actually used.
->>>>
->>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
->>>
->>> Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>
->> What kind of review did you do when giving that attributation?
+On Mon, Jan 27, 2014 at 9:20 AM, Richard Weinberger <richard@nod.at> wrote:
+> Am 27.01.2014 18:05, schrieb Kees Cook:
+>> I would argue that decoding a non-panic oops on a running system is
+>> entirely possible as-is, since the offset can be found from
+>> /proc/kallsyms as root. It was the dead system that needed the offset
+>> exported: via text in the panic, or via an ELF note in a core.
 >
-> I did the review to the best of my knowledge and with good will.
->
-> I read your comment on this patch and I learnt one more thing.
->
-> Today, I am smarter than yesterday and dumber than tomorrow :)
+> The problem is that you have to pickup information from two sources.
+> As a kernel developer users/customers often show you a backtrace (oops or panic)
+> and want you do find the problem.
+> They barley manage it copy&paste the topmost full trace from dmesg or /var/log/messages.
+> If I have to ask them a bit later to tell me the offset from /proc/kallsyms or something else
+> I'm lost. Mostly because they have already rebooted the box...
 
-Just be aware that putting a comment along with the reviewed-by tag
-is always a good idea.  I know that's a little more work, but this has
-been raised a number of times by various people over the years.
+As long as I can turn it off, I'd be happy. :)
+/proc/sys/kernel/kaslr_in_oops or something?
 
-A reviewed-by tag on its own doesn't mean much, as it could mean that
-you've just glanced over the code and decided "yea, it looks okay", or
-it could mean that you've spent all day verifying that the code change
-is indeed correct.
-
-Consequently, some will ignore emails which just contain a reviewed-by
-attributation.
+-Kees
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Kees Cook
+Chrome OS Security
