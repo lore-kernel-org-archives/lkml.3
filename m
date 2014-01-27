@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaA0TNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:13:38 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:38074 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689AbaA0TNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:13:37 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Luis Ortega <luiorpe1@upv.es>
-Cc: dmitry.torokhov@gmail.com, yongjun_wei@trendmicro.com.cn,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] Input: zforce - fix lines exceeding 80 columns
-Date: Mon, 27 Jan 2014 20:12:48 +0100
-Message-ID: <1864335.qYXGSfrppl@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1390848373-7723-3-git-send-email-luiorpe1@upv.es>
-References: <1390848373-7723-1-git-send-email-luiorpe1@upv.es> <1390848373-7723-3-git-send-email-luiorpe1@upv.es>
+	id S1753909AbaA0TOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:14:31 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:47151 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaA0TO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 14:14:29 -0500
+Message-ID: <52E6AFFE.3030004@siemens.com>
+Date: Mon, 27 Jan 2014 20:14:06 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, 27. January 2014 19:46:11 Luis Ortega wrote:
-> Fixed lines exceeding 80 characters long wherever possible,
-> as per the coding style.
-> 
-> Signed-off-by: Luis Ortega <luiorpe1@upv.es>
+apic_icr_write and its users in smpboot.c were apparently written under
+the assumption that this code would only run during early boot. But
+nowadays we also execute it when onlining a CPU later on while the
+system is fully running. That will make wakeup_cpu_via_init_nmi and,
+thus, also native_apic_icr_write run in plain process context. If we
+migrate the caller to a different CPU at the wrong time or interrupt it
+and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
+INIT, SIPI or NMIs to wrong CPUs.
 
-checkpatch did not complain on the initial submission, so I guess it's more an 
-issue of taste. Nevertheless I don't have a preference for one way or the 
-other, so
+Fix this by disabling interrupts during the write to the ICR halves and
+disable preemption around waiting for ICR availability and using it.
 
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/x86/kernel/apic/apic.c |  4 ++++
+ arch/x86/kernel/smpboot.c   | 11 +++++++++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-
-> ---
->  drivers/input/touchscreen/zforce_ts.c | 19 ++++++++++++-------
->  1 file changed, 12 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/zforce_ts.c
-> b/drivers/input/touchscreen/zforce_ts.c index c145c1d..c1b6b82 100644
-> --- a/drivers/input/touchscreen/zforce_ts.c
-> +++ b/drivers/input/touchscreen/zforce_ts.c
-> @@ -235,7 +235,8 @@ static int zforce_scan_frequency(struct zforce_ts *ts,
-> u16 idle, u16 finger, (finger & 0xff), ((finger >> 8) & 0xff),
->  			(stylus & 0xff), ((stylus >> 8) & 0xff) };
-> 
-> -	dev_dbg(&client->dev, "set scan frequency to (idle: %d, finger: %d,
-> stylus: %d)\n", +	dev_dbg(&client->dev,
-> +		"set scan frequency to (idle: %d, finger: %d, stylus: %d)\n",
->  		idle, finger, stylus);
-> 
->  	return zforce_send_wait(ts, &buf[0], ARRAY_SIZE(buf));
-> @@ -332,7 +333,8 @@ static int zforce_touch_event(struct zforce_ts *ts, u8
-> *payload)
-> 
->  	count = payload[0];
->  	if (count > ZFORCE_REPORT_POINTS) {
-> -		dev_warn(&client->dev, "too many coordinates %d, expected max %d\n",
-> +		dev_warn(&client->dev,
-> +			 "too many coordinates %d, expected max %d\n",
->  			 count, ZFORCE_REPORT_POINTS);
->  		count = ZFORCE_REPORT_POINTS;
->  	}
-> @@ -494,8 +496,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
-> *dev_id) while (!gpio_get_value(pdata->gpio_int)) {
->  		ret = zforce_read_packet(ts, payload_buffer);
->  		if (ret < 0) {
-> -			dev_err(&client->dev, "could not read packet, ret: %d\n",
-> -				ret);
-> +			dev_err(&client->dev,
-> +				"could not read packet, ret: %d\n", ret);
->  			break;
->  		}
-> 
-> @@ -539,7 +541,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
-> *dev_id) payload[RESPONSE_DATA + 4];
->  			ts->version_rev   = (payload[RESPONSE_DATA + 7] << 8) |
->  						payload[RESPONSE_DATA + 6];
-> -			dev_dbg(&ts->client->dev, "Firmware Version %04x:%04x %04x:
-%04x\n",
-> +			dev_dbg(&ts->client->dev,
-> +				"Firmware Version %04x:%04x %04x:%04x\n",
->  				ts->version_major, ts->version_minor,
->  				ts->version_build, ts->version_rev);
-> 
-> @@ -552,7 +555,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
-> *dev_id) break;
-> 
->  		default:
-> -			dev_err(&ts->client->dev, "unrecognized response id: 0x%x\n",
-> +			dev_err(&ts->client->dev,
-> +				"unrecognized response id: 0x%x\n",
->  				payload[RESPONSE_ID]);
->  			break;
->  		}
-> @@ -618,7 +622,8 @@ static int zforce_suspend(struct device *dev)
-> 
->  		enable_irq_wake(client->irq);
->  	} else if (input->users) {
-> -		dev_dbg(&client->dev, "suspend without being a wakeup source\n");
-> +		dev_dbg(&client->dev,
-> +			"suspend without being a wakeup source\n");
-> 
->  		ret = zforce_stop(ts);
->  		if (ret)
-
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 7f26c9a..06f90b8 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -283,8 +283,12 @@ u32 native_safe_apic_wait_icr_idle(void)
+ 
+ void native_apic_icr_write(u32 low, u32 id)
+ {
++	unsigned long flags;
++
++	local_irq_save(flags);
+ 	apic_write(APIC_ICR2, SET_APIC_DEST_FIELD(id));
+ 	apic_write(APIC_ICR, low);
++	local_irq_restore(flags);
+ }
+ 
+ u64 native_apic_icr_read(void)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a32da80..37e11e5 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -701,11 +701,15 @@ wakeup_cpu_via_init_nmi(int cpu, unsigned long start_ip, int apicid,
+ 	int id;
+ 	int boot_error;
+ 
++	preempt_disable();
++
+ 	/*
+ 	 * Wake up AP by INIT, INIT, STARTUP sequence.
+ 	 */
+-	if (cpu)
+-		return wakeup_secondary_cpu_via_init(apicid, start_ip);
++	if (cpu) {
++		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++		goto out;
++	}
+ 
+ 	/*
+ 	 * Wake up BSP by nmi.
+@@ -725,6 +729,9 @@ wakeup_cpu_via_init_nmi(int cpu, unsigned long start_ip, int apicid,
+ 		boot_error = wakeup_secondary_cpu_via_nmi(id, start_ip);
+ 	}
+ 
++out:
++	preempt_enable();
++
+ 	return boot_error;
+ }
+ 
+-- 
+1.8.1.1.298.ge7eed54
