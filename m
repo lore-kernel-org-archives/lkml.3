@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaA0BxX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 20:53:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40629 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaA0BxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 20:53:22 -0500
-Message-ID: <52E5BC03.3080207@zytor.com>
-Date: Sun, 26 Jan 2014 17:53:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753351AbaA0Bzs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 20:55:48 -0500
+Received: from s72.web-hosting.com ([198.187.29.21]:54398 "EHLO
+	s72.web-hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaA0Bzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 20:55:46 -0500
+From: Sujith Manoharan <sujith@msujith.org>
 MIME-Version: 1.0
-To: Ren Qiaowei <qiaowei.ren@intel.com>, David Rientjes <rientjes@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] x86, mpx: extend siginfo structure to include
- bound violation information
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-5-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.02.1401252010400.10325@chino.kir.corp.google.com> <52E4919B.8050408@intel.com> <alpine.DEB.2.02.1401261335400.26515@chino.kir.corp.google.com> <52E5B7AA.9060205@intel.com>
-In-Reply-To: <52E5B7AA.9060205@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <21221.47960.726835.615315@gargle.gargle.HOWL>
+Date: Mon, 27 Jan 2014 07:20:16 +0530
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        <ath9k-devel@venema.h4ckr.net>, netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k ARM build error with v3.13-8330-g4ba9920
+In-Reply-To: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
+References: <CA+5PVA4fnCo8anT0HZCVu4+AFAseibm=0yD8nL3Lm7Q5dA-qZQ@mail.gmail.com>
+X-Mailer: VM 8.2.0b under 24.3.50.1 (x86_64-unknown-linux-gnu)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - server72.web-hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - msujith.org
+X-Get-Message-Sender-Via: server72.web-hosting.com: authenticated_id: sujith@msujith.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 05:34 PM, Ren Qiaowei wrote:
->>
-> I agree with you and we should suppress all the warnings as possible. If
-> I use (unsgined long) to cast like the following code, what do you think
-> about it? sizeof(long) will be 4 for 32-bit.
+Josh Boyer wrote:
+> adds a udelay(10000) call to the ath9k driver.  This will cause a
+> build error on various ARM configs because the value passed to udelay
+> is too large:
 > 
->     info->si_lower = (void __user *)(unsigned long)
->         (xsave_buf->bndregs.bndregs[2*bndregno]);
->     info->si_upper = (void __user *)(unsigned long)
->     (~xsave_buf->bndregs.bndregs[2*bndregno+1]);
+> ERROR: "__bad_udelay" [drivers/net/wireless/ath/ath9k/ath9k_hw.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
 > 
+> Is the 10000 microsecond udelay really required?  I believe the limit
+> on ARM is 2000.  Perhaps something else could be done in this case?
 
-That is the way it is usually done, yes.  Add a comment saying something
-like:
+The delay is a workaround for a HW issue. Does this patch fix the problem ?
 
-	/* Note: the upper 32 bits are ignored in 32-bit mode. */
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index fbf43c0..11eab9f 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1316,7 +1316,7 @@ static bool ath9k_hw_set_reset(struct ath_hw *ah, int type)
+ 	if (AR_SREV_9300_20_OR_LATER(ah))
+ 		udelay(50);
+ 	else if (AR_SREV_9100(ah))
+-		udelay(10000);
++		mdelay(10);
+ 	else
+ 		udelay(100);
+ 
+@@ -2051,9 +2051,8 @@ static bool ath9k_hw_set_power_awake(struct ath_hw *ah)
+ 
+ 	REG_SET_BIT(ah, AR_RTC_FORCE_WAKE,
+ 		    AR_RTC_FORCE_WAKE_EN);
+-
+ 	if (AR_SREV_9100(ah))
+-		udelay(10000);
++		mdelay(10);
+ 	else
+ 		udelay(50);
+ 
 
-It is worth watching out a bit here, though, because you could be
-running a 32-bit process on top of a 64-bit kernel.
-
-	-hpa
-
-
+Sujith
