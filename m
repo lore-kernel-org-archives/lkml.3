@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaA0WGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:06:35 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33903 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072AbaA0WGe (ORCPT
+	id S1754065AbaA0WEC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:04:02 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:58564 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaA0WEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:06:34 -0500
-Message-ID: <52E6D866.604@amacapital.net>
-Date: Mon, 27 Jan 2014 14:06:30 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com> <20140127002255.GA10323@ZenIV.linux.org.uk> <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com> <20140127074208.GB10323@ZenIV.linux.org.uk>
-In-Reply-To: <20140127074208.GB10323@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Jan 2014 17:04:00 -0500
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
+        mingo@redhat.com, chegu_vinod@hp.com
+Subject: [PATCH v5 0/9] numa,sched,mm: pseudo-interleaving for automatic NUMA balancing
+Date: Mon, 27 Jan 2014 17:03:39 -0500
+Message-Id: <1390860228-21539-1-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 11:42 PM, Al Viro wrote:
-> On Sun, Jan 26, 2014 at 08:32:09PM -0800, Linus Torvalds wrote:
->> On Sun, Jan 26, 2014 at 4:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>>
->>> Umm...  Can't uprobe_notify_resume() modify regs as well?
->>
->> Probably.
->>
->> .. and on the other hand, we should actually be able to use 'sysret'
->> for signal handling on x86-64, because while sysret destroys %rcx and
->> doesn't allow for returning to odd modes, for calling a signal handler
->> I don't think we really care..
-> 
-> I'm afraid we might:
-> 
->  * When user can change the frames always force IRET. That is because
->  * it deals with uncanonical addresses better. SYSRET has trouble
->  * with them due to bugs in both AMD and Intel CPUs.
-> 
-> IIRC, that was about SYSRET with something unpleasant left in RCX, which
-> comes from regs->ip, which is set to sa_handler by __setup_rt_frame().
-> And we do not normalize or validate that - not in __setup_rt_frame() and
-> not at sigaction(2) time.  Something about GPF triggered and buggering
-> attacker-chosen memory area?  I don't remember details, but IIRC the
-> conclusion had been "just don't go there"...
-> 
-> Note that we can manipulate regs->ip and regs->sp, regardless of validation
-> at sigaction(2) or __setup_rt_frame() - just have the sucker ptraced, send
-> it a signal and it'll stop on delivery.  Then tracer can use ptrace to modify
-> registers and issue PTRACE_CONT with zero signal.  Voila - regs->[is]p
-> set to arbitrary values, no signal handlers triggered...
-> 
+The current automatic NUMA balancing code base has issues with
+workloads that do not fit on one NUMA load. Page migration is
+slowed down, but memory distribution between the nodes where
+the workload runs is essentially random, often resulting in a
+suboptimal amount of memory bandwidth being available to the
+workload.
 
-It's not just ip and sp -- cs matters here, too, I think.
+In order to maximize performance of workloads that do not fit in one NUMA
+node, we want to satisfy the following criteria:
+1) keep private memory local to each thread
+2) avoid excessive NUMA migration of pages
+3) distribute shared memory across the active nodes, to
+   maximize memory bandwidth available to the workload
 
-(I may be the only one to have ever tried it, but it's possible to
-far-call from 64-bit to 32-bit cs, and it works.  I've never tried
-switching cs using ptrace, but someone may want that to work. too.)
+This patch series identifies the NUMA nodes on which the workload
+is actively running, and balances (somewhat lazily) the memory
+between those nodes, satisfying the criteria above.
 
-That being said, the last time I benchmarked it, sysret was *way* faster
-than iret.  So maybe the thing to do is to validate the registers on the
-way out and, if they're appropriate for sysret, do the sysret.
+As usual, the series has had some performance testing, but it
+could always benefit from more testing, on other systems.
 
-I'm not quite sure how to express "I don't care about rcx" in pt_regs.
-Maybe use the actual value that the CPU will stick in there (assuming
-that anyone knows that this is).
+Changes since v4:
+ - remove some code that did not help performance
+ - implement all the cleanups suggested by Mel Gorman
+ - lots more testing, by Chegu Vinod and myself
+ - rebase against -tip instead of -next, to make merging easier
+Changes since v3:
+ - various code cleanups suggested by Mel Gorman (some in their own patches)
+ - after some testing, switch back to the NUMA specific CPU use stats,
+   since that results in a 1% performance increase for two 8-warehouse
+   specjbb instances on a 4-node system, and reduced page migration across
+   the board
+Changes since v2:
+ - dropped tracepoint (for now?)
+ - implement obvious improvements suggested by Peter
+ - use the scheduler maintained CPU use statistics, drop
+   the NUMA specific ones for now. We can add those later
+   if they turn out to be beneficial
+Changes since v1:
+ - fix divide by zero found by Chegu Vinod
+ - improve comment, as suggested by Peter Zijlstra
+ - do stats calculations in task_numa_placement in local variables
 
---Andy
+
+Some performance numbers, with two 40-warehouse specjbb instances
+on an 8 node system with 10 CPU cores per node, using a pre-cleanup
+version of these patches, courtesy of Chegu Vinod:
+
+numactl manual pinning
+spec1.txt:           throughput =     755900.20 SPECjbb2005 bops
+spec2.txt:           throughput =     754914.40 SPECjbb2005 bops
+
+NO-pinning results (Automatic NUMA balancing, with patches)
+spec1.txt:           throughput =     706439.84 SPECjbb2005 bops
+spec2.txt:           throughput =     729347.75 SPECjbb2005 bops
+
+NO-pinning results (Automatic NUMA balancing, without patches)
+spec1.txt:           throughput =     667988.47 SPECjbb2005 bops
+spec2.txt:           throughput =     638220.45 SPECjbb2005 bops
+
+No Automatic NUMA and NO-pinning results
+spec1.txt:           throughput =     544120.97 SPECjbb2005 bops
+spec2.txt:           throughput =     453553.41 SPECjbb2005 bops
+
