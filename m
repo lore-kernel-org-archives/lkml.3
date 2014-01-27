@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaA0JDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:03:01 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:60906 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbaA0JC7 (ORCPT
+	id S1753485AbaA0JL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:11:56 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:39979 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444AbaA0JLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:02:59 -0500
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <Pine.LNX.4.44L0.1401140942520.1310-100000@iolanthe.rowland.org>
-References: <20140114090519.GP4770@phenom.ffwll.local>
-	<Pine.LNX.4.44L0.1401140942520.1310-100000@iolanthe.rowland.org>
-Date: Mon, 27 Jan 2014 10:02:58 +0100
-X-Google-Sender-Auth: IRTSqdQUcmgAUizqVj4CPFLJZVY
-Message-ID: <CAKMK7uHFmYfjdmUrW34qzp1+q99jzvzYe47E-ZCtAT88eSSavQ@mail.gmail.com>
-Subject: Re: Excessive WARN()s in Intel 915 driver
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 Jan 2014 04:11:54 -0500
+Subject: Re: [PATCH] misc: genwqe: Fix potential memory leak when pinning
+ memory
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, haver@linux.vnet.ibm.com
+In-Reply-To: <20140125224744.0a9c360c@spike>
+References: <20140125224744.0a9c360c@spike>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 27 Jan 2014 10:11:44 +0100
+Message-ID: <1390813904.18801.2.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012709-2966-0000-0000-00000A0CFDB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 3:43 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Don't bother.  I'll redo it using the drm-intel-nightly branch, but I
-> won't have time for a few days.
+Hi Christian,
 
-My apologies for the delay in getting around to this. Can you please
-test the patch i've just posted?
+Am Samstag, den 25.01.2014, 22:47 +0100 schrieb Christian Engelmayer:
+> Fix a memory leak in the genwqe_pin_mem() error path as called by
+> ioctl GENWQE_PIN_MEM. In case there is an error encountered when
+> mapping memory, the already allocated dma_mapping struct needs to
+> be freed correctly.
+> 
+> Detected by Coverity: CID 1162606.
+> 
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> ---
+>  drivers/misc/genwqe/card_dev.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
+> index 8f8a6b3..2c2c9cc 100644
+> --- a/drivers/misc/genwqe/card_dev.c
+> +++ b/drivers/misc/genwqe/card_dev.c
+> @@ -787,6 +787,7 @@ static int genwqe_pin_mem(struct genwqe_file *cfile, struct genwqe_mem *m)
+>  	if (rc != 0) {
+>  		dev_err(&pci_dev->dev,
+>  			"[%s] genwqe_user_vmap rc=%d\n", __func__, rc);
+> +		kfree(dma_map);
+>  		return rc;
+>  	}
+> 
 
-http://patchwork.freedesktop.org/patch/18810/
+thanks for discovering and fixing the problem.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
