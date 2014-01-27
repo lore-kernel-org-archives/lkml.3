@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaA0UQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36166 "EHLO
+	id S1754533AbaA0UTB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:19:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728AbaA0UQJ (ORCPT
+	with ESMTP id S1754008AbaA0UQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:09 -0500
+	Mon, 27 Jan 2014 15:16:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.13 01/10] GFS2: Increase i_writecount during gfs2_setattr_chown
-Date: Mon, 27 Jan 2014 12:17:04 -0800
-Message-Id: <20140127201535.454532256@linuxfoundation.org>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.13 03/10] staging: comedi: addi_apci_1032: fix subdevice type/flags bug
+Date: Mon, 27 Jan 2014 12:17:06 -0800
+Message-Id: <20140127201535.588126013@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -27,59 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit 62e96cf81988101fe9e086b2877307b6adda5197 upstream.
+commit 90daf69a7a3f1d1a41018c799968a0bb896d65e0 upstream.
 
-This patch calls get_write_access in function gfs2_setattr_chown,
-which merely increases inode->i_writecount for the duration of the
-function. That will ensure that any file closes won't delete the
-inode's multi-block reservation while the function is running.
-It also ensures that a multi-block reservation exists when needed
-for quota change operations during the chown.
+The SDF_CMD_READ should be one of the s->subdev_flags not part of
+the s->type.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/inode.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/addi_apci_1032.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -1607,10 +1607,22 @@ static int setattr_chown(struct inode *i
- 	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
- 		ogid = ngid = NO_GID_QUOTA_CHANGE;
- 
--	error = gfs2_quota_lock(ip, nuid, ngid);
-+	error = get_write_access(inode);
- 	if (error)
- 		return error;
- 
-+	error = gfs2_rs_alloc(ip);
-+	if (error)
-+		goto out;
-+
-+	error = gfs2_rindex_update(sdp);
-+	if (error)
-+		goto out;
-+
-+	error = gfs2_quota_lock(ip, nuid, ngid);
-+	if (error)
-+		goto out;
-+
- 	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
- 	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
- 		error = gfs2_quota_check(ip, nuid, ngid);
-@@ -1637,6 +1649,8 @@ out_end_trans:
- 	gfs2_trans_end(sdp);
- out_gunlock_q:
- 	gfs2_quota_unlock(ip);
-+out:
-+	put_write_access(inode);
- 	return error;
- }
- 
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -325,8 +325,8 @@ static int apci1032_auto_attach(struct c
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
 
 
