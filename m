@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaA0U2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:28:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51743 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843AbaA0U2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:28:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,731,1384329600"; 
-   d="scan'208";a="471628365"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc 0/2] mei: memory leak fixes
-Date: Mon, 27 Jan 2014 22:27:22 +0200
-Message-Id: <1390854444-30650-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.5.3
+	id S1754281AbaA0UaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:30:08 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:59812 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaA0UaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 15:30:05 -0500
+Date: Mon, 27 Jan 2014 12:30:01 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tom Gundersen <teg@jklm.no>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, kay@vrfy.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC][PATCH] module: allow multiple calls to
+ MODULE_DEVICE_TABLE() per module
+Message-ID: <20140127203001.GA18575@core.coreip.homeip.net>
+References: <1390849795-2155-1-git-send-email-teg@jklm.no>
+ <20140127195422.GB21018@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140127195422.GB21018@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A memory leak was detected in the mei driver,
-here are two fixes that should address that. 
+On Mon, Jan 27, 2014 at 11:54:22AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Jan 27, 2014 at 08:09:55PM +0100, Tom Gundersen wrote:
+> > Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
+> > second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
+> > the modaliases being exposed.
+> > 
+> > This fixes the problem by including the name of the device_id table in the
+> > __mod_*_device_table alias, allowing us to export several device_id tables
+> > per module.
+> > 
+> > Suggested-by: Kay Sievers <kay@vrfy.org>
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > ---
+> >  include/linux/module.h   |  2 +-
+> >  scripts/mod/file2alias.c | 14 +++++++++-----
+> >  2 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> Ah, very nice, I've wanted this for a while now, it would make a number
+> of different drivers much smaller and simpler to add new device ids to
+> (no multiple lists of ids, one for the module loader and one for the
+> sub-driver that is in the single file.)
+> 
+> If this doesn't break any userspace tools, I have no objection to it at
+> all:
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I suggest this goes to stable as well
+Looks great to me as long as module tools keep working.
 
-Alexander Usyskin (2):
-  mei: clear write cb from waiting list on reset
-  mei: don't unset read cb ptr on reset
-
- drivers/misc/mei/client.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Thanks.
 
 -- 
-1.8.5.3
-
+Dmitry
