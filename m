@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaA0VEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 16:04:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50156 "EHLO mx1.redhat.com"
+	id S1754427AbaA0VMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 16:12:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47385 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288AbaA0VEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 16:04:39 -0500
-Date: Mon, 27 Jan 2014 16:04:23 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, riel@redhat.com,
-        mgorman@suse.de, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
-        david@gibson.dropbear.id.au, js1304@gmail.com,
-        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
-        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1390856663-xenxk2ck-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1390794746-16755-8-git-send-email-davidlohr@hp.com>
-References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
- <1390794746-16755-8-git-send-email-davidlohr@hp.com>
-Subject: Re: [PATCH 7/8] mm, hugetlb: mm, hugetlb: unify chg and avoid_reserve
- to use_reserve
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1754217AbaA0VMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 16:12:16 -0500
+Message-ID: <52E6CBAA.1080405@suse.cz>
+Date: Mon, 27 Jan 2014 22:12:10 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+CC: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        jkosina@suse.cz
+Subject: Re: [PATCH 03/11] bin2c: Move bin2c in scripts/basic
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com> <1390849071-21989-4-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1390849071-21989-4-git-send-email-vgoyal@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1390794746-16755-8-git-send-email-davidlohr@hp.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 07:52:25PM -0800, Davidlohr Bueso wrote:
-> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Dne 27.1.2014 19:57, Vivek Goyal napsal(a):
+> Kexec wants to use bin2c and it wants to use it really early in the build
+> process. See arch/x86/purgatory/ code in later patches.
 > 
-> Currently, we have two variable to represent whether we can use reserved
-> page or not, chg and avoid_reserve, respectively. With aggregating these,
-> we can have more clean code. This makes no functional difference.
+> So move bin2c in scripts/basic so that it can be built very early and
+> be usable by arch/x86/purgatory/
 > 
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+[...]
+> diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
+> index 4fcef87..afbc1cd 100644
+> --- a/scripts/basic/Makefile
+> +++ b/scripts/basic/Makefile
+> @@ -9,6 +9,7 @@
+>  # fixdep: 	 Used to generate dependency information during build process
+>  
+>  hostprogs-y	:= fixdep
+> +hostprogs-$(CONFIG_IKCONFIG)     += bin2c
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Is the CONFIG_IKCONFIG dependency still correct, now that you found
+another use of bin2c?
+
+Thanks,
+Michal
+
