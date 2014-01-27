@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaA0UmU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:42:20 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60343 "EHLO
+	id S1754309AbaA0UnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:43:11 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60351 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996AbaA0UmT (ORCPT
+	with ESMTP id S1753947AbaA0UnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:42:19 -0500
-Date: Mon, 27 Jan 2014 20:42:03 +0000
+	Mon, 27 Jan 2014 15:43:09 -0500
+Date: Mon, 27 Jan 2014 20:43:02 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Jean-Francois Moine <moinejf@free.fr>
-Cc: alsa-devel@alsa-project.org, Dave Airlie <airlied@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Message-ID: <20140127204203.GX11841@sirena.org.uk>
+Message-ID: <20140127204302.GY11841@sirena.org.uk>
 References: <cover.1390813480.git.moinejf@free.fr>
- <a62784e8778d06512d49a24dcf59ff9e45839902.1390813481.git.moinejf@free.fr>
+ <22fafd7e11771ffc25c84ff609d18039f07b7295.1390813481.git.moinejf@free.fr>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+smLgjZrX8DJCqNF"
+	protocol="application/pgp-signature"; boundary="Io5+l5/qWLIGd1Gn"
 Content-Disposition: inline
-In-Reply-To: <a62784e8778d06512d49a24dcf59ff9e45839902.1390813481.git.moinejf@free.fr>
+In-Reply-To: <22fafd7e11771ffc25c84ff609d18039f07b7295.1390813481.git.moinejf@free.fr>
 X-Cookie: O.K., fine.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] ASoC: tda998x: add a codec driver for TDA998x
+Subject: Re: [PATCH 3/4] ASoC: tda998x: add DT documentation
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,92 +35,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+smLgjZrX8DJCqNF
+--Io5+l5/qWLIGd1Gn
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Sun, Jan 26, 2014 at 07:45:36PM +0100, Jean-Francois Moine wrote:
+On Mon, Jan 27, 2014 at 09:34:49AM +0100, Jean-Francois Moine wrote:
 
->  	select SND_SOC_STAC9766 if SND_SOC_AC97_BUS
->  	select SND_SOC_TAS5086 if I2C
-> +	select SND_SOC_TDA998X if I2C
+> +	- compatible: must be "nxp,tda998x-codec".
+> +	- audio-ports: one or two values.
+> +		The first value defines the I2S input port.
+> +		The second one, if present, defines the S/PDIF input port.
 
-> +config SND_SOC_TDA998X
-> +	tristate
-> +	depends on OF
-> +	default y if DRM_I2C_NXP_TDA998X=y
-> +	default m if DRM_I2C_NXP_TDA998X=m
-> +
+I take it these are port numbers on the device and it's not possible to
+do something like having multiple I2S ports?
 
-These two things don't seem to agree with each other, and I expect this
-breaks the build for ALL_CODECS.
-
-> +static void tda_get_encoder(struct tda_priv *priv)
-> +{
-> +	struct snd_soc_codec *codec = priv->codec;
-> +	struct device_node *np;
-> +	struct i2c_client *i2c_client;
-> +	static const struct of_device_id tda_dt[] = {
-> +		{ .compatible = "nxp,tda998x" },
-> +		{ },
-> +	};
-> +
-> +	/* search the tda998x device */
-> +	np = of_find_matching_node_and_match(NULL, tda_dt, NULL);
-> +	if (!np || !of_device_is_available(np)) {
-> +		dev_err(codec->dev, "No tda998x in DT\n");
-> +		return;
-> +	}
-> +	i2c_client = of_find_i2c_device_by_node(np);
-> +	of_node_put(np);
-> +	if (!i2c_client) {
-> +		dev_err(codec->dev, "no tda998x i2c client\n");
-> +		return;
-> +	}
-> +	if (!i2c_get_clientdata(i2c_client)) {
-> +		dev_err(codec->dev, "tda998x not initialized\n");
-> +		return;
-> +	}
-> +
-> +	priv->i2c_client = i2c_client;
-> +}
-
-The normal way of doing this would be to make the device a MFD - that
-way the frameworks make sure probe ordering and so on are sorted out.
-Other than that this looks basically OK, a few small comments below.
-
-> +	/* give the audio input type and ports to the HDMI encoder */
-> +	format = start ? priv->dai_id : 0;
-
-It's not clear to me what the above is doing (I think I know but it
-requires thinking about rather than being clear).
-
-> +static const struct snd_soc_dai_driver tda998x_dai[] = {
-> +    {
-> +	.name = "i2s-hifi",
-
-Coding style, indents are tabs.
-
---+smLgjZrX8DJCqNF
+--Io5+l5/qWLIGd1Gn
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS5sSYAAoJELSic+t+oim9/q0P/0NijLlc2Ajqfpptgf8bfG16
-gPZR0oj8fRn1SrD6E1HHjsbQhm3sv8OfyX6cJoy3iCC/ZYjcKVL4Goyje4v7xPyB
-rEJQJ/AWivXGNract7mYp1s+I4M/91RHbyCeLEvb7YTtHmbwFGhZxjXJGuwaSHFs
-cHM5vkpw/prMe304iPOvHTxQXnI1HzxuWKxiCOGF9f9h3oxZyndbeUS7B+Yo1SJq
-SA3ml5J6rstfqBH3WIR67w/kKJ8HclhBCbd1bKiadAmAJkZ46oD0v9T4cHi5QG+2
-UL00YtWDbGznjFtH6a4Q6hiIjo2MpZa41TODxMs5zEIT19Jq6qgoheShq+GU6nJG
-ReveBHgeMNdqGD8n7DGH3IvxYaRZt0F+hEO2Zz1iC/g6PscyxMYCWRmWco5b3tnj
-9cV6cH02geMRpOlXUBAzKcXu0IC+cIrskjYZUjF8pLTasj2mysRHrSn83SFsLHBa
-7fh5o7r8Qh5umy7J0Zi09JSmFfNatu+fb1KhcDEEeiSYu7hZwlwNGRttPmQG3KOO
-aLfZAdFH2sdRO6MqNHB+Gy4pfnPFdHH8OpUoZaE/wOe55p5wHTMyHUpkNNImD5P3
-/CkhlCZHcKD5nVwCxw5WUY6l7seSlLNxmv9SlsO54LiV1kfuX5uC5p/u5mLvpiZi
-LKplvxsifXaFZgcyl1jb
-=EpZ5
+iQIcBAEBAgAGBQJS5sTSAAoJELSic+t+oim9qhYQAIvBnoUun4PLU6BfbITHYRNb
+vNWEBEI3NrYcJGjik5HWEsSiXuXBE7c8LhGHc2WF6/YoycFkWmmhupZIwG1FYit5
+Rr7IL6GhtDdgWPDRiR2umGrZijkRowpy7Dr+nrdoWY61W565Sx//gnvf/hes0kjT
+OagqXrIfnO7AOkp5ivSwIEah6be+ZsN8++HL/++Q6nkPy3UtH3x838UDB1Fnggzy
+CK6iT7DqfsvcppPz7gLci5uW0A1us64jcebgbV2EjvBdCTirYMJ7GPCN1DqF8zW0
+O0H1SzvWIIYe5h0/W6gnAYepv9nuG0EZD++7AsaGxzOXgPZzzh3iC5BsH/xD7WCz
+u8YHHunQStyXMtYTTbLGoDdmdYeOmk+ZsUGuV6amNASMu+9P/2GNnZuRxZhwaMas
+1H5OOaBSD7uWVxsD/Ya8lls8Bi3NPz/QIWW9XrWQccylPy3PJNGQqPFLBJESMbeX
+gcC1gV27I89jbZM4tahOq1uYI36H/fUzlM2s/awqLP7SDEcQJAkDh7w8bvoVRqnP
+Gqr9Z/WfFuSe34R3YRvIfKc627OG6LfZcXj1c/nKlQsBjCAU2Zf2PfrkEFHgXkfO
+aAj9eDdspTwKT+LsCMsORSPgV/A+VvyvyH4GGi/PaddrIeVp3Q4TZJ79nKFArPSQ
+aTFbP2X5p5my8AGbRx7q
+=7WZ8
 -----END PGP SIGNATURE-----
 
---+smLgjZrX8DJCqNF--
+--Io5+l5/qWLIGd1Gn--
