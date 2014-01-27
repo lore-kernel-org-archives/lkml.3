@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaA0UQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36183 "EHLO
+	id S1754458AbaA0URK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:17:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaA0UQU (ORCPT
+	with ESMTP id S1754203AbaA0UQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:20 -0500
+	Mon, 27 Jan 2014 15:16:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 3.13 07/10] extcon: gpio: Request gpio pin before modifying its state
-Date: Mon, 27 Jan 2014 12:17:10 -0800
-Message-Id: <20140127201535.871457088@linuxfoundation.org>
+        Ethan Wilson <ethan.wilson@shiftmail.org>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.13 09/10] md/raid5: fix long-standing problem with bitmap handling on write failure.
+Date: Mon, 27 Jan 2014 12:17:12 -0800
+Message-Id: <20140127201536.003082770@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -28,55 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: NeilBrown <neilb@suse.de>
 
-commit 4288d9b8edcec7289e00eecdad44f14c9ea1ba0e upstream.
+commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
 
-Commit 338de0ca (extcon: gpio: Use gpio driver/chip debounce if supported)
-introduced a call to gpio_set_debounce() before actually requesting the
-respective gpio pin from the gpio subsystem.
+Before a write starts we set a bit in the write-intent bitmap.
+When the write completes we clear that bit if the write was successful
+to all devices.  However if the write wasn't fully successful we
+should not clear the bit.  If the faulty drive is subsequently
+re-added, the fact that the bit is still set ensure that we will
+re-write the data that is missing.
 
-The gpio subsystem expects that a gpio pin was requested before modifying its
-state. Not doing so results in a warning from gpiolib, and the gpio pin is
-auto-requested. This in turn causes the subsequent devm_gpio_request_one()
-to fail. So devm_gpio_request_one() must be called prior to calling
-gpio_set_debounce().
+This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
+bitmap bit when this flag is not set.
+Currently we correctly set the flag if a write starts when some
+devices are failed or missing.  But we do *not* set the flag if some
+device failed during the write attempt.
+This is wrong and can result in clearing the bit inappropriately.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+So: set the flag when a write fails.
+
+This bug has been present since bitmaps were introduces, so the fix is
+suitable for any -stable kernel.
+
+Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/extcon/extcon-gpio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/md/raid5.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -105,6 +105,12 @@ static int gpio_extcon_probe(struct plat
- 	extcon_data->state_off = pdata->state_off;
- 	if (pdata->state_on && pdata->state_off)
- 		extcon_data->edev.print_state = extcon_gpio_print_state;
-+
-+	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
-+				    pdev->name);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (pdata->debounce) {
- 		ret = gpio_set_debounce(extcon_data->gpio,
- 					pdata->debounce * 1000);
-@@ -117,11 +123,6 @@ static int gpio_extcon_probe(struct plat
- 	if (ret < 0)
- 		return ret;
- 
--	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
--				    pdev->name);
--	if (ret < 0)
--		goto err;
--
- 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
- 
- 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -2111,6 +2111,7 @@ static void raid5_end_write_request(stru
+ 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
+ 	} else {
+ 		if (!uptodate) {
++			set_bit(STRIPE_DEGRADED, &sh->state);
+ 			set_bit(WriteErrorSeen, &rdev->flags);
+ 			set_bit(R5_WriteError, &sh->dev[i].flags);
+ 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 
 
