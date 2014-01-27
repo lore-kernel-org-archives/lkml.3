@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaA0JL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:11:56 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:39979 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444AbaA0JLy (ORCPT
+	id S1753505AbaA0JNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:13:49 -0500
+Received: from dehamd003.servertools24.de ([31.47.254.18]:36706 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751135AbaA0JNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:11:54 -0500
-Subject: Re: [PATCH] misc: genwqe: Fix potential memory leak when pinning
- memory
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, haver@linux.vnet.ibm.com
-In-Reply-To: <20140125224744.0a9c360c@spike>
-References: <20140125224744.0a9c360c@spike>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Mon, 27 Jan 2014 10:11:44 +0100
-Message-ID: <1390813904.18801.2.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+	Mon, 27 Jan 2014 04:13:47 -0500
+X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jan 2014 04:13:47 EST
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <52E6219A.3020405@ladisch.de>
+Date: Mon, 27 Jan 2014 10:06:34 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Network Nut <sillystack@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: WaitForMultipleObjects/etc. In Kernel
+References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com>
+In-Reply-To: <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012709-2966-0000-0000-00000A0CFDB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christian,
+Network Nut wrote:
+> As you know, under Windows, synchronization objects such as {event | mutex |
+> semaphore | timer}; all have names that are computer-global. Process B can
+> open, and use, any {event | mutex | semaphore | timer} that was created by
+> process A, as long as Process B knows the name that was used by Process A to
+> create the {event | mutex | semaphore | timer}. [...]
+> Is there a method I can use where Process A and Process B can both refer to
+> the same eventfd by name?
 
-Am Samstag, den 25.01.2014, 22:47 +0100 schrieb Christian Engelmayer:
-> Fix a memory leak in the genwqe_pin_mem() error path as called by
-> ioctl GENWQE_PIN_MEM. In case there is an error encountered when
-> mapping memory, the already allocated dma_mapping struct needs to
-> be freed correctly.
-> 
-> Detected by Coverity: CID 1162606.
-> 
-> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
-> ---
->  drivers/misc/genwqe/card_dev.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
-> index 8f8a6b3..2c2c9cc 100644
-> --- a/drivers/misc/genwqe/card_dev.c
-> +++ b/drivers/misc/genwqe/card_dev.c
-> @@ -787,6 +787,7 @@ static int genwqe_pin_mem(struct genwqe_file *cfile, struct genwqe_mem *m)
->  	if (rc != 0) {
->  		dev_err(&pci_dev->dev,
->  			"[%s] genwqe_user_vmap rc=%d\n", __func__, rc);
-> +		kfree(dma_map);
->  		return rc;
->  	}
-> 
+In Unix, the most common method of sharing file descriptors is by
+letting child processes inherit them.  (This also works in Windows, but
+is not as efficient due to the process creation overhead.)
 
-thanks for discovering and fixing the problem.
+Unrelated processes cannot directly open objects created by another
+process (with the exception of sockets and pipes, which can be created
+in the file system).  However, sharing of any file descriptor is
+possible by sending it in a control message through a Unix domain
+socket.
 
-Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+> BTW, the man page for epoll_wait seems to be incorrect.
 
+<https://www.kernel.org/doc/man-pages/reporting_bugs.html>
+
+> "The timeout argument specifies the minimum number of milliseconds
+>        that epoll_wait() will block."
+>
+> I think the word "minimum" should be "maximum".
+
+This sentence was copied from the poll(2) man page, where the previous
+sentence says "poll() blocks until one of the events occurs".  So the
+word "block" implies that no event has occured.
+
+
+Regards,
+Clemens
