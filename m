@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaA0Rsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:48:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689AbaA0Rsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:48:43 -0500
-Date: Mon, 27 Jan 2014 18:48:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] wait*() induced tasklist_lock starvation
-Message-ID: <20140127174858.GD32450@redhat.com>
-References: <alpine.DEB.2.02.1401261500250.5335@chino.kir.corp.google.com>
+	id S1753883AbaA0Rwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:52:38 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50115 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753622AbaA0Rwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 12:52:37 -0500
+Date: Mon, 27 Jan 2014 17:52:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Q] block / zynq: DMA bouncing
+Message-ID: <20140127175231.GU15937@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.64.1401271549280.23931@axis700.grange> <20140127170230.GQ15937@n2100.arm.linux.org.uk> <52E69B4E.5010604@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401261500250.5335@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <52E69B4E.5010604@monstr.eu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Mon, Jan 27, 2014 at 06:45:50PM +0100, Michal Simek wrote:
+> Why 0x4000? IRC Linux for ARM is using space for any purpose.
+> Russell knows this much better than I.
 
-On 01/26, David Rientjes wrote:
->
-> Or is it just
-> another case of tasklist_lock problems that needs a major overhaul?
+Probably because as the kernel is loaded at 0x8000, it will place the
+swapper page table at 0x4000, thus covering from 0x4000 upwards.
 
-All I can say right now is: I'm afraid yes...
+Thus, the majority of your un-DMA-able memory will be kernel text or
+swapper page tables.
 
-David, sorry, currently I can't even read your email carefully,
-I'll try to return in a couple of days.
-
-Oleg.
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
