@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaA0Sh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:37:26 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50844 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaA0ShY (ORCPT
+	id S1754165AbaA0Sh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:37:56 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60105 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815AbaA0Shz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:37:24 -0500
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, badarkhe.manish@gmail.com
-Subject: [PATCH V3] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
-Date: Tue, 28 Jan 2014 00:07:09 +0530
-Message-Id: <1390847829-8379-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 27 Jan 2014 13:37:55 -0500
+Date: Mon, 27 Jan 2014 18:37:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
+Message-ID: <20140127183749.GF11841@sirena.org.uk>
+References: <1390585698-31661-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vKFfOv5t3oGVpiF+"
+Content-Disposition: inline
+In-Reply-To: <1390585698-31661-1-git-send-email-festevam@gmail.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio-regulator: Remove unneeded OOM error
+ message
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of "#ifdef CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
-option for DT code to avoid if-deffery in code.
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 b4513f2... 3e54476... M	drivers/power/max8925_power.c
- drivers/power/max8925_power.c |   17 +++++------------
- 1 file changed, 5 insertions(+), 12 deletions(-)
+--vKFfOv5t3oGVpiF+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index b4513f2..3e54476 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
- 	return 0;
- }
- 
--#ifdef CONFIG_OF
- static struct max8925_power_pdata *
- max8925_power_dt_init(struct platform_device *pdev)
- {
-@@ -440,9 +439,6 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	int no_insert_detect;
- 	struct max8925_power_pdata *pdata;
- 
--	if (!nproot)
--		return pdev->dev.platform_data;
--
- 	np = of_find_node_by_name(nproot, "charger");
- 	if (!np) {
- 		dev_err(&pdev->dev, "failed to find charger node\n");
-@@ -468,13 +464,6 @@ max8925_power_dt_init(struct platform_device *pdev)
- 
- 	return pdata;
- }
--#else
--static struct max8925_power_pdata *
--max8925_power_dt_init(struct platform_device *pdev)
--{
--	return pdev->dev.platform_data;
--}
--#endif
- 
- static int max8925_power_probe(struct platform_device *pdev)
- {
-@@ -483,7 +472,11 @@ static int max8925_power_probe(struct platform_device *pdev)
- 	struct max8925_power_info *info;
- 	int ret;
- 
--	pdata = max8925_power_dt_init(pdev);
-+	pdata = dev_get_platdata(&pdev->dev);
-+
-+	if (!pdata && chip->dev->of_node)
-+		pdata = max8925_power_dt_init(pdev);
-+
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "platform data isn't assigned to "
- 			"power supply\n");
--- 
-1.7.10.4
+On Fri, Jan 24, 2014 at 03:48:18PM -0200, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>=20
+> There is no need to print an OOM message after devm_kzalloc, since there =
+is
+> a generic OOM message in place.
 
+Applied, thanks.
+
+--vKFfOv5t3oGVpiF+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5qd6AAoJELSic+t+oim9K3cP+gOW4xjfUREV91E/fpyodEp/
+dzgPofOC/8PLEABGmp+sSlOUZOuW+XuxJ33E+1s9lurvLpFeW6f4g4qk2UbUA9xI
+JJ37AiW2CNyzMzfvHbUqzPa1n6UuzPdb+NBwiJKcl4v2+pRjuz3pWpfxm7uzy03F
+JxTDoNdEx2LFOei2CntR2tABJwIt3cYb+qFuE0eeLvhp6NKNlwklmOGF0/toPBir
+PaXWuT0Oe/6BNzjSjZuh8/YiaWwgTSfforQZNVFIu1Hre36fcp3Rk8E6zOqOeJDQ
+FoLQ0U3SQ54R72V+fUI1E7nuqEEQf5HM8PJhGYimCxx6nlisov/hfQ7jmZa0ZZ8l
+S89TII1ouoHWujHHUzPLjLCKj33yWUO14W9f/0zmh8oQpIJ9UNSv6oFuh+IbPSfh
+OBLXgeFoRwbdVQySzkrkFwDmr86UNuoz8ip5Z9uIJbXjBSjWjpmgSAdqArtEKy7C
+NIgy5FcTJBypdavQBWvy+ge2o4hN8ahRunFG5MVz67itYPsSPiXZX1ig/nFhh1p9
+0eKy4uzw2EIUtTXDX50ix6nvBbwwvLjLUWjVV9hpHiNx8TKo8xKKOKtYkct1zsqC
+FO5J8cMHf1i11lfraSBb2MZhOR0y0tyys/4fNeSDGMQQfDrd1oa79cWZimVA2IPQ
+71K80iGxdsvrRFziZN32
+=lApL
+-----END PGP SIGNATURE-----
+
+--vKFfOv5t3oGVpiF+--
