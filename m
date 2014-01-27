@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaA0EtU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 23:49:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41751 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203AbaA0EtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 23:49:19 -0500
-Message-ID: <52E5E508.3060203@zytor.com>
-Date: Sun, 26 Jan 2014 20:48:08 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751135AbaA0FDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 00:03:25 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34683 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbaA0FDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 00:03:24 -0500
+Date: Sun, 26 Jan 2014 21:02:44 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: bring back /sys/kernel/mm
+In-Reply-To: <20140127040330.GA17584@windriver.com>
+Message-ID: <alpine.LSU.2.11.1401262053510.1002@eggly.anvils>
+References: <alpine.LSU.2.11.1401261849120.1259@eggly.anvils> <20140127040330.GA17584@windriver.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>	<20140127002255.GA10323@ZenIV.linux.org.uk> <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
-In-Reply-To: <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 08:32 PM, Linus Torvalds wrote:
-> On Sun, Jan 26, 2014 at 4:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> Umm...  Can't uprobe_notify_resume() modify regs as well?
+On Sun, 26 Jan 2014, Paul Gortmaker wrote:
+> [[PATCH] mm: bring back /sys/kernel/mm] On 26/01/2014 (Sun 18:52) Hugh Dickins wrote:
 > 
-> Probably.
+> > Commit da29bd36224b ("mm/mm_init.c: make creation of the mm_kobj happen
+> > earlier than device_initcall") changed to pure_initcall(mm_sysfs_init).
+> > 
+> > That's too early: mm_sysfs_init() depends on core_initcall(ksysfs_init)
+> > to have made the kernel_kobj directory "kernel" in which to create "mm".
+> > 
+> > Make it postcore_initcall(mm_sysfs_init).  We could use core_initcall(),
+> > and depend upon Makefile link order kernel/ mm/ fs/ ipc/ security/ ...
+> > as core_initcall(debugfs_init) and core_initcall(securityfs_init) do;
+> > but better not.
 > 
-> .. and on the other hand, we should actually be able to use 'sysret'
-> for signal handling on x86-64, because while sysret destroys %rcx and
-> doesn't allow for returning to odd modes, for calling a signal handler
-> I don't think we really care..
+> Agreed, N+1 is better than link order.  I guess it silently fails then,
+> with /sys/kernel/mm missing as the symptom?  I'd booted i386 and ppc
+> and didn't spot this, unfortunately...  wondering now if there was a
+> hint in dmesg that I simply failed to notice.
+
+No, nothing in dmesg at all: both mm_sysfs_init() and ksm_init()
+(it was /sys/kernel/mm/ksm/run that I was looking for) thought
+they had succeeded.
+
+Ah, I get it: it's normal to pass NULL parent to kobject_create_and_add(),
+that just means create at the root.  And when I look at an unfixed box,
+yes, there's /sys/mm with all the right contents.
+
+Given /sys/block and /sys/fs and /sys/kernel, I think /sys/mm is a better
+location; but we're a few years too late to be making that change now ;)
+
+Hugh
+
 > 
-
-Yes, it is the fourth argument register, but we only have three
-arguments to a signal handler.  I had to think about that one.
-
->> While we
->> are at it, when we start using the same thing on 32bit kernels, we'll
->> need to watch out for execve() - the reason why start_thread() sets
->> TIF_NOTIFY_RESUME is to force us away from sysexit path.  IIRC, vm86
->> is another thing to watch out for (same reasons).
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
 > 
-> Yes, the 32-bit code I didn't want to touch, partly because I no
-> longer have a test-case. And it does end up having some more
-> interesting cases.
-
-That is one way to put it.  However, this code is incredibly ugly and
-getting it cleaned up would really, really help, of course.
-
-	-hpa
-
-
+> Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> Thanks,
+> Paul.
+> 
+> > ---
+> > 
+> >  mm/mm_init.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- 3.13.0+/mm/mm_init.c	2014-01-23 21:51:26.004001378 -0800
+> > +++ linux/mm/mm_init.c	2014-01-26 18:06:40.488488209 -0800
+> > @@ -202,4 +202,4 @@ static int __init mm_sysfs_init(void)
+> >  
+> >  	return 0;
+> >  }
+> > -pure_initcall(mm_sysfs_init);
+> > +postcore_initcall(mm_sysfs_init);
