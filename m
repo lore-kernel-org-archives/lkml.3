@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaA0KkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:40:04 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:33507 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaA0KkC (ORCPT
+	id S1753572AbaA0KuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:50:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51678 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaA0KuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:40:02 -0500
-Message-ID: <52E63779.5090101@gmail.com>
-Date: Mon, 27 Jan 2014 18:39:53 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 27 Jan 2014 05:50:19 -0500
+Date: Mon, 27 Jan 2014 11:50:11 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.14] mm, mempolicy: fix mempolicy printing in
+ numa_maps
+Message-ID: <20140127105011.GB11314@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, linux-kernel@vger.kernel.org,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: How to identify 6to4 and 6in4 tunnels
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Maintainers
+On Sat, Jan 25, 2014 at 07:12:35PM -0800, David Rientjes wrote:
+> As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference 
+> policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as 
+> "prefer:N" for the local node, N, of the process reading the file.
+> 
+> This should only be printed when the mempolicy of <pid> is MPOL_PREFERRED 
+> for node N.
+> 
+> If the process is actually only using the default mempolicy for local node 
+> allocation, make sure "default" is printed as expected.
 
-In our scene, we will create the 6in4/6to4 tunnel firstly and need to 
-check the tunnel type, secondly, we will configure the ip address on it. 
-So, Could we have any way to get the actual tunnel for 6in4 and 6to4 
-from current linux version?
+Should we also consider printing the MOF and MORON states so we get a
+better view of what the actual policy is?
 
-Both 6in4 and 6to4 have the same protocol “IPPROTO_IPV6” in Linux 
-kernel. The only difference is the ip address on the tunnel. Can we 
-distinguish them in Linux kernel?
 
-Best Regards
-
-Zhu Yanjun
